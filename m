@@ -1,167 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab3GMPij (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 11:38:39 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:60511 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab3GMPih (ORCPT
+	id S1752374Ab3GMPp4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 11:45:56 -0400
+Received: from forward5.mail.yandex.net ([77.88.46.21]:45443 "EHLO
+	forward5.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab3GMPpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 11:38:37 -0400
-Date: Sat, 13 Jul 2013 08:38:36 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: SoC fixes for -rc1
-Message-ID: <20130713153836.GA13431@quad.lixom.net>
+	Sat, 13 Jul 2013 11:45:55 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] sched: Add logic to handle parallel try_to_wake_up() of the same task
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <1517081373730349@web23d.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sat, 13 Jul 2013 19:45:49 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patch adds optimization of try_to_wake_up() function
+for cases when the system is doing parallel wake_up
+of the same task on the different cpus. Also it adds
+accounting the statistics of these situations.
 
-Here's the first set of fixes for SoC platforms. You'll see a trivial
-merge conflict due to the same bug being fixed through our tree and
-another (with a newline difference), but it was near the bottom of the
-branch and I didn't think it was worth rebasing away.
+We check the status of the task we want to wake up.
+If it is TASK_WAKING then the task is manipulated
+by try_to_wake_up() on another cpu. And after this
+check it will be a moment when the task is queued
+and his status is TASK_RUNNING. We just return
+earlier when we are sure the task will be TASK_RUNNING
+in the future (maybe right after the check). The profit is
+we don't loop while we are waiting the spinlock.
 
+There mustn't be any problems connected with
+we return earlier, besause scheduler allready does
+the same, when he queues a task in wake_list to be
+waked up on another cpu.
 
--Olof
+Parallel wake up is not unreal situation. Here is
+statistics from my 2-cpu laptop:
 
-The following changes since commit ddcf6600b133697adbafd96e080818bdc0dfd028:
+~# grep 'nr_wakeups_parallel.*[1-9]' -B100 -h /proc/*/sched | grep 'threads\|parallel\|wakeups ' | sed 's/(.*)//g'
 
-  Merge tag 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging (2013-07-03 19:56:35 -0700)
+rcu_sched 
+se.statistics.nr_wakeups                     :                  102
+se.statistics.nr_wakeups_parallel            :                    2
+Xorg 
+se.statistics.nr_wakeups                     :                36030
+se.statistics.nr_wakeups_parallel            :                   56
+gnome-terminal 
+se.statistics.nr_wakeups                     :                70573
+se.statistics.nr_wakeups_parallel            :                   55
+rcu_preempt 
+se.statistics.nr_wakeups                     :                68101
+se.statistics.nr_wakeups_parallel            :                 1368
 
-are available in the git repository at:
+It's the moment after boot (5-10 minutes uptime). Later the ratio
+goes down:
 
+rcu_sched 
+se.statistics.nr_wakeups                     :                  102
+se.statistics.nr_wakeups_parallel            :                    2
+Xorg 
+se.statistics.nr_wakeups                     :                49057
+se.statistics.nr_wakeups_parallel            :                   74
+gnome-terminal 
+se.statistics.nr_wakeups                     :              1495463
+se.statistics.nr_wakeups_parallel            :                   99
+rcu_preempt 
+se.statistics.nr_wakeups                     :              2015010
+se.statistics.nr_wakeups_parallel            :                 3738
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
-
-for you to fetch changes up to d4e1c7ef46e9b02dbf691da0c84d653f88670213:
-
-  arm: multi_v7_defconfig: Tweaks for omap and sunxi (2013-07-12 23:45:33 -0700)
-
-----------------------------------------------------------------
-ARM: SoC fixes for 3.11-rc
-
-This is our first set of fixes from arm-soc for 3.11.
- - A handful of build and warning fixes from Arnd
- - A collection of OMAP fixes
- - defconfig updates to make the default configs more useful for real use
-   (and testing) out of the box on hardware.
-
-And a couple of other small fixes. Some of these have been recently
-applied but it's normally how we deal with fixes, with less bake time
-in -next needed.
-
-----------------------------------------------------------------
-Afzal Mohammed (1):
-      ARM: OMAP2+: timer: initialize before using oh_name
-
-Arnd Bergmann (8):
-      Merge tag 'renesas-fixes-for-v3.11' of git://git.kernel.org/.../horms/renesas into fixes
-      ARM: omap5: omap5 has SCU and TWD
-      ARM: zynq: use DT_MACHINE_START
-      ARM: OMAP: build mach-omap code only if needed
-      ARM: sti: move DEBUG_STI_UART into alphabetical order
-      ARM: OMAP: omap_common_late_init may be unused
-      ARM: ixp4xx: avoid circular header dependency
-      ARM: exynos: select PM_GENERIC_DOMAINS only when used
-
-Eduardo Valentin (2):
-      ARM: OMAP2+: omap2plus_defconfig: enable TI bandgap driver
-      ARM: OMAP2+: omap2plus_defconfig: enable DRA752 thermal support by default
-
-Enric Balletbo i Serra (1):
-      ARM: OMAP3: igep0020: Set DSS pins in correct mux mode.
-
-Fabio Baltieri (2):
-      ARM: ux500: select WATCHDOG and MUSB for ux500
-      ARM: ux500: select SND_SOC_UX500 for ux500
-
-Joel Fernandes (1):
-      ARM: OMAP2+: Enable TI_EDMA in omap2plus_defconfig
-
-Lee Jones (1):
-      ARM: ux500: Enable HIGHMEM in the u8500 defconfig
-
-Linus Walleij (1):
-      ARM: ux500: update defconfig base
-
-Magnus Damm (1):
-      ARM: shmobile: emev2 GIO3 resource fix
-
-Nishanth Menon (2):
-      ARM: OMAP4: sleep: build OMAP4 specific functions only for OMAP4
-      ARM: scu: provide inline dummy functions when SCU is not present
-
-Olof Johansson (5):
-      ARM: Make multi_v7_defconfig usable on hardware
-      ARM: omap2: add select of TI_PRIV_EDMA
-      Merge tag 'omap-for-v3.11/fixes-for-merge-window' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'ux500-defconfig-for-arm-soc' of git://git.kernel.org/.../linusw/linux-stericsson into fixes
-      arm: multi_v7_defconfig: Tweaks for omap and sunxi
-
-Paul Bolle (1):
-      ARM: OMAP2+: Remove obsolete Makefile line
-
-Pavel Machek (1):
-      ARM: OMAP2+: N900: enable N900-specific drivers even if device tree is enabled
-
-Santosh Shilimkar (1):
-      ARM: OMAP5: Enable Cortex A15 errata 798181
-
-Stephen Warren (1):
-      ARM: tegra: fix VBUS regulator GPIO polarity in DT
-
-Takanari Hayama (1):
-      ARM: shmobile: r8a73a4: Fix resources for SCIFB0
-
-Thomas Meyer (1):
-      ARM: OMAP2+: Cocci spatch "ptr_ret.spatch"
-
-Tom Rini (1):
-      ARM: OMAP2+: omap2plus_defconfig: Enable appended DTB support
-
-Ulf Hansson (1):
-      ARM: ux500: Update MMC configs for u8500 defconfig
-
-Vincent Stehlé (1):
-      arm: multi_v7_defconfig: add i.MX options and NFS root
-
-Wei Yongjun (1):
-      ARM: OMAP2+: devices: remove duplicated include from devices.c
-
- arch/arm/Kconfig.debug                    |  20 ++--
- arch/arm/boot/dts/tegra20-seaboard.dts    |   1 +
- arch/arm/boot/dts/tegra20-trimslice.dts   |   1 +
- arch/arm/boot/dts/tegra20-whistler.dts    |   2 +
- arch/arm/configs/multi_v7_defconfig       | 133 ++++++++++++++++++++------
- arch/arm/configs/omap2plus_defconfig      |  19 ++++
- arch/arm/configs/u8500_defconfig          |  44 +++++----
- arch/arm/include/asm/smp_scu.h            |  13 ++-
- arch/arm/mach-exynos/Kconfig              |   2 +-
- arch/arm/mach-ixp4xx/dsmg600-setup.c      |   2 +
- arch/arm/mach-ixp4xx/include/mach/timex.h |   2 +-
- arch/arm/mach-ixp4xx/omixp-setup.c        |   2 +
- arch/arm/mach-omap2/Kconfig               | 153 +++++++++++++++---------------
- arch/arm/mach-omap2/Makefile              |   4 -
- arch/arm/mach-omap2/board-igep0020.c      |  31 ++++++
- arch/arm/mach-omap2/board-rx51-video.c    |   2 +-
- arch/arm/mach-omap2/devices.c             |   5 +-
- arch/arm/mach-omap2/fb.c                  |   5 +-
- arch/arm/mach-omap2/gpmc.c                |   2 +-
- arch/arm/mach-omap2/io.c                  |   2 +-
- arch/arm/mach-omap2/pmu.c                 |   5 +-
- arch/arm/mach-omap2/sleep44xx.S           |   6 +-
- arch/arm/mach-omap2/timer.c               |   2 +-
- arch/arm/mach-shmobile/setup-emev2.c      |   8 +-
- arch/arm/mach-shmobile/setup-r8a73a4.c    |   2 +-
- arch/arm/mach-zynq/common.c               |   2 +-
- sound/soc/omap/rx51.c                     |   2 +-
- 27 files changed, 311 insertions(+), 161 deletions(-)
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |   29 +++++++++++++++++++++++++----
+ kernel/sched/debug.c  |    7 +++++++
+ kernel/sched/stats.h  |   16 ++++++++++++++++
+ 4 files changed, 49 insertions(+), 4 deletions(-)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index fc09d21..235a466 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -964,6 +964,7 @@ struct sched_statistics {
+ 	u64			nr_wakeups_affine_attempts;
+ 	u64			nr_wakeups_passive;
+ 	u64			nr_wakeups_idle;
++	atomic_t		nr_wakeups_parallel;
+ };
+ #endif
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9d06ad6..1e1475f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1336,6 +1336,11 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+ 
+ 	p->state = TASK_RUNNING;
+ #ifdef CONFIG_SMP
++	/*
++	 * Pair bracket with TASK_WAKING check it try_to_wake_up()
++	 */
++	smp_wmb();
++
+ 	if (p->sched_class->task_woken)
+ 		p->sched_class->task_woken(rq, p);
+ 
+@@ -1487,20 +1492,37 @@ static int
+ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ {
+ 	unsigned long flags;
+-	int cpu, success = 0;
++	int cpu, success = 1;
+ 
++	/*
++	 * See commentary for commit 04e2f1741d235ba599037734878d72e57cb302b5.
++	 */
+ 	smp_wmb();
++#ifdef CONFIG_SMP
++	if (p->state == TASK_WAKING) {
++		/*
++		 * Pairs with sets of p->state: below and in ttwu_do_wakeup().
++		 */
++		smp_rmb();
++		inc_nr_parallel_wakeups(p);
++		return success;
++	}
++#endif
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+-	if (!(p->state & state))
++	if (!(p->state & state)) {
++		success = 0;
+ 		goto out;
++	}
+ 
+-	success = 1; /* we're going to change ->state */
+ 	cpu = task_cpu(p);
+ 
+ 	if (p->on_rq && ttwu_remote(p, wake_flags))
+ 		goto stat;
+ 
+ #ifdef CONFIG_SMP
++	p->state = TASK_WAKING;
++	smp_wmb();
++
+ 	/*
+ 	 * If the owning (remote) cpu is still in the middle of schedule() with
+ 	 * this task as prev, wait until its done referencing the task.
+@@ -1513,7 +1535,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	smp_rmb();
+ 
+ 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
+-	p->state = TASK_WAKING;
+ 
+ 	if (p->sched_class->task_waking)
+ 		p->sched_class->task_waking(p);
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index e076bdd..f18736d 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -542,6 +542,13 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+ 	P(se.statistics.nr_wakeups_idle);
+ 
+ 	{
++		int nr = get_nr_parallel_wakeups(p);
++
++		SEQ_printf(m, "%-45s:%21d\n",
++			      "se.statistics.nr_wakeups_parallel", nr);
++	}
++
++	{
+ 		u64 avg_atom, avg_per_cpu;
+ 
+ 		avg_atom = p->se.sum_exec_runtime;
+diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+index 5aef494..dbbc6e9 100644
+--- a/kernel/sched/stats.h
++++ b/kernel/sched/stats.h
+@@ -155,6 +155,22 @@ sched_info_switch(struct task_struct *prev, struct task_struct *next)
+ #define sched_info_switch(t, next)		do { } while (0)
+ #endif /* CONFIG_SCHEDSTATS || CONFIG_TASK_DELAY_ACCT */
+ 
++#if defined(CONFIG_SCHEDSTATS) && defined(CONFIG_SMP)
++static inline void
++inc_nr_parallel_wakeups(struct task_struct *t)
++{
++	atomic_inc(&t->se.statistics.nr_wakeups_parallel);
++}
++static inline int
++get_nr_parallel_wakeups(struct task_struct *t)
++{
++	return atomic_read(&t->se.statistics.nr_wakeups_parallel);
++}
++#else
++#define inc_nr_parallel_wakeups(t)		do { } while (0)
++#define get_nr_parallel_wakeups(t)		(0)
++#endif /* CONFIG_SCHEDSTATS && CONFIG_SMP */
++
+ /*
+  * The following are functions that support scheduler-internal time accounting.
+  * These functions are generally called at the timer tick.  None of this depends
