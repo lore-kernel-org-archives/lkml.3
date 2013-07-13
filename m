@@ -1,111 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab3GMSwl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 14:52:41 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:44022 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758048Ab3GMSwk (ORCPT
+	id S933358Ab3GMSxI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 14:53:08 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:51151 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933342Ab3GMSwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 14:52:40 -0400
-Date: Sat, 13 Jul 2013 11:52:40 -0700
+	Sat, 13 Jul 2013 14:52:54 -0400
+Date: Sat, 13 Jul 2013 11:52:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.4.53
-Message-ID: <20130713185240.GA568@kroah.com>
+Subject: Re: Linux 3.4.53
+Message-ID: <20130713185254.GB568@kroah.com>
+References: <20130713185240.GA568@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130713185240.GA568@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.4.53 kernel.
-
-All users of the 3.4 kernel series must upgrade.
-
-The updated 3.4.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.4.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- MAINTAINERS                        |    1 +
- Makefile                           |    2 +-
- block/genhd.c                      |    2 +-
- crypto/algapi.c                    |    3 ++-
- drivers/block/nbd.c                |    3 ++-
- drivers/cdrom/cdrom.c              |    2 +-
- drivers/power/charger-manager.c    |    2 +-
- drivers/scsi/osd/osd_uld.c         |    2 +-
- drivers/scsi/sd.c                  |    2 +-
- drivers/tty/serial/8250/8250_pci.c |    4 ----
- fs/hpfs/map.c                      |    3 ++-
- fs/hpfs/super.c                    |    8 +++++++-
- fs/nfsd/nfs4xdr.c                  |    2 +-
- kernel/time/tick-sched.c           |    1 -
- net/ceph/auth_none.c               |    6 ++++++
- 15 files changed, 27 insertions(+), 16 deletions(-)
-
-Ben Hutchings (1):
-      SCSI: sd: Fix parsing of 'temporary ' cache mode prefix
-
-Greg Kroah-Hartman (4):
-      MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
-      Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
-      Revert "sched: Add missing call to calc_load_exit_idle()"
-      Linux 3.4.53
-
-J. Bruce Fields (1):
-      nfsd4: fix decoding of compounds across page boundaries
-
-Jonathan Salwan (1):
-      drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-
-Kees Cook (3):
-      charger-manager: Ensure event is not used as format string
-      block: do not pass disk names as format strings
-      crypto: sanitize argument for format string
-
-Mikulas Patocka (1):
-      hpfs: better test for errors
-
-Tyler Hicks (1):
-      libceph: Fix NULL pointer dereference in auth client code
-
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR4aH4AAoJEDjbvchgkmk+KsEQAItn8uDYV3FVCMef7kJDYL3w
-g488hxcPKieTJ9xR92r6xwIerQLvi1uCXcs5pmKUWCXOQRIzIL/+ZfUAR3d2idUq
-qKU2CYGmlR2p2Xxy1hne7u16Apy82+dN15o/b25gMmPlMAXlaURLtX9rO13r2ATw
-lLytAnco0WqIbYwoHHJ/YDb1UaD9V7XJ2kVliX5A039wNoEn7l6oAGB4GvrOLMC0
-iiEsOhpVGW84yno+kX4eMiy2wav8Tdm16B6S2n8YTko7AbjHKfTGIWHD5hRfdPnW
-p/Se2LgaDcksynVnjs1xCkHanIT0m0bUQqtsSSkuyUO3nkMLcnijVHq3SoGcdSD4
-O1b8e9zgdnsEPtgT/p5FC6iUagMqWq4hvcCh9VXqHskd5sM2tA6WR429FDeQDfb6
-wEa/Nl6PhGy4/FhZKFxK8N94ksnn48LAuWkIv1Kdiw24S1f3K/Pt9HEelcYUBwLu
-FUbd+WBCfpuVSI6bDgICsxsPIU2WxQgfR+k8WYJxOo5H1x4PTbM88tZ+ewVM8pYF
-DTraAVivUKigUxp45Jz9G4bvT7ytAyWNEtvkwdO/e3V6L/ReTqv2cRtzVV+NUdOz
-DW66KYsQY66FCj+yw4KbASHuQuQScFY/jlijQmBqUf1CG0OXe+8qfcacoARG7wY7
-8RMmHOrFgIdkUkiQeHDh
-=VJz1
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c744d9c..5725829 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6390,6 +6390,7 @@ STABLE BRANCH
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	stable@vger.kernel.org
+ S:	Supported
++F:	Documentation/stable_kernel_rules.txt
+ 
+ STAGING SUBSYSTEM
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+diff --git a/Makefile b/Makefile
+index 810572b..104049d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 4
+-SUBLEVEL = 52
++SUBLEVEL = 53
+ EXTRAVERSION =
+ NAME = Saber-toothed Squirrel
+ 
+diff --git a/block/genhd.c b/block/genhd.c
+index 60108d9..d815a0f 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -518,7 +518,7 @@ static void register_disk(struct gendisk *disk)
+ 
+ 	ddev->parent = disk->driverfs_dev;
+ 
+-	dev_set_name(ddev, disk->disk_name);
++	dev_set_name(ddev, "%s", disk->disk_name);
+ 
+ 	/* delay uevents, until we scanned partition table */
+ 	dev_set_uevent_suppress(ddev, 1);
+diff --git a/crypto/algapi.c b/crypto/algapi.c
+index 056571b..b4c046c 100644
+--- a/crypto/algapi.c
++++ b/crypto/algapi.c
+@@ -512,7 +512,8 @@ static struct crypto_template *__crypto_lookup_template(const char *name)
+ 
+ struct crypto_template *crypto_lookup_template(const char *name)
+ {
+-	return try_then_request_module(__crypto_lookup_template(name), name);
++	return try_then_request_module(__crypto_lookup_template(name), "%s",
++				       name);
+ }
+ EXPORT_SYMBOL_GPL(crypto_lookup_template);
+ 
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 3c4c225..386d40e 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -666,7 +666,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 
+ 		mutex_unlock(&nbd->tx_lock);
+ 
+-		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
++		thread = kthread_create(nbd_thread, nbd, "%s",
++					nbd->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+ 			mutex_lock(&nbd->tx_lock);
+ 			return PTR_ERR(thread);
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index d620b44..8a3aff7 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2882,7 +2882,7 @@ static noinline int mmc_ioctl_cdrom_read_data(struct cdrom_device_info *cdi,
+ 	if (lba < 0)
+ 		return -EINVAL;
+ 
+-	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
++	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
+ 	if (cgc->buffer == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 9eca9f1..4c449b2 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -330,7 +330,7 @@ static void uevent_notify(struct charger_manager *cm, const char *event)
+ 	strncpy(env_str, event, UEVENT_BUF_SIZE);
+ 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
+ 
+-	dev_info(cm->dev, event);
++	dev_info(cm->dev, "%s", event);
+ }
+ 
+ /**
+diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+index d4ed9eb..caac1b2 100644
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -465,7 +465,7 @@ static int osd_probe(struct device *dev)
+ 	oud->class_dev.class = &osd_uld_class;
+ 	oud->class_dev.parent = dev;
+ 	oud->class_dev.release = __remove;
+-	error = dev_set_name(&oud->class_dev, disk->disk_name);
++	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
+ 	if (error) {
+ 		OSD_ERR("dev_set_name failed => %d\n", error);
+ 		goto err_put_cdev;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 2bbb845..3141c1a 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -140,7 +140,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 	char *buffer_data;
+ 	struct scsi_mode_data data;
+ 	struct scsi_sense_hdr sshdr;
+-	const char *temp = "temporary ";
++	static const char temp[] = "temporary ";
+ 	int len;
+ 
+ 	if (sdp->type != TYPE_DISK)
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index ffba1ef..40747fe 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -4086,10 +4086,6 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 		PCI_VENDOR_ID_IBM, 0x0299,
+ 		0, 0, pbn_b0_bt_2_115200 },
+ 
+-	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
+-		0x1000, 0x0012,
+-		0, 0, pbn_b0_bt_2_115200 },
+-
+ 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
+ 		0xA000, 0x1000,
+ 		0, 0, pbn_b0_1_115200 },
+diff --git a/fs/hpfs/map.c b/fs/hpfs/map.c
+index a790821..ea3d1ca 100644
+--- a/fs/hpfs/map.c
++++ b/fs/hpfs/map.c
+@@ -17,7 +17,8 @@ unsigned int *hpfs_map_bitmap(struct super_block *s, unsigned bmp_block,
+ 			 struct quad_buffer_head *qbh, char *id)
+ {
+ 	secno sec;
+-	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
++	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
++	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
+ 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
+ 		return NULL;
+ 	}
+diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
+index 54f6ecc..0bf578d 100644
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -552,7 +552,13 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 	sbi->sb_cp_table = NULL;
+ 	sbi->sb_c_bitmap = -1;
+ 	sbi->sb_max_fwd_alloc = 0xffffff;
+-	
++
++	if (sbi->sb_fs_size >= 0x80000000) {
++		hpfs_error(s, "invalid size in superblock: %08x",
++			(unsigned)sbi->sb_fs_size);
++		goto bail4;
++	}
++
+ 	/* Load bitmap directory */
+ 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
+ 		goto bail4;
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 1798846..cb997b1 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -161,8 +161,8 @@ static __be32 *read_buf(struct nfsd4_compoundargs *argp, u32 nbytes)
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
++	argp->p = page_address(argp->pagelist[0]);
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 6570548..a1e0795 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -145,7 +145,6 @@ static void tick_nohz_update_jiffies(ktime_t now)
+ 	tick_do_update_jiffies64(now);
+ 	local_irq_restore(flags);
+ 
+-	calc_load_exit_idle();
+ 	touch_softlockup_watchdog();
+ }
+ 
+diff --git a/net/ceph/auth_none.c b/net/ceph/auth_none.c
+index 925ca58..8c93fa8 100644
+--- a/net/ceph/auth_none.c
++++ b/net/ceph/auth_none.c
+@@ -39,6 +39,11 @@ static int should_authenticate(struct ceph_auth_client *ac)
+ 	return xi->starting;
+ }
+ 
++static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
++{
++	return 0;
++}
++
+ /*
+  * the generic auth code decode the global_id, and we carry no actual
+  * authenticate state, so nothing happens here.
+@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops ceph_auth_none_ops = {
+ 	.destroy = destroy,
+ 	.is_authenticated = is_authenticated,
+ 	.should_authenticate = should_authenticate,
++	.build_request = build_request,
+ 	.handle_reply = handle_reply,
+ 	.create_authorizer = ceph_auth_none_create_authorizer,
+ 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
