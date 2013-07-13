@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab3GMHlU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 03:41:20 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:54138 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3GMHlS (ORCPT
+	id S1758127Ab3GMH6W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 03:58:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63850 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201Ab3GMH6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 03:41:18 -0400
-From: Alexandru Juncu <alexj@rosedu.org>
-Cc: alexj@rosedu.org, linux-kernel@vger.kernel.org
-Subject: [RFC] Script for isolating maintainer email.
-Date: Sat, 13 Jul 2013 10:40:41 +0300
-Message-Id: <1373701241-6499-1-git-send-email-alexj@rosedu.org>
-X-Mailer: git-send-email 1.7.10.4
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 13 Jul 2013 03:58:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH] misc: add driver for Renesas R-Car Gyro-ADC/speed-pulse interfaces
+Date: Sat, 13 Jul 2013 09:58:16 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+References: <201307130351.42967.sergei.shtylyov@cogentembedded.com> <20130713005702.GA14788@kroah.com> <51E0AA24.6070203@cogentembedded.com>
+In-Reply-To: <51E0AA24.6070203@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307130958.16533.arnd@arndb.de>
+X-Provags-ID: V02:K0:Adif1FQbcqevMkIPMg2Nh9E+KoTKMayJ4GHc7FRjLp2
+ VLvgcUPdX8n93zNkEeLkchiUjrQLIKgKehE+lp/ACPbkYr3KIq
+ SRWAwTJA/nFI5CK70UVKimPyuTPRupadnwn8U+VFQqimWuEE/b
+ xqVotnc5ntZHzWjSZ50+leLpMkWK2uajB39OpWr1vXudKt5NP4
+ HWDu6cK2NjNWcQ3oFyPgKWC9FZv+nLE66I2CubtBS4y9S8NJgZ
+ +2SKkFqDmnKsJyQAZ3VgwYZ6CcWFjdoZpqN5+lhFKp/PVqLjn9
+ aIMXzDvATDHY2xEMo6Obk7XinoBBG7Eghw7awXSnqaPPhU8KUI
+ kVWmtePCLfwv0/Rc3pSQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Saturday 13 July 2013, Sergei Shtylyov wrote:
+> > And are you sure you want to control this through sysfs?  There's no
+> > other better user/kernel apis for it?
+> 
+>     I found none, besides ioctl(), as the device driven is rather 
+> unique. But I thought that sysfs is "ioctl() today", so I went with it...
+> 
 
-I found the need for a script that doesn't require me to copy part of the
-output from get_maintainer.pl into git send-email and could do both with
-one command.
+It does sound like it would fit better into IIO than just a misc driver,
+even if it's the only hardware of its kind.
 
-I don't know if there is something similar already implemented. If there is,
-please point me to it. If not, maybe somebody finds it useful.
-
-Used on top of get_maintainer.pl, it generates the list of
-emails required for git send-email.
-
-The output can be used as a process expansion into the arguments of
-git send-email. Example:
-
-git send-email $(scripts/get_email.sh my.patch) my.patch
-
-Signed-off-by: Alexandru Juncu <alexj@rosedu.org>
----
- scripts/get_email.sh |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100755 scripts/get_email.sh
-
-diff --git a/scripts/get_email.sh b/scripts/get_email.sh
-new file mode 100755
-index 0000000..a71d56d
---- /dev/null
-+++ b/scripts/get_email.sh
-@@ -0,0 +1,24 @@
-+#!/bin/bash
-+
-+if [ -e scripts/get_maintainer.pl ]; then
-+	if [ $# -lt 1 ]; then
-+		echo "Script needs a patch file as a parameter."
-+	exit 1
-+fi
-+
-+	IFS=$'\n'
-+	for line in $(scripts/get_maintainer.pl $1); do
-+		email_regexp="\b[a-zA-Z0-9.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+\b"
-+		email=$(grep -E -o $email_regexp<<<$line)
-+		if [ $(grep "maintainer" <<< $line) ]; then
-+			list="$list --to $email"
-+		else
-+			list="$list --cc $email"
-+		fi
-+	done
-+	echo $list
-+
-+else
-+	echo "You should run this from the root of the source tree."
-+	exit 1
-+fi
--- 
-1.7.10.4
-
+	Arnd
