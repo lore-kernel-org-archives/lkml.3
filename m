@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab3GMWk1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 18:40:27 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:37071 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3GMWk0 convert rfc822-to-8bit (ORCPT
+	id S1751666Ab3GMWoq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 18:44:46 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:34451 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab3GMWoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 18:40:26 -0400
+	Sat, 13 Jul 2013 18:44:44 -0400
+Message-ID: <51E1D858.7000809@cogentembedded.com>
+Date: Sun, 14 Jul 2013 02:44:40 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1307131317350.11918@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.02.1307131317350.11918@ionos.tec.linutronix.de>
-Date: Sat, 13 Jul 2013 15:40:24 -0700
-X-Google-Sender-Auth: XV70zLF5d-BtHkOwFzM3sjrUAj4
-Message-ID: <CA+55aFwJAV7DnMAyMm+Hdp3uYrgn+BRcBS4cLGf+KGQCdhKwbg@mail.gmail.com>
-Subject: Re: [GIT pull] x86 updates for 3.11
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        daniel@caiaq.de
+Subject: Re: [PATCH] misc: add driver for Renesas R-Car Gyro-ADC/speed-pulse
+ interfaces
+References: <201307130351.42967.sergei.shtylyov@cogentembedded.com> <20130713005702.GA14788@kroah.com> <51E0AA24.6070203@cogentembedded.com> <20130713013000.GA22493@kroah.com>
+In-Reply-To: <20130713013000.GA22493@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 4:21 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
->    * Guarantee IDT page alignment
+Hello.
 
-What the F*CK, guys?
+On 07/13/2013 05:30 AM, Greg KH wrote:
 
-This piece-of-shit commit is marked for stable, but you clearly never
-even test-compiled it, did you?
+>>>> Add the driver for Gyro-ADC/speed-pulse interfaces found in Renesas R-Car SoCs.
+>>>> Though  being two separate devices, they have to be driven together because of
+>>>> the shared start/stop register (located in Gyro-ADC still). At this time, only
+>>>> speed-pulse interface is fully supported, the Gyro-ADC is just initialized and
+>>>> started/stopped synchronously with the speed-pulse interface.  A user interface
+>>>> is implemented via several sysfs files which allow to read and reset the speed-
+>>>> pulse interface's registers.
 
-Because on x86-64 (the which is the only place where the patch
-matters), I don't see how you could have avoided this honking huge
-warning otherwise:
+>>> If you modify/create/remove sysfs files, you also have to document them
+>>> in Documentation/ABI/ which is missing from this patch.
 
-  arch/x86/kernel/traps.c:74:1: warning: braces around scalar
-initializer [enabled by default]
-   gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
-   ^
-  arch/x86/kernel/traps.c:74:1: warning: (near initialization for
-‘idt_table[0].offset_low’) [enabled by default]
-  arch/x86/kernel/traps.c:74:1: warning: braces around scalar
-initializer [enabled by default]
-  arch/x86/kernel/traps.c:74:1: warning: (near initialization for
-‘idt_table[0].offset_low’) [enabled by default]
-  arch/x86/kernel/traps.c:74:1: warning: excess elements in scalar
-initializer [enabled by default]
-  arch/x86/kernel/traps.c:74:1: warning: (near initialization for
-‘idt_table[0].offset_low’) [enabled by default]
+>>     I've looked there and didn't find the documentation for my closest
+>> model driver, drivers/misc/ti_dac7512.c (or for many other drivers),
+>> so I thought I too can do without it.
 
-and I don't think this is compiler-specific, because that code is
-crap. The declaration for gate_desc is very very different for 32-bit
-and 64-bit x86 for whatever braindamaged reasons.
+> Nope, that driver should be fixed as well, care to do so?
 
-Seriously, WTF? I made the mistake of doing multiple merges
-back-to-back with the intention of not doing a full allmodconfig build
-in between them, and now I have to undo them all because this pull
-request was full of unbelievable shit.
+    Sorry, I don't. The driver has an author, which I'm CCing.
 
-And why the hell was this marked for stable even *IF* it hadn't been
-complete and utter tripe? It even has a comment in the commit message
-about how this probably doesn't matter. So it's doubly crap: it's
-*wrong*, and it didn't actually fix anything to begin with.
+>>> Your sysfs files are also being created in a "racy" way, i.e. after
+>>> userspace is told about the device, please fix that as well.
 
-There aren't enough swear-words in the English language, so now I'll
-have to call you perkeleen vittupää just to express my disgust and
-frustration with this crap.
+>>     Not sure I understand you. Could you elaborate?
 
-            Linus
+> Please read the driver model documentation, it goes into the details of
+> how to do this properly.  As does this post from me a week or so ago:
+> 	http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
+
+    Thank you. Probably a good read for ti_dac7512 driver too.
+
+> greg k-h
+
+WBR, Sergei
+
