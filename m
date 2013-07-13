@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032Ab3GMB3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 21:29:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56173 "EHLO
+	id S1758043Ab3GMBbQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 21:31:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56178 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757984Ab3GMB3D (ORCPT
+	with ESMTP id S1757984Ab3GMBbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 21:29:03 -0400
-Date: Fri, 12 Jul 2013 18:30:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH] misc: add driver for Renesas R-Car Gyro-ADC/speed-pulse
- interfaces
-Message-ID: <20130713013000.GA22493@kroah.com>
-References: <201307130351.42967.sergei.shtylyov@cogentembedded.com>
- <20130713005702.GA14788@kroah.com>
- <51E0AA24.6070203@cogentembedded.com>
+	Fri, 12 Jul 2013 21:31:14 -0400
+Date: Fri, 12 Jul 2013 18:32:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        ksummit-2013-discuss@lists.linux-foundation.org,
+        torvalds@linux-foundation.org
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+Message-ID: <20130713013211.GA22726@kroah.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130712025745.GA24086@tuxdriver.com>
+ <20130712033430.GA3798@kroah.com>
+ <2354417.lhslZaMQMB@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E0AA24.6070203@cogentembedded.com>
+In-Reply-To: <2354417.lhslZaMQMB@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 05:15:16AM +0400, Sergei Shtylyov wrote:
-> Hello.
+On Sat, Jul 13, 2013 at 02:24:07AM +0200, Rafael J. Wysocki wrote:
+> On Thursday, July 11, 2013 08:34:30 PM Greg Kroah-Hartman wrote:
+> > On Thu, Jul 11, 2013 at 10:57:46PM -0400, John W. Linville wrote:
+> > > On Thu, Jul 11, 2013 at 08:50:23PM -0400, Theodore Ts'o wrote:
+> > > 
+> > > > In any case, I've been very conservative in _not_ pushing bug fixes to
+> > > > Linus after -rc3 (unless they are fixing a regression or the bug fix
+> > > > is super-serious); I'd much rather have them cook in the ext4 tree
+> > > > where they can get a lot more testing (a full regression test run for
+> > > > ext4 takes over 24 hours), and for people trying out linux-next.
+> > > > 
+> > > > Maybe the pendulum has swung too far in the direction of holding back
+> > > > changes and trying to avoid the risk of introducing regressions;
+> > > > perhaps this would be a good topic to discuss at the Kernel Summit.
+> > > 
+> > > Yes, there does seem to be a certain ebb and flow as to how strict
+> > > the rules are about what should go into stable, what fixes are "good
+> > > enough" for a given -rc, how tight those rule are in -rc2 vs in -rc6,
+> > > etc.  If nothing else, a good repetitive flogging and a restatement of
+> > > the One True Way to handle these things might be worthwhile once again...
+> > 
+> > The rules are documented in stable_kernel_rules.txt for what I will
+> > accept.
+> > 
+> > I have been beating on maintainers for 8 years now to actually mark
+> > patches for stable, and only this past year have I finally seen people
+> > do it (we FINALLY got SCSI patches marked for stable in this merge
+> > window!!!)  So now that maintainers are finally realizing that they need
+> > to mark patches, I'll be pushing back harder on the patches that they do
+> > submit, because the distros are rightfully pushing back on me for
+> > accepting things that are outside of the stable_kernel_rules.txt
+> > guidelines.
 > 
->    Can't get to sleep, sigh...
-> 
-> On 07/13/2013 04:57 AM, Greg KH wrote:
-> 
-> >>Add the driver for Gyro-ADC/speed-pulse interfaces found in Renesas R-Car SoCs.
-> >>Though  being two separate devices, they have to be driven together because of
-> >>the shared start/stop register (located in Gyro-ADC still). At this time, only
-> >>speed-pulse interface is fully supported, the Gyro-ADC is just initialized and
-> >>started/stopped synchronously with the speed-pulse interface.  A user interface
-> >>is implemented via several sysfs files which allow to read and reset the speed-
-> >>pulse interface's registers.
-> 
-> >If you modify/create/remove sysfs files, you also have to document them
-> >in Documentation/ABI/ which is missing from this patch.
-> 
->    I've looked there and didn't find the documentation for my closest
-> model driver, drivers/misc/ti_dac7512.c (or for many other drivers),
-> so I thought I too can do without it.
+> I don't quite understand why they are pushing back on you rather than on
+> the maintainers who have marked the commits they have problems with for
+> -stable.  Why are you supposed to play the role of the gatekeeper here?
+> Can't maintainers be held responsible for the commits they mark for -stable in
+> the same way as they are responsible for the commits they push to Linus?
 
-Nope, that driver should be fixed as well, care to do so?
+Because I'm an easy big target and people are lazy.
 
-> >Your sysfs files are also being created in a "racy" way, i.e. after
-> >userspace is told about the device, please fix that as well.
+> Also, I don't really think that the distros have problems with fixes that are
+> simple and provably correct, even though the problems they fix don't seem to be
+> "serious enough" for -stable.  They rather have problems with subtle changes
+> whose impact is difficult to estimate by inspection and you're not going to be
+> pushing back on those anyway (exactly because their impact is difficult to
+> estimate).
+
+I know that, you know that, but managers who see tons of kernel patches
+just get scared :)
+
+> > If you look on the stable@vger list, I've already rejected 3 today and
+> > asked about the huge 21 powerpc patches.  Sure, it's not a lot, when
+> > staring down 174 more to go, but it's a start...
 > 
->    Not sure I understand you. Could you elaborate?
+> And 2 of those 3 rejected were mine and for 1 of them I actually had a very
+> specific reason to mark it for -stable as I told you: It fixed a breakage
+> introduced inadvertently in 3.10 and I thought it would be good to reduce
+> the exposure of that breakage by fixing it in 3.10.1 as well as in 3.11-rc.
 
-Please read the driver model documentation, it goes into the details of
-how to do this properly.  As does this post from me a week or so ago:
-	http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
+There was no real breakage, that is why I rejected it.
 
 greg k-h
