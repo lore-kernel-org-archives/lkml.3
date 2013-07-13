@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab3GMGuR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 02:50:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45013 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab3GMGuP (ORCPT
+	id S1756752Ab3GMGxn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 02:53:43 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:42671 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab3GMGxl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 02:50:15 -0400
-Date: Sat, 13 Jul 2013 08:49:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: mingo@kernel.org, arjan@linux.intel.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, alex.shi@intel.com, efault@gmx.de,
-        pjt@google.com, len.brown@intel.com, corbet@lwn.net,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, catalin.marinas@arm.com,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-Message-ID: <20130713064909.GW25631@dyad.programming.kicks-ass.net>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+	Sat, 13 Jul 2013 02:53:41 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Hannes Reinecke <hare@suse.de>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        James Smart <James.Smart@Emulex.Com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kmo@daterainc.com" <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Thread-Topic: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Thread-Index: AQHOfpVv2TksF95TD0G0h7C4mQqWyZlgrxyAgAAIuICAAJwxgIABT4YA
+Date: Sat, 13 Jul 2013 06:53:32 +0000
+Message-ID: <1373698410.2922.10.camel@dabdike>
+References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
+	 <20130712010223.GA15673@kroah.com>
+	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
+	 <51DFDFF5.80702@suse.de>
+In-Reply-To: <51DFDFF5.80702@suse.de>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [194.186.187.194]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <E181B1EA86CD704B8CD424D82E41E669@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 04:55:29PM +0100, Morten Rasmussen wrote:
-> Hi,
+On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
+> On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
+> > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
+> >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
+> >>> Drilling down the work items ahead of a real mainline push is high on
+> >>> priority list for discussion.
+> >>>
+> >>> The parties to be included in such a discussion are:
+> >>>
+> >>>   - Jens Axboe (blk-mq author)
+> >>>   - James Bottomley (scsi maintainer)
+> >>>   - Christoph Hellwig (scsi)
+> >>>   - Martin Petersen (scsi)
+> >>>   - Tejun Heo (block + libata)
+> >>>   - Hannes Reinecke (scsi error recovery)
+> >>>   - Kent Overstreet (block, per-cpu ida)
+> >>>   - Stephen Cameron (scsi-over-pcie driver)
+> >>>   - Andrew Vasquez (qla2xxx LLD)
+> >>>   - James Smart (lpfc LLD)
+> >>
+> >> Isn't this something that should have been discussed at the storage
+> >> mini-summit a few months ago?
+> > 
+> > The scsi-mq prototype, along with blk-mq (in it's current form) did not
+> > exist a few short months ago.  ;)
+> > 
+> >>  It seems very specific to one subsystem to be a kernel summit topic,
+> >> don't you think?
+> > 
+> > It's no more subsystem specific than half of the other proposals so far,
+> > and given it's reach across multiple subsystems (block, scsi, target),
+> > and the amount of off-list interest on the topic, I think it would make
+> > a good candidate for discussion.
+> > 
+> And it'll open up new approaches which previously were dismissed,
+> like re-implementing multipathing on top of scsi-mq, giving us the
+> single scsi device like other UNIX systems.
 > 
-> This patch set is an initial prototype aiming at the overall power-aware
-> scheduler design proposal that I previously described
-> <http://permalink.gmane.org/gmane.linux.kernel/1508480>.
-> 
-> The patch set introduces a cpu capacity managing 'power scheduler' which lives
-> by the side of the existing (process) scheduler. Its role is to monitor the
-> system load and decide which cpus that should be available to the process
-> scheduler.
+> Also I do think there's quite some synergy to be had, as with blk-mq
+> we could nail each queue to a processor, which would eliminate the
+> need for locking.
+> Which could be useful for other subsystems, too.
 
-Hmm...
+Lets start with discussing this on the list, please, and then see where
+we go from there ...
 
-This looks like a userspace hotplug deamon approach lifted to kernel space :/
+James
 
-How about instead of layering over the load-balancer to constrain its behaviour
-you change the behaviour to not need constraint? Fix it so it does the right
-thing, instead of limiting it.
-
-I don't think its _that_ hard to make the balancer do packing over spreading.
-The power balance code removed in 8e7fbcbc had things like that (although it
-was broken). And I'm sure I've seen patches over the years that did similar
-things. Didn't Vincent and Alex also do things like that?
-
-We should take the good bits from all that and make something of it. And I
-think its easier now that we have the per task and per rq utilization numbers
-[1].
-
-Just start by changing the balancer to pack instead of spread. Once that works,
-see where the two modes diverge and put a knob in.
-
-Then worry about power thingies.
-
-
-[1] -- I realize that the utilization numbers are actually influenced by
-cpufreq state. Fixing this is another possible first step. I think it could be
-done independently of the larger picture of a power aware balancer.
-
-
-You also introduce a power topology separate from the topology information we
-already have. Please integrate with the existing topology information so that
-its a single entity.
-
-
-The integration of cpuidle and cpufreq should start by unifying all the
-statistics stuff. For cpuidle we need to pull in the per-cpu idle time
-guestimator. For cpufreq the per-cpu usage stuff -- which we already have in
-the scheduler these days!
-
-Once we have all the statistics in place, its also easier to see what we can do
-with them and what might be missing.
-
-At this point mandate that policy drivers may not do any statistics gathering
-of their own. If they feel the need to do so, we're missing something and
-that's not right.
-
-For the actual policies we should build a small library of concepts that can be
-quickly composed to form an actual policy. Such that when two chips need
-similar things they do indeed use the same code and not a copy with different
-bugs. If there's only a single arch user of a concept that's fine, but at least
-its out in the open and ready for re-use. Not hidden away in arch code.
-
-
-Then we can start doing fancy stuff like fairness when constrained by power or
-thermal envelopes. We'll need input from the GPU etc. for that. And the wildly
-asymmetric thing you're interested in :-)
-
-
-I'm not entirely sold on differentiating between short running and other tasks
-either. Although I suppose I see where that comes from. A task that would run
-50% on a big core would unlikely be qualified as small, however if it would
-require 85% of a small core and there's room on the small cores its a good move
-to run it there.
-
-So where's the limit for being small? It seems like an artificial limit and
-such should be avoided where possible.
-
-
-Arjan; from reading your emails you're mostly busy explaining what cannot be
-done. Please explain what _can_ be done and what Intel wants. From what I can
-see you basically promote a max P state max concurrency race to idle FTW.
-
-Since you can't say what the max P state is; and I think I understand the
-reasons for that, and the hardware might not even respect the P state you tell
-it to run at, does it even make sense to talk about Intel P states? When would
-you not program the max P state?
-
-In such a case the aperf/mperf ratio [2] gives both the current freq as the max
-freq, since you're effectively always going at max speed.
-
-[2] aperf/mperf ratio with an idle filter, we should exclude idle time.
-
-IIRC you at one point said there was a time limit below which concurrency
-spread wasn't useful anymore?
-
-Also, most what you say for single socket systems; what does Intel want for
-multi-socket systems?
