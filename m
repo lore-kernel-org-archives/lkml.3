@@ -1,60 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab3GMA6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 20:58:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11972 "EHLO mga03.intel.com"
+	id S1758020Ab3GMA61 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 20:58:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27989 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757957Ab3GMA62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 20:58:28 -0400
+	id S1757957Ab3GMA6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 20:58:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,656,1367996400"; 
-   d="scan'208";a="330686418"
+   d="scan'208";a="369464358"
 From: Darren Hart <dvhart@linux.intel.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        netdev@vger.kernel.org
-Subject: [PATCH 2/3] pch_gbe: Use PCH_GBE_PHY_REGS_LEN instead of 32
-Date: Fri, 12 Jul 2013 17:58:06 -0700
-Message-Id: <7320fe759f7076354707346a6d98b031f64f4039.1373676797.git.dvhart@linux.intel.com>
+Cc: Darren Hart <dvhart@linux.intel.com>, Michael Brunner <mibru@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/3] pch_uart: Use DMI interface for board detection
+Date: Fri, 12 Jul 2013 17:58:05 -0700
+Message-Id: <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
 References: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
-In-Reply-To: <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
-References: <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid using magic numbers when we have perfectly good defines just lying
-around.
+Use the DMI interface rather than manually matching DMI strings.
 
 Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: netdev@vger.kernel.org
+Cc: Michael Brunner <mibru@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/pch_uart.c | 71 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 49 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-index ab1039a..749ddd9 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -682,7 +682,7 @@ static int pch_gbe_init_phy(struct pch_gbe_adapter *adapter)
- 	}
- 	adapter->hw.phy.addr = adapter->mii.phy_id;
- 	netdev_dbg(netdev, "phy_addr = %d\n", adapter->mii.phy_id);
--	if (addr == 32)
-+	if (addr == PCH_GBE_PHY_REGS_LEN)
- 		return -EAGAIN;
- 	/* Selected the phy and isolate the rest */
- 	for (addr = 0; addr < PCH_GBE_PHY_REGS_LEN; addr++) {
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 572d481..271cc73 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -373,35 +373,62 @@ static const struct file_operations port_regs_ops = {
+ };
+ #endif	/* CONFIG_DEBUG_FS */
+ 
++static struct dmi_system_id __initdata pch_uart_dmi_table[] = {
++	{
++		.ident = "CM-iTC",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "CM-iTC"),
++		},
++		(void *)CMITC_UARTCLK,
++	},
++	{
++		.ident = "FRI2",
++		{
++			DMI_MATCH(DMI_BIOS_VERSION, "FRI2"),
++		},
++		(void *)FRI2_64_UARTCLK,
++	},
++	{
++		.ident = "Fish River Island II",
++		{
++			DMI_MATCH(DMI_PRODUCT_NAME, "Fish River Island II"),
++		},
++		(void *)FRI2_48_UARTCLK,
++	},
++	{
++		.ident = "COMe-mTT",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-mTT"),
++		},
++		(void *)NTC1_UARTCLK,
++	},
++	{
++		.ident = "nanoETXexpress-TT",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "nanoETXexpress-TT"),
++		},
++		(void *)NTC1_UARTCLK,
++	},
++	{
++		.ident = "MinnowBoard",
++		{
++			DMI_MATCH(DMI_BOARD_NAME, "MinnowBoard"),
++		},
++		(void *)MINNOW_UARTCLK,
++	},
++};
++
+ /* Return UART clock, checking for board specific clocks. */
+ static int pch_uart_get_uartclk(void)
+ {
+-	const char *cmp;
++	const struct dmi_system_id *d;
+ 
+ 	if (user_uartclk)
+ 		return user_uartclk;
+ 
+-	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (cmp && strstr(cmp, "CM-iTC"))
+-		return CMITC_UARTCLK;
+-
+-	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
+-	if (cmp && strnstr(cmp, "FRI2", 4))
+-		return FRI2_64_UARTCLK;
+-
+-	cmp = dmi_get_system_info(DMI_PRODUCT_NAME);
+-	if (cmp && strstr(cmp, "Fish River Island II"))
+-		return FRI2_48_UARTCLK;
+-
+-	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
+-	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (cmp && (strstr(cmp, "COMe-mTT") ||
+-		    strstr(cmp, "nanoETXexpress-TT")))
+-		return NTC1_UARTCLK;
+-
+-	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (cmp && strstr(cmp, "MinnowBoard"))
+-		return MINNOW_UARTCLK;
++	d = dmi_first_match(pch_uart_dmi_table);
++	if (d)
++		return (int)d->driver_data;
+ 
+ 	return DEFAULT_UARTCLK;
+ }
 -- 
 1.8.3.1
 
