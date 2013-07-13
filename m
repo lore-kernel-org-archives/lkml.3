@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab3GMBQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 21:16:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37782 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757984Ab3GMBQg (ORCPT
+	id S1758032Ab3GMB3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 21:29:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56173 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757984Ab3GMB3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 21:16:36 -0400
-X-Sasl-enc: EEwtSLkIsZMh927WIPn4lQ02V8Tc2xoPoYuGkxVHJgyJ 1373678194
-Date: Fri, 12 Jul 2013 18:17:31 -0700
-From: Greg KH <greg@kroah.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        netdev@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3/3] pch_gbe: Add MinnowBoard support
-Message-ID: <20130713011731.GA17939@kroah.com>
-References: <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
- <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
+	Fri, 12 Jul 2013 21:29:03 -0400
+Date: Fri, 12 Jul 2013 18:30:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH] misc: add driver for Renesas R-Car Gyro-ADC/speed-pulse
+ interfaces
+Message-ID: <20130713013000.GA22493@kroah.com>
+References: <201307130351.42967.sergei.shtylyov@cogentembedded.com>
+ <20130713005702.GA14788@kroah.com>
+ <51E0AA24.6070203@cogentembedded.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
+In-Reply-To: <51E0AA24.6070203@cogentembedded.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 05:58:07PM -0700, Darren Hart wrote:
-> The MinnowBoard uses an AR803x PHY with the PCH GBE which requires
-> special handling. Use the MinnowBoard PCI Subsystem ID to detect this
-> and add a pci_device_id.driver_data structure and functions to handle
-> platform setup.
+On Sat, Jul 13, 2013 at 05:15:16AM +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> The AR803x does not implement the RGMII 2ns TX clock delay in the trace
-> routing nor via strapping. Add a detection method for the board and the
-> PHY and enable the TX clock delay via the registers.
+>    Can't get to sleep, sigh...
 > 
-> This PHY will hibernate without link for 10 seconds. Ensure the PHY is
-> awake for probe and then disable hibernation. A future improvement would
-> be to convert pch_gbe to using PHYLIB and making sure we can wake the
-> PHY at the necessary times rather than permanently disabling it.
+> On 07/13/2013 04:57 AM, Greg KH wrote:
 > 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
-> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: netdev@vger.kernel.org
-> Cc: <stable@vger.kernel.org> # 3.8.x: 5829e9b mfd: lpc_sch: Accomodate partial
-> Cc: <stable@vger.kernel.org> # 3.8.x: 3cbf182 gpio-sch: Allow for more than 8
-> Cc: <stable@vger.kernel.org> # 3.8.x: 91bbe92: PCI: Add CircuitCo vendor ID
-> Cc: <stable@vger.kernel.org> # 3.8.x: bd79680: pch_gbe: remove inline keyword
-> Cc: <stable@vger.kernel.org> # 3.8.x: 453ca93: pch_gbe: convert pr_* to
-> Cc: <stable@vger.kernel.org> # 3.8.x: 29cc436: pch_gbe: use managed functions
-> Cc: <stable@vger.kernel.org> # 3.8.x
-> Cc: <stable@vger.kernel.org> # 3.10.x: 91bbe92: PCI: Add CircuitCo vendor ID
-> Cc: <stable@vger.kernel.org> # 3.10.x: bd79680: pch_gbe: remove inline keyword
-> Cc: <stable@vger.kernel.org> # 3.10.x: 453ca93: pch_gbe: convert pr_* to
-> Cc: <stable@vger.kernel.org> # 3.10.x: 29cc436: pch_gbe: use managed functions
-> Cc: <stable@vger.kernel.org> # 3.10.x
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> ---
->  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    | 15 ++++
->  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   | 48 +++++++++++
->  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c    | 98 ++++++++++++++++++++++
->  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h    |  2 +
->  4 files changed, 163 insertions(+)
+> >>Add the driver for Gyro-ADC/speed-pulse interfaces found in Renesas R-Car SoCs.
+> >>Though  being two separate devices, they have to be driven together because of
+> >>the shared start/stop register (located in Gyro-ADC still). At this time, only
+> >>speed-pulse interface is fully supported, the Gyro-ADC is just initialized and
+> >>started/stopped synchronously with the speed-pulse interface.  A user interface
+> >>is implemented via several sysfs files which allow to read and reset the speed-
+> >>pulse interface's registers.
+> 
+> >If you modify/create/remove sysfs files, you also have to document them
+> >in Documentation/ABI/ which is missing from this patch.
+> 
+>    I've looked there and didn't find the documentation for my closest
+> model driver, drivers/misc/ti_dac7512.c (or for many other drivers),
+> so I thought I too can do without it.
 
-This is _far_ more than just a simple "add a new device id" for a stable
-kernel update.   Please go read Documentation/stable_kernel_rules.txt
-again for why there's no way I can take this type of thing.
+Nope, that driver should be fixed as well, care to do so?
 
-You know better than this.
+> >Your sysfs files are also being created in a "racy" way, i.e. after
+> >userspace is told about the device, please fix that as well.
+> 
+>    Not sure I understand you. Could you elaborate?
+
+Please read the driver model documentation, it goes into the details of
+how to do this properly.  As does this post from me a week or so ago:
+	http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
 
 greg k-h
