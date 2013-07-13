@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab3GMVsV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 17:48:21 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:46116 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab3GMVsT (ORCPT
+	id S1751422Ab3GMV44 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 17:56:56 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:38743 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab3GMV4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 17:48:19 -0400
+	Sat, 13 Jul 2013 17:56:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130713162604.627C2FAAE9@dev.laptop.org>
-References: <20130713162604.627C2FAAE9@dev.laptop.org>
-Date: Sat, 13 Jul 2013 14:48:18 -0700
-X-Google-Sender-Auth: jW5PGLH4dAEAVsDZ_NRDNYLWhUQ
-Message-ID: <CAE9FiQUndrTZYk+JS09PUYg4Od1VLz_CDikp2DftXSrUraH1bw@mail.gmail.com>
-Subject: Re: [PATCH] x86: don't clear olpc_ofw_header when sentinel is detected
+In-Reply-To: <51E169F1.5010301@zytor.com>
+References: <1373659660-31123-1-git-send-email-keescook@chromium.org>
+	<20130712203802.GA14702@www.outflux.net>
+	<CAE9FiQWJin8-hXsodo46vhYPMrWiiboEVQySPO-LgXtebYmUzw@mail.gmail.com>
+	<51E169F1.5010301@zytor.com>
+Date: Sat, 13 Jul 2013 14:56:54 -0700
+X-Google-Sender-Auth: B34JkgV02Q7r09bNFtKBZY7DI4o
+Message-ID: <CAE9FiQVrq3_oeFFLVhXvfBM75frQghzy7i6r+N4gW_F-K0-n8g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
 From: Yinghai Lu <yinghai@kernel.org>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        pgf@laptop.org, Andres Salomon <dilinger@queued.net>
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 9:26 AM, Daniel Drake <dsd@laptop.org> wrote:
-> OpenFirmware doesn't quite follow the protocol described in boot.txt
-> and the kernel has detected this through use of the sentinel value
-> in boot_params. OFW does zero out almost all of the stuff that it should
-> do, but not the sentinel.
+On Sat, Jul 13, 2013 at 7:53 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/12/2013 11:47 PM, Yinghai Lu wrote:
+>>
+>> for 32 bit, that is ok.
+>> for 64 bit via 32bit bootloader, arch/x86/boot/compressed/head_64.S
+>> will set page table for first 4G still ok.
+>> for 64 bit via 64bit loader, like kexec via bzImage64, First Kernel/Kexec only
+>> set ident mapping for usable range, so mmio just under 64 is not mapped.
+>>
+>> Looks like we need to update boot.txt to add requirement for 64bit bootloader
+>> that 0-4G need to be all ident mapping?
+>>
 >
-> This causes the kernel to clear olpc_ofw_header, which breaks x86 OLPC
-> support.
->
-> We will fix OpenFirmware. However, it would be nice if we could maintain
-> Linux compatibility with old firmware versions. To do that, we just have
-> to avoid zeroing out olpc_ofw_header.
->
-> OFW does not write to any other parts of the header that are being zapped
-> by the sentinel-detection code, and all users of olpc_ofw_header are
-> somewhat protected through checking for the OLPC_OFW_SIG magic value
-> before using it. So this should not cause any problems for anyone.
->
-> Signed-off-by: Daniel Drake <dsd@laptop.org>
-> ---
->  arch/x86/include/asm/bootparam_utils.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/include/asm/bootparam_utils.h b/arch/x86/include/asm/bootparam_utils.h
-> index 653668d..4a8cb8d 100644
-> --- a/arch/x86/include/asm/bootparam_utils.h
-> +++ b/arch/x86/include/asm/bootparam_utils.h
-> @@ -35,9 +35,9 @@ static void sanitize_boot_params(struct boot_params *boot_params)
->          */
->         if (boot_params->sentinel) {
->                 /* fields in boot_params are left uninitialized, clear them */
-> -               memset(&boot_params->olpc_ofw_header, 0,
-> +               memset(&boot_params->ext_ramdisk_image, 0,
->                        (char *)&boot_params->efi_info -
-> -                       (char *)&boot_params->olpc_ofw_header);
-> +                       (char *)&boot_params->ext_ramdisk_image);
->                 memset(&boot_params->kbd_status, 0,
->                        (char *)&boot_params->hdr -
->                        (char *)&boot_params->kbd_status);
-> --
-> 1.8.1.4
+> I think that is an unrealistic requirement, especially if this is the
+> sole user.
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+That will cause regression for:
+64bit system with kexec/kdump bzImage64.
+if second kernel carry "console=uart,mmio,0xABCD0000"
 
-also need to
-Cc: <stable@vger.kerne.org> v3.9+
+or we can extend kexec-tools to make it scan second kernel command line string
+and one entry into image->segment[]
+
+Yinghai
