@@ -1,105 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128Ab3GMDWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 23:22:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43960 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757969Ab3GMDWR (ORCPT
+	id S1758121Ab3GMD3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 23:29:08 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:53693 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758070Ab3GMD3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 23:22:17 -0400
-Date: Fri, 12 Jul 2013 20:21:48 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-3a783f6e39cc6c89da8846312f29ca47affaa470@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        onny@project-insanity.org, tglx@linutronix.de, hpa@linux.intel.com,
-        rjw@sisk.pl, christian.suenkenberg@student.kit.edu
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        onny@project-insanity.org, tglx@linutronix.de, hpa@linux.intel.com,
-        rjw@sisk.pl, christian.suenkenberg@student.kit.edu
-In-Reply-To: <51DDC972.3010005@student.kit.edu>
-References: <51DDC972.3010005@student.kit.edu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, suspend:
-  Handle CPUs which fail to #GP on RDMSR
-Git-Commit-ID: 3a783f6e39cc6c89da8846312f29ca47affaa470
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 12 Jul 2013 23:29:06 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgYPAOPI4FF5LK/r/2dsb2JhbABagwa9LYUpBAGBDhd0giMBAQQBOhwPFAULCAMYCSUPBSUDIRMbh24FtwsWjjCBHQeDC2wDlAWDVoojhyuDJCo
+Date: Sat, 13 Jul 2013 13:29:00 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130713032900.GC5228@dastard>
+References: <20130702121947.GE14996@dastard>
+ <20130702124427.GG16815@dhcp22.suse.cz>
+ <20130703112403.GP14996@dastard>
+ <20130704163643.GF7833@dhcp22.suse.cz>
+ <20130708125352.GC20149@dhcp22.suse.cz>
+ <20130710023138.GO3438@dastard>
+ <20130710080605.GC4437@dhcp22.suse.cz>
+ <20130711022634.GZ3438@dastard>
+ <20130711132300.GG21667@dhcp22.suse.cz>
+ <alpine.LNX.2.00.1307111741130.2448@eggly.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 20:21:56 -0700 (PDT)
+In-Reply-To: <alpine.LNX.2.00.1307111741130.2448@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3a783f6e39cc6c89da8846312f29ca47affaa470
-Gitweb:     http://git.kernel.org/tip/3a783f6e39cc6c89da8846312f29ca47affaa470
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Fri, 12 Jul 2013 16:48:12 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 12 Jul 2013 16:48:12 -0700
+On Thu, Jul 11, 2013 at 06:42:03PM -0700, Hugh Dickins wrote:
+> On Thu, 11 Jul 2013, Michal Hocko wrote:
+> > On Thu 11-07-13 12:26:34, Dave Chinner wrote:
+> > > > We are wating for page under writeback but neither of the 2 paths starts
+> > > > in xfs code. So I do not think waiting for PageWriteback causes a
+> > > > deadlock here.
+> > > 
+> > > The problem is this: the page that we are waiting for IO on is in
+> > > the IO completion queue, but the IO compeltion requires memory
+> > > allocation to complete the transaction. That memory allocation is
+> > > causing memcg reclaim, which then waits for IO completion on another
+> > > page, which may or may not end up in the same IO completion queue.
+> > > The CMWQ can continue to process new Io completions - up to a point
+> > > - so slow progress will be made. In the worst case, it can deadlock.
+> > 
+> > OK, I thought something like that was going on but I just wanted to be
+> > sure that I didn't manage to confuse you by the lockup messages.
+> > > 
+> > > GFP_NOFS allocation is the mechanism by which filesystems are
+> > > supposed to be able to avoid this recursive deadlock...
+> > 
+> > Yes.
+> > 
+> > > > [...]
+> > > > > ... is running IO completion work and trying to commit a transaction
+> > > > > that is blocked in memory allocation which is waiting for IO
+> > > > > completion. It's disappeared up it's own fundamental orifice.
+> > > > > 
+> > > > > Ok, this has absolutely nothing to do with the LRU changes - this is
+> > > > > a pre-existing XFS/mm interaction problem from around 3.2. The
+> > > > > question is now this: how the hell do I get memory allocation to not
+> > > > > block waiting on IO completion here? This is already being done in
+> > > > > GFP_NOFS allocation context here....
+> > > > 
+> > > > Just for reference. wait_on_page_writeback is issued only for memcg
+> > > > reclaim because there is no other throttling mechanism to prevent from
+> > > > too many dirty pages on the list, thus pre-mature OOM killer. See
+> > > > e62e384e9d (memcg: prevent OOM with too many dirty pages) for more
+> > > > details. The original patch relied on may_enter_fs but that check
+> > > > disappeared by later changes by c3b94f44fc (memcg: further prevent OOM
+> > > > with too many dirty pages).
+> > > 
+> > > Aye. That's the exact code I was looking at yesterday and wondering
+> > > "how the hell is waiting on page writeback valid in GFP_NOFS
+> > > context?". It seems that memcg reclaim is intentionally ignoring
+> > > GFP_NOFS to avoid OOM issues.  That's a memcg implementation problem,
+> > > not a filesystem or LRU infrastructure problem....
+> > 
+> > Agreed and until we have a proper per memcg dirty memory throttling we
+> > will always be in a workaround mode. Which is sad but that is the
+> > reality...
+> > 
+> > I am CCing Hugh (the discussion was long and started with a different
+> > issue but the above should tell about the current xfs hang. It seems
+> > that c3b94f44fc make xfs hang).
+> 
+> The may_enter_fs test came and went several times as we prepared those
+> patches: one set of problems with it in, another set with it out.
+> 
+> When I made c3b94f44fc, I was not imagining that I/O completion might
+> have to wait on a further __GFP_IO allocation.  But I can see the sense
+> of what XFS is doing there: after writing the data, it wants to perform
+> (initiate?) a transaction; but if that happens to fail, wants to mark
+> the written data pages as bad before reaching the end_page_writeback.
+> I've toyed with reordering that, but its order does seem sensible.
+> 
+> I've always thought of GFP_NOFS as meaning "don't recurse into the
+> filesystem" (and wondered what that amounts to since direct reclaim
+> stopped doing filesystem writeback); but here XFS is expecting it
+> to include "and don't wait for PageWriteback to be cleared".
 
-x86, suspend: Handle CPUs which fail to #GP on RDMSR
+Well, it's more general than that - my understanding of GFP_NOFS is
+that it means "don't block reclaim on anything filesystem related
+because a filesystem deadlock is possible from this calling
+content". Even without direct reclaim doing writeback, there is
+still shrinkers that need to avoid locking filesystem objects during
+direct reclaim, and the fact that waiting on writeback for specific
+pages to complete may (indirectly) block a memory allocation
+required to complete the writeback of that page. It's the latter
+case that is the problem here...
 
-There are CPUs which have errata causing RDMSR of a nonexistent MSR to
-not fault.  We would then try to WRMSR to restore the value of that
-MSR, causing a crash.  Specifically, some Pentium M variants would
-have this problem trying to save and restore the non-existent EFER,
-causing a crash on resume.
+> I've mused on this for a while, and haven't arrived at any conclusion;
+> but do have several mutterings on different kinds of solution.
+> 
+> Probably the easiest solution, but not necessarily the right solution,
+> would be for XFS to add a KM_NOIO akin to its KM_NOFS, and use KM_NOIO
+> instead of KM_NOFS in xfs_iomap_write_unwritten() (anywhere else?).
+> I'd find that more convincing if it were not so obviously designed
+> to match an assumption I'd once made over in mm/vmscan.c.
 
-Work around this by making sure we can write back the result at
-suspend time.
+I'd prefer not to have to start using KM_NOIO in specific places in
+the filesystem layer. I can see how it may be relevant, though,
+because we are in the IO completion path here, and so -technically-
+we are dealing with IO layer interactions here. Hmmm - it looks like
+there is already a task flag to tell memory allocation we are in IO
+context without needing to pass GFP_IO: PF_MEMALLOC_NOIO.
 
-Huge thanks to Christian Sünkenberg for finding the offending erratum
-that finally deciphered the mystery.
+[ As an idle thought, if we drove PF_FSTRANS into the memory
+allocation to clear __GFP_FS like PF_MEMALLOC_NOIO clears __GFP_IO,
+we could probably get rid of a large amount of the XFS specific
+memory allocation wrappers. Hmmm, it would solve all the "we
+need to do GFP_NOFS for vmalloc()" problems we have as well, which
+is what DM uses PF_MEMALLOC_NOIO for.... ]
 
-Reported-and-tested-by: Johan Heinrich <onny@project-insanity.org>
-Debugged-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Link: http://lkml.kernel.org/r/51DDC972.3010005@student.kit.edu
-Cc: <stable@vger.kernel.org> # v3.7+
----
- arch/x86/kernel/acpi/sleep.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+> A harder solution, but one which I'd expect to have larger benefits,
+> would be to reinstate the may_enter_fs test there in shrink_page_list(),
+> but modify ext4 and xfs and gfs2 to use grab_cache_page_write_begin()
+> without needing AOP_FLAG_NOFS: I think it is very sad that major FS
+> page allocations are made with the limiting GFP_NOFS, and I hope there
+> might be an efficient way to make those page allocations outside of the
+> transaction, with __GFP_FS instead.
 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 2a34aaf..3312010 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -48,9 +48,20 @@ int x86_acpi_suspend_lowlevel(void)
- #ifndef CONFIG_64BIT
- 	native_store_gdt((struct desc_ptr *)&header->pmode_gdt);
- 
-+	/*
-+	 * We have to check that we can write back the value, and not
-+	 * just read it.  At least on 90 nm Pentium M (Family 6, Model
-+	 * 13), reading an invalid MSR is not guaranteed to trap, see
-+	 * Erratum X4 in "Intel Pentium M Processor on 90 nm Process
-+	 * with 2-MB L2 Cache and Intel® Processor A100 and A110 on 90
-+	 * nm process with 512-KB L2 Cache Specification Update".
-+	 */
- 	if (!rdmsr_safe(MSR_EFER,
- 			&header->pmode_efer_low,
--			&header->pmode_efer_high))
-+			&header->pmode_efer_high) &&
-+	    !wrmsr_safe(MSR_EFER,
-+			header->pmode_efer_low,
-+			header->pmode_efer_high))
- 		header->pmode_behavior |= (1 << WAKEUP_BEHAVIOR_RESTORE_EFER);
- #endif /* !CONFIG_64BIT */
- 
-@@ -61,7 +72,10 @@ int x86_acpi_suspend_lowlevel(void)
- 	}
- 	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
- 			&header->pmode_misc_en_low,
--			&header->pmode_misc_en_high))
-+			&header->pmode_misc_en_high) &&
-+	    !wrmsr_safe(MSR_IA32_MISC_ENABLE,
-+			header->pmode_misc_en_low,
-+			header->pmode_misc_en_high))
- 		header->pmode_behavior |=
- 			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
- 	header->realmode_flags = acpi_realmode_flags;
+I don't think that helps the AOP_FLAG_NOFS case - even if we aren't
+in a transaction context, we're still holding (multiple) filesystem
+locks when doing memory allocation...
+
+> Another kind of solution: I did originally worry about your e62e384e9d
+> in rather the same way that akpm has, thinking a wait on return from
+> shrink_page_list() more appropriate than waiting on a single page
+> (with a hold on all the other pages of the page_list).  I did have a
+> patch I'd been playing with about the time you posted yours, but we
+> agreed to go ahead with yours unless problems showed up (I think mine
+> was not so pretty as yours).  Maybe I need to dust off my old
+> alternative now - though I've rather forgotten how to test it.
+
+I think that a congestion_wait()-styleange (as Andrew suggested) is
+a workable interim solution but I suspect - like Michal - that we
+need proper memcg awareness in balance_dirty_pages() to really solve
+this problem fully....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
