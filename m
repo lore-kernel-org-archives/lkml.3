@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab3GMBKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 21:10:16 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51429 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757972Ab3GMBKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 21:10:14 -0400
-Message-ID: <1373677813.2614.23.camel@joe-AO722>
-Subject: Re: [PATCH 3/3] pch_gbe: Add MinnowBoard support
-From: Joe Perches <joe@perches.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        netdev@vger.kernel.org, stable@vger.kernel.org
-Date: Fri, 12 Jul 2013 18:10:13 -0700
-In-Reply-To: <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
-References: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
-	 <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758025Ab3GMBPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 21:15:01 -0400
+Received: from oker.escape.de ([194.120.234.254]:48529 "EHLO oker.escape.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757972Ab3GMBO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 21:14:59 -0400
+X-Greylist: delayed 875 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Jul 2013 21:14:58 EDT
+Date: Sat, 13 Jul 2013 02:47:07 +0200
+From: Jochen Striepe <jochen@tolot.escape.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130713004707.GF7609@pompeji.miese-zwerge.org>
+References: <20130711224455.GA17222@kroah.com>
+ <20130712141530.GA3629@roeck-us.net>
+ <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+ <20130712173150.GA5534@roeck-us.net>
+ <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
+ <20130712181103.GA6689@roeck-us.net>
+ <20130712193557.GB342@thunk.org>
+ <1373658551.17876.117.camel@gandalf.local.home>
+ <20130712201939.GB15261@redhat.com>
+ <1373660900.17876.124.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373660900.17876.124.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 17:58 -0700, Darren Hart wrote:
-> The MinnowBoard uses an AR803x PHY with the PCH GBE which requires
-> special handling. Use the MinnowBoard PCI Subsystem ID to detect this
-> and add a pci_device_id.driver_data structure and functions to handle
-> platform setup.
+	Hello,
 
-trivial comments only:
+On Fri, Jul 12, 2013 at 04:28:20PM -0400, Steven Rostedt wrote:
+> I would suspect that machines that allow unprivileged users would be
+> running distro kernels, and not the latest release from Linus, and thus
+> even a bug that "can allow an unprivileged user to crash the kernel" may
+> still be able to sit around for a month before being submitted.
+> 
+> This wouldn't be the case if the bug was in older kernels that are being
+> used.
 
-Please use scripts/checkpatch.pl
+On the one hand, you seem to want users with any kind of production
+systems to use distro kernels. On the other hand, developers want
+a broad testing base, with vanilla kernels (or better, rc) as early
+as possible. You cannot get both at the same time, some kinds of bugs
+just appear on production systems.
 
-[]
+Users expect vanilla .0 releases usable as production systems, to
+be updated (meaning, no new features, just stabilizing) with the
+corresponding -stable series.
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c[]
-[]
-> +static int pch_gbe_minnow_platform_init(struct pci_dev *pdev)
-[]
-> +	if (ret){
-
-Missing space before brace
-
-> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c
-[]
-> +int pch_gbe_phy_tx_clk_delay(struct pch_gbe_hw *hw)
-[]
-> +	case PHY_AR803X_ID:
-> +		netdev_dbg(adapter->netdev,
-> +			   "Configuring AR803X PHY for 2ns TX clock delay\n"); 
-[]
-> +		netdev_err(adapter->netdev,
-> +			   "Unknown PHY (%x), could not set TX clock delay.\n",
-> +			   hw->phy.id);
-[]
-> +		netdev_err(adapter->netdev,
-> +			   "Could not configure tx clock delay for PHY.\n");
-[]
-> +int pch_gbe_phy_disable_hibernate(struct pch_gbe_hw *hw)
-[]
-> +	case PHY_AR803X_ID:
-> +		netdev_dbg(adapter->netdev,
-> +			   "Disabling hibernation for AR803X PHY\n");
-
-It'd be nice if no period before newline were used
-everywhere.
-
-> +		netdev_err(adapter->netdev,
-> +			   "Unknown PHY (%x), could not disable hibernation\n",
-> +			   hw->phy.id);
-[]
-> +		netdev_err(adapter->netdev,
-> +			   "Could not disable PHY hibernation.\n");
-
-
+Just my 2p,
+Jochen.
