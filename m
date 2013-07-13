@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab3GMBjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 21:39:39 -0400
-Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:48287 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757998Ab3GMBji (ORCPT
+	id S1758073Ab3GMCAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 22:00:37 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:28723 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758027Ab3GMCAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 21:39:38 -0400
-Date: Fri, 12 Jul 2013 21:40:19 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Dave Jones <davej@redhat.com>
-cc: Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Subject: Re: Yet more softlockups.
-In-Reply-To: <20130712154521.GD1020@redhat.com>
-Message-ID: <alpine.DEB.2.02.1307122136540.2540@pianoman.cluster.toy>
-References: <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com> <20130705143821.GB325@redhat.com> <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de> <20130705160043.GF325@redhat.com> <20130706072408.GA14865@gmail.com>
- <20130710151324.GA11309@redhat.com> <20130710152015.GA757@x4> <20130710154029.GB11309@redhat.com> <20130712103117.GA14862@gmail.com> <51E0230C.9010509@intel.com> <20130712154521.GD1020@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 12 Jul 2013 22:00:36 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgsPAL+z4FF5LK/r/2dsb2JhbABagwa9LoEihAcEAYENF3SCIwEBBTocMwgDGAkaCw8FJQMhARKIDrcTFo4wgSSDdwOXW4ojhyuBWYFLKg
+Date: Sat, 13 Jul 2013 12:00:30 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file:
+ fs/xfs/xfs_dir2_sf.c, line: 358
+Message-ID: <20130713020030.GG3438@dastard>
+References: <20130712023930.GA6473@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020207.51E0AFD9.00E0,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130712023930.GA6473@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Jul 2013, Dave Jones wrote:
-
+On Thu, Jul 11, 2013 at 10:39:30PM -0400, Dave Jones wrote:
+> Just saw this during boot after an unclean shutdown. It hung afterwards.
 > 
-> Here's a fun trick:
+> [   97.162665] XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file: fs/xfs/xfs_dir2_sf.c, line: 358
+....
+> [   97.173730]  [<ffffffffa0076953>] xfs_dir2_sf_addname+0x43/0x760 [xfs]
+> [   97.173743]  [<ffffffffa0067cfc>] xfs_dir_createname+0x15c/0x1b0 [xfs]
+> [   97.173754]  [<ffffffffa002f2dc>] xfs_create+0x4cc/0x710 [xfs]
+> [   97.173764]  [<ffffffffa00278ca>] xfs_vn_mknod+0x9a/0x1c0 [xfs]
+> [   97.173773]  [<ffffffffa0027a03>] xfs_vn_create+0x13/0x20 [xfs]
+> [   97.173776]  [<ffffffff811d100d>] vfs_create+0x9d/0x100
+> [   97.173778]  [<ffffffff811d1995>] do_last+0x925/0xe00
+> [   97.173780]  [<ffffffff811d1f2e>] path_openat+0xbe/0x6f0
+> [   97.173783]  [<ffffffff8109e33f>] ? local_clock+0x3f/0x50
+> [   97.173785]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
+> [   97.173787]  [<ffffffff811d2c3a>] do_filp_open+0x3a/0x90
+> [   97.173789]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
+> [   97.173790]  [<ffffffff811c0ddb>] do_sys_open+0x10b/0x200
+> [   97.173792]  [<ffffffff81010578>] ? syscall_trace_enter+0x18/0x290
+> [   97.173794]  [<ffffffff811c0eee>] SyS_open+0x1e/0x20
 > 
-> trinity -c perf_event_open -C4 -q -l off
-> 
-> Within about a minute, that brings any of my boxes to its knees.
-> The softlockup detector starts going nuts, and then the box wedges solid.
+> This trace repeated a few times, then the same assertion was triggered from sys_renameat.
 
-are you running with the patch
+That's rather curious. What this means is that there is either an
+EIO or EEXIST error being returned from xfs_dir2_sf_lookup() when a
+we're about to add the new entry. There are two things here - EIO
+can only be returned if a shutdown has occurred - are there any
+signs of a shutdown in the logs? If there is a shutdown in progress,
+then this is just unlucky to shutdown with an inode in an
+inconsistent state in memory that triggers this validity check
+failure.
 
- [PATCH 1/2] perf: Clone child context from parent context pmu
+And EEXIST means that the initial lookup of the name during the open
+failed to find the entry we are now trying to create. i.e. the
+initial path walk failed to do the correct lookup on the directory,
+and so never got down to xfs_dir2_sf_lookup() to find the directory
+entry (perhaps a problem with a cached negative dentry?). Hence it
+was decided during the open(O_CREATE) call that the directory entry
+needed to be created, we get down to XFS to create it, and then get
+EEXIST because the name already exists...
 
- https://lkml.org/lkml/2013/7/9/310
+So, it's not clear what has caused this yet. Is it reproducable? If
+would be good to get a trace of lookup vs addname events from XFS,
+too (i.e. all the xfs_dir* and xfs_da* events) so we can see if the
+correct lookups were done prior to the failing addname operation...
 
-It hasn't hit Linus git yet.
+Cheers,
 
-It fixes a bug that my perf_fuzzer would hit within seconds but it took me 
-over a month of trace bisecting and kernel bisecting to isolate it.
-
-The symptoms were stuck processes and NMI tracebacks leading to hard 
-locks.  
-
-With the patch applied my perf_fuzzer (which uses the same perf_event_open 
-syscall generator as trinity) runs for hours w/o problems.
-
-Vince
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
