@@ -1,162 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818Ab3GMMRM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 08:17:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40403 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab3GMMRL (ORCPT
+	id S932535Ab3GMMq3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 08:46:29 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:59590 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755625Ab3GMMq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 08:17:11 -0400
-Date: Sat, 13 Jul 2013 14:17:09 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH v2] N900: add device tree
-Message-ID: <20130713121709.GC16473@amd.pavel.ucw.cz>
-References: <20130613155240.GB3775@amd.pavel.ucw.cz>
- <20130613161418.GJ8164@atomide.com>
- <20130613230808.GA14876@amd.pavel.ucw.cz>
- <20130614055629.GM8164@atomide.com>
- <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com>
- <20130701211753.GC15318@amd.pavel.ucw.cz>
- <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
- <20130704202145.GB10752@amd.pavel.ucw.cz>
- <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 13 Jul 2013 08:46:28 -0400
+Message-ID: <1373719585.1359.3.camel@x61.thuisdomein>
+Subject: Re: [PATCH 1/8] cpufreq: Revert commit a66b2e to fix cpufreq
+ regression during suspend/resume
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl,
+        toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 13 Jul 2013 14:46:25 +0200
+In-Reply-To: <CAKohpomVo5FEN1fOHQQ9jQuLnrRfHcNkH7QcnJG7x6x-Xd7J-A@mail.gmail.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+	 <20130711221527.547.46447.stgit@srivatsabhat.in.ibm.com>
+	 <CAKohpomVo5FEN1fOHQQ9jQuLnrRfHcNkH7QcnJG7x6x-Xd7J-A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jul 2013 12:46:26.0126 (UTC) FILETIME=[FCC3B6E0:01CE7FC6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-07-12 at 12:48 +0530, Viresh Kumar wrote:
+> On 12 July 2013 03:45, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> > commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume) has
+> > unfortunately caused several things in the cpufreq subsystem to break subtly
+> > after a suspend/resume cycle.
+> >
+> > The intention of that patch was to retain the file permissions of the
+> > cpufreq related sysfs files across suspend/resume. To achieve that, the commit
+> > completely removed the calls to cpufreq_add_dev() and __cpufreq_remove_dev()
+> > during suspend/resume transitions. But the problem is that those functions
+> > do 2 kinds of things:
+> >   1. Low-level initialization/tear-down that are critical to the correct
+> >      functioning of cpufreq-core.
+> >   2. Kobject and sysfs related initialization/teardown.
+> >
+> > Ideally we should have reorganized the code to cleanly separate these two
+> > responsibilities, and skipped only the sysfs related parts during
+> > suspend/resume. Since we skipped the entire callbacks instead (which also
+> > included some CPU and cpufreq-specific critical components), cpufreq
+> > subsystem started behaving erratically after suspend/resume.
+> >
+> > So revert the commit to fix the regression. We'll revisit and address the
+> > original goal of that commit separately, since it involves quite a bit of
+> > careful code reorganization and appears to be non-trivial.
+> >
+> > (While reverting the commit, note that another commit f51e1eb "cpufreq:
+> > Fix cpufreq regression after suspend/resume" already reverted part of the
+> > original set of changes. So revert only the remaining ones).
+> >
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > ---
+> >
+> >  drivers/cpufreq/cpufreq.c       |    4 +++-
+> >  drivers/cpufreq/cpufreq_stats.c |    6 ++----
+> >  2 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-This adds device tree with neccessary support to boot with functional
-video (on both emulator and real N900 device).
+This seems to fix the "core stuck at some frequency after resume" issue
+I ran into since v3.10. So:
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Tested-by: Paul Bolle <pebolle@tiscali.nl>
 
----
 
->From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
-can be enabled on 3.10, and tested it on that kernel.
+Paul Bolle
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f0895c5..1950aed 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -141,6 +141,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	omap3-devkit8000.dtb \
- 	omap3-beagle-xm.dtb \
- 	omap3-evm.dtb \
-+	omap3-n900.dtb \
- 	omap3-tobi.dtb \
- 	omap3-igep0020.dtb \
- 	omap3-igep0030.dtb \
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-new file mode 100644
-index 0000000..fb461bf
---- /dev/null
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -0,0 +1,92 @@
-+/*
-+ * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
-+ * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/dts-v1/;
-+
-+/include/ "omap34xx.dtsi"
-+
-+/ {
-+	model = "Nokia N900";
-+	compatible = "nokia,omap3-n900", "ti,omap3";
-+
-+	cpus {
-+		cpu@0 {
-+			cpu0-supply = <&vcc>;
-+		};
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x10000000>; /* 256 MB */
-+	};
-+
-+};
-+
-+&i2c1 {
-+	clock-frequency = <2200000>;
-+
-+	twl: twl@48 {
-+		reg = <0x48>;
-+		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
-+		interrupt-parent = <&intc>;
-+	};
-+};
-+
-+/include/ "twl4030.dtsi"
-+
-+&twl_gpio {
-+	ti,pullups	= <0x0>;
-+	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
-+};
-+
-+&i2c2 {
-+	clock-frequency = <400000>;
-+};
-+
-+&i2c3 {
-+	clock-frequency = <100000>;
-+};
-+
-+&mmc1 {
-+	status = "disabled";
-+};
-+
-+&mmc2 {
-+	status = "disabled";
-+};
-+
-+&mmc3 {
-+	status = "disabled";
-+};
-+
-+&mcspi1 {
-+	// For some reason, touchscreen is neccessary for screen to work at 
-+	// all on real hw. It works well without it on emulator.
-+	//
-+	// Also... order in the device tree actually matters here.
-+	tsc2005@0 {
-+		compatible = "tsc2005";
-+		spi-max-frequency = <6000000>;
-+		reg = <0>;
-+	};
-+	mipid@2 {
-+		compatible = "acx565akm";
-+		spi-max-frequency = <6000000>;
-+		reg = <2>;
-+		// turbo_mode = 0,
-+		// cs_per_word = 0
-+	};
-+};
-+
-+&usb_otg_hs {
-+	interface-type = <0>;
-+	usb-phy = <&usb2_phy>;
-+	mode = <2>;
-+	power = <50>;
-+};
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
