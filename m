@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab3GMUjM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 16:39:12 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:33073 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758286Ab3GMUjL convert rfc822-to-8bit (ORCPT
+	id S1751069Ab3GMVeR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 17:34:17 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:38498 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab3GMVeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 16:39:11 -0400
+	Sat, 13 Jul 2013 17:34:16 -0400
 MIME-Version: 1.0
 In-Reply-To: <tip-c0b3450f101523a49823fa93d155f1d258e5ac6f@git.kernel.org>
 References: <20130712225017.GA5366@www.outflux.net>
 	<tip-c0b3450f101523a49823fa93d155f1d258e5ac6f@git.kernel.org>
-Date: Sat, 13 Jul 2013 13:39:10 -0700
-X-Google-Sender-Auth: TemgCfokArboUURFT4VNsttUavQ
-Message-ID: <CAE9FiQX=5Oe_F5Q3WQBGfghgOcgHjcOufPhtUy2X6J_s6GY36Q@mail.gmail.com>
+Date: Sat, 13 Jul 2013 14:34:15 -0700
+X-Google-Sender-Auth: wkQ5hBs9kMqmKrTB_FB-Ats9eAQ
+Message-ID: <CAE9FiQXvfopU1SYs3OFQk8rXVgq-Hbhw6gB49u5H4O70Tx12+A@mail.gmail.com>
 Subject: Re: [tip:x86/urgent] x86: Make sure IDT is page aligned
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -23,8 +23,7 @@ To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
 Cc: "linux-tip-commits@vger.kernel.org" 
 	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,6 +42,9 @@ On Fri, Jul 12, 2013 at 8:21 PM, tip-bot for Kees Cook <tipbot@zytor.com> wrote:
 > Merge with 32-bit one, since it was already aligned to deal with F00F bug.
 > This avoids the risk of it ever being moved in the bss and having the
 > mapping be offset, resulting in calling incorrect handlers.
+
+why can put idt_table not be in .bss?
+
 >
 > [ hpa: It isn't clear that this is a manifest bug in any way, but
 >   tagging for -stable because it shouldn't hurt and might avoid some
@@ -90,19 +92,17 @@ On Fri, Jul 12, 2013 at 8:21 PM, tip-bot for Kees Cook <tipbot@zytor.com> wrote:
 > +/* The IDT has to be page-aligned to keep it aligned with its fixmap. */
 >  gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
 > -#endif
+
+can we use put all idt_table related in to __bss.aligned section ...?
+
+like
+gate_desc idt_table[NR_VECTORS] __page_aligned_bss;
+
 >
 >  DECLARE_BITMAP(used_vectors, NR_VECTORS);
 >  EXPORT_SYMBOL_GPL(used_vectors);
-
-arch/x86/kernel/traps.c:74:1: warning: braces around scalar
-initializer [enabled by default]
-arch/x86/kernel/traps.c:74:1: warning: (near initialization for
-‘idt_table[0].offset_low’) [enabled by default]
-arch/x86/kernel/traps.c:74:1: warning: braces around scalar
-initializer [enabled by default]
-arch/x86/kernel/traps.c:74:1: warning: (near initialization for
-‘idt_table[0].offset_low’) [enabled by default]
-arch/x86/kernel/traps.c:74:1: warning: excess elements in scalar
-initializer [enabled by default]
-arch/x86/kernel/traps.c:74:1: warning: (near initialization for
-‘idt_table[0].offset_low’) [enabled by default]
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
