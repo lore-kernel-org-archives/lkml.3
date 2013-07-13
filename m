@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab3GMQOY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 12:14:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43837 "EHLO mga03.intel.com"
+	id S1758105Ab3GMQYq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 12:24:46 -0400
+Received: from lists.laptop.org ([18.85.2.166]:45128 "EHLO swan.laptop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152Ab3GMQOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 12:14:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,659,1367996400"; 
-   d="scan'208";a="330891758"
-Message-ID: <51E17CDD.30805@linux.intel.com>
-Date: Sat, 13 Jul 2013 09:14:21 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
-        corbet@lwn.net, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <20130713064909.GW25631@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130713064909.GW25631@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752620Ab3GMQYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 12:24:45 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, pgf@laptop.org, dilinger@queued.net
+Subject: [PATCH] x86: don't clear olpc_ofw_header when sentinel is detected
+Message-Id: <20130713162604.627C2FAAE9@dev.laptop.org>
+Date: Sat, 13 Jul 2013 12:26:04 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/12/2013 11:49 PM, Peter Zijlstra wrote:
-> On Tue, Jul 09, 2013 at 04:55:29PM +0100, Morten Rasmussen wrote:
->> Hi,
->>
->> This patch set is an initial prototype aiming at the overall power-aware
->> scheduler design proposal that I previously described
->> <http://permalink.gmane.org/gmane.linux.kernel/1508480>.
->>
->> The patch set introduces a cpu capacity managing 'power scheduler' which lives
->> by the side of the existing (process) scheduler. Its role is to monitor the
->> system load and decide which cpus that should be available to the process
->> scheduler.
->
-> Hmm...
->
-> This looks like a userspace hotplug deamon approach lifted to kernel space :/
->
-> How about instead of layering over the load-balancer to constrain its behaviour
-> you change the behaviour to not need constraint? Fix it so it does the right
-> thing, instead of limiting it.
->
-> I don't think its _that_ hard to make the balancer do packing over spreading.
-> The power balance code removed in 8e7fbcbc had things like that (although it
-> was broken). And I'm sure I've seen patches over the years that did similar
-> things. Didn't Vincent and Alex also do things like that?
+OpenFirmware doesn't quite follow the protocol described in boot.txt
+and the kernel has detected this through use of the sentinel value
+in boot_params. OFW does zero out almost all of the stuff that it should
+do, but not the sentinel.
 
-a basic "sort left" (e.g. when needing to pick a cpu for a task that is short running,
-pick the lowest numbered idle one) will already have the effect of packing in practice.
-it's not perfect packing, but on a statistical level it'll be quite good.
+This causes the kernel to clear olpc_ofw_header, which breaks x86 OLPC
+support.
 
-(this all assumes relatively idle systems with spare capacity to play with of course..
-... but that's the domain where packing plays a role)
+We will fix OpenFirmware. However, it would be nice if we could maintain
+Linux compatibility with old firmware versions. To do that, we just have
+to avoid zeroing out olpc_ofw_header. 
 
+OFW does not write to any other parts of the header that are being zapped
+by the sentinel-detection code, and all users of olpc_ofw_header are
+somewhat protected through checking for the OLPC_OFW_SIG magic value
+before using it. So this should not cause any problems for anyone.
 
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ arch/x86/include/asm/bootparam_utils.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> Arjan; from reading your emails you're mostly busy explaining what cannot be
-> done. Please explain what _can_ be done and what Intel wants. From what I can
-> see you basically promote a max P state max concurrency race to idle FTW.
->
-
-btw one more thing I'd like to get is a communication between the scheduler
-and the policy/hardware drivers about task migration.
-When a task migrates to another CPU, the statistics that the hardware/driver/policy
-were keeping on that target CPU are really not valid anymore in terms of forward
-looking predictive power. A communication (API or notification or whatever form it takes)
-around this would be quite helpful.
-This could be as simple as just setting a flag on the target cpu (in their rq), so that
-the next power event (exiting idle, P state evaluation, whatever) the policy code
-can flush-and-start-over.
-
-
-on thinking more about the short running task thing; there is an optimization we currently don't do,
-mostly for hyperthreading. (and HT is just one out of a set of cases with similar power behavior)
-If we know a task runs briefly AND is not performance critical, it's much much better to place it on
-a hyperthreading buddy of an already busy core than it is to place it on an empty core (or to delay it).
-Yes a HT pair isn't the same performance as a full core, but in terms of power the 2nd half of a HT pair
-is nearly free... so if there's a task that's not performance sensitive (and won't disturb the other task too much,
-e.g. runs briefly enough)... it's better to pack onto a core than to spread.
-you can generalize this to a class of systems where adding work to a core (read: group of cpus that share resources)
-is significantly cheaper than running on a full empty core.
-
-(there is clearly a tradeoff, by sharing resources you also end up reducing performance/efficiency, and that has its
-own effect on power, so there is some kind of balance needed and a big enough gain to be worth the loss)
+diff --git a/arch/x86/include/asm/bootparam_utils.h b/arch/x86/include/asm/bootparam_utils.h
+index 653668d..4a8cb8d 100644
+--- a/arch/x86/include/asm/bootparam_utils.h
++++ b/arch/x86/include/asm/bootparam_utils.h
+@@ -35,9 +35,9 @@ static void sanitize_boot_params(struct boot_params *boot_params)
+ 	 */
+ 	if (boot_params->sentinel) {
+ 		/* fields in boot_params are left uninitialized, clear them */
+-		memset(&boot_params->olpc_ofw_header, 0,
++		memset(&boot_params->ext_ramdisk_image, 0,
+ 		       (char *)&boot_params->efi_info -
+-			(char *)&boot_params->olpc_ofw_header);
++			(char *)&boot_params->ext_ramdisk_image);
+ 		memset(&boot_params->kbd_status, 0,
+ 		       (char *)&boot_params->hdr -
+ 		       (char *)&boot_params->kbd_status);
+-- 
+1.8.1.4
 
