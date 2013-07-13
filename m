@@ -1,97 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab3GMRG7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 13:06:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10895 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab3GMRG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 13:06:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,660,1367996400"; 
-   d="scan'208";a="364779161"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] PCI / hotplug / ACPI: Get rid of check_sub_bridges()
-Date: Sat, 13 Jul 2013 20:09:59 +0300
-Message-Id: <1373735399-28055-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S933016Ab3GMRJQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 13:09:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45682 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751071Ab3GMRJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 13:09:14 -0400
+X-Sasl-enc: CMsfhhjeYtiKPW1k3DQRDZ7nsurngKJ7zjnaTO6qQ9u0 1373735352
+Date: Sat, 13 Jul 2013 10:09:14 -0700
+From: Greg KH <greg@kroah.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        netdev@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3/3] pch_gbe: Add MinnowBoard support
+Message-ID: <20130713170914.GA3837@kroah.com>
+References: <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
+ <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
+ <20130713011731.GA17939@kroah.com>
+ <1373694381.3475.95.camel@envy.home>
+ <20130713062631.GB15155@kroah.com>
+ <1373731681.3475.113.camel@envy.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373731681.3475.113.camel@envy.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that acpiphp_check_bridge() always enumerates devices behind the
-bridge, there is no need to do that for each sub-bridge anymore like it is
-done in the current ACPI-based PCI hotplug code. Given this we don't need
-check_sub_bridges() anymore and can drop the function completely.
+On Sat, Jul 13, 2013 at 09:08:01AM -0700, Darren Hart wrote:
+> On Fri, 2013-07-12 at 23:26 -0700, Greg KH wrote:
+> > On Fri, Jul 12, 2013 at 10:46:21PM -0700, Darren Hart wrote:
+> > > On Fri, 2013-07-12 at 18:17 -0700, Greg KH wrote:
+> > > > > ---
+> > > > >  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    | 15 ++++
+> > > > >  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   | 48 +++++++++++
+> > > > >  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c    | 98 ++++++++++++++++++++++
+> > > > >  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h    |  2 +
+> > > > >  4 files changed, 163 insertions(+)
+> > > > 
+> > > > This is _far_ more than just a simple "add a new device id" for a stable
+> > > > kernel update.   Please go read Documentation/stable_kernel_rules.txt
+> > > > again for why there's no way I can take this type of thing.
+> > > >
+> > > > You know better than this.
+> > > 
+> > > I do appreciate the documentation that is there, and I have read it
+> > > (several times). The first two for 3.8 should be acceptable.
+> > 
+> > I didn't even look at those other patches (and hint, 3.8 is dead and
+> > burried, no stable releases are happening for it that really matter.)
+> > 
+> > I'm talking about _this_ patch.  Look at it.  How big it is.  How it's
+> > not just "add a new device id."  Now please explain how _this_ patch
+> > meets the stable kernel rules as documented?  Let alone the pr_*
+> > conversions, ick, don't get me started...
+> 
+> I was looking at it as a quirk:
+> 
+> " - New device IDs and quirks are also accepted."
+> 
+> I even considered implementation as a pci quirk. I didn't because the
+> PHY work needed to happen too late during probe. The frustrating thing
+> is there is probably 15 lines of code that are needed to get it to
+> work, all the rest is infrastructure to make it generic.
 
-This also simplifies the ACPIPHP code a bit.
+163 lines of code is not a "quirk" I can accept.  When I wrote, "new
+device ids or quirks can be accpted for stable", I meant things like
+commit 9e9dd0e889c76c786e8f2e164c825c3c06dea30c.  That's acceptable.
+Not thing huge thing.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
-This applies on top of v3.10 with Rafael's ACPIPHP + Thunderbolt series
-applied:
+> I get the size argument. It's too big. The docs say 100 lines with
+> context, I've seen much larger go in... I just wasn't sure where the
+> line is. It seems things are getting more strict here, not less. OK.
+> Lesson learned.
 
-	http://www.spinics.net/lists/linux-acpi/msg44480.html
+You have seen larger "quirks" than this go into the stable tree?
+Examples for where I've been sleeping on the job would be good.
 
+And that's the whole point of the huge thread I pointed you at, people
+are trying to get stuff into stable that they shouldn't be (and they are
+being lazy, but that's not the issue with this patch...)
 
- drivers/pci/hotplug/acpiphp_glue.c | 25 -------------------------
- 1 file changed, 25 deletions(-)
+> > Just have users use 3.11, it's not like you have shipping hardware yet,
+> 
+> We're talking days here, but yes.
+> 
+> > and again, who cares about 3.8.  Heck, who cares about 3.9 or even 3.10
+> > for brand-new hardware.  Just use 3.11 or 3.12 and don't worry about
+> > backport hell.
+> > 
+> > This isn't going to land in Linus's tree until 3.12 anyway, so what's
+> > the rush?
+> 
+> My reasoning is that the BSP for this is based on 3.8. I would like to
+> bring 3.8 in sync with master for support of this board so I can update
+> the release BSP to use the same sources. People can use my code from
+> the linux-yocto_3.8 standard/minnow branch, but it would be preferable
+> if that code was also destined for upstream.
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 62e09af..741504a 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -760,25 +760,6 @@ static void acpiphp_sanitize_bus(struct pci_bus *bus)
-  * ACPI event handlers
-  */
- 
--static acpi_status
--check_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
--{
--	struct acpiphp_bridge *bridge;
--	char objname[64];
--	struct acpi_buffer buffer = { .length = sizeof(objname),
--				      .pointer = objname };
--
--	bridge = acpiphp_handle_to_bridge(handle);
--	if (bridge) {
--		acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
--		dbg("%s: re-enumerating slots under %s\n",
--			__func__, objname);
--		acpiphp_check_bridge(bridge);
--		put_bridge(bridge);
--	}
--	return AE_OK ;
--}
--
- void acpiphp_check_host_bridge(acpi_handle handle)
- {
- 	struct acpiphp_bridge *bridge;
-@@ -788,9 +769,6 @@ void acpiphp_check_host_bridge(acpi_handle handle)
- 		acpiphp_check_bridge(bridge);
- 		put_bridge(bridge);
- 	}
--
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
--		ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
- }
- 
- static void hotplug_event(acpi_handle handle, u32 type, void *data)
-@@ -818,9 +796,6 @@ static void hotplug_event(acpi_handle handle, u32 type, void *data)
- 		dbg("%s: re-enumerating slots under %s\n", __func__, objname);
- 		if (bridge) {
- 			acpiphp_check_bridge(bridge);
--			acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
--					    ACPI_UINT32_MAX, check_sub_bridges,
--					    NULL, NULL, NULL);
- 		} else {
- 			struct acpiphp_slot *slot = func->slot;
- 
--- 
-1.8.3.2
+That's your choice to pick 3.8, not upstream's (and frankly, not
+something that I would have picked, but that's another topic...)
 
+> If you still feel this doesn't qualify as a "quirk", I'll drop the
+> stable push. If you can see that argument, I can look at breaking it up
+> into smaller chunks, or possibly reducing some of the generic bits and
+> doing the bare minimum to get it working and follow-up in master with
+> more generic bits.
+
+You are adding functionality for new devices that take much more than a
+simple "add an id to a table", so no, it's not ok for stable releases.
+
+thanks,
+
+greg k-h
