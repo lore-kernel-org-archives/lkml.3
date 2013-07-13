@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964778Ab3GMObF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 10:31:05 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:36314 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932571Ab3GMObD (ORCPT
+	id S933360Ab3GMOkt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 10:40:49 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:56925 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933198Ab3GMOkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 10:31:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAN1soZzQz8PaHOwNf-Ec6G=ahhx_P8gaaX4fQnpX-Mqrepk_7g@mail.gmail.com>
-References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
-	<1373352166-10064-2-git-send-email-zhangwm@marvell.com>
-	<20130709124900.GG11908@titan.lakedaemon.net>
-	<CAN1soZxiOh6TpbUOCUzK8gNwmvjbT3ihkUWaw8tuZ7md+NVA2g@mail.gmail.com>
-	<20130710122433.GO11908@titan.lakedaemon.net>
-	<CAN1soZzMvront1-jcBW6-uRKNs0OZNGnmiOjKGZSM28bViB_8A@mail.gmail.com>
-	<20130710215041.GR11908@titan.lakedaemon.net>
-	<CAN1soZzuiukY9qASFNcH0k=zH8=uT=71bKejPss44FCzNy=X-A@mail.gmail.com>
-	<CAMLZHHQGZvDssY-YxQ3ZW8FYhpG-H1-VbokOid33socRSPrMNw@mail.gmail.com>
-	<CAN1soZzQz8PaHOwNf-Ec6G=ahhx_P8gaaX4fQnpX-Mqrepk_7g@mail.gmail.com>
-Date: Sat, 13 Jul 2013 08:30:59 -0600
-X-Google-Sender-Auth: ne0Uewe56YB_jsXY4OAiL6I6xLA
-Message-ID: <CAMLZHHSDu+zgumVtWeU8yGiJ8Wmp3TQJbEc6u54LziOC5oXPeQ@mail.gmail.com>
-Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
-From: Daniel Drake <dsd@laptop.org>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Bergmann Arnd <arnd@arndb.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Neil Zhang <zhangwm@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 13 Jul 2013 10:40:47 -0400
+Message-ID: <1373726446.1359.17.camel@x61.thuisdomein>
+Subject: [PATCH] staging/lustre/libcfs: fix typo "default false"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Sat, 13 Jul 2013 16:40:46 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jul 2013 14:40:46.0683 (UTC) FILETIME=[F5F9A2B0:01CE7FD6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 6:35 PM, Haojian Zhuang
-<haojian.zhuang@gmail.com> wrote:
-> These patches couldn't be applied. Since we're moving irq drivers from arch
-> directories to irq directories.
+Commit 4b5b4c7222 ("staging/lustre/libcfs: restore LINVRNT") added
+"default false" to this Kconfig file. It was obviously meant to use
+"default n" here.
 
-It does not seem in line with the collaborative manner of kernel
-development to block my patches for a whole month because they
-conflict with your own private patches which do not exist for anyone
-else (at least I searched and couldn't find them).
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested lightly, with "make menuconfig" only.
 
-Please, either post your patches immediately (I will help review), or
-review mine and figure out how to handle any conflict with your own
-work afterwards.
+1) No-one noticed because "default <invalid Kconfig symbol>" and
+"default n" behave the same. Actually, it seems "default n" isn't needed
+at all. But there are hundreds of Kconfig symbols that use "default n",
+so I suppose it serves some purpose.
 
-> When the irq patches are applied, you can rebase your patches.
+ drivers/staging/lustre/lustre/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-2 of the pending patches don't touch the irq stuff anyway.
+diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
+index e0eb830..002dd2e 100644
+--- a/drivers/staging/lustre/lustre/Kconfig
++++ b/drivers/staging/lustre/lustre/Kconfig
+@@ -43,7 +43,7 @@ config LUSTRE_OBD_MAX_IOCTL_BUFFER
+ config LUSTRE_DEBUG_EXPENSIVE_CHECK
+ 	bool "Enable Lustre DEBUG checks"
+ 	depends on LUSTRE_FS
+-	default false
++	default n
+ 	help
+ 	  This option is mainly for debug purpose. It enables Lustre code to do
+ 	  expensive checks that may have a performance impact.
+-- 
+1.8.1.4
 
-Daniel
