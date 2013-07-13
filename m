@@ -1,40 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab3GMTky (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 15:40:54 -0400
-Received: from [172.245.216.35] ([172.245.216.35]:41172 "EHLO phpbb.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752316Ab3GMTkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 15:40:53 -0400
-X-Greylist: delayed 2232 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Jul 2013 15:40:53 EDT
-To: linux-kernel@vger.kernel.org
-Subject: phpBB support
-X-PHP-Script: 172.245.216.35/~admin/cc/ccmail/admin.php for 41.37.149.9
-Date: Sat, 13 Jul 2013 22:55:00 +0400
-From: phpbbaid@gmail.com
-Message-ID: <f6f09d714246161155b9f15783cd45c2@172.245.216.35>
-X-Priority: 3
-X-Mailer: CcMail 1.0 - powered by PHPMailer 1.72
+	id S1758225Ab3GMTti (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 15:49:38 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:51901 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab3GMTth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 15:49:37 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+Date: Sat, 13 Jul 2013 22:49:36 +0300
+Message-ID: <CAFC2PC5_PVQBY31s5AHGVkP1N56CozAFy+T37qZmR4QDfSapeg@mail.gmail.com>
+Subject: Looking for a mentor
+From: Alexey Shmalko <rasen.dubi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear customers,
+Hello everyone,
+My name is Alexey Shmalko and I'm a student of the Kiev Polytechnic
+Institute and have just finished the first year of my studying.
 
-We encourage you to update your phpBB forums to the latest version as it
-prevents many security bugs and make your forum stable.
-There are many anti-spam methods to prevent the spambots registration and
-posting , please pick up one of these mods to keep your forum clean 
+I'm crazy about programming, have a strong knowledge of the C language
+and good knowledge of the Linux system (thank you, Gentoo). I've read
+Robert Love's Linux Kernel Development, so I'm familiar with the
+general kernel concepts and successfully answered some kernel-related
+questions on stackoverflow.
 
-We provide paid services , if you want our assistance please reply to us and
-we will be happy to put all our efforts and experience for your help we can
-help you in updating , mod installation , styling your forum with a unique
-style and solve any other problem you may face 
+It would be great to participate in the next year GSoC contributing to
+the Linux kernel. For this reason, I have to find a mentor. If someone
+pushes me in the right direction, I'll be happy.
 
-Thank you .
-
-
-
+Best regards,
+Alexey
