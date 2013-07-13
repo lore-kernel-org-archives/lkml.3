@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758143Ab3GMIRf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 04:17:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40929 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757848Ab3GMIRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 04:17:33 -0400
-Date: Sat, 13 Jul 2013 10:17:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Alexandru Juncu <alexj@rosedu.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Script for isolating maintainer email.
-Message-ID: <20130713081711.GA5311@pd.tnic>
-References: <1373701241-6499-1-git-send-email-alexj@rosedu.org>
- <20130713080153.GA5502@pd.tnic>
- <CAPhGq=b6FRJnjd+H_cxLLbs_cWR=p6WPdJtocV+je4=cCeRUmw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPhGq=b6FRJnjd+H_cxLLbs_cWR=p6WPdJtocV+je4=cCeRUmw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758151Ab3GMI0r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 04:26:47 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43641 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757848Ab3GMI0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 04:26:43 -0400
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: davem@davemloft.net
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Baluta <dbaluta@ixiacom.com>
+Subject: [PATCH] ndisc: bool initializations should use true and false
+Date: Sat, 13 Jul 2013 11:26:51 +0300
+Message-Id: <1373704011-2146-1-git-send-email-dbaluta@ixiacom.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 11:05:04AM +0300, Alexandru Juncu wrote:
-> Nothing wrong at all. It's just that, to my shame, I don't know Perl.
+Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
+---
+ net/ipv6/ndisc.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Now would be the right time to get your feet wet :-)
-
->From quickly skimming over it, it is almost ready:
-
-./scripts/get_maintainer.pl --email --norolestats <patch>
-
-gives you already the email addresses. What it would need is simply
-adjusting the output to what --cc-cmd expects.
-
+diff --git a/net/ipv6/ndisc.c b/net/ipv6/ndisc.c
+index b3b5730..24c03396 100644
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -479,7 +479,7 @@ static void ndisc_send_na(struct net_device *dev, struct neighbour *neigh,
+ 	if (ifp) {
+ 		src_addr = solicited_addr;
+ 		if (ifp->flags & IFA_F_OPTIMISTIC)
+-			override = 0;
++			override = false;
+ 		inc_opt |= ifp->idev->cnf.force_tllao;
+ 		in6_ifa_put(ifp);
+ 	} else {
+@@ -557,7 +557,7 @@ void ndisc_send_ns(struct net_device *dev, struct neighbour *neigh,
+ 	}
+ 
+ 	if (ipv6_addr_any(saddr))
+-		inc_opt = 0;
++		inc_opt = false;
+ 	if (inc_opt)
+ 		optlen += ndisc_opt_addr_space(dev);
+ 
+@@ -790,7 +790,7 @@ static void ndisc_recv_ns(struct sk_buff *skb)
+ 		     (is_router = pndisc_is_router(&msg->target, dev)) >= 0)) {
+ 			if (!(NEIGH_CB(skb)->flags & LOCALLY_ENQUEUED) &&
+ 			    skb->pkt_type != PACKET_HOST &&
+-			    inc != 0 &&
++			    inc &&
+ 			    idev->nd_parms->proxy_delay != 0) {
+ 				/*
+ 				 * for anycast or proxy,
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
