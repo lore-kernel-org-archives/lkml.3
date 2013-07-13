@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491Ab3GMW0T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 18:26:19 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:48243 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab3GMW0S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 18:26:18 -0400
-Message-ID: <51E1D406.9090702@cogentembedded.com>
-Date: Sun, 14 Jul 2013 02:26:14 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1751601Ab3GMWdi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 18:33:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53646 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751341Ab3GMWdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 18:33:37 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAE9FiQVrq3_oeFFLVhXvfBM75frQghzy7i6r+N4gW_F-K0-n8g@mail.gmail.com>
+References: <1373659660-31123-1-git-send-email-keescook@chromium.org> <20130712203802.GA14702@www.outflux.net> <CAE9FiQWJin8-hXsodo46vhYPMrWiiboEVQySPO-LgXtebYmUzw@mail.gmail.com> <51E169F1.5010301@zytor.com> <CAE9FiQVrq3_oeFFLVhXvfBM75frQghzy7i6r+N4gW_F-K0-n8g@mail.gmail.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] misc: add driver for Renesas R-Car Gyro-ADC/speed-pulse
- interfaces
-References: <201307130351.42967.sergei.shtylyov@cogentembedded.com> <20130713005702.GA14788@kroah.com> <51E0AA24.6070203@cogentembedded.com> <201307130958.16533.arnd@arndb.de>
-In-Reply-To: <201307130958.16533.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 13 Jul 2013 15:33:09 -0700
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org
+Message-ID: <f8b2c6f6-6f00-4966-9d95-56d7ef3eb626@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+I think we will need to map the uart explicitly, which is complex as that in turn implies seeing up something like the fixmap for the decompressor... not impossible but additional complexity to be sure.  At least on 64 bits the high half should not conflict with any physical addresses.
 
-On 07/13/2013 11:58 AM, Arnd Bergmann wrote:
+Either that or be able to add pagetables to map the mmio directly or via a #PF handler like we already have in the early kernel.
 
->>> And are you sure you want to control this through sysfs?  There's no
->>> other better user/kernel apis for it?
+Yinghai Lu <yinghai@kernel.org> wrote:
 
->>      I found none, besides ioctl(), as the device driven is rather
->> unique. But I thought that sysfs is "ioctl() today", so I went with it...
+>On Sat, Jul 13, 2013 at 7:53 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 07/12/2013 11:47 PM, Yinghai Lu wrote:
+>>>
+>>> for 32 bit, that is ok.
+>>> for 64 bit via 32bit bootloader, arch/x86/boot/compressed/head_64.S
+>>> will set page table for first 4G still ok.
+>>> for 64 bit via 64bit loader, like kexec via bzImage64, First
+>Kernel/Kexec only
+>>> set ident mapping for usable range, so mmio just under 64 is not
+>mapped.
+>>>
+>>> Looks like we need to update boot.txt to add requirement for 64bit
+>bootloader
+>>> that 0-4G need to be all ident mapping?
+>>>
+>>
+>> I think that is an unrealistic requirement, especially if this is the
+>> sole user.
+>
+>That will cause regression for:
+>64bit system with kexec/kdump bzImage64.
+>if second kernel carry "console=uart,mmio,0xABCD0000"
+>
+>or we can extend kexec-tools to make it scan second kernel command line
+>string
+>and one entry into image->segment[]
+>
+>Yinghai
 
-> It does sound like it would fit better into IIO than just a misc driver,
-> even if it's the only hardware of its kind.
-
-    I got somewhat familiarized myself with drivers/iio/ infrastructure 
-and I have found a place only the for ADC device in which the customer 
-currently has no interest.
-    The other trouble is that I'll have to backport this driver to 3.4 
-which doesn't contain the IIO infrastructure at all. :-(
-
-> 	Arnd
-
-WBR, Sergei
-
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
