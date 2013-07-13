@@ -1,106 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab3GMCjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 22:39:06 -0400
-Received: from rcdn-iport-2.cisco.com ([173.37.86.73]:54960 "EHLO
-	rcdn-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab3GMCjE convert rfc822-to-8bit (ORCPT
+	id S1758100Ab3GMDGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 23:06:55 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:59724 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758078Ab3GMDGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 22:39:04 -0400
-X-Greylist: delayed 742 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Jul 2013 22:39:04 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag0FAJq64FGtJXG8/2dsb2JhbABagwY0T8FZgQ8WdIIlAQQnExQrEgEIIhQxEAElAgQIBgUIFQSHXAMPDK4aDYhejHqCODECBYMLbAOVc4MSiHmCBYUmgxKCKA
-X-IronPort-AV: E=Sophos;i="4.89,656,1367971200"; 
-   d="scan'208";a="234286485"
-From: "Hiral Patel (hiralpat)" <hiralpat@cisco.com>
-To: Camelia Groza <camelia.groza@gmail.com>
-CC: "Suma Ramars (sramars)" <sramars@cisco.com>,
-        "Brian Uchino (buchino)" <buchino@cisco.com>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fnic: use simple_open instead of fnic_trace_ctrl_open
-Thread-Topic: [PATCH] fnic: use simple_open instead of fnic_trace_ctrl_open
-Thread-Index: AQHOfswYYEtwtsccb0upODOj6hjVCZlhwY0A
-Date: Sat, 13 Jul 2013 02:26:12 +0000
-Message-ID: <DF334AB4E0858445841A5B5201E1C1B128A30FAF@xmb-rcd-x08.cisco.com>
-In-Reply-To: <1373611808-4959-1-git-send-email-camelia.groza@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.2.1.120420
-x-originating-ip: [10.155.160.249]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <6AB2DD2961C8FF4B8BF0670F32CE28A9@emea.cisco.com>
-Content-Transfer-Encoding: 8BIT
+	Fri, 12 Jul 2013 23:06:54 -0400
 MIME-Version: 1.0
+In-Reply-To: <1373594635-131067-4-git-send-email-holt@sgi.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+	<1373594635-131067-4-git-send-email-holt@sgi.com>
+Date: Fri, 12 Jul 2013 20:06:52 -0700
+X-Google-Sender-Auth: WO3CJRJl2LYGD8i5-oXb9TJwlNQ
+Message-ID: <CAE9FiQVUetPrrAgRWdeiTyp-tp=6afSuWY7aXkaucYifP7b++w@mail.gmail.com>
+Subject: Re: [RFC 3/4] Seperate page initialization into a separate function.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 7/11/13 11:50 PM, "Camelia Groza" <camelia.groza@gmail.com> wrote:
-
->This removes the open coded fnic_trace_ctrl_open() function
->and replaces file operations references to the function
->with simple_open() instead.
+On Thu, Jul 11, 2013 at 7:03 PM, Robin Holt <holt@sgi.com> wrote:
+> Currently, memmap_init_zone() has all the smarts for initializing a
+> single page.  When we convert to initializing pages in a 2MiB chunk,
+> we will need to do this equivalent work from two separate places
+> so we are breaking out a helper function.
 >
->Found using coccinelle.
+> Signed-off-by: Robin Holt <holt@sgi.com>
+> Signed-off-by: Nate Zimmer <nzimmer@sgi.com>
+> To: "H. Peter Anvin" <hpa@zytor.com>
+> To: Ingo Molnar <mingo@kernel.org>
+> Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+> Cc: Linux MM <linux-mm@kvack.org>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Mike Travis <travis@sgi.com>
+> Cc: Daniel J Blueman <daniel@numascale-asia.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Greg KH <gregkh@linuxfoundation.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/mm_init.c    |  2 +-
+>  mm/page_alloc.c | 75 +++++++++++++++++++++++++++++++++------------------------
+>  2 files changed, 45 insertions(+), 32 deletions(-)
 >
->Signed-off-by: Camelia Groza <camelia.groza@gmail.com>
->---
-> drivers/scsi/fnic/fnic_debugfs.c |   19 +------------------
-> 1 file changed, 1 insertion(+), 18 deletions(-)
+> diff --git a/mm/mm_init.c b/mm/mm_init.c
+> index c280a02..be8a539 100644
+> --- a/mm/mm_init.c
+> +++ b/mm/mm_init.c
+> @@ -128,7 +128,7 @@ void __init mminit_verify_pageflags_layout(void)
+>         BUG_ON(or_mask != add_mask);
+>  }
 >
->diff --git a/drivers/scsi/fnic/fnic_debugfs.c
->b/drivers/scsi/fnic/fnic_debugfs.c
->index cbcb012..ddc7e94 100644
->--- a/drivers/scsi/fnic/fnic_debugfs.c
->+++ b/drivers/scsi/fnic/fnic_debugfs.c
->@@ -25,23 +25,6 @@ static struct dentry *fnic_trace_debugfs_file;
-> static struct dentry *fnic_trace_enable;
-> 
-> /*
->- * fnic_trace_ctrl_open - Open the trace_enable file
->- * @inode: The inode pointer.
->- * @file: The file pointer to attach the trace enable/disable flag.
->- *
->- * Description:
->- * This routine opens a debugsfs file trace_enable.
->- *
->- * Returns:
->- * This function returns zero if successful.
->- */
->-static int fnic_trace_ctrl_open(struct inode *inode, struct file *filp)
->-{
->-	filp->private_data = inode->i_private;
->-	return 0;
->-}
->-
->-/*
->  * fnic_trace_ctrl_read - Read a trace_enable debugfs file
->  * @filp: The file pointer to read from.
->  * @ubuf: The buffer to copy the data to.
->@@ -222,7 +205,7 @@ static int fnic_trace_debugfs_release(struct inode
->*inode,
-> 
-> static const struct file_operations fnic_trace_ctrl_fops = {
-> 	.owner = THIS_MODULE,
->-	.open = fnic_trace_ctrl_open,
->+	.open = simple_open,
-> 	.read = fnic_trace_ctrl_read,
-> 	.write = fnic_trace_ctrl_write,
-> };
->-- 
->1.7.10.4
+> -void __meminit mminit_verify_page_links(struct page *page, enum zone_type zone,
+> +void mminit_verify_page_links(struct page *page, enum zone_type zone,
+>                         unsigned long nid, unsigned long pfn)
+>  {
+>         BUG_ON(page_to_nid(page) != nid);
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index c3edb62..635b131 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -697,6 +697,49 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+>         spin_unlock(&zone->lock);
+>  }
+>
+> +static void __init_single_page(struct page *page, unsigned long zone, int nid, int reserved)
+> +{
+> +       unsigned long pfn = page_to_pfn(page);
+> +       struct zone *z = &NODE_DATA(nid)->node_zones[zone];
+> +
+> +       set_page_links(page, zone, nid, pfn);
+> +       mminit_verify_page_links(page, zone, nid, pfn);
+> +       init_page_count(page);
+> +       page_mapcount_reset(page);
+> +       page_nid_reset_last(page);
+> +       if (reserved) {
+> +               SetPageReserved(page);
+> +       } else {
+> +               ClearPageReserved(page);
+> +               set_page_count(page, 0);
+> +       }
+> +       /*
+> +        * Mark the block movable so that blocks are reserved for
+> +        * movable at startup. This will force kernel allocations
+> +        * to reserve their blocks rather than leaking throughout
+> +        * the address space during boot when many long-lived
+> +        * kernel allocations are made. Later some blocks near
+> +        * the start are marked MIGRATE_RESERVE by
+> +        * setup_zone_migrate_reserve()
+> +        *
+> +        * bitmap is created for zone's valid pfn range. but memmap
+> +        * can be created for invalid pages (for alignment)
+> +        * check here not to call set_pageblock_migratetype() against
+> +        * pfn out of zone.
+> +        */
+> +       if ((z->zone_start_pfn <= pfn)
+> +           && (pfn < zone_end_pfn(z))
+> +           && !(pfn & (pageblock_nr_pages - 1)))
+> +               set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+> +
+> +       INIT_LIST_HEAD(&page->lru);
+> +#ifdef WANT_PAGE_VIRTUAL
+> +       /* The shift won't overflow because ZONE_NORMAL is below 4G. */
+> +       if (!is_highmem_idx(zone))
+> +               set_page_address(page, __va(pfn << PAGE_SHIFT));
+> +#endif
+> +}
+> +
+>  static bool free_pages_prepare(struct page *page, unsigned int order)
+>  {
+>         int i;
+> @@ -3934,37 +3977,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
+>                                 continue;
+>                 }
+>                 page = pfn_to_page(pfn);
+> -               set_page_links(page, zone, nid, pfn);
+> -               mminit_verify_page_links(page, zone, nid, pfn);
+> -               init_page_count(page);
+> -               page_mapcount_reset(page);
+> -               page_nid_reset_last(page);
+> -               SetPageReserved(page);
+> -               /*
+> -                * Mark the block movable so that blocks are reserved for
+> -                * movable at startup. This will force kernel allocations
+> -                * to reserve their blocks rather than leaking throughout
+> -                * the address space during boot when many long-lived
+> -                * kernel allocations are made. Later some blocks near
+> -                * the start are marked MIGRATE_RESERVE by
+> -                * setup_zone_migrate_reserve()
+> -                *
+> -                * bitmap is created for zone's valid pfn range. but memmap
+> -                * can be created for invalid pages (for alignment)
+> -                * check here not to call set_pageblock_migratetype() against
+> -                * pfn out of zone.
+> -                */
+> -               if ((z->zone_start_pfn <= pfn)
+> -                   && (pfn < zone_end_pfn(z))
+> -                   && !(pfn & (pageblock_nr_pages - 1)))
+> -                       set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+> -
+> -               INIT_LIST_HEAD(&page->lru);
+> -#ifdef WANT_PAGE_VIRTUAL
+> -               /* The shift won't overflow because ZONE_NORMAL is below 4G. */
+> -               if (!is_highmem_idx(zone))
+> -                       set_page_address(page, __va(pfn << PAGE_SHIFT));
+> -#endif
+> +               __init_single_page(page, zone, nid, 1);
 
-Acked-by: Hiral Patel <hiralpat@cisco.com>
+Can you
+move page = pfn_to_page(pfn) into __init_single_page
+and pass pfn directly?
 
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Yinghai
