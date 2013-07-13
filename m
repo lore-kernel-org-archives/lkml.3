@@ -1,190 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab3GMLVC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 07:21:02 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44379 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757711Ab3GMLVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 07:21:00 -0400
-Date: Sat, 13 Jul 2013 13:21:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] x86 updates for 3.11
-Message-ID: <alpine.DEB.2.02.1307131317350.11918@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752449Ab3GMLmZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 07:42:25 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37435 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100Ab3GMLmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 07:42:23 -0400
+Date: Sat, 13 Jul 2013 07:42:11 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Willy Tarreau <w@1wt.eu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130713114211.GA3112@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Willy Tarreau <w@1wt.eu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	stable <stable@vger.kernel.org>
+References: <20130711222935.GA11340@redhat.com>
+ <20130711224455.GA17222@kroah.com>
+ <20130712141530.GA3629@roeck-us.net>
+ <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+ <20130712173150.GA5534@roeck-us.net>
+ <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
+ <20130712195051.GB32054@1wt.eu>
+ <20130713062223.GA15155@kroah.com>
+ <20130713063607.GI32054@1wt.eu>
+ <20130713064801.GA1305@kroah.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-597968327-1373714462=:11918"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130713064801.GA1305@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, Jul 12, 2013 at 11:48:01PM -0700, Greg Kroah-Hartman wrote:
+> > It's the difference between "this is a fix" and "please backport this
+> > fix into stable". As we aid in this thread, cc:stable is a bit too much
+> > automatic and sometimes not appropriate (not important enough fixes).
+> 
+> No, I've never said that.
 
---8323329-597968327-1373714462=:11918
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+You've not said this, but Linus has.  Linus has pointed at the
+following words which are in stable_kernel_rules:
 
-Linus,
+ - It must fix a problem that causes a build error (but not for things
+   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
+   security issue, or some "oh, that's not good" issue.  In short, something
+   critical.                                             ^^^^^^^^^^^^^^^^^^^
+   ^^^^^^^^
 
-please pull the latest x86-urgent-for-linus git tree from:
+> I _want_ fixes in stable trees, as they are being done to, obviously,
+> fix problems.  So does Linus, why wouldn't a fix for something that is
+> an issue for someone _not_ go into his tree after -rc4?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+Linus has said he doesn't want fixes that aren't CRITICAL after -rc4.
 
-   * Guarantee IDT page alignment
-   * Revert an UEFI patch which caused a regression
-   * Add a missing check for EFI runtime services
-   * Fix for an x86 erratum where read access to nonexisting MSRs does
-     not result in a fault.
+So the problem is there's apparently a discrepancy between your
+standards for when a patch should hit stable, and Linus's criteria for
+post-rc4 inclusion.
 
-Thanks,
+Originally, this boundary for "nothing but regressions and critical
+fixes" was -rc3 at the latest, which is why I've sat on fixes after
+-rc2 has been released.  But since you've wanted these fixes, I would
+mark them stable, with the assumption that by the time I've completed
+all of the regression tests before the merge window, it would be fine
+for stable.
 
-	tglx
+Here's another real-life situation which is happening right now.  It's
+almost -rc1, and I've believe that discovered a potential ext4 bug
+fix.  It fixes a long-standing xfstest failure, that we've been trying
+to track down for several releases.  This is the sort of thing that
+stable enterprise distro's would want (eventually), since otherwise
+their help desks would be tearing their hair out with a
+hard-to-reproduce and hard-to-root-cause bug report from the field.
+I'll probably want to push out this fix to Linus, assuming it passes
+all of my regression tests --- especially since Linus has said he'll
+now take bug-fixes before -rc4.
 
------------------->
-H. Peter Anvin (1):
-      x86, suspend: Handle CPUs which fail to #GP on RDMSR
+But is this the sort of thing that we would want in stable right away?
+I was thinking that perhaps the right thing to do was to mark it with
+a "Fixes: v3.8" (indicating that eventually this may want to be sent
+to all stable kernel releases v3.8+), but perhaps it shouldn't be
+automatically scooped up for stable, at least until a week or two
+after 3.11 comes out and we're sure that the bug fix doesn't introduce
+some other regression.
 
-Kees Cook (1):
-      x86: Make sure IDT is page aligned
+I'll note that technically this fix might not meet the "something
+critical" test in stable_kernel_rules, since it only occurs under
+extreme memory pressure, and it's otherwise extraordinarily hard to
+reproduce (but this is why it's extraordinarily expensive for
+enterprise distros to root cause these sorts of problem when they are
+reported from the field).
 
-Matt Fleming (2):
-      efivars: check for EFI_RUNTIME_SERVICES
-      Revert "UEFI: Don't pass boot services regions to SetVirtualAddressMap()"
+> I _should_ be seeing more patches marked for stable showing up after
+> -rc3 then for -rc1.  As it is, I think there's something wrong with
+> maintainers relying on me to do their work for them too much, and it's
+> finally pushed me to start complaining and pushing back.
 
-Xiong Zhou (1):
-      x86/platform/ce4100: Add header file for reboot type
+How about this?  If patches marked for stable show up after 3.11-rc2,
+or 3.11-rc3, could they not get automatically scooped up until a week
+after 3.11 comes out?  If a post-rc2 patch shows up in 3.10.x before
+3.11 comes out, and it is not a __critical__ bug fix, I would be
+really uncomfortable about accidentally introducing a regression into
+the stable kernel tree --- at least for a subsystem like ext4, where a
+regression might lead to data corruption (which generally makes users
+a lot more cranky than a bug in some random graphics driver which just
+causes their system to reboot.)
 
+If it's critical, I'll explicitly send it to stable@vger.kernel.org;
+but if it's not critical, I really would like more soak time in
+mainline before it gets picked up for stable.  If you don't think this
+is appropriate for all subsystems, maybe it could be a per-subsystem
+policy --- but I really think this is a good idea for everyone.
 
- arch/x86/kernel/acpi/sleep.c      |   18 ++++++++++++++++--
- arch/x86/kernel/head_64.S         |    4 ----
- arch/x86/kernel/traps.c           |    7 ++-----
- arch/x86/platform/ce4100/ce4100.c |    1 +
- arch/x86/platform/efi/efi.c       |    7 -------
- drivers/firmware/efi/efivars.c    |    3 +++
- 6 files changed, 22 insertions(+), 18 deletions(-)
+Regards,
 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 2a34aaf..3312010 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -48,9 +48,20 @@ int x86_acpi_suspend_lowlevel(void)
- #ifndef CONFIG_64BIT
- 	native_store_gdt((struct desc_ptr *)&header->pmode_gdt);
- 
-+	/*
-+	 * We have to check that we can write back the value, and not
-+	 * just read it.  At least on 90 nm Pentium M (Family 6, Model
-+	 * 13), reading an invalid MSR is not guaranteed to trap, see
-+	 * Erratum X4 in "Intel Pentium M Processor on 90 nm Process
-+	 * with 2-MB L2 Cache and Intel® Processor A100 and A110 on 90
-+	 * nm process with 512-KB L2 Cache Specification Update".
-+	 */
- 	if (!rdmsr_safe(MSR_EFER,
- 			&header->pmode_efer_low,
--			&header->pmode_efer_high))
-+			&header->pmode_efer_high) &&
-+	    !wrmsr_safe(MSR_EFER,
-+			header->pmode_efer_low,
-+			header->pmode_efer_high))
- 		header->pmode_behavior |= (1 << WAKEUP_BEHAVIOR_RESTORE_EFER);
- #endif /* !CONFIG_64BIT */
- 
-@@ -61,7 +72,10 @@ int x86_acpi_suspend_lowlevel(void)
- 	}
- 	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
- 			&header->pmode_misc_en_low,
--			&header->pmode_misc_en_high))
-+			&header->pmode_misc_en_high) &&
-+	    !wrmsr_safe(MSR_IA32_MISC_ENABLE,
-+			header->pmode_misc_en_low,
-+			header->pmode_misc_en_high))
- 		header->pmode_behavior |=
- 			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
- 	header->realmode_flags = acpi_realmode_flags;
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 5e4d8a8..317b8cc 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -514,10 +514,6 @@ ENTRY(phys_base)
- 	
- 	.section .bss, "aw", @nobits
- 	.align L1_CACHE_BYTES
--ENTRY(idt_table)
--	.skip IDT_ENTRIES * 16
--
--	.align L1_CACHE_BYTES
- ENTRY(debug_idt_table)
- 	.skip IDT_ENTRIES * 16
- 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b0865e8..0952614 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -68,13 +68,10 @@
- #include <asm/setup.h>
- 
- asmlinkage int system_call(void);
-+#endif
- 
--/*
-- * The IDT has to be page-aligned to simplify the Pentium
-- * F0 0F bug workaround.
-- */
-+/* The IDT has to be page-aligned to keep it aligned with its fixmap. */
- gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
--#endif
- 
- DECLARE_BITMAP(used_vectors, NR_VECTORS);
- EXPORT_SYMBOL_GPL(used_vectors);
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index f8ab494..9962015 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -14,6 +14,7 @@
- #include <linux/module.h>
- #include <linux/serial_reg.h>
- #include <linux/serial_8250.h>
-+#include <linux/reboot.h>
- 
- #include <asm/ce4100.h>
- #include <asm/prom.h>
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c8d5577..90f6ed1 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -931,13 +931,6 @@ void __init efi_enter_virtual_mode(void)
- 			va = efi_ioremap(md->phys_addr, size,
- 					 md->type, md->attribute);
- 
--		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
--			if (!va)
--				pr_err("ioremap of 0x%llX failed!\n",
--				       (unsigned long long)md->phys_addr);
--			continue;
--		}
--
- 		md->virt_addr = (u64) (unsigned long) va;
- 
- 		if (!va) {
-diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
-index 8bd1bb6..8a7432a 100644
---- a/drivers/firmware/efi/efivars.c
-+++ b/drivers/firmware/efi/efivars.c
-@@ -583,6 +583,9 @@ int efivars_sysfs_init(void)
- 	struct kobject *parent_kobj = efivars_kobject();
- 	int error = 0;
- 
-+	if (!efi_enabled(EFI_RUNTIME_SERVICES))
-+		return -ENODEV;
-+
- 	/* No efivars has been registered yet */
- 	if (!parent_kobj)
- 		return 0;
---8323329-597968327-1373714462=:11918--
+						- Ted
+
+P.S.  Maybe this is a grey area that you're not worried about, and
+you're actually getting more cranky about people labelling whitespace
+fixes with stable@vger.kernel.org.  My personal policy is those sorts
+of changes should *** NEVER *** be sent to the stable kernel series,
+regardless of when they hit either my tree or mainline....
