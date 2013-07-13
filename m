@@ -1,538 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab3GMSzf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 14:55:35 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:52301 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933399Ab3GMSzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 14:55:15 -0400
-Date: Sat, 13 Jul 2013 11:55:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.10.1
-Message-ID: <20130713185516.GB673@kroah.com>
-References: <20130713185503.GA673@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130713185503.GA673@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933355Ab3GMTdu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 15:33:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11733 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752316Ab3GMTds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 15:33:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,660,1367996400"; 
+   d="scan'208";a="267931681"
+Message-ID: <1373744026.3475.122.camel@envy.home>
+Subject: Re: [PATCH 3/3] pch_gbe: Add MinnowBoard support
+From: Darren Hart <dvhart@linux.intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        netdev@vger.kernel.org, stable@vger.kernel.org
+Date: Sat, 13 Jul 2013 12:33:46 -0700
+In-Reply-To: <20130713170914.GA3837@kroah.com>
+References: <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
+	 <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
+	 <20130713011731.GA17939@kroah.com> <1373694381.3475.95.camel@envy.home>
+	 <20130713062631.GB15155@kroah.com> <1373731681.3475.113.camel@envy.home>
+	 <20130713170914.GA3837@kroah.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-07-13 at 10:09 -0700, Greg KH wrote:
+> On Sat, Jul 13, 2013 at 09:08:01AM -0700, Darren Hart wrote:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ad7e322..48c7480 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7667,6 +7667,7 @@ STABLE BRANCH
- M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- L:	stable@vger.kernel.org
- S:	Supported
-+F:	Documentation/stable_kernel_rules.txt
- 
- STAGING SUBSYSTEM
- M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-diff --git a/Makefile b/Makefile
-index e5e3ba0..b75cc30 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 10
--SUBLEVEL = 0
-+SUBLEVEL = 1
- EXTRAVERSION =
- NAME = Unicycling Gorilla
- 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 260a919..5402c94 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3399,15 +3399,22 @@ static void vmx_get_segment(struct kvm_vcpu *vcpu,
- 	var->limit = vmx_read_guest_seg_limit(vmx, seg);
- 	var->selector = vmx_read_guest_seg_selector(vmx, seg);
- 	ar = vmx_read_guest_seg_ar(vmx, seg);
-+	var->unusable = (ar >> 16) & 1;
- 	var->type = ar & 15;
- 	var->s = (ar >> 4) & 1;
- 	var->dpl = (ar >> 5) & 3;
--	var->present = (ar >> 7) & 1;
-+	/*
-+	 * Some userspaces do not preserve unusable property. Since usable
-+	 * segment has to be present according to VMX spec we can use present
-+	 * property to amend userspace bug by making unusable segment always
-+	 * nonpresent. vmx_segment_access_rights() already marks nonpresent
-+	 * segment as unusable.
-+	 */
-+	var->present = !var->unusable;
- 	var->avl = (ar >> 12) & 1;
- 	var->l = (ar >> 13) & 1;
- 	var->db = (ar >> 14) & 1;
- 	var->g = (ar >> 15) & 1;
--	var->unusable = (ar >> 16) & 1;
- }
- 
- static u64 vmx_get_segment_base(struct kvm_vcpu *vcpu, int seg)
-diff --git a/block/genhd.c b/block/genhd.c
-index 20625ee..cdeb527 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -512,7 +512,7 @@ static void register_disk(struct gendisk *disk)
- 
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
-diff --git a/crypto/algapi.c b/crypto/algapi.c
-index 6149a6e..7a1ae87 100644
---- a/crypto/algapi.c
-+++ b/crypto/algapi.c
-@@ -495,7 +495,8 @@ static struct crypto_template *__crypto_lookup_template(const char *name)
- 
- struct crypto_template *crypto_lookup_template(const char *name)
- {
--	return try_then_request_module(__crypto_lookup_template(name), name);
-+	return try_then_request_module(__crypto_lookup_template(name), "%s",
-+				       name);
- }
- EXPORT_SYMBOL_GPL(crypto_lookup_template);
- 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 037288e..46b35f7 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -714,7 +714,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 		else
- 			blk_queue_flush(nbd->disk->queue, 0);
- 
--		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
-+		thread = kthread_create(nbd_thread, nbd, "%s",
-+					nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
- 			return PTR_ERR(thread);
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index d620b44..8a3aff7 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2882,7 +2882,7 @@ static noinline int mmc_ioctl_cdrom_read_data(struct cdrom_device_info *cdi,
- 	if (lba < 0)
- 		return -EINVAL;
- 
--	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-+	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
- 	if (cgc->buffer == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index fb65dec..591b6fb 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -349,6 +349,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
- 
- 	switch (action) {
- 	case CPU_ONLINE:
-+	case CPU_ONLINE_FROZEN:
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index fefc39f..98de1dd 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -450,7 +450,7 @@ static void uevent_notify(struct charger_manager *cm, const char *event)
- 	strncpy(env_str, event, UEVENT_BUF_SIZE);
- 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
- 
--	dev_info(cm->dev, event);
-+	dev_info(cm->dev, "%s", event);
- }
- 
- /**
-diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-index 0fab6b5..9d86947 100644
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -485,7 +485,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index c1c5552..6f6a1b4 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -142,7 +142,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
- 	char *buffer_data;
- 	struct scsi_mode_data data;
- 	struct scsi_sense_hdr sshdr;
--	const char *temp = "temporary ";
-+	static const char temp[] = "temporary ";
- 	int len;
- 
- 	if (sdp->type != TYPE_DISK)
-diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 26e3a97..c52948b 100644
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -4797,10 +4797,6 @@ static struct pci_device_id serial_pci_tbl[] = {
- 		PCI_VENDOR_ID_IBM, 0x0299,
- 		0, 0, pbn_b0_bt_2_115200 },
- 
--	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
--		0x1000, 0x0012,
--		0, 0, pbn_b0_bt_2_115200 },
--
- 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
- 		0xA000, 0x1000,
- 		0, 0, pbn_b0_1_115200 },
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 6464029..4476682 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1618,6 +1618,8 @@ static void release_tty(struct tty_struct *tty, int idx)
- 	tty_free_termios(tty);
- 	tty_driver_remove_tty(tty->driver, tty);
- 	tty->port->itty = NULL;
-+	if (tty->link)
-+		tty->link->port->itty = NULL;
- 	cancel_work_sync(&tty->port->buf.work);
- 
- 	if (tty->link)
-diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
-index 9b6b2b6..be661d8 100644
---- a/fs/ceph/xattr.c
-+++ b/fs/ceph/xattr.c
-@@ -675,17 +675,18 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
- 	if (!ceph_is_valid_xattr(name))
- 		return -ENODATA;
- 
--	spin_lock(&ci->i_ceph_lock);
--	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
--	     ci->i_xattrs.version, ci->i_xattrs.index_version);
- 
- 	/* let's see if a virtual xattr was requested */
- 	vxattr = ceph_match_vxattr(inode, name);
- 	if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
- 		err = vxattr->getxattr_cb(ci, value, size);
--		goto out;
-+		return err;
- 	}
- 
-+	spin_lock(&ci->i_ceph_lock);
-+	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
-+	     ci->i_xattrs.version, ci->i_xattrs.index_version);
-+
- 	if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 1) &&
- 	    (ci->i_xattrs.index_version >= ci->i_xattrs.version)) {
- 		goto get_xattr;
-diff --git a/fs/hpfs/map.c b/fs/hpfs/map.c
-index 4acb19d..803d3da 100644
---- a/fs/hpfs/map.c
-+++ b/fs/hpfs/map.c
-@@ -17,7 +17,8 @@ __le32 *hpfs_map_bitmap(struct super_block *s, unsigned bmp_block,
- 			 struct quad_buffer_head *qbh, char *id)
- {
- 	secno sec;
--	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
-+	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
-+	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
- 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
- 		return NULL;
- 	}
-diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
-index a0617e7..962e90c 100644
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -558,7 +558,13 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
- 	sbi->sb_cp_table = NULL;
- 	sbi->sb_c_bitmap = -1;
- 	sbi->sb_max_fwd_alloc = 0xffffff;
--	
-+
-+	if (sbi->sb_fs_size >= 0x80000000) {
-+		hpfs_error(s, "invalid size in superblock: %08x",
-+			(unsigned)sbi->sb_fs_size);
-+		goto bail4;
-+	}
-+
- 	/* Load bitmap directory */
- 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
- 		goto bail4;
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index 1fab140..2c37442 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -228,19 +228,8 @@ static int nfs41_setup_state_renewal(struct nfs_client *clp)
- 	return status;
- }
- 
--/*
-- * Back channel returns NFS4ERR_DELAY for new requests when
-- * NFS4_SESSION_DRAINING is set so there is no work to be done when draining
-- * is ended.
-- */
--static void nfs4_end_drain_session(struct nfs_client *clp)
-+static void nfs4_end_drain_slot_table(struct nfs4_slot_table *tbl)
- {
--	struct nfs4_session *ses = clp->cl_session;
--	struct nfs4_slot_table *tbl;
--
--	if (ses == NULL)
--		return;
--	tbl = &ses->fc_slot_table;
- 	if (test_and_clear_bit(NFS4_SLOT_TBL_DRAINING, &tbl->slot_tbl_state)) {
- 		spin_lock(&tbl->slot_tbl_lock);
- 		nfs41_wake_slot_table(tbl);
-@@ -248,6 +237,16 @@ static void nfs4_end_drain_session(struct nfs_client *clp)
- 	}
- }
- 
-+static void nfs4_end_drain_session(struct nfs_client *clp)
-+{
-+	struct nfs4_session *ses = clp->cl_session;
-+
-+	if (ses != NULL) {
-+		nfs4_end_drain_slot_table(&ses->bc_slot_table);
-+		nfs4_end_drain_slot_table(&ses->fc_slot_table);
-+	}
-+}
-+
- /*
-  * Signal state manager thread if session fore channel is drained
-  */
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 6cd86e0..582321a 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -162,8 +162,8 @@ static __be32 *read_buf(struct nfsd4_compoundargs *argp, u32 nbytes)
- 	 */
- 	memcpy(p, argp->p, avail);
- 	/* step to next page */
--	argp->p = page_address(argp->pagelist[0]);
- 	argp->pagelist++;
-+	argp->p = page_address(argp->pagelist[0]);
- 	if (argp->pagelen < PAGE_SIZE) {
- 		argp->end = argp->p + (argp->pagelen>>2);
- 		argp->pagelen = 0;
-diff --git a/include/linux/ceph/decode.h b/include/linux/ceph/decode.h
-index 379f715..0442c3d 100644
---- a/include/linux/ceph/decode.h
-+++ b/include/linux/ceph/decode.h
-@@ -160,11 +160,6 @@ static inline void ceph_decode_timespec(struct timespec *ts,
- static inline void ceph_encode_timespec(struct ceph_timespec *tv,
- 					const struct timespec *ts)
- {
--	BUG_ON(ts->tv_sec < 0);
--	BUG_ON(ts->tv_sec > (__kernel_time_t)U32_MAX);
--	BUG_ON(ts->tv_nsec < 0);
--	BUG_ON(ts->tv_nsec > (long)U32_MAX);
--
- 	tv->tv_sec = cpu_to_le32((u32)ts->tv_sec);
- 	tv->tv_nsec = cpu_to_le32((u32)ts->tv_nsec);
- }
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 6b4890f..feaf0c7 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -358,6 +358,17 @@ static inline int hstate_index(struct hstate *h)
- 	return h - hstates;
- }
- 
-+pgoff_t __basepage_index(struct page *page);
-+
-+/* Return page->index in PAGE_SIZE units */
-+static inline pgoff_t basepage_index(struct page *page)
-+{
-+	if (!PageCompound(page))
-+		return page->index;
-+
-+	return __basepage_index(page);
-+}
-+
- #else	/* CONFIG_HUGETLB_PAGE */
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -378,6 +389,11 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
- }
- #define hstate_index_to_shift(index) 0
- #define hstate_index(h) 0
-+
-+static inline pgoff_t basepage_index(struct page *page)
-+{
-+	return page->index;
-+}
- #endif	/* CONFIG_HUGETLB_PAGE */
- 
- #endif /* _LINUX_HUGETLB_H */
-diff --git a/kernel/futex.c b/kernel/futex.c
-index b26dcfc..49dacfb 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -61,6 +61,7 @@
- #include <linux/nsproxy.h>
- #include <linux/ptrace.h>
- #include <linux/sched/rt.h>
-+#include <linux/hugetlb.h>
- 
- #include <asm/futex.h>
- 
-@@ -365,7 +366,7 @@ again:
- 	} else {
- 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
- 		key->shared.inode = page_head->mapping->host;
--		key->shared.pgoff = page_head->index;
-+		key->shared.pgoff = basepage_index(page);
- 	}
- 
- 	get_futex_key_refs(key);
-diff --git a/kernel/module.c b/kernel/module.c
-index cab4bce..fa53db8 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2927,7 +2927,6 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
- {
- 	/* Module within temporary copy. */
- 	struct module *mod;
--	Elf_Shdr *pcpusec;
- 	int err;
- 
- 	mod = setup_load_info(info, flags);
-@@ -2942,17 +2941,10 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
- 	err = module_frob_arch_sections(info->hdr, info->sechdrs,
- 					info->secstrings, mod);
- 	if (err < 0)
--		goto out;
-+		return ERR_PTR(err);
- 
--	pcpusec = &info->sechdrs[info->index.pcpu];
--	if (pcpusec->sh_size) {
--		/* We have a special allocation for this section. */
--		err = percpu_modalloc(mod,
--				      pcpusec->sh_size, pcpusec->sh_addralign);
--		if (err)
--			goto out;
--		pcpusec->sh_flags &= ~(unsigned long)SHF_ALLOC;
--	}
-+	/* We will do a special allocation for per-cpu sections later. */
-+	info->sechdrs[info->index.pcpu].sh_flags &= ~(unsigned long)SHF_ALLOC;
- 
- 	/* Determine total sizes, and put offsets in sh_entsize.  For now
- 	   this is done generically; there doesn't appear to be any
-@@ -2963,17 +2955,22 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
- 	/* Allocate and move to the final place */
- 	err = move_module(mod, info);
- 	if (err)
--		goto free_percpu;
-+		return ERR_PTR(err);
- 
- 	/* Module has been copied to its final place now: return it. */
- 	mod = (void *)info->sechdrs[info->index.mod].sh_addr;
- 	kmemleak_load_module(mod, info);
- 	return mod;
-+}
- 
--free_percpu:
--	percpu_modfree(mod);
--out:
--	return ERR_PTR(err);
-+static int alloc_module_percpu(struct module *mod, struct load_info *info)
-+{
-+	Elf_Shdr *pcpusec = &info->sechdrs[info->index.pcpu];
-+	if (!pcpusec->sh_size)
-+		return 0;
-+
-+	/* We have a special allocation for this section. */
-+	return percpu_modalloc(mod, pcpusec->sh_size, pcpusec->sh_addralign);
- }
- 
- /* mod is no longer valid after this! */
-@@ -3237,6 +3234,11 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 	}
- #endif
- 
-+	/* To avoid stressing percpu allocator, do this once we're unique. */
-+	err = alloc_module_percpu(mod, info);
-+	if (err)
-+		goto unlink_mod;
-+
- 	/* Now module is in final location, initialize linked lists, etc. */
- 	err = module_unload_init(mod);
- 	if (err)
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e2bfbf7..5cf99bf 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -690,6 +690,23 @@ int PageHuge(struct page *page)
- }
- EXPORT_SYMBOL_GPL(PageHuge);
- 
-+pgoff_t __basepage_index(struct page *page)
-+{
-+	struct page *page_head = compound_head(page);
-+	pgoff_t index = page_index(page_head);
-+	unsigned long compound_idx;
-+
-+	if (!PageHuge(page_head))
-+		return page_index(page);
-+
-+	if (compound_order(page_head) >= MAX_ORDER)
-+		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
-+	else
-+		compound_idx = page - page_head;
-+
-+	return (index << compound_order(page_head)) + compound_idx;
-+}
-+
- static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
- {
- 	struct page *page;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1947218..fd79df5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6303,8 +6303,6 @@ mem_cgroup_css_online(struct cgroup *cont)
- 		 * call __mem_cgroup_free, so return directly
- 		 */
- 		mem_cgroup_put(memcg);
--		if (parent->use_hierarchy)
--			mem_cgroup_put(parent);
- 	}
- 	return error;
- }
-diff --git a/net/ceph/auth_none.c b/net/ceph/auth_none.c
-index 925ca58..8c93fa8 100644
---- a/net/ceph/auth_none.c
-+++ b/net/ceph/auth_none.c
-@@ -39,6 +39,11 @@ static int should_authenticate(struct ceph_auth_client *ac)
- 	return xi->starting;
- }
- 
-+static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
-+{
-+	return 0;
-+}
-+
- /*
-  * the generic auth code decode the global_id, and we carry no actual
-  * authenticate state, so nothing happens here.
-@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops ceph_auth_none_ops = {
- 	.destroy = destroy,
- 	.is_authenticated = is_authenticated,
- 	.should_authenticate = should_authenticate,
-+	.build_request = build_request,
- 	.handle_reply = handle_reply,
- 	.create_authorizer = ceph_auth_none_create_authorizer,
- 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
+...
+> > I was looking at it as a quirk:
+> > 
+> > " - New device IDs and quirks are also accepted."
+> > 
+> > I even considered implementation as a pci quirk. I didn't because the
+> > PHY work needed to happen too late during probe. The frustrating thing
+> > is there is probably 15 lines of code that are needed to get it to
+> > work, all the rest is infrastructure to make it generic.
+> 
+> 163 lines of code is not a "quirk" I can accept.  When I wrote, "new
+> device ids or quirks can be accpted for stable", I meant things like
+> commit 9e9dd0e889c76c786e8f2e164c825c3c06dea30c.  That's acceptable.
+> Not thing huge thing.
+
+Got it. I was confused on "new device IDs and quirks" versus "support
+for new hardware". My fault, that's clear now. 
+
+...
+> > I get the size argument. It's too big. The docs say 100 lines with
+> > context, I've seen much larger go in... I just wasn't sure where the
+> > line is. It seems things are getting more strict here, not less. OK.
+> > Lesson learned.
+> 
+> You have seen larger "quirks" than this go into the stable tree?
+> Examples for where I've been sleeping on the job would be good.
+
+No, sorry, I just meant patches larger than 100 lines with context,
+that's all.
+
+...
+> > > This isn't going to land in Linus's tree until 3.12 anyway, so what's
+> > > the rush?
+> > 
+> > My reasoning is that the BSP for this is based on 3.8. I would like to
+> > bring 3.8 in sync with master for support of this board so I can update
+> > the release BSP to use the same sources. People can use my code from
+> > the linux-yocto_3.8 standard/minnow branch, but it would be preferable
+> > if that code was also destined for upstream.
+> 
+> That's your choice to pick 3.8, not upstream's (and frankly, not
+> something that I would have picked, but that's another topic...)
+
+Maybe we can catch up at LPC or something, I'd like to hear your
+thoughts on that. Of course there are a lot of factors that go into
+that decision, and the bulk of it is consolidating effort on a single
+tree across BSPs in a project that has a 6 month release cadence.
+
+...
+> You are adding functionality for new devices that take much more than a
+> simple "add an id to a table", so no, it's not ok for stable releases.
+
+Got it, I'll drop the stable lines from the subsequent versions and
+keep that in mind for future projects. I'm trying to think if I can
+polish up the docs to help clarify things, thinking on it.
+
+Thank you Greg.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
+
