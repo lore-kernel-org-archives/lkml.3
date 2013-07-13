@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933269Ab3GMNuW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 09:50:22 -0400
-Received: from mout.gmx.net ([212.227.17.22]:65183 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab3GMNuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 09:50:21 -0400
-Message-ID: <51E15B11.4070907@gmx.de>
-Date: Sat, 13 Jul 2013 15:50:09 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
+	id S964778Ab3GMObF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 10:31:05 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:36314 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932571Ab3GMObD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 10:31:03 -0400
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: rjw@sisk.pl, viresh.kumar@linaro.org, robert.jarzmik@intel.com,
-        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
-        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <51E11C82.8000805@gmx.de>
-In-Reply-To: <51E11C82.8000805@gmx.de>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:rQQRkwIfJ/CDS1yxdBW8SsFecyRXcR0ybC7X2zbTICCYCrSqg8x
- m7nt5mrFDlQf6LeVwi5Q7RXxOi09AQMMvMVYGwVGnGDDFFpNacW9yDfyck1yaettWUU6dH4
- SNtq9vcg7wUktMJXwLFJSXGE0y27p74jVnEhkCvx9ageQAcclBiZFiZSHqSPS2WNZSgAN26
- Fpm1KO0w5wscmvPgHg9sA==
+In-Reply-To: <CAN1soZzQz8PaHOwNf-Ec6G=ahhx_P8gaaX4fQnpX-Mqrepk_7g@mail.gmail.com>
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
+	<1373352166-10064-2-git-send-email-zhangwm@marvell.com>
+	<20130709124900.GG11908@titan.lakedaemon.net>
+	<CAN1soZxiOh6TpbUOCUzK8gNwmvjbT3ihkUWaw8tuZ7md+NVA2g@mail.gmail.com>
+	<20130710122433.GO11908@titan.lakedaemon.net>
+	<CAN1soZzMvront1-jcBW6-uRKNs0OZNGnmiOjKGZSM28bViB_8A@mail.gmail.com>
+	<20130710215041.GR11908@titan.lakedaemon.net>
+	<CAN1soZzuiukY9qASFNcH0k=zH8=uT=71bKejPss44FCzNy=X-A@mail.gmail.com>
+	<CAMLZHHQGZvDssY-YxQ3ZW8FYhpG-H1-VbokOid33socRSPrMNw@mail.gmail.com>
+	<CAN1soZzQz8PaHOwNf-Ec6G=ahhx_P8gaaX4fQnpX-Mqrepk_7g@mail.gmail.com>
+Date: Sat, 13 Jul 2013 08:30:59 -0600
+X-Google-Sender-Auth: ne0Uewe56YB_jsXY4OAiL6I6xLA
+Message-ID: <CAMLZHHSDu+zgumVtWeU8yGiJ8Wmp3TQJbEc6u54LziOC5oXPeQ@mail.gmail.com>
+Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+From: Daniel Drake <dsd@laptop.org>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Bergmann Arnd <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Neil Zhang <zhangwm@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2013 11:23 AM, Toralf Förster wrote:
-> On 07/12/2013 12:15 AM, Srivatsa S. Bhat wrote:
->> And I'd of course appreciate to hear from Dirk, Tianyu and Toralf to know
->> whether their systems work fine after:
->> a. applying only the first commit (this is what gets backported to stable)
-> 
-> applied on top of straight 3.10 .0 : Breaks my system completely -
+On Fri, Jul 12, 2013 at 6:35 PM, Haojian Zhuang
+<haojian.zhuang@gmail.com> wrote:
+> These patches couldn't be applied. Since we're moving irq drivers from arch
+> directories to irq directories.
 
-overlooked, that the 8 patches are 3.11/3.12 material - but nevertheless :
+It does not seem in line with the collaborative manner of kernel
+development to block my patches for a whole month because they
+conflict with your own private patches which do not exist for anyone
+else (at least I searched and couldn't find them).
 
-Applied 1/8 on top of v3.10-9289-g9903883 brought same bad picture as
-described for 3.10.0
+Please, either post your patches immediately (I will help review), or
+review mine and figure out how to handle any conflict with your own
+work afterwards.
 
-And applying patches 1-8 on top of that commit id just gives the same
-pciture - systems hangs during s2ram completly
+> When the irq patches are applied, you can rebase your patches.
 
+2 of the pending patches don't touch the irq stuff anyway.
 
-> trying s2ram just blanks the console, lets the power led blinking,
-> neither sys-rq nor anything else worked now, no output to console nor to
-> syslog
-> 
->> b. applying all the commits
-> patch 2#8 doesn't apply at 3.10.0 (neither after patch 1#8 nor directly)
-
-I attached the .config I'm using for my tests
-(/me wonders if it is worth to notice, that it is a 32bit system booted
-from an external USB drive ?)
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Daniel
