@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab3GMBPB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 21:15:01 -0400
-Received: from oker.escape.de ([194.120.234.254]:48529 "EHLO oker.escape.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757972Ab3GMBO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 21:14:59 -0400
-X-Greylist: delayed 875 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Jul 2013 21:14:58 EDT
-Date: Sat, 13 Jul 2013 02:47:07 +0200
-From: Jochen Striepe <jochen@tolot.escape.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130713004707.GF7609@pompeji.miese-zwerge.org>
-References: <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712181103.GA6689@roeck-us.net>
- <20130712193557.GB342@thunk.org>
- <1373658551.17876.117.camel@gandalf.local.home>
- <20130712201939.GB15261@redhat.com>
- <1373660900.17876.124.camel@gandalf.local.home>
+	id S1758045Ab3GMBPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 21:15:24 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:46361 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757993Ab3GMBPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 21:15:22 -0400
+Message-ID: <51E0AA24.6070203@cogentembedded.com>
+Date: Sat, 13 Jul 2013 05:15:16 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373660900.17876.124.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH] misc: add driver for Renesas R-Car Gyro-ADC/speed-pulse
+ interfaces
+References: <201307130351.42967.sergei.shtylyov@cogentembedded.com> <20130713005702.GA14788@kroah.com>
+In-Reply-To: <20130713005702.GA14788@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hello,
+Hello.
 
-On Fri, Jul 12, 2013 at 04:28:20PM -0400, Steven Rostedt wrote:
-> I would suspect that machines that allow unprivileged users would be
-> running distro kernels, and not the latest release from Linus, and thus
-> even a bug that "can allow an unprivileged user to crash the kernel" may
-> still be able to sit around for a month before being submitted.
-> 
-> This wouldn't be the case if the bug was in older kernels that are being
-> used.
+    Can't get to sleep, sigh...
 
-On the one hand, you seem to want users with any kind of production
-systems to use distro kernels. On the other hand, developers want
-a broad testing base, with vanilla kernels (or better, rc) as early
-as possible. You cannot get both at the same time, some kinds of bugs
-just appear on production systems.
+On 07/13/2013 04:57 AM, Greg KH wrote:
 
-Users expect vanilla .0 releases usable as production systems, to
-be updated (meaning, no new features, just stabilizing) with the
-corresponding -stable series.
+>> Add the driver for Gyro-ADC/speed-pulse interfaces found in Renesas R-Car SoCs.
+>> Though  being two separate devices, they have to be driven together because of
+>> the shared start/stop register (located in Gyro-ADC still). At this time, only
+>> speed-pulse interface is fully supported, the Gyro-ADC is just initialized and
+>> started/stopped synchronously with the speed-pulse interface.  A user interface
+>> is implemented via several sysfs files which allow to read and reset the speed-
+>> pulse interface's registers.
 
-Just my 2p,
-Jochen.
+> If you modify/create/remove sysfs files, you also have to document them
+> in Documentation/ABI/ which is missing from this patch.
+
+    I've looked there and didn't find the documentation for my closest
+model driver, drivers/misc/ti_dac7512.c (or for many other drivers), so 
+I thought I too can do without it.
+
+> Your sysfs files are also being created in a "racy" way, i.e. after
+> userspace is told about the device, please fix that as well.
+
+    Not sure I understand you. Could you elaborate?
+
+> And are you sure you want to control this through sysfs?  There's no
+> other better user/kernel apis for it?
+
+    I found none, besides ioctl(), as the device driven is rather 
+unique. But I thought that sysfs is "ioctl() today", so I went with it...
+
+> thanks,
+
+> greg k-h
+
+WBR, Sergei
+
