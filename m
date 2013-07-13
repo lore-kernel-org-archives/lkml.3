@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3GMCAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 22:00:37 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:28723 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758027Ab3GMCAg (ORCPT
+	id S1758091Ab3GMCjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 22:39:06 -0400
+Received: from rcdn-iport-2.cisco.com ([173.37.86.73]:54960 "EHLO
+	rcdn-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab3GMCjE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 22:00:36 -0400
+	Fri, 12 Jul 2013 22:39:04 -0400
+X-Greylist: delayed 742 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Jul 2013 22:39:04 EDT
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgsPAL+z4FF5LK/r/2dsb2JhbABagwa9LoEihAcEAYENF3SCIwEBBTocMwgDGAkaCw8FJQMhARKIDrcTFo4wgSSDdwOXW4ojhyuBWYFLKg
-Date: Sat, 13 Jul 2013 12:00:30 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file:
- fs/xfs/xfs_dir2_sf.c, line: 358
-Message-ID: <20130713020030.GG3438@dastard>
-References: <20130712023930.GA6473@redhat.com>
+X-IronPort-Anti-Spam-Result: Ag0FAJq64FGtJXG8/2dsb2JhbABagwY0T8FZgQ8WdIIlAQQnExQrEgEIIhQxEAElAgQIBgUIFQSHXAMPDK4aDYhejHqCODECBYMLbAOVc4MSiHmCBYUmgxKCKA
+X-IronPort-AV: E=Sophos;i="4.89,656,1367971200"; 
+   d="scan'208";a="234286485"
+From: "Hiral Patel (hiralpat)" <hiralpat@cisco.com>
+To: Camelia Groza <camelia.groza@gmail.com>
+CC: "Suma Ramars (sramars)" <sramars@cisco.com>,
+        "Brian Uchino (buchino)" <buchino@cisco.com>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fnic: use simple_open instead of fnic_trace_ctrl_open
+Thread-Topic: [PATCH] fnic: use simple_open instead of fnic_trace_ctrl_open
+Thread-Index: AQHOfswYYEtwtsccb0upODOj6hjVCZlhwY0A
+Date: Sat, 13 Jul 2013 02:26:12 +0000
+Message-ID: <DF334AB4E0858445841A5B5201E1C1B128A30FAF@xmb-rcd-x08.cisco.com>
+In-Reply-To: <1373611808-4959-1-git-send-email-camelia.groza@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.2.1.120420
+x-originating-ip: [10.155.160.249]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <6AB2DD2961C8FF4B8BF0670F32CE28A9@emea.cisco.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712023930.GA6473@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 10:39:30PM -0400, Dave Jones wrote:
-> Just saw this during boot after an unclean shutdown. It hung afterwards.
+
+
+On 7/11/13 11:50 PM, "Camelia Groza" <camelia.groza@gmail.com> wrote:
+
+>This removes the open coded fnic_trace_ctrl_open() function
+>and replaces file operations references to the function
+>with simple_open() instead.
+>
+>Found using coccinelle.
+>
+>Signed-off-by: Camelia Groza <camelia.groza@gmail.com>
+>---
+> drivers/scsi/fnic/fnic_debugfs.c |   19 +------------------
+> 1 file changed, 1 insertion(+), 18 deletions(-)
+>
+>diff --git a/drivers/scsi/fnic/fnic_debugfs.c
+>b/drivers/scsi/fnic/fnic_debugfs.c
+>index cbcb012..ddc7e94 100644
+>--- a/drivers/scsi/fnic/fnic_debugfs.c
+>+++ b/drivers/scsi/fnic/fnic_debugfs.c
+>@@ -25,23 +25,6 @@ static struct dentry *fnic_trace_debugfs_file;
+> static struct dentry *fnic_trace_enable;
 > 
-> [   97.162665] XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file: fs/xfs/xfs_dir2_sf.c, line: 358
-....
-> [   97.173730]  [<ffffffffa0076953>] xfs_dir2_sf_addname+0x43/0x760 [xfs]
-> [   97.173743]  [<ffffffffa0067cfc>] xfs_dir_createname+0x15c/0x1b0 [xfs]
-> [   97.173754]  [<ffffffffa002f2dc>] xfs_create+0x4cc/0x710 [xfs]
-> [   97.173764]  [<ffffffffa00278ca>] xfs_vn_mknod+0x9a/0x1c0 [xfs]
-> [   97.173773]  [<ffffffffa0027a03>] xfs_vn_create+0x13/0x20 [xfs]
-> [   97.173776]  [<ffffffff811d100d>] vfs_create+0x9d/0x100
-> [   97.173778]  [<ffffffff811d1995>] do_last+0x925/0xe00
-> [   97.173780]  [<ffffffff811d1f2e>] path_openat+0xbe/0x6f0
-> [   97.173783]  [<ffffffff8109e33f>] ? local_clock+0x3f/0x50
-> [   97.173785]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
-> [   97.173787]  [<ffffffff811d2c3a>] do_filp_open+0x3a/0x90
-> [   97.173789]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
-> [   97.173790]  [<ffffffff811c0ddb>] do_sys_open+0x10b/0x200
-> [   97.173792]  [<ffffffff81010578>] ? syscall_trace_enter+0x18/0x290
-> [   97.173794]  [<ffffffff811c0eee>] SyS_open+0x1e/0x20
+> /*
+>- * fnic_trace_ctrl_open - Open the trace_enable file
+>- * @inode: The inode pointer.
+>- * @file: The file pointer to attach the trace enable/disable flag.
+>- *
+>- * Description:
+>- * This routine opens a debugsfs file trace_enable.
+>- *
+>- * Returns:
+>- * This function returns zero if successful.
+>- */
+>-static int fnic_trace_ctrl_open(struct inode *inode, struct file *filp)
+>-{
+>-	filp->private_data = inode->i_private;
+>-	return 0;
+>-}
+>-
+>-/*
+>  * fnic_trace_ctrl_read - Read a trace_enable debugfs file
+>  * @filp: The file pointer to read from.
+>  * @ubuf: The buffer to copy the data to.
+>@@ -222,7 +205,7 @@ static int fnic_trace_debugfs_release(struct inode
+>*inode,
 > 
-> This trace repeated a few times, then the same assertion was triggered from sys_renameat.
+> static const struct file_operations fnic_trace_ctrl_fops = {
+> 	.owner = THIS_MODULE,
+>-	.open = fnic_trace_ctrl_open,
+>+	.open = simple_open,
+> 	.read = fnic_trace_ctrl_read,
+> 	.write = fnic_trace_ctrl_write,
+> };
+>-- 
+>1.7.10.4
 
-That's rather curious. What this means is that there is either an
-EIO or EEXIST error being returned from xfs_dir2_sf_lookup() when a
-we're about to add the new entry. There are two things here - EIO
-can only be returned if a shutdown has occurred - are there any
-signs of a shutdown in the logs? If there is a shutdown in progress,
-then this is just unlucky to shutdown with an inode in an
-inconsistent state in memory that triggers this validity check
-failure.
+Acked-by: Hiral Patel <hiralpat@cisco.com>
 
-And EEXIST means that the initial lookup of the name during the open
-failed to find the entry we are now trying to create. i.e. the
-initial path walk failed to do the correct lookup on the directory,
-and so never got down to xfs_dir2_sf_lookup() to find the directory
-entry (perhaps a problem with a cached negative dentry?). Hence it
-was decided during the open(O_CREATE) call that the directory entry
-needed to be created, we get down to XFS to create it, and then get
-EEXIST because the name already exists...
 
-So, it's not clear what has caused this yet. Is it reproducable? If
-would be good to get a trace of lookup vs addname events from XFS,
-too (i.e. all the xfs_dir* and xfs_da* events) so we can see if the
-correct lookups were done prior to the failing addname operation...
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
