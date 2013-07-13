@@ -1,119 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab3GMGog (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 02:44:36 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:58304 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab3GMGod (ORCPT
+	id S1756478Ab3GMGot (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 02:44:49 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:46421 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab3GMGof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 02:44:33 -0400
-Date: Fri, 12 Jul 2013 23:44:30 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alexander Levitskiy <sanek@google.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH 001/001] [Input:] Propagate hardware generated event
- timestamp to evdev.
-Message-ID: <20130713064430.GA20979@core.coreip.homeip.net>
-References: <CAJVTVr=rbkYHD93N4H9ANy1Hsivdd_XFLONXxOBp+TR9LfAyaQ@mail.gmail.com>
+	Sat, 13 Jul 2013 02:44:35 -0400
+Date: Sat, 13 Jul 2013 08:44:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linux-foundation.org
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+Message-ID: <20130713064430.GA9153@gmail.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130712005023.GB31005@thunk.org>
+ <20130712025745.GA24086@tuxdriver.com>
+ <20130712033430.GA3798@kroah.com>
+ <51E03AEE.5010403@zytor.com>
+ <20130712172836.GA7627@kroah.com>
+ <20130712175718.GA342@thunk.org>
+ <51E0480A.2040905@zytor.com>
+ <51E04AB9.1000003@zytor.com>
+ <CA+55aFw0PvYBguFmacL0FC6V_hjGVcUWsrZ6HO9tuQof=yw5PA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJVTVr=rbkYHD93N4H9ANy1Hsivdd_XFLONXxOBp+TR9LfAyaQ@mail.gmail.com>
+In-Reply-To: <CA+55aFw0PvYBguFmacL0FC6V_hjGVcUWsrZ6HO9tuQof=yw5PA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha,
 
-On Wed, Jul 10, 2013 at 01:38:00PM -0700, Alexander Levitskiy wrote:
-> From: Sasha Levitskiy <sanek@google.com>
-> 
-> Input: Propagate hardware event timestamp to evdev.
-> 
-> Convey hardware generated timestamp associated with the current event packet.
-> The use of these event codes by hardware drivers is optional.
-> Used to reduce jitter and improve velocity tracking in ABS_MT and other timing
-> sensitive devices.
-> 
-> kernel v. 3.4
-> 
-> Signed-off-by: Sasha Levitskiy <sanek@google.com>
-> ---
-> diff --git a/Documentation/input/event-codes.txt
-> b/Documentation/input/event-codes.txt
-> index 53305bd..f0f0e07 100644
-> --- a/Documentation/input/event-codes.txt
-> +++ b/Documentation/input/event-codes.txt
-> @@ -91,6 +91,15 @@ sent in the evdev event stream.
->      event and query the device (using EVIOCG* ioctls) to obtain its
->      current state.
-> 
-> +* SYN_TIME_SEC, SYN_TIME_NSEC:
-> +  - Used to convey hardware timestamp associated with the current
-> +    event packet. The use of these event codes by hardware drivers
-> +    is optional. If used, the hardware driver should send the timestamp
-> +    ahead of any other events associated with this packet. The timestamp
-> +    should be adjusted to CLOCK_MONOTONIC base.
-> +    This becomes useful for drivers of hardware that handle batching
-> +    without involving the main CPU.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-We already have MSC_TIMESTAMP (which is in usec), do you really need
-nsec resolution?
-
-> +
->  EV_KEY:
->  ----------
->  EV_KEY events take the form KEY_<name> or BTN_<name>. For example,
-> KEY_A is used
-> diff --git a/Documentation/input/multi-touch-protocol.txt
-> b/Documentation/input/multi-touch-protocol.txt
-> index 543101c..71af317 100644
-> --- a/Documentation/input/multi-touch-protocol.txt
-> +++ b/Documentation/input/multi-touch-protocol.txt
-> @@ -80,6 +80,10 @@ Userspace can detect that a driver can report more
-> total contacts than slots
->  by noting that the largest supported BTN_TOOL_*TAP event is larger than the
->  total number of type B slots reported in the absinfo for the ABS_MT_SLOT axis.
+> On Fri, Jul 12, 2013 at 11:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> >
+> > OK, just read up some more on git notes, and *both* the assumptions I 
+> > had made about git notes were fundamentally wrong.  Not sure how well 
+> > they would scale, though, but stuffing metadata like additional 
+> > Acked-by:, Tested-by: and Cc: stable into notes seems more viable 
+> > after reading the spec.
 > 
-> +Velocity tracking and temporal precision can be improved if device provides
-> +exact timestamp for touches reported through SYN_TIME_SEC and SYN_TIME_NSEC.
-> +The timestamp should be reported ahead of everything else in the packet.
-> +
->  Protocol Example A
->  ------------------
-> 
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index 41f79be..48baf6f 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -37,6 +37,8 @@ struct evdev {
->   struct mutex mutex;
->   struct device dev;
->   bool exist;
-> + int hw_ts_sec;
-> + int hw_ts_nsec;
->  };
-> 
->  struct evdev_client {
-> @@ -109,7 +111,20 @@ static void evdev_event(struct input_handle *handle,
->   struct input_event event;
->   ktime_t time_mono, time_real;
-> 
-> - time_mono = ktime_get();
-> + if (type == EV_SYN && code == SYN_TIME_SEC) {
-> + evdev->hw_ts_sec = value;
-> + return;
+> I really don't want to use git notes for anything that actually gets 
+> distributed.
 
-Why do you need this special handling? Can you simply have MSC_TIMESTAMP
-to be delivered as part of the event packet and use it instead of the
-event timestamp if userspace chooses to do so?
+Regardless of any scalability and other technical merits, allowing tags to 
+go into a commit log entry via git notes would IMO dilute the value of 
+Acked-by and Reviewed-by tags and it would actively hurt our kernel 
+development workflow I think.
 
-Thanks.
+Today there's a time limit on acking/reviewing patches: if it did not 
+arrive by the time the code was committed and pushed out, it does not get 
+into the commit log, ever. That gives people an incentive to be active 
+_before_ a patch gets applied.
 
--- 
-Dmitry
+And that's really how it should work IMO: the most important, most 
+critical decision point is when a patch gets applied to a tree with the 
+intent to send it upstream. Maintainers need the most help at that point. 
+Anything after that, unless it points out actual problems or room for 
+improvements (which will generate new commits), is not very useful.
+
+So adding git notes after that point to add Acked-by or Reviewed-by tags 
+is just post facto whitewashing, ego stroking or pointless act 
+self-serving bureaucracy, beyond being a sign of a broken Git workflow to 
+begin with.
+
+Thanks,
+
+	Ingo
