@@ -1,134 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3GMGr5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 02:47:57 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39769 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab3GMGrz (ORCPT
+	id S1757342Ab3GMGsI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 02:48:08 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:49587 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756019Ab3GMGsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 02:47:55 -0400
+	Sat, 13 Jul 2013 02:48:03 -0400
+Date: Fri, 12 Jul 2013 23:48:01 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130713064801.GA1305@kroah.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130711222935.GA11340@redhat.com>
+ <20130711224455.GA17222@kroah.com>
+ <20130712141530.GA3629@roeck-us.net>
+ <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+ <20130712173150.GA5534@roeck-us.net>
+ <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
+ <20130712195051.GB32054@1wt.eu>
+ <20130713062223.GA15155@kroah.com>
+ <20130713063607.GI32054@1wt.eu>
 MIME-Version: 1.0
-In-Reply-To: <20130712203802.GA14702@www.outflux.net>
-References: <1373659660-31123-1-git-send-email-keescook@chromium.org>
-	<20130712203802.GA14702@www.outflux.net>
-Date: Fri, 12 Jul 2013 23:47:54 -0700
-X-Google-Sender-Auth: 0BdzrtxhqG3xa7A9I_fuv0G0k1k
-Message-ID: <CAE9FiQWJin8-hXsodo46vhYPMrWiiboEVQySPO-LgXtebYmUzw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
-From: Yinghai Lu <yinghai@kernel.org>
-To: Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130713063607.GI32054@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 1:38 PM, Kees Cook <keescook@chromium.org> wrote:
-> Allows "console=uart[8250],mmio[32],0xADDR[,BAUDn8[,BASE_BAUD]]" to
-> be recognized during compressed boot early console setup, and during
-> boot console setup. Replaces defines with common serial defines. Adds
-> suport for mmio-based serial devices to compressed-boot early console,
-> and plumbs support for defining the base baud rate for UART clock
-> calculations (since mmio serial cards may not have the standard rate,
-> resulting in incorrect baud rates for mmio devices).
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
-> v2:
->  - fixed typo in SERIAL_RSA_...
-> ---
->  Documentation/kernel-parameters.txt             |   12 ++-
->  arch/x86/boot/boot.h                            |   20 +++-
->  arch/x86/boot/compressed/early_serial_console.c |    5 +-
->  arch/x86/boot/compressed/misc.c                 |   10 +-
->  arch/x86/boot/compressed/misc.h                 |    4 +-
->  arch/x86/boot/early_serial_console.c            |  122 +++++++++++++----------
->  arch/x86/boot/early_serial_console.h            |   43 ++++++++
->  arch/x86/boot/tty.c                             |   12 +--
->  drivers/tty/serial/8250/8250_early.c            |   11 +-
->  include/uapi/linux/serial_reg.h                 |    5 +-
->  10 files changed, 168 insertions(+), 76 deletions(-)
->  create mode 100644 arch/x86/boot/early_serial_console.h
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 15356ac..52ad7d8 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -575,11 +575,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->                         alternative.
->
->                 uart[8250],io,<addr>[,options]
-> -               uart[8250],mmio,<addr>[,options]
-> +               uart[8250],mmio,<addr>[,options[,base_baud]]
->                         Start an early, polled-mode console on the 8250/16550
->                         UART at the specified I/O port or MMIO address,
->                         switching to the matching ttyS device later.  The
->                         options are the same as for ttyS, above.
-> +
-> +                       For x86 early boot mmio uart consoles, the base baud
-> +                       rate (for calculating the UART clock) can be defined
-> +                       as well. This is done after the options above, comma
-> +                       separated. For example "...,115200n8,4000000" would
-> +                       use 4000000 as the base baud rate. Once the real uart
-> +                       driver initializes, this value will be ignored, since
-> +                       it will use the known device-specific value instead.
-> +                       The default is 115200.
-> +
->                 hvc<n>  Use the hypervisor console device <n>. This is for
->                         both Xen and PowerPC hypervisors.
->
-> diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-> index 5b75319..ae61c19 100644
-> --- a/arch/x86/boot/boot.h
-> +++ b/arch/x86/boot/boot.h
-> @@ -80,6 +80,23 @@ static inline void io_delay(void)
->         asm volatile("outb %%al,%0" : : "dN" (DELAY_PORT));
->  }
->
-> +/* Minimal mmio functions from include/asm/io.h. */
-> +#define build_mmio_read(name, size, type, reg, barrier) \
-> +static inline type name(const volatile void __iomem *addr) \
-> +{ type ret; asm volatile("mov" size " %1,%0":reg (ret) \
-> +:"m" (*(volatile type __force *)addr) barrier); return ret; }
-> +
-> +#define build_mmio_write(name, size, type, reg, barrier) \
-> +static inline void name(type val, volatile void __iomem *addr) \
-> +{ asm volatile("mov" size " %0,%1": :reg (val), \
-> +"m" (*(volatile type __force *)addr) barrier); }
-> +
-> +build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
-> +build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
-> +
-> +build_mmio_write(writeb, "b", unsigned char, "q", :"memory")
-> +build_mmio_write(writel, "l", unsigned int, "r", :"memory")
-> +
->  /* These functions are used to reference data in other segments. */
->
->  static inline u16 ds(void)
-> @@ -319,7 +336,8 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr);
->  int validate_cpu(void);
->
->  /* early_serial_console.c */
-> -extern int early_serial_base;
-> +extern unsigned long early_serial_base;
-> +extern int early_serial_type;
->  void console_init(void);
+On Sat, Jul 13, 2013 at 08:36:07AM +0200, Willy Tarreau wrote:
+> On Fri, Jul 12, 2013 at 11:22:23PM -0700, Greg Kroah-Hartman wrote:
+> > > So probably we should incite patch contributors to add a specific
+> > > tag such as "Fixes: 3.5 and later", so that non-important patches
+> > > do not need the Cc:stable anymore, but users who experience an issue
+> > > can easily spot them and ask for their inclusion.
+> > 
+> > Huh?  What's wrong with the existing way people mark stable patches to
+> > go back to much older kernel versions?  Is that not working well enough
+> > for you?
+> > 
+> > And if something "fixes" an issue, then I want it in stable, just like
+> > Linus wants that in his tree.
+> 
+> It's the difference between "this is a fix" and "please backport this
+> fix into stable". As we aid in this thread, cc:stable is a bit too much
+> automatic and sometimes not appropriate (not important enough fixes).
 
-so the mmio range is under 4G.
+No, I've never said that.
 
-for 32 bit, that is ok.
-for 64 bit via 32bit bootloader, arch/x86/boot/compressed/head_64.S
-will set page table for first 4G still ok.
-for 64 bit via 64bit loader, like kexec via bzImage64, First Kernel/Kexec only
-set ident mapping for usable range, so mmio just under 64 is not mapped.
+I _want_ fixes in stable trees, as they are being done to, obviously,
+fix problems.  So does Linus, why wouldn't a fix for something that is
+an issue for someone _not_ go into his tree after -rc4?
 
-Looks like we need to update boot.txt to add requirement for 64bit bootloader
-that 0-4G need to be all ident mapping?
+Ok, for some issues, they need some time to "bake" I can understand, but
+that's the exception not the rule at all.
 
-Yinghai
+If a distro would pick a patch up to solve a problem for a user, and
+that patch is in Linus's tree, there's almost no reason that shouldn't
+also be in the stable trees.
+
+My issue is that people are trying to get me to take stuff that is _not_
+fixes (i.e. build errors that are impossible to hit, or \n additions to
+debugging kernel messages, or pseudo-optimizations of functions).
+
+The other larger issue is that people somehow are not willing to send
+their valid fixes to Linus after -rc4, and they flood in during the -rc1
+merge and people expect me to backport them all into .1 because they are
+lazy.
+
+Again, specific examples are the 7 powerpc patches that are over a month
+old that were marked for the stable tree, yet didn't hit Linus's tree
+until now.  I can dig up more examples if wanted, just look at the flood
+that comes in for -rc1.
+
+I _should_ be seeing more patches marked for stable showing up after
+-rc3 then for -rc1.  As it is, I think there's something wrong with
+maintainers relying on me to do their work for them too much, and it's
+finally pushed me to start complaining and pushing back.
+
+greg k-h
