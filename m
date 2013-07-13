@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab3GMIvm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 04:51:42 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35355 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758172Ab3GMIvk (ORCPT
+	id S932806Ab3GMIvt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 04:51:49 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:63521 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758155Ab3GMIvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 04:51:40 -0400
+	Sat, 13 Jul 2013 04:51:47 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 3/5] media: davinci: vpbe_display: convert to devm* api
-Date: Sat, 13 Jul 2013 14:20:29 +0530
-Message-Id: <1373705431-11500-4-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 4/5] media: davinci: vpss: convert to devm* api
+Date: Sat, 13 Jul 2013 14:20:30 +0530
+Message-Id: <1373705431-11500-5-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373705431-11500-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1373705431-11500-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,83 +30,113 @@ simplifies error paths.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpbe_display.c |   23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+ drivers/media/platform/davinci/vpss.c |   62 +++++++--------------------------
+ 1 file changed, 13 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-index e180ff7..04609cc6 100644
---- a/drivers/media/platform/davinci/vpbe_display.c
-+++ b/drivers/media/platform/davinci/vpbe_display.c
-@@ -1743,11 +1743,10 @@ static int vpbe_display_probe(struct platform_device *pdev)
+diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
+index 8a2f01e..31120b4 100644
+--- a/drivers/media/platform/davinci/vpss.c
++++ b/drivers/media/platform/davinci/vpss.c
+@@ -21,6 +21,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/pm_runtime.h>
++#include <linux/err.h>
  
- 	printk(KERN_DEBUG "vpbe_display_probe\n");
- 	/* Allocate memory for vpbe_display */
--	disp_dev = kzalloc(sizeof(struct vpbe_display), GFP_KERNEL);
--	if (!disp_dev) {
--		printk(KERN_ERR "ran out of memory\n");
-+	disp_dev = devm_kzalloc(&pdev->dev, sizeof(struct vpbe_display),
-+				GFP_KERNEL);
-+	if (!disp_dev)
- 		return -ENOMEM;
+ #include <media/davinci/vpss.h>
+ 
+@@ -404,9 +405,8 @@ EXPORT_SYMBOL(dm365_vpss_set_pg_frame_size);
+ 
+ static int vpss_probe(struct platform_device *pdev)
+ {
+-	struct resource		*r1, *r2;
++	struct resource *res;
+ 	char *platform_name;
+-	int status;
+ 
+ 	if (!pdev->dev.platform_data) {
+ 		dev_err(&pdev->dev, "no platform data\n");
+@@ -427,38 +427,19 @@ static int vpss_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	dev_info(&pdev->dev, "%s vpss probed\n", platform_name);
+-	r1 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!r1)
+-		return -ENOENT;
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
+-	r1 = request_mem_region(r1->start, resource_size(r1), r1->name);
+-	if (!r1)
+-		return -EBUSY;
+-
+-	oper_cfg.vpss_regs_base0 = ioremap(r1->start, resource_size(r1));
+-	if (!oper_cfg.vpss_regs_base0) {
+-		status = -EBUSY;
+-		goto fail1;
 -	}
++	oper_cfg.vpss_regs_base0 = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(oper_cfg.vpss_regs_base0))
++		return PTR_ERR(oper_cfg.vpss_regs_base0);
  
- 	spin_lock_init(&disp_dev->dma_queue_lock);
- 	/*
-@@ -1786,26 +1785,24 @@ static int vpbe_display_probe(struct platform_device *pdev)
+ 	if (oper_cfg.platform == DM355 || oper_cfg.platform == DM365) {
+-		r2 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-		if (!r2) {
+-			status = -ENOENT;
+-			goto fail2;
+-		}
+-		r2 = request_mem_region(r2->start, resource_size(r2), r2->name);
+-		if (!r2) {
+-			status = -EBUSY;
+-			goto fail2;
+-		}
+-
+-		oper_cfg.vpss_regs_base1 = ioremap(r2->start,
+-						   resource_size(r2));
+-		if (!oper_cfg.vpss_regs_base1) {
+-			status = -EBUSY;
+-			goto fail3;
+-		}
++		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++
++		oper_cfg.vpss_regs_base1 = devm_ioremap_resource(&pdev->dev,
++								 res);
++		if (IS_ERR(oper_cfg.vpss_regs_base1))
++			return PTR_ERR(oper_cfg.vpss_regs_base1);
  	}
  
- 	irq = res->start;
--	if (request_irq(irq, venc_isr,  IRQF_DISABLED, VPBE_DISPLAY_DRIVER,
--		disp_dev)) {
-+	err = devm_request_irq(&pdev->dev, irq, venc_isr, IRQF_DISABLED,
-+			       VPBE_DISPLAY_DRIVER, disp_dev);
-+	if (err) {
- 		v4l2_err(&disp_dev->vpbe_dev->v4l2_dev,
- 				"Unable to request interrupt\n");
--		err = -ENODEV;
- 		goto probe_out;
- 	}
+ 	if (oper_cfg.platform == DM355) {
+@@ -493,30 +474,13 @@ static int vpss_probe(struct platform_device *pdev)
  
- 	for (i = 0; i < VPBE_DISPLAY_MAX_DEVICES; i++) {
- 		if (register_device(disp_dev->dev[i], disp_dev, pdev)) {
- 			err = -ENODEV;
--			goto probe_out_irq;
-+			goto probe_out;
- 		}
- 	}
+ 	spin_lock_init(&oper_cfg.vpss_lock);
+ 	dev_info(&pdev->dev, "%s vpss probe success\n", platform_name);
+-	return 0;
  
- 	printk(KERN_DEBUG "Successfully completed the probing of vpbe v4l2 device\n");
- 	return 0;
- 
--probe_out_irq:
--	free_irq(res->start, disp_dev);
- probe_out:
- 	for (k = 0; k < VPBE_DISPLAY_MAX_DEVICES; k++) {
- 		/* Get the pointer to the layer object */
-@@ -1817,7 +1814,6 @@ probe_out:
- 				kfree(disp_dev->dev[k]);
- 		}
- 	}
--	kfree(disp_dev);
- 	return err;
+-fail3:
+-	release_mem_region(r2->start, resource_size(r2));
+-fail2:
+-	iounmap(oper_cfg.vpss_regs_base0);
+-fail1:
+-	release_mem_region(r1->start, resource_size(r1));
+-	return status;
++	return 0;
  }
  
-@@ -1830,15 +1826,10 @@ static int vpbe_display_remove(struct platform_device *pdev)
- 	struct vpbe_layer *vpbe_display_layer;
- 	struct vpbe_display *disp_dev = platform_get_drvdata(pdev);
- 	struct vpbe_device *vpbe_dev = disp_dev->vpbe_dev;
--	struct resource *res;
- 	int i;
- 
- 	v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev, "vpbe_display_remove\n");
- 
--	/* unregister irq */
--	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	free_irq(res->start, disp_dev);
+ static int vpss_remove(struct platform_device *pdev)
+ {
+-	struct resource		*res;
 -
- 	/* deinitialize the vpbe display controller */
- 	if (NULL != vpbe_dev->ops.deinitialize)
- 		vpbe_dev->ops.deinitialize(&pdev->dev, vpbe_dev);
+ 	pm_runtime_disable(&pdev->dev);
+-	iounmap(oper_cfg.vpss_regs_base0);
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, resource_size(res));
+-	if (oper_cfg.platform == DM355 || oper_cfg.platform == DM365) {
+-		iounmap(oper_cfg.vpss_regs_base1);
+-		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-		release_mem_region(res->start, resource_size(res));
+-	}
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.5
 
