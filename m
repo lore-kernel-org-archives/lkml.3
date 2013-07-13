@@ -1,170 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab3GMAqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 20:46:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12677 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757950Ab3GMApt (ORCPT
+	id S1757995Ab3GMAyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 20:54:46 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:40391 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757959Ab3GMAyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 20:45:49 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=DrNmnk2JS-sA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=O0olwec3pisA:10 a=VnNF1IyMAAAA:8 a=NO-XTRILGWK9rTBr8EUA:9 a=jeBq3FmKZ4MA:10 a=6tQl6VDH3J4nkrVg:21 a=sNhEkZTIjf2agXgl:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130713004548.016951772@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 12 Jul 2013 20:41:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC][PATCH 3/4] tracing: Add __tracepoint_string() to export string pointers
-References: <20130713004102.219523935@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Add-__tracepoint_string-to-export-string-poi.patch
+	Fri, 12 Jul 2013 20:54:44 -0400
+Date: Fri, 12 Jul 2013 17:54:54 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+cc: David Gibson <david@gibson.dropbear.id.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/hugetlb: per-vma instantiation mutexes
+In-Reply-To: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+Message-ID: <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Adding the essential David Gibson to the Cc list.
 
-There are several tracepoints (mostly in RCU), that reference a string
-pointer and uses the print format of "%s" to display the string that
-exists in the kernel, instead of copying the actual string to the
-ring buffer (saves time and ring buffer space).
+On Fri, 12 Jul 2013, Davidlohr Bueso wrote:
 
-But this has an issue with userspace tools that read the binary buffers
-that has the address of the string but has no access to what the string
-itself is. The end result is just output that looks like:
+> The hugetlb_instantiation_mutex serializes hugepage allocation and instantiation
+> in the page directory entry. It was found that this mutex can become quite contended
+> during the early phases of large databases which make use of huge pages - for instance
+> startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
+> reports that this mutex can be one of the top 5 most contended locks in the kernel during
+> the first few minutes:
+> 
+> hugetlb_instantiation_mutex:      10678     10678
+>              ---------------------------
+>              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+>              ---------------------------
+>              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+> 
+> contentions:          10678
+> acquisitions:         99476
+> waittime-total: 76888911.01 us
+> 
+> Instead of serializing each hugetlb fault, we can deal with concurrent faults for pages
+> in different vmas. The per-vma mutex is initialized when creating a new vma. So, back to
+> the example above, we now get much less contention:
+> 
+>  &vma->hugetlb_instantiation_mutex:  1         1
+>        ---------------------------------
+>        &vma->hugetlb_instantiation_mutex       1   [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+>        ---------------------------------
+>        &vma->hugetlb_instantiation_mutex       1    [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+> 
+> contentions:          1
+> acquisitions:    108092
+> waittime-total:  621.24 us
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
- rcu_dyntick:          ffffffff818adeaa 1 0
- rcu_dyntick:          ffffffff818adeb5 0 140000000000000
- rcu_dyntick:          ffffffff818adeb5 0 140000000000000
- rcu_utilization:      ffffffff8184333b
- rcu_utilization:      ffffffff8184333b
+I agree this is a problem worth solving,
+but I doubt this patch is the right solution.
 
-The above is pretty useless when read by the userspace tools. Ideally
-we would want something that looks like this:
+> ---
+>  include/linux/mm_types.h |  3 +++
+>  mm/hugetlb.c             | 12 +++++-------
+>  mm/mmap.c                |  3 +++
+>  3 files changed, 11 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index fb425aa..b45fd87 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -289,6 +289,9 @@ struct vm_area_struct {
+>  #ifdef CONFIG_NUMA
+>  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+>  #endif
+> +#ifdef CONFIG_HUGETLB_PAGE
+> +	struct mutex hugetlb_instantiation_mutex;
+> +#endif
+>  };
 
- rcu_dyntick:          Start 1 0
- rcu_dyntick:          End 0 140000000000000
- rcu_dyntick:          Start 140000000000000 0
- rcu_callback:         rcu_preempt rhp=0xffff880037aff710 func=put_cred_rcu 0/4
- rcu_callback:         rcu_preempt rhp=0xffff880078961980 func=file_free_rcu 0/5
- rcu_dyntick:          End 0 1
+Bloating every vm_area_struct with a rarely useful mutex:
+I'm sure you can construct cases where per-vma mutex would win over
+per-mm mutex, but they will have to be very common to justify the bloat.
 
-The trace_printk() which also only stores the address of the string
-format instead of recording the string into the buffer itself, exports
-the mapping of kernel addresses to format strings via the printk_format
-file in the debugfs tracing directory.
+>  
+>  struct core_thread {
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 83aff0a..12e665b 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -137,12 +137,12 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
+>   * The region data structures are protected by a combination of the mmap_sem
+>   * and the hugetlb_instantion_mutex.  To access or modify a region the caller
+>   * must either hold the mmap_sem for write, or the mmap_sem for read and
+> - * the hugetlb_instantiation mutex:
+> + * the vma's hugetlb_instantiation mutex:
 
-The tracepoint strings can use this same method and output the format
-to the same file and the userspace tools will be able to decipher
-the address without any modification.
+Reading the existing comment, this change looks very suspicious to me.
+A per-vma mutex is just not going to provide the necessary exclusion, is
+it?  (But I recall next to nothing about these regions and reservations.)
 
-The tracepoint strings need its own section to save the strings because
-the trace_printk section will cause the trace_printk() buffers to be
-allocated if anything exists within the section. trace_printk() is only
-used for debugging and should never exist in the kernel, we can not use
-the trace_printk sections.
+>   *
+>   *	down_write(&mm->mmap_sem);
+>   * or
+>   *	down_read(&mm->mmap_sem);
+> - *	mutex_lock(&hugetlb_instantiation_mutex);
+> + *	mutex_lock(&vma->hugetlb_instantiation_mutex);
+>   */
+>  struct file_region {
+>  	struct list_head link;
+> @@ -2547,7 +2547,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+>  
+>  /*
+>   * Hugetlb_cow() should be called with page lock of the original hugepage held.
+> - * Called with hugetlb_instantiation_mutex held and pte_page locked so we
+> + * Called with the vma's hugetlb_instantiation_mutex held and pte_page locked so we
+>   * cannot race with other handlers or page migration.
+>   * Keep the pte_same checks anyway to make transition from the mutex easier.
+>   */
+> @@ -2847,7 +2847,6 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	int ret;
+>  	struct page *page = NULL;
+>  	struct page *pagecache_page = NULL;
+> -	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+>  	struct hstate *h = hstate_vma(vma);
+>  
+>  	address &= huge_page_mask(h);
+> @@ -2872,7 +2871,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	 * get spurious allocation failures if two CPUs race to instantiate
+>  	 * the same page in the page cache.
+>  	 */
+> -	mutex_lock(&hugetlb_instantiation_mutex);
+> +	mutex_lock(&vma->hugetlb_instantiation_mutex);
+>  	entry = huge_ptep_get(ptep);
+>  	if (huge_pte_none(entry)) {
+>  		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
+> @@ -2943,8 +2942,7 @@ out_page_table_lock:
+>  	put_page(page);
+>  
+>  out_mutex:
+> -	mutex_unlock(&hugetlb_instantiation_mutex);
+> -
+> +	mutex_unlock(&vma->hugetlb_instantiation_mutex);
+>  	return ret;
+>  }
+>  
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index fbad7b0..8f0b034 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1543,6 +1543,9 @@ munmap_back:
+>  	vma->vm_page_prot = vm_get_page_prot(vm_flags);
+>  	vma->vm_pgoff = pgoff;
+>  	INIT_LIST_HEAD(&vma->anon_vma_chain);
+> +#ifdef CONFIG_HUGETLB_PAGE
+> +	mutex_init(&vma->hugetlb_instantiation_mutex);
+> +#endif
+>  
+>  	error = -EINVAL;	/* when rejecting VM_GROWSDOWN|VM_GROWSUP */
+>  
+> -- 
+> 1.7.11.7
 
-Add a new tracepoint_str section that will also be examined by the output
-of the printk_format file.
+The hugetlb_instantiation_mutex has always been rather an embarrassment:
+it would be much more satisfying to remove the need for it, than to split
+it in this way.  (Maybe a technique like THP sometimes uses, marking an
+entry as in transition while the new entry is prepared.)
 
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/asm-generic/vmlinux.lds.h |    7 ++++++-
- include/linux/ftrace_event.h      |    7 +++++++
- kernel/trace/trace.h              |    3 +++
- kernel/trace/trace_printk.c       |    7 +++++++
- 4 files changed, 23 insertions(+), 1 deletion(-)
+But I suppose it would not have survived so long if that were easy,
+and I think it may have grown some subtle dependants over the years -
+as the region comment indicates.
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 69732d2..83e2c31 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -122,8 +122,12 @@
- #define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
- 			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
- 			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
-+#define TRACEPOINT_STR() VMLINUX_SYMBOL(__start___tracepoint_str) = .;	\
-+			 *(__tracepoint_str) /* Trace_printk fmt' pointer */ \
-+			 VMLINUX_SYMBOL(__stop___tracepoint_str) = .;
- #else
- #define TRACE_PRINTKS()
-+#define TRACEPOINT_STR()
- #endif
- 
- #ifdef CONFIG_FTRACE_SYSCALLS
-@@ -190,7 +194,8 @@
- 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
- 	LIKELY_PROFILE()		       				\
- 	BRANCH_PROFILE()						\
--	TRACE_PRINTKS()
-+	TRACE_PRINTKS()							\
-+	TRACEPOINT_STR()
- 
- /*
-  * Data section helpers
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4372658..cead2e9 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -357,6 +357,13 @@ do {									\
- 		__trace_printk(ip, fmt, ##args);			\
- } while (0)
- 
-+#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
-+#define tracepoint_string(str)						\
-+	({								\
-+		static const char *___tp_str __tracepoint_string = str; \
-+		___tp_str;						\
-+	})
-+
- #ifdef CONFIG_PERF_EVENTS
- struct perf_event;
- 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 4a4f6e1..ba321f1 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -1022,6 +1022,9 @@ extern struct list_head ftrace_events;
- extern const char *__start___trace_bprintk_fmt[];
- extern const char *__stop___trace_bprintk_fmt[];
- 
-+extern const char *__start___tracepoint_str[];
-+extern const char *__stop___tracepoint_str[];
-+
- void trace_printk_init_buffers(void);
- void trace_printk_start_comm(void);
- int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
-diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
-index a9077c1..fa8d070 100644
---- a/kernel/trace/trace_printk.c
-+++ b/kernel/trace/trace_printk.c
-@@ -244,12 +244,19 @@ static const char **find_next(void *v, loff_t *pos)
- {
- 	const char **fmt = v;
- 	int start_index;
-+	int last_index;
- 
- 	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
- 
- 	if (*pos < start_index)
- 		return __start___trace_bprintk_fmt + *pos;
- 
-+	last_index = start_index;
-+	start_index = __stop___tracepoint_str - __start___tracepoint_str;
-+
-+	if (*pos < last_index + start_index)
-+		return __start___tracepoint_str + (*pos - last_index);
-+
- 	return find_next_mod_format(start_index, v, fmt, pos);
- }
- 
--- 
-1.7.10.4
-
-
+Hugh
