@@ -1,523 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab3GMAqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 20:46:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31597 "EHLO
+	id S1758002Ab3GMAqt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 20:46:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12677 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757960Ab3GMApu (ORCPT
+	with ESMTP id S1757950Ab3GMApt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 20:45:50 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=uqMUd5LdnloA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=g0wrOMdMTsEA:10 a=b1pOczBhtL5Cvz3H_8oA:9 a=jeBq3FmKZ4MA:10 a=qPOEZP1rway1L_ZO:21 a=FS8VojMeRVN4rK64:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Fri, 12 Jul 2013 20:45:49 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=DrNmnk2JS-sA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=O0olwec3pisA:10 a=VnNF1IyMAAAA:8 a=NO-XTRILGWK9rTBr8EUA:9 a=jeBq3FmKZ4MA:10 a=6tQl6VDH3J4nkrVg:21 a=sNhEkZTIjf2agXgl:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130713004548.158111633@goodmis.org>
+Message-Id: <20130713004548.016951772@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 12 Jul 2013 20:41:06 -0400
+Date: Fri, 12 Jul 2013 20:41:05 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC][PATCH 4/4] rcu: Have the RCU tracepoints use the tracepoint_string
- infrastructure
+Subject: [RFC][PATCH 3/4] tracing: Add __tracepoint_string() to export string pointers
 References: <20130713004102.219523935@goodmis.org>
-Content-Disposition: inline; filename=0004-rcu-Have-the-RCU-tracepoints-use-the-tracepoint_stri.patch
+Content-Disposition: inline; filename=0003-tracing-Add-__tracepoint_string-to-export-string-poi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Currently, RCU tracepoints save only a pointer to strings in the
-ring buffer. When displayed via the /sys/kernel/debug/tracing/trace file
-they are referenced like the printf "%s" that looks at the address
-in the ring buffer and prints out the string it points too. This requires
-that the strings are constand and presistent in the kernel.
+There are several tracepoints (mostly in RCU), that reference a string
+pointer and uses the print format of "%s" to display the string that
+exists in the kernel, instead of copying the actual string to the
+ring buffer (saves time and ring buffer space).
 
-The problem with this is for tools like trace-cmd and perf that read the
-binary data from the buffers but have no access to the kernel memory to
-find out what string is represented by the address in the buffer.
+But this has an issue with userspace tools that read the binary buffers
+that has the address of the string but has no access to what the string
+itself is. The end result is just output that looks like:
 
-By using the tracepoint_string infrastructure, the RCU tracepoint strings
-can be exported such that userspace tools can map the addresses to
-the strings.
+ rcu_dyntick:          ffffffff818adeaa 1 0
+ rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+ rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+ rcu_utilization:      ffffffff8184333b
+ rcu_utilization:      ffffffff8184333b
 
- # cat /sys/kernel/debug/tracing/printk_formats
-0xffffffff81a4a0e8 : "rcu_preempt"
-0xffffffff81a4a0f4 : "rcu_bh"
-0xffffffff81a4a100 : "rcu_sched"
-0xffffffff818437a0 : "cpuqs"
-0xffffffff818437a6 : "rcu_sched"
-0xffffffff818437a0 : "cpuqs"
-0xffffffff818437b0 : "rcu_bh"
-0xffffffff818437b7 : "Start context switch"
-0xffffffff818437cc : "End context switch"
-0xffffffff818437a0 : "cpuqs"
-[...]
+The above is pretty useless when read by the userspace tools. Ideally
+we would want something that looks like this:
 
-Now userspaces tools can display:
-
- rcu_utilization:      Start context switch
- rcu_dyntick:          Start 1 0
- rcu_utilization:      End context switch
- rcu_batch_start:      rcu_preempt CBs=0/5 bl=10
- rcu_dyntick:          End 0 140000000000000
- rcu_invoke_callback:  rcu_preempt rhp=0xffff880071c0d600 func=proc_i_callback
- rcu_invoke_callback:  rcu_preempt rhp=0xffff880077b5b230 func=__d_free
- rcu_dyntick:          Start 140000000000000 0
- rcu_invoke_callback:  rcu_preempt rhp=0xffff880077563980 func=file_free_rcu
- rcu_batch_end:        rcu_preempt CBs-invoked=3 idle=>c<>c<>c<>c<
- rcu_utilization:      End RCU core
- rcu_grace_period:     rcu_preempt 9741 start
  rcu_dyntick:          Start 1 0
  rcu_dyntick:          End 0 140000000000000
  rcu_dyntick:          Start 140000000000000 0
+ rcu_callback:         rcu_preempt rhp=0xffff880037aff710 func=put_cred_rcu 0/4
+ rcu_callback:         rcu_preempt rhp=0xffff880078961980 func=file_free_rcu 0/5
+ rcu_dyntick:          End 0 1
 
-Instead of:
+The trace_printk() which also only stores the address of the string
+format instead of recording the string into the buffer itself, exports
+the mapping of kernel addresses to format strings via the printk_format
+file in the debugfs tracing directory.
 
- rcu_utilization:      ffffffff81843110
- rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f32
- rcu_batch_start:      ffffffff81842f1d CBs=0/4 bl=10
- rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f3c
- rcu_grace_period:     ffffffff81842f1d 9939 ffffffff81842f80
- rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff88007888aac0 func=file_free_rcu
- rcu_grace_period:     ffffffff81842f1d 9939 ffffffff81842f95
- rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff88006aeb4600 func=proc_i_callback
- rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f32
- rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f3c
- rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff880071cb9fc0 func=__d_free
- rcu_grace_period:     ffffffff81842f1d 9939 ffffffff81842f80
- rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff88007888ae80 func=file_free_rcu
- rcu_batch_end:        ffffffff81842f1d CBs-invoked=4 idle=>c<>c<>c<>c<
- rcu_utilization:      ffffffff8184311f
+The tracepoint strings can use this same method and output the format
+to the same file and the userspace tools will be able to decipher
+the address without any modification.
 
+The tracepoint strings need its own section to save the strings because
+the trace_printk section will cause the trace_printk() buffers to be
+allocated if anything exists within the section. trace_printk() is only
+used for debugging and should never exist in the kernel, we can not use
+the trace_printk sections.
+
+Add a new tracepoint_str section that will also be examined by the output
+of the printk_format file.
+
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/rcutree.c        |   82 +++++++++++++++++++++++++++--------------------
- kernel/rcutree_plugin.h |   32 +++++++++---------
- 2 files changed, 64 insertions(+), 50 deletions(-)
+ include/asm-generic/vmlinux.lds.h |    7 ++++++-
+ include/linux/ftrace_event.h      |    7 +++++++
+ kernel/trace/trace.h              |    3 +++
+ kernel/trace/trace_printk.c       |    7 +++++++
+ 4 files changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 89a8b10..32d403a 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -53,18 +53,31 @@
- #include <linux/delay.h>
- #include <linux/stop_machine.h>
- #include <linux/random.h>
-+#include <linux/ftrace_event.h>
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 69732d2..83e2c31 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -122,8 +122,12 @@
+ #define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
+ 			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
+ 			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
++#define TRACEPOINT_STR() VMLINUX_SYMBOL(__start___tracepoint_str) = .;	\
++			 *(__tracepoint_str) /* Trace_printk fmt' pointer */ \
++			 VMLINUX_SYMBOL(__stop___tracepoint_str) = .;
+ #else
+ #define TRACE_PRINTKS()
++#define TRACEPOINT_STR()
+ #endif
  
- #include "rcutree.h"
- #include <trace/events/rcu.h>
+ #ifdef CONFIG_FTRACE_SYSCALLS
+@@ -190,7 +194,8 @@
+ 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
+ 	LIKELY_PROFILE()		       				\
+ 	BRANCH_PROFILE()						\
+-	TRACE_PRINTKS()
++	TRACE_PRINTKS()							\
++	TRACEPOINT_STR()
  
- #include "rcu.h"
+ /*
+  * Data section helpers
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4372658..cead2e9 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -357,6 +357,13 @@ do {									\
+ 		__trace_printk(ip, fmt, ##args);			\
+ } while (0)
  
-+#define TPS(x)	tracepoint_string(x)
++#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
++#define tracepoint_string(str)						\
++	({								\
++		static const char *___tp_str __tracepoint_string = str; \
++		___tp_str;						\
++	})
 +
- /* Data structures. */
+ #ifdef CONFIG_PERF_EVENTS
+ struct perf_event;
  
- static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
- static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4a4f6e1..ba321f1 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1022,6 +1022,9 @@ extern struct list_head ftrace_events;
+ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
  
-+/*
-+ * In order to export the rcu_state name to the tracing tools, it
-+ * needs to be added in the __tracepoint_string section.
-+ * This requires defining a separate variable tp_<sname>_varname
-+ * that points to the string being used, and this will allow
-+ * the tracing userspace tools to be able to decipher the string
-+ * address to the matching string.
-+ */
- #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
-+static char sname##_varname[] = #sname; \
-+static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
- struct rcu_state sname##_state = { \
- 	.level = { &sname##_state.node[0] }, \
- 	.call = cr, \
-@@ -76,7 +89,7 @@ struct rcu_state sname##_state = { \
- 	.orphan_donetail = &sname##_state.orphan_donelist, \
- 	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
- 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
--	.name = #sname, \
-+	.name = sname##_varname, \
- 	.abbr = sabbr, \
- }; \
- DEFINE_PER_CPU(struct rcu_data, sname##_data)
-@@ -176,7 +189,7 @@ void rcu_sched_qs(int cpu)
- 	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
- 
- 	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period("rcu_sched", rdp->gpnum, "cpuqs");
-+		trace_rcu_grace_period(TPS("rcu_sched"), rdp->gpnum, TPS("cpuqs"));
- 	rdp->passed_quiesce = 1;
- }
- 
-@@ -185,7 +198,7 @@ void rcu_bh_qs(int cpu)
- 	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
- 
- 	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period("rcu_bh", rdp->gpnum, "cpuqs");
-+		trace_rcu_grace_period(TPS("rcu_bh"), rdp->gpnum, TPS("cpuqs"));
- 	rdp->passed_quiesce = 1;
- }
- 
-@@ -196,10 +209,10 @@ void rcu_bh_qs(int cpu)
-  */
- void rcu_note_context_switch(int cpu)
++extern const char *__start___tracepoint_str[];
++extern const char *__stop___tracepoint_str[];
++
+ void trace_printk_init_buffers(void);
+ void trace_printk_start_comm(void);
+ int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
+diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+index a9077c1..fa8d070 100644
+--- a/kernel/trace/trace_printk.c
++++ b/kernel/trace/trace_printk.c
+@@ -244,12 +244,19 @@ static const char **find_next(void *v, loff_t *pos)
  {
--	trace_rcu_utilization("Start context switch");
-+	trace_rcu_utilization(TPS("Start context switch"));
- 	rcu_sched_qs(cpu);
- 	rcu_preempt_note_context_switch(cpu);
--	trace_rcu_utilization("End context switch");
-+	trace_rcu_utilization(TPS("End context switch"));
- }
- EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ 	const char **fmt = v;
+ 	int start_index;
++	int last_index;
  
-@@ -343,11 +356,11 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
- static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
- 				bool user)
- {
--	trace_rcu_dyntick("Start", oldval, rdtp->dynticks_nesting);
-+	trace_rcu_dyntick(TPS("Start"), oldval, rdtp->dynticks_nesting);
- 	if (!user && !is_idle_task(current)) {
- 		struct task_struct *idle = idle_task(smp_processor_id());
+ 	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
  
--		trace_rcu_dyntick("Error on entry: not idle task", oldval, 0);
-+		trace_rcu_dyntick(TPS("Error on entry: not idle task"), oldval, 0);
- 		ftrace_dump(DUMP_ORIG);
- 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
- 			  current->pid, current->comm,
-@@ -477,7 +490,7 @@ void rcu_irq_exit(void)
- 	rdtp->dynticks_nesting--;
- 	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
- 	if (rdtp->dynticks_nesting)
--		trace_rcu_dyntick("--=", oldval, rdtp->dynticks_nesting);
-+		trace_rcu_dyntick(TPS("--="), oldval, rdtp->dynticks_nesting);
- 	else
- 		rcu_eqs_enter_common(rdtp, oldval, true);
- 	local_irq_restore(flags);
-@@ -499,11 +512,11 @@ static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
- 	smp_mb__after_atomic_inc();  /* See above. */
- 	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
- 	rcu_cleanup_after_idle(smp_processor_id());
--	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
-+	trace_rcu_dyntick(TPS("End"), oldval, rdtp->dynticks_nesting);
- 	if (!user && !is_idle_task(current)) {
- 		struct task_struct *idle = idle_task(smp_processor_id());
+ 	if (*pos < start_index)
+ 		return __start___trace_bprintk_fmt + *pos;
  
--		trace_rcu_dyntick("Error on exit: not idle task",
-+		trace_rcu_dyntick(TPS("Error on exit: not idle task"),
- 				  oldval, rdtp->dynticks_nesting);
- 		ftrace_dump(DUMP_ORIG);
- 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-@@ -618,7 +631,7 @@ void rcu_irq_enter(void)
- 	rdtp->dynticks_nesting++;
- 	WARN_ON_ONCE(rdtp->dynticks_nesting == 0);
- 	if (oldval)
--		trace_rcu_dyntick("++=", oldval, rdtp->dynticks_nesting);
-+		trace_rcu_dyntick(TPS("++="), oldval, rdtp->dynticks_nesting);
- 	else
- 		rcu_eqs_exit_common(rdtp, oldval, true);
- 	local_irq_restore(flags);
-@@ -773,7 +786,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- 	 * of the current RCU grace period.
- 	 */
- 	if ((curr & 0x1) == 0 || UINT_CMP_GE(curr, snap + 2)) {
--		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "dti");
-+		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, TPS("dti"));
- 		rdp->dynticks_fqs++;
- 		return 1;
- 	}
-@@ -793,7 +806,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- 		return 0;  /* Grace period is not old enough. */
- 	barrier();
- 	if (cpu_is_offline(rdp->cpu)) {
--		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "ofl");
-+		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, TPS("ofl"));
- 		rdp->offline_fqs++;
- 		return 1;
- 	}
-@@ -1056,9 +1069,9 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
- 	 * grace period is already marked as needed, return to the caller.
- 	 */
- 	c = rcu_cbs_completed(rdp->rsp, rnp);
--	trace_rcu_future_gp(rnp, rdp, c, "Startleaf");
-+	trace_rcu_future_gp(rnp, rdp, c, TPS("Startleaf"));
- 	if (rnp->need_future_gp[c & 0x1]) {
--		trace_rcu_future_gp(rnp, rdp, c, "Prestartleaf");
-+		trace_rcu_future_gp(rnp, rdp, c, TPS("Prestartleaf"));
- 		return c;
- 	}
- 
-@@ -1072,7 +1085,7 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
- 	if (rnp->gpnum != rnp->completed ||
- 	    ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
- 		rnp->need_future_gp[c & 0x1]++;
--		trace_rcu_future_gp(rnp, rdp, c, "Startedleaf");
-+		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedleaf"));
- 		return c;
- 	}
- 
-@@ -1100,7 +1113,7 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
- 	 * recorded, trace and leave.
- 	 */
- 	if (rnp_root->need_future_gp[c & 0x1]) {
--		trace_rcu_future_gp(rnp, rdp, c, "Prestartedroot");
-+		trace_rcu_future_gp(rnp, rdp, c, TPS("Prestartedroot"));
- 		goto unlock_out;
- 	}
- 
-@@ -1109,9 +1122,9 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
- 
- 	/* If a grace period is not already in progress, start one. */
- 	if (rnp_root->gpnum != rnp_root->completed) {
--		trace_rcu_future_gp(rnp, rdp, c, "Startedleafroot");
-+		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedleafroot"));
- 	} else {
--		trace_rcu_future_gp(rnp, rdp, c, "Startedroot");
-+		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedroot"));
- 		rcu_start_gp_advanced(rdp->rsp, rnp_root, rdp);
- 	}
- unlock_out:
-@@ -1135,7 +1148,8 @@ static int rcu_future_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
- 	rcu_nocb_gp_cleanup(rsp, rnp);
- 	rnp->need_future_gp[c & 0x1] = 0;
- 	needmore = rnp->need_future_gp[(c + 1) & 0x1];
--	trace_rcu_future_gp(rnp, rdp, c, needmore ? "CleanupMore" : "Cleanup");
-+	trace_rcu_future_gp(rnp, rdp, c,
-+			    needmore ? TPS("CleanupMore") : TPS("Cleanup"));
- 	return needmore;
- }
- 
-@@ -1203,9 +1217,9 @@ static void rcu_accelerate_cbs(struct rcu_state *rsp, struct rcu_node *rnp,
- 
- 	/* Trace depending on how much we were able to accelerate. */
- 	if (!*rdp->nxttail[RCU_WAIT_TAIL])
--		trace_rcu_grace_period(rsp->name, rdp->gpnum, "AccWaitCB");
-+		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("AccWaitCB"));
- 	else
--		trace_rcu_grace_period(rsp->name, rdp->gpnum, "AccReadyCB");
-+		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("AccReadyCB"));
- }
- 
- /*
-@@ -1271,7 +1285,7 @@ static void __note_gp_changes(struct rcu_state *rsp, struct rcu_node *rnp, struc
- 
- 		/* Remember that we saw this grace-period completion. */
- 		rdp->completed = rnp->completed;
--		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuend");
-+		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("cpuend"));
- 	}
- 
- 	if (rdp->gpnum != rnp->gpnum) {
-@@ -1281,7 +1295,7 @@ static void __note_gp_changes(struct rcu_state *rsp, struct rcu_node *rnp, struc
- 		 * go looking for one.
- 		 */
- 		rdp->gpnum = rnp->gpnum;
--		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpustart");
-+		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("cpustart"));
- 		rdp->passed_quiesce = 0;
- 		rdp->qs_pending = !!(rnp->qsmask & rdp->grpmask);
- 		zero_cpu_stall_ticks(rdp);
-@@ -1324,7 +1338,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 
- 	/* Advance to a new grace period and initialize state. */
- 	rsp->gpnum++;
--	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
-+	trace_rcu_grace_period(rsp->name, rsp->gpnum, TPS("start"));
- 	record_gp_stall_check_time(rsp);
- 	raw_spin_unlock_irq(&rnp->lock);
- 
-@@ -1446,7 +1460,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
- 	rcu_nocb_gp_set(rnp, nocb);
- 
- 	rsp->completed = rsp->gpnum; /* Declare grace period done. */
--	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
-+	trace_rcu_grace_period(rsp->name, rsp->completed, TPS("end"));
- 	rsp->fqs_state = RCU_GP_IDLE;
- 	rdp = this_cpu_ptr(rsp->rda);
- 	rcu_advance_cbs(rsp, rnp, rdp);  /* Reduce false positives below. */
-@@ -1855,7 +1869,7 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
- 	RCU_TRACE(mask = rdp->grpmask);
- 	trace_rcu_grace_period(rsp->name,
- 			       rnp->gpnum + 1 - !!(rnp->qsmask & mask),
--			       "cpuofl");
-+			       TPS("cpuofl"));
- }
- 
- /*
-@@ -2042,7 +2056,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
-  */
- void rcu_check_callbacks(int cpu, int user)
- {
--	trace_rcu_utilization("Start scheduler-tick");
-+	trace_rcu_utilization(TPS("Start scheduler-tick"));
- 	increment_cpu_stall_ticks();
- 	if (user || rcu_is_cpu_rrupt_from_idle()) {
- 
-@@ -2075,7 +2089,7 @@ void rcu_check_callbacks(int cpu, int user)
- 	rcu_preempt_check_callbacks(cpu);
- 	if (rcu_pending(cpu))
- 		invoke_rcu_core();
--	trace_rcu_utilization("End scheduler-tick");
-+	trace_rcu_utilization(TPS("End scheduler-tick"));
- }
- 
- /*
-@@ -2206,10 +2220,10 @@ static void rcu_process_callbacks(struct softirq_action *unused)
- 
- 	if (cpu_is_offline(smp_processor_id()))
- 		return;
--	trace_rcu_utilization("Start RCU core");
-+	trace_rcu_utilization(TPS("Start RCU core"));
- 	for_each_rcu_flavor(rsp)
- 		__rcu_process_callbacks(rsp);
--	trace_rcu_utilization("End RCU core");
-+	trace_rcu_utilization(TPS("End RCU core"));
- }
- 
- /*
-@@ -2950,7 +2964,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- 			rdp->completed = rnp->completed;
- 			rdp->passed_quiesce = 0;
- 			rdp->qs_pending = 0;
--			trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuonl");
-+			trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("cpuonl"));
- 		}
- 		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
- 		rnp = rnp->parent;
-@@ -2980,7 +2994,7 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	struct rcu_node *rnp = rdp->mynode;
- 	struct rcu_state *rsp;
- 
--	trace_rcu_utilization("Start CPU hotplug");
-+	trace_rcu_utilization(TPS("Start CPU hotplug"));
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
-@@ -3009,7 +3023,7 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	default:
- 		break;
- 	}
--	trace_rcu_utilization("End CPU hotplug");
-+	trace_rcu_utilization(TPS("End CPU hotplug"));
- 	return NOTIFY_OK;
- }
- 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 5cdb559..59fe9e2 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -167,7 +167,7 @@ static void rcu_preempt_qs(int cpu)
- 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
- 
- 	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period("rcu_preempt", rdp->gpnum, "cpuqs");
-+		trace_rcu_grace_period(TPS("rcu_preempt"), rdp->gpnum, TPS("cpuqs"));
- 	rdp->passed_quiesce = 1;
- 	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- }
-@@ -386,7 +386,7 @@ void rcu_read_unlock_special(struct task_struct *t)
- 		np = rcu_next_node_entry(t, rnp);
- 		list_del_init(&t->rcu_node_entry);
- 		t->rcu_blocked_node = NULL;
--		trace_rcu_unlock_preempted_task("rcu_preempt",
-+		trace_rcu_unlock_preempted_task(TPS("rcu_preempt"),
- 						rnp->gpnum, t->pid);
- 		if (&t->rcu_node_entry == rnp->gp_tasks)
- 			rnp->gp_tasks = np;
-@@ -410,7 +410,7 @@ void rcu_read_unlock_special(struct task_struct *t)
- 		 */
- 		empty_exp_now = !rcu_preempted_readers_exp(rnp);
- 		if (!empty && !rcu_preempt_blocked_readers_cgp(rnp)) {
--			trace_rcu_quiescent_state_report("preempt_rcu",
-+			trace_rcu_quiescent_state_report(TPS("preempt_rcu"),
- 							 rnp->gpnum,
- 							 0, rnp->qsmask,
- 							 rnp->level,
-@@ -1248,12 +1248,12 @@ static int rcu_boost_kthread(void *arg)
- 	int spincnt = 0;
- 	int more2boost;
- 
--	trace_rcu_utilization("Start boost kthread@init");
-+	trace_rcu_utilization(TPS("Start boost kthread@init"));
- 	for (;;) {
- 		rnp->boost_kthread_status = RCU_KTHREAD_WAITING;
--		trace_rcu_utilization("End boost kthread@rcu_wait");
-+		trace_rcu_utilization(TPS("End boost kthread@rcu_wait"));
- 		rcu_wait(rnp->boost_tasks || rnp->exp_tasks);
--		trace_rcu_utilization("Start boost kthread@rcu_wait");
-+		trace_rcu_utilization(TPS("Start boost kthread@rcu_wait"));
- 		rnp->boost_kthread_status = RCU_KTHREAD_RUNNING;
- 		more2boost = rcu_boost(rnp);
- 		if (more2boost)
-@@ -1262,14 +1262,14 @@ static int rcu_boost_kthread(void *arg)
- 			spincnt = 0;
- 		if (spincnt > 10) {
- 			rnp->boost_kthread_status = RCU_KTHREAD_YIELDING;
--			trace_rcu_utilization("End boost kthread@rcu_yield");
-+			trace_rcu_utilization(TPS("End boost kthread@rcu_yield"));
- 			schedule_timeout_interruptible(2);
--			trace_rcu_utilization("Start boost kthread@rcu_yield");
-+			trace_rcu_utilization(TPS("Start boost kthread@rcu_yield"));
- 			spincnt = 0;
- 		}
- 	}
- 	/* NOTREACHED */
--	trace_rcu_utilization("End boost kthread@notreached");
-+	trace_rcu_utilization(TPS("End boost kthread@notreached"));
- 	return 0;
- }
- 
-@@ -1417,7 +1417,7 @@ static void rcu_cpu_kthread(unsigned int cpu)
- 	int spincnt;
- 
- 	for (spincnt = 0; spincnt < 10; spincnt++) {
--		trace_rcu_utilization("Start CPU kthread@rcu_wait");
-+		trace_rcu_utilization(TPS("Start CPU kthread@rcu_wait"));
- 		local_bh_disable();
- 		*statusp = RCU_KTHREAD_RUNNING;
- 		this_cpu_inc(rcu_cpu_kthread_loops);
-@@ -1429,15 +1429,15 @@ static void rcu_cpu_kthread(unsigned int cpu)
- 			rcu_kthread_do_work();
- 		local_bh_enable();
- 		if (*workp == 0) {
--			trace_rcu_utilization("End CPU kthread@rcu_wait");
-+			trace_rcu_utilization(TPS("End CPU kthread@rcu_wait"));
- 			*statusp = RCU_KTHREAD_WAITING;
- 			return;
- 		}
- 	}
- 	*statusp = RCU_KTHREAD_YIELDING;
--	trace_rcu_utilization("Start CPU kthread@rcu_yield");
-+	trace_rcu_utilization(TPS("Start CPU kthread@rcu_yield"));
- 	schedule_timeout_interruptible(2);
--	trace_rcu_utilization("End CPU kthread@rcu_yield");
-+	trace_rcu_utilization(TPS("End CPU kthread@rcu_yield"));
- 	*statusp = RCU_KTHREAD_WAITING;
- }
- 
-@@ -2200,7 +2200,7 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 	 * Wait for the grace period.  Do so interruptibly to avoid messing
- 	 * up the load average.
- 	 */
--	trace_rcu_future_gp(rnp, rdp, c, "StartWait");
-+	trace_rcu_future_gp(rnp, rdp, c, TPS("StartWait"));
- 	for (;;) {
- 		wait_event_interruptible(
- 			rnp->nocb_gp_wq[c & 0x1],
-@@ -2208,9 +2208,9 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 		if (likely(d))
- 			break;
- 		flush_signals(current);
--		trace_rcu_future_gp(rnp, rdp, c, "ResumeWait");
-+		trace_rcu_future_gp(rnp, rdp, c, TPS("ResumeWait"));
- 	}
--	trace_rcu_future_gp(rnp, rdp, c, "EndWait");
-+	trace_rcu_future_gp(rnp, rdp, c, TPS("EndWait"));
- 	smp_mb(); /* Ensure that CB invocation happens after GP end. */
++	last_index = start_index;
++	start_index = __stop___tracepoint_str - __start___tracepoint_str;
++
++	if (*pos < last_index + start_index)
++		return __start___tracepoint_str + (*pos - last_index);
++
+ 	return find_next_mod_format(start_index, v, fmt, pos);
  }
  
 -- 
