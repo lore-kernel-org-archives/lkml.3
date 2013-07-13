@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab3GMIvG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 04:51:06 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:36969 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758120Ab3GMIvD (ORCPT
+	id S932382Ab3GMIv1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 04:51:27 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:42177 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139Ab3GMIvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 04:51:03 -0400
+	Sat, 13 Jul 2013 04:51:25 -0400
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 1/5] media: davinci: vpbe_venc: convert to devm_* api
-Date: Sat, 13 Jul 2013 14:20:27 +0530
-Message-Id: <1373705431-11500-2-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 2/5] media: davinci: vpbe_osd: convert to devm_* api
+Date: Sat, 13 Jul 2013 14:20:28 +0530
+Message-Id: <1373705431-11500-3-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373705431-11500-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1373705431-11500-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,31 +30,26 @@ simplifies error paths.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpbe_venc.c |   97 ++++++----------------------
- 1 file changed, 19 insertions(+), 78 deletions(-)
+ drivers/media/platform/davinci/vpbe_osd.c |   45 +++++++----------------------
+ 1 file changed, 10 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/media/platform/davinci/vpbe_venc.c b/drivers/media/platform/davinci/vpbe_venc.c
-index 87eef9b..14a023a 100644
---- a/drivers/media/platform/davinci/vpbe_venc.c
-+++ b/drivers/media/platform/davinci/vpbe_venc.c
-@@ -639,105 +639,46 @@ static int venc_probe(struct platform_device *pdev)
+diff --git a/drivers/media/platform/davinci/vpbe_osd.c b/drivers/media/platform/davinci/vpbe_osd.c
+index 6ed82e8..d053c26 100644
+--- a/drivers/media/platform/davinci/vpbe_osd.c
++++ b/drivers/media/platform/davinci/vpbe_osd.c
+@@ -1547,61 +1547,36 @@ static int osd_probe(struct platform_device *pdev)
  	const struct platform_device_id *pdev_id;
- 	struct venc_state *venc;
+ 	struct osd_state *osd;
  	struct resource *res;
--	int ret;
+-	int ret = 0;
  
--	venc = kzalloc(sizeof(struct venc_state), GFP_KERNEL);
-+	if (!pdev->dev.platform_data) {
-+		dev_err(&pdev->dev, "No platform data for VENC sub device");
-+		return -EINVAL;
-+	}
-+
+-	osd = kzalloc(sizeof(struct osd_state), GFP_KERNEL);
 +	pdev_id = platform_get_device_id(pdev);
 +	if (!pdev_id)
 +		return -EINVAL;
 +
-+	venc = devm_kzalloc(&pdev->dev, sizeof(struct venc_state), GFP_KERNEL);
- 	if (venc == NULL)
++	osd = devm_kzalloc(&pdev->dev, sizeof(struct osd_state), GFP_KERNEL);
+ 	if (osd == NULL)
  		return -ENOMEM;
  
 -	pdev_id = platform_get_device_id(pdev);
@@ -62,103 +57,55 @@ index 87eef9b..14a023a 100644
 -		ret = -EINVAL;
 -		goto free_mem;
 -	}
- 	venc->venc_type = pdev_id->driver_data;
- 	venc->pdev = &pdev->dev;
- 	venc->pdata = pdev->dev.platform_data;
--	if (NULL == venc->pdata) {
--		dev_err(venc->pdev, "Unable to get platform data for"
--			" VENC sub device");
--		ret = -ENOENT;
--		goto free_mem;
--	}
-+
+ 
+ 	osd->dev = &pdev->dev;
+ 	osd->vpbe_type = pdev_id->driver_data;
+ 
  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(venc->pdev,
--			"Unable to get VENC register address map\n");
+-		dev_err(osd->dev, "Unable to get OSD register address map\n");
 -		ret = -ENODEV;
 -		goto free_mem;
 -	}
- 
--	if (!request_mem_region(res->start, resource_size(res), "venc")) {
--		dev_err(venc->pdev, "Unable to reserve VENC MMIO region\n");
--		ret = -ENODEV;
--		goto free_mem;
--	}
--
--	venc->venc_base = ioremap_nocache(res->start, resource_size(res));
--	if (!venc->venc_base) {
--		dev_err(venc->pdev, "Unable to map VENC IO space\n");
--		ret = -ENODEV;
--		goto release_venc_mem_region;
--	}
-+	venc->venc_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(venc->venc_base))
-+		return PTR_ERR(venc->venc_base);
- 
- 	if (venc->venc_type != VPBE_VERSION_1) {
- 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--		if (!res) {
--			dev_err(venc->pdev,
--				"Unable to get VDAC_CONFIG address map\n");
--			ret = -ENODEV;
--			goto unmap_venc_io;
--		}
--
--		if (!request_mem_region(res->start,
--					resource_size(res), "venc")) {
--			dev_err(venc->pdev,
--				"Unable to reserve VDAC_CONFIG  MMIO region\n");
--			ret = -ENODEV;
--			goto unmap_venc_io;
--		}
--
--		venc->vdaccfg_reg = ioremap_nocache(res->start,
--						    resource_size(res));
--		if (!venc->vdaccfg_reg) {
--			dev_err(venc->pdev,
--				"Unable to map VDAC_CONFIG IO space\n");
--			ret = -ENODEV;
--			goto release_vdaccfg_mem_region;
--		}
++	osd->osd_base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(osd->osd_base))
++		return PTR_ERR(osd->osd_base);
 +
-+		venc->vdaccfg_reg = devm_ioremap_resource(&pdev->dev, res);
-+		if (IS_ERR(venc->vdaccfg_reg))
-+			return PTR_ERR(venc->vdaccfg_reg);
- 	}
- 	spin_lock_init(&venc->lock);
- 	platform_set_drvdata(pdev, venc);
- 	dev_notice(venc->pdev, "VENC sub device probe success\n");
--	return 0;
+ 	osd->osd_base_phys = res->start;
+ 	osd->osd_size = resource_size(res);
+-	if (!request_mem_region(osd->osd_base_phys, osd->osd_size,
+-				MODULE_NAME)) {
+-		dev_err(osd->dev, "Unable to reserve OSD MMIO region\n");
+-		ret = -ENODEV;
+-		goto free_mem;
+-	}
+-	osd->osd_base = ioremap_nocache(res->start, osd->osd_size);
+-	if (!osd->osd_base) {
+-		dev_err(osd->dev, "Unable to map the OSD region\n");
+-		ret = -ENODEV;
+-		goto release_mem_region;
+-	}
+ 	spin_lock_init(&osd->lock);
+ 	osd->ops = osd_ops;
+ 	platform_set_drvdata(pdev, osd);
+ 	dev_notice(osd->dev, "OSD sub device probe success\n");
+-	return ret;
  
--release_vdaccfg_mem_region:
--	release_mem_region(res->start, resource_size(res));
--unmap_venc_io:
--	iounmap(venc->venc_base);
--release_venc_mem_region:
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(res->start, resource_size(res));
+-release_mem_region:
+-	release_mem_region(osd->osd_base_phys, osd->osd_size);
 -free_mem:
--	kfree(venc);
+-	kfree(osd);
 -	return ret;
 +	return 0;
  }
  
- static int venc_remove(struct platform_device *pdev)
+ static int osd_remove(struct platform_device *pdev)
  {
--	struct venc_state *venc = platform_get_drvdata(pdev);
--	struct resource *res;
+-	struct osd_state *osd = platform_get_drvdata(pdev);
 -
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	iounmap((void *)venc->venc_base);
--	release_mem_region(res->start, resource_size(res));
--	if (venc->venc_type != VPBE_VERSION_1) {
--		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--		iounmap((void *)venc->vdaccfg_reg);
--		release_mem_region(res->start, resource_size(res));
--	}
--	kfree(venc);
--
+-	iounmap((void *)osd->osd_base);
+-	release_mem_region(osd->osd_base_phys, osd->osd_size);
+-	kfree(osd);
  	return 0;
  }
  
