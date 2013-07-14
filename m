@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab3GNNZN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 09:25:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3875 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab3GNNZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 09:25:10 -0400
-Date: Sun, 14 Jul 2013 16:24:02 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 16/18] kvm hypervisor : Simplify
- kvm_for_each_vcpu with kvm_irq_delivery_to_apic
-Message-ID: <20130714132402.GB11772@redhat.com>
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
- <20130624124353.27508.94224.sendpatchset@codeblue.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624124353.27508.94224.sendpatchset@codeblue.in.ibm.com>
+	id S1752500Ab3GNN0r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 09:26:47 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:57395 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752246Ab3GNN0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 09:26:44 -0400
+X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Jul 2013 09:26:44 EDT
+Message-ID: <1373807844.4998.10.camel@palomino.walls.org>
+Subject: Re: [PATCH 00/50] USB: cleanup spin_lock in URB->complete()
+From: Andy Walls <awalls@md.metrocast.net>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        Oliver Neukum <oliver@neukum.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-input@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-media@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Sun, 14 Jul 2013 09:17:24 -0400
+In-Reply-To: <1373533573-12272-1-git-send-email-ming.lei@canonical.com>
+References: <1373533573-12272-1-git-send-email-ming.lei@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-07-14_04:2013-07-12,2013-07-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=4
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1305240000 definitions=main-1307140102
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 06:13:53PM +0530, Raghavendra K T wrote:
-> Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
+On Thu, 2013-07-11 at 17:05 +0800, Ming Lei wrote:
+> Hi,
 > 
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> Note that we are using APIC_DM_REMRD which has reserved usage.
-> In future if APIC_DM_REMRD usage is standardized, then we should
-> find some other way or go back to old method.
-> 
-> Suggested-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/lapic.c |    5 ++++-
->  arch/x86/kvm/x86.c   |   25 ++++++-------------------
->  2 files changed, 10 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> index e1adbb4..3f5f82e 100644
-> --- a/arch/x86/kvm/lapic.c
-> +++ b/arch/x86/kvm/lapic.c
-> @@ -706,7 +706,10 @@ out:
->  		break;
->  
->  	case APIC_DM_REMRD:
-> -		apic_debug("Ignoring delivery mode 3\n");
-> +		result = 1;
-> +		vcpu->arch.pv.pv_unhalted = 1;
-> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
-> +		kvm_vcpu_kick(vcpu);
->  		break;
->  
->  	case APIC_DM_SMI:
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 92a9932..b963c86 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5456,27 +5456,14 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
->   */
->  static void kvm_pv_kick_cpu_op(struct kvm *kvm, int apicid)
->  {
-> -	struct kvm_vcpu *vcpu = NULL;
-> -	int i;
-> +	struct kvm_lapic_irq lapic_irq;
->  
-> -	kvm_for_each_vcpu(i, vcpu, kvm) {
-> -		if (!kvm_apic_present(vcpu))
-> -			continue;
-> +	lapic_irq.shorthand = 0;
-> +	lapic_irq.dest_mode = 0;
-> +	lapic_irq.dest_id = apicid;
->  
-> -		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
-> -			break;
-> -	}
-> -	if (vcpu) {
-> -		/*
-> -		 * Setting unhalt flag here can result in spurious runnable
-> -		 * state when unhalt reset does not happen in vcpu_block.
-> -		 * But that is harmless since that should soon result in halt.
-> -		 */
-> -		vcpu->arch.pv.pv_unhalted = true;
-> -		/* We need everybody see unhalt before vcpu unblocks */
-> -		smp_wmb();
-> -		kvm_vcpu_kick(vcpu);
-> -	}
-> +	lapic_irq.delivery_mode = APIC_DM_REMRD;
-Need to make sure that delivery_mode cannot be set to APIC_DM_REMRD
-from MSI/IOAPIC/IPI path.
+> As we are going to run URB->complete() in tasklet context[1][2],
 
-> +	kvm_irq_delivery_to_apic(kvm, 0, &lapic_irq, NULL);
->  }
->  
->  int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+Hi,
 
---
-			Gleb.
+Please pardon my naivete, but why was it decided to use tasklets to
+defer work, as opposed to some other deferred work mechanism?
+
+It seems to me that getting rid of tasklets has been an objective for
+years:
+
+http://lwn.net/Articles/239633/
+http://lwn.net/Articles/520076/
+http://lwn.net/Articles/240054/
+
+
+Regards,
+Andy
+
+>  and
+> hard interrupt may be enabled when running URB completion handler[3],
+> so we might need to disable interrupt when acquiring one lock in
+> the completion handler for the below reasons:
+> 
+> - URB->complete() holds a subsystem wide lock which may be acquired
+> in another hard irq context, and the subsystem wide lock is acquired
+> by spin_lock()/read_lock()/write_lock() in complete()
+> 
+> - URB->complete() holds a private lock with spin_lock()/read_lock()/write_lock()
+> but driver may export APIs to make other drivers acquire the same private
+> lock in its interrupt handler.
+> 
+> For the sake of safety and making the change simple, this patch set
+> converts all spin_lock()/read_lock()/write_lock() in completion handler
+> path into their irqsave version mechanically.
+> 
+> But if you are sure the above two cases do not happen in your driver,
+> please let me know and I can drop the unnecessary change.
+> 
+> Also if you find some conversions are missed, also please let me know so
+> that I can add it in the next round.
+> 
+> 
+> [1], http://marc.info/?l=linux-usb&m=137286322526312&w=2
+> [2], http://marc.info/?l=linux-usb&m=137286326726326&w=2
+> [3], http://marc.info/?l=linux-usb&m=137286330626363&w=2
+> 
+[snip]
+> 
+> 
+> Thanks,
+> --
+> Ming Lei
+
+
