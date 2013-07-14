@@ -1,34 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab3GNRHT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 13:07:19 -0400
-Received: from nwl-staff.nwlsd.org ([216.48.129.159]:61123 "EHLO
-	NWL-STAFF.nwlsd.priv" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751267Ab3GNRHS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 13:07:18 -0400
-X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Jul 2013 13:07:17 EDT
-From: Katie Rawlinson <krawlinson@nwlsd.org>
-To: Katie Rawlinson <krawlinson@nwlsd.org>
-Subject: RE: RE-VALIDATE:
-Thread-Topic: RE-VALIDATE:
-Thread-Index: Ac6AsMsOvH6HBU3qQ7GqZa3IgMTPGQAAiYIq
-Date: Sun, 14 Jul 2013 17:02:04 +0000
-Message-ID: <4593E9205F271E41AFCCDF538F785D6469D3B31A@NWL-STAFF.nwlsd.priv>
-References: <4593E9205F271E41AFCCDF538F785D6469D36F8C@NWL-STAFF.nwlsd.priv>
-In-Reply-To: <4593E9205F271E41AFCCDF538F785D6469D36F8C@NWL-STAFF.nwlsd.priv>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [41.190.3.98]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1752808Ab3GNRHe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 13:07:34 -0400
+Received: from gmmr3.centrum.cz ([46.255.225.251]:38177 "EHLO gmmr3.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752772Ab3GNRHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 13:07:32 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
+Date: Sun, 14 Jul 2013 19:07:23 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>
+References: <20130606160446.GE24115@dhcp22.suse.cz>, <20130606181633.BCC3E02E@pobox.sk>, <20130607131157.GF8117@dhcp22.suse.cz>, <20130617122134.2E072BA8@pobox.sk>, <20130619132614.GC16457@dhcp22.suse.cz>, <20130622220958.D10567A4@pobox.sk>, <20130624201345.GA21822@cmpxchg.org>, <20130628120613.6D6CAD21@pobox.sk>, <20130705181728.GQ17812@cmpxchg.org>, <20130705210246.11D2135A@pobox.sk> <20130705191854.GR17812@cmpxchg.org>
+In-Reply-To: <20130705191854.GR17812@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
+Message-Id: <20130714190723.BF406E48@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Mailbox Has Exceeded It Storage Limit As Set By Your Administrator, And You Will Not Be  Able To Receive New Mails  until You Re-Validate It. To  RE-VALIDATE<http://kelven.coffeecup.com/forms/cleanup/>
+> CC: "Michal Hocko" <mhocko@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, "cgroups mailinglist" <cgroups@vger.kernel.org>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+>On Fri, Jul 05, 2013 at 09:02:46PM +0200, azurIt wrote:
+>> >I looked at your debug messages but could not find anything that would
+>> >hint at a deadlock.  All tasks are stuck in the refrigerator, so I
+>> >assume you use the freezer cgroup and enabled it somehow?
+>> 
+>> 
+>> Yes, i'm really using freezer cgroup BUT i was checking if it's not
+>> doing problems - unfortunately, several days passed from that day
+>> and now i don't fully remember if i was checking it for both cases
+>> (unremoveabled cgroups and these freezed processes holding web
+>> server port). I'm 100% sure i was checking it for unremoveable
+>> cgroups but not so sure for the other problem (i had to act quickly
+>> in that case). Are you sure (from stacks) that freezer cgroup was
+>> enabled there?
+>
+>Yeah, all the traces without exception look like this:
+>
+>1372089762/23433/stack:[<ffffffff81080925>] refrigerator+0x95/0x160
+>1372089762/23433/stack:[<ffffffff8106ab7b>] get_signal_to_deliver+0x1cb/0x540
+>1372089762/23433/stack:[<ffffffff8100188b>] do_signal+0x6b/0x750
+>1372089762/23433/stack:[<ffffffff81001fc5>] do_notify_resume+0x55/0x80
+>1372089762/23433/stack:[<ffffffff815cac77>] int_signal+0x12/0x17
+>1372089762/23433/stack:[<ffffffffffffffff>] 0xffffffffffffffff
+>
+>so the freezer was already enabled when you took the backtraces.
+>
+>> Btw, what about that other stacks? I mean this file:
+>> http://watchdog.sk/lkml/memcg-bug-7.tar.gz
+>> 
+>> It was taken while running the kernel with your patch and from
+>> cgroup which was under unresolveable OOM (just like my very original
+>> problem).
+>
+>I looked at these traces too, but none of the tasks are stuck in rmdir
+>or the OOM path.  Some /are/ in the page fault path, but they are
+>happily doing reclaim and don't appear to be stuck.  So I'm having a
+>hard time matching this data to what you otherwise observed.
+>
+>However, based on what you reported the most likely explanation for
+>the continued hangs is the unfinished OOM handling for which I sent
+>the followup patch for arch/x86/mm/fault.c.
 
-© 2013 by Intellectual Reserve, Inc. All rights reserved.
+
+Johannes,
+
+this problem happened again but was even worse, now i'm sure it wasn't my fault. This time I even wasn't able to access /proc/<pid> of hanged apache process (which was, again, helding web server port and forced me to reboot the server). Everything which tried to access /proc/<pid> just hanged. Server even wasn't able to reboot correctly, it hanged and then done a hard reboot after few minutes.
+
+azur
