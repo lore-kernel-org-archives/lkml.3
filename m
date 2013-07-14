@@ -1,85 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab3GNMqM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 08:46:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34737 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3GNMqK (ORCPT
+	id S1752339Ab3GNNAP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 09:00:15 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:48580 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab3GNNAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 08:46:10 -0400
-Date: Sun, 14 Jul 2013 13:45:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130714124538.GA11538@sirena.org.uk>
-References: <1373804812.1370.23.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
-Content-Disposition: inline
-In-Reply-To: <1373804812.1370.23.camel@x61.thuisdomein>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ARM: EXYNOS: remove references to non-DT SoCs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Sun, 14 Jul 2013 09:00:13 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Andi Kleen <ak@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Eli Friedman <eli.friedman@gmail.com>,
+        Jim Grosbach <grosbach@apple.com>, Stephen Checkoway <s@pahtak.org>,
+        LLVMdev <llvmdev@cs.uiuc.edu>
+Subject: [PATCH] x86/asm: avoid mnemonics without type suffix
+Date: Sun, 14 Jul 2013 18:26:02 +0530
+Message-Id: <1373806562-30422-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.3.2.736.g869de25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+1c54d77 (x86: partial unification of asm-x86/bitops.h, 2008-01-30)
+changed a bunch of btrl/btsl instructions to btr/bts, with the following
+justification:
 
---sm4nu43k4a2Rpi4c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  The inline assembly for the bit operations has been changed to remove
+  explicit sizing hints on the instructions, so the assembler will pick
+  the appropriate instruction forms depending on the architecture and
+  the context.
 
-On Sun, Jul 14, 2013 at 02:26:52PM +0200, Paul Bolle wrote:
-> Commit 383ffda2fa ("ARM: EXYNOS: no more support non-DT for EXYNOS
-> SoCs") removed the Kconfig symbols MACH_SMDKV310 and MACH_SMDKC210.
-> Now remove the references to both of these symbols from the Kconfig
-> entry for SND_SOC_SAMSUNG_SMDK_WM9713. They're not needed anymore.
+Unfortunately, GNU as does no such thing, and the AT&T syntax manual
+[1] contains no references to any such inference.  As evidenced by the
+following experiment, gas always disambiguates btr/bts to btrl/btsl.
+Feed the following input to gas:
 
-Look at the code you are editing here:
+  btrl	$1, 0
+  btr	$1, 0
+  btsl	$1, 0
+  bts	$1, 0
 
-> -       depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110 || MACH_SMDKV310 || MACH_SMDKC210)
-> +       depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110)
+Check that btr matches btrl, and bts matches btsl in both cases:
 
-Simply removing the dependencies is not going to give the clearly
-intended effect here.  The dependency on the DT only machine needs to be
-replaced with something, not just deleted, otherwise the driver can't be
-enabled in Kconfig.
+  $ as --32 -a in.s
+  $ as --64 -a in.s
 
-Also let me again remind you to submit patches with subject lines that
-are appropriate for the subsystem you're updating.  I very nearly
-deleted this unread since it looks like a patch for arch/arm with no
-relationship with audio but in fact it doesn't touch arch/arm at all.
+To avoid giving readers the illusion of such an inference, and for
+clarity, change btr/bts back to btrl/btsl.  Also, llvm-mc refuses to
+disambiguate btr/bts automatically.
 
---sm4nu43k4a2Rpi4c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[1]: http://docs.oracle.com/cd/E19253-01/817-5477/817-5477.pdf
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Eli Friedman <eli.friedman@gmail.com>
+Cc: Jim Grosbach <grosbach@apple.com>
+Cc: Stephen Checkoway <s@pahtak.org>
+Cc: LLVMdev <llvmdev@cs.uiuc.edu>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ We discussed this pretty extensively on LLVMDev, but I'm still not
+ sure that I haven't missed something.
 
-iQIcBAEBAgAGBQJR4p1oAAoJELSic+t+oim9DLsQAJVpWI9QM6ijA+jlUWrJ44xF
-g3BM8ut+H444RiP8f6lDrOnpWuqF3Ii5STX0Ce4uoethQfb2WVb0XHS4YT2+QzAg
-ncCQ6nw2sk68QjNHtOU9cF2yDwyV5JVazKz1BVYbpFU171vncuEF0UGP4HxjykMI
-4nNiwzHiJMxecvs5ZOoB6amSTr+LnIwkz7MjQuEE3ViiVECkYEaJp1WV9170dcbl
-pCgfefmsyXaTDNyYupu9RXhUrEE+IscnyO4Nn6uyeirmPQbwNHUyWhSyyWPmtvo9
-WMsvhSqYarOHFQR3sOy9gAFTEWpuZESF3FMYZDlg+HdE2a7DiEO488q+HcMKPVwo
-Kga0JRAzlgywGnO5AVD/KmgU5meTUOJ09CEQIAm7AaLHQm9tWd8IHDsTbMfRZ6OK
-aCszuXfxrUJfKcW1XlskrQnfEoZhlt7uTSR+MAuaI+PQbzXX+iwpuivpoaz7yphG
-nb4Yx7VZ4W/nZRD0pE3TQQZCeg1wxYB01ZM4t+XCKKVP/B+oCahE4q50TNHpFPoD
-cFAlYGhXDsk59jALNYNxx4rFX9pN+Ar8JBSe5nPe4m15Hh6+S+qw3k4DvwQImO4s
-nEQgJWDm4GQMJUL9BOf9WAKCF16HkIU0FMAmAdRTPtbEh1/NbhUEhf1wDISSv7n6
-4EPE1hCPXb3a4M4zM2zD
-=Q1pW
------END PGP SIGNATURE-----
+ arch/x86/include/asm/bitops.h | 16 ++++++++--------
+ arch/x86/include/asm/percpu.h |  2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
---sm4nu43k4a2Rpi4c--
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index 6dfd019..6ed3d1e 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -67,7 +67,7 @@ set_bit(unsigned int nr, volatile unsigned long *addr)
+ 			: "iq" ((u8)CONST_MASK(nr))
+ 			: "memory");
+ 	} else {
+-		asm volatile(LOCK_PREFIX "bts %1,%0"
++		asm volatile(LOCK_PREFIX "btsl %1,%0"
+ 			: BITOP_ADDR(addr) : "Ir" (nr) : "memory");
+ 	}
+ }
+@@ -83,7 +83,7 @@ set_bit(unsigned int nr, volatile unsigned long *addr)
+  */
+ static inline void __set_bit(int nr, volatile unsigned long *addr)
+ {
+-	asm volatile("bts %1,%0" : ADDR : "Ir" (nr) : "memory");
++	asm volatile("btsl %1,%0" : ADDR : "Ir" (nr) : "memory");
+ }
+ 
+ /**
+@@ -104,7 +104,7 @@ clear_bit(int nr, volatile unsigned long *addr)
+ 			: CONST_MASK_ADDR(nr, addr)
+ 			: "iq" ((u8)~CONST_MASK(nr)));
+ 	} else {
+-		asm volatile(LOCK_PREFIX "btr %1,%0"
++		asm volatile(LOCK_PREFIX "btrl %1,%0"
+ 			: BITOP_ADDR(addr)
+ 			: "Ir" (nr));
+ 	}
+@@ -126,7 +126,7 @@ static inline void clear_bit_unlock(unsigned nr, volatile unsigned long *addr)
+ 
+ static inline void __clear_bit(int nr, volatile unsigned long *addr)
+ {
+-	asm volatile("btr %1,%0" : ADDR : "Ir" (nr));
++	asm volatile("btrl %1,%0" : ADDR : "Ir" (nr));
+ }
+ 
+ /*
+@@ -198,7 +198,7 @@ static inline int test_and_set_bit(int nr, volatile unsigned long *addr)
+ {
+ 	int oldbit;
+ 
+-	asm volatile(LOCK_PREFIX "bts %2,%1\n\t"
++	asm volatile(LOCK_PREFIX "btsl %2,%1\n\t"
+ 		     "sbb %0,%0" : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
+ 
+ 	return oldbit;
+@@ -230,7 +230,7 @@ static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
+ {
+ 	int oldbit;
+ 
+-	asm("bts %2,%1\n\t"
++	asm("btsl %2,%1\n\t"
+ 	    "sbb %0,%0"
+ 	    : "=r" (oldbit), ADDR
+ 	    : "Ir" (nr));
+@@ -249,7 +249,7 @@ static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
+ {
+ 	int oldbit;
+ 
+-	asm volatile(LOCK_PREFIX "btr %2,%1\n\t"
++	asm volatile(LOCK_PREFIX "btrl %2,%1\n\t"
+ 		     "sbb %0,%0"
+ 		     : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
+ 
+@@ -276,7 +276,7 @@ static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
+ {
+ 	int oldbit;
+ 
+-	asm volatile("btr %2,%1\n\t"
++	asm volatile("btrl %2,%1\n\t"
+ 		     "sbb %0,%0"
+ 		     : "=r" (oldbit), ADDR
+ 		     : "Ir" (nr));
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 0da5200..fda54c9 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -490,7 +490,7 @@ do {									\
+ #define x86_test_and_clear_bit_percpu(bit, var)				\
+ ({									\
+ 	int old__;							\
+-	asm volatile("btr %2,"__percpu_arg(1)"\n\tsbbl %0,%0"		\
++	asm volatile("btrl %2,"__percpu_arg(1)"\n\tsbbl %0,%0"		\
+ 		     : "=r" (old__), "+m" (var)				\
+ 		     : "dIr" (bit));					\
+ 	old__;								\
+-- 
+1.8.3.2.736.g869de25
+
