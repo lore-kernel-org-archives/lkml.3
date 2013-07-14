@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab3GNAUP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 20:20:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5925 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903Ab3GNAUN convert rfc822-to-8bit (ORCPT
+	id S1752093Ab3GNA1L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 20:27:11 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:62594 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab3GNA1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 20:20:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,661,1367996400"; 
-   d="scan'208";a="267993413"
-From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: Dragos Foianu <dragos.foianu@gmail.com>
-CC: "tao.peng@emc.com" <tao.peng@emc.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging/lustre/libcfs: replaced string duplication code
- with kstrdup
-Thread-Topic: [PATCH] staging/lustre/libcfs: replaced string duplication
- code with kstrdup
-Thread-Index: AQHOfs32JhpGJimIYkO896487P0M3pljYu0A
-Date: Sun, 14 Jul 2013 00:20:05 +0000
-Message-ID: <CE0749B3.54CC0%andreas.dilger@intel.com>
-In-Reply-To: <1373612526-15990-1-git-send-email-dragos.foianu@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.80.187]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <973EA885BC02EE4AABECA94194356823@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Sat, 13 Jul 2013 20:27:10 -0400
+Message-ID: <51E1F056.3000108@gmail.com>
+Date: Sun, 14 Jul 2013 08:27:02 +0800
+From: Sam Ben <sam.bennn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Colin Cross <ccross@google.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: RFC: named anonymous vmas
+References: <CAMbhsRQU=xrcum+ZUbG3S+JfFUJK_qm_VB96Vz=PpL=vQYhUvg@mail.gmail.com>
+In-Reply-To: <CAMbhsRQU=xrcum+ZUbG3S+JfFUJK_qm_VB96Vz=PpL=vQYhUvg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/07 1:02 AM, "Dragos Foianu" <dragos.foianu@gmail.com> wrote:
-
->Modified cfs_strdup function to use kstrdup instead of duplicating its
->implementation.
+Hi Colin,
+On 06/22/2013 07:42 AM, Colin Cross wrote:
+> One of the features of ashmem (drivers/staging/android/ashmem.c) that
+> hasn't gotten much discussion about moving out of staging is named
+> anonymous memory.
 >
->Found using Coccinelle.
+> In Android, ashmem is used for three different features, and most
+> users of it only care about one feature at a time.  One is volatile
+> ranges, which John Stultz has been implementing.  The second is
+> anonymous shareable memory without having a world-writable tmpfs that
+> untrusted apps could fill with files.  The third and most heavily used
 
-Thanks for the patch, but in fact this function doesn't appear to be used
-in the code anymore and could be removed entirely.  Seems that
-cfs_vsnprintf() and cfs_snprintf() could also be deleted at the same time.
+How to understand "anonymous shareable memory without having a 
+world-writable tmpfs that untrusted apps could fill with files"?
 
-Cheers, Andreas
-
->Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
->---
-> drivers/staging/lustre/lustre/libcfs/libcfs_string.c |   13 +------------
-> 1 file changed, 1 insertion(+), 12 deletions(-)
+> feature within the Android codebase is named anonymous memory, where a
+> region of anonymous memory can have a name associated with it that
+> will show up in /proc/pid/maps.  The Dalvik VM likes to use this
+> feature extensively, even for memory that will never be shared and
+> could easily be allocated using an anonymous mmap, and even malloc has
+> used it in the past.  It provides an easy way to collate memory used
+> for different purposes across multiple processes, which Android uses
+> for its "dumpsys meminfo" and "librank" tools to determine how much
+> memory is used for java heaps, JIT caches, native mallocs, etc.
 >
->diff --git a/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
->b/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
->index 9edccc9..4dba304 100644
->--- a/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
->+++ b/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
->@@ -135,18 +135,7 @@ EXPORT_SYMBOL(cfs_str2mask);
-> /* Duplicate a string in a platform-independent way */
-> char *cfs_strdup(const char *str, u_int32_t flags)
-> {
->-	size_t lenz; /* length of str + zero byte */
->-	char *dup_str;
->-
->-	lenz = strlen(str) + 1;
->-
->-	dup_str = kmalloc(lenz, flags);
->-	if (dup_str == NULL)
->-		return NULL;
->-
->-	memcpy(dup_str, str, lenz);
->-
->-	return dup_str;
->+	return kstrdup(str, flags);
-> }
-> EXPORT_SYMBOL(cfs_strdup);
-
-
-Cheers, Andreas
--- 
-Andreas Dilger
-
-Lustre Software Architect
-Intel High Performance Data Division
-
+> I'd like to add this feature for anonymous mmap memory.  I propose
+> adding an madvise2(unsigned long start, size_t len_in, int behavior,
+> void *ptr, size_t size) syscall and a new MADV_NAME behavior, which
+> treats ptr as a string of length size.  The string would be copied
+> somewhere reusable in the kernel, or reused if it already exists, and
+> the kernel address of the string would get stashed in a new field in
+> struct vm_area_struct.  Adjacent vmas would only get merged if the
+> name pointer matched, and naming part of a mapping would split the
+> mapping.  show_map_vma would print the name only if none of the other
+> existing names rules match.
+>
+> Any comments as I start implementing it?  Is there any reason to allow
+> naming a file-backed mapping and showing it alongside the file name in
+> /proc/pid/maps?
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
