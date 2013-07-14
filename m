@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab3GNTHJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 15:07:09 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:44531 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab3GNTHG (ORCPT
+	id S1753082Ab3GNTHa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 15:07:30 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:42925 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060Ab3GNTH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 15:07:06 -0400
-Date: Sun, 14 Jul 2013 22:06:59 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] SLAB changes for v3.11-rc0
-Message-ID: <alpine.LFD.2.03.1307142205090.2124@kernel.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Sun, 14 Jul 2013 15:07:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Sun, 14 Jul 2013 15:07:25 -0400
+Message-ID: <CAOULuOY5VMiiuYmesaGxVWWKtby4Cj9Pc9ctQZeOKfoUzV46dA@mail.gmail.com>
+Subject: BGRT Pointer in System RAM
+From: Parag Warudkar <parag.lkml@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        luto@amacapital.net, josh@joshtriplett.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Saw this warning running latest git (Ubuntu daily mainline.) It looked
+similar to what Andy saw on MSI hardware -
+http://www.spinics.net/lists/linux-acpi/msg43410.html . The patch for
+it doesn't seem to be merged, although it won't help in my case -
+different hardware with valid status instead of invalid and image
+address falling in system RAM instead of just being wild.
 
-Please pull the latest SLAB tree from:
+Unsure  how this should be handled - moving the is_ram() check in
+efi_bgrt_init and ignoring the BGRT in case where the check succeeds?
+Doesn't sound completely right to me - since the BGRT is valid and
+exists somewhere, but..
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+[    0.015141] ------------[ cut here ]------------
+[    0.015147] WARNING: CPU: 0 PID: 0 at
+/home/apw/COD/linux/arch/x86/mm/ioremap.c:102
+__ioremap_caller+0x312/0x390()
+[ snip ]
+[    0.015160] Call Trace:
+[    0.015165]  [<ffffffff8170a704>] dump_stack+0x46/0x58
+[    0.015169]  [<ffffffff8106406c>] warn_slowpath_common+0x8c/0xc0
+[    0.015171]  [<ffffffff810640ba>] warn_slowpath_null+0x1a/0x20
+[    0.015173]  [<ffffffff81054e32>] __ioremap_caller+0x312/0x390
+[    0.015176]  [<ffffffff814013d4>] ? acpi_tb_verify_table+0x54/0x58
+[    0.015179]  [<ffffffff81d35551>] ? efi_bgrt_init+0x8f/0x143
+[    0.015181]  [<ffffffff81054f07>] ioremap_nocache+0x17/0x20
+[    0.015183]  [<ffffffff81d35551>] efi_bgrt_init+0x8f/0x143
+[    0.015186]  [<ffffffff81401d36>] ? acpi_tb_initialize_facs+0x32/0x34
+[    0.015188]  [<ffffffff81d34e7f>] efi_late_init+0x9/0xb
+[    0.015190]  [<ffffffff81d18f17>] start_kernel+0x3fd/0x419
+[    0.015192]  [<ffffffff81d189ac>] ? do_early_param+0x87/0x87
+[    0.015194]  [<ffffffff81d18120>] ? early_idt_handlers+0x120/0x120
+[    0.015196]  [<ffffffff81d185e6>] x86_64_start_reservations+0x2a/0x2c
 
-Highlights:
+ioremap.c:102
+    /*
+         * Don't allow anybody to remap normal RAM that we're using..
+         */
+        last_pfn = last_addr >> PAGE_SHIFT;
+        for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
+                int is_ram = page_is_ram(pfn);
 
-  - Fix for boot-time problems on some architectures due to
-    init_lock_keys() not respecting kmalloc_caches boundaries
-    (Christoph Lameter)
+                if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
+                        return NULL;
+                WARN_ON_ONCE(is_ram);
+        }
 
-  - CONFIG_SLUB_CPU_PARTIAL requested by RT folks (Joonsoo Kim)
+Looking at the BGRT table from IASL, the status seems to be valid but
+the image address *seems* to me that is falling under system RAM.
 
-  - Fix for excessive slab freelist draining (Wanpeng Li)
+[000h 0000   4]                    Signature : "BGRT"    [Boot
+Graphics Resource Table]
+[004h 0004   4]                 Table Length : 00000038
+[008h 0008   1]                     Revision : 00
+[009h 0009   1]                     Checksum : 3D
+[00Ah 0010   6]                       Oem ID : "HPQOEM"
+[010h 0016   8]                 Oem Table ID : "SLIC-CPC"
+[018h 0024   4]                 Oem Revision : 01072009
+[01Ch 0028   4]              Asl Compiler ID : "AMI "
+[020h 0032   4]        Asl Compiler Revision : 00010013
 
-  - SLUB and SLOB cleanups and fixes (various people)
+[024h 0036   2]                      Version : 0001
+[026h 0038   1]                       Status : 01
+[027h 0039   1]                   Image Type : 00
+[028h 0040   8]                Image Address : 00000000B2E1B018
+[030h 0048   4]                Image OffsetX : 00000279
+[034h 0052   4]                Image OffsetY : 0000014F
 
-The tree also contains Christoph's unification work that I merged in
-too late had to revert because it broke things. We'll try again for
-v3.12.
+Below is from 3.8 kernel - I think that shouldn't make a difference
+given ioremap also find the address in RAM.
 
-			Pekka
-
------------------->
-The following changes since commit 21884a83b2192a00885d7244a1dda32debd2fbc7:
-
-  Merge branch 'timers-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2013-07-06 14:09:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
-
-Christoph Lameter (4):
-      slob: Rework #ifdeffery in slab.h
-      slab: fix init_lock_keys
-      mm/sl[aou]b: Move kmalloc_node functions to common code
-      mm/sl[aou]b: Move kmalloc definitions to slab.h
-
-Joonsoo Kim (2):
-      slub: do not put a slab to cpu partial list when cpu_partial is 0
-      slub: Make cpu partial slab support configurable
-
-Michael Opdenacker (1):
-      slab: add kmalloc() to kernel API documentation
-
-Pekka Enberg (2):
-      Revert "mm/sl[aou]b: Move kmalloc definitions to slab.h"
-      Revert "mm/sl[aou]b: Move kmalloc_node functions to common code"
-
-Sasha Levin (1):
-      slob: use DIV_ROUND_UP where possible
-
-Steven Rostedt (2):
-      slob: Check for NULL pointer before calling ctor()
-      slub: Check for page NULL before doing the node_match check
-
-Wanpeng Li (6):
-      mm/slab: Fix drain freelist excessively
-      mm/slab: Sharing s_next and s_stop between slab and slub
-      mm/slab: Fix /proc/slabinfo unwriteable for slab
-      mm/slub: Drop unnecessary nr_partials
-      mm/slub: Use node_nr_slabs and node_nr_objs in get_slabinfo
-      mm/slab: Give s_next and s_stop slab-specific names
-
-Zhouping Liu (1):
-      mm, slab: moved kmem_cache_alloc_node comment to correct place
-
- include/linux/slab.h     |   57 +++++++++++++++++++++++++++++++++------------
- include/linux/slob_def.h |    8 ------
- init/Kconfig             |   11 +++++++++
- mm/slab.c                |   51 ++++++++++++++++++----------------------
- mm/slab.h                |    3 ++
- mm/slab_common.c         |   18 ++++++++++----
- mm/slob.c                |    4 +-
- mm/slub.c                |   38 +++++++++++++++++++++---------
- 8 files changed, 121 insertions(+), 69 deletions(-)
+$ cat /proc/iomem |grep RAM00010000-0009ffff : System RAM
+00100000-bdb6bfff : System RAM
+be6ef000-be6effff : System RAM
+be8f6000-bed2ffff : System RAM
+beff3000-beffffff : System RAM
+bf000000-bfffffff : RAM buffer
+100001000-2beffffff : System RAM
+2bf000000-2bfffffff : RAM buffer
