@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3GNXGw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 19:06:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40498 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab3GNXGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 19:06:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: abbotti@mev.co.uk, oliver@schinagl.nl, linux@roeck-us.net,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 06/10] sysfs: prevent warning when only using binary attributes
-Date: Sun, 14 Jul 2013 16:05:56 -0700
-Message-Id: <1373843160-3990-7-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
+	id S1753609Ab3GNXIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 19:08:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40729 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753523Ab3GNXGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 19:06:51 -0400
+Message-ID: <1373843199.19894.302.camel@pasglop>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Date: Mon, 15 Jul 2013 09:06:39 +1000
+In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
+References: <20130711214830.611455274@linuxfoundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oliver Schinagl <oliver@schinagl.nl>
+On Thu, 2013-07-11 at 15:01 -0700, Greg Kroah-Hartman wrote:
+> s is the start of the stable review cycle for the 3.10.1 release.
+> There are 19 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied,
+> please
+> let me know.
+> 
+> Responses should be made by Sat Jul 13 21:45:35 UTC 2013.
+> Anything received after that time might be too late.
 
-When only using bin_attrs instead of attrs the kernel prints a warning
-and refuses to create the sysfs entry. This fixes that.
+And you expect that we all have time to dig that out from lkml in 1
+day ? You have a rant about powerpc and don't CC me ? :-)
 
-Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/sysfs/group.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This one is really important/urgent:
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index e5719c60..09a1a25c 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -93,8 +93,8 @@ static int internal_create_group(struct kobject *kobj, int update,
- 	/* Updates may happen before the object has been instantiated */
- 	if (unlikely(update && !kobj->sd))
- 		return -EINVAL;
--	if (!grp->attrs) {
--		WARN(1, "sysfs: attrs not set by subsystem for group: %s/%s\n",
-+	if (!grp->attrs && !grp->bin_attrs) {
-+		WARN(1, "sysfs: (bin_)attrs not set by subsystem for group: %s/%s\n",
- 			kobj->name, grp->name ? "" : grp->name);
- 		return -EINVAL;
- 	}
--- 
-1.8.3.rc0.20.gb99dd2e
+74251fe21bfa9310ddba9e0436d1fcf389e602ee
+"powerpc/powernv: Fix iommu initialization again"
+
+Cheers,
+Ben.
+
 
