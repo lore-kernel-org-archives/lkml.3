@@ -1,115 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab3GNTJX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 15:09:23 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64810 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab3GNTJW (ORCPT
+	id S1753074Ab3GNTXj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 15:23:39 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:35850 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3GNTXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 15:09:22 -0400
+	Sun, 14 Jul 2013 15:23:37 -0400
+Message-ID: <51E2FAB3.3060409@gmail.com>
+Date: Sun, 14 Jul 2013 21:23:31 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAFHTzf+PTVBcMYy2NQBQDLQgsWjbUBc+FYp2Hokd-002hXrePA@mail.gmail.com>
-References: <1373806562-30422-1-git-send-email-artagnon@gmail.com>
-	<CA+55aFwKQQtTrgm7O8MLkqGgno-CsLSTM8tjrjuGmmqPEAZghw@mail.gmail.com>
-	<CAFHTzf+PTVBcMYy2NQBQDLQgsWjbUBc+FYp2Hokd-002hXrePA@mail.gmail.com>
-Date: Sun, 14 Jul 2013 12:09:21 -0700
-X-Google-Sender-Auth: 1G_1gWh_hEyLhAf2Q72A8xAkBio
-Message-ID: <CA+55aFwpfn9FjkYeVpA8aPiGy6o8Z-JgJUNFmKF3H7nGqmbi+w@mail.gmail.com>
-Subject: Re: [LLVMdev] [PATCH] x86/asm: avoid mnemonics without type suffix
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tim Northover <t.p.northover@gmail.com>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Andi Kleen <ak@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LLVMdev <llvmdev@cs.uiuc.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH RFC v3] media: OF: add video sync endpoint property
+References: <1371913383-25088-1-git-send-email-prabhakar.csengg@gmail.com> <51D0548D.7020004@gmail.com> <CA+V-a8uG1KLY-Vjj+0ix2=wV4r=k+tkJ4aDBCN+iN+JZ6my30w@mail.gmail.com> <51DF206E.9010301@gmail.com> <CA+V-a8sxnMkdgrqD=GWYx-7K8UviOKNtvxfw=TMOUWaLWrks=g@mail.gmail.com>
+In-Reply-To: <CA+V-a8sxnMkdgrqD=GWYx-7K8UviOKNtvxfw=TMOUWaLWrks=g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 14, 2013 at 11:35 AM, Tim Northover <t.p.northover@gmail.com> wrote:
->
-> I'm coming at this from the compiler side, where the register form is
-> unambiguous and not questioned. The discussion we're having involves
-> only the immediate form of the instruction. GNU as interprets:
->
->     bt $63, mem
->
-> as
->     btl $63, mem
->
-> which may or may not be what the user intended, but is not the same as
-> "btq $63, mem".
+Hi Prabhakar,
 
-Umm. The user doesn't care. The user wants the best code without
-having to worry about it.
+On 07/12/2013 06:29 AM, Prabhakar Lad wrote:
+> On Fri, Jul 12, 2013 at 2:45 AM, Sylwester Nawrocki
+> <sylvester.nawrocki@gmail.com>  wrote:
+>> On 07/11/2013 01:41 PM, Prabhakar Lad wrote:
+>> [...]
+>>
+>>>>> diff --git a/drivers/media/v4l2-core/v4l2-of.c
+>>>>> b/drivers/media/v4l2-core/v4l2-of.c
+>>>>> index aa59639..1a54530 100644
+>>>>> --- a/drivers/media/v4l2-core/v4l2-of.c
+>>>>> +++ b/drivers/media/v4l2-core/v4l2-of.c
+>>>>> @@ -100,6 +100,26 @@ static void v4l2_of_parse_parallel_bus(const struct
+>>>>> device_node *node,
+>>>>>           if (!of_property_read_u32(node, "data-shift",&v))
+>>>>>                   bus->data_shift = v;
+>>>>>
+>>>>> +       if (!of_property_read_u32(node, "video-sync",&v)) {
+>>>>> +               switch (v) {
+>>>>> +               case V4L2_MBUS_VIDEO_SEPARATE_SYNC:
+>>>>> +                       flags |= V4L2_MBUS_VIDEO_SEPARATE_SYNC;
+>>>>
+>>>>
+>>>>
+>>>> I'm not convinced all those video sync types is something that really
+>>>> belongs
+>>>> to the flags field. In my understanding this field is supposed to hold
+>>>> only
+>>>> the _signal polarity_ information.
+>>>>
+>>>>
+>>> Ok, so there should be a function say v4l2_of_parse_signal_polarity()
+>>> to get the polarity alone then.
+>>
+>>
+>> I don't think this is required, I would just extend
+>> v4l2_of_parse_parallel_bus()
+>> function to also handle sync-on-green-active property.
+>>
+> If that is the case than I have to add a member say 'signal_polarity'
+> in struct v4l2_of_bus_parallel and assign the polarity to it.
+> Let me know if you are OK with it.
 
-Think of it this way: the whole and ONLY point of an assembler is to
-make machine code reasonably easy to write, by not having to worry
-about the exact encoding details. We don't want the users specifying
-the hex representation of the instructions, do we? Or even details
-like "what is the most efficient form of this instruction". For
-example, think about branch offsets and immediates. Most architectures
-have some limits about how long branch offsets or immediates are, and
-a short branch offset may use TOTALLY DIFFERENT instruction encoding
-than a long branch offset.
+It probably would have been sensible to do something like this, however 
+I can't
+see any advantage at the moment. struct v4l2_of_bus_parallel::flags 
+currently
+holds all the polarity flags. Let's just add relevant macros for 
+sync-on-green
+and store them in the flags field, as is done with the others.
+Those V4L2_MUS_* flags are used by soc-camera to negotiate the 
+capabilities,
+so I would rather not split them further without good reason, even though
+struct v4l2_mbus_config::flags is used in those negotiation routines, 
+rather
+than struct v4l2_of_bus_parallel::flags.
 
-Do you really expect that the user says "jnel" for the long form of
-the "jne" instruction? And "jnes" if you want the
-smaller/faster/simpler 8-bit version?
+--
+Thanks,
+Sylwester
 
-No sane person actually wants that, and no modern assembler does that
-(although I can remember ones that did - ugh). You write "jne target"
-and depend on the assembler doing the right thing. Or you write "add
-$5,%eax", and depend on the fact that the assembler will use the much
-shorter version of the "add" instruction that just takes a 8-bit
-signed value instead of the full 32-bit immediate. Or any number of
-details like this ("there are special versions that only work on %eax"
-etc rules)
 
-And that is why I think you should just consider "bt $x,y" to be
-trivially the same thing and not at all ambiguous. Because there is
-ABSOLUTELY ZERO ambiguity when people write
-
-   bt $63, mem
-
-Zero. Nada. None. The semantics are *exactly* the same for btl and btq
-in this case, so why would you want the user to specify one or the
-other? The user may be knowledgeable about the architecture, and know
-that "btl" is one byte shorter than "btq", and use "btl" for that
-reason. You seem to argue that that is the "right thing"(tm) to do,
-since that's what the instruction encoding will be. But if that's the
-case, then you are arguing that "jne target" is "ambiguous" because
-there are two different ways to encode that too? Do you seriously
-argue that?
-
-So I'm arguing that that is wrong for an assembler to not just do the
-right thing, because the user isn't *supposed* to have to know about
-things like "one byte shorter encoding format". And there really is no
-semantic difference between the two forms. So making the user specify
-the size is just going to cause problems (in particular, it might well
-make users go "this is an array of 64-bit entities, so I should use
-btq", even though that is actually incorrect).
-
-Now, I obviously think that the user should have the choice to
-*override* the default thing, so sometimes you might have
-
-   /* We use a 64-bit btsq to encourage the CPU to do it as a 64-bit
-read-modify-write, since we will do a 64-bit read of the result later,
-and otherwise we'll get a partial write buffer stall */
-
-   btsq $63, mem
-
-and then the assembler had obviously better use the size information
-the user gave it. But the thing is, this is basically never a concern
-in practice, and when it is, the assembler really cannot know (it
-could go either way: maybe the bts is following a 32-bit write, and
-you want the 32-bit version - and I suspect that the likelihood of
-most users getting this right by hand is quite low too).
-
-(Side note: I'm not even going to guarantee that the actual CPU uses
-the operand size for the memory access size. The manuals imply they
-do, but since there are no real semantic reasons to enforce that, I
-could imagine that some microarchitecture doesn't actually care).
-
-                    Linus
