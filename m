@@ -1,47 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab3GNA5X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 20:57:23 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:45497 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab3GNA5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 20:57:22 -0400
-Message-ID: <51E1F769.7090208@gmail.com>
-Date: Sun, 14 Jul 2013 08:57:13 +0800
-From: Sam Ben <sam.bennn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752345Ab3GNBGk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 21:06:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54709 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111Ab3GNBGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 21:06:39 -0400
+Message-ID: <51E1F988.7010700@zytor.com>
+Date: Sat, 13 Jul 2013 18:06:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Alex Elsayed <eternaleye@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: RFC: named anonymous vmas
-References: <CAMbhsRQU=xrcum+ZUbG3S+JfFUJK_qm_VB96Vz=PpL=vQYhUvg@mail.gmail.com> <20130622103158.GA16304@infradead.org> <CAMbhsRTz246dWPQOburNor2HvrgbN-AWb2jT_AEywtJHFbKWsA@mail.gmail.com> <kq4v0b$p8p$3@ger.gmane.org> <20130624114832.GA9961@infradead.org>
-In-Reply-To: <20130624114832.GA9961@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT pull] x86 updates for 3.11
+References: <alpine.DEB.2.02.1307131317350.11918@ionos.tec.linutronix.de> <CA+55aFwJAV7DnMAyMm+Hdp3uYrgn+BRcBS4cLGf+KGQCdhKwbg@mail.gmail.com>
+In-Reply-To: <CA+55aFwJAV7DnMAyMm+Hdp3uYrgn+BRcBS4cLGf+KGQCdhKwbg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
-On 06/24/2013 07:48 PM, Christoph Hellwig wrote:
-> On Sat, Jun 22, 2013 at 12:47:29PM -0700, Alex Elsayed wrote:
->> Couldn't this be done by having a root-only tmpfs, and having a userspace
->> component that creates per-app directories with restrictive permissions on
->> startup/app install? Then each app creates files in its own directory, and
->> can pass the fds around.
-> Honestly having a device that allows passing fds around that can be
-> mmaped sounds a lot simpler.  I have to admit that I expect /dev/zero
-> to do this, but looking at the code it creates new file structures
-> at ->mmap time which would defeat this.
+Fail on me.  I got rushed and sloppy.  I really need to automate looking
+for warnings pre-commit and not rely on Fengguang's robot.
 
-Could you point out where done this?
-
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+	-hpa
 
