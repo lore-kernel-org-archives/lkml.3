@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3GNVlo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 17:41:44 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:37174 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab3GNVlm (ORCPT
+	id S1753409Ab3GNVl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 17:41:59 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:58335 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab3GNVln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 17:41:42 -0400
+	Sun, 14 Jul 2013 17:41:43 -0400
 From: Javier Martinez Canillas <javier@dowhile0.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Henrik Rydberg <rydberg@euromail.se>, Ferruh Yigit <fery@cypress.com>,
@@ -14,9 +14,11 @@ Cc: Henrik Rydberg <rydberg@euromail.se>, Ferruh Yigit <fery@cypress.com>,
         linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier@dowhile0.org>
 Subject: [PATCH 1/1] MAINTAINERS: Change maintainer for cyttsp driver
-Date: Sun, 14 Jul 2013 23:41:21 +0200
-Message-Id: <1373838082-12372-1-git-send-email-javier@dowhile0.org>
+Date: Sun, 14 Jul 2013 23:41:22 +0200
+Message-Id: <1373838082-12372-2-git-send-email-javier@dowhile0.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1373838082-12372-1-git-send-email-javier@dowhile0.org>
+References: <1373838082-12372-1-git-send-email-javier@dowhile0.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
