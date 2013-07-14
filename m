@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab3GNXG4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 19:06:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40508 "EHLO
+	id S1753598Ab3GNXGz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 19:06:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40501 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab3GNXGP (ORCPT
+	with ESMTP id S1753525Ab3GNXGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 19:06:15 -0400
+	Sun, 14 Jul 2013 19:06:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: abbotti@mev.co.uk, oliver@schinagl.nl, linux@roeck-us.net,
+        Jean Delvare <khali@linux-fr.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 08/10] driver core: add default groups to struct class
-Date: Sun, 14 Jul 2013 16:05:58 -0700
-Message-Id: <1373843160-3990-9-git-send-email-gregkh@linuxfoundation.org>
+Subject: [PATCH 07/10] driver core: Introduce device_create_groups
+Date: Sun, 14 Jul 2013 16:05:57 -0700
+Message-Id: <1373843160-3990-8-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
@@ -21,79 +22,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should be using groups, not attribute lists, for classes to allow
-subdirectories, and soon, binary files.  Groups are just more flexible
-overall, so add them.
+From: Guenter Roeck <linux@roeck-us.net>
 
-The dev_attrs list will go away after all in-kernel users are converted
-to use dev_groups.
+device_create_groups lets callers create devices as well as associated
+sysfs attributes with a single call. This avoids race conditions seen
+if sysfs attributes on new devices are created later.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+[fixed up comment block placement and add checks for printk buffer
+formats - gregkh]
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/base/core.c    | 9 ++++++++-
- include/linux/device.h | 4 +++-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/base/core.c    | 111 ++++++++++++++++++++++++++++++++++++-------------
+ include/linux/device.h |   5 +++
+ 2 files changed, 88 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/base/core.c b/drivers/base/core.c
-index a8aae182..8856d745 100644
+index dc3ea237..a8aae182 100644
 --- a/drivers/base/core.c
 +++ b/drivers/base/core.c
-@@ -528,9 +528,12 @@ static int device_add_attrs(struct device *dev)
- 	int error;
- 
- 	if (class) {
--		error = device_add_attributes(dev, class->dev_attrs);
-+		error = device_add_groups(dev, class->dev_groups);
- 		if (error)
- 			return error;
-+		error = device_add_attributes(dev, class->dev_attrs);
-+		if (error)
-+			goto err_remove_class_groups;
- 		error = device_add_bin_attributes(dev, class->dev_bin_attrs);
- 		if (error)
- 			goto err_remove_class_attrs;
-@@ -563,6 +566,9 @@ static int device_add_attrs(struct device *dev)
-  err_remove_class_attrs:
- 	if (class)
- 		device_remove_attributes(dev, class->dev_attrs);
-+ err_remove_class_groups:
-+	if (class)
-+		device_remove_groups(dev, class->dev_groups);
- 
- 	return error;
- }
-@@ -581,6 +587,7 @@ static void device_remove_attrs(struct device *dev)
- 	if (class) {
- 		device_remove_attributes(dev, class->dev_attrs);
- 		device_remove_bin_attributes(dev, class->dev_bin_attrs);
-+		device_remove_groups(dev, class->dev_groups);
- 	}
+@@ -1667,34 +1667,11 @@ static void device_create_release(struct device *dev)
+ 	kfree(dev);
  }
  
+-/**
+- * device_create_vargs - creates a device and registers it with sysfs
+- * @class: pointer to the struct class that this device should be registered to
+- * @parent: pointer to the parent struct device of this new device, if any
+- * @devt: the dev_t for the char device to be added
+- * @drvdata: the data to be added to the device for callbacks
+- * @fmt: string for the device's name
+- * @args: va_list for the device's name
+- *
+- * This function can be used by char device classes.  A struct device
+- * will be created in sysfs, registered to the specified class.
+- *
+- * A "dev" file will be created, showing the dev_t for the device, if
+- * the dev_t is not 0,0.
+- * If a pointer to a parent struct device is passed in, the newly created
+- * struct device will be a child of that device in sysfs.
+- * The pointer to the struct device will be returned from the call.
+- * Any further sysfs files that might be required can be created using this
+- * pointer.
+- *
+- * Returns &struct device pointer on success, or ERR_PTR() on error.
+- *
+- * Note: the struct class passed to this function must have previously
+- * been created with a call to class_create().
+- */
+-struct device *device_create_vargs(struct class *class, struct device *parent,
+-				   dev_t devt, void *drvdata, const char *fmt,
+-				   va_list args)
++static struct device *
++device_create_groups_vargs(struct class *class, struct device *parent,
++			   dev_t devt, void *drvdata,
++			   const struct attribute_group **groups,
++			   const char *fmt, va_list args)
+ {
+ 	struct device *dev = NULL;
+ 	int retval = -ENODEV;
+@@ -1711,6 +1688,7 @@ struct device *device_create_vargs(struct class *class, struct device *parent,
+ 	dev->devt = devt;
+ 	dev->class = class;
+ 	dev->parent = parent;
++	dev->groups = groups;
+ 	dev->release = device_create_release;
+ 	dev_set_drvdata(dev, drvdata);
+ 
+@@ -1728,6 +1706,39 @@ error:
+ 	put_device(dev);
+ 	return ERR_PTR(retval);
+ }
++
++/**
++ * device_create_vargs - creates a device and registers it with sysfs
++ * @class: pointer to the struct class that this device should be registered to
++ * @parent: pointer to the parent struct device of this new device, if any
++ * @devt: the dev_t for the char device to be added
++ * @drvdata: the data to be added to the device for callbacks
++ * @fmt: string for the device's name
++ * @args: va_list for the device's name
++ *
++ * This function can be used by char device classes.  A struct device
++ * will be created in sysfs, registered to the specified class.
++ *
++ * A "dev" file will be created, showing the dev_t for the device, if
++ * the dev_t is not 0,0.
++ * If a pointer to a parent struct device is passed in, the newly created
++ * struct device will be a child of that device in sysfs.
++ * The pointer to the struct device will be returned from the call.
++ * Any further sysfs files that might be required can be created using this
++ * pointer.
++ *
++ * Returns &struct device pointer on success, or ERR_PTR() on error.
++ *
++ * Note: the struct class passed to this function must have previously
++ * been created with a call to class_create().
++ */
++struct device *device_create_vargs(struct class *class, struct device *parent,
++				   dev_t devt, void *drvdata, const char *fmt,
++				   va_list args)
++{
++	return device_create_groups_vargs(class, parent, devt, drvdata, NULL,
++					  fmt, args);
++}
+ EXPORT_SYMBOL_GPL(device_create_vargs);
+ 
+ /**
+@@ -1767,6 +1778,50 @@ struct device *device_create(struct class *class, struct device *parent,
+ }
+ EXPORT_SYMBOL_GPL(device_create);
+ 
++/**
++ * device_create_with_groups - creates a device and registers it with sysfs
++ * @class: pointer to the struct class that this device should be registered to
++ * @parent: pointer to the parent struct device of this new device, if any
++ * @devt: the dev_t for the char device to be added
++ * @drvdata: the data to be added to the device for callbacks
++ * @groups: NULL-terminated list of attribute groups to be created
++ * @fmt: string for the device's name
++ *
++ * This function can be used by char device classes.  A struct device
++ * will be created in sysfs, registered to the specified class.
++ * Additional attributes specified in the groups parameter will also
++ * be created automatically.
++ *
++ * A "dev" file will be created, showing the dev_t for the device, if
++ * the dev_t is not 0,0.
++ * If a pointer to a parent struct device is passed in, the newly created
++ * struct device will be a child of that device in sysfs.
++ * The pointer to the struct device will be returned from the call.
++ * Any further sysfs files that might be required can be created using this
++ * pointer.
++ *
++ * Returns &struct device pointer on success, or ERR_PTR() on error.
++ *
++ * Note: the struct class passed to this function must have previously
++ * been created with a call to class_create().
++ */
++struct device *device_create_with_groups(struct class *class,
++					 struct device *parent, dev_t devt,
++					 void *drvdata,
++					 const struct attribute_group **groups,
++					 const char *fmt, ...)
++{
++	va_list vargs;
++	struct device *dev;
++
++	va_start(vargs, fmt);
++	dev = device_create_groups_vargs(class, parent, devt, drvdata, groups,
++					 fmt, vargs);
++	va_end(vargs);
++	return dev;
++}
++EXPORT_SYMBOL_GPL(device_create_with_groups);
++
+ static int __match_devt(struct device *dev, const void *data)
+ {
+ 	const dev_t *devt = data;
 diff --git a/include/linux/device.h b/include/linux/device.h
-index bd5931e8..22b546a5 100644
+index f207a8f4..bd5931e8 100644
 --- a/include/linux/device.h
 +++ b/include/linux/device.h
-@@ -320,6 +320,7 @@ int subsys_virtual_register(struct bus_type *subsys,
-  * @name:	Name of the class.
-  * @owner:	The module owner.
-  * @class_attrs: Default attributes of this class.
-+ * @dev_groups:	Default attributes of the devices that belong to the class.
-  * @dev_attrs:	Default attributes of the devices belong to the class.
-  * @dev_bin_attrs: Default binary attributes of the devices belong to the class.
-  * @dev_kobj:	The kobject that represents this class and links it into the hierarchy.
-@@ -349,7 +350,8 @@ struct class {
- 	struct module		*owner;
+@@ -938,6 +938,11 @@ extern __printf(5, 6)
+ struct device *device_create(struct class *cls, struct device *parent,
+ 			     dev_t devt, void *drvdata,
+ 			     const char *fmt, ...);
++extern __printf(6, 7)
++struct device *device_create_with_groups(struct class *cls,
++			     struct device *parent, dev_t devt, void *drvdata,
++			     const struct attribute_group **groups,
++			     const char *fmt, ...);
+ extern void device_destroy(struct class *cls, dev_t devt);
  
- 	struct class_attribute		*class_attrs;
--	struct device_attribute		*dev_attrs;
-+	struct device_attribute		*dev_attrs;	/* use dev_groups instead */
-+	const struct attribute_group	**dev_groups;
- 	struct bin_attribute		*dev_bin_attrs;
- 	struct kobject			*dev_kobj;
- 
+ /*
 -- 
 1.8.3.rc0.20.gb99dd2e
 
