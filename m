@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab3GNTaE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 15:30:04 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43253 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab3GNTaD (ORCPT
+	id S1753167Ab3GNTa0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 15:30:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58280 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab3GNTaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 15:30:03 -0400
+	Sun, 14 Jul 2013 15:30:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Neil Zhang <zhangwm@marvell.com>
+Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+Date: Sun, 14 Jul 2013 21:29:43 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jason Cooper <jason@lakedaemon.net>, Matt Sealey <neko@bakuhatsu.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com> <20130710214922.GQ11908@titan.lakedaemon.net> <175CCF5F49938B4D99B2E3EF7F558EBE3DBC97FDFA@SC-VEXCH4.marvell.com>
+In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE3DBC97FDFA@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwpfn9FjkYeVpA8aPiGy6o8Z-JgJUNFmKF3H7nGqmbi+w@mail.gmail.com>
-References: <1373806562-30422-1-git-send-email-artagnon@gmail.com>
-	<CA+55aFwKQQtTrgm7O8MLkqGgno-CsLSTM8tjrjuGmmqPEAZghw@mail.gmail.com>
-	<CAFHTzf+PTVBcMYy2NQBQDLQgsWjbUBc+FYp2Hokd-002hXrePA@mail.gmail.com>
-	<CA+55aFwpfn9FjkYeVpA8aPiGy6o8Z-JgJUNFmKF3H7nGqmbi+w@mail.gmail.com>
-Date: Sun, 14 Jul 2013 19:30:00 +0000
-Message-ID: <CAFHTzf+O7sdeETp5nsnoQDFeg-zE4q6Kmq9rHPZEr5z2jm2zxg@mail.gmail.com>
-Subject: Re: [LLVMdev] [PATCH] x86/asm: avoid mnemonics without type suffix
-From: Tim Northover <t.p.northover@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Andi Kleen <ak@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LLVMdev <llvmdev@cs.uiuc.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="gb2312"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307142129.43271.arnd@arndb.de>
+X-Provags-ID: V02:K0:yzufvrmF/lKNZ5pSnIkXA8u1Ss2Df2DeYeLRgpxetoM
+ Yv4QrYJRKjbQIoDddR1y882UTECACWqNKvprvnlh1Oh+qzBbK7
+ lMwn82hNEO5fLiQ2GlRutzFJDUiY4iSt2J6KRbGmQbdwvpv9Qi
+ 9IkAdmkDZabORf66ZbJZ/R/uak0AD+Qn1Tdt2d1ZAoPb9kPfLC
+ ZZG0LD2zmlkgf615FVBbT3oPQBLaLCAgRhH8X/Bu4SHH7S3UxL
+ z+TYV6/RE1eeYxZib55QwkK4+Q73Tl5uf0PNonXx4bkeobbnqX
+ +5yMjCesreFryEHiUR6lRSHlfMxJ/zehe93yNEJ8n+RTS7ApiM
+ VcCZxsdJFRSN2UulhHTI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And that is why I think you should just consider "bt $x,y" to be
-> trivially the same thing and not at all ambiguous. Because there is
-> ABSOLUTELY ZERO ambiguity when people write
->
->    bt $63, mem
->
-> Zero. Nada. None. The semantics are *exactly* the same for btl and btq
-> in this case, so why would you want the user to specify one or the
-> other?
+On Thursday 11 July 2013, Neil Zhang wrote:
+> > > > To do this properly, the drivers are going to have to be compatible
+> > > > with the old and the new names, and the binding docs updated to
+> > > > reflect the legacy name and the preferred name.
+> > >
+> > > Properly would be as above. You can stop using stock tickers for new
+> > > company names, but anything that has been defined in a device tree
+> > > before has to stay that way, and all the manufacturer prefixes to
+> > > device names should be the same. What you're proposing is purely
+> > > driver bloat and increasing the size of kernel.
+> > 
+> > *I'm* not proposing to change the name, Neil is.  I'm proposing that
+> > iff they chose to do that, don't break sh*t along the way.
+> > 
+> 
+> What's your opinion?
 
-I don't think you've actually tested that, have you? (x86-64)
+We discussed the topic of fixing bad bindings vs. keeping backwards
+compatibility during last week's Linaro Connect.
 
-int main() {
-  long val = 0xffffffff;
-  char res;
+The main outcome was that we need to have a better review for new bindings
+getting merged to avoid this situation in the future, but the general
+consensus seems that bindings that are already in use but were never
+reviewed properly (which should have caught this) should be changed.
+We will likely establish an annotation in the binding soon to mark those
+that can not be changed as opposed to those that are not considered stable
+yet.
 
-  asm("btl $63, %1\n\tsetc %0" : "=r"(res) : "m"(val));
-  printf("%d\n", res);
-
-  asm("btq $63, %1\n\tsetc %0" : "=r"(res) : "m"(val));
-  printf("%d\n", res);
-}
-
-Tim.
+	Arnd
