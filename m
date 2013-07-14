@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab3GNR4w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 13:56:52 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:65049 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab3GNR4v (ORCPT
+	id S1752895Ab3GNS0v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 14:26:51 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:41652 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab3GNS0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 13:56:51 -0400
-Message-ID: <51E2E65D.5050803@openvz.org>
-Date: Sun, 14 Jul 2013 21:56:45 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	Sun, 14 Jul 2013 14:26:50 -0400
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] drm/i915: fix long-standing SNB regression in power consumption
- after resume
-References: <20130714163009.22374.22100.stgit@zurg> <CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
-In-Reply-To: <CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFwKQQtTrgm7O8MLkqGgno-CsLSTM8tjrjuGmmqPEAZghw@mail.gmail.com>
+References: <1373806562-30422-1-git-send-email-artagnon@gmail.com> <CA+55aFwKQQtTrgm7O8MLkqGgno-CsLSTM8tjrjuGmmqPEAZghw@mail.gmail.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Sun, 14 Jul 2013 23:56:10 +0530
+Message-ID: <CALkWK0nWO3E2pOLKDds68d_SLA_72e2ok9AV7UvbN6Qa4yAoig@mail.gmail.com>
+Subject: Re: [PATCH] x86/asm: avoid mnemonics without type suffix
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eli Friedman <eli.friedman@gmail.com>,
+        Jim Grosbach <grosbach@apple.com>, Stephen Checkoway <s@pahtak.org>,
+        LLVMdev <llvmdev@cs.uiuc.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Vetter wrote:
-> On Sun, Jul 14, 2013 at 6:30 PM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org>  wrote:
->> This patch fixes regression in power consumtion of sandy bridge gpu, which
->> exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
->> it's extremely busy. After that it never reaches rc6 state.
->>
->> Bug was introduce by commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
->> ("drm/i915: load boot context at driver init time"). Without documentation
->> it's not clear what is happening here, probably this breaks internal state of
->> hardware ring buffers and confuses RPS engine. Fortunately keeping forcewake
->> during whole initialization sequence in gen6_init_clock_gating() fixes this bug.
->>
->> References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+Linus Torvalds wrote:
+>>   btrl  $1, 0
+>>   btr   $1, 0
+>>   btsl  $1, 0
+>>   bts   $1, 0
 >
-> We already hold an forcewake reference while setting up the rps stuff,
-> should we maybe hold the forcewake for the entire duration, i.e. grab
-> it here in clock_gating and release it only in gen6/vlv_enable_rps?
-> Can you please test that version, too?
+> What the heck is that supposed to show?
 
-This will be racy because rps stuff is done in separate work which might be canceled
-if intel_disable_gt_powersave() happens before its completion.
+I was trying to show a reduced case where gas doesn't complain, but
+llvm-mc does.  Try compiling this with llvm-mc, and you'll get:
 
->
-> In any case the forcewake grabbing here in the clock gating function
-> needs a big comment that otherwise setting the MCTL register might
-> break rc6 entry.
-> -Daniel
->
->> ---
->>   drivers/gpu/drm/i915/intel_pm.c |    4 ++++
->>   1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
->> index aa01128..839a43f 100644
->> --- a/drivers/gpu/drm/i915/intel_pm.c
->> +++ b/drivers/gpu/drm/i915/intel_pm.c
->> @@ -3640,6 +3640,8 @@ static void gen6_init_clock_gating(struct drm_device *dev)
->>          int pipe;
->>          uint32_t dspclk_gate = ILK_VRHUNIT_CLOCK_GATE_DISABLE;
->>
->> +       gen6_gt_force_wake_get(dev_priv);
->> +
->>          I915_WRITE(ILK_DSPCLK_GATE_D, dspclk_gate);
->>
->>          I915_WRITE(ILK_DISPLAY_CHICKEN2,
->> @@ -3728,6 +3730,8 @@ static void gen6_init_clock_gating(struct drm_device *dev)
->>          cpt_init_clock_gating(dev);
->>
->>          gen6_check_mch_setup(dev);
->> +
->> +       gen6_gt_force_wake_put(dev_priv);
->>   }
->>
->>   static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
->>
->
->
->
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+        .text
+        btrl    $1, 0
+in.s:2:1: error: ambiguous instructions require an explicit suffix
+      (could be 'btrw', 'btrl', or 'btrq')
+btr     $1, 0
+^
+        btsl    $1, 0
+in.s:4:1: error: ambiguous instructions require an explicit suffix
+      (could be 'btsw', 'btsl', or 'btsq')
+bts     $1, 0
+^
 
+Obviously, I misunderstood something major and screwed up the commit message.
+
+> int main(int argc, char **argv)
+> {
+>   asm("bt %1,%0":"=m" (**argv): "a" (argc));
+>   asm("bt %1,%0":"=m" (**argv): "a" ((unsigned long)(argc)));
+> }
+
+Right, so in:
+
+int main(int argc, char **argv)
+{
+  asm("bts %1,%0":"=m" (**argv): "r" (argc));
+  asm("btsl %1,%0":"=m" (**argv): "r" (argc));
+  asm("btr %1,%0":"=m" (**argv): "r" ((unsigned long)(argc)));
+  asm("btrq %1,%0":"=m" (**argv): "r" ((unsigned long)(argc)));
+}
+
+bts disambiguates to btsl, and btr disambiguates to btrq, as
+advertised.  Is it dependent on whether I have a 32-bit machine or
+64-bit machine, or just on the operand lengths?
+
+Either way, this is not a very enlightening example, because clang
+also compiles this fine, and doesn't complain about any ambiguity.  To
+see the ambiguity I'm talking about, try to compile linux.git with
+clang; I'll paste one error:
+
+arch/x86/include/asm/bitops.h:129:15: error: ambiguous instructions
+      require an explicit suffix (could be 'btrw', 'btrl', or 'btrq')
+        asm volatile("btr %1,%0" : ADDR : "Ir" (nr));
+                     ^
+<inline asm>:1:2: note: instantiated into assembly here
+        btr $0,(%rsi)
+        ^
+
+Since nr is an int, and ADDR is *(volatile long *), this should
+disambiguate to btrl, right?  Any clue why clang is complaining?
