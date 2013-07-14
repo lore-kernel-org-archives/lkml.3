@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab3GNFuj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 01:50:39 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:49493 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab3GNFui (ORCPT
+	id S1751383Ab3GNFzy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 01:55:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64425 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3GNFzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 01:50:38 -0400
-Message-ID: <51E2E485.9090902@gmail.com>
-Date: Sun, 14 Jul 2013 13:48:53 -0400
-From: Dong Fang <yp.fangdong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Dong Fang <yp.fangdong@gmail.com>
-CC: viro@zeniv.linux.org.uk, nyc@holomorphy.com, fweisbec@gmail.com,
-        dhowells@redhat.com, mchehab@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] kprobes: fix compiler warning
-References: <1372689999-30921-1-git-send-email-yp.fangdong@gmail.com>
-In-Reply-To: <1372689999-30921-1-git-send-email-yp.fangdong@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 14 Jul 2013 01:55:53 -0400
+Message-ID: <1373781316.7242.34.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: Add logic to handle parallel try_to_wake_up() of
+ the same task
+From: Mike Galbraith <bitbucket@online.de>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Sun, 14 Jul 2013 07:55:16 +0200
+In-Reply-To: <1517081373730349@web23d.yandex.ru>
+References: <1517081373730349@web23d.yandex.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:iApsxWkXvQFVSrgHtC7knpbFuBixsgdcaay6Sni6pao
+ eor8zjB/zWM9SKMKBf2toYfyYggq6n8fD3HxGzkZodXxoEVgR7
+ 9yXaiUS1KnwtZsLcd1YR89386XQejU3vYtSVkn1e0xJfvPGCya
+ RVM8B8OLEM/4p4f+k07omXmLcK3wUqK06msX8cXG3ePNJhjh1i
+ WZGq21jXul6lQV5GOq3Tv0B4N/HbgdZuVid61/zH75oQgjAPGV
+ zuixEZEUOPUkYBGsELMt4qTqcXx7F4c24SNMO5Mc36u7Or9j1W
+ +jPxk0QoOZmSj195TKgJgxwrG/O77avKaNRunWfg4sakyH9Z75
+ rY7OAjCqaScNKKJq5ScF/TYCVqBESlmvxq0/D31F8BAiS5hHkH
+ +po9hbBtb0ETA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2013 10:46 AM, Dong Fang wrote:
-> Fix the following compiler warning of uninitialized variable
->
-> kernel/kprobes.c: In function 'register_kprobe':
-> kernel/kprobes.c:1493: warning: 'probed_mod' may be used uninitialized in this function
->
-> Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
-> ---
->   kernel/kprobes.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index bddf3b2..7a5b2b1 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1490,7 +1490,7 @@ int __kprobes register_kprobe(struct kprobe *p)
->   {
->   	int ret;
->   	struct kprobe *old_p;
-> -	struct module *probed_mod;
-> +	struct module *probed_mod = NULL;
->   	kprobe_opcode_t *addr;
->
->   	/* Adjust probe address from symbol */
->
-can anybody take a look at this patch and give me some feedback? thx
+On Sat, 2013-07-13 at 19:45 +0400, Kirill Tkhai wrote: 
+> This patch adds optimization of try_to_wake_up() function
+> for cases when the system is doing parallel wake_up
+> of the same task on the different cpus. Also it adds
+> accounting the statistics of these situations.
+> 
+> We check the status of the task we want to wake up.
+> If it is TASK_WAKING then the task is manipulated
+> by try_to_wake_up() on another cpu. And after this
+> check it will be a moment when the task is queued
+> and his status is TASK_RUNNING. We just return
+> earlier when we are sure the task will be TASK_RUNNING
+> in the future (maybe right after the check). The profit is
+> we don't loop while we are waiting the spinlock.
+
+Hm, you're adding cycles to the common case to shave spin cycles in the
+very rare case, then spending some to note that a collision happened.
+What makes recording worth even 1 cycle?  What am I gonna do with the
+knowledge that $dinkynum wakeups intersected at a some random task?
+
+-Mike
+
+
