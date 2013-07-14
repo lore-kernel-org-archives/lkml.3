@@ -1,165 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab3GNNAP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 09:00:15 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:48580 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab3GNNAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 09:00:13 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Andi Kleen <ak@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Eli Friedman <eli.friedman@gmail.com>,
-        Jim Grosbach <grosbach@apple.com>, Stephen Checkoway <s@pahtak.org>,
-        LLVMdev <llvmdev@cs.uiuc.edu>
-Subject: [PATCH] x86/asm: avoid mnemonics without type suffix
-Date: Sun, 14 Jul 2013 18:26:02 +0530
-Message-Id: <1373806562-30422-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.3.2.736.g869de25
+	id S1752424Ab3GNNOZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 09:14:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752272Ab3GNNOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 09:14:22 -0400
+Date: Sun, 14 Jul 2013 16:12:41 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+Message-ID: <20130714131241.GA11772@redhat.com>
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
+ <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1c54d77 (x86: partial unification of asm-x86/bitops.h, 2008-01-30)
-changed a bunch of btrl/btsl instructions to btr/bts, with the following
-justification:
+On Mon, Jun 24, 2013 at 06:13:42PM +0530, Raghavendra K T wrote:
+> kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
+> 
+> From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+> 
+> During smp_boot_cpus  paravirtualied KVM guest detects if the hypervisor has
+> required feature (KVM_FEATURE_PV_UNHALT) to support pv-ticketlocks. If so,
+>  support for pv-ticketlocks is registered via pv_lock_ops.
+> 
+> Use KVM_HC_KICK_CPU hypercall to wakeup waiting/halted vcpu.
+> 
+> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+> Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
+> [Raghu: check_zero race fix, enum for kvm_contention_stat
+> jumplabel related changes ]
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
+>  arch/x86/include/asm/kvm_para.h |   14 ++
+>  arch/x86/kernel/kvm.c           |  255 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 267 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index 695399f..427afcb 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -118,10 +118,20 @@ void kvm_async_pf_task_wait(u32 token);
+>  void kvm_async_pf_task_wake(u32 token);
+>  u32 kvm_read_and_reset_pf_reason(void);
+>  extern void kvm_disable_steal_time(void);
+> -#else
+> -#define kvm_guest_init() do { } while (0)
+> +
+> +#ifdef CONFIG_PARAVIRT_SPINLOCKS
+> +void __init kvm_spinlock_init(void);
+> +#else /* !CONFIG_PARAVIRT_SPINLOCKS */
+> +static inline void kvm_spinlock_init(void)
+> +{
+> +}
+> +#endif /* CONFIG_PARAVIRT_SPINLOCKS */
+> +
+> +#else /* CONFIG_KVM_GUEST */
+> +#define kvm_guest_init() do {} while (0)
+>  #define kvm_async_pf_task_wait(T) do {} while(0)
+>  #define kvm_async_pf_task_wake(T) do {} while(0)
+> +
+>  static inline u32 kvm_read_and_reset_pf_reason(void)
+>  {
+>  	return 0;
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index cd6d9a5..97ade5a 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/slab.h>
+>  #include <linux/kprobes.h>
+> +#include <linux/debugfs.h>
+>  #include <asm/timer.h>
+>  #include <asm/cpu.h>
+>  #include <asm/traps.h>
+> @@ -419,6 +420,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
+>  	WARN_ON(kvm_register_clock("primary cpu clock"));
+>  	kvm_guest_cpu_init();
+>  	native_smp_prepare_boot_cpu();
+> +	kvm_spinlock_init();
+>  }
+>  
+>  static void __cpuinit kvm_guest_cpu_online(void *dummy)
+> @@ -523,3 +525,256 @@ static __init int activate_jump_labels(void)
+>  	return 0;
+>  }
+>  arch_initcall(activate_jump_labels);
+> +
+> +/* Kick a cpu by its apicid. Used to wake up a halted vcpu */
+> +void kvm_kick_cpu(int cpu)
+> +{
+> +	int apicid;
+> +
+> +	apicid = per_cpu(x86_cpu_to_apicid, cpu);
+> +	kvm_hypercall1(KVM_HC_KICK_CPU, apicid);
+> +}
+> +
+> +#ifdef CONFIG_PARAVIRT_SPINLOCKS
+> +
+> +enum kvm_contention_stat {
+> +	TAKEN_SLOW,
+> +	TAKEN_SLOW_PICKUP,
+> +	RELEASED_SLOW,
+> +	RELEASED_SLOW_KICKED,
+> +	NR_CONTENTION_STATS
+> +};
+> +
+> +#ifdef CONFIG_KVM_DEBUG_FS
+> +#define HISTO_BUCKETS	30
+> +
+> +static struct kvm_spinlock_stats
+> +{
+> +	u32 contention_stats[NR_CONTENTION_STATS];
+> +	u32 histo_spin_blocked[HISTO_BUCKETS+1];
+> +	u64 time_blocked;
+> +} spinlock_stats;
+> +
+> +static u8 zero_stats;
+> +
+> +static inline void check_zero(void)
+> +{
+> +	u8 ret;
+> +	u8 old;
+> +
+> +	old = ACCESS_ONCE(zero_stats);
+> +	if (unlikely(old)) {
+> +		ret = cmpxchg(&zero_stats, old, 0);
+> +		/* This ensures only one fellow resets the stat */
+> +		if (ret == old)
+> +			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
+> +	}
+> +}
+> +
+> +static inline void add_stats(enum kvm_contention_stat var, u32 val)
+> +{
+> +	check_zero();
+> +	spinlock_stats.contention_stats[var] += val;
+> +}
+> +
+> +
+> +static inline u64 spin_time_start(void)
+> +{
+> +	return sched_clock();
+> +}
+> +
+> +static void __spin_time_accum(u64 delta, u32 *array)
+> +{
+> +	unsigned index;
+> +
+> +	index = ilog2(delta);
+> +	check_zero();
+> +
+> +	if (index < HISTO_BUCKETS)
+> +		array[index]++;
+> +	else
+> +		array[HISTO_BUCKETS]++;
+> +}
+> +
+> +static inline void spin_time_accum_blocked(u64 start)
+> +{
+> +	u32 delta;
+> +
+> +	delta = sched_clock() - start;
+> +	__spin_time_accum(delta, spinlock_stats.histo_spin_blocked);
+> +	spinlock_stats.time_blocked += delta;
+> +}
+> +
+> +static struct dentry *d_spin_debug;
+> +static struct dentry *d_kvm_debug;
+> +
+> +struct dentry *kvm_init_debugfs(void)
+> +{
+> +	d_kvm_debug = debugfs_create_dir("kvm", NULL);
+> +	if (!d_kvm_debug)
+> +		printk(KERN_WARNING "Could not create 'kvm' debugfs directory\n");
+> +
+> +	return d_kvm_debug;
+> +}
+> +
+> +static int __init kvm_spinlock_debugfs(void)
+> +{
+> +	struct dentry *d_kvm;
+> +
+> +	d_kvm = kvm_init_debugfs();
+> +	if (d_kvm == NULL)
+> +		return -ENOMEM;
+> +
+> +	d_spin_debug = debugfs_create_dir("spinlocks", d_kvm);
+> +
+> +	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
+> +
+> +	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
+> +		   &spinlock_stats.contention_stats[TAKEN_SLOW]);
+> +	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
+> +		   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
+> +
+> +	debugfs_create_u32("released_slow", 0444, d_spin_debug,
+> +		   &spinlock_stats.contention_stats[RELEASED_SLOW]);
+> +	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
+> +		   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
+> +
+> +	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
+> +			   &spinlock_stats.time_blocked);
+> +
+> +	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
+> +		     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
+> +
+> +	return 0;
+> +}
+> +fs_initcall(kvm_spinlock_debugfs);
+> +#else  /* !CONFIG_KVM_DEBUG_FS */
+> +static inline void add_stats(enum kvm_contention_stat var, u32 val)
+> +{
+> +}
+> +
+> +static inline u64 spin_time_start(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void spin_time_accum_blocked(u64 start)
+> +{
+> +}
+> +#endif  /* CONFIG_KVM_DEBUG_FS */
+> +
+> +struct kvm_lock_waiting {
+> +	struct arch_spinlock *lock;
+> +	__ticket_t want;
+> +};
+> +
+> +/* cpus 'waiting' on a spinlock to become available */
+> +static cpumask_t waiting_cpus;
+> +
+> +/* Track spinlock on which a cpu is waiting */
+> +static DEFINE_PER_CPU(struct kvm_lock_waiting, lock_waiting);
+> +
+> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+> +{
+> +	struct kvm_lock_waiting *w;
+> +	int cpu;
+> +	u64 start;
+> +	unsigned long flags;
+> +
+> +	w = &__get_cpu_var(lock_waiting);
+> +	cpu = smp_processor_id();
+> +	start = spin_time_start();
+> +
+> +	/*
+> +	 * Make sure an interrupt handler can't upset things in a
+> +	 * partially setup state.
+> +	 */
+> +	local_irq_save(flags);
+> +
+> +	/*
+> +	 * The ordering protocol on this is that the "lock" pointer
+> +	 * may only be set non-NULL if the "want" ticket is correct.
+> +	 * If we're updating "want", we must first clear "lock".
+> +	 */
+> +	w->lock = NULL;
+> +	smp_wmb();
+> +	w->want = want;
+> +	smp_wmb();
+> +	w->lock = lock;
+> +
+> +	add_stats(TAKEN_SLOW, 1);
+> +
+> +	/*
+> +	 * This uses set_bit, which is atomic but we should not rely on its
+> +	 * reordering gurantees. So barrier is needed after this call.
+> +	 */
+> +	cpumask_set_cpu(cpu, &waiting_cpus);
+> +
+> +	barrier();
+> +
+> +	/*
+> +	 * Mark entry to slowpath before doing the pickup test to make
+> +	 * sure we don't deadlock with an unlocker.
+> +	 */
+> +	__ticket_enter_slowpath(lock);
+> +
+> +	/*
+> +	 * check again make sure it didn't become free while
+> +	 * we weren't looking.
+> +	 */
+> +	if (ACCESS_ONCE(lock->tickets.head) == want) {
+> +		add_stats(TAKEN_SLOW_PICKUP, 1);
+> +		goto out;
+> +	}
+> +
+> +	/* Allow interrupts while blocked */
+> +	local_irq_restore(flags);
+> +
+So what happens if an interrupt comes here and an interrupt handler
+takes another spinlock that goes into the slow path? As far as I see
+lock_waiting will become overwritten and cpu will be cleared from
+waiting_cpus bitmap by nested kvm_lock_spinning(), so when halt is
+called here after returning from the interrupt handler nobody is going
+to wake this lock holder. Next random interrupt will "fix" it, but it
+may be several milliseconds away, or never. We should probably check
+if interrupt were enabled and call native_safe_halt() here.
 
-  The inline assembly for the bit operations has been changed to remove
-  explicit sizing hints on the instructions, so the assembler will pick
-  the appropriate instruction forms depending on the architecture and
-  the context.
+> +	/* halt until it's our turn and kicked. */
+> +	halt();
+> +
+> +	local_irq_save(flags);
+> +out:
+> +	cpumask_clear_cpu(cpu, &waiting_cpus);
+> +	w->lock = NULL;
+> +	local_irq_restore(flags);
+> +	spin_time_accum_blocked(start);
+> +}
+> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+> +
+> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
+> +static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+> +{
+> +	int cpu;
+> +
+> +	add_stats(RELEASED_SLOW, 1);
+> +	for_each_cpu(cpu, &waiting_cpus) {
+> +		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+> +		if (ACCESS_ONCE(w->lock) == lock &&
+> +		    ACCESS_ONCE(w->want) == ticket) {
+> +			add_stats(RELEASED_SLOW_KICKED, 1);
+> +			kvm_kick_cpu(cpu);
+> +			break;
+> +		}
+> +	}
+> +}
+> +
+> +/*
+> + * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
+> + */
+> +void __init kvm_spinlock_init(void)
+> +{
+> +	if (!kvm_para_available())
+> +		return;
+> +	/* Does host kernel support KVM_FEATURE_PV_UNHALT? */
+> +	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
+> +		return;
+> +
+> +	printk(KERN_INFO "KVM setup paravirtual spinlock\n");
+> +
+> +	static_key_slow_inc(&paravirt_ticketlocks_enabled);
+> +
+> +	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
+> +	pv_lock_ops.unlock_kick = kvm_unlock_kick;
+> +}
+> +#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
 
-Unfortunately, GNU as does no such thing, and the AT&T syntax manual
-[1] contains no references to any such inference.  As evidenced by the
-following experiment, gas always disambiguates btr/bts to btrl/btsl.
-Feed the following input to gas:
-
-  btrl	$1, 0
-  btr	$1, 0
-  btsl	$1, 0
-  bts	$1, 0
-
-Check that btr matches btrl, and bts matches btsl in both cases:
-
-  $ as --32 -a in.s
-  $ as --64 -a in.s
-
-To avoid giving readers the illusion of such an inference, and for
-clarity, change btr/bts back to btrl/btsl.  Also, llvm-mc refuses to
-disambiguate btr/bts automatically.
-
-[1]: http://docs.oracle.com/cd/E19253-01/817-5477/817-5477.pdf
-
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Eli Friedman <eli.friedman@gmail.com>
-Cc: Jim Grosbach <grosbach@apple.com>
-Cc: Stephen Checkoway <s@pahtak.org>
-Cc: LLVMdev <llvmdev@cs.uiuc.edu>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- We discussed this pretty extensively on LLVMDev, but I'm still not
- sure that I haven't missed something.
-
- arch/x86/include/asm/bitops.h | 16 ++++++++--------
- arch/x86/include/asm/percpu.h |  2 +-
- 2 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 6dfd019..6ed3d1e 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -67,7 +67,7 @@ set_bit(unsigned int nr, volatile unsigned long *addr)
- 			: "iq" ((u8)CONST_MASK(nr))
- 			: "memory");
- 	} else {
--		asm volatile(LOCK_PREFIX "bts %1,%0"
-+		asm volatile(LOCK_PREFIX "btsl %1,%0"
- 			: BITOP_ADDR(addr) : "Ir" (nr) : "memory");
- 	}
- }
-@@ -83,7 +83,7 @@ set_bit(unsigned int nr, volatile unsigned long *addr)
-  */
- static inline void __set_bit(int nr, volatile unsigned long *addr)
- {
--	asm volatile("bts %1,%0" : ADDR : "Ir" (nr) : "memory");
-+	asm volatile("btsl %1,%0" : ADDR : "Ir" (nr) : "memory");
- }
- 
- /**
-@@ -104,7 +104,7 @@ clear_bit(int nr, volatile unsigned long *addr)
- 			: CONST_MASK_ADDR(nr, addr)
- 			: "iq" ((u8)~CONST_MASK(nr)));
- 	} else {
--		asm volatile(LOCK_PREFIX "btr %1,%0"
-+		asm volatile(LOCK_PREFIX "btrl %1,%0"
- 			: BITOP_ADDR(addr)
- 			: "Ir" (nr));
- 	}
-@@ -126,7 +126,7 @@ static inline void clear_bit_unlock(unsigned nr, volatile unsigned long *addr)
- 
- static inline void __clear_bit(int nr, volatile unsigned long *addr)
- {
--	asm volatile("btr %1,%0" : ADDR : "Ir" (nr));
-+	asm volatile("btrl %1,%0" : ADDR : "Ir" (nr));
- }
- 
- /*
-@@ -198,7 +198,7 @@ static inline int test_and_set_bit(int nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
--	asm volatile(LOCK_PREFIX "bts %2,%1\n\t"
-+	asm volatile(LOCK_PREFIX "btsl %2,%1\n\t"
- 		     "sbb %0,%0" : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
- 
- 	return oldbit;
-@@ -230,7 +230,7 @@ static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
--	asm("bts %2,%1\n\t"
-+	asm("btsl %2,%1\n\t"
- 	    "sbb %0,%0"
- 	    : "=r" (oldbit), ADDR
- 	    : "Ir" (nr));
-@@ -249,7 +249,7 @@ static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
--	asm volatile(LOCK_PREFIX "btr %2,%1\n\t"
-+	asm volatile(LOCK_PREFIX "btrl %2,%1\n\t"
- 		     "sbb %0,%0"
- 		     : "=r" (oldbit), ADDR : "Ir" (nr) : "memory");
- 
-@@ -276,7 +276,7 @@ static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
--	asm volatile("btr %2,%1\n\t"
-+	asm volatile("btrl %2,%1\n\t"
- 		     "sbb %0,%0"
- 		     : "=r" (oldbit), ADDR
- 		     : "Ir" (nr));
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index 0da5200..fda54c9 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -490,7 +490,7 @@ do {									\
- #define x86_test_and_clear_bit_percpu(bit, var)				\
- ({									\
- 	int old__;							\
--	asm volatile("btr %2,"__percpu_arg(1)"\n\tsbbl %0,%0"		\
-+	asm volatile("btrl %2,"__percpu_arg(1)"\n\tsbbl %0,%0"		\
- 		     : "=r" (old__), "+m" (var)				\
- 		     : "dIr" (bit));					\
- 	old__;								\
--- 
-1.8.3.2.736.g869de25
-
+--
+			Gleb.
