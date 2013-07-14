@@ -1,47 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3GNXIN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 19:08:13 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40729 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab3GNXGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 19:06:51 -0400
-Message-ID: <1373843199.19894.302.camel@pasglop>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Date: Mon, 15 Jul 2013 09:06:39 +1000
-In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
-References: <20130711214830.611455274@linuxfoundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753571Ab3GNXGu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 19:06:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40493 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab3GNXGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 19:06:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: abbotti@mev.co.uk, oliver@schinagl.nl, linux@roeck-us.net,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 05/10] sysfs: add support for binary attributes in groups
+Date: Sun, 14 Jul 2013 16:05:55 -0700
+Message-Id: <1373843160-3990-6-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
+References: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-11 at 15:01 -0700, Greg Kroah-Hartman wrote:
-> s is the start of the stable review cycle for the 3.10.1 release.
-> There are 19 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied,
-> please
-> let me know.
-> 
-> Responses should be made by Sat Jul 13 21:45:35 UTC 2013.
-> Anything received after that time might be too late.
+groups should be able to support binary attributes, just like it
+supports "normal" attributes.  This lets us only handle one type of
+structure, groups, throughout the driver core and subsystems, making
+binary attributes a "full fledged" part of the driver model, and not
+something just "tacked on".
 
-And you expect that we all have time to dig that out from lkml in 1
-day ? You have a rant about powerpc and don't CC me ? :-)
+Reported-by: Oliver Schinagl <oliver@schinagl.nl>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/sysfs/group.c      | 66 +++++++++++++++++++++++++++++++++++----------------
+ include/linux/sysfs.h |  4 ++--
+ 2 files changed, 48 insertions(+), 22 deletions(-)
 
-This one is really important/urgent:
-
-74251fe21bfa9310ddba9e0436d1fcf389e602ee
-"powerpc/powernv: Fix iommu initialization again"
-
-Cheers,
-Ben.
-
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index aec3d5c9..e5719c60 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -20,38 +20,64 @@ static void remove_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 			 const struct attribute_group *grp)
+ {
+ 	struct attribute *const* attr;
+-	int i;
++	struct bin_attribute *const* bin_attr;
+ 
+-	for (i = 0, attr = grp->attrs; *attr; i++, attr++)
+-		sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
++	if (grp->attrs)
++		for (attr = grp->attrs; *attr; attr++)
++			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
++	if (grp->bin_attrs)
++		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
++			sysfs_remove_bin_file(kobj, *bin_attr);
+ }
+ 
+ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 			const struct attribute_group *grp, int update)
+ {
+ 	struct attribute *const* attr;
++	struct bin_attribute *const* bin_attr;
+ 	int error = 0, i;
+ 
+-	for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
+-		umode_t mode = 0;
++	if (grp->attrs) {
++		for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
++			umode_t mode = 0;
++
++			/*
++			 * In update mode, we're changing the permissions or
++			 * visibility.  Do this by first removing then
++			 * re-adding (if required) the file.
++			 */
++			if (update)
++				sysfs_hash_and_remove(dir_sd, NULL,
++						      (*attr)->name);
++			if (grp->is_visible) {
++				mode = grp->is_visible(kobj, *attr, i);
++				if (!mode)
++					continue;
++			}
++			error = sysfs_add_file_mode(dir_sd, *attr,
++						    SYSFS_KOBJ_ATTR,
++						    (*attr)->mode | mode);
++			if (unlikely(error))
++				break;
++		}
++		if (error) {
++			remove_files(dir_sd, kobj, grp);
++			goto exit;
++		}
++	}
+ 
+-		/* in update mode, we're changing the permissions or
+-		 * visibility.  Do this by first removing then
+-		 * re-adding (if required) the file */
+-		if (update)
+-			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
+-		if (grp->is_visible) {
+-			mode = grp->is_visible(kobj, *attr, i);
+-			if (!mode)
+-				continue;
++	if (grp->bin_attrs) {
++		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++) {
++			if (update)
++				sysfs_remove_bin_file(kobj, *bin_attr);
++			error = sysfs_create_bin_file(kobj, *bin_attr);
++			if (error)
++				break;
+ 		}
+-		error = sysfs_add_file_mode(dir_sd, *attr, SYSFS_KOBJ_ATTR,
+-					    (*attr)->mode | mode);
+-		if (unlikely(error))
+-			break;
++		if (error)
++			remove_files(dir_sd, kobj, grp);
+ 	}
+-	if (error)
+-		remove_files(dir_sd, kobj, grp);
++exit:
+ 	return error;
+ }
+ 
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index d50a96b9..2c3b6a30 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -21,6 +21,7 @@
+ 
+ struct kobject;
+ struct module;
++struct bin_attribute;
+ enum kobj_ns_type;
+ 
+ struct attribute {
+@@ -59,10 +60,9 @@ struct attribute_group {
+ 	umode_t			(*is_visible)(struct kobject *,
+ 					      struct attribute *, int);
+ 	struct attribute	**attrs;
++	struct bin_attribute	**bin_attrs;
+ };
+ 
+-
+-
+ /**
+  * Use these macros to make defining attributes easier. See include/linux/device.h
+  * for examples..
+-- 
+1.8.3.rc0.20.gb99dd2e
 
