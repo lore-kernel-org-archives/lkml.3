@@ -1,182 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab3GNOTY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 10:19:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36832 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752541Ab3GNOTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 10:19:22 -0400
-Date: Sun, 14 Jul 2013 17:18:18 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 18/18] kvm hypervisor: Add directed yield in vcpu
- block path
-Message-ID: <20130714141818.GD11772@redhat.com>
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
- <20130624124415.27508.74230.sendpatchset@codeblue.in.ibm.com>
+	id S1752619Ab3GNOUM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 10:20:12 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:56488 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab3GNOUK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 10:20:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130624124415.27508.74230.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20130714110327.GA2178@swordfish>
+References: <20130714110327.GA2178@swordfish>
+Date: Sun, 14 Jul 2013 10:20:09 -0400
+Message-ID: <CADnq5_Ma0ViMUP18QUKmuxAjFjuX3RyunwivU7mv=RpvmXL7QA@mail.gmail.com>
+Subject: Re: [PATCH] radeon kms: do not flush uninitialized hotplug work
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 24, 2013 at 06:14:15PM +0530, Raghavendra K T wrote:
-> kvm hypervisor: Add directed yield in vcpu block path
-> 
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> We use the improved PLE handler logic in vcpu block patch for
-> scheduling rather than plain schedule, so that we can make
-> intelligent decisions.
-> 
-What kind of improvement this provides? Doesn't it screw up our pause
-exit heuristics?
+On Sun, Jul 14, 2013 at 7:03 AM, Sergey Senozhatsky
+<sergey.senozhatsky@gmail.com> wrote:
+> Fix a warning from lockdep caused by calling flush_work() for
+> uninitialized hotplug work. Initialize hotplug_work, audio_work
+> and reset_work upon successful radeon_irq_kms_init() completion
+> and thus perform hotplug flush_work only when rdev->irq.installed
+> is true.
+>
+> [    4.790019] [drm] Loading CEDAR Microcode
+> [    4.790943] r600_cp: Failed to load firmware "radeon/CEDAR_smc.bin"
+> [    4.791152] [drm:evergreen_startup] *ERROR* Failed to load firmware!
+> [    4.791330] radeon 0000:01:00.0: disabling GPU acceleration
+>
+> [    4.792633] INFO: trying to register non-static key.
+> [    4.792792] the code is fine but needs lockdep annotation.
+> [    4.792953] turning off the locking correctness validator.
+>
+> [    4.793114] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.11.0-rc0-dbg-10676-gfe56456-dirty #1816
+> [    4.793314] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+> [    4.793507]  ffffffff821fd810 ffff8801530b9a18 ffffffff8160434e 0000000000000002
+> [    4.794155]  ffff8801530b9ad8 ffffffff810b8404 ffff8801530b0798 ffff8801530b0000
+> [    4.794789]  ffff8801530b9b00 0000000000000046 00000000000004c0 ffffffff00000000
+> [    4.795418] Call Trace:
+> [    4.795573]  [<ffffffff8160434e>] dump_stack+0x4e/0x82
+> [    4.795731]  [<ffffffff810b8404>] __lock_acquire+0x1a64/0x1d30
+> [    4.795893]  [<ffffffff814a87f0>] ? dev_vprintk_emit+0x50/0x60
+> [    4.796034]  [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
+> [    4.796216]  [<ffffffff8106cd75>] ? flush_work+0x5/0x280
+> [    4.796375]  [<ffffffff8106cdad>] flush_work+0x3d/0x280
+> [    4.796520]  [<ffffffff8106cd75>] ? flush_work+0x5/0x280
+> [    4.796682]  [<ffffffff810b659d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+> [    4.796862]  [<ffffffff8131d775>] ? delay_tsc+0x95/0xf0
+> [    4.797024]  [<ffffffff8141bb8b>] radeon_irq_kms_fini+0x2b/0x70
+> [    4.797186]  [<ffffffff814557c9>] evergreen_init+0x2a9/0x2e0
+> [    4.797347]  [<ffffffff813ebb1f>] radeon_device_init+0x5ef/0x700
+> [    4.797511]  [<ffffffff81335bc7>] ? pci_find_capability+0x47/0x50
+> [    4.797672]  [<ffffffff813edaed>] radeon_driver_load_kms+0x8d/0x150
+> [    4.797843]  [<ffffffff813ce426>] drm_get_pci_dev+0x166/0x280
+> [    4.798007]  [<ffffffff8116cff5>] ? kfree+0xf5/0x2e0
+> [    4.798168]  [<ffffffff813ea298>] ? radeon_pci_probe+0x98/0xd0
+> [    4.798329]  [<ffffffff813ea2aa>] radeon_pci_probe+0xaa/0xd0
+> [    4.798489]  [<ffffffff81339404>] pci_device_probe+0x84/0xe0
+> [    4.798644]  [<ffffffff814ac7d6>] driver_probe_device+0x76/0x240
+> [    4.798805]  [<ffffffff814aca73>] __driver_attach+0x93/0xa0
+> [    4.798948]  [<ffffffff814ac9e0>] ? __device_attach+0x40/0x40
+> [    4.799126]  [<ffffffff814aa82b>] bus_for_each_dev+0x6b/0xb0
+> [    4.799272]  [<ffffffff814ac2be>] driver_attach+0x1e/0x20
+> [    4.799434]  [<ffffffff814abec0>] bus_add_driver+0x1f0/0x280
+> [    4.799596]  [<ffffffff814ad0e4>] driver_register+0x74/0x150
+> [    4.799758]  [<ffffffff8133923d>] __pci_register_driver+0x5d/0x60
+> [    4.799936]  [<ffffffff81d16efc>] ? ttm_init+0x67/0x67
+> [    4.800081]  [<ffffffff813ce655>] drm_pci_init+0x115/0x130
+> [    4.800243]  [<ffffffff81d16efc>] ? ttm_init+0x67/0x67
+> [    4.800405]  [<ffffffff81d16f98>] radeon_init+0x9c/0xba
+> [    4.800586]  [<ffffffff810002ca>] do_one_initcall+0xfa/0x150
+> [    4.800746]  [<ffffffff81073f60>] ? parse_args+0x120/0x330
+> [    4.800909]  [<ffffffff81cdafae>] kernel_init_freeable+0x111/0x191
+> [    4.801052]  [<ffffffff81cda87a>] ? do_early_param+0x88/0x88
+> [    4.801233]  [<ffffffff815fb670>] ? rest_init+0x140/0x140
+> [    4.801393]  [<ffffffff815fb67e>] kernel_init+0xe/0x180
+> [    4.801556]  [<ffffffff8160dcac>] ret_from_fork+0x7c/0xb0
+> [    4.801718]  [<ffffffff815fb670>] ? rest_init+0x140/0x140
+>
+>
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>
 
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Applied to by fixes tree.  thanks!
+
+Alex
+
 > ---
->  arch/ia64/include/asm/kvm_host.h    |    5 +++++
->  arch/powerpc/include/asm/kvm_host.h |    5 +++++
->  arch/s390/include/asm/kvm_host.h    |    5 +++++
->  arch/x86/include/asm/kvm_host.h     |    2 +-
->  arch/x86/kvm/x86.c                  |    8 ++++++++
->  include/linux/kvm_host.h            |    2 +-
->  virt/kvm/kvm_main.c                 |    6 ++++--
-This miss some arches.
-
->  7 files changed, 29 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
-> index 989dd3f..999ab15 100644
-> --- a/arch/ia64/include/asm/kvm_host.h
-> +++ b/arch/ia64/include/asm/kvm_host.h
-> @@ -595,6 +595,11 @@ int kvm_emulate_halt(struct kvm_vcpu *vcpu);
->  int kvm_pal_emul(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run);
->  void kvm_sal_emul(struct kvm_vcpu *vcpu);
->  
-> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	schedule();
-> +}
-> +
->  #define __KVM_HAVE_ARCH_VM_ALLOC 1
->  struct kvm *kvm_arch_alloc_vm(void);
->  void kvm_arch_free_vm(struct kvm *kvm);
-> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-> index af326cd..1aeecc0 100644
-> --- a/arch/powerpc/include/asm/kvm_host.h
-> +++ b/arch/powerpc/include/asm/kvm_host.h
-> @@ -628,4 +628,9 @@ struct kvm_vcpu_arch {
->  #define __KVM_HAVE_ARCH_WQP
->  #define __KVM_HAVE_CREATE_DEVICE
->  
-> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	schedule();
-> +}
-> +
->  #endif /* __POWERPC_KVM_HOST_H__ */
-> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-> index 16bd5d1..db09a56 100644
-> --- a/arch/s390/include/asm/kvm_host.h
-> +++ b/arch/s390/include/asm/kvm_host.h
-> @@ -266,4 +266,9 @@ struct kvm_arch{
->  };
->  
->  extern int sie64a(struct kvm_s390_sie_block *, u64 *);
-> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	schedule();
-> +}
-> +
->  #endif
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 95702de..72ff791 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -1042,5 +1042,5 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info);
->  int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
->  void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
->  void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
-> -
-> +void kvm_do_schedule(struct kvm_vcpu *vcpu);
->  #endif /* _ASM_X86_KVM_HOST_H */
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index b963c86..84a4eb2 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -7281,6 +7281,14 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
->  			kvm_x86_ops->interrupt_allowed(vcpu);
->  }
->  
-> +void kvm_do_schedule(struct kvm_vcpu *vcpu)
-> +{
-> +	/* We try to yield to a kicked vcpu else do a schedule */
-> +	if (kvm_vcpu_on_spin(vcpu) <= 0)
-> +		schedule();
-> +}
-> +EXPORT_SYMBOL_GPL(kvm_do_schedule);
-> +
->  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
->  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
->  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index f0eea07..39efc18 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -565,7 +565,7 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
->  void kvm_vcpu_block(struct kvm_vcpu *vcpu);
->  void kvm_vcpu_kick(struct kvm_vcpu *vcpu);
->  bool kvm_vcpu_yield_to(struct kvm_vcpu *target);
-> -void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
-> +bool kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
->  void kvm_resched(struct kvm_vcpu *vcpu);
->  void kvm_load_guest_fpu(struct kvm_vcpu *vcpu);
->  void kvm_put_guest_fpu(struct kvm_vcpu *vcpu);
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 302681c..8387247 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1685,7 +1685,7 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
->  		if (signal_pending(current))
->  			break;
->  
-> -		schedule();
-> +		kvm_do_schedule(vcpu);
->  	}
->  
->  	finish_wait(&vcpu->wq, &wait);
-> @@ -1786,7 +1786,7 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
->  }
->  #endif
->  
-> -void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-> +bool kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>
+>  drivers/gpu/drm/radeon/radeon_irq_kms.c | 11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> index bcdefd1..081886b 100644
+> --- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> +++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+> @@ -260,10 +260,6 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
 >  {
->  	struct kvm *kvm = me->kvm;
->  	struct kvm_vcpu *vcpu;
-> @@ -1835,6 +1835,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  
->  	/* Ensure vcpu is not eligible during next spinloop */
->  	kvm_vcpu_set_dy_eligible(me, false);
+>         int r = 0;
+>
+> -       INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
+> -       INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+> -       INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
+> -
+>         spin_lock_init(&rdev->irq.lock);
+>         r = drm_vblank_init(rdev->ddev, rdev->num_crtc);
+>         if (r) {
+> @@ -285,6 +281,11 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
+>                 rdev->irq.installed = false;
+>                 return r;
+>         }
 > +
-> +	return yielded;
+> +       INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
+> +       INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+> +       INIT_WORK(&rdev->reset_work, radeon_irq_reset_work_func);
+> +
+>         DRM_INFO("radeon: irq initialized.\n");
+>         return 0;
 >  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
->  
-
---
-			Gleb.
+> @@ -304,8 +305,8 @@ void radeon_irq_kms_fini(struct radeon_device *rdev)
+>                 rdev->irq.installed = false;
+>                 if (rdev->msi_enabled)
+>                         pci_disable_msi(rdev->pdev);
+> +               flush_work(&rdev->hotplug_work);
+>         }
+> -       flush_work(&rdev->hotplug_work);
+>  }
+>
+>  /**
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
