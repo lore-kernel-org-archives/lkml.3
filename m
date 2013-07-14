@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab3GNRAA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 13:00:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53496 "EHLO mx1.redhat.com"
+	id S1752819Ab3GNQ76 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 12:59:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47966 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab3GNQ7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 12:59:52 -0400
-Date: Sun, 14 Jul 2013 18:54:57 +0200
+	id S1752720Ab3GNQ7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 12:59:48 -0400
+Date: Sun, 14 Jul 2013 18:54:51 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Colin Cross <ccross@android.com>,
         David Rientjes <rientjes@google.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] mm: mmap_region: kill correct_wcount/inode, use
-	allow_write_access()
-Message-ID: <20130714165457.GA20857@redhat.com>
+Subject: [PATCH 1/3] mm: shift VM_GROWS* check from mmap_region() to
+	do_mmap_pgoff()
+Message-ID: <20130714165451.GA20847@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,71 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-correct_wcount and inode in mmap_region() just complicate the code.
-This boolean was needed previously, when deny_write_access() was
-called before vma_merge(), now we can simply check VM_DENYWRITE and
-do allow_write_access() if it is set.
+mmap() doesn't allow the non-anonymous mappings with VM_GROWS* bit set.
+In particular this means that mmap_region()->vma_merge(file, vm_flags)
+must always fail if vm_flags & VM_GROWS. So it does not make sense to
+check VM_GROWS* after we already allocated the new vma, the only caller,
+do_mmap_pgoff(), which can pass this flag can do the check itself.
 
-allow_write_access() checks file != NULL, so this is safe even if it
-was possible to use VM_DENYWRITE && !file. Just we need to ensure we
-use the same file which was deny_write_access()'ed, so the patch also
-moves "file = vma->vm_file" down after allow_write_access().
+And this looks a bit more correct, mmap_region() already unmapped the
+old mapping at this stage. But if mmap() is going to fail, it should
+avoid do_munmap() if possible.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- mm/mmap.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
+ mm/mmap.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/mm/mmap.c b/mm/mmap.c
-index 759dce7..7be923a 100644
+index f681e18..6b69352 100644
 --- a/mm/mmap.c
 +++ b/mm/mmap.c
-@@ -1476,11 +1476,9 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- {
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma, *prev;
--	int correct_wcount = 0;
- 	int error;
- 	struct rb_node **rb_link, *rb_parent;
- 	unsigned long charged = 0;
--	struct inode *inode =  file ? file_inode(file) : NULL;
- 
- 	/* Check against address space limit. */
- 	if (!may_expand_vm(mm, len >> PAGE_SHIFT)) {
-@@ -1549,7 +1547,6 @@ munmap_back:
- 			error = deny_write_access(file);
- 			if (error)
- 				goto free_vma;
--			correct_wcount = 1;
+@@ -1327,6 +1327,9 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
  		}
- 		vma->vm_file = get_file(file);
- 		error = file->f_op->mmap(file, vma);
-@@ -1590,11 +1587,10 @@ munmap_back:
  	}
  
- 	vma_link(mm, vma, prev, rb_link, rb_parent);
--	file = vma->vm_file;
++	/* Only MAP_PRIVATE|MAP_ANONYMOUS can use MAP_GROWS */
++	if ((vm_flags & VM_MAYSHARE) && (vm_flags & (VM_GROWSDOWN|VM_GROWSUP)))
++		return -EINVAL;
+ 	/*
+ 	 * Set 'VM_NORESERVE' if we should not account for the
+ 	 * memory use of this mapping.
+@@ -1542,11 +1545,7 @@ munmap_back:
+ 	vma->vm_pgoff = pgoff;
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
+ 
+-	error = -EINVAL;	/* when rejecting VM_GROWSDOWN|VM_GROWSUP */
 -
- 	/* Once vma denies write, undo our temporary denial count */
--	if (correct_wcount)
--		atomic_inc(&inode->i_writecount);
-+	if (vm_flags & VM_DENYWRITE)
-+		allow_write_access(file);
-+	file = vma->vm_file;
- out:
- 	perf_event_mmap(vma);
- 
-@@ -1613,8 +1609,8 @@ out:
- 	return addr;
- 
- unmap_and_free_vma:
--	if (correct_wcount)
--		atomic_inc(&inode->i_writecount);
-+	if (vm_flags & VM_DENYWRITE)
-+		allow_write_access(file);
- 	vma->vm_file = NULL;
- 	fput(file);
- 
+ 	if (file) {
+-		if (vm_flags & (VM_GROWSDOWN|VM_GROWSUP))
+-			goto free_vma;
+ 		if (vm_flags & VM_DENYWRITE) {
+ 			error = deny_write_access(file);
+ 			if (error)
+@@ -1571,8 +1570,6 @@ munmap_back:
+ 		pgoff = vma->vm_pgoff;
+ 		vm_flags = vma->vm_flags;
+ 	} else if (vm_flags & VM_SHARED) {
+-		if (unlikely(vm_flags & (VM_GROWSDOWN|VM_GROWSUP)))
+-			goto free_vma;
+ 		error = shmem_zero_setup(vma);
+ 		if (error)
+ 			goto free_vma;
 -- 
 1.5.5.1
 
