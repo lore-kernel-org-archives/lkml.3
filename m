@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab3GNJm5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 05:42:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29075 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab3GNJm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 05:42:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,662,1367996400"; 
-   d="scan'208";a="369972326"
-From: Jenny TC <jenny.tc@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Jenny TC <jenny.tc@intel.com>
-Subject: [PATCH 3/3] power_supply: add throttle state
-Date: Sun, 14 Jul 2013 23:08:15 +0530
-Message-Id: <1373823495-2651-1-git-send-email-jenny.tc@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751944Ab3GNKiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 06:38:09 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55211 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751246Ab3GNKiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 06:38:08 -0400
+Message-ID: <1373798285.1370.2.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: keystone: drop "select HAVE_SCHED_CLOCK"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Sun, 14 Jul 2013 12:38:05 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jul 2013 10:38:06.0661 (UTC) FILETIME=[39F05750:01CE807E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The charger and battery temperature contribute to the
-platform thermal. The only way to control the temperature
-is to control the charging. The charging can be controlled in different
-way. This could be disabling charger, disabling charging, adjusting CC,
-or by adjusting the INLMT. This patch adds a structure to define the
-charger throttle actions. Also this patch adds a throttle_states
-field to the struct power_supply which can be used by the charger
-driver to define it's throttle actions for different states
+The Kconfig symbol HAVE_SCHED_CLOCK got removed in v3.4,
+with commit 6905a65879b5 ("ARM: Make the sched_clock
+framework mandatory"). But a select statement for it popped up again
+through commit 828989ad87af ("ARM: keystone: Add minimal TI Keystone
+platform support"). Drop that statement, as it is useless.
 
-Signed-off-by: Jenny TC <jenny.tc@intel.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- include/linux/power_supply.h |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+Not tested.
 
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 5a24e10..516e4c4 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -209,6 +209,18 @@ union power_supply_propval {
- 
- struct device_node;
- 
-+enum psy_throttle_action {
-+
-+	PSY_THROTTLE_DISABLE_CHARGER = 0,
-+	PSY_THROTTLE_DISABLE_CHARGING,
-+	PSY_THROTTLE_CC_LIMIT,
-+	PSY_THROTTLE_INPUT_LIMIT,
-+};
-+
-+struct psy_throttle_state {
-+	enum psy_throttle_action throttle_action;
-+	unsigned throttle_val;
-+};
- struct power_supply {
- 	const char *name;
- 	enum power_supply_type type;
-@@ -223,6 +235,9 @@ struct power_supply {
- 	size_t num_supplies;
- 	struct device_node *of_node;
- 
-+	struct psy_throttle_state *throttle_states;
-+	size_t num_throttle_states;
-+
- 	int (*get_property)(struct power_supply *psy,
- 			    enum power_supply_property psp,
- 			    union power_supply_propval *val);
+ arch/arm/mach-keystone/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/mach-keystone/Kconfig b/arch/arm/mach-keystone/Kconfig
+index 51a50e9..366d1a3 100644
+--- a/arch/arm/mach-keystone/Kconfig
++++ b/arch/arm/mach-keystone/Kconfig
+@@ -7,7 +7,6 @@ config ARCH_KEYSTONE
+ 	select HAVE_SMP
+ 	select CLKSRC_MMIO
+ 	select GENERIC_CLOCKEVENTS
+-	select HAVE_SCHED_CLOCK
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARM_ERRATA_798181 if SMP
+ 	help
 -- 
-1.7.9.5
+1.8.1.4
 
