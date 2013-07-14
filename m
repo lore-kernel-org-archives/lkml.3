@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab3GNSaA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 14:30:00 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:56721 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752796Ab3GNS37 (ORCPT
+	id S1752936Ab3GNScJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 14:32:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54923 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab3GNScI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 14:29:59 -0400
-Message-ID: <1373826596.1370.59.camel@x61.thuisdomein>
-Subject: [PATCH] cpufreq: s3c24xx: rename CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 14 Jul 2013 20:29:56 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Jul 2013 18:29:57.0637 (UTC) FILETIME=[24987350:01CE80C0]
-X-RcptDomain: vger.kernel.org
+	Sun, 14 Jul 2013 14:32:08 -0400
+Date: Sun, 14 Jul 2013 11:32:06 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, oliver+list@schinagl.nl, khali@linux-fr.org
+Subject: Re: [PATCH v2 0/7] Driver core and sysfs changes for attribute groups
+Message-ID: <20130714183206.GA29004@roeck-us.net>
+References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
+ <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
+ <20130714172703.GA26513@roeck-us.net>
+ <20130714173258.GA19592@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130714173258.GA19592@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol CPU_FREQ_S3C24XX_DEBUGFS was renamed to
-ARM_S3C24XX_CPUFREQ_DEBUGFS in commit f023f8dd59 ("cpufreq: s3c24xx:
-move cpufreq driver to drivers/cpufreq"). But that commit missed one
-instance of its macro CONFIG_CPU_FREQ_S3C24XX_DEBUGFS. Rename it too.
+On Sun, Jul 14, 2013 at 10:32:58AM -0700, Greg Kroah-Hartman wrote:
+> On Sun, Jul 14, 2013 at 10:27:03AM -0700, Guenter Roeck wrote:
+> > On Wed, Jul 10, 2013 at 05:35:58PM -0700, Greg Kroah-Hartman wrote:
+> > > Hi all,
+> > > 
+> > > Here's the second iteration of the patchset to add better attribute
+> > > group support to the driver core and sysfs.
+> > > 
+> > > I've tested these (shocker!) and everything works fine with them (I'm
+> > > sending this from Linus's latest kernel with these 7 on top of it.)
+> > > 
+> > > I'd like to send these to Linus for 3.11 unless someone objects.
+> > > 
+> > Hi Greg,
+> > 
+> > I have not seen the series in the upstream kernel. Do you have an updated
+> > plan to get it upstream ?
+> > 
+> > If needed I can carry the patches I need in my branch for now, so it doesn't
+> > matter too much if the code misses 3.11. Still, it would help to know the
+> > plan going forward.
+> 
+> I was planning on doing one more respin of the patches on Monday, and
+> then getting them into 3.11-rc2 if possible so that everyone can start
+> taking advantage of them.
+> 
+Sounds good.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested. Needs compile testing. But please note that setting
-ARM_S3C24XX_CPUFREQ_DEBUGFS should currently lead to compile errors.
+> Got sucked into the "discussion" of the stable kernels on Friday and
+> didn't do the update like I was wanting to do so :)
+> 
+In this context ... you are doing an amazing job with -stable.
+I have no idea how you manage to do that, especially with all your other
+responsibilities. If anything, it is unfair to talk about an allegedly
+"broken" process if so much of it depends on a single person.
+stable_kernel_rules talks about a review committee. Unless I am missing
+something, that committee consists of one person. Maybe it would help
+to add a couple more. Good candidates might be the people who are
+complaining about a broken process ;).
 
- drivers/cpufreq/s3c24xx-cpufreq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/cpufreq/s3c24xx-cpufreq.c b/drivers/cpufreq/s3c24xx-cpufreq.c
-index 3513e74..87781eb 100644
---- a/drivers/cpufreq/s3c24xx-cpufreq.c
-+++ b/drivers/cpufreq/s3c24xx-cpufreq.c
-@@ -49,7 +49,7 @@ static struct clk *clk_hclk;
- static struct clk *clk_pclk;
- static struct clk *clk_arm;
- 
--#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
-+#ifdef CONFIG_ARM_S3C24XX_CPUFREQ_DEBUGFS
- struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void)
- {
- 	return &cpu_cur;
-@@ -59,7 +59,7 @@ struct s3c_iotimings *s3c_cpufreq_getiotimings(void)
- {
- 	return &s3c24xx_iotiming;
- }
--#endif /* CONFIG_CPU_FREQ_S3C24XX_DEBUGFS */
-+#endif /* CONFIG_ARM_S3C24XX_CPUFREQ_DEBUGFS */
- 
- static void s3c_cpufreq_getcur(struct s3c_cpufreq_config *cfg)
- {
--- 
-1.8.1.4
-
+Guenter
