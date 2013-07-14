@@ -1,174 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab3GNW20 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 18:28:26 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:39344 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab3GNW2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 18:28:24 -0400
-Date: Mon, 15 Jul 2013 01:28:19 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH v2] N900: add device tree
-Message-ID: <20130714222819.GB3296@blackmetal.musicnaut.iki.fi>
-References: <20130613161418.GJ8164@atomide.com>
- <20130613230808.GA14876@amd.pavel.ucw.cz>
- <20130614055629.GM8164@atomide.com>
- <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com>
- <20130701211753.GC15318@amd.pavel.ucw.cz>
- <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
- <20130704202145.GB10752@amd.pavel.ucw.cz>
- <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
- <20130713121709.GC16473@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130713121709.GC16473@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753437Ab3GNWlQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 18:41:16 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42816 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753322Ab3GNWlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 18:41:15 -0400
+Message-ID: <1373841642.19894.286.camel@pasglop>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Date: Mon, 15 Jul 2013 08:40:42 +1000
+In-Reply-To: <20130712170532.GA5656@kroah.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+	 <20130711222935.GA11340@redhat.com> <20130711224455.GA17222@kroah.com>
+	 <20130712141530.GA3629@roeck-us.net>
+	 <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+	 <1373644044.17876.92.camel@gandalf.local.home>
+	 <CA+55aFxUZCWT55EZ7fZw0j_UgaqjPA8Wiv47s5qO01NvHNzFCQ@mail.gmail.com>
+	 <20130712161708.GA3759@gmail.com>
+	 <CA+5PVA6k8xQR4uCpiCnYD3iz421XHGX9eV8vNDH3y1t092aAdw@mail.gmail.com>
+	 <20130712170532.GA5656@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2013-07-12 at 10:05 -0700, Greg Kroah-Hartman wrote:
+> Specific example is, again, the powerpc patches.  Out of 21 patches
+> marked for stable that showed up in the -rc1 merge, at least 7 of them
+> had _plenty_ of time to get into 3.10.0 as they are weeks, and sometimes
+> months, old.  Some of the other ones seem _very_ new, being only days
+> old before they hit Linus's tree, which makes me worry about them for
+> totally different reasons (i.e. not tested in linux-next at all.)
 
-On Sat, Jul 13, 2013 at 02:17:09PM +0200, Pavel Machek wrote:
-> 
-> This adds device tree with neccessary support to boot with functional
-> video (on both emulator and real N900 device).
-> 
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+So for the old ones that's me not actively sending you stuff that has a
+CC stable tag when I merge it. I should probably fix that indeed. This
+is especially true of (but not exclusively) stuff that I don't apply
+myself but merge via somebody else branch.
 
-You can also add:
+For the new stuff, this is a combinations of some last minute fuckups
+which are pretty specific to 3.10 and for which I'm in part responsible,
+and in part due to us basically ramping up testing on Power8 and getting
+ready for the next RHEL & SLES at the same time, thus doing more testing
+internally.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+You'll notice that a lot of that stuff is P8 support so testing in
+"next" isn't going to help much since nobody outside of IBM has access
+to these guys yet. We are getting the stuff out there due to distro
+unrealistic expectations of having upstream code for new machines years
+before a release.
 
-Thanks,
+Also keep in mind that sometimes, that stuff has been around on
+patchwork for a while and got tested by various people, but the patch
+got a last minute rev of improved changeset comment or cosmetic polish.
 
-A.
+> I can put a "delay" on patches to not hit a stable release for a few
+> weeks until they get some testing in Linus's tree, but in reality,
+> what's that going to help with?
 
-> 
-> ---
-> 
-> From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
-> can be enabled on 3.10, and tested it on that kernel.
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index f0895c5..1950aed 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -141,6 +141,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
->  	omap3-devkit8000.dtb \
->  	omap3-beagle-xm.dtb \
->  	omap3-evm.dtb \
-> +	omap3-n900.dtb \
->  	omap3-tobi.dtb \
->  	omap3-igep0020.dtb \
->  	omap3-igep0030.dtb \
-> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-> new file mode 100644
-> index 0000000..fb461bf
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/omap3-n900.dts
-> @@ -0,0 +1,92 @@
-> +/*
-> + * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
-> + * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +/dts-v1/;
-> +
-> +/include/ "omap34xx.dtsi"
-> +
-> +/ {
-> +	model = "Nokia N900";
-> +	compatible = "nokia,omap3-n900", "ti,omap3";
-> +
-> +	cpus {
-> +		cpu@0 {
-> +			cpu0-supply = <&vcc>;
-> +		};
-> +	};
-> +
-> +	memory {
-> +		device_type = "memory";
-> +		reg = <0x80000000 0x10000000>; /* 256 MB */
-> +	};
-> +
-> +};
-> +
-> +&i2c1 {
-> +	clock-frequency = <2200000>;
-> +
-> +	twl: twl@48 {
-> +		reg = <0x48>;
-> +		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
-> +		interrupt-parent = <&intc>;
-> +	};
-> +};
-> +
-> +/include/ "twl4030.dtsi"
-> +
-> +&twl_gpio {
-> +	ti,pullups	= <0x0>;
-> +	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
-> +};
-> +
-> +&i2c2 {
-> +	clock-frequency = <400000>;
-> +};
-> +
-> +&i2c3 {
-> +	clock-frequency = <100000>;
-> +};
-> +
-> +&mmc1 {
-> +	status = "disabled";
-> +};
-> +
-> +&mmc2 {
-> +	status = "disabled";
-> +};
-> +
-> +&mmc3 {
-> +	status = "disabled";
-> +};
-> +
-> +&mcspi1 {
-> +	// For some reason, touchscreen is neccessary for screen to work at 
-> +	// all on real hw. It works well without it on emulator.
-> +	//
-> +	// Also... order in the device tree actually matters here.
-> +	tsc2005@0 {
-> +		compatible = "tsc2005";
-> +		spi-max-frequency = <6000000>;
-> +		reg = <0>;
-> +	};
-> +	mipid@2 {
-> +		compatible = "acx565akm";
-> +		spi-max-frequency = <6000000>;
-> +		reg = <2>;
-> +		// turbo_mode = 0,
-> +		// cs_per_word = 0
-> +	};
-> +};
-> +
-> +&usb_otg_hs {
-> +	interface-type = <0>;
-> +	usb-phy = <&usb2_phy>;
-> +	mode = <2>;
-> +	power = <50>;
-> +};
-> 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Depends. In some of the patches I put in for stable, they fix something
+that 3.10 broke and the fixes are quite self-contained, waiting makes no
+sense.
+
+At some stage I make a judgement call on a given patch, how "obvious"
+the fix is (I know they never are completely ... well most of the time),
+how invasive it is, what risk it represents outside of the are that it
+"fixes". I do mistakes, but generally I am fairly conservative in that
+area.
+
+> I guess I can just not apply them at all, tough-love and all that, but
+> that just puts an extra burden on the distro kernel maintainers to have
+> to go dig up the fixes for their users.
+
+You know how the distro can be about that... especially when they invent
+idiotic junk such as kABI which prevents you from fixing things properly
+for the sake of [probably illegal] binary drivers, and so on... Distro
+seem to enjoy establishing a process that guarantee that an "enterprise
+release" is entirely comprise of utter junk (not even talking about all
+the in-house untested broken stupid crap they add to their kernels while
+at the same time being hard-ass with fixes coming from the vendors).
+
+> Although really, who cares about powerpc anymore :)
+
+That was unfair :-)
+
+Cheers,
+Ben.
+
+
