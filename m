@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab3GNDuc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 23:50:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35149 "EHLO
+	id S1751188Ab3GNEEG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 00:04:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35181 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab3GNDub (ORCPT
+	with ESMTP id S1750712Ab3GNEEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 23:50:31 -0400
-Date: Sat, 13 Jul 2013 20:51:28 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130714035128.GA10697@kroah.com>
-References: <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712195051.GB32054@1wt.eu>
- <20130713062223.GA15155@kroah.com>
- <20130713063607.GI32054@1wt.eu>
- <20130713064801.GA1305@kroah.com>
- <20130713114211.GA3112@thunk.org>
- <20130713182717.GA16637@kroah.com>
- <20130714022219.GC3112@thunk.org>
+	Sun, 14 Jul 2013 00:04:04 -0400
+Date: Sat, 13 Jul 2013 21:05:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Aaron Plattner <aplattner@nvidia.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ALSA: hda - Add new GPU codec ID to snd-hda
+Message-ID: <20130714040501.GA11088@kroah.com>
+References: <1373652097-4845-1-git-send-email-aplattner@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130714022219.GC3112@thunk.org>
+In-Reply-To: <1373652097-4845-1-git-send-email-aplattner@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 10:22:19PM -0400, Theodore Ts'o wrote:
-> On Sat, Jul 13, 2013 at 11:27:17AM -0700, Greg Kroah-Hartman wrote:
-> > Ugh, the conversation has degenerated now into parsing the meaning of
-> > specific words.  This is why lawyers have created whole vocabularies
-> > that are not used by "normal" people.  There's a very good reason why
-> > I'm not a lawyer, and this is one of them...
-> > 
-> > If I change the word "critical" to "real", would that make everyone
-> > happy here?
-> > 
-> > It comes down to the simple fact that for stable kernels I _want_ to
-> > take bugfixes that any user would hit.  In other words, something that a
-> > distro kernel would take.
+On Fri, Jul 12, 2013 at 11:01:37AM -0700, Aaron Plattner wrote:
+> Vendor ID 0x10de0060 is used by a yet-to-be-named GPU chip.
 > 
-> Yes, but ***Linus*** has said he only wants critical fixes in his tree
-> after -rc4.  It seems pretty clear that what he wants post -rc4 and
-> what you want in the stable tree are different.
+> Reviewed-by: Andy Ritger <aritger@nvidia.com>
+> Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+> ---
+>  sound/pci/hda/patch_hdmi.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> You can change the stable_kernel_tree to be "real" bugs, but if Linus
-> is still using "critical" as the standard for mainline post-rc4, then
-> those of us who are maintainers are stuck between a rock and a hard
-> place.
+> diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+> index e12f7a0..486def7 100644
+> --- a/sound/pci/hda/patch_hdmi.c
+> +++ b/sound/pci/hda/patch_hdmi.c
+> @@ -2536,6 +2536,7 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
+>  { .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
+>  { .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
+>  { .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
+> +{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
+>  { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
+>  { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
+>  { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
+> @@ -2588,6 +2589,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0042");
+>  MODULE_ALIAS("snd-hda-codec-id:10de0043");
+>  MODULE_ALIAS("snd-hda-codec-id:10de0044");
+>  MODULE_ALIAS("snd-hda-codec-id:10de0051");
+> +MODULE_ALIAS("snd-hda-codec-id:10de0060");
+>  MODULE_ALIAS("snd-hda-codec-id:10de0067");
+>  MODULE_ALIAS("snd-hda-codec-id:10de8001");
+>  MODULE_ALIAS("snd-hda-codec-id:11069f80");
 
-You are confusing the words "real" and "critical" perhaps.  I, and other
-large subsystem maintainers, based on how they submit fixes to Linus and
-to stable, view the late -rc portion as time for fixes that affect users
-and other issues like that.  So far, it's worked out pretty well and we
-don't seem to be in disagreement with Linus's view of what is a valid
-late -rc fix based on recent kernel development cycles.
+Why are these module aliases being created by hand and not automated
+like all other aliases that contain device ids like this are?
 
-The issue now is, we have maintainers who aren't sending stuff to Linus
-at all in the late -rc cycle and are relying on me to pick up things
-that are obviously "real" and "critical" fixes after .0 is out for .1
-and .2 to resolve "real" issues.
-
-You are not one of these people, so I don't understand why you are
-getting upset and think that you somehow need to change how you mark
-stuff for stable.
-
-The powerpc and iscsi people on the other hand, they need to look out...
-
-chill out please and go enjoy the rest of the weekend,
+odd,
 
 greg k-h
