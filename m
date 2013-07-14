@@ -1,70 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab3GNUbI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 16:31:08 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50654 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3GNUbG (ORCPT
+	id S1753262Ab3GNUdP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 16:33:15 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:63340 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3GNUdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 16:31:06 -0400
+	Sun, 14 Jul 2013 16:33:13 -0400
+Message-ID: <51E30B04.8090009@gmail.com>
+Date: Sun, 14 Jul 2013 22:33:08 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130714052441.GA9042@roeck-us.net>
-References: <20130712173150.GA5534@roeck-us.net>
-	<CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
-	<20130712195051.GB32054@1wt.eu>
-	<20130713062223.GA15155@kroah.com>
-	<20130713063607.GI32054@1wt.eu>
-	<20130713064801.GA1305@kroah.com>
-	<20130713114211.GA3112@thunk.org>
-	<20130713182717.GA16637@kroah.com>
-	<20130714022219.GC3112@thunk.org>
-	<20130714035128.GA10697@kroah.com>
-	<20130714052441.GA9042@roeck-us.net>
-Date: Sun, 14 Jul 2013 22:31:04 +0200
-X-Google-Sender-Auth: ifMt2NQnXR7uQQWIU1_b9DDAbQU
-Message-ID: <CAMuHMdW5qpovGzt9YywTGsUW3vJZnZGdYr1QxWxu-MZOxky_Pg@mail.gmail.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v2] media: i2c: adv7343: add OF support
+References: <1373713959-31066-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1373713959-31066-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 14, 2013 at 7:24 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> You are confusing the words "real" and "critical" perhaps.  I, and other
+Hi Prabhakar,
+
+On 07/13/2013 01:12 PM, Prabhakar Lad wrote:
+> From: "Lad, Prabhakar"<prabhakar.csengg@gmail.com>
 >
-> A typical classification of bugs might be
->         critical: mission critical, no workaround, must be fixed prior to
->                 customer release
->         severe (high): related to core functionality, must fix, but not
->                 necessarily in first release.
->         moderate (medium): Bugs that do not affect any critical user
->                 functionality; typically has workaround
->         minor (low): Bugs that do not interfere with core functionality
->                 and are just annoyances that may or may not ever be fixed
->         cosmetic: misspellings
+> add OF support for the adv7343 driver.
 >
-> Such classifications are widely used in the industry. The term "affecting users"
-> might apply to all of those, and even a cosmetic bug is "real".
+> Signed-off-by: Lad, Prabhakar<prabhakar.csengg@gmail.com>
+> ---
+>   Changes for v2:
+>   1: Fixed naming of properties.
+>
+>   .../devicetree/bindings/media/i2c/adv7343.txt      |   54 ++++++++++++++++
+>   drivers/media/i2c/adv7343.c                        |   65 +++++++++++++++++++-
+>   2 files changed, 118 insertions(+), 1 deletion(-)
+>   create mode 100644 Documentation/devicetree/bindings/media/i2c/adv7343.txt
+>
+> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7343.txt b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
+> new file mode 100644
+> index 0000000..1d2e854
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
+> @@ -0,0 +1,54 @@
+> +* Analog Devices adv7343 video encoder
+> +
+> +The ADV7343 are high speed, digital-to-analog video encoders in a 64-lead LQFP
+> +package. Six high speed, 3.3 V, 11-bit video DACs provide support for composite
+> +(CVBS), S-Video (Y-C), and component (YPrPb/RGB) analog outputs in standard
+> +definition (SD), enhanced definition (ED), or high definition (HD) video
+> +formats.
+> +
+> +Required Properties :
+> +- compatible: Must be "ad,adv7343"
 
-And typically there's a distinction between severity (how bad is it), and
-priority (how soon it should be fixed), wich are not always linearly correlated.
+Please have a look at Documentation/devicetree/bindings/vendor-prefixes.txt.
+'ad' is a vendor prefix reserved for "Avionic Design GmbH".
+For "Analog Devices, Inc." 'adi' should be used.
 
-Gr{oetje,eeting}s,
+If I would have to draft a new DT binding proposal checklist checking
+vendor-prefixes.txt would certainly be one of the first steps.
 
-                        Geert
+> +Optional Properties :
+> +- ad,adv7343-power-mode-sleep-mode: on enable the current consumption is
+> +				     reduced to micro ampere level. All DACs and
+> +				     the internal PLL circuit are disabled.
+> +- ad,adv7343-power-mode-pll-ctrl: PLL and oversampling control. This control
+> +				   allows internal PLL 1 circuit to be powered
+> +				   down and the oversampling to beswitched off.
+> +- ad,adv7343-power-mode-dac-1: power on/off DAC 1, 0 = OFF and 1 = ON.
+> +- ad,adv7343-power-mode-dac-2: power on/off DAC 2, 0 = OFF and 1 = ON.
+> +- ad,adv7343-power-mode-dac-3: power on/off DAC 3, 0 = OFF and 1 = ON.
+> +- ad,adv7343-power-mode-dac-4: power on/off DAC 4, 0 = OFF and 1 = ON.
+> +- ad,adv7343-power-mode-dac-5: power on/off DAC 5, 0 = OFF and 1 = ON.
+> +- ad,adv7343-power-mode-dac-6: power on/off DAC 6, 0 = OFF and 1 = ON.
+> +- ad,adv7343-sd-config-dac-out-1: Configure SD DAC Output 1.
+> +- ad,adv7343-sd-config-dac-out-2: Configure SD DAC Output 2.
+
+All these properties look more like hardware configuration, rather than
+hardware description. So at first sight I would say none of these properties
+is suitable for the device tree.
+
+sleep mode and pll ctrl should likely only have default values in the 
+driver.
+sleep-mode disables all DAC, while power-mode-dac-? does power on/off
+(enables / disables?) individual DACs. How those properties interact, 
+what's
+going on here exactly ? :)
+
+That said, how about only leaving the properties indicating which DACs
+(including SD DACs) should be enabled ? E.g.
+
+adi,dac-enable - an array indicating which DACs are enabled, in order
+  		DAC1...DAC6, 1 to enable DAC, 0 to disable.
+
+adi,sd-dac-enable - an array indicating which SD DACs are enabled, in order
+  		DAC1...DAC2, 1 to enable SD DAC, 0 to disable.
+
+Please note you don't need ",adv7343-" prefix in each single property
+for that device.
+
+> +Example:
+> +
+> +i2c0@1c22000 {
+> +	...
+> +	...
+> +
+> +	adv7343@2a {
+> +		compatible = "ad,adv7343";
+> +		reg =<0x2a>;
+> +
+> +		port {
+> +			adv7343_1: endpoint {
+> +					ad,adv7343-power-mode-sleep-mode;
+> +					ad,adv7343-power-mode-pll-ctrl;
+> +					ad,adv7343-power-mode-dac-1;
+> +					ad,adv7343-power-mode-dac-2;
+> +					ad,adv7343-power-mode-dac-3;
+> +					ad,adv7343-power-mode-dac-4;
+> +					ad,adv7343-power-mode-dac-5;
+> +					ad,adv7343-power-mode-dac-6;
+
+Then this would have become:
+					adi,dac-enable = <1 1 1 1 1 1>;	
+
+But I would put some disabled DACs in the example as well:
+
+					/* Use DAC1..3, DAC6 */
+					adi,dac-enable = <1 1 1 0 0 1>;
+
+> +					ad,adv7343-sd-config-dac-out-1;
+> +					ad,adv7343-sd-config-dac-out-2;
+
+And this:	
+					adi,sd-dac-enable = <1 1>;	
+
+> +			};
+> +		};
+> +	};
+> +	...
+> +};
+> diff --git a/drivers/media/i2c/adv7343.c b/drivers/media/i2c/adv7343.c
+> index 7606218..22ee6f4 100644
+> --- a/drivers/media/i2c/adv7343.c
+> +++ b/drivers/media/i2c/adv7343.c
+> @@ -29,6 +29,7 @@
+>   #include<media/adv7343.h>
+>   #include<media/v4l2-device.h>
+>   #include<media/v4l2-ctrls.h>
+> +#include<media/v4l2-of.h>
+>
+>   #include "adv7343_regs.h"
+>
+> @@ -398,6 +399,59 @@ static int adv7343_initialize(struct v4l2_subdev *sd)
+>   	return err;
+>   }
+>
+> +static struct adv7343_platform_data *
+> +adv7343_get_pdata(struct i2c_client *client)
+> +{
+> +	struct adv7343_platform_data *pdata;
+> +	struct device_node *np;
+> +
+> +	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
+> +		return client->dev.platform_data;
+> +
+> +	np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
+> +	if (!np)
+> +		return NULL;
+> +
+> +	pdata = devm_kzalloc(&client->dev, sizeof(struct adv7343_platform_data),
+> +			     GFP_KERNEL);
+> +	if (!pdata)
+> +		goto done;
+> +
+> +	pdata->mode_config.sleep_mode =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-sleep-mode");
+> +
+> +	pdata->mode_config.pll_control =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-pll-ctrl");
+> +
+> +	pdata->mode_config.dac_1 =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-dac-1");
+> +
+> +	pdata->mode_config.dac_2 =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-dac-2");
+> +
+> +	pdata->mode_config.dac_3 =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-dac-3");
+> +
+> +	pdata->mode_config.dac_4 =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-dac-4");
+> +
+> +	pdata->mode_config.dac_5 =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-dac-5");
+> +
+> +	pdata->mode_config.dac_6 =
+> +		of_property_read_bool(np, "ad,adv7343-power-mode-dac-6");
+> +
+> +	pdata->sd_config.sd_dac_out1 =
+> +		of_property_read_bool(np, "ad,adv7343-sd-config-dac-out-1");
+> +
+> +	pdata->sd_config.sd_dac_out2 =
+> +		of_property_read_bool(np, "ad,adv7343-sd-config-dac-out-2");
+
+This doesn't look very impressive. IMHO changing 
+pdata->mode_config.{dac,sd_dac}
+to an array type could simplify this code a little. But you could as 
+well use
+of_property_read_u32_array() and assign each element to corresponding
+mode_config.(sd_)dac field.
+
+> +done:
+> +	of_node_put(np);
+> +	return pdata;
+> +}
+> +
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Sylwester
