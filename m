@@ -1,83 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3GNWZZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 18:25:25 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:55406 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753322Ab3GNWZY (ORCPT
+	id S1753423Ab3GNW20 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 18:28:26 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:39344 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab3GNW2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 18:25:24 -0400
-X-Greylist: delayed 2206 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Jul 2013 18:25:23 EDT
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Sun, 14 Jul 2013 22:48:24 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] drm/i915: fix long-standing SNB regression in power
- consumption after resume
-Message-ID: <20130714214824.GB31828@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	David Airlie <airlied@linux.ie>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>
-References: <20130714163009.22374.22100.stgit@zurg>
- <CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
+	Sun, 14 Jul 2013 18:28:24 -0400
+Date: Mon, 15 Jul 2013 01:28:19 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2] N900: add device tree
+Message-ID: <20130714222819.GB3296@blackmetal.musicnaut.iki.fi>
+References: <20130613161418.GJ8164@atomide.com>
+ <20130613230808.GA14876@amd.pavel.ucw.cz>
+ <20130614055629.GM8164@atomide.com>
+ <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
+ <20130617111031.GQ20992@atomide.com>
+ <20130701211753.GC15318@amd.pavel.ucw.cz>
+ <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
+ <20130704202145.GB10752@amd.pavel.ucw.cz>
+ <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
+ <20130713121709.GC16473@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
+In-Reply-To: <20130713121709.GC16473@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 14, 2013 at 06:52:39PM +0200, Daniel Vetter wrote:
-> On Sun, Jul 14, 2013 at 6:30 PM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org> wrote:
-> > This patch fixes regression in power consumtion of sandy bridge gpu, which
-> > exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
-> > it's extremely busy. After that it never reaches rc6 state.
-> >
-> > Bug was introduce by commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
-> > ("drm/i915: load boot context at driver init time"). Without documentation
-> > it's not clear what is happening here, probably this breaks internal state of
-> > hardware ring buffers and confuses RPS engine. Fortunately keeping forcewake
-> > during whole initialization sequence in gen6_init_clock_gating() fixes this bug.
-> >
-> > References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
-> > Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Hi,
+
+On Sat, Jul 13, 2013 at 02:17:09PM +0200, Pavel Machek wrote:
 > 
-> We already hold an forcewake reference while setting up the rps stuff,
-> should we maybe hold the forcewake for the entire duration, i.e. grab
-> it here in clock_gating and release it only in gen6/vlv_enable_rps?
-> Can you please test that version, too?
+> This adds device tree with neccessary support to boot with functional
+> video (on both emulator and real N900 device).
 > 
-> In any case the forcewake grabbing here in the clock gating function
-> needs a big comment that otherwise setting the MCTL register might
-> break rc6 entry.
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-It is not clear why the forcewake works, but is easy to imagine one of
-the operations in that sequence requires the GPU to be awake at the time
-of programming for it to succeed. MBCTL:EnableBootFetch does seem the most
-suspicious from its wording in the bspec. I guess all instances of
-poking this bit should be protected similary (snb, ivb, vlv, hsw).
+You can also add:
 
-Based on that reasoning and that waking the GPU up here has no negative
-consequences, and so long as all paths are fixed, I am happy to give this
-an Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-Also, we need to reapply the w/a after a Function Level Reset, in other
-words we do need to repeat the init_clock_gating after
-intel_gpu_reset().
--Chris
+Thanks,
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+A.
+
+> 
+> ---
+> 
+> From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
+> can be enabled on 3.10, and tested it on that kernel.
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index f0895c5..1950aed 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -141,6 +141,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+>  	omap3-devkit8000.dtb \
+>  	omap3-beagle-xm.dtb \
+>  	omap3-evm.dtb \
+> +	omap3-n900.dtb \
+>  	omap3-tobi.dtb \
+>  	omap3-igep0020.dtb \
+>  	omap3-igep0030.dtb \
+> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+> new file mode 100644
+> index 0000000..fb461bf
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/omap3-n900.dts
+> @@ -0,0 +1,92 @@
+> +/*
+> + * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
+> + * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +/dts-v1/;
+> +
+> +/include/ "omap34xx.dtsi"
+> +
+> +/ {
+> +	model = "Nokia N900";
+> +	compatible = "nokia,omap3-n900", "ti,omap3";
+> +
+> +	cpus {
+> +		cpu@0 {
+> +			cpu0-supply = <&vcc>;
+> +		};
+> +	};
+> +
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x80000000 0x10000000>; /* 256 MB */
+> +	};
+> +
+> +};
+> +
+> +&i2c1 {
+> +	clock-frequency = <2200000>;
+> +
+> +	twl: twl@48 {
+> +		reg = <0x48>;
+> +		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+> +		interrupt-parent = <&intc>;
+> +	};
+> +};
+> +
+> +/include/ "twl4030.dtsi"
+> +
+> +&twl_gpio {
+> +	ti,pullups	= <0x0>;
+> +	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
+> +};
+> +
+> +&i2c2 {
+> +	clock-frequency = <400000>;
+> +};
+> +
+> +&i2c3 {
+> +	clock-frequency = <100000>;
+> +};
+> +
+> +&mmc1 {
+> +	status = "disabled";
+> +};
+> +
+> +&mmc2 {
+> +	status = "disabled";
+> +};
+> +
+> +&mmc3 {
+> +	status = "disabled";
+> +};
+> +
+> +&mcspi1 {
+> +	// For some reason, touchscreen is neccessary for screen to work at 
+> +	// all on real hw. It works well without it on emulator.
+> +	//
+> +	// Also... order in the device tree actually matters here.
+> +	tsc2005@0 {
+> +		compatible = "tsc2005";
+> +		spi-max-frequency = <6000000>;
+> +		reg = <0>;
+> +	};
+> +	mipid@2 {
+> +		compatible = "acx565akm";
+> +		spi-max-frequency = <6000000>;
+> +		reg = <2>;
+> +		// turbo_mode = 0,
+> +		// cs_per_word = 0
+> +	};
+> +};
+> +
+> +&usb_otg_hs {
+> +	interface-type = <0>;
+> +	usb-phy = <&usb2_phy>;
+> +	mode = <2>;
+> +	power = <50>;
+> +};
+> 
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
