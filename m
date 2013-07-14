@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab3GNW6u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 18:58:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46919 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753383Ab3GNW6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 18:58:49 -0400
-Message-ID: <1373842716.19894.300.camel@pasglop>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Date: Mon, 15 Jul 2013 08:58:36 +1000
-In-Reply-To: <20130711224455.GA17222@kroah.com>
-References: <20130711214830.611455274@linuxfoundation.org>
-	 <20130711222935.GA11340@redhat.com> <20130711224455.GA17222@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753477Ab3GNXGH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 19:06:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40465 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753442Ab3GNXGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 19:06:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: abbotti@mev.co.uk, oliver@schinagl.nl, linux@roeck-us.net
+Subject: [PATCH v3 01/10] Driver core and sysfs changes for attribute groups
+Date: Sun, 14 Jul 2013 16:05:50 -0700
+Message-Id: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-11 at 15:44 -0700, Greg Kroah-Hartman wrote:
-> > And the later in -rc we are, the more reluctant some people seem to be
-> > at sending stuff. Which, for slowing things down as we go through -rc is great,
-> > but not so much when people stop sending _everything_ and start thinking
-> > "I'll just get it in stable in a few weeks".
-> 
-> The 20 powerpc patches are proof of that.  I'm amost considering just
-> not applying them at all, as obviously they weren't all that important.
+Hi all,
 
-Can you stop about powerpc for a minute Greg ? It's becoming tiring.... When it's
-not this (seriously ? We are by FAR not the worst managed architecture around here
-but you seem to pick on any opportunity, public medium, etc... to trash us for
-whatever reason, time to find another axe to grind really).
+Here is the third iteration of the patchset to add better attribute
+group support to the driver core and sysfs.
 
-Also look at the damn history. We rarely had that much stuff going back. You know
-3.10 is special and you probably know why, and I've mentioned already that a lot
-of that stuff you are complaining about affects HW that people do NOT have presently
-access to outside of IBM.
+Others have now tested it, and we got 3 more patches fixing a warning
+that was showing up when binary attributes were in a group with no
+"normal" attributes, and some more helper macros were added and cleaned
+up.
 
-Please, go play another violin.
+I've booted this successfully against 3.11-rc1 with no problems (am
+sending these from that machine.)
 
-Ben.
+Ian, I didn't add a DEVICE_PATTR() macro yet, that can come later.  I
+considered it, but that would also mean a BUS_PATTR() and the like, which I
+guess works, but I hate even a _hint_ of "Hungarian" notation, which this
+implies.
 
+Anyone else have a better name for this macro:
+	#define DEVICE_PATTR(_name)	&dev_attr_##_name.attr
+that they can think of?  It will cut down on the typing done for
+attribute lists.
+
+changes from v3:
+	- tested by Guenter
+	- patches from Oliver added
+	- refreshed on 3.11-rc1 (minor fuzz)
+	- Ian glanced at them.
+
+changes from v2:
+	- actually boots
+	- 7th patch added properly
+	- added BUS_ATTR, CLASS_ATTR, and DRIVER_ATTR RW and RO macros
+	  to help with converting code to use attributes properly.
+
+thanks,
+
+greg k-h
 
