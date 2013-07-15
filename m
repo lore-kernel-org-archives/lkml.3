@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab3GOSRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:17:10 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:33422 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3GOSRH (ORCPT
+	id S1753967Ab3GOSUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:20:33 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:59644 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753156Ab3GOSUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:17:07 -0400
+	Mon, 15 Jul 2013 14:20:31 -0400
+Message-ID: <51E43D6C.1050000@metafoo.de>
+Date: Mon, 15 Jul 2013 20:20:28 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130715180403.GD15531@xanatos>
-References: <20130715155202.GC29526@xanatos>
-	<CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
-	<20130715174659.GC15531@xanatos>
-	<CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	<20130715180403.GD15531@xanatos>
-Date: Mon, 15 Jul 2013 11:17:06 -0700
-X-Google-Sender-Auth: bvv2-WQrz2ntQtN5dltr__WEHqw
-Message-ID: <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Vinod Koul <vinod.koul@intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] ASoC: dmaengine-pcm: Add support for querying DMA capabilities
+References: <1373906531-6938-1-git-send-email-lars@metafoo.de> <20130715172643.GZ11538@sirena.org.uk> <20130715165721.GV16653@intel.com> <20130715175726.GA11538@sirena.org.uk>
+In-Reply-To: <20130715175726.GA11538@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 11:04 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
+On 07/15/2013 07:57 PM, Mark Brown wrote:
+> On Mon, Jul 15, 2013 at 10:27:21PM +0530, Vinod Koul wrote:
+>> On Mon, Jul 15, 2013 at 06:26:43PM +0100, Mark Brown wrote:
+>>> On Mon, Jul 15, 2013 at 06:42:10PM +0200, Lars-Peter Clausen wrote:
 >
-> However, I am serious about this.  Linus, you're one of the worst
-> offenders when it comes to verbally abusing people and publicly tearing
-> their emotions apart.
+>>>> +	hw.period_bytes_min = 16;
+>>>> +	hw.period_bytes_max = dma_caps.max_sg_len;
+>
+>>> We can't read the minimum period size from dmaengine? Seems like
+>>> something might have a restriction other than 16 bytes here.
+>
+>> max would be how many list items the engine supports so queried therotical min
+>> would be 1 byte, not sure how 16 bytes is assumed above but my guess is that if
+>> engine is able to push min burst lengths which would be 1 and give you
+>> interrupt. But seriously, that would not be practical. So this should be a
+>> realistic limit which system can cope with.
+>
+> Right, we probably want to set an artificial floor here but it still
+> seems like we should be checking that the device actually supports this.
+> If the hardware can only support 64 bytes then the above code won't work
+> properly.
+>
 
-Yes. And I do it partly (mostly) because it's who I am, and partly
-because I honestly despise being subtle or "nice".
+It shouldn't be to hard to extend the dma_caps API with a min_sg_len. But is 
+this something you've actually seen in existing hardware for that the driver 
+would make use of the dmaengine PCM framework? If it is more of theoretical 
+nature we can still easily add it later if it becomes necessary.
 
-The fact is, people need to know what my position on things are. And I
-can't just say "please don't do that", because people won't listen. I
-say "On the internet, nobody can hear you being subtle", and I mean
-it.
+That said it is not uncommon that the segment size needs to be a multiple of 
+the burst size. Adding support for that is still on my TODO list but will 
+require some changes to some of the existing users, since implementing this 
+will be a lot easier if all users use the snd_dmaengine_dai_dma_data struct for 
+their DAI DMA data.
 
-And I definitely am not willing to string people along, either. I've
-had that happen too - not telling people clearly enough that I don't
-like their approach, they go on to re-architect something, and get
-really upset when I am then not willing to take their work.
-
-Sarah, first off, I don't have that many tools at hand. Secondly, I
-simply don't believe in being polite or politically correct. And you
-can point at all those cultural factors where some cultures are not
-happy with confrontation (and feel free to make it about gender too -
-I think that's almost entirely cultural too). And please bring up
-"cultural sensitivity" while at it. And I'll give you back that same
-"cultural sensitivity". Please be sensitive to _my_ culture too.
-
-Google "management by perkele".
-
-Do you really want to oppress a minority? Because Finns are a minority
-compared to almost any other country. If you want to talk cultural
-sensitivity, I'll join you. But my culture includes cursing.
-
-And some of the above is written tonge-in-cheek, but all of it is also
-serious. I really fundamentally believe that being honest and open
-about your emotions about core/process is good. And because it's damn
-hard to read people over email, I think you need to be *more* honest
-and *more* open over email. I'm generally nicer in person. Not always.
-
-And yes, I'll happily be part of the discussion at the KS. But I think
-you also need to be aware that your "high horse" isn't necessarily all
-that high.
-
-              Linus
+- Lars
