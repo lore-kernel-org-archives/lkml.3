@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3GOIMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:12:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13628 "EHLO mga14.intel.com"
+	id S1754382Ab3GOINA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:13:00 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:46758 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab3GOIMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:12:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,667,1367996400"; 
-   d="scan'208";a="331446081"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.jf.intel.com>, h.mitake@gmail.com,
-        kirill.shutemov@linux.jf.intel.com
-In-Reply-To: <1373675551-18684-1-git-send-email-andi@firstfloor.org>
-References: <1373675551-18684-1-git-send-email-andi@firstfloor.org>
-Subject: RE: [PATCH] perf, tools, bench: Fix memcpy benchmark for large sizes
+	id S1751353Ab3GOIM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 04:12:58 -0400
+Date: Mon, 15 Jul 2013 10:14:26 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] pinctrl: pinctrl-single: fix compile warning when no
+ CONFIG_PM
+Message-ID: <20130715101426.4e4301b3@armhf>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130715081532.52D85E0090@blue.fi.intel.com>
-Date: Mon, 15 Jul 2013 11:15:32 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> glibc calloc() has an optimization to not explicitely memset()
-> very large calloc allocations that just came from mmap(),
-> because they are known to be zero.
-> 
-> This could result in the perf memcpy benchmark reading only from
-> the zero page, which gives unrealistic results.
-> 
-> Always call memset explicitly on the source area to avoid this problem.
-> 
-> Cc: h.mitake@gmail.com
-> Cc: kirill.shutemov@linux.intel.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+This warning has been introduced by the commit
+ 0f9bc4bcdf4f pinctrl: single: adopt pinctrl sleep mode management
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+ drivers/pinctrl/pinctrl-single.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-> ---
->  tools/perf/bench/mem-memcpy.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-> index 93c83e3..690f75f 100644
-> --- a/tools/perf/bench/mem-memcpy.c
-> +++ b/tools/perf/bench/mem-memcpy.c
-> @@ -117,6 +117,8 @@ static void alloc_mem(void **dst, void **src, size_t length)
->  	*src = zalloc(length);
->  	if (!src)
->  		die("memory allocation failed - maybe length is too large?\n");
-> +	/* Make sure to always replace the zero pages even if MMAP_THRESH is crossed */
-> +	memset(src, 0, length);
->  }
->  
->  static u64 do_memcpy_cycle(memcpy_t fn, size_t len, bool prefault)
-> -- 
-> 1.8.1.4
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 6866548..7323cca 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -1483,6 +1483,7 @@ static int pcs_add_gpio_func(struct device_node *node, struct pcs_device *pcs)
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_PM
+ static int pinctrl_single_suspend(struct platform_device *pdev,
+ 					pm_message_t state)
+ {
+@@ -1505,6 +1506,7 @@ static int pinctrl_single_resume(struct platform_device *pdev)
+ 
+ 	return pinctrl_force_default(pcs->pctl);
+ }
++#endif
+ 
+ static int pcs_probe(struct platform_device *pdev)
+ {
 
--- 
- Kirill A. Shutemov
