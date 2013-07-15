@@ -1,206 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab3GOIZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:25:18 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:64926 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab3GOIZP (ORCPT
+	id S1754421Ab3GOIZi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:25:38 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26547 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab3GOIZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:25:15 -0400
-Message-ID: <51E3B1E7.2080004@suse.cz>
-Date: Mon, 15 Jul 2013 10:25:11 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
-MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        Jiri Slaby <jirislaby@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: Re: e1000e + suspend, 3.9-rc2
-References: <20130311191936.GD5000@pd.tnic> <513E355C.4000204@gmail.com> <20130311202537.GF5000@pd.tnic> <20130312171745.GE5370@pd.tnic> <51483B1A.9090704@suse.cz> <51483DAA.7060806@openvz.org> <5148589E.8030509@suse.cz> <804857E1F29AAC47BF68C404FC60A1844D9F3062@ORSMSX103.amr.corp.intel.com> <516C1CE5.1080803@suse.cz> <51B8C8A8.9040900@suse.cz> <51B8E854.9040101@openvz.org> <51D72B7C.3040700@suse.cz>
-In-Reply-To: <51D72B7C.3040700@suse.cz>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 15 Jul 2013 04:25:35 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-03-51e3b1ebb86f
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
+References: <001201ce7dfa$716b3370$54419a50$@samsung.com>
+ <51DFD3F3.9050704@ti.com>
+In-reply-to: <51DFD3F3.9050704@ti.com>
+Subject: Re: [PATCH V2] pci: exynos: split into two parts such as Synopsys part
+ and Exynos part
+Date: Mon, 15 Jul 2013 17:25:15 +0900
+Message-id: <000601ce8134$d5277b20$7f767160$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQMw1eBP/VKXWuT2/qwqXEWC1QeRsgH66BKvlpDlkSA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+Zse6bjY8DDZpkLf5OOsZusaQpw+Ll
+	IU2LywsvsVr0LrjKZnHhaQ+bxeVdc9gszs47zmYx4/w+JouNU38xWrRfUrZoPPqA1aL1yQNG
+	B16P378mMXos2FTq8X3hfHaPvi2rGD2e/tjL7HH8xnYmj8+b5ALYo7hsUlJzMstSi/TtErgy
+	9nx/w1iwXrHiXkM7SwPjE8kuRk4OCQETif079jNC2GISF+6tZ+ti5OIQEljGKHH3+CFWmKJX
+	S28wQSQWMUpc/ziLFcL5xSgx78NasHY2ATWJL18Os4PYIgI6EgtPr2cGKWIWmMsscbivlQUk
+	ISQQKtE99wjQKA4OTqCG9puVIGFhgUSJfysfsIHYLAKqElMOLQUr5xWwlDg6vYsVwhaU+DH5
+	HlicWUBLYv3O40wQtrzE5jVvmSEuVZDYcfY1I8QNVhITfy6FqhGR2PfiHSPIPRICSzkkHj49
+	zAqxTEDi2+RDLCD3SAjISmw6ADVHUuLgihssExglZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC
+	4qT0IlO94sTc4tK8dL3k/NxNjJA0MHEH4/0D1ocYk4HWT2SWEk3OB6aRvJJ4Q2MzIwtTE1Nj
+	I3NLM9KElcR51VusA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwBpuu3T77zKZVJy4VVNsl
+	MRYvUDP/qxKbU6UQ8n/ueaWrfJWtEzk26ahlmke/+pl7Wu5Re1Lm5/D/Vz/0f9sw/fb/XE/d
+	LubUc/NFjBZXvJy0bGvn+qUmN1Z9uPdn29niYk/Nh8oGMf+0JugGXT5+J8s243aGsMTmiX53
+	C1VOXHbyO6JfxBampsRSnJFoqMVcVJwIAGwvnaUZAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCKsWRmVeSWpSXmKPExsVy+t9jAd3XGx8HGvQvN7f4O+kYu8WSpgyL
+	l4c0LS4vvMRq0bvgKpvFhac9bBaXd81hszg77zibxYzz+5gsNk79xWjRfknZovHoA1aL1icP
+	GB14PX7/msTosWBTqcf3hfPZPfq2rGL0ePpjL7PH8RvbmTw+b5ILYI9qYLTJSE1MSS1SSM1L
+	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpVSaEsMacUKBSQWFyspG+H
+	aUJoiJuuBUxjhK5vSBBcj5EBGkhYx5ix5/sbxoL1ihX3GtpZGhifSHYxcnJICJhIvFp6gwnC
+	FpO4cG89WxcjF4eQwCJGiesfZ7FCOL8YJeZ9WMsIUsUmoCbx5cthdhBbREBHYuHp9cwgRcwC
+	c5klDve1soAkhARCJbrnHgEay8HBCdTQfrMSJCwskCjxb+UDNhCbRUBVYsqhpWDlvAKWEken
+	d7FC2IISPybfA4szC2hJrN95nAnClpfYvOYtM8SlChI7zr5mhLjBSmLiz6VQNSIS+168Y5zA
+	KDQLyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC08wz6R2Mqxos
+	DjEKcDAq8fBmqD0OFGJNLCuuzD3EKMHBrCTCu0z5UaAQb0piZVVqUX58UWlOavEhxmSgTycy
+	S4km5wNTYF5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MDo8
+	X9DPlnLshHTAoY3GG6RvpktWthj9aJSruZdRdOfTVbHUO/w1y4K//JL5dlHkpJrUm3q5RUyv
+	P+8QfL1h2+I3xxJv3NtwwzB0/027Kcp3sxZLf3TXeLhS/tzFTWLrbB/Prkn+85V7zVExp7tu
+	7q9ULj9rvXbapaB376/VBVM+L5BkFHXZtWqVEktxRqKhFnNRcSIAsMExbXcDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any ideas on this?
+On Friday, July 12, 2013 7:01 PM, Kishon Vijay Abraham I wrote:
+> On Thursday 11 July 2013 11:19 AM, Jingoo Han wrote:
+> > Exynos PCIe IP consists of Synopsys specific part and Exynos
+> > specific part. Only core block is a Synopsys designware part;
+> > other parts are Exynos specific.
+> > Also, the Synopsys designware part can be shared with other
+> > platforms; thus, it can be split two parts such as Synopsys
+> > designware part and Exynos specific part.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > Cc: Pratyush Anand <pratyush.anand@st.com>
+> > Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
+> > ---
+> > Changes since v1:
+> > - moved the configuration, I/O, memory space handling to dw_pcie_host_init()
+> > - removed exynos_pcie_abort()
+> > - replaced 'purple_base' with 'block_base'
+> > - replaced 'dbi_base' with 'dbi_addr'
+> >
+> >  drivers/pci/host/Makefile          |    1 +
+> >  drivers/pci/host/pcie-designware.c |  963 +++++++++---------------------------
+> >  drivers/pci/host/pcie-designware.h |   71 +++
+> >  drivers/pci/host/pcie-exynos.c     |  523 ++++++++++++++++++++
+> >  4 files changed, 822 insertions(+), 736 deletions(-)
+> >  create mode 100644 drivers/pci/host/pcie-designware.h
+> >  create mode 100644 drivers/pci/host/pcie-exynos.c
+> >
 
-On 07/05/2013 10:24 PM, Jiri Slaby wrote:
-> On 06/12/2013 11:29 PM, Konstantin Khlebnikov wrote:
->> Jiri Slaby wrote:
->>> On 04/15/2013 05:29 PM, Jiri Slaby wrote:
->>>> On 03/29/2013 07:04 PM, Allan, Bruce W wrote:
->>>>>> -----Original Message-----
->>>>>> From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
->>>>>> Sent: Tuesday, March 19, 2013 5:23 AM
->>>>>> To: Konstantin Khlebnikov
->>>>>> Cc: Borislav Petkov; Kirsher, Jeffrey T; Rafael J. Wysocki; Bjorn
->>>>>> Helgaas;
->>>>>> x86@kernel.org; lkml; e1000-devel@lists.sourceforge.net; Allan,
->>>>>> Bruce W
->>>>>> Subject: Re: e1000e + suspend, 3.9-rc2
->>>>>>
->>>>>>>>> Ok, I can still see the hardware error message when suspending:
->>>>>>>>
->>>>>>>> And with 3.8 plus these:
->>>>>>>>       PCI/PM: Clear state_saved during suspend
->>>>>>>>       e1000e: fix pci-device enable-counter balance
->>>>>>>>       e1000e: fix runtime power management transitions
->>>>>>>>       e1000e: fix accessing to suspended device
->>>>>>>>
->>>>>>>> I sometimes see this:
->>>>>>>> pci_pm_suspend():e1000_suspend +0x0/0x10 [e1000e] returns -2
->>>>>>>> dpm_run_callback(): pci_pm_suspend+0x0/0x140 returns -2
->>>>>>>> PM: Device 0000:00:19.0 failed to suspend async: error -2
->>>>>>>>
->>>>>>>> Any ideas? Am I missing some patch still?
->>>>>>>
->>>>>>> Try this:
->>>>>>> "PCI: Don't try to disable Bus Master on disconnected PCI devices"
->>>>>>> https://patchwork.kernel.org/patch/2271641/
->>>>>>>
->>>>>>> But I'm not sure, probably it is unrelated because this code works
->>>>>>> only (?)
->>>>>>> during shutdown/kexec sequences.
->>>>>>
->>>>>> I don't think it will help either. -2 here is -E1000_ERR_PHY from
->>>>>> e1000e_write_phy_reg_mdic if I'm looking correctly. I.e. MDIC not
->>>>>> ready
->>>>>> or unlike MDIC_ERROR.
->>>>>>
->>>>>> I think this happened after I put the link down and tried to suspend.
->>>>>>
->>>>>> -- 
->>>>>> js
->>>>>> suse labs
->>>>>
->>>>> Sorry for not replying sooner, for some reason some of this thread
->>>>> was filtered
->>>>> to my junk folder and I didn’t see it until now.
->>>>>
->>>>> Jiri, can you provide the output of 'lspci -s 00:19.0 -n -vv' and
->>>>> confirm the scenario
->>>>> in which the problem occurs?  Is this easily reproduced?
->>>>
->>>> Sorry about the late reply, I totally forgot about this. lspci output is
->>>> attached below. The scenario is not rigid as I'm not sure when exactly
->>>> this happens. It looks like I have to use power saving on that device.
->>>> And I don't need to use that device at all. Here is an excerpt from one
->>>> kernel boot modulo e1000e where the error occurred.
->>>>
->>>> e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
->>>> e1000e 0000:00:19.0: setting latency timer to 64
->>>> e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to dynamic
->>>> conservative mode
->>>> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
->>>> e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1)
->>>> 3c:97:0e:35:3d:dd
->>>> e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network Connection
->>>> e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-0FF
->>>> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: setting latency timer to 64
->>>> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: setting latency timer to 64
->>>> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: setting latency timer to 64
->>>> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: setting latency timer to 64
->>>> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: setting latency timer to 64
->>>> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
->>>> e1000e 0000:00:19.0: setting latency timer to 64
->>>> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
->>>> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
->>>> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
->>>> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
->>>> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
->>>> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
->>>> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
->>>
->>> This still happens with 3.9.5 ...
->>>
->>> I don't use wired net at all. This usually happens after I enable power
->>> saving.
->>
->> I guess that '-2' is one of 'return -E1000_ERR_PHY',
->> but all that debug messages are omitted by default.
->>
->> Please enable CONFIG_DYNAMIC_DEBUG=y and mount debugfs, after that:
->> # echo module e1000e +p > /sys/kernel/debug/dynamic_debug/control
->> If it would be too verbose you can enable these messages more selective.\
+[...]
+
+> > -static void exynos_pcie_setup_rc(struct pcie_port *pp)
+> > +void dw_pcie_setup_rc(struct pcie_port *pp)
+> >  {
+> >  	struct pcie_port_info *config = &pp->config;
+> >  	void __iomem *dbi_base = pp->dbi_base;
+> > @@ -549,509 +502,47 @@ static void exynos_pcie_setup_rc(struct pcie_port *pp)
+> >  	u32 memlimit;
+> >
+> >  	/* set the number of lines as 4 */
+> > -	readl_rc(pp, dbi_base + PCIE_PORT_LINK_CONTROL, &val);
+> > +	dw_pcie_readl_rc(pp, dbi_base + PCIE_PORT_LINK_CONTROL, &val);
+> >  	val &= ~PORT_LINK_MODE_MASK;
+> >  	val |= PORT_LINK_MODE_4_LANES;
+> > -	writel_rc(pp, val, dbi_base + PCIE_PORT_LINK_CONTROL);
+> > +	dw_pcie_writel_rc(pp, val, dbi_base + PCIE_PORT_LINK_CONTROL);
 > 
-> Here we go at last:
+> I guess here we need to make this configurable. In Jacinto6 this can be either
+> single lane or double lane. Maybe we should have a dt property to specify the
+> number of lanes?
+
+OK, I will make it configurable.
+
+[...]
+
+> > +struct pcie_port_info {
+> > +	u32		cfg0_size;
+> > +	u32		cfg1_size;
+> > +	u32		io_size;
+> > +	u32		mem_size;
+> > +	phys_addr_t	io_bus_addr;
+> > +	phys_addr_t	mem_bus_addr;
+> > +};
+> > +
+> > +struct pcie_port {
+> > +	struct device		*dev;
+> > +	u8			controller;
+> > +	u8			root_bus_nr;
+> > +	void __iomem		*dbi_base;
+> > +	void __iomem		*elbi_base;
+> > +	void __iomem		*phy_base;
+> > +	void __iomem		*block_base;
+> > +	u64			cfg0_base;
+> > +	void __iomem		*va_cfg0_base;
+> > +	u64			cfg1_base;
+> > +	void __iomem		*va_cfg1_base;
+> > +	u64			io_base;
+> > +	u64			mem_base;
+> > +	spinlock_t		conf_lock;
+> > +	struct resource		cfg;
+> > +	struct resource		io;
+> > +	struct resource		mem;
+> > +	struct pcie_port_info	config;
+> > +	struct clk		*clk;
+> > +	struct clk		*bus_clk;
+> > +	int			irq;
+> > +	int			reset_gpio;
+> > +	struct dw_pcie_host_ops	*ops;
+> > +};
 > 
-> e1000e 0000:00:19.0 eth0: Setting page 0x6020
-> e1000e 0000:00:19.0 eth0: MDI Write did not complete
-> e1000e 0000:00:19.0 eth0: Setting page 0x6020
-> e1000e 0000:00:19.0 eth0: MDI Write did not complete
-> e1000e 0000:00:19.0 eth0: failed to enable jumbo frame workaround mode
-> e1000e 0000:00:19.0 eth0: Setting page 0x0
-> e1000e 0000:00:19.0 eth0: MDI Write did not complete
-> e1000e 0000:00:19.0 eth0: Setting page 0x0
-> e1000e 0000:00:19.0 eth0: MDI Write did not complete
-> e1000e 0000:00:19.0 eth0: Setting page 0x6020
-> e1000e 0000:00:19.0 eth0: MDI Write did not complete
-> e1000e 0000:00:19.0 eth0: Could not set Port Control page
-> e1000e 0000:00:19.0 eth0: Setting page 0x6020
-> e1000e 0000:00:19.0 eth0: MDI Write did not complete
-> e1000e 0000:00:19.0 eth0: Could not set Port Control page
-> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
-> dpm_run_callback(): pci_pm_suspend+0x0/0x140 returns -2
-> PM: Device 0000:00:19.0 failed to suspend async: error -2
-> PM: Some devices failed to suspend
+> I think this structure should be split. This has too many of platform specific
+> fields. Maybe we should make pcie_port have only fields necessary for core part
+> and have some other structure for platform specific part?
 > 
->>>> 00:19.0 Ethernet controller [0200]: Intel Corporation 82579LM Gigabit
->>>> Network Connection [8086:1502] (rev 04)
->>>>          Subsystem: Lenovo Device [17aa:21f3]
->>>>          Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
->>>> ParErr- Stepping- SERR- FastB2B- DisINTx+
->>>>          Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast>TAbort-
->>>> <TAbort-<MAbort->SERR-<PERR- INTx-
->>>>          Latency: 0
->>>>          Interrupt: pin A routed to IRQ 46
->>>>          Region 0: Memory at f2500000 (32-bit, non-prefetchable)
->>>> [size=128K]
->>>>          Region 1: Memory at f253b000 (32-bit, non-prefetchable)
->>>> [size=4K]
->>>>          Region 2: I/O ports at 5080 [size=32]
->>>>          Capabilities: [c8] Power Management version 2
->>>>                  Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
->>>> PME(D0+,D1-,D2-,D3hot+,D3cold+)
->>>>                  Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
->>>>          Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
->>>>                  Address: 00000000fee00398  Data: 0000
->>>>          Capabilities: [e0] PCI Advanced Features
->>>>                  AFCap: TP+ FLR+
->>>>                  AFCtrl: FLR-
->>>>                  AFStatus: TP-
->>>>          Kernel driver in use: e1000e
->>>>
->>>>
->>>> thanks,
->>>>
->>>
->>>
->>
+> Something like
+> struct exynos_pcie {
+> 	[...]
+> 	void __iomem		*dbi_base;
+> 	void __iomem		*elbi_base;
+> 	void __iomem		*phy_base;
+> 	int			reset_gpio;
+> 	struct clk		*clk;
+> 	struct clk		*bus_clk;
+> 	[...]
+> 	struct pcie_port	pp;
+> }
 > 
+> struct pcie_port {
+> 	struct device		*dev;
+> 	u64			cfg0_base;
+> 	void __iomem		*va_cfg0_base;
+> 	u64			cfg1_base;
+> 	void __iomem		*va_cfg1_base;
+> 	u64			io_base;
+> 	u64			mem_base;
+> 	spinlock_t		conf_lock;
+> 	struct resource		cfg;
+> 	struct resource		io;
+> 	struct resource		mem;
+> 	struct pcie_port_info	config;
+> 	int			irq;
+> 	struct dw_pcie_host_ops	*ops;
+> };
 > 
+> And in ops, you can use container_of to get reference to exynos_pcie (if we
+> want to write to exynos pcie registers)
+
+OK, I see.
+It looks good. I will use it as you guided.
+Thank you for your suggestion. :)
+
+Best regards,
+Jingoo Han
 
 
--- 
-js
-suse labs
