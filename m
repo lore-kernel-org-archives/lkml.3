@@ -1,163 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3GOJqr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 05:46:47 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42976 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab3GOJqm (ORCPT
+	id S1754727Ab3GOJuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 05:50:10 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55015 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754666Ab3GOJuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 05:46:42 -0400
-Message-ID: <51E3C5CE.7000009@linux.vnet.ibm.com>
-Date: Mon, 15 Jul 2013 15:20:06 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com> <20130714131241.GA11772@redhat.com>
-In-Reply-To: <20130714131241.GA11772@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071509-2674-0000-0000-000009CD39AC
+	Mon, 15 Jul 2013 05:50:09 -0400
+Message-ID: <1373881807.2591.16.camel@x61.thuisdomein>
+Subject: Re: [PATCH] ioatdma: silence GCC warnings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 15 Jul 2013 11:50:07 +0200
+In-Reply-To: <1371465315.26299.17.camel@x61.thuisdomein>
+References: <1371465315.26299.17.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 15 Jul 2013 09:50:07.0794 (UTC) FILETIME=[B069D920:01CE8140]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2013 06:42 PM, Gleb Natapov wrote:
-> On Mon, Jun 24, 2013 at 06:13:42PM +0530, Raghavendra K T wrote:
->> kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
->>
->> From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
->>
-trimming
-[...]
->> +
->> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
->> +{
->> +	struct kvm_lock_waiting *w;
->> +	int cpu;
->> +	u64 start;
->> +	unsigned long flags;
->> +
->> +	w = &__get_cpu_var(lock_waiting);
->> +	cpu = smp_processor_id();
->> +	start = spin_time_start();
->> +
->> +	/*
->> +	 * Make sure an interrupt handler can't upset things in a
->> +	 * partially setup state.
->> +	 */
->> +	local_irq_save(flags);
->> +
->> +	/*
->> +	 * The ordering protocol on this is that the "lock" pointer
->> +	 * may only be set non-NULL if the "want" ticket is correct.
->> +	 * If we're updating "want", we must first clear "lock".
->> +	 */
->> +	w->lock = NULL;
->> +	smp_wmb();
->> +	w->want = want;
->> +	smp_wmb();
->> +	w->lock = lock;
->> +
->> +	add_stats(TAKEN_SLOW, 1);
->> +
->> +	/*
->> +	 * This uses set_bit, which is atomic but we should not rely on its
->> +	 * reordering gurantees. So barrier is needed after this call.
->> +	 */
->> +	cpumask_set_cpu(cpu, &waiting_cpus);
->> +
->> +	barrier();
->> +
->> +	/*
->> +	 * Mark entry to slowpath before doing the pickup test to make
->> +	 * sure we don't deadlock with an unlocker.
->> +	 */
->> +	__ticket_enter_slowpath(lock);
->> +
->> +	/*
->> +	 * check again make sure it didn't become free while
->> +	 * we weren't looking.
->> +	 */
->> +	if (ACCESS_ONCE(lock->tickets.head) == want) {
->> +		add_stats(TAKEN_SLOW_PICKUP, 1);
->> +		goto out;
->> +	}
->> +
->> +	/* Allow interrupts while blocked */
->> +	local_irq_restore(flags);
->> +
-> So what happens if an interrupt comes here and an interrupt handler
-> takes another spinlock that goes into the slow path? As far as I see
-> lock_waiting will become overwritten and cpu will be cleared from
-> waiting_cpus bitmap by nested kvm_lock_spinning(), so when halt is
-> called here after returning from the interrupt handler nobody is going
-> to wake this lock holder. Next random interrupt will "fix" it, but it
-> may be several milliseconds away, or never. We should probably check
-> if interrupt were enabled and call native_safe_halt() here.
->
+On Mon, 2013-06-17 at 12:35 +0200, Paul Bolle wrote:
+> Building dma_v3.o triggers two GCC warnings:
+>     drivers/dma/ioat/dma_v3.c: In function ‘__ioat3_prep_pq16_lock’:
+>     drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
+>     drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
+> 
+> These warnings are caused by pq16_set_src(). It uses "int idx" as an
+> index to an eight element array. Changing "idx" to unsigned int silences
+> these warnings. Apparently GCC can then determine that "idx" will never
+> be negative.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Okay you mean something like below should be done.
-if irq_enabled()
-   native_safe_halt()
-else
-   halt()
-
-It is been a complex stuff for analysis for me.
-
-So in our discussion stack would looking like this.
-
-spinlock()
-   kvm_lock_spinning()
-                   <------ interrupt here
-           halt()
+Identical warnings can still be seen in v3.11-rc1. Did anyone had a
+chance to look at this patch?
 
 
- From the halt if we trace
-
-   halt()
-     kvm_vcpu_block()
-        kvm_arch_vcpu_runnable())
-	 kvm_make_request(KVM_REQ_UNHALT)
-		
-This would drive us out of halt handler, and we are fine when it
-happens since we would revisit kvm_lock_spinning.
-
-But I see that
-
-kvm_arch_vcpu_runnable() has this condition
-  (kvm_arch_interrupt_allowed(vcpu) &&  kvm_cpu_has_interrupt(vcpu));
-
-which means that if we going process the interrupt here we would set 
-KVM_REQ_UNHALT. and we are fine.
-
-But if we are in the situation kvm_arch_interrupt_allowed(vcpu) = true, 
-but we already processed interrupt and kvm_cpu_has_interrupt(vcpu) is 
-false, we have problem till next random interrupt.
-
-The confusing part to me is the case kvm_cpu_has_interrupt(vcpu)=false 
-and irq
-already handled and overwritten the lock_waiting. can this
-situation happen? or is it that we will process the interrupt only
-after this point (kvm_vcpu_block). Because if that is the case we are
-fine.
-
-Please let me know.
+Paul Bolle
+> ---
+> 0) Compile tested only.
+> 
+> 1) These warning were introduced in v3.10-rc1. That must have been
+> through commit 7727eaa449 ("ioatdma: Adding support for 16 src PQ ops
+> and super extended descriptors").
+> 
+>  drivers/dma/ioat/dma_v3.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index ca6ea9b..b5102da 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -251,7 +251,7 @@ static bool is_bwd_noraid(struct pci_dev *pdev)
+>  }
+>  
+>  static void pq16_set_src(struct ioat_raw_descriptor *desc[3],
+> -			dma_addr_t addr, u32 offset, u8 coef, int idx)
+> +			dma_addr_t addr, u32 offset, u8 coef, unsigned int idx)
+>  {
+>  	struct ioat_pq_descriptor *pq = (struct ioat_pq_descriptor *)desc[0];
+>  	struct ioat_pq16a_descriptor *pq16 =
+> @@ -1180,7 +1180,7 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
+>  	struct ioat_pq_descriptor *pq;
+>  	u32 offset = 0;
+>  	u8 op;
+> -	int i, s, idx, num_descs;
+> +	int i, idx, num_descs;
+>  
+>  	/* this function only handles src_cnt 9 - 16 */
+>  	BUG_ON(src_cnt < 9);
+> @@ -1206,6 +1206,7 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
+>  	do {
+>  		struct ioat_raw_descriptor *descs[4];
+>  		size_t xfer_size = min_t(size_t, len, 1 << ioat->xfercap_log);
+> +		unsigned int s;
+>  
+>  		desc = ioat2_get_ring_ent(ioat, idx + i);
+>  		pq = desc->pq;
 
