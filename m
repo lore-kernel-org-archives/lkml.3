@@ -1,143 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab3GOVZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:25:09 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:11011 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164Ab3GOVZI (ORCPT
+	id S1757634Ab3GOVak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:30:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49758 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab3GOVaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:25:08 -0400
-Message-ID: <51E468A4.3030605@hp.com>
-Date: Mon, 15 Jul 2013 17:24:52 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v5 01/12] spinlock: A new lockref structure for lockless
- update of refcount
-References: <1373035656-40600-1-git-send-email-Waiman.Long@hp.com> <1373035656-40600-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1307051911110.32106@ionos.tec.linutronix.de> <51DACADF.4000802@hp.com> <alpine.DEB.2.02.1307151612090.11918@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307151612090.11918@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 15 Jul 2013 17:30:39 -0400
+Date: Mon, 15 Jul 2013 14:30:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Robin Holt <holt@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
+Message-Id: <20130715143037.8287ffbf2fb0e72bc8efb287@linux-foundation.org>
+In-Reply-To: <1373594635-131067-5-git-send-email-holt@sgi.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+	<1373594635-131067-5-git-send-email-holt@sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 10:41 AM, Thomas Gleixner wrote:
-> On Mon, 8 Jul 2013, Waiman Long wrote:
->> On 07/05/2013 02:59 PM, Thomas Gleixner wrote:
->>> On Fri, 5 Jul 2013, Waiman Long wrote:
->> I think it is OK to add the GENERIC option, but I would like to make available
->> a slightly different set of options:
->> 1) Always take the lock
->> 2) Use the generic implementation with the default parameters
->> 3) Use the generic implementation with a customized set of parameters
->> 4) Use an architecture specific implementation.
->>
->> 2) set only GENERIC_SPINLOCK_REFCOUNT
->> 3) set both GENERIC_SPINLOCK_REFCOUNT and ARCH_SPINLOCK_REFCOUNT
->> 4) set only ARCH_SPINLOCK_REFCOUNT
->>
->> The customized parameters will be set in the "asm/spinlock_refcount.h" file.
->> Currently ,there is 2 parameters that can be customized for each architecture:
->> 1) How much time will the function wait until the lock is free
->> 2) How many attempts to do a lockless cmpxchg to update reference count
-> Sigh. GENERIC means, that you use the generic implementation, ARCH
-> means the architecture has a private implementation of that code.
+On Thu, 11 Jul 2013 21:03:55 -0500 Robin Holt <holt@sgi.com> wrote:
+
+> During boot of large memory machines, a significant portion of boot
+> is spent initializing the struct page array.  The vast majority of
+> those pages are not referenced during boot.
+> 
+> Change this over to only initializing the pages when they are
+> actually allocated.
+> 
+> Besides the advantage of boot speed, this allows us the chance to
+> use normal performance monitoring tools to determine where the bulk
+> of time is spent during page initialization.
+> 
+> ...
 >
-> The generic implementation can use arch specific includes and if there
-> is none we simply fallback to the asm-generic one.
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1330,8 +1330,19 @@ static inline void __free_reserved_page(struct page *page)
+>  	__free_page(page);
+>  }
+>  
+> +extern void __reserve_bootmem_region(phys_addr_t start, phys_addr_t end);
+> +
+> +static inline void __reserve_bootmem_page(struct page *page)
+> +{
+> +	phys_addr_t start = page_to_pfn(page) << PAGE_SHIFT;
+> +	phys_addr_t end = start + PAGE_SIZE;
+> +
+> +	__reserve_bootmem_region(start, end);
+> +}
 
-I used the ARCH+GENERIC to mean using the generic code but with arch 
-specific include.
+It isn't obvious that this needed to be inlined?
 
->   >  Let's start with a simple version because it IS simple and easy
->>> to analyze and debug and then incrementally build improvements on it
->>> instead of creating an heuristics monster in the first place, i.e.:
->>>
->>>      if (!spin_is_locked(&lr->lock)&&   try_cmpxchg_once(lr))
->>>         return 0;
->>>      return 1;
->>>
->>> Take numbers for this on a zoo of different machines: Intel and AMD,
->>> old and new.
->>>
->>> Then you can add an incremental patch on that, which add loops and
->>> hoops. Along with numbers on the same zoo of machines.
->> I originally tried to do a cmpxchg without waiting and there was
->> practically no performance gain. I believe that as soon as
-> Well, you did not see a difference on your particular machine. Still
-> we don't have an idea how all of this works on a set of different
-> machines. There is a world beside 8 socket servers.
+>  static inline void free_reserved_page(struct page *page)
+>  {
+> +	__reserve_bootmem_page(page);
+>  	__free_reserved_page(page);
+>  	adjust_managed_page_count(page, 1);
+>  }
+> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+> index 6d53675..79e8eb7 100644
+> --- a/include/linux/page-flags.h
+> +++ b/include/linux/page-flags.h
+> @@ -83,6 +83,7 @@ enum pageflags {
+>  	PG_owner_priv_1,	/* Owner use. If pagecache, fs may use*/
+>  	PG_arch_1,
+>  	PG_reserved,
+> +	PG_uninitialized2mib,	/* Is this the right spot? ntz - Yes - rmh */
 
-I understand that. I can live with try_cmpxchg_once, though doing it 
-twice will give a slightly better performance. However, without waiting 
-for the lock to be free, this patch won't do much good. To keep it 
-simple, I can remove the ability to do customization while doing cmpxchg 
-once and wait until the lock is free. Please let me know if this is 
-acceptable to you.
+"mib" creeps me out too.  And it makes me think of SNMP, which I'd
+prefer not to think about.
 
->> contention happens, it will force all the upcoming reference count
->> update threads to take the lock eliminating any potential
->> performance gain that we can have. To make it simple, I can change
->> the default to wait indefinitely until the lock is free instead of
->> looping a certain number of times, but I still like the option of
->> letting each architecture to decide how many times they want to
->> try. I agree that the actual waiting time even for one architecture
->> is depending on the actual CPU chip that is being used. I have done
->> some experiment on that. As long as the count is large enough,
->> increasing the loop count doesn't have any significant impact on
->> performance any more. The main reason for having a finite time is to
->> avoid having the waiting thread to wait virtually forever if the
->> lock happens to be busy for a long time.
-> Again, if we make this tunable then we still want documentation for
-> the behaviour on small, medium and large machines.
+We've traditionally had fears of running out of page flags, but I've
+lost track of how close we are to that happening.  IIRC the answer
+depends on whether you believe there is such a thing as a 32-bit NUMA
+system.
+
+Can this be avoided anyway?  I suspect there's some idiotic combination
+of flags we could use to indicate the state.  PG_reserved|PG_lru or
+something.
+
+"2MB" sounds terribly arch-specific.  Shouldn't we make it more generic
+for when the hexagon64 port wants to use 4MB?
+
+That conversational code comment was already commented on, but it's
+still there?
+
+> 
+> ...
 >
-> Also what's the approach to tune that? Running some random testbench
-> and monitor the results for various settings?
->
-> If that's the case we better have a that as variables with generic
-> initial values in the code, which can be modified by sysctl.
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -740,6 +740,54 @@ static void __init_single_page(struct page *page, unsigned long zone, int nid, i
+>  #endif
+>  }
+>  
+> +static void expand_page_initialization(struct page *basepage)
+> +{
+> +	unsigned long pfn = page_to_pfn(basepage);
+> +	unsigned long end_pfn = pfn + PTRS_PER_PMD;
+> +	unsigned long zone = page_zonenum(basepage);
+> +	int reserved = PageReserved(basepage);
+> +	int nid = page_to_nid(basepage);
+> +
+> +	ClearPageUninitialized2Mib(basepage);
+> +
+> +	for( pfn++; pfn < end_pfn; pfn++ )
+> +		__init_single_page(pfn_to_page(pfn), zone, nid, reserved);
+> +}
+> +
+> +void ensure_pages_are_initialized(unsigned long start_pfn,
+> +				  unsigned long end_pfn)
 
-As I said above, I can remove the customization. I may reintroduce user 
-customization using sysctl as you suggested in the a follow up patch 
-after this one is merged.
+I think this can be made static.  I hope so, as it's a somewhat
+odd-sounding identifier for a global.
 
->
->>>> +		getnstimeofday(&tv2);
->>>> +		ns = (tv2.tv_sec - tv1.tv_sec) * NSEC_PER_SEC +
->>>> +		     (tv2.tv_nsec - tv1.tv_nsec);
->>>> +		pr_info("lockref wait loop time = %lu ns\n", ns);
->>> Using getnstimeofday() for timestamping and spamming the logs with
->>> printouts? You can't be serious about that?
->>>
->>> Thats what tracepoints are for. Tracing is the only way to get proper
->>> numbers which take preemption, interrupts etc. into account without
->>> hurting runtime performace.
->> The _SHOW_WAIT_LOOP_TIME is for debugging and instrumentation purpose only
->> during development cycle. It is not supposed to be turned on at production
->> system. I will document that in the code.
-> No, no, no! Again: That's what tracepoints are for.
->
-> This kind of debugging is completely pointless. Tracepoints are
-> designed to be low overhead and can be enabled on production
-> systems.
->
-> Your debugging depends on slow timestamps against CLOCK_REALTIME and
-> an even slower output via printk. How useful is that if you want to
-> really instrument the behaviour of this code?
+> +{
+> +	unsigned long aligned_start_pfn = start_pfn & ~(PTRS_PER_PMD - 1);
+> +	unsigned long aligned_end_pfn;
+> +	struct page *page;
+> +
+> +	aligned_end_pfn = end_pfn & ~(PTRS_PER_PMD - 1);
+> +	aligned_end_pfn += PTRS_PER_PMD;
+> +	while (aligned_start_pfn < aligned_end_pfn) {
+> +		if (pfn_valid(aligned_start_pfn)) {
+> +			page = pfn_to_page(aligned_start_pfn);
+> +
+> +			if(PageUninitialized2Mib(page))
 
-This code is not critical and I can certainly remove it.
+checkpatch them, please.
 
-Regards,
-Longman
+> +				expand_page_initialization(page);
+> +		}
+> +
+> +		aligned_start_pfn += PTRS_PER_PMD;
+> +	}
+> +}
+
+Some nice code comments for the above two functions would be helpful.
+
+> 
+> ...
+>
+> +int __meminit pfn_range_init_avail(unsigned long pfn, unsigned long end_pfn,
+> +				   unsigned long size, int nid)
+> +{
+> +	unsigned long validate_end_pfn = pfn + size;
+> +
+> +	if (pfn & (size - 1))
+> +		return 1;
+> +
+> +	if (pfn + size >= end_pfn)
+> +		return 1;
+> +
+> +	while (pfn < validate_end_pfn)
+> +	{
+> +		if (!early_pfn_valid(pfn))
+> +			return 1;
+> +		if (!early_pfn_in_nid(pfn, nid))
+> +			return 1;
+> +		pfn++;
+> + 	}
+> +
+> +	return size;
+> +}
+
+Document it, please.  The return value semantics look odd, so don't
+forget to explain all that as well.
+
+> 
+> ...
+>
+> @@ -6196,6 +6302,7 @@ static const struct trace_print_flags pageflag_names[] = {
+>  	{1UL << PG_owner_priv_1,	"owner_priv_1"	},
+>  	{1UL << PG_arch_1,		"arch_1"	},
+>  	{1UL << PG_reserved,		"reserved"	},
+> +	{1UL << PG_uninitialized2mib,	"Uninit_2MiB"	},
+
+It would be better if the name which is visible in procfs matches the
+name in the kernel source code.
+
+>  	{1UL << PG_private,		"private"	},
+>  	{1UL << PG_private_2,		"private_2"	},
+>  	{1UL << PG_writeback,		"writeback"	},
+
