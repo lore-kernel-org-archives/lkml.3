@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab3GOTOC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:14:02 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:60813 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754634Ab3GOTN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755002Ab3GOTN7 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 15 Jul 2013 15:13:59 -0400
-Message-ID: <1373915638.2591.45.camel@x61.thuisdomein>
-Subject: Re: CONFIG_* used by user-space to figure out whether a feature is
- on/off
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Date: Mon, 15 Jul 2013 21:13:58 +0200
-In-Reply-To: <20130715190311.GA3385@phenom.dumpdata.com>
-References: <20130715154050.GA5941@phenom.dumpdata.com>
-	 <20130715170244.GA29883@kroah.com>
-	 <20130715172431.GA8034@phenom.dumpdata.com>
-	 <CA+55aFx0rLqQUig9VHsfckRX650H=kq6hXH35m=yev17zfi0EA@mail.gmail.com>
-	 <20130715180202.GB2433@phenom.dumpdata.com>
-	 <1373912743.2591.34.camel@x61.thuisdomein>
-	 <20130715190311.GA3385@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48619 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab3GOTN6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 15:13:58 -0400
+Date: Mon, 15 Jul 2013 12:13:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Joe Perches <joe@perches.com>, Peng Tao <bergwolf@gmail.com>,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH-v3 00/17] staging/lustre: fix various build issues
+Message-Id: <20130715121357.42ef2826750909c1fc57788a@linux-foundation.org>
+In-Reply-To: <20130715184030.GA17220@kroah.com>
+References: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
+	<1373908589.2062.18.camel@joe-AO722>
+	<20130715184030.GA17220@kroah.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Jul 2013 19:13:59.0013 (UTC) FILETIME=[75643150:01CE818F]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 15:03 -0400, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jul 15, 2013 at 08:25:43PM +0200, Paul Bolle wrote:
-> > And you're now also taking Michael's patch, that triggered this
-> > discussion, aren't you?
+On Mon, 15 Jul 2013 11:40:30 -0700 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+
+> On Mon, Jul 15, 2013 at 10:16:29AM -0700, Joe Perches wrote:
+> > On Mon, 2013-07-15 at 22:27 +0800, Peng Tao wrote:
+> > > Hi Greg,
+> > > 
+> > > Now that 3.11-rc1 is out, please consider queuing following patches to
+> > > fix various Lustre client build issues. I've verified that we can now
+> > > pass build on sparc/mips/s390/powerpc/x86, both 32bits and 64bits.
+> > 
+> > These patches apply to linus' current, but not to -next
+> > where other lustre patches have already been applied.
 > 
-> I believe there is a better way of doing this that I had enumerated
-> in the thread (see "xen: remove unused Kconfig parameter"). That was to
-> remove the CONFIG_XEN_PRIVILIGED and XEN_CONFIG_DOM0 and instead have an
-> CONFIG_XEN_HARDWARE_DOMAIN and CONFIG_XEN_CONTROL_DOMAIN which reflect the
-> reality a lot better.
+> What trees are those in?  I have nothing in my staging-next branch right
+> now, so they didn't come from there, which is where I will be applying
+> this to.
 
-But, whatever you choose to do in the future, that needn't stop you from
-dropping XEN_PRIVILIGED_GUEST now. It's basically a trivial cleanup.
+See the five patches I sent you on July 8 ;)
 
-
-Paul Bolle
-
+I'll resend.
