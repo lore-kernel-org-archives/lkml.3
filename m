@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab3GOTyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:54:23 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11142 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab3GOTyS (ORCPT
+	id S1756117Ab3GOTy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:54:27 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16247 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab3GOTyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:54:18 -0400
+	Mon, 15 Jul 2013 15:54:23 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 15 Jul 2013 12:54:16 -0700
+	by hqnvupgp08.nvidia.com on Mon, 15 Jul 2013 12:53:33 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 7/9] usb: phy: tegra: Remove custom PHY locating APIs
-Date: Mon, 15 Jul 2013 22:53:47 +0300
-Message-ID: <1373918029-28977-8-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v2 9/9] usb: phy: tegra: Use DT helpers for dr_mode
+Date: Mon, 15 Jul 2013 22:53:49 +0300
+Message-ID: <1373918029-28977-10-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
@@ -27,62 +27,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra EHCI driver is no longer using these custom functions, so they
-can be removed.
+Use the new of_usb_get_dr_mode helper function for parsing dr_mode
+from the device tree. Also replace the usage of the custom
+tegra_usb_phy_mode enum with the standard enum.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- drivers/usb/phy/phy-tegra-usb.c   | 24 ------------------------
- include/linux/usb/tegra_usb_phy.h |  2 --
- 2 files changed, 26 deletions(-)
+ drivers/usb/phy/phy-tegra-usb.c   | 24 ++++++++++++------------
+ include/linux/usb/tegra_usb_phy.h |  8 +-------
+ 2 files changed, 13 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 8397206..0d48f4e 100644
+index 3ded872..b7ad8b3 100644
 --- a/drivers/usb/phy/phy-tegra-usb.c
 +++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -967,29 +967,5 @@ static struct platform_driver tegra_usb_phy_driver = {
- };
- module_platform_driver(tegra_usb_phy_driver);
+@@ -377,7 +377,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 		UTMIP_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
+ 	writel(val, base + UTMIP_PLL_CFG1);
  
--static int tegra_usb_phy_match(struct device *dev, void *data)
--{
--	struct tegra_usb_phy *tegra_phy = dev_get_drvdata(dev);
--	struct device_node *dn = data;
--
--	return (tegra_phy->u_phy.dev->of_node == dn) ? 1 : 0;
--}
--
--struct usb_phy *tegra_usb_get_phy(struct device_node *dn)
--{
--	struct device *dev;
--	struct tegra_usb_phy *tegra_phy;
--
--	dev = driver_find_device(&tegra_usb_phy_driver.driver, NULL, dn,
--				 tegra_usb_phy_match);
--	if (!dev)
--		return ERR_PTR(-EPROBE_DEFER);
--
--	tegra_phy = dev_get_drvdata(dev);
--
--	return &tegra_phy->u_phy;
--}
--EXPORT_SYMBOL_GPL(tegra_usb_get_phy);
--
- MODULE_DESCRIPTION("Tegra USB PHY driver");
- MODULE_LICENSE("GPL v2");
+-	if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE) {
++	if (phy->mode == USB_DR_MODE_PERIPHERAL) {
+ 		val = readl(base + USB_SUSP_CTRL);
+ 		val &= ~(USB_WAKE_ON_CNNT_EN_DEV | USB_WAKE_ON_DISCON_EN_DEV);
+ 		writel(val, base + USB_SUSP_CTRL);
+@@ -412,7 +412,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 
+ 	if (phy->is_legacy_phy) {
+ 		val = readl(base + UTMIP_SPARE_CFG0);
+-		if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE)
++		if (phy->mode == USB_DR_MODE_PERIPHERAL)
+ 			val &= ~FUSE_SETUP_SEL;
+ 		else
+ 			val |= FUSE_SETUP_SEL;
+@@ -453,7 +453,7 @@ static int utmi_phy_power_off(struct tegra_usb_phy *phy)
+ 
+ 	utmi_phy_clk_disable(phy);
+ 
+-	if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE) {
++	if (phy->mode == USB_DR_MODE_PERIPHERAL) {
+ 		val = readl(base + USB_SUSP_CTRL);
+ 		val &= ~USB_WAKEUP_DEBOUNCE_COUNT(~0);
+ 		val |= USB_WAKE_ON_CNNT_EN_DEV | USB_WAKEUP_DEBOUNCE_COUNT(5);
+@@ -906,15 +906,15 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	err = of_property_match_string(np, "dr_mode", "otg");
+-	if (err < 0) {
+-		err = of_property_match_string(np, "dr_mode", "peripheral");
+-		if (err < 0)
+-			tegra_phy->mode = TEGRA_USB_PHY_MODE_HOST;
+-		else
+-			tegra_phy->mode = TEGRA_USB_PHY_MODE_DEVICE;
+-	} else
+-		tegra_phy->mode = TEGRA_USB_PHY_MODE_OTG;
++	if (of_find_property(np, "dr_mode", NULL))
++		tegra_phy->mode = of_usb_get_dr_mode(np);
++	else
++		tegra_phy->mode = USB_DR_MODE_HOST;
++
++	if (tegra_phy->mode == USB_DR_MODE_UNKNOWN) {
++		dev_err(&pdev->dev, "dr_mode is invalid\n");
++		return -EINVAL;
++	}
+ 
+ 	/* On some boards, the VBUS regulator doesn't need to be controlled */
+ 	if (of_find_property(np, "vbus-supply", NULL)) {
 diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index 8474153..a095c98 100644
+index a095c98..d3db274 100644
 --- a/include/linux/usb/tegra_usb_phy.h
 +++ b/include/linux/usb/tegra_usb_phy.h
-@@ -60,8 +60,6 @@ struct tegra_usb_phy {
- 	int reset_gpio;
+@@ -34,12 +34,6 @@ enum tegra_usb_phy_port_speed {
+ 	TEGRA_USB_PHY_PORT_SPEED_HIGH,
  };
  
--struct usb_phy *tegra_usb_get_phy(struct device_node *dn);
+-enum tegra_usb_phy_mode {
+-	TEGRA_USB_PHY_MODE_DEVICE,
+-	TEGRA_USB_PHY_MODE_HOST,
+-	TEGRA_USB_PHY_MODE_OTG,
+-};
 -
- void tegra_usb_phy_preresume(struct usb_phy *phy);
+ struct tegra_xtal_freq;
  
- void tegra_usb_phy_postresume(struct usb_phy *phy);
+ struct tegra_usb_phy {
+@@ -51,7 +45,7 @@ struct tegra_usb_phy {
+ 	struct clk *pll_u;
+ 	struct clk *pad_clk;
+ 	struct regulator *vbus;
+-	enum tegra_usb_phy_mode mode;
++	enum usb_dr_mode mode;
+ 	void *config;
+ 	struct usb_phy *ulpi;
+ 	struct usb_phy u_phy;
 -- 
 1.8.1.5
 
