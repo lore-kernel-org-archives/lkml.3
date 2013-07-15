@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab3GOGMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 02:12:35 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:55013 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3GOGMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 02:12:34 -0400
-Message-ID: <51E392CE.9000605@kernel.org>
-Date: Mon, 15 Jul 2013 09:12:30 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1754002Ab3GOGQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 02:16:38 -0400
+Received: from [115.249.9.81] ([115.249.9.81]:37372 "EHLO ns1370540052.xyz.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752749Ab3GOGQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 02:16:37 -0400
+X-Greylist: delayed 14002 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Jul 2013 02:16:36 EDT
+Message-Id: <201307150216.r6F2GpmM017161@ns1370540052.xyz.com>
+Reply-To: <kelvinol0ofsson1@gmail.com>
+From: "Kelvin  Olofsson" <kelvinolofos@info.net>
+Subject: {Spam?} INTERESTED IN YOUR PRODUCT
+Date: Sun, 14 Jul 2013 23:17:34 -0300
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] SLAB changes for v3.11-rc0
-References: <alpine.LFD.2.03.1307142205090.2124@kernel.org> <CA+55aFytd8NZeX1ux8U56uQk65N3jcq_7UMv1RrFgAPmLJc-dw@mail.gmail.com>
-In-Reply-To: <CA+55aFytd8NZeX1ux8U56uQk65N3jcq_7UMv1RrFgAPmLJc-dw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-yoursite-MailScanner-Information: Please contact the ISP for more information
+X-yoursite-MailScanner: Found to be clean
+X-yoursite-MailScanner-SpamCheck: spam, SBL+XBL
+X-MailScanner-From: kelvinolofos@info.net
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2013 10:58 PM, Linus Torvalds wrote:
-> On Sun, Jul 14, 2013 at 12:06 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>
->> The tree also contains Christoph's unification work that I merged in
->> too late had to revert because it broke things. We'll try again for
->> v3.12.
->
-> Ugh. I'll merge the commits leading up to that, but not the actual
-> broken try at unification at all.
->
-> There's just one one-liner patch in between the broken commits and
-> their reverts, I don't see the point of pulling that part at all, and
-> I can take the one-liner separately.
+Hello
 
-OK, I'll requeue the oneliner commit. Thanks!
+I am writing from  SONAADA CONSULTANT LTD and I am a trading company running on its
+own since 2005,I Am very Interested in your product kindly send your full
+catalog for products with clear photos, and list of FOB prices in USD with
+prices, competitive prices for serious starting.
 
-			Pekka
-
+Waiting your quick response
+Best Regards
+Kelvin  Olofsson
+SONAADA CONSULTANT LTD
+Miranda Australia
+Email; kelvinol0ofsson1@gmail.com 
