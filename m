@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab3GOKj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:39:57 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:43891
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755088Ab3GOKj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:39:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
-        <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <vakul@freescale.com>, Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v3 0/2] DMA: Freescale: Add support for 8-channel DMA engine
-Date: Mon, 15 Jul 2013 18:34:57 +0800
-Message-ID: <1373884499-24079-1-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	id S1755526Ab3GOKpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:45:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49141 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755152Ab3GOKpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:45:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
+   d="scan'208";a="345744644"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 6/8] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
+Date: Mon, 15 Jul 2013 13:47:52 +0300
+Message-Id: <1373885274-25249-7-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Hi Vinod, Dan, Leo and Scott, please have a look at these V2 patches.
+It's confusing that mk_huge_pmd() has semantics different from mk_pte()
+or mk_pmd(). I spent some time on debugging issue cased by this
+inconsistency.
 
-Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
-adds support this DMA engine.
+Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
+prototype to match mk_pte().
 
-V2->V3 changes:
-- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-- edit text string in Kconfig and the driver files, using "elo series" to
-  mention all the current "elo*"
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+ mm/huge_memory.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-V1->V2 changes:
-- removed the codes handling the register dgsr1, since it isn't used corrently
-- renamed the DMA DT compatible to "fsl,elo3-dma"
-- renamed the new dts files to "elo3-dma-<n>.dtsi"
-
-Hongbo Zhang (2):
-  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
-  DMA: Freescale: update driver to support 8-channel DMA engine
-
- .../devicetree/bindings/powerpc/fsl/dma.txt        |    8 +-
- arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   90 ++++++++++++++++++++
- arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   90 ++++++++++++++++++++
- arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
- drivers/dma/Kconfig                                |    9 +-
- drivers/dma/fsldma.c                               |    9 +-
- drivers/dma/fsldma.h                               |    2 +-
- 7 files changed, 199 insertions(+), 13 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
- create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 04f0749..ec735a9 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -690,11 +690,10 @@ pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
+ 	return pmd;
+ }
+ 
+-static inline pmd_t mk_huge_pmd(struct page *page, struct vm_area_struct *vma)
++static inline pmd_t mk_huge_pmd(struct page *page, pgprot_t prot)
+ {
+ 	pmd_t entry;
+-	entry = mk_pmd(page, vma->vm_page_prot);
+-	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
++	entry = mk_pmd(page, prot);
+ 	entry = pmd_mkhuge(entry);
+ 	return entry;
+ }
+@@ -727,7 +726,8 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 		pte_free(mm, pgtable);
+ 	} else {
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(page, vma);
++		entry = mk_huge_pmd(page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		page_add_new_anon_rmap(page, vma, haddr);
+ 		pgtable_trans_huge_deposit(mm, pmd, pgtable);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+@@ -1210,7 +1210,8 @@ alloc:
+ 		goto out_mn;
+ 	} else {
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(new_page, vma);
++		entry = mk_huge_pmd(new_page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		pmdp_clear_flush(vma, haddr, pmd);
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+@@ -2356,7 +2357,8 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	__SetPageUptodate(new_page);
+ 	pgtable = pmd_pgtable(_pmd);
+ 
+-	_pmd = mk_huge_pmd(new_page, vma);
++	_pmd = mk_huge_pmd(new_page, vma->vm_page_prot);
++	_pmd = maybe_pmd_mkwrite(pmd_mkdirty(_pmd), vma);
+ 
+ 	/*
+ 	 * spin_lock() below is not the equivalent of smp_wmb(), so
 -- 
-1.7.9.5
-
-
+1.8.3.2
 
