@@ -1,83 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab3GOLKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 07:10:40 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57110 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754299Ab3GOLKi convert rfc822-to-8bit (ORCPT
+	id S1755650Ab3GOLUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 07:20:37 -0400
+Received: from smtp-out-191.synserver.de ([212.40.185.191]:1142 "EHLO
+	smtp-out-191.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab3GOLUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 07:10:38 -0400
-From: "Kozaruk, Oleksandr" <oleksandr.kozaruk@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "tony@atomide.com" <tony@atomide.com>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "Ujfalusi, Peter" <peter.ujfalusi@ti.com>,
-        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "ch.naveen@samsung.com" <ch.naveen@samsung.com>,
-        "poeschel@lemonage.de" <poeschel@lemonage.de>,
-        "Kim, Milo" <Milo.Kim@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH v3 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
-Thread-Topic: [PATCH v3 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC
- driver
-Thread-Index: AQHOfznlQz/LbRwjPkm/a2+YYG7+MZlibVf+
-Date: Mon, 15 Jul 2013 11:09:40 +0000
-Message-ID: <2A7ABDFCE21540479A5AEB0244A684D5E3D067@DNCE04.ent.ti.com>
-References: <1373613482-28390-1-git-send-email-oleksandr.kozaruk@ti.com>
- <1373613482-28390-3-git-send-email-oleksandr.kozaruk@ti.com>,<51E05F6C.1060506@metafoo.de>
-In-Reply-To: <51E05F6C.1060506@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.92]
-x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Jul 2013 07:20:37 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 2062
+Message-ID: <51E3DB27.4070905@metafoo.de>
+Date: Mon, 15 Jul 2013 13:21:11 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Matt Porter <matt@ohporter.com>
+Subject: Re: [PATCH] dmaengine: add dma_slave_get_caps api
+References: <1373273650-31097-1-git-send-email-vinod.koul@intel.com> <1373883687-10146-1-git-send-email-vinod.koul@intel.com>
+In-Reply-To: <1373883687-10146-1-git-send-email-vinod.koul@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lars-Peter,
-Thank you for the review.
+On 07/15/2013 12:21 PM, Vinod Koul wrote:
+> add new device callback .device_slave_caps api which can be used by clients to
+> query the dma channel capablties before they program the channel. This can help
+> is removing errors during the channel programming. Also add helper
+> dma_slave_get_caps API
+> 
+> This patch folds the work done by Matt earlier
+> https://patchwork.kernel.org/patch/2094891/
+> 
+> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 
->> diff --git a/drivers/iio/adc/twl6030-gpadc.c b/drivers/iio/adc/twl6030-gpadc.c
->> new file mode 100644
->> index 0000000..6ceb789
->> --- /dev/null
->> +++ b/drivers/iio/adc/twl6030-gpadc.c
->> @@ -0,0 +1,1019 @@
->[...]
->> +static u8 twl6032_channel_to_reg(int channel)
->> +{
->> +     return TWL6032_GPADC_GPCH0_LSB;
->
->There is more than one channel, isn't there?
-Yes. But for twl6032 channel of interest is chosen first. When the conversion
-is ready tre result is available in GPCH0_LSB/GPCH1_MSB for any cosen
-channel. For twl6030 there are as many result register pairs as many of
-channels.
+Thanks, looks good to me. I already had some changes to the dmaengine PCM
+driver based on Matt's patch, I'll rework them on top of this one.
 
->> +     ret = devm_request_threaded_irq(dev, irq, NULL,
->> +                                     twl6030_gpadc_irq_handler,
->> +                                     IRQF_ONESHOT, "twl6030_gpadc", gpadc);
->
->You access memory in the interrupt handler which is freed before the interrupt
->handler is freed.
-Thanks for pointing this. devm_* will free memory for irq after the driver
-is removed and memory for the device is freed. I took me awhile to understand
-this. Is there going to be something like devm_iio_device_alloc? whould it be helpfull?
+- Lars
+
+> ---
+> this version
+> 	changes api to include struct dma_slave_caps as arg
+> 	removed burst lengths, can be added when we have users
+> --
+> 
+>  include/linux/dmaengine.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 44 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index cb286b1..3582593 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -370,6 +370,33 @@ struct dma_slave_config {
+>  	unsigned int slave_id;
+>  };
+>  
+> +/* struct dma_slave_caps - expose capabilities of a slave channel only
+> + *
+> + * @src_addr_widths: bit mask of src addr widths the channel supports
+> + * @dstn_addr_widths: bit mask of dstn addr widths the channel supports
+> + * @directions: bit mask of slave direction the channel supported
+> + * 	since the enum dma_transfer_direction is not defined as bits for each
+> + * 	type of direction, the dma controller should fill (1 << <TYPE>) and same
+> + * 	should be checked by controller as well
+> + * @cmd_pause: true, if pause and thereby resume is supported
+> + * @cmd_terminate: true, if terminate cmd is supported
+> + *
+> + * @max_seg_nr: maximum number of SG segments supported
+> + * 	0 for no maximum
+> + * @max_seg_len: maximum length of a SG segment supported
+> + * 	0 for no maximum
+> + */
+> +struct dma_slave_caps {
+> +	u32 src_addr_widths;
+> +	u32 dstn_addr_widths;
+> +	u32 directions;
+> +	bool cmd_pause;
+> +	bool cmd_terminate;
+> +
+> +	u32 max_sg_nr;
+> +	u32 max_sg_len;
+> +};
+> +
+>  static inline const char *dma_chan_name(struct dma_chan *chan)
+>  {
+>  	return dev_name(&chan->dev->device);
+> @@ -532,6 +559,7 @@ struct dma_tx_state {
+>   *	struct with auxiliary transfer status information, otherwise the call
+>   *	will just return a simple status code
+>   * @device_issue_pending: push pending transactions to hardware
+> + * @device_slave_caps: return the slave channel capabilities
+>   */
+>  struct dma_device {
+>  
+> @@ -597,6 +625,7 @@ struct dma_device {
+>  					    dma_cookie_t cookie,
+>  					    struct dma_tx_state *txstate);
+>  	void (*device_issue_pending)(struct dma_chan *chan);
+> +	int (*device_slave_caps)(struct dma_chan *chan, struct dma_slave_caps *caps);
+>  };
+>  
+>  static inline int dmaengine_device_control(struct dma_chan *chan,
+> @@ -670,6 +699,21 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
+>  	return chan->device->device_prep_interleaved_dma(chan, xt, flags);
+>  }
+>  
+> +static inline int dma_get_slave_caps(struct dma_chan *chan, struct dma_slave_caps *caps)
+> +{
+> +	if (!chan || !caps)
+> +		return -EINVAL;
+> +
+> +	/* check if the channel supports slave transactions */
+> +	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
+> +		return -ENXIO;
+> +
+> +	if (chan->device->device_slave_caps)
+> +		return chan->device->device_slave_caps(chan, caps);
+> +
+> +	return -ENXIO;
+> +}
+> +
+>  static inline int dmaengine_terminate_all(struct dma_chan *chan)
+>  {
+>  	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+> 
+
