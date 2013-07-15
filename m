@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933404Ab3GOQ23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 12:28:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31999 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097Ab3GOQ22 (ORCPT
+	id S933417Ab3GOQjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 12:39:15 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:52113 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933394Ab3GOQjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 12:28:28 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=TCvBf9P_FREA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=aUkMh35ueQYA:10 a=zW1UpoXLWwo_Rl7pwmMA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373905707.17876.151.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/3] tracing: some minor fix
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 15 Jul 2013 12:28:27 -0400
-In-Reply-To: <51E3B396.8030905@huawei.com>
-References: <51E3B396.8030905@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Jul 2013 12:39:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOMZO5C_7nJ9RVYvuKJHP2u0mYY6P2UyGVA6OpPzqTnd7YXN2Q@mail.gmail.com>
+References: <1373898160-8460-1-git-send-email-otavio@ossystems.com.br>
+	<CAOMZO5C_7nJ9RVYvuKJHP2u0mYY6P2UyGVA6OpPzqTnd7YXN2Q@mail.gmail.com>
+Date: Mon, 15 Jul 2013 13:39:13 -0300
+X-Google-Sender-Auth: xLLbsZndK-DAoe0A6YhzbniTo5M
+Message-ID: <CAP9ODKpr82mMoxhiv=K70RKdn01b=ZM2J9E4vV-AM5nwXxUR+g@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ARM: dts: imx23-evk: enable USB PHY and controller
+From: Otavio Salvador <otavio@ossystems.com.br>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 16:32 +0800, zhangwei(Jovi) wrote:
-> Hi Steven,
-> 
-> This patchset don't have big change on tracing, just three minor fix,
-> please check it.
+On Mon, Jul 15, 2013 at 12:39 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> Hi Otavio,
+>
+> On Mon, Jul 15, 2013 at 11:22 AM, Otavio Salvador
+> <otavio@ossystems.com.br> wrote:
+>> The i.MX23EVK board provides a USB port so the USB PHY and controller
+>> need to be enabled for it to be usable.
+>>
+>> Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
+>> ---
+>
+> You should have Cc'd Shawn Guo on this series.
 
-Thanks, they seem fine. I'll add them to my queue.
+Oh; thanks for fix my mistake. I am new to kernel development :-)
 
--- Steve
-
-> 
-> Thanks.
-> 
-> zhangwei(Jovi) (3):
->   tracing: use correct config guard CONFIG_STACK_TRACER
->   tracing: use trace_seq_puts()/trace_seq_putc() where possible
->   tracing: update typo of ring buffer comments
-> 
->  kernel/trace/ring_buffer.c           |   26 +++++++++--------
->  kernel/trace/trace.c                 |    4 +--
->  kernel/trace/trace_events_filter.c   |    4 +--
->  kernel/trace/trace_functions_graph.c |   52 +++++++++++++++++-----------------
->  kernel/trace/trace_mmiotrace.c       |    8 +++---
->  kernel/trace/trace_output.c          |   14 ++++-----
->  kernel/trace/trace_syscalls.c        |    2 +-
->  7 files changed, 56 insertions(+), 54 deletions(-)
-> 
-
-
+--
+Otavio Salvador                             O.S. Systems
+http://www.ossystems.com.br        http://projetos.ossystems.com.br
+Mobile: +55 (53) 9981-7854            Mobile: +1 (347) 903-9750
