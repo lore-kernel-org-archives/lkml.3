@@ -1,153 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3GOHxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 03:53:42 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:52905 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab3GOHxk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 03:53:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130713102350.GA8067@MacBook-Pro.local>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
-	<20130713064909.GW25631@dyad.programming.kicks-ass.net>
-	<20130713102350.GA8067@MacBook-Pro.local>
-Date: Mon, 15 Jul 2013 09:53:39 +0200
-Message-ID: <CAKfTPtDux60+o9iCh=+QOq_6OJydaGT3H1M2j7MPDk=uoeQB1Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754353Ab3GOIM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:12:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26642 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754284Ab3GOIMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 04:12:24 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Honza Brazdil <jbrazdil@redhat.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] HID: kye: Add report fixup for Genius Gx Imperator Keyboard
+Date: Mon, 15 Jul 2013 10:12:18 +0200
+Message-Id: <1373875938-10165-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 July 2013 12:23, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> Hi Peter,
->
-> (Morten's away for a week, I'll try cover some bits in the meantime)
->
-> On Sat, Jul 13, 2013 at 07:49:09AM +0100, Peter Zijlstra wrote:
->> On Tue, Jul 09, 2013 at 04:55:29PM +0100, Morten Rasmussen wrote:
->> > This patch set is an initial prototype aiming at the overall power-aware
->> > scheduler design proposal that I previously described
->> > <http://permalink.gmane.org/gmane.linux.kernel/1508480>.
->> >
->> > The patch set introduces a cpu capacity managing 'power scheduler' which lives
->> > by the side of the existing (process) scheduler. Its role is to monitor the
->> > system load and decide which cpus that should be available to the process
->> > scheduler.
->>
->> Hmm...
->>
->> This looks like a userspace hotplug deamon approach lifted to kernel space :/
->
-> The difference is that this is faster. We even had hotplug in mind some
-> years ago for big.LITTLE but it wouldn't give the performance we need
-> (hotplug is incredibly slow even if driven from the kernel).
->
->> How about instead of layering over the load-balancer to constrain its behaviour
->> you change the behaviour to not need constraint? Fix it so it does the right
->> thing, instead of limiting it.
->>
->> I don't think its _that_ hard to make the balancer do packing over spreading.
->> The power balance code removed in 8e7fbcbc had things like that (although it
->> was broken). And I'm sure I've seen patches over the years that did similar
->> things. Didn't Vincent and Alex also do things like that?
->>
->> We should take the good bits from all that and make something of it. And I
->> think its easier now that we have the per task and per rq utilization numbers
->> [1].
->
-> That's what we've been pushing for. From a big.LITTLE perspective, I
-> would probably vote for Vincent's patches but I guess we could probably
-> adapt any of the other options.
->
-> But then we got Ingo NAK'ing all these approaches. Taking the best bits
-> from the current load balancing patches would create yet another set of
-> patches which don't fall under Ingo's requirements (at least as I
-> understand them).
+Genius Gx Imperator Keyboard presents the same problem in its report
+descriptors than Genius Gila Gaming Mouse.
+Use the same fixup for both.
 
-In fact we are currently updating our patchset based on Ingo's
-feedback. The move of cpuidle and cpufreq statistic was planned to
-appear later in our dev but we are now integrating it based in Ingo's
-request. We start with cpuidle statistics and are moving it into the
-scheduler. In addition, we want to integrate the current C-state of a
-core in the wake up decision.
+Fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=928561
 
->
->> Just start by changing the balancer to pack instead of spread. Once that works,
->> see where the two modes diverge and put a knob in.
->
-> That's the approach we've had so far (not sure about the knob). But it
-> doesn't solve Ingo's complain about fragmentation between scheduler,
-> cpufreq and cpuidle policies.
->
->> Then worry about power thingies.
->
-> To quote Ingo: "To create a new low level idle driver mechanism the
-> scheduler could use and integrate proper power saving / idle policy into
-> the scheduler."
->
-> That's unless we all agree (including Ingo) that the above requirement
-> is orthogonal to task packing and, as a *separate* project, we look at
-> better integrating the cpufreq/cpuidle with the scheduler, possibly with
-> a new driver model and governors as libraries used by such drivers. In
-> which case the current packing patches shouldn't be NAK'ed but reviewed
-> so that they can be improved further or rewritten.
->
->> The integration of cpuidle and cpufreq should start by unifying all the
->> statistics stuff. For cpuidle we need to pull in the per-cpu idle time
->> guestimator. For cpufreq the per-cpu usage stuff -- which we already have in
->> the scheduler these days!
->>
->> Once we have all the statistics in place, its also easier to see what we can do
->> with them and what might be missing.
->>
->> At this point mandate that policy drivers may not do any statistics gathering
->> of their own. If they feel the need to do so, we're missing something and
->> that's not right.
->
-> I agree in general but there is the intel_pstate.c driver which has it's
-> own separate statistics that the scheduler does not track. We could move
-> to invariant task load tracking which uses aperf/mperf (and could do
-> similar things with perf counters on ARM). As I understand from Arjan,
-> the new pstate driver will be different, so we don't know exactly what
-> it requires.
->
->> I'm not entirely sold on differentiating between short running and other tasks
->> either. Although I suppose I see where that comes from. A task that would run
->> 50% on a big core would unlikely be qualified as small, however if it would
->> require 85% of a small core and there's room on the small cores its a good move
->> to run it there.
->>
->> So where's the limit for being small? It seems like an artificial limit and
->> such should be avoided where possible.
->
-> I agree. With Morten's approach, it doesn't care about how small a task
-> is but rather when a CPU (or cluster) is loaded to a certain threshold,
-> just spread tasks to the next. I think small task threshold on its own
-> doesn't make much sense if you have lots of such 'small' tasks, so you
-> need a view of the overall load or a more dynamic threshold.
->
-> --
-> Catalin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Reported-and-tested-by: Honza Brazdil <jbrazdil@redhat.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+
+with the proper blacklist in hid-core this time.
+
+Cheers,
+Benjamin
+
+ drivers/hid/hid-core.c |  1 +
+ drivers/hid/hid-ids.h  |  1 +
+ drivers/hid/hid-kye.c  | 45 ++++++++++++++++++++++++++++-----------------
+ 3 files changed, 30 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 8de5cb8..b0f2f45 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1594,6 +1594,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_I405X) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index c5aea29..0288531 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -479,6 +479,7 @@
+ #define USB_VENDOR_ID_KYE		0x0458
+ #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
+ #define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
++#define USB_DEVICE_ID_GENIUS_GX_IMPERATOR	0x4018
+ #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
+ #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
+ #define USB_DEVICE_ID_KYE_MOUSEPEN_I608X	0x5011
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index 1e2ee2aa..7384512 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -268,6 +268,26 @@ static __u8 easypen_m610x_rdesc_fixed[] = {
+ 	0xC0                          /*  End Collection                  */
+ };
+ 
++static __u8 *kye_consumer_control_fixup(struct hid_device *hdev, __u8 *rdesc,
++		unsigned int *rsize, int offset, const char *device_name) {
++	/*
++	 * the fixup that need to be done:
++	 *   - change Usage Maximum in the Comsumer Control
++	 *     (report ID 3) to a reasonable value
++	 */
++	if (*rsize >= offset + 31 &&
++	    /* Usage Page (Consumer Devices) */
++	    rdesc[offset] == 0x05 && rdesc[offset + 1] == 0x0c &&
++	    /* Usage (Consumer Control) */
++	    rdesc[offset + 2] == 0x09 && rdesc[offset + 3] == 0x01 &&
++	    /*   Usage Maximum > 12287 */
++	    rdesc[offset + 10] == 0x2a && rdesc[offset + 12] > 0x2f) {
++		hid_info(hdev, "fixing up %s report descriptor\n", device_name);
++		rdesc[offset + 12] = 0x2f;
++	}
++	return rdesc;
++}
++
+ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+@@ -315,23 +335,12 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		}
+ 		break;
+ 	case USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE:
+-		/*
+-		 * the fixup that need to be done:
+-		 *   - change Usage Maximum in the Comsumer Control
+-		 *     (report ID 3) to a reasonable value
+-		 */
+-		if (*rsize >= 135 &&
+-			/* Usage Page (Consumer Devices) */
+-			rdesc[104] == 0x05 && rdesc[105] == 0x0c &&
+-			/* Usage (Consumer Control) */
+-			rdesc[106] == 0x09 && rdesc[107] == 0x01 &&
+-			/*   Usage Maximum > 12287 */
+-			rdesc[114] == 0x2a && rdesc[116] > 0x2f) {
+-			hid_info(hdev,
+-				 "fixing up Genius Gila Gaming Mouse "
+-				 "report descriptor\n");
+-			rdesc[116] = 0x2f;
+-		}
++		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
++					"Genius Gila Gaming Mouse");
++		break;
++	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
++		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
++					"Genius Gx Imperator Keyboard");
+ 		break;
+ 	}
+ 	return rdesc;
+@@ -428,6 +437,8 @@ static const struct hid_device_id kye_devices[] = {
+ 				USB_DEVICE_ID_KYE_EASYPEN_M610X) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
+ 				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
++				USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, kye_devices);
+-- 
+1.8.3.1
+
