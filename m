@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3GOKKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:10:16 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:57535 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab3GOKIH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:08:07 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-da-51e3c67192e1
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 1/9] mm, hugetlb: move up the code which check availability of free huge page
-Date: Mon, 15 Jul 2013 18:52:39 +0900
-Message-Id: <1373881967-16153-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1754936Ab3GOKMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:12:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61279 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754791Ab3GOKMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:12:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
+   d="scan'208";a="370403023"
+Date: Mon, 15 Jul 2013 15:03:43 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Li Yang <leoli@freescale.com>,
+        Zhang Wei <zw@melbourneit.hotkeysparking.com>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 00/12] dma: various minor clean ups for slave drivers
+Message-ID: <20130715093343.GN16653@intel.com>
+References: <1369656882-25241-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130530174727.GE3767@intel.com>
+ <CAA9_cmdNiLfJjv-8Mh-Xb1ifZb4aw_9NGCVW6aWsfq6BN-DYyQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmdNiLfJjv-8Mh-Xb1ifZb4aw_9NGCVW6aWsfq6BN-DYyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to proceede the processing if we don't have any usable
-free huge page. So move this code up.
+On Fri, May 31, 2013 at 05:09:51PM -0700, Dan Williams wrote:
+> On Thu, May 30, 2013 at 10:47 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > On Mon, May 27, 2013 at 03:14:30PM +0300, Andy Shevchenko wrote:
+> >> Here is a set of small independent patches that clean up or fix minor things
+> >> across DMA slave drivers.
+> > The series looks fine. I am going to wait a day more and apply, pls speak up if
+> > you disagree and ack if you agree
+> 
+> Looks ok to me.  Reminds we can probably take this one step further
+> and provide a generic implementation for the common case.  It's just a
+> bit inconsistent though that some engines will poll the completion
+> handler (try to advance the state of the last completed cookie)
+> whereas others just assume things will be completed asynchronously.
+agree with that. These are the inconsistencies some of which are based on
+hardware and some are user iterpretations...
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e2bfbf7..d87f70b 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -539,10 +539,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 	struct zoneref *z;
- 	unsigned int cpuset_mems_cookie;
- 
--retry_cpuset:
--	cpuset_mems_cookie = get_mems_allowed();
--	zonelist = huge_zonelist(vma, address,
--					htlb_alloc_mask, &mpol, &nodemask);
- 	/*
- 	 * A child process with MAP_PRIVATE mappings created by their parent
- 	 * have no page reserves. This check ensures that reservations are
-@@ -550,11 +546,16 @@ retry_cpuset:
- 	 */
- 	if (!vma_has_reserves(vma) &&
- 			h->free_huge_pages - h->resv_huge_pages == 0)
--		goto err;
-+		return NULL;
- 
- 	/* If reserves cannot be used, ensure enough pages are in the pool */
- 	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
--		goto err;
-+		return NULL;
-+
-+retry_cpuset:
-+	cpuset_mems_cookie = get_mems_allowed();
-+	zonelist = huge_zonelist(vma, address,
-+					htlb_alloc_mask, &mpol, &nodemask);
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 						MAX_NR_ZONES - 1, nodemask) {
-@@ -572,10 +573,6 @@ retry_cpuset:
- 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
- 		goto retry_cpuset;
- 	return page;
--
--err:
--	mpol_cond_put(mpol);
--	return NULL;
- }
- 
- static void update_and_free_page(struct hstate *h, struct page *page)
--- 
-1.7.9.5
-
+--
+~Vinod
