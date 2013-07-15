@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab3GOWun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 18:50:43 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41093 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728Ab3GOWul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 18:50:41 -0400
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Raymond Jennings <shentino@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Willy Tarreau <w@1wt.eu>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-In-Reply-To: <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com>
-References: <20130715155202.GC29526@xanatos>
-	 <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
-	 <20130715174659.GC15531@xanatos>
-	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	 <20130715180403.GD15531@xanatos>
-	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	 <20130715184642.GE15531@xanatos> <20130715191727.GC10157@1wt.eu>
-	 <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Jul 2013 15:50:37 -0700
-Message-ID: <1373928637.31535.2.camel@warfang>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1758366Ab3GOWwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 18:52:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19194 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758326Ab3GOWwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 18:52:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,672,1367996400"; 
+   d="scan'208";a="331831318"
+Message-ID: <51E47D30.5030203@linux.intel.com>
+Date: Mon, 15 Jul 2013 15:52:32 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
+        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
+        corbet@lwn.net, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <20130713064909.GW25631@dyad.programming.kicks-ass.net> <51E166C8.3000902@linux.intel.com> <20130715195914.GC23818@dyad.programming.kicks-ass.net> <51E45E8B.705@linux.intel.com> <20130715210650.GF23818@dyad.programming.kicks-ass.net> <20130715211230.GG23818@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130715211230.GG23818@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 12:23 -0700, Linus Torvalds wrote:
-> On Mon, Jul 15, 2013 at 12:17 PM, Willy Tarreau <w@1wt.eu> wrote:
-> >
-> > BTW, I was amazed that you managed to get him have a much softer tone inr
-> > his last e-mail, you probably found a weakness here in his management
-> > process :-)
-> 
-> Hey, I _like_ arguing, and "cursing" and "arguing" are actually not at
-> all the same thing.
-> 
-> And I really don't tend to curse unless people are doing something
-> stupid and annoying. If people have concerns and questions that I feel
-> are valid, I'm more than happy to talk about it.
-> 
-> I curse when there isn't any argument. The cursing happens for the
-> "you're so f*cking wrong that it's not even worth trying to make
-> logical arguments about it, because you have no possible excuse" case.
-> 
-> .. and sometimes people surprise me and come back with a valid excuse
-> after all. "My whole family died in a tragic freak accident and my
-> pony got cancer, and I was distracted".
+On 7/15/2013 2:12 PM, Peter Zijlstra wrote:
+> On Mon, Jul 15, 2013 at 11:06:50PM +0200, Peter Zijlstra wrote:
+>> OK, but isn't that part of why the micro controller might not make you go
+>> faster even if you do program a higher P state?
+>>
+>> But yes, I understand this issue in the 'traditional' cpufreq sense. There's no
+>> point in ramping the speed if all you do is stall more.
+>>
+>> But I was under the impression the 'hardware' was doing this. If not then we
+>> need the whole go-faster and go-slower thing and places to call them and means
+>> to determine to call them etc.
+>
+>
+> So with the scheduler measuring cpu utilization we could say to go-faster when
+> u>0.8 and go-slower when u<0.75 or so. Lacking any better metrics like the
+> stall stuff etc.
+>
+> So I understand that ondemand spends quite a lot of time 'sampling' what the
+>  system does while the scheduler mostly already knows this.
 
-...At least with the recent SCOTUS ruling, if you took your pony to a
-vet you wouldn't have to worry about Hasbro suing him for patent
-infringement...
+yeah ondemand does this, but ondemand is actually a pretty bad governor.
+not because of the sampling, but because of its algorithm.
 
-> And then I might even tell them I'm sorry.
-> 
-> No. Not really.
-> 
->            Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+if you look at what the ondemand algorithm tries to do, it's trying to
+manage the cpu "frequency" primarily for when the system is idle.
+Ten to twelve years ago, this was actually important and it does a decent
+job on that.
+
+HOWEVER, on modern CPUs, even many of the ARM ones, the frequency
+when you're idle is zero anyway regardless of what you as OS ask for.
+
+And when Linux went tickless, ondemand went to deferred timers, which make it
+even worse.
+
+btw technically ondemand does not sample things, you may (or may not) understand
+what it does.
+Every 10 (or 100) milliseconds, ondemand makes a new P state decision.
+It does this by asking the scheduler the time used, does a delta and
+ends up at a utilization %age which then goes into a formula.
+It's not that ondemand samples inbetween decision moments to see if the system
+is busy or not; the microaccounting that the scheduler does is used instead,
+and only at decision moments.
 
 
