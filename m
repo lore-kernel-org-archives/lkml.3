@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab3GOVvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:51:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33798 "EHLO
+	id S1758192Ab3GOVvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:51:51 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:36237 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757274Ab3GOVvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:51:41 -0400
+	id S1758127Ab3GOVvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 17:51:50 -0400
 From: Joe Perches <joe@perches.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [v3.11-rc1 PATCH 0/5] printk: Initial restructuring
-Date: Mon, 15 Jul 2013 14:51:30 -0700
-Message-Id: <cover.1373922863.git.joe@perches.com>
+Subject: [v3.11-rc1 PATCH 1/5] printk: Move to separate directory for easier modification
+Date: Mon, 15 Jul 2013 14:51:31 -0700
+Message-Id: <481ca0c501673e22d8e3324d8ec27c6a9ecb9434.1373922863.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1373922863.git.joe@perches.com>
+References: <cover.1373922863.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Back last year, I posted a largish restructuring of printk.
+Make it easier to break up printk into bite-sized chunks.
 
-V1: https://lkml.org/lkml/2012/10/17/41
-V2: https://lkml.org/lkml/2012/10/24/748
+Remove printk path/filename from comment.
 
-The idea was to break up this way too large a file into
-something more manageable and readable.
-
-This is another posting of just the first few patches of this
-series rebased onto v3.11-rc1
-
-If this is acceptable, I'll post 5 or so patches at a time
-after/if each block of patches is applied.
-
-Joe Perches (5):
-  printk: Move to separate directory for easier modification
-  printk: Add console_cmdline.h
-  printk: Move braille console support into separate braille.[ch] files
-  printk: Use pointer for console_cmdline indexing
-  printk: rename struct log to struct printk_log
-
- drivers/accessibility/braille/braille_console.c |   9 +-
- kernel/Makefile                                 |   3 +-
- kernel/printk/Makefile                          |   2 +
- kernel/printk/braille.c                         |  48 ++++++
- kernel/printk/braille.h                         |  48 ++++++
- kernel/printk/console_cmdline.h                 |  14 ++
- kernel/{ => printk}/printk.c                    | 185 +++++++++++-------------
- 7 files changed, 202 insertions(+), 107 deletions(-)
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ kernel/Makefile              | 3 ++-
+ kernel/printk/Makefile       | 1 +
+ kernel/{ => printk}/printk.c | 2 --
+ 3 files changed, 3 insertions(+), 3 deletions(-)
  create mode 100644 kernel/printk/Makefile
- create mode 100644 kernel/printk/braille.c
- create mode 100644 kernel/printk/braille.h
- create mode 100644 kernel/printk/console_cmdline.h
- rename kernel/{ => printk}/printk.c (95%)
+ rename kernel/{ => printk}/printk.c (99%)
 
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 470839d..35ef118 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel.
+ #
+ 
+-obj-y     = fork.o exec_domain.o panic.o printk.o \
++obj-y     = fork.o exec_domain.o panic.o \
+ 	    cpu.o exit.o itimer.o time.o softirq.o resource.o \
+ 	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o \
+ 	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
+@@ -24,6 +24,7 @@ endif
+ 
+ obj-y += sched/
+ obj-y += power/
++obj-y += printk/
+ obj-y += cpu/
+ 
+ obj-$(CONFIG_CHECKPOINT_RESTORE) += kcmp.o
+diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
+new file mode 100644
+index 0000000..36d306d
+--- /dev/null
++++ b/kernel/printk/Makefile
+@@ -0,0 +1 @@
++obj-y	= printk.o
+diff --git a/kernel/printk.c b/kernel/printk/printk.c
+similarity index 99%
+rename from kernel/printk.c
+rename to kernel/printk/printk.c
+index d37d45c..cd5a6cf 100644
+--- a/kernel/printk.c
++++ b/kernel/printk/printk.c
+@@ -1,6 +1,4 @@
+ /*
+- *  linux/kernel/printk.c
+- *
+  *  Copyright (C) 1991, 1992  Linus Torvalds
+  *
+  * Modified to make sys_syslog() more flexible: added commands to
 -- 
 1.8.1.2.459.gbcd45b4.dirty
+
