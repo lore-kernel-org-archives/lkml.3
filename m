@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab3GOKpO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:45:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49141 "EHLO mga09.intel.com"
+	id S1755574Ab3GOKqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:46:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:3820 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab3GOKpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:45:08 -0400
+	id S1755452Ab3GOKpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:45:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
-   d="scan'208";a="345744647"
+   d="scan'208";a="365360385"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 8/8] thp: consolidate code between handle_mm_fault() and do_huge_pmd_anonymous_page()
-Date: Mon, 15 Jul 2013 13:47:54 +0300
-Message-Id: <1373885274-25249-9-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 3/8] thp: account anon transparent huge pages into NR_ANON_PAGES
+Date: Mon, 15 Jul 2013 13:47:49 +0300
+Message-Id: <1373885274-25249-4-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,150 +33,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-do_huge_pmd_anonymous_page() has copy-pasted piece of handle_mm_fault()
-to handle fallback path.
+We use NR_ANON_PAGES as base for reporting AnonPages to user.
+There's not much sense in not accounting transparent huge pages there, but
+add them on printing to user.
 
-Let's consolidate code back by introducing VM_FAULT_FALLBACK return
-code.
+Let's account transparent huge pages in NR_ANON_PAGES in the first place.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
- include/linux/huge_mm.h |  3 ---
- include/linux/mm.h      |  3 ++-
- mm/huge_memory.c        | 31 +++++--------------------------
- mm/memory.c             |  9 ++++++---
- 4 files changed, 13 insertions(+), 33 deletions(-)
+ drivers/base/node.c |  6 ------
+ fs/proc/meminfo.c   |  6 ------
+ mm/huge_memory.c    |  1 -
+ mm/rmap.c           | 18 +++++++++---------
+ 4 files changed, 9 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index b60de92..3935428 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -96,9 +96,6 @@ extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 			  pmd_t *dst_pmd, pmd_t *src_pmd,
- 			  struct vm_area_struct *vma,
- 			  unsigned long addr, unsigned long end);
--extern int handle_pte_fault(struct mm_struct *mm,
--			    struct vm_area_struct *vma, unsigned long address,
--			    pte_t *pte, pmd_t *pmd, unsigned int flags);
- extern int split_huge_page_to_list(struct page *page, struct list_head *list);
- static inline int split_huge_page(struct page *page)
- {
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f022460..d5c82dc 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -884,11 +884,12 @@ static inline int page_mapped(struct page *page)
- #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
- #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
- #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
-+#define VM_FAULT_FALLBACK 0x0800	/* huge page fault failed, fall back to small */
- 
- #define VM_FAULT_HWPOISON_LARGE_MASK 0xf000 /* encodes hpage index for large hwpoison */
- 
- #define VM_FAULT_ERROR	(VM_FAULT_OOM | VM_FAULT_SIGBUS | VM_FAULT_HWPOISON | \
--			 VM_FAULT_HWPOISON_LARGE)
-+			 VM_FAULT_FALLBACK | VM_FAULT_HWPOISON_LARGE)
- 
- /* Encode hstate index for a hwpoisoned large page */
- #define VM_FAULT_SET_HINDEX(x) ((x) << 12)
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 7616a77..bc9f43b 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -125,13 +125,7 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+ 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
+ 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-		       nid, K(node_page_state(nid, NR_ANON_PAGES)
+-			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+-			HPAGE_PMD_NR),
+-#else
+ 		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
+-#endif
+ 		       nid, K(node_page_state(nid, NR_SHMEM)),
+ 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
+ 				THREAD_SIZE / 1024,
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 5aa847a..59d85d6 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -132,13 +132,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 		K(i.freeswap),
+ 		K(global_page_state(NR_FILE_DIRTY)),
+ 		K(global_page_state(NR_WRITEBACK)),
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-		K(global_page_state(NR_ANON_PAGES)
+-		  + global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+-		  HPAGE_PMD_NR),
+-#else
+ 		K(global_page_state(NR_ANON_PAGES)),
+-#endif
+ 		K(global_page_state(NR_FILE_MAPPED)),
+ 		K(global_page_state(NR_SHMEM)),
+ 		K(global_page_state(NR_SLAB_RECLAIMABLE) +
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 82f0697..c3b8c9c 100644
+index a92012a..04f0749 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -783,10 +783,9 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- {
- 	struct page *page;
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
--	pte_t *pte;
+@@ -1661,7 +1661,6 @@ static void __split_huge_page_refcount(struct page *page,
+ 	BUG_ON(atomic_read(&page->_count) <= 0);
  
- 	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	if (unlikely(anon_vma_prepare(vma)))
- 		return VM_FAULT_OOM;
- 	if (unlikely(khugepaged_enter(vma)))
-@@ -803,7 +802,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (unlikely(!zero_page)) {
- 			pte_free(mm, pgtable);
- 			count_vm_event(THP_FAULT_FALLBACK);
--			goto out;
-+			return VM_FAULT_FALLBACK;
- 		}
- 		spin_lock(&mm->page_table_lock);
- 		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-@@ -819,40 +818,20 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			vma, haddr, numa_node_id(), 0);
- 	if (unlikely(!page)) {
- 		count_vm_event(THP_FAULT_FALLBACK);
--		goto out;
-+		return VM_FAULT_FALLBACK;
+ 	__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
+-	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
+ 
+ 	ClearPageCompound(page);
+ 	compound_unlock(page);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index cd356df..7066470 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1055,11 +1055,11 @@ void do_page_add_anon_rmap(struct page *page,
+ {
+ 	int first = atomic_inc_and_test(&page->_mapcount);
+ 	if (first) {
+-		if (!PageTransHuge(page))
+-			__inc_zone_page_state(page, NR_ANON_PAGES);
+-		else
++		if (PageTransHuge(page))
+ 			__inc_zone_page_state(page,
+ 					      NR_ANON_TRANSPARENT_HUGEPAGES);
++		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
++				hpage_nr_pages(page));
  	}
- 	count_vm_event(THP_FAULT_ALLOC);
- 	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
- 		put_page(page);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page))) {
+ 	if (unlikely(PageKsm(page)))
+ 		return;
+@@ -1088,10 +1088,10 @@ void page_add_new_anon_rmap(struct page *page,
+ 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+ 	SetPageSwapBacked(page);
+ 	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
+-	if (!PageTransHuge(page))
+-		__inc_zone_page_state(page, NR_ANON_PAGES);
+-	else
++	if (PageTransHuge(page))
+ 		__inc_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
++	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
++			hpage_nr_pages(page));
+ 	__page_set_anon_rmap(page, vma, address, 1);
+ 	if (!mlocked_vma_newpage(vma, page)) {
+ 		SetPageActive(page);
+@@ -1151,11 +1151,11 @@ void page_remove_rmap(struct page *page)
+ 		goto out;
+ 	if (anon) {
  		mem_cgroup_uncharge_page(page);
- 		put_page(page);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 
- 	return 0;
--out:
--	/*
--	 * Use __pte_alloc instead of pte_alloc_map, because we can't
--	 * run pte_offset_map on the pmd, if an huge pmd could
--	 * materialize from under us from a different thread.
--	 */
--	if (unlikely(pmd_none(*pmd)) &&
--	    unlikely(__pte_alloc(mm, vma, pmd, address)))
--		return VM_FAULT_OOM;
--	/* if an huge pmd materialized from under us just retry later */
--	if (unlikely(pmd_trans_huge(*pmd)))
--		return 0;
--	/*
--	 * A regular pmd is established and it can't morph into a huge pmd
--	 * from under us anymore at this point because we hold the mmap_sem
--	 * read mode and khugepaged takes it in write mode. So now it's
--	 * safe to run pte_offset_map().
--	 */
--	pte = pte_offset_map(pmd, address);
--	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
- }
- 
- int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-diff --git a/mm/memory.c b/mm/memory.c
-index 1ce2e2a..f2ab2a8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3693,7 +3693,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-  * but allow concurrent faults), and pte mapped but not yet locked.
-  * We return with mmap_sem still held, but pte unmapped and unlocked.
-  */
--int handle_pte_fault(struct mm_struct *mm,
-+static int handle_pte_fault(struct mm_struct *mm,
- 		     struct vm_area_struct *vma, unsigned long address,
- 		     pte_t *pte, pmd_t *pmd, unsigned int flags)
- {
-@@ -3780,9 +3780,12 @@ retry:
- 	if (!pmd)
- 		return VM_FAULT_OOM;
- 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
-+		int ret = VM_FAULT_FALLBACK;
- 		if (!vma->vm_ops)
--			return do_huge_pmd_anonymous_page(mm, vma, address,
--							  pmd, flags);
-+			ret = do_huge_pmd_anonymous_page(mm, vma, address,
-+					pmd, flags);
-+		if (!(ret & VM_FAULT_FALLBACK))
-+			return ret;
+-		if (!PageTransHuge(page))
+-			__dec_zone_page_state(page, NR_ANON_PAGES);
+-		else
++		if (PageTransHuge(page))
+ 			__dec_zone_page_state(page,
+ 					      NR_ANON_TRANSPARENT_HUGEPAGES);
++		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
++				hpage_nr_pages(page));
  	} else {
- 		pmd_t orig_pmd = *pmd;
- 		int ret;
+ 		__dec_zone_page_state(page, NR_FILE_MAPPED);
+ 		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
 -- 
 1.8.3.2
 
