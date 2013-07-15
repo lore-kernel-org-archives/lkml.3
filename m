@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab3GOAnv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 20:43:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58605 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab3GOAnu (ORCPT
+	id S1753725Ab3GOAvg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 20:51:36 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:8114 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab3GOAvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 20:43:50 -0400
-Message-ID: <51E3459A.7070909@infradead.org>
-Date: Sun, 14 Jul 2013 17:43:06 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Sun, 14 Jul 2013 20:51:35 -0400
+Message-ID: <51E34785.20703@huawei.com>
+Date: Mon, 15 Jul 2013 08:51:17 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] driver-core: fix new kernel-doc warning in base/platform.c
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Rafael <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>
+Subject: Re: [PATCH -v2 0/3] Use PCIe DSN to improve pciehp_resume
+References: <1373535825-49972-1-git-send-email-wangyijing@huawei.com>  <1373552385.1349.2.camel@x61.thuisdomein> <51DF6150.8010401@huawei.com> <1373710849.1352.29.camel@x61.thuisdomein>
+In-Reply-To: <1373710849.1352.29.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On 2013/7/13 18:20, Paul Bolle wrote:
+> Yijing,
+> 
+> On Fri, 2013-07-12 at 09:52 +0800, Yijing Wang wrote:
+>> Do you wireless card support Device Serial Number ?
+>> You can confirm it by lspci -vvv.
+> 
+> Yes, it does:
+>     lspci -vvv -s 03:00 | grep Serial
+>         Capabilities: [140 v1] Device Serial Number [...]
+> 
 
-Fix new kernel-doc warning in drivers/base/platform.c:
+OK, I got it, thanks!
 
-Warning(drivers/base/platform.c:528): No description found for parameter 'owner'
+> 
+> Paul Bolle
+> 
+> 
+> 
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- drivers/base/platform.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- lnx-311-rc1.orig/drivers/base/platform.c
-+++ lnx-311-rc1/drivers/base/platform.c
-@@ -522,6 +522,7 @@ static void platform_drv_shutdown(struct
- /**
-  * __platform_driver_register - register a driver for platform-level devices
-  * @drv: platform driver structure
-+ * @owner: owning module/driver
-  */
- int __platform_driver_register(struct platform_driver *drv,
- 				struct module *owner)
+-- 
+Thanks!
+Yijing
+
