@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab3GOIu0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:50:26 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50634 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab3GOIuZ (ORCPT
+	id S1754630Ab3GOJMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 05:12:35 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33781 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab3GOJMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:50:25 -0400
-Message-ID: <51E3B6FB.7040002@linux.vnet.ibm.com>
-Date: Mon, 15 Jul 2013 14:16:51 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 15 Jul 2013 05:12:34 -0400
+Date: Mon, 15 Jul 2013 11:12:32 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, akpm@linux-foundation.org,
+        jslaby@suse.cz, rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
+        Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Steev Klimaszewski <steev@genesi-usa.com>
+Subject: Re: [PATCH] Route kbd LEDs through the generic LEDs layer
+Message-ID: <20130715091230.GA8786@amd.pavel.ucw.cz>
+References: <20110102103210.GA25662@core.coreip.homeip.net>
+ <20110102225741.GX5480@const.famille.thibault.fr>
+ <20110112182702.GA9168@core.coreip.homeip.net>
+ <20111114040613.GA4992@type.famille.thibault.fr>
+ <20121221003449.GA6999@type.youpi.perso.aquilenet.fr>
+ <20130707101028.GD5651@type.youpi.perso.aquilenet.fr>
+ <20130712113655.GA4227@amd.pavel.ucw.cz>
+ <20130712124242.GA5876@type>
+ <20130712233301.GA3646@amd.pavel.ucw.cz>
+ <20130713093552.GU8252@type>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc/pseries: drop "select HOTPLUG"
-References: <1373799735.1370.5.camel@x61.thuisdomein>
-In-Reply-To: <1373799735.1370.5.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071508-8878-0000-0000-000007F30485
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130713093552.GU8252@type>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2013 04:32 PM, Paul Bolle wrote:
-> The Kconfig symbol HOTPLUG was removed with commit 40b313608a ("Finally
-> eradicate CONFIG_HOTPLUG"). But there's still one select statement for
-> that symbol. It seems that select statement was added after the patch to
-> remove CONFIG_HOTPLUG was submitted. Anyhow, it is useless and can be
-> dropped.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
+Hi!
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
+> > > > > This permits to reassign keyboard LEDs to something else than keyboard "leds"
+> > > > > state, by adding keyboard led and modifier triggers connected to a series
+> > > > > of VT input LEDs, themselves connected to VT input triggers, which
+> > > > > per-input device LEDs use by default.  Userland can thus easily change the LED
+> > > > > behavior of (a priori) all input devices, or of particular input devices.
+> > > > 
+> > > > Nice! Leds now have proper /sys interface.
+> > > > 
+> > > > But... I boot up, switch from X to console, press capslock, and no
+> > > > reaction anywhere.
+> > > 
+> > > Is it working without the patch?  Console-setup for instance is known to
+> > > have broken the capslock LED, which is precisely one of the reasons for
+> > > this patch, which will provide console-setup with a way to bring back
+> > > caps lock working properly.
+> > 
+> > You are right, it was broken before.
 > 
->  arch/powerpc/platforms/pseries/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
+> Ok. You then may want fix your setup by configuring your caps lock led
+> the way console-setup will be supposed to do in the future:
 > 
-> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-> index 1bd3399..62b4f80 100644
-> --- a/arch/powerpc/platforms/pseries/Kconfig
-> +++ b/arch/powerpc/platforms/pseries/Kconfig
-> @@ -19,7 +19,6 @@ config PPC_PSERIES
->  	select ZLIB_DEFLATE
->  	select PPC_DOORBELL
->  	select HAVE_CONTEXT_TRACKING
-> -	select HOTPLUG if SMP
->  	select HOTPLUG_CPU if SMP
->  	default y
-> 
+> echo ctrlllock > /sys/class/leds/vt::capsl/trigger
 
-Regards,
-Srivatsa S. Bhat
+And this indeed makes capslock led work on console, again. Nice!
 
+Richard, could we get this applied for 3.12 or something? It makes
+keyboard LEDs sane...
+
+Thanks,
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
