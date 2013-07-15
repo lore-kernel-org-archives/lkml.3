@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3GOKIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:08:12 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:47672 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab3GOKIH (ORCPT
+	id S1755002Ab3GOKIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:08:38 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35423 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab3GOKIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:08:07 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-dc-51e3c6717c6b
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 3/9] mm, hugetlb: clean-up alloc_huge_page()
-Date: Mon, 15 Jul 2013 18:52:41 +0900
-Message-Id: <1373881967-16153-4-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 15 Jul 2013 06:08:35 -0400
+Message-ID: <51E3C950.90503@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 15:35:04 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com> <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com>
+In-Reply-To: <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071510-4790-0000-0000-000009446275
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can unify some codes for succeed allocation.
-This makes code more readable.
-There is no functional difference.
+On 07/15/2013 03:25 PM, Viresh Kumar wrote:
+> Hi Srivatsa,
+> 
+> I may be wrong but it looks something is wrong in this patch.
+> 
+> On 12 July 2013 03:47, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> 
+>> @@ -1239,29 +1263,40 @@ static int __cpufreq_remove_dev(struct device *dev,
+>>         if ((cpus == 1) && (cpufreq_driver->target))
+>>                 __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+>>
+>> -       pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+>> -       cpufreq_cpu_put(data);
+>> +       if (!frozen) {
+>> +               pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+>> +               cpufreq_cpu_put(data);
+> 
+> So, we don't decrement usage count here. But we are still increasing
+> counts on cpufreq_add_dev after resume, isn't it?
+> 
+> So, we wouldn't be able to free policy struct once all the cpus of a
+> policy are removed after suspend/resume has happened once.
+> 
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Actually even I was wondering about this while writing the patch and
+I even tested shutdown after multiple suspend/resume cycles, to verify that
+the refcount is messed up. But surprisingly, things worked just fine.
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index d21a33a..0067cf4 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1144,29 +1144,25 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 		hugepage_subpool_put_pages(spool, chg);
- 		return ERR_PTR(-ENOSPC);
- 	}
-+
- 	spin_lock(&hugetlb_lock);
- 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
--	if (page) {
--		/* update page cgroup details */
--		hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h),
--					     h_cg, page);
--		spin_unlock(&hugetlb_lock);
--	} else {
-+	if (!page) {
- 		spin_unlock(&hugetlb_lock);
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
- 			hugetlb_cgroup_uncharge_cgroup(idx,
--						       pages_per_huge_page(h),
--						       h_cg);
-+						pages_per_huge_page(h), h_cg);
- 			hugepage_subpool_put_pages(spool, chg);
- 			return ERR_PTR(-ENOSPC);
- 		}
-+
- 		spin_lock(&hugetlb_lock);
--		hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h),
--					     h_cg, page);
- 		list_move(&page->lru, &h->hugepage_activelist);
--		spin_unlock(&hugetlb_lock);
-+		/* Fall through */
- 	}
-+	hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
-+	spin_unlock(&hugetlb_lock);
- 
- 	set_page_private(page, (unsigned long)spool);
- 
--- 
-1.7.9.5
+Logically there should've been a refcount mismatch and things should have
+failed, but everything worked fine during my tests. Apart from suspend/resume
+and shutdown tests, I even tried mixing a few regular CPU hotplug operations
+(echo 0/1 to sysfs online files), but nothing stood out.
+
+Sorry, I forgot to document this in the patch. Either the patch is wrong
+or something else is silently fixing this up. Not sure what is the exact
+situation.
+
+Regards,
+Srivatsa S. Bhat
 
