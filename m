@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3GOKpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:45:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11439 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755152Ab3GOKpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:45:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
-   d="scan'208";a="370365361"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH, REBASED 0/8] Transparent huge page cache: phase 0, prep work
-Date: Mon, 15 Jul 2013 13:47:46 +0300
-Message-Id: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1755315Ab3GOKpF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:45:05 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50578 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab3GOKpC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:45:02 -0400
+Message-ID: <1373885096.3146.11.camel@hornet>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
+ samples with kernel samples
+From: Pawel Moll <pawel.moll@arm.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Date: Mon, 15 Jul 2013 11:44:56 +0100
+In-Reply-To: <51CB1BA5.9010307@gmail.com>
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
+	 <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet>
+	 <51CB1BA5.9010307@gmail.com>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 15 Jul 2013 10:44:57.0138 (UTC) FILETIME=[5903E920:01CE8148]
+X-MC-Unique: 113071511445901701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Wed, 2013-06-26 at 17:49 +0100, David Ahern wrote:
+> With all the perf ioctl extensions tossed out the past day or so I 
+> wanted to revive this request. Still need a solution to the problem of 
+> correlating perf_clock to other clocks ...
 
-[ no changes since last post, only rebased to v3.11-rc1 ]
+And I second. We've been trying to squeeze the solution into the posix
+clock framework (and vdso) but it didn't get anywhere, really. I've
+spoken to John last week and although there is one more potential
+"solution" (and the quotes are meaningful ;-), it seems that the
+perf-specific ioctl would work for all interested individuals for now.
 
-My patchset which introduces transparent huge page cache is pretty big and
-hardly reviewable. Dave Hansen suggested to split it in few parts.
+Paweł
 
-This is the first part: preparation work. I think it's useful without rest
-patches.
-
-There's one fix for bug in lru_add_page_tail(). I doubt it's possible to
-trigger it on current code, but nice to have it upstream anyway.
-Rest is cleanups.
-
-Patch 8 depends on patch 7. Other patches are independent and can be
-applied separately.
-
-Please, consider applying.
-
-Kirill A. Shutemov (8):
-  mm: drop actor argument of do_generic_file_read()
-  thp, mm: avoid PageUnevictable on active/inactive lru lists
-  thp: account anon transparent huge pages into NR_ANON_PAGES
-  mm: cleanup add_to_page_cache_locked()
-  thp, mm: locking tail page is a bug
-  thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
-  thp: do_huge_pmd_anonymous_page() cleanup
-  thp: consolidate code between handle_mm_fault() and
-    do_huge_pmd_anonymous_page()
-
- drivers/base/node.c     |   6 ---
- fs/proc/meminfo.c       |   6 ---
- include/linux/huge_mm.h |   3 --
- include/linux/mm.h      |   3 +-
- mm/filemap.c            |  60 ++++++++++++-----------
- mm/huge_memory.c        | 125 ++++++++++++++++++++----------------------------
- mm/memory.c             |   9 ++--
- mm/rmap.c               |  18 +++----
- mm/swap.c               |  20 +-------
- 9 files changed, 104 insertions(+), 146 deletions(-)
-
--- 
-1.8.3.2
 
