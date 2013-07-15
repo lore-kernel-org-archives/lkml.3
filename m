@@ -1,330 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab3GOXnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 19:43:41 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44006 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907Ab3GOXnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 19:43:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-acpi@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>, daniel.vetter@ffwll.ch,
-        seth.forshee@canonical.com, joeyli.kernel@gmail.com,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org
-Subject: Re: [Update][PATCH] ACPI / video / i915: Remove ACPI backlight if firmware expects Windows 8
-Date: Tue, 16 Jul 2013 01:53:32 +0200
-Message-ID: <1519137.ZQha2P5GjU@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1373893569.2002.3.camel@ThinkPad-X230.localdomain>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1683364.CdnoW81WLH@vostro.rjw.lan> <1373893569.2002.3.camel@ThinkPad-X230.localdomain>
+	id S1758431Ab3GOXrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 19:47:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53125 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758148Ab3GOXrK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 19:47:10 -0400
+Date: Tue, 16 Jul 2013 01:47:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Waiman Long <waiman.long@hp.com>
+cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v5 01/12] spinlock: A new lockref structure for lockless
+ update of refcount
+In-Reply-To: <51E468A4.3030605@hp.com>
+Message-ID: <alpine.DEB.2.02.1307160109490.11918@ionos.tec.linutronix.de>
+References: <1373035656-40600-1-git-send-email-Waiman.Long@hp.com> <1373035656-40600-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1307051911110.32106@ionos.tec.linutronix.de> <51DACADF.4000802@hp.com> <alpine.DEB.2.02.1307151612090.11918@ionos.tec.linutronix.de>
+ <51E468A4.3030605@hp.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 15, 2013 05:06:09 PM Igor Gnatenko wrote:
-> On Sat, 2013-07-13 at 02:46 +0200, Rafael J. Wysocki wrote:
-
-[...]
-
+On Mon, 15 Jul 2013, Waiman Long wrote:
+> On 07/15/2013 10:41 AM, Thomas Gleixner wrote:
+> > On Mon, 8 Jul 2013, Waiman Long wrote:
+> > Sigh. GENERIC means, that you use the generic implementation, ARCH
+> > means the architecture has a private implementation of that code.
+> > 
+> > The generic implementation can use arch specific includes and if there
+> > is none we simply fallback to the asm-generic one.
 > 
-> I can't build it. Where did I go wrong?
+> I used the ARCH+GENERIC to mean using the generic code but with arch specific
+> include.
 
-Probably nowhere, you tried to build the ACPI video driver as a module, that's
-all.  And you need to apply https://patchwork.kernel.org/patch/2812951/
-before.
+And what's the point of that? I just explained it to you that you do
+not need the ARCH=y and GENERIC=y at all.
+ 
+> >   >  Let's start with a simple version because it IS simple and easy
+> > > > to analyze and debug and then incrementally build improvements on it
+> > > > instead of creating an heuristics monster in the first place, i.e.:
+> > > > 
+> > > >      if (!spin_is_locked(&lr->lock)&&   try_cmpxchg_once(lr))
+> > > >         return 0;
+> > > >      return 1;
+> > > > 
+> > > > Take numbers for this on a zoo of different machines: Intel and AMD,
+> > > > old and new.
+> > > > 
+> > > > Then you can add an incremental patch on that, which add loops and
+> > > > hoops. Along with numbers on the same zoo of machines.
+> > > I originally tried to do a cmpxchg without waiting and there was
+> > > practically no performance gain. I believe that as soon as
+> > Well, you did not see a difference on your particular machine. Still
+> > we don't have an idea how all of this works on a set of different
+> > machines. There is a world beside 8 socket servers.
+> 
+> I understand that. I can live with try_cmpxchg_once, though doing it
+> twice will give a slightly better performance. However, without
 
-Please try the appended version (on top of
-https://patchwork.kernel.org/patch/2812951/).
+I asked you several times now to explain and document the whole thing
+with numbers instead of your handwaving "slightly better performance"
+arguments.
+
+I CANNOT verify that at all simply because I have no access to a 8
+socket machine. Hint: Ask your boss to send me one :)
+
+> waiting for the lock to be free, this patch won't do much good. To
+> keep it simple, I can remove the ability to do customization while
+> doing cmpxchg once and wait until the lock is free. Please let me
+> know if this is acceptable to you.
+
+No, it's not acceptable at all if you are not able to provide data for
+1,2,4,8 socket machines (from single core to your precious big
+boxes). It's that simple. We are not accepting patches which optimize
+for a single use case and might negatively affect 99,9999% of the
+existing users which have no access to this kind of hardware unless
+proven otherwise.
+
+As I told you versus the qrwlocks: You are missing to explain WHY it
+improves your particular workloads and WHY this change wont affect
+other workloads. All I can see from your explanations is: Works better
+on 8 socket big iron. I have yet to see any numbers that this wont
+affect the vast majority of users.
+
+> > Also what's the approach to tune that? Running some random testbench
+> > and monitor the results for various settings?
+> > 
+> > If that's the case we better have a that as variables with generic
+> > initial values in the code, which can be modified by sysctl.
+> 
+> As I said above, I can remove the customization. I may reintroduce user
+> customization using sysctl as you suggested in the a follow up patch after
+> this one is merged.
+
+And I asked for a step by step approach in the first review, but you
+decided to ignore that. And now you think that it's accetable for you
+as long as you get what you want. That's not the way it works, really.
+
+> > > > > +		getnstimeofday(&tv2);
+> > > > > +		ns = (tv2.tv_sec - tv1.tv_sec) * NSEC_PER_SEC +
+> > > > > +		     (tv2.tv_nsec - tv1.tv_nsec);
+> > > > > +		pr_info("lockref wait loop time = %lu ns\n", ns);
+> > > > Using getnstimeofday() for timestamping and spamming the logs with
+> > > > printouts? You can't be serious about that?
+> > > > 
+q > > > > Thats what tracepoints are for. Tracing is the only way to get proper
+> > > > numbers which take preemption, interrupts etc. into account without
+> > > > hurting runtime performace.
+> > > The _SHOW_WAIT_LOOP_TIME is for debugging and instrumentation purpose only
+> > > during development cycle. It is not supposed to be turned on at production
+> > > system. I will document that in the code.
+> > No, no, no! Again: That's what tracepoints are for.
+> > 
+> > This kind of debugging is completely pointless. Tracepoints are
+> > designed to be low overhead and can be enabled on production
+> > systems.
+> > 
+> > Your debugging depends on slow timestamps against CLOCK_REALTIME and
+> > an even slower output via printk. How useful is that if you want to
+> > really instrument the behaviour of this code?
+> 
+> This code is not critical and I can certainly remove it.
+
+Did you even try to understand what I wrote? I did not ask you to
+remove instrumentation. I asked you to use useful instrumentation
+instead of some totally useless crap.
 
 Thanks,
-Rafael
+
+	tglx
 
 
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / video / i915: No ACPI backlight if firmware expects Windows 8
-
-According to Matthew Garrett, "Windows 8 leaves backlight control up
-to individual graphics drivers rather than making ACPI calls itself.
-There's plenty of evidence to suggest that the Intel driver for
-Windows [8] doesn't use the ACPI interface, including the fact that
-it's broken on a bunch of machines when the OS claims to support
-Windows 8.  The simplest thing to do appears to be to disable the
-ACPI backlight interface on these systems".
-
-There's a problem with that approach, however, because simply
-avoiding to register the ACPI backlight interface if the firmware
-calls _OSI for Windows 8 may not work in the following situations:
- (1) The ACPI backlight interface actually works on the given system
-     and the i915 driver is not loaded (e.g. another graphics driver
-     is used).
- (2) The ACPI backlight interface doesn't work on the given system,
-     but there is a vendor platform driver that will register its
-     own, equally broken, backlight interface if not prevented from
-     doing so by the ACPI subsystem.
-Therefore we need to allow the ACPI backlight interface to be
-registered until the i915 driver is loaded which then will unregister
-it if the firmware has called _OSI for Windows 8 (or will register
-the ACPI video driver without backlight support if not already
-present).
-
-For this reason, introduce an alternative function for registering
-ACPI video, acpi_video_register_with_quirks(), that will check
-whether or not the ACPI video driver has already been registered
-and whether or not the backlight Windows 8 quirk has to be applied.
-If the quirk has to be applied, it will block the ACPI backlight
-support and either unregister the backlight interface if the ACPI
-video driver has already been registered, or register the ACPI
-video driver without the backlight interface otherwise.  Make
-the i915 driver use acpi_video_register_with_quirks() instead of
-acpi_video_register() in i915_driver_load().
-
-This change is based on earlier patches from Matthew Garrett,
-Chun-Yi Lee and Seth Forshee and Aaron Lu's comments.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/internal.h         |   11 ++++++
- drivers/acpi/video.c            |   65 ++++++++++++++++++++++++++++++++++++----
- drivers/acpi/video_detect.c     |   21 ++++++++++++
- drivers/gpu/drm/i915/i915_dma.c |    2 -
- include/acpi/video.h            |   11 ++++++
- include/linux/acpi.h            |    1 
- 6 files changed, 103 insertions(+), 8 deletions(-)
-
-Index: linux-pm/drivers/acpi/video.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video.c
-+++ linux-pm/drivers/acpi/video.c
-@@ -44,6 +44,8 @@
- #include <linux/suspend.h>
- #include <acpi/video.h>
- 
-+#include "internal.h"
-+
- #define PREFIX "ACPI: "
- 
- #define ACPI_VIDEO_BUS_NAME		"Video Bus"
-@@ -898,7 +900,7 @@ static void acpi_video_device_find_cap(s
- 		device->cap._DDC = 1;
- 	}
- 
--	if (acpi_video_backlight_support()) {
-+	if (acpi_video_verify_backlight_support()) {
- 		struct backlight_properties props;
- 		struct pci_dev *pdev;
- 		acpi_handle acpi_parent;
-@@ -1854,6 +1856,46 @@ static int acpi_video_bus_remove(struct
- 	return 0;
- }
- 
-+static acpi_status video_unregister_backlight(acpi_handle handle, u32 lvl,
-+					      void *context, void **rv)
-+{
-+	struct acpi_device *acpi_dev;
-+	struct acpi_video_bus *video;
-+	struct acpi_video_device *dev, *next;
-+
-+	if (acpi_bus_get_device(handle, &acpi_dev))
-+		return AE_OK;
-+
-+	if (acpi_match_device_ids(acpi_dev, video_device_ids))
-+		return AE_OK;
-+
-+	video = acpi_driver_data(acpi_dev);
-+	if (!video)
-+		return AE_OK;
-+
-+	acpi_video_bus_stop_devices(video);
-+	mutex_lock(&video->device_list_lock);
-+	list_for_each_entry_safe(dev, next, &video->video_device_list, entry) {
-+		if (dev->backlight) {
-+			backlight_device_unregister(dev->backlight);
-+			dev->backlight = NULL;
-+			kfree(dev->brightness->levels);
-+			kfree(dev->brightness);
-+		}
-+		if (dev->cooling_dev) {
-+			sysfs_remove_link(&dev->dev->dev.kobj,
-+					  "thermal_cooling");
-+			sysfs_remove_link(&dev->cooling_dev->device.kobj,
-+					  "device");
-+			thermal_cooling_device_unregister(dev->cooling_dev);
-+			dev->cooling_dev = NULL;
-+		}
-+	}
-+	mutex_unlock(&video->device_list_lock);
-+	acpi_video_bus_start_devices(video);
-+	return AE_OK;
-+}
-+
- static int __init is_i740(struct pci_dev *dev)
- {
- 	if (dev->device == 0x00D1)
-@@ -1885,14 +1927,25 @@ static int __init intel_opregion_present
- 	return opregion;
- }
- 
--int acpi_video_register(void)
-+int __acpi_video_register(bool backlight_quirks)
- {
--	int result = 0;
-+	bool no_backlight;
-+	int result;
-+
-+	no_backlight = backlight_quirks ? acpi_video_backlight_quirks() : false;
-+
- 	if (register_count) {
- 		/*
--		 * if the function of acpi_video_register is already called,
--		 * don't register the acpi_vide_bus again and return no error.
-+		 * If acpi_video_register() has been called already, don't try
-+		 * to register acpi_video_bus, but unregister backlight devices
-+		 * if no backlight support is requested.
- 		 */
-+		if (no_backlight)
-+			acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-+					    ACPI_UINT32_MAX,
-+					    video_unregister_backlight,
-+					    NULL, NULL, NULL);
-+
- 		return 0;
- 	}
- 
-@@ -1908,7 +1961,7 @@ int acpi_video_register(void)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(acpi_video_register);
-+EXPORT_SYMBOL(__acpi_video_register);
- 
- void acpi_video_unregister(void)
- {
-Index: linux-pm/drivers/gpu/drm/i915/i915_dma.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/i915/i915_dma.c
-+++ linux-pm/drivers/gpu/drm/i915/i915_dma.c
-@@ -1648,7 +1648,7 @@ int i915_driver_load(struct drm_device *
- 	if (INTEL_INFO(dev)->num_pipes) {
- 		/* Must be done after probing outputs */
- 		intel_opregion_init(dev);
--		acpi_video_register();
-+		acpi_video_register_with_quirks();
- 	}
- 
- 	if (IS_GEN5(dev))
-Index: linux-pm/include/acpi/video.h
-===================================================================
---- linux-pm.orig/include/acpi/video.h
-+++ linux-pm/include/acpi/video.h
-@@ -17,12 +17,21 @@ struct acpi_device;
- #define ACPI_VIDEO_DISPLAY_LEGACY_TV      0x0200
- 
- #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
--extern int acpi_video_register(void);
-+extern int __acpi_video_register(bool backlight_quirks);
-+static inline int acpi_video_register(void)
-+{
-+	return __acpi_video_register(false);
-+}
-+static inline int acpi_video_register_with_quirks(void)
-+{
-+	return __acpi_video_register(true);
-+}
- extern void acpi_video_unregister(void);
- extern int acpi_video_get_edid(struct acpi_device *device, int type,
- 			       int device_id, void **edid);
- #else
- static inline int acpi_video_register(void) { return 0; }
-+static inline int acpi_video_register_with_quirks(void) { return 0; }
- static inline void acpi_video_unregister(void) { return; }
- static inline int acpi_video_get_edid(struct acpi_device *device, int type,
- 				      int device_id, void **edid)
-Index: linux-pm/drivers/acpi/video_detect.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video_detect.c
-+++ linux-pm/drivers/acpi/video_detect.c
-@@ -38,6 +38,8 @@
- #include <linux/dmi.h>
- #include <linux/pci.h>
- 
-+#include "internal.h"
-+
- #define PREFIX "ACPI: "
- 
- ACPI_MODULE_NAME("video");
-@@ -234,6 +236,17 @@ static void acpi_video_caps_check(void)
- 		acpi_video_get_capabilities(NULL);
- }
- 
-+bool acpi_video_backlight_quirks(void)
-+{
-+	if (acpi_gbl_osi_data >= ACPI_OSI_WIN_8) {
-+		acpi_video_caps_check();
-+		acpi_video_support |= ACPI_VIDEO_SKIP_BACKLIGHT;
-+		return true;
-+	}
-+	return false;
-+}
-+EXPORT_SYMBOL(acpi_video_backlight_quirks);
-+
- /* Promote the vendor interface instead of the generic video module.
-  * This function allow DMI blacklists to be implemented by externals
-  * platform drivers instead of putting a big blacklist in video_detect.c
-@@ -278,6 +291,14 @@ int acpi_video_backlight_support(void)
- }
- EXPORT_SYMBOL(acpi_video_backlight_support);
- 
-+/* For the ACPI video driver use only. */
-+bool acpi_video_verify_backlight_support(void)
-+{
-+	return (acpi_video_support & ACPI_VIDEO_SKIP_BACKLIGHT) ?
-+		false : acpi_video_backlight_support();
-+}
-+EXPORT_SYMBOL(acpi_video_verify_backlight_support);
-+
- /*
-  * Use acpi_backlight=vendor/video to force that backlight switching
-  * is processed by vendor specific acpi drivers or video.ko driver.
-Index: linux-pm/include/linux/acpi.h
-===================================================================
---- linux-pm.orig/include/linux/acpi.h
-+++ linux-pm/include/linux/acpi.h
-@@ -191,6 +191,7 @@ extern bool wmi_has_guid(const char *gui
- #define ACPI_VIDEO_BACKLIGHT_DMI_VIDEO			0x0200
- #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VENDOR		0x0400
- #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VIDEO		0x0800
-+#define ACPI_VIDEO_SKIP_BACKLIGHT			0x1000
- 
- #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
- 
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -164,4 +164,15 @@ struct platform_device;
- int acpi_create_platform_device(struct acpi_device *adev,
- 				const struct acpi_device_id *id);
- 
-+/*--------------------------------------------------------------------------
-+					Video
-+  -------------------------------------------------------------------------- */
-+#if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
-+bool acpi_video_backlight_quirks(void);
-+bool acpi_video_verify_backlight_support(void);
-+#else
-+static inline bool acpi_video_backlight_quirks(void) { return false; }
-+static inline bool acpi_video_verify_backlight_support(void) { return false; }
-+#endif
-+
- #endif /* _ACPI_INTERNAL_H_ */
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
