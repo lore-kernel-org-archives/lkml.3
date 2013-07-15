@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab3GOEXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 00:23:39 -0400
-Received: from ozlabs.org ([203.10.76.45]:34587 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab3GOEXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 00:23:38 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Amos Kong <akong@redhat.com>, Dave Jones <davej@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-net: put virtio net header inline with data
-In-Reply-To: <20130710061407.GC19759@redhat.com>
-References: <20130708101259.GA16074@redhat.com> <871u78eavc.fsf@rustcorp.com.au> <20130709051824.GA3234@redhat.com> <87vc4kcfzg.fsf@rustcorp.com.au> <20130710061407.GC19759@redhat.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 15 Jul 2013 11:10:41 +0930
-Message-ID: <878v1838iu.fsf@rustcorp.com.au>
+	id S1752049Ab3GOEZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 00:25:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42548 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3GOEZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 00:25:09 -0400
+Date: Sun, 14 Jul 2013 19:59:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] driver-core: fix new kernel-doc warning in
+ base/platform.c
+Message-ID: <20130715025948.GA12595@kroah.com>
+References: <51E3459A.7070909@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E3459A.7070909@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
-> On Tue, Jul 09, 2013 at 05:38:51PM +0930, Rusty Russell wrote:
->> "Michael S. Tsirkin" <mst@redhat.com> writes:
->> > On Tue, Jul 09, 2013 at 11:46:23AM +0930, Rusty Russell wrote:
->> >> "Michael S. Tsirkin" <mst@redhat.com> writes:
->> >> > For small packets we can simplify xmit processing
->> >> > by linearizing buffers with the header:
->> >> > most packets seem to have enough head room
->> >> > we can use for this purpose.
->> >> > Since existing hypervisors require that header
->> >> > is the first s/g element, we need a feature bit
->> >> > for this.
->> >> >
->> >> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->> >> > ---
->> >> >
->> >> > Note: this needs to be applied on top of patch
->> >> > defining VIRTIO_F_ANY_LAYOUT - bit to be
->> >> > selected by Rusty.
->> >> >
->> >> > The following patch should work for any definition of
->> >> > VIRTIO_F_ANY_LAYOUT - I used bit 31 for testing.
->> >> > Rusty, could you please pick a valid bit for VIRTIO_F_ANY_LAYOUT
->> >> > and squeeze this patch into 3.11?
->> >> 
->> >> Sorry, it's too late.
->> >> 
->> >> First, I've been a bit lax in sending patches via DaveM, and this is
->> >> definitely his territory (ie. more net than virtio).
->> >
->> > Let's do this: I'll send a patch series, you ack and we see
->> > what happens?
->> 
->> If you convince DaveM, I won't object :)
->> 
->> >> Secondly, it needs baking and testing time.
->> >> 
->> >> Cheers,
->> >> Rusty.
->> >
->> > I did some testing on this.  But proper testing just isn't happening out
->> > of tree.
->> 
->> But it will get into linux-next for the *next* merge window.
->> 
->> Cheers,
->> Rusty.
->
-> Okay. Can you put it on virtio-next then?
-> I don't see it there ...
+On Sun, Jul 14, 2013 at 05:43:06PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Fix new kernel-doc warning in drivers/base/platform.c:
+> 
+> Warning(drivers/base/platform.c:528): No description found for parameter 'owner'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> ---
+>  drivers/base/platform.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- lnx-311-rc1.orig/drivers/base/platform.c
+> +++ lnx-311-rc1/drivers/base/platform.c
+> @@ -522,6 +522,7 @@ static void platform_drv_shutdown(struct
+>  /**
+>   * __platform_driver_register - register a driver for platform-level devices
+>   * @drv: platform driver structure
+> + * @owner: owning module/driver
+>   */
+>  int __platform_driver_register(struct platform_driver *drv,
+>  				struct module *owner)
 
-Here's the general order:
-- 1 week before Linus merge window: I stop putting new stuff into xxx-next.
-- Linus merge window open: I push stuff to Linus, new stuff stays in -pending.
-- Linus merge window close: I ff my -next trees to -rc1, merge stuff
-  from -pending.
+Thanks, I'll queue this up with my next round of patches for Linus.
 
-In this case, your patch will go from pending-rebases to DaveM, not
-virtio-next.
-
-Which I will do now...
-
-Cheers,
-Rusty.
+greg k-h
