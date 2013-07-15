@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758517Ab3GOXkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 19:40:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35587 "EHLO mx2.suse.de"
+	id S1758501Ab3GOXnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 19:43:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35651 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758437Ab3GOXkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 19:40:31 -0400
-Date: Tue, 16 Jul 2013 01:40:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        James.Bottomley@HansenPartnership.com
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-In-Reply-To: <alpine.LNX.2.00.1307160011530.29788@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1307160131420.29788@pobox.suse.cz>
-References: <1373916476.2748.69.camel@dabdike> <20130715214422.GA2478@kroah.com> <alpine.LNX.2.00.1307160011530.29788@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754896Ab3GOXm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 19:42:58 -0400
+Date: Tue, 16 Jul 2013 09:42:41 +1000
+From: NeilBrown <neilb@suse.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130716094241.43dbabb0@notabene.brown>
+In-Reply-To: <1373915984.17876.176.camel@gandalf.local.home>
+References: <20130715155202.GC29526@xanatos>
+	<CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+	<20130715174659.GC15531@xanatos>
+	<CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	<20130715180403.GD15531@xanatos>
+	<CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	<20130715190505.GA3336@fieldses.org>
+	<1373915984.17876.176.camel@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/J6pzIXUGPbktN2ssPCYiYjX"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013, Jiri Kosina wrote:
+--Sig_/J6pzIXUGPbktN2ssPCYiYjX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> (*) For me personally, the best mode of operation would actually be to 
->     have for-stable/3.x branches in my git tree, cherry-pick from other 
->     topic branches once the patches are in Linus' tree, and send you pull 
->     request for stable regularly (for each stable branch separately of 
->     course)
->    
->     This model would make maintainers clearly responsible for the contents 
->     of stable tree, wouldn't cause any extra work for you (quite the 
->     contrary, I'd say), and it'd follow the development model we have for
->     Linus' tree.
+On Mon, 15 Jul 2013 15:19:44 -0400 Steven Rostedt <rostedt@goodmis.org> wro=
+te:
 
-... and it will actually have a nice self-regulatory feature (in case 
-maintainers who are pushing too much stuff your way are part of the 
-problem).
+> On Mon, 2013-07-15 at 15:05 -0400, J. Bruce Fields wrote:
+>=20
+> > "Nice", "subtle", and "polite" all seem mostly orthogonal to me.
+> >=20
+>=20
+> "Nice" and "polite" are rather attached.
 
-Preparing a proper pull request requires much more care, "stopping and 
-thinking for a while", formulating the pull request, than just blindly 
-tossing "Cc: stable" everywhere in a headless-chicken mode.
+Being "polite" without being "nice" is quite possible.  It even has a name:
+ Diplomacy.
 
-To sum it up:
+NeilBrown
 
-- if the maintainers really do care about their patches being in the 
-  -stable tree, this wouldn't cost them too much extra time
+--Sig_/J6pzIXUGPbktN2ssPCYiYjX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-- if they are just randomly pushing everything to -stable because "hey, 
-  why not", this will be an extra hurdle for them to overcome, and they 
-  will be revealed easily by poor pull request justification
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-- if the maintainers are lazy and don't care about preparing stable 
-  branches, it's their responsibility (and their shame) that -stable will 
-  be missing the code they are responsible for
+iQIVAwUBUeSI8Tnsnt1WYoG5AQJKsw/+LlebrhJmtOIVkCs744DoB0f6fjGEbTxL
+r15bdR8plVr+1cnHTqUhltu3S9pc0xuBCt46QdnRa/JAC3OUVZEVPSniPDbio52h
+Y7OIo3g6RpgeYhE5BVCfmcQeqN1+fohusUmbkt43tVGig6S+BUxpBnpNzh2qJr/W
+Sfj/OAGOXYMcXZ8yoCdO22XvqEXOSnXlmd+EKyJlw8w+v/AsciyY34ItKkIUP7k6
+xtjQs45iOm2ANVXY/3nPFKoZ0+KBUY/odR/l40n5xmPrFWmKhthQwFWL+ErmUdcy
+aobc53XguT817WDj8wcb4rj6EzOIlU6ICIJZ3snafj1P7Loz69YqLiriifSv73rJ
+hk4G8lk4ectzVCIUc9DOdcnx0xt+gInVMIlw0UKEmRuucmzGbXeZIQklhF+fzaeR
+ew15NaSWjoGjcoK6ontHDuH1Skg9cMUeTPX4VsMEjPCqalJM9chtyTYH29pvJ20e
+ZaXusBzb5oWYz4C0qDrSGpp3y4BP8xeNQjGAFgkrE/qdxck64UQHw7Z4BfLAc2Rm
+NtYMT2akZX3MBeE10Fn0hkGBbOKOP4ZD863AupHHFrWNa2xk5Rnl4YHWPy2wqpJB
+oEKGW7CX04i1EaWiIH01zvSjZkI1saxPtulpNHeDEH4iVRn3CqAgYr4JWVueH6IL
+jYdK6t873sM=
+=TNxX
+-----END PGP SIGNATURE-----
 
-- it offloads the work from single point of failure (you) to the 
-  maintainers, which makes a lot of sense to me
-
-- it aligns the workflow with the workflow that's in place for Linus' 
-  already (and not only there) to be more or less a proper git workflow
-
--- 
-Jiri Kosina
-SUSE Labs
+--Sig_/J6pzIXUGPbktN2ssPCYiYjX--
