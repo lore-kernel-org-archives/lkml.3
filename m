@@ -1,240 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab3GONuT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:50:19 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:52387 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756009Ab3GONuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:50:17 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] treewide: Fix typo in printk
-Date: Mon, 15 Jul 2013 22:50:10 +0900
-Message-Id: <1373896210-21316-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.3.2.804.g0da7a53
+	id S1756660Ab3GONwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:52:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60540 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755659Ab3GONwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 09:52:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
+   d="scan'208";a="370434420"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+In-Reply-To: <1373885274-25249-5-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1373885274-25249-5-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: RE: [PATCH 4/8] mm: cleanup add_to_page_cache_locked()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130715135547.22A94E0090@blue.fi.intel.com>
+Date: Mon, 15 Jul 2013 16:55:47 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in printk
+Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> The patch makes add_to_page_cache_locked() cleaner:
+>  - unindent most code of the function by inverting one condition;
+>  - streamline code no-error path;
+>  - move insert error path outside normal code path;
+>  - call radix_tree_preload_end() earlier;
+> 
+> No functional changes.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+> ---
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+...
+
+> +	spin_lock_irq(&mapping->tree_lock);
+> +	error = radix_tree_insert(&mapping->page_tree, offset, page);
+> +	radix_tree_preload_end();
+> +	if (unlikely(!error))
+> +		goto err_insert;
+
+Nadav Shemer noticed mistake here. It should be 'if (unlikely(error))'.
+
+I've missed this during becase it was fixed by other patch in my
+thp-pagecache series.
+
+Fixed patch is below. Retested with this patchset applied only.
+Looks okay now.
+
+Sorry for this.
+
 ---
- drivers/crypto/ux500/hash/hash_core.c               | 2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c | 4 ++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c      | 2 +-
- drivers/net/wireless/cw1200/wsm.c                   | 2 +-
- drivers/net/wireless/iwlwifi/mvm/time-event.c       | 2 +-
- drivers/net/wireless/rtlwifi/rtl8188ee/fw.c         | 4 ++--
- drivers/net/wireless/rtlwifi/rtl8723ae/fw.c         | 4 ++--
- drivers/power/88pm860x_charger.c                    | 4 ++--
- drivers/power/pm2301_charger.c                      | 2 +-
- drivers/scsi/lpfc/lpfc_attr.c                       | 8 ++++----
- drivers/scsi/qla2xxx/qla_mr.c                       | 2 +-
- 11 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
-index 496ae6a..33693d9 100644
---- a/drivers/crypto/ux500/hash/hash_core.c
-+++ b/drivers/crypto/ux500/hash/hash_core.c
-@@ -282,7 +282,7 @@ static int get_empty_message_digest(
- 			}
- 		} else {
- 			dev_dbg(device_data->dev, "[%s] Continue hash "
--					"calculation, since hmac key avalable",
-+					"calculation, since hmac key available",
- 					__func__);
- 		}
- 	}
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
-index 0913c62..3c51b77 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
-@@ -1637,7 +1637,7 @@ int qlcnic_83xx_nic_set_promisc(struct qlcnic_adapter *adapter, u32 mode)
- 	err = qlcnic_issue_cmd(adapter, &cmd);
- 	if (err)
- 		dev_info(&adapter->pdev->dev,
--			 "Promiscous mode config failed\n");
-+			 "Promiscuous mode config failed\n");
+>From 0c74a39660f41a6c9504e3b4ec7a1ba3433af2a3 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Thu, 23 May 2013 16:08:12 +0300
+Subject: [PATCH] mm: cleanup add_to_page_cache_locked()
+
+The patch makes add_to_page_cache_locked() cleaner:
+ - unindent most code of the function by inverting one condition;
+ - streamline code no-error path;
+ - move insert error path outside normal code path;
+ - call radix_tree_preload_end() earlier;
+
+No functional changes.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/filemap.c | 48 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 25 insertions(+), 23 deletions(-)
+
+diff --git a/mm/filemap.c b/mm/filemap.c
+index f6fe61f..f1ca99c 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -467,32 +467,34 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 	error = mem_cgroup_cache_charge(page, current->mm,
+ 					gfp_mask & GFP_RECLAIM_MASK);
+ 	if (error)
+-		goto out;
++		return error;
  
- 	qlcnic_free_mbx_args(&cmd);
- 	return err;
-@@ -3082,7 +3082,7 @@ int qlcnic_83xx_set_settings(struct qlcnic_adapter *adapter,
- 	status = qlcnic_83xx_set_port_config(adapter);
- 	if (status) {
- 		dev_info(&adapter->pdev->dev,
--			 "Faild to Set Link Speed and autoneg.\n");
-+			 "Failed to Set Link Speed and autoneg.\n");
- 		adapter->ahw->port_config = config;
- 	}
- 	return status;
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-index d3f8797..2fe15c5 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-@@ -1652,7 +1652,7 @@ static int qlcnic_83xx_process_rcv_ring(struct qlcnic_host_sds_ring *sds_ring,
- 			break;
- 		default:
- 			dev_info(&adapter->pdev->dev,
--				 "Unkonwn opcode: 0x%x\n", opcode);
-+				 "Unknown opcode: 0x%x\n", opcode);
- 			goto skip;
- 		}
- 
-diff --git a/drivers/net/wireless/cw1200/wsm.c b/drivers/net/wireless/cw1200/wsm.c
-index cbb74d7..9e0ca30 100644
---- a/drivers/net/wireless/cw1200/wsm.c
-+++ b/drivers/net/wireless/cw1200/wsm.c
-@@ -1199,7 +1199,7 @@ bool wsm_flush_tx(struct cw1200_common *priv)
- 
- 	if (priv->bh_error) {
- 		/* In case of failure do not wait for magic. */
--		pr_err("[WSM] Fatal error occured, will not flush TX.\n");
-+		pr_err("[WSM] Fatal error occurred, will not flush TX.\n");
- 		return false;
- 	} else {
- 		/* Get a timestamp of "oldest" frame */
-diff --git a/drivers/net/wireless/iwlwifi/mvm/time-event.c b/drivers/net/wireless/iwlwifi/mvm/time-event.c
-index ad9bbca..39b3ffb 100644
---- a/drivers/net/wireless/iwlwifi/mvm/time-event.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/time-event.c
-@@ -184,7 +184,7 @@ static void iwl_mvm_te_handle_notif(struct iwl_mvm *mvm,
- 		    (!te_data->vif->bss_conf.assoc ||
- 		     !te_data->vif->bss_conf.dtim_period)) {
- 			IWL_ERR(mvm,
--				"No assocation and the time event is over already...\n");
-+				"No association and the time event is over already...\n");
- 			ieee80211_connection_loss(te_data->vif);
- 		}
- 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
-index 57e4cc5..557bc5b 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
-@@ -341,7 +341,7 @@ static void _rtl88e_fill_h2c_command(struct ieee80211_hw *hw,
- 			wait_h2c_limit--;
- 			if (wait_h2c_limit == 0) {
- 				RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
--					 "Wating too long for FW read "
-+					 "Waiting too long for FW read "
- 					 "clear HMEBox(%d)!\n", boxnum);
- 				break;
- 			}
-@@ -351,7 +351,7 @@ static void _rtl88e_fill_h2c_command(struct ieee80211_hw *hw,
- 			isfw_read = _rtl88e_check_fw_read_last_h2c(hw, boxnum);
- 			u1b_tmp = rtl_read_byte(rtlpriv, 0x130);
- 			RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
--				 "Wating for FW read clear HMEBox(%d)!!! "
-+				 "Waiting for FW read clear HMEBox(%d)!!! "
- 				 "0x130 = %2x\n", boxnum, u1b_tmp);
- 		}
- 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c
-index dedfa1e..ba1502b 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c
-@@ -330,7 +330,7 @@ static void _rtl8723ae_fill_h2c_command(struct ieee80211_hw *hw,
- 			wait_h2c_limmit--;
- 			if (wait_h2c_limmit == 0) {
- 				RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
--					 "Wating too long for FW read clear HMEBox(%d)!\n",
-+					 "Waiting too long for FW read clear HMEBox(%d)!\n",
- 					 boxnum);
- 				break;
- 			}
-@@ -340,7 +340,7 @@ static void _rtl8723ae_fill_h2c_command(struct ieee80211_hw *hw,
- 			isfw_rd = rtl8723ae_check_fw_read_last_h2c(hw, boxnum);
- 			u1tmp = rtl_read_byte(rtlpriv, 0x1BF);
- 			RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
--				 "Wating for FW read clear HMEBox(%d)!!! "
-+				 "Waiting for FW read clear HMEBox(%d)!!! "
- 				 "0x1BF = %2x\n", boxnum, u1tmp);
- 		}
- 
-diff --git a/drivers/power/88pm860x_charger.c b/drivers/power/88pm860x_charger.c
-index ffff66b..2c843ca 100644
---- a/drivers/power/88pm860x_charger.c
-+++ b/drivers/power/88pm860x_charger.c
-@@ -554,7 +554,7 @@ static irqreturn_t pm860x_vchg_handler(int irq, void *data)
- 					OVTEMP_AUTORECOVER,
- 					OVTEMP_AUTORECOVER);
- 			dev_dbg(info->dev,
--				"%s, pm8606 over-temp occure\n", __func__);
-+				"%s, pm8606 over-temp occur\n", __func__);
- 		}
- 	}
- 
-@@ -562,7 +562,7 @@ static irqreturn_t pm860x_vchg_handler(int irq, void *data)
- 		set_vchg_threshold(info, VCHG_OVP_LOW, 0);
- 		info->allowed = 0;
- 		dev_dbg(info->dev,
--			"%s,pm8607 over-vchg occure,vchg = %dmv\n",
-+			"%s,pm8607 over-vchg occur,vchg = %dmv\n",
- 			__func__, vchg);
- 	} else if (vchg < VCHG_OVP_LOW) {
- 		set_vchg_threshold(info, VCHG_NORMAL_LOW,
-diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
-index 1c0bfcb..ffa10ed 100644
---- a/drivers/power/pm2301_charger.c
-+++ b/drivers/power/pm2301_charger.c
-@@ -386,7 +386,7 @@ static int pm2_int_reg2(void *pm2_data, int val)
- 	if (val & (PM2XXX_INT3_ITCHPRECHARGEWD |
- 				PM2XXX_INT3_ITCHCCWD | PM2XXX_INT3_ITCHCVWD)) {
- 		dev_dbg(pm2->dev,
--			"Watchdog occured for precharge, CC and CV charge\n");
-+			"Watchdog occurred for precharge, CC and CV charge\n");
- 	}
- 
- 	return ret;
-diff --git a/drivers/scsi/lpfc/lpfc_attr.c b/drivers/scsi/lpfc/lpfc_attr.c
-index 5cb08ae..f4360c5 100644
---- a/drivers/scsi/lpfc/lpfc_attr.c
-+++ b/drivers/scsi/lpfc/lpfc_attr.c
-@@ -818,7 +818,7 @@ lpfc_issue_reset(struct device *dev, struct device_attribute *attr,
-  * the readyness after performing a firmware reset.
-  *
-  * Returns:
-- * zero for success, -EPERM when port does not have privilage to perform the
-+ * zero for success, -EPERM when port does not have privilege to perform the
-  * reset, -EIO when port timeout from recovering from the reset.
-  *
-  * Note:
-@@ -835,7 +835,7 @@ lpfc_sli4_pdev_status_reg_wait(struct lpfc_hba *phba)
- 	lpfc_readl(phba->sli4_hba.u.if_type2.STATUSregaddr,
- 		   &portstat_reg.word0);
- 
--	/* verify if privilaged for the request operation */
-+	/* verify if privileged for the request operation */
- 	if (!bf_get(lpfc_sliport_status_rn, &portstat_reg) &&
- 	    !bf_get(lpfc_sliport_status_err, &portstat_reg))
- 		return -EPERM;
-@@ -927,9 +927,9 @@ lpfc_sli4_pdev_reg_request(struct lpfc_hba *phba, uint32_t opcode)
- 	rc = lpfc_sli4_pdev_status_reg_wait(phba);
- 
- 	if (rc == -EPERM) {
--		/* no privilage for reset */
-+		/* no privilege for reset */
- 		lpfc_printf_log(phba, KERN_ERR, LOG_SLI,
--				"3150 No privilage to perform the requested "
-+				"3150 No privilege to perform the requested "
- 				"access: x%x\n", reg_val);
- 	} else if (rc == -EIO) {
- 		/* reset failed, there is nothing more we can do */
-diff --git a/drivers/scsi/qla2xxx/qla_mr.c b/drivers/scsi/qla2xxx/qla_mr.c
-index d799379..ab4be10 100644
---- a/drivers/scsi/qla2xxx/qla_mr.c
-+++ b/drivers/scsi/qla2xxx/qla_mr.c
-@@ -1779,7 +1779,7 @@ qlafx00_fx_disc(scsi_qla_host_t *vha, fc_port_t *fcport, uint16_t fx_type)
- 		p_sysid = utsname();
- 		if (!p_sysid) {
- 			ql_log(ql_log_warn, vha, 0x303c,
--			    "Not able to get the system informtion\n");
-+			    "Not able to get the system information\n");
- 			goto done_free_sp;
- 		}
- 		break;
+ 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+-	if (error == 0) {
+-		page_cache_get(page);
+-		page->mapping = mapping;
+-		page->index = offset;
+-
+-		spin_lock_irq(&mapping->tree_lock);
+-		error = radix_tree_insert(&mapping->page_tree, offset, page);
+-		if (likely(!error)) {
+-			mapping->nrpages++;
+-			__inc_zone_page_state(page, NR_FILE_PAGES);
+-			spin_unlock_irq(&mapping->tree_lock);
+-			trace_mm_filemap_add_to_page_cache(page);
+-		} else {
+-			page->mapping = NULL;
+-			/* Leave page->index set: truncation relies upon it */
+-			spin_unlock_irq(&mapping->tree_lock);
+-			mem_cgroup_uncharge_cache_page(page);
+-			page_cache_release(page);
+-		}
+-		radix_tree_preload_end();
+-	} else
++	if (error) {
+ 		mem_cgroup_uncharge_cache_page(page);
+-out:
++		return error;
++	}
++
++	page_cache_get(page);
++	page->mapping = mapping;
++	page->index = offset;
++
++	spin_lock_irq(&mapping->tree_lock);
++	error = radix_tree_insert(&mapping->page_tree, offset, page);
++	radix_tree_preload_end();
++	if (unlikely(error))
++		goto err_insert;
++	mapping->nrpages++;
++	__inc_zone_page_state(page, NR_FILE_PAGES);
++	spin_unlock_irq(&mapping->tree_lock);
++	trace_mm_filemap_add_to_page_cache(page);
++	return 0;
++err_insert:
++	page->mapping = NULL;
++	/* Leave page->index set: truncation relies upon it */
++	spin_unlock_irq(&mapping->tree_lock);
++	mem_cgroup_uncharge_cache_page(page);
++	page_cache_release(page);
+ 	return error;
+ }
+ EXPORT_SYMBOL(add_to_page_cache_locked);
 -- 
-1.8.3.2.804.g0da7a53
-
+ Kirill A. Shutemov
