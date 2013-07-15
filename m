@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3GOTLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:11:08 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:45896 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab3GOTLG (ORCPT
+	id S1754902Ab3GOTLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:11:48 -0400
+Received: from mail-ye0-f179.google.com ([209.85.213.179]:48461 "EHLO
+	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab3GOTLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:11:06 -0400
-Message-ID: <51E44943.7000600@gmail.com>
-Date: Mon, 15 Jul 2013 14:10:59 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 15 Jul 2013 15:11:47 -0400
+Date: Mon, 15 Jul 2013 16:11:38 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [RFC 0/4] perf tools: Remove event types data
+Message-ID: <20130715191138.GA3298@ghostprotocols.net>
+References: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
+ <1500509.qlU7PPnHQq@hammer82.arch.suse.de>
+ <20130710074940.GA1048@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Sudeep.KarkadaNagesha@arm.com
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
-        linux@arm.linux.org.uk, arnd@arndb.de, viresh.kumar@linaro.org,
-        rob.herring@calxeda.com, rjw@sisk.pl, grant.likely@linaro.org,
-        cpufreq@vger.kernel.org, kernel@pengutronix.de,
-        gregkh@linuxfoundation.org, olof@lixom.net,
-        gregory.clement@free-electrons.com, shawn.guo@linaro.org
-Subject: Re: [RFC PATCH 02/11] ARM: DT/kernel: define ARM specific arch_of_get_cpu_node
-References: <1373883732-26303-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1373883732-26303-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-In-Reply-To: <1373883732-26303-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130710074940.GA1048@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 05:22 AM, Sudeep.KarkadaNagesha@arm.com wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Em Wed, Jul 10, 2013 at 09:49:40AM +0200, Jiri Olsa escreveu:
+> On Wed, Jul 10, 2013 at 08:11:48AM +0200, Thomas Renninger wrote:
+> > On Tuesday, July 09, 2013 06:48:55 PM Jiri Olsa wrote:
+> > > hi,
+> > > following up on the 'perf timechart' FIXME note and changing
+> > > its tracepoint match not to use event types data.
+> > 
+> > Looks sane and pretty straight forward.
+> > Still I am not that deep involved in perf to give a Reviewed-by: quickly...
+
+In such cases an "Acked-by:" seems adequate enough, right? I'm merging
+this now, so will not add it, but please let us know if that would be
+ok, I may go thru some rebase and then would add that line.
+ 
+> thanks, I saw your name in changelog.. wanted to include
+> someone who probably uses timechart command ;-)
 > 
-> CPU subsystem now provides architecture specific hook to retrieve the
-> of_node. Most of the cpu DT node parsing and initialisation is contained
-> in devtree.c. It's better to contain all CPU device node parsing there.
+> > 
+> > #define SUPPORT_OLD_POWER_EVENTS
+> > could also vanish, maybe with the next round.
 > 
-> arch_of_get_cpu_node is mainly used to assign cpu->of_node when CPUs get
-> registered. This patch overrides the defination of the same. It can also
-> act as the helper function in pre-SMP/early initialisation stages to
-> retrieve CPU device node pointers in logical ordering.
+> ok
 > 
-> This mainly helps to avoid replication of the code doing CPU node parsing
-> and physical(MPIDR) to logical mapping.
-> 
-> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-
-[snip]
-
-> +struct device_node * __init arch_of_get_cpu_node(int cpu)
-> +{
-> +	struct device_node *cpun, *cpus;
-> +	const u32 *cell;
-> +	u64 hwid;
-> +	int ac;
-> +
-> +	cpus = of_find_node_by_path("/cpus");
-> +	if (WARN(!cpus, "Missing cpus node, bailing out\n"))
-> +		return NULL;
-> +
-> +	if (WARN_ON(of_property_read_u32(cpus, "#address-cells", &ac)))
-> +		ac = of_n_addr_cells(cpus);
-> +
-> +	for_each_child_of_node(cpus, cpun) {
-> +		if (of_node_cmp(cpun->type, "cpu"))
-> +			continue;
-> +		cell = of_get_property(cpun, "reg", NULL);
-> +		if (WARN(!cell, "%s: missing reg property\n", cpun->full_name))
-> +			continue;
-> +
-> +		hwid = of_read_number(cell, ac);
-> +		if ((hwid & MPIDR_HWID_BITMASK) == cpu_logical_map(cpu))
-
-Most of this function is not ARM specific, so it would be nice if we
-could shrink the arch specific part down to just this match. A default
-match of reg == logical cpu number might be useful.
-
-The powermac cpufreq driver could probably also be converted
-(arch/powerpc/platforms/powermac/cpufreq_64.c).
-
-Other than that, this series looks good to me.
-
-Rob
-
+> jirka
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
