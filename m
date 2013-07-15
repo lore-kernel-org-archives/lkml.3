@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab3GOWQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 18:16:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50260 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802Ab3GOWQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 18:16:13 -0400
-Date: Mon, 15 Jul 2013 15:16:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Chen Gang <gang.chen@asianux.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH, re-send] Always trap on BUG()
-Message-Id: <20130715151612.9499c2b2ad40e88d183a4600@linux-foundation.org>
-In-Reply-To: <201307051738.35930.arnd@arndb.de>
-References: <201307051738.35930.arnd@arndb.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758281Ab3GOWWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 18:22:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33169 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754924Ab3GOWWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 18:22:19 -0400
+Date: Tue, 16 Jul 2013 00:22:16 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Greg KH <greg@kroah.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+In-Reply-To: <20130715214422.GA2478@kroah.com>
+Message-ID: <alpine.LNX.2.00.1307160011530.29788@pobox.suse.cz>
+References: <1373916476.2748.69.camel@dabdike> <20130715214422.GA2478@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Jul 2013 17:38:35 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+On Mon, 15 Jul 2013, Greg KH wrote:
 
-> I've run some size analyis using the ARM 'multi_v7_defconfig'
-> and gcc-4.8, using various definitions for BUG() and BUG_ON(), to
-> see how big the size improvement actually gets
+> > The solution, to me, looks simple:  Let's co-opt a process we already
+> > know how to do: mailing list review and tree handling.  So the proposal
+> > is simple:
+> > 
+> >      1. Drop the cc: stable@ tag: it makes it way too easy to add an ill
+> >         reviewed patch to stable
+> >      2. All patches to stable should follow current review rules: They
+> >         should go to the mailing list the original patch was sent to
+> >         once the original is upstream as a request for stable.
+> >      3. Following debate on the list, the original maintainer would be
+> >         responsible for collecting the patches (including the upstream
+> >         commit) adjudicating on them and passing them on to stable after
+> >         list review (either by git tree pull or email to stable@).
+> > 
+> > I contend this raises the bar for adding patches to stable much higher,
+> > which seems to be needed, and adds a review stage which involves all the
+> > original reviewers.
 > 
-> 1. Baseline: normal bug plus CONFIG_BUG_VERBOSE
->    text    data     bss     dec     hex filename
-> 3743196  224396  206812 4174404  3fb244 vmlinux-bugverbose
-> 
-> 2. disabling CONFIG_BUG_VERBOSE, saving 0.6%
-> 3716920  224380  206812 4148112  3f4b90 vmlinux-nobugverbose
-> 
-> 3. #define BUG() panic(__func__), #define BUG_ON(c) if(c) BUG(), saving 1.0%
-> 3701076  224384  206812 4132272  3f0db0 vmlinux-bug-panicfunc
-> 
-> 3. #define BUG() panic(__func__), #define BUG_ON(c) if(c) BUG(), saving 1.5%
-> 3678884  224400  206812 4110096  3eb710 vmlinux-bug-panic
-> 
-> 4. #define BUG() unreachable(), saving 2.1%
-> 3652636  224384  206812 4083832  3e5078 vmlinux-bug-unreachable
-> 
-> 5. as 4, plus #define BUG_ON(c) if(c) unreachable(), saving 2.2%
-> 3651108  224380  206812 4082300  3e4a7c vmlinux-bugon-unreachable
-> 
-> 6. #define BUG() do{}while(0), saving 2.1%
-> 3654264  224380  206812 4085456  3e56d0 vmlinux-nobug
-> 
-> 7. as 6, plus #define BUG_ON if(0 && (c)) unreachable, saving 2.2%
-> 3648392  223996  206748 4079136  3e3e20 vmlinux-no-bugon
-> 
-> 8. my patch below, saving 1.8%
-> 3666532  224380  206812 4097724  3e86bc obj-tmp/vmlinux
-> 
-> The gain of doing unreachable and letting the code run off whereever
-> is minimal compared to the current state of doing nothing, but it
-> avoids the warnings.
-> 
-> Same test using x86_defconfig:
-> 
-> 1. CONFIG_BUG=y, CONFIG_BUGVERBOSE=n
-> 10797859        1395648 1175552 13369059         cbfee3 vmlinux-x86-bug
-> 
-> 2. CONFIG_BUG=n, saves 1.0%
-> 10658553        1395584 1175552 13229689         c9de79 vmlinux-x86-nobug
-> 
-> 3. with my patch, saves 0.8%
-> 10684186        1395584 1175552 13255322         ca429a vmlinux-x86-archbug
-> 
-> Getting 1-2% savings in kernel size seems absolutely worth keeping the
-> option, but 0.2-0.4% left for getting reproducible behavior also seems
-> worthwhile. The result in the patch below.
-> 
-> This basically loses any of the BUG() reporting, but leaves the
-> logic to trap and kill the task in place when CONFIG_BUG is disabled.
+> I don't like this at all, just for the simple reason that it will push
+> the majority of the work of stable kernel development on to the
+> subsystem maintainers, who have enough work to do as it is.
 
-um, nice changelog, but it didn't tell us what the patch actually does.
+Sorry Greg, but I disagree.
 
-AFACIT it arranges for the kernel to execute the trap instruction even
-when CONFIG_BUG=n?  Can't be bothered fully working it out, really.
+If the point of the stable tree really is about rock-solid stability, the 
+"it applies without fuzz and there was no explicit NACK" just isn't 
+enough. Someone who actually understands the code (maintainer) should 
+absolutely give his Acked-for-stable-by: (*), otherwise the result is much 
+less trustworthy.
 
-It also makes mystery changes to WARN_ON() and WARN().  What are those?
+I think 991f76f83 might serve as a good example. It has been marked "Cc: 
+stable", it applied without cleanly, so it has been applied to all the 
+existing stable trees, including 3.0.
 
-Also, you say "it avoids the warnings".  To what warnings do you refer?
-The ones which are already emitted by CONFIG_BUG=n, or new ones which
-would have been added had this patch been implemented differently?
+The problem is that one has to actually perform a review of the patch with 
+respect to 3.0.x codebase to notice that the pre-requisity for this patch 
+(ef3d0fd27e) is only present in 3.2 and later, and hasn't been marked for 
+stable (which is correct, it has no business there).
 
-Finally, code-size decreases are nice, but what are the runtime effects
-of this patch?
+(*) For me personally, the best mode of operation would actually be to 
+    have for-stable/3.x branches in my git tree, cherry-pick from other 
+    topic branches once the patches are in Linus' tree, and send you pull 
+    request for stable regularly (for each stable branch separately of 
+    course)
+   
+    This model would make maintainers clearly responsible for the contents 
+    of stable tree, wouldn't cause any extra work for you (quite the 
+    contrary, I'd say), and it'd follow the development model we have for
+    Linus' tree.
 
-I've been thinking for a while that CONFIG_BUG=n is a pretty dumb thing
-to do, and that maintaining it (and trying to fix the warnings it
-produces) aren't worth the effort and that we should remove the whole
-thing.  Perhaps your patch changes that calculus, dunno.  Please discuss.
-
+-- 
+Jiri Kosina
+SUSE Labs
