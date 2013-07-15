@@ -1,198 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab3GOVak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:30:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49758 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab3GOVaj (ORCPT
+	id S1757910Ab3GOVcr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:32:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50218 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab3GOVcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:30:39 -0400
-Date: Mon, 15 Jul 2013 14:30:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robin Holt <holt@sgi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
-Message-Id: <20130715143037.8287ffbf2fb0e72bc8efb287@linux-foundation.org>
-In-Reply-To: <1373594635-131067-5-git-send-email-holt@sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
-	<1373594635-131067-5-git-send-email-holt@sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 15 Jul 2013 17:32:46 -0400
+Message-ID: <51E46A4D.6060108@infradead.org>
+Date: Mon, 15 Jul 2013 14:31:57 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: update git pull info in SubmittingPatches
+References: <1373923096-25674-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1373923096-25674-1-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Jul 2013 21:03:55 -0500 Robin Holt <holt@sgi.com> wrote:
+On 07/15/13 14:18, Paul Gortmaker wrote:
+> The info in this section was overdue for an update; it had manual
+> individual steps listed for collecting the information that a
+> pull request should contain, and no mention of having a proper
+> overall summary in the pull request that could be used for a
+> merge commit.
+> 
+> There are other chunks of this file that need updates to match
+> current git workflows, but giant wholesale updates are more likely
+> to get caught up in bike shedding discussions over small details,
+> so lets start somewhere and attack the problem piece-wise.
+> 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-> During boot of large memory machines, a significant portion of boot
-> is spent initializing the struct page array.  The vast majority of
-> those pages are not referenced during boot.
+Did some "git <command>" create this patch?
+It is missing <quote>
+  - A marker line containing simply "---".
+</quote> just after the S-O-B line.
+
+
 > 
-> Change this over to only initializing the pages when they are
-> actually allocated.
-> 
-> Besides the advantage of boot speed, this allows us the chance to
-> use normal performance monitoring tools to determine where the bulk
-> of time is spent during page initialization.
-> 
-> ...
->
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1330,8 +1330,19 @@ static inline void __free_reserved_page(struct page *page)
->  	__free_page(page);
->  }
+> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+> index 6e97e73..6102da9 100644
+> --- a/Documentation/SubmittingPatches
+> +++ b/Documentation/SubmittingPatches
+> @@ -590,33 +590,32 @@ See more details on the proper patch format in the following
+>  references.
 >  
-> +extern void __reserve_bootmem_region(phys_addr_t start, phys_addr_t end);
-> +
-> +static inline void __reserve_bootmem_page(struct page *page)
-> +{
-> +	phys_addr_t start = page_to_pfn(page) << PAGE_SHIFT;
-> +	phys_addr_t end = start + PAGE_SIZE;
-> +
-> +	__reserve_bootmem_region(start, end);
-> +}
-
-It isn't obvious that this needed to be inlined?
-
->  static inline void free_reserved_page(struct page *page)
->  {
-> +	__reserve_bootmem_page(page);
->  	__free_reserved_page(page);
->  	adjust_managed_page_count(page, 1);
->  }
-> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-> index 6d53675..79e8eb7 100644
-> --- a/include/linux/page-flags.h
-> +++ b/include/linux/page-flags.h
-> @@ -83,6 +83,7 @@ enum pageflags {
->  	PG_owner_priv_1,	/* Owner use. If pagecache, fs may use*/
->  	PG_arch_1,
->  	PG_reserved,
-> +	PG_uninitialized2mib,	/* Is this the right spot? ntz - Yes - rmh */
-
-"mib" creeps me out too.  And it makes me think of SNMP, which I'd
-prefer not to think about.
-
-We've traditionally had fears of running out of page flags, but I've
-lost track of how close we are to that happening.  IIRC the answer
-depends on whether you believe there is such a thing as a 32-bit NUMA
-system.
-
-Can this be avoided anyway?  I suspect there's some idiotic combination
-of flags we could use to indicate the state.  PG_reserved|PG_lru or
-something.
-
-"2MB" sounds terribly arch-specific.  Shouldn't we make it more generic
-for when the hexagon64 port wants to use 4MB?
-
-That conversational code comment was already commented on, but it's
-still there?
-
-> 
-> ...
->
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -740,6 +740,54 @@ static void __init_single_page(struct page *page, unsigned long zone, int nid, i
->  #endif
->  }
 >  
-> +static void expand_page_initialization(struct page *basepage)
-> +{
-> +	unsigned long pfn = page_to_pfn(basepage);
-> +	unsigned long end_pfn = pfn + PTRS_PER_PMD;
-> +	unsigned long zone = page_zonenum(basepage);
-> +	int reserved = PageReserved(basepage);
-> +	int nid = page_to_nid(basepage);
+> -16) Sending "git pull" requests  (from Linus emails)
+> -
+> -Please write the git repo address and branch name alone on the same line
+> -so that I can't even by mistake pull from the wrong branch, and so
+> -that a triple-click just selects the whole thing.
+> -
+> -So the proper format is something along the lines of:
+> -
+> -	"Please pull from
+> -
+> -		git://jdelvare.pck.nerim.net/jdelvare-2.6 i2c-for-linus
+> -
+> -	 to get these changes:"
+> -
+> -so that I don't have to hunt-and-peck for the address and inevitably
+> -get it wrong (actually, I've only gotten it wrong a few times, and
+> -checking against the diffstat tells me when I get it wrong, but I'm
+> -just a lot more comfortable when I don't have to "look for" the right
+> -thing to pull, and double-check that I have the right branch-name).
+> -
+> -
+> -Please use "git diff -M --stat --summary" to generate the diffstat:
+> -the -M enables rename detection, and the summary enables a summary of
+> -new/deleted or renamed files.
+> -
+> -With rename detection, the statistics are rather different [...]
+> -because git will notice that a fair number of the changes are renames.
+> +16) Sending "git pull" requests
 > +
-> +	ClearPageUninitialized2Mib(basepage);
+> +For a long time now, the "git request-pull" command has existed,
+> +and gives a uniform pre-canned text with all the expected information
+> +within it.  Use this as the basis of your pull request e-mail, and
+> +prefix it with a sensible description of what the overall series
+> +of commits achieves.  Assume that this text will be used by the
+> +maintainer in their merge commit of your changes, and hence be part
+> +of the git history, just like the changelog of each commit.  Use
+> +the triple dash described above to separate the merge commit text
+> +in the top of your mail from the output from "git request-pull".
 > +
-> +	for( pfn++; pfn < end_pfn; pfn++ )
-> +		__init_single_page(pfn_to_page(pfn), zone, nid, reserved);
-> +}
+> +You are strongly discouraged against manually creating your own
+
+                    discouraged from
+(I would say, but no big deal.)
+
+> +pull request text.  Doing so just increases the odds of having
+> +a typo in the repo location, the branch name, or other missing
+> +information.  In addition to creating all the required text output,
+> +the command also validates that your commits are actually reachable
+> +at the specified location, ensuring you don't waste the maintainer's
+> +time with having to hunt around trying find the location that you
+> +really meant.
 > +
-> +void ensure_pages_are_initialized(unsigned long start_pfn,
-> +				  unsigned long end_pfn)
-
-I think this can be made static.  I hope so, as it's a somewhat
-odd-sounding identifier for a global.
-
-> +{
-> +	unsigned long aligned_start_pfn = start_pfn & ~(PTRS_PER_PMD - 1);
-> +	unsigned long aligned_end_pfn;
-> +	struct page *page;
+> +Your mail subject should be prefixed with "[GIT PULL]" and also
+> +mention the subsystem it is for, and if possible a very brief
+> +theme of what the changes achieve, e.g.
 > +
-> +	aligned_end_pfn = end_pfn & ~(PTRS_PER_PMD - 1);
-> +	aligned_end_pfn += PTRS_PER_PMD;
-> +	while (aligned_start_pfn < aligned_end_pfn) {
-> +		if (pfn_valid(aligned_start_pfn)) {
-> +			page = pfn_to_page(aligned_start_pfn);
-> +
-> +			if(PageUninitialized2Mib(page))
+> +   "[GIT PULL] x86: Remove uniprocessor support"
 
-checkpatch them, please.
+Lots of pull requests $Subject line also includes a kernel version number
+that the pull is for, e.g.,
 
-> +				expand_page_initialization(page);
-> +		}
-> +
-> +		aligned_start_pfn += PTRS_PER_PMD;
-> +	}
-> +}
+[GIT pull] x86 updates for 3.11
 
-Some nice code comments for the above two functions would be helpful.
+I find that helpful in searching.  IOW, I would prefer to see that instead
+of 12 emails with the same subject of
 
+[GIT pull] x86 updates
+
+for kernel versions 3.0 thru 3.11.
+
+>  
+>  -----------------------------------
+>  SECTION 2 - HINTS, TIPS, AND TRICKS
 > 
-> ...
->
-> +int __meminit pfn_range_init_avail(unsigned long pfn, unsigned long end_pfn,
-> +				   unsigned long size, int nid)
-> +{
-> +	unsigned long validate_end_pfn = pfn + size;
-> +
-> +	if (pfn & (size - 1))
-> +		return 1;
-> +
-> +	if (pfn + size >= end_pfn)
-> +		return 1;
-> +
-> +	while (pfn < validate_end_pfn)
-> +	{
-> +		if (!early_pfn_valid(pfn))
-> +			return 1;
-> +		if (!early_pfn_in_nid(pfn, nid))
-> +			return 1;
-> +		pfn++;
-> + 	}
-> +
-> +	return size;
-> +}
 
-Document it, please.  The return value semantics look odd, so don't
-forget to explain all that as well.
 
-> 
-> ...
->
-> @@ -6196,6 +6302,7 @@ static const struct trace_print_flags pageflag_names[] = {
->  	{1UL << PG_owner_priv_1,	"owner_priv_1"	},
->  	{1UL << PG_arch_1,		"arch_1"	},
->  	{1UL << PG_reserved,		"reserved"	},
-> +	{1UL << PG_uninitialized2mib,	"Uninit_2MiB"	},
-
-It would be better if the name which is visible in procfs matches the
-name in the kernel source code.
-
->  	{1UL << PG_private,		"private"	},
->  	{1UL << PG_private_2,		"private_2"	},
->  	{1UL << PG_writeback,		"writeback"	},
-
+-- 
+~Randy
