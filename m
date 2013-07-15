@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3GOIPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:15:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29885 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab3GOIPW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:15:22 -0400
-Date: Mon, 15 Jul 2013 11:15:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: smatch@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: smatch v1.59 released
-Message-ID: <20130715081513.GA16280@elgon.mountain>
+	id S1754332Ab3GOIYc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:24:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58823 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752845Ab3GOIYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 04:24:30 -0400
+Message-ID: <51E3B19E.80906@ti.com>
+Date: Mon, 15 Jul 2013 11:23:58 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Kevin Hilman <khilman@linaro.org>
+CC: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>, <tony@atomide.com>,
+        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 4/6] mfd: omap-usb-host: Put pins in IDLE state on suspend
+References: <1373473081-27181-1-git-send-email-rogerq@ti.com> <1373473380-27515-1-git-send-email-rogerq@ti.com> <51E2A603.1000805@linaro.org>
+In-Reply-To: <51E2A603.1000805@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch is a C static checker with a lot of kernel specific checks.
+On 07/14/2013 04:22 PM, Kevin Hilman wrote:
+> On 07/10/2013 05:23 PM, Roger Quadros wrote:
+>> In order to support wake up from suspend use the pinctrl
+>> framework to put the USB host pins in IDLE state during suspend.
+>>
+>> CC: Samuel Ortiz <sameo@linux.intel.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> 
+> [...]
+> 
+>> @@ -608,6 +618,14 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+>>  		return -ENOMEM;
+>>  	}
+>>  
+>> +	if (!dev->pins || !dev->pins->idle_state) {
+>> +		/* If IDLE pins are not available, we can't remote wakeup,
+>> +		 * so prevent idling in that case.
+>> +		 */
+> 
+> nit: multi-line comment style
+> 
+> Also, if there are no pins, aren't the pinctrl ops nops anyways?  IOW,
+> not sure the need
+> for this is clear, and it's not mentioned in the changelog.
 
-This release has several new tricks:
+The pinctrl ops are nops but the runtime suspend isn't. So in this case,
+we'll never be able to wake up the USB controller.
 
-1) Small functions are parsed inline now.  That makes it more accurate
-and now even without the database configured, you have at least some
-cross function analysis.
+I'll update the changelog to reflect this.
 
-2) The way smatch handles math was completely rewritten and should be
-more accurate.
-
-3) Comparisons between variables are recorded.  So even if you don't
-know the return value, maybe you know that it is less than or equal to
-parameter 2.  (This requires the database to be set up).
-
-Btw, having the database set up is super useful for understanding code.
-Say you want to know how lifebook_limit_serio3() is called you can type:
-`smbdb.py lifebook_limit_serio3` and it's simple enough to see that
-(struct dmi_system_id)->callback() is called from dmi_check_system().
-
-The command to set up the database is:
-~/path/to/smatch/smatch_scripts/build_kernel_data.sh
-
-To run smatch on the kernel source:
-~/path/to/smatch/smatch_scripts/test_kernel.sh
-
-To test a specific file:
-~/path/to/smatch/smatch_scripts/kchecker drivers/file.c
-
-regards,
-dan carpenter
-
+cheers,
+-roger
