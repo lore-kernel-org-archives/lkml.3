@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab3GOLjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 07:39:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49830 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab3GOLjM (ORCPT
+	id S1755920Ab3GOLlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 07:41:05 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:45816
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755637Ab3GOLlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 07:39:12 -0400
-Date: Mon, 15 Jul 2013 12:39:09 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20130715113909.GE11538@sirena.org.uk>
+	Mon, 15 Jul 2013 07:41:03 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zzd799h4015I14ffIzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275bhz2fh95h668h839hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h906i1155h192ch)
+From: Srikanth Thokala <srikanth.thokala@xilinx.com>
+To: <arnd@arndb.de>, <gregkh@linuxfoundation.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <grant.likely@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH RFC] trafgen: xilinx: 
+Date: Mon, 15 Jul 2013 17:09:47 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IU5/I01NYhRvwH70"
-Content-Disposition: inline
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regmap updates for v3.11
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
+Message-ID: <1af83c15-509f-4f64-b1ed-36e8b84b7777@CO9EHSMHS011.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
---IU5/I01NYhRvwH70
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is the driver for Xilinx AXI Traffic Generator IP. The
+AXI Traffic Generator IP is a core that stresses the AXI4 
+interconnect and other AXI4 peripherals in the system.
+It generates a wide variety of AXI4 transactions based on
+the core programming.
 
-The following changes since commit 8bb495e3f02401ee6f76d1b1d77f3ac9f079e376:
+For more details of this IP, please refer:
+http://www.xilinx.com/support/documentation/ip_documentation/
+axi_traffic_gen/v1_0/pg125-axi-traffic-gen.pdf
 
-  Linux 3.10 (2013-06-30 15:13:29 -0700)
+The architecture of the core is broadly separated into a master
+and slave block, each of which contains the write block and
+read block. Other support functions are provided by the
+control registers and three internal RAMs - Master RAM (8KB), 
+Command RAM(8KB), Parameter RAM(2KB). The initialisation sequence
+includes programming Command RAM with commands, data into 
+Master RAM (optional Parameter RAM programming) and then 
+enable master logic using control register interface.
+This sequence generates traffic to cores connected in the
+h/w design. It can be interconnect or cores attached via the
+interconnect.  The commands programmed selects the specific
+core to stress.
 
-are available in the git repository at:
+The driver for this IP is designed to be a module with 
+sysfs interface.  All the control registers and internal
+RAMs can be accessed through sysfs interface. Internal
+RAMs are designed to be sysfs files with BIN attributes.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.11-rc1
+Is sysfs the proper interface for this driver? If you 
+guys feel there is an other framework where my driver
+perfectly fits into, please suggest and provide your
+inputs.
 
-for you to fetch changes up to f2e055e7c9c6084bfbaa68701e52562acf96419e:
+Thanks,
+Srikanth.
 
-  regmap: cache: bail in regmap_async_complete() for bus-less maps (2013-07-04 13:54:44 +0100)
+Srikanth Thokala (1):
+  trafgen: xilinx: add axi traffic generator driver
 
-----------------------------------------------------------------
-regmap: Fix crash for async operation on busless maps
+ .../devicetree/bindings/misc/xilinx-axitrafgen.txt |   21 +
+ drivers/misc/Kconfig                               |   13 +
+ drivers/misc/Makefile                              |    1 +
+ drivers/misc/xilinx_trafgen.c                      | 1160 ++++++++++++++++++++
+ 4 files changed, 1195 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/misc/xilinx-axitrafgen.txt
+ create mode 100644 drivers/misc/xilinx_trafgen.c
 
-This fixes a crash if something tries to do an asynchronous operation on
-busless maps which was introduced during the merge window.
+-- 
+1.7.4
 
-----------------------------------------------------------------
-Daniel Mack (1):
-      regmap: cache: bail in regmap_async_complete() for bus-less maps
 
- drivers/base/regmap/regmap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---IU5/I01NYhRvwH70
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR499aAAoJELSic+t+oim9Fh4P/RsNA5EH+HO/WMrt2hIY38Vj
-x+Cifzi9TG1j1xIzNo8yx+0PJsVpNjt12BY+lNxOsaxc4tkT8+8VAbU5hWWhBp4L
-HIbiRbr9danwgSiSOzN0qdTQCOSNShkTgqHOLI/9Z8wT7Q9pO2GDqiDQxgPuZj1X
-NrGSQpaofGtGgqiP2IKW1OnEKOJzuz6TF4pZ77Z5Sm5pV+SJsQRzu3+Vnir9gr+/
-q9KQsHvhEbzU1g+mEEyLy9nGp4TEtsIAOUZCDscXJefJnYOi6ITcGFVlzd9+nyBz
-zQaUkzDX0L3DQ4fr/uaKBdGhhqZ6uPJykNtEeuPLthpp3HjShqe+ZeJs6LiwAYjy
-qNXhKn3RT/m5hIW8vUdVYl2pYoWIE32XaR/vC0OdnzG1LGErP2Q3vJPV2X0oLk0V
-pqSlYq8amDxhVVd9L/hbYCrV0qxip8o+EqTMzgMOBq0Czgar/SN3ysU+0ts4VWKr
-NatSrTqsNSM1u0uk9IIAUCoSFoJ4UeEou2qg0yWNTNFrHaJYt08BKUo/R2dS0eUK
-gZLyNFaszvHqouOyOZBQnm6Zq4PbKqvzocGKUacbjPxih7qtNHAVAppd8uGnICFD
-CR0wG7VsozU90BKIa76TAnmR/3UCkUXpXpxtWZq5JljtKgR5XYVXsXmTdxkVEndL
-npLGEGfHytH0g4LQW4Hl
-=Vho1
------END PGP SIGNATURE-----
-
---IU5/I01NYhRvwH70--
