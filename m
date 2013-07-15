@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3GONPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:15:36 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:39570 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631Ab3GONKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:10:50 -0400
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-v2 02/17] staging/lustre: fix Lustre code link order
-Date: Mon, 15 Jul 2013 21:08:00 +0800
-Message-Id: <1373893695-4094-3-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
-References: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
+	id S1756580Ab3GONQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:16:38 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.105]:55705 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756209Ab3GONQg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 09:16:36 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-14.tower-194.messagelabs.com!1373894191!10461597!3
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.9; banners=-,-,-
+X-VirusChecked: Checked
+From: Steve Twiss <stwiss.opensource@diasemi.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC V2] DA9210 driver files
+Thread-Topic: [RFC V2] DA9210 driver files
+Thread-Index: AQHOd2gCZZX+PbJuDUi47mb2PgoYbZllubJA
+Date: Mon, 15 Jul 2013 12:37:08 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB71D6FB49A@SW-EX-MBX02.diasemi.com>
+References: <201307011447.r61Els8t019635@swsrvapps-01.diasemi.com>
+ <20130702210617.GA27646@sirena.org.uk>
+In-Reply-To: <20130702210617.GA27646@sirena.org.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change Makefiles to keep link order in match with Lustre module
-dependency, so that when Lustre is built in kernel, we'll have
-the same dependency. Otherwise we'll crash kernel if Lustre is
-builtin due to missing internal dependency.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
----
- drivers/staging/lustre/Makefile        |    2 +-
- drivers/staging/lustre/lnet/Makefile   |    2 +-
- drivers/staging/lustre/lustre/Makefile |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+>On 02 July 2013 22:06, Mark Brown wrote:
+>>On Mon, Jul 01, 2013 at 03:10:28PM +0100, Steve Twiss wrote:
+>
+>> The use of regmap_range is not being considered because I am not
+>> intending to use PAGE_CON register page selection in any of the driver development.
+>
+>Makes sense to map things in for diagnostics...
 
-diff --git a/drivers/staging/lustre/Makefile b/drivers/staging/lustre/Makefile
-index 2616289..fb0e0fa 100644
---- a/drivers/staging/lustre/Makefile
-+++ b/drivers/staging/lustre/Makefile
-@@ -1,4 +1,4 @@
- subdir-ccflags-y := -I$(src)/include/
- 
--obj-$(CONFIG_LUSTRE_FS)		+= lustre/
- obj-$(CONFIG_LNET)		+= lnet/
-+obj-$(CONFIG_LUSTRE_FS)		+= lustre/
-diff --git a/drivers/staging/lustre/lnet/Makefile b/drivers/staging/lustre/lnet/Makefile
-index 374212b..f6f03e3 100644
---- a/drivers/staging/lustre/lnet/Makefile
-+++ b/drivers/staging/lustre/lnet/Makefile
-@@ -1 +1 @@
--obj-$(CONFIG_LNET) := klnds/ lnet/ selftest/
-+obj-$(CONFIG_LNET) += lnet/ klnds/ selftest/
-diff --git a/drivers/staging/lustre/lustre/Makefile b/drivers/staging/lustre/lustre/Makefile
-index 3fb94fc..d1eb0bd 100644
---- a/drivers/staging/lustre/lustre/Makefile
-+++ b/drivers/staging/lustre/lustre/Makefile
-@@ -1,2 +1,2 @@
--obj-$(CONFIG_LUSTRE_FS) := fid/ lvfs/ obdclass/ ptlrpc/ obdecho/ mgc/ lov/ \
--			   osc/ mdc/ lmv/ llite/ fld/ libcfs/
-+obj-$(CONFIG_LUSTRE_FS) += libcfs/ lvfs/ obdclass/ ptlrpc/ fld/ osc/ mgc/ \
-+			   fid/ lov/ mdc/ lmv/ llite/ obdecho/
--- 
-1.7.9.5
+Hi Mark,
+
+I understand you will need regmap_range added so that it follows your
+standards and so I will definitely add that into the functionality.
+
+There will be further updates to follow this first release, so I am intending
+to add regmap_range during one of those next releases. Because the paged
+registers are explicitly removed in this driver, I am hoping that this version
+will be sufficient for the moment.
+
+I will resubmit the updated version with all my latest changes and catch
+everyone's replies then.
+
+regards,
+Steve
 
