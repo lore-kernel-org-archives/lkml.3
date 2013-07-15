@@ -1,228 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab3GONta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:49:30 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42966 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab3GONt3 (ORCPT
+	id S1756555Ab3GONuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:50:19 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:52387 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756009Ab3GONuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:49:29 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: <pjt@google.com>, <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH v2] sched: move h_load calculation to task_h_load
-Date: Mon, 15 Jul 2013 17:49:19 +0400
-Message-ID: <1373896159-1278-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130715105950.GA23818@dyad.programming.kicks-ass.net>
-References: <20130715105950.GA23818@dyad.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.24.234]
+	Mon, 15 Jul 2013 09:50:17 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] treewide: Fix typo in printk
+Date: Mon, 15 Jul 2013 22:50:10 +0900
+Message-Id: <1373896210-21316-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.3.2.804.g0da7a53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bad thing about update_h_load(), which computes hierarchical load
-factor for task groups, is that it is called for each task group in the
-system before every load balancer run, and since rebalance can be
-triggered very often, this function can eat really a lot of cpu time if
-there are many cpu cgroups in the system.
+Correct spelling typo in printk
 
-Although the situation was improved significantly by commit a35b646
-('sched, cgroup: Reduce rq->lock hold times for large cgroup
-hierarchies'), the problem still can arise under some kinds of loads,
-e.g. when cpus are switching from idle to busy and back very frequently.
-
-For instance, when I start 1000 of processes that wake up every
-millisecond on my 8 cpus host, 'top' and 'perf top' show:
-
-Cpu(s): 17.8%us, 24.3%sy,  0.0%ni, 57.9%id,  0.0%wa,  0.0%hi,  0.0%si
-Events: 243K cycles
-  7.57%  [kernel]               [k] __schedule
-  7.08%  [kernel]               [k] timerqueue_add
-  6.13%  libc-2.12.so           [.] usleep
-
-Then if I create 10000 *idle* cpu cgroups (no processes in them), cpu
-usage increases significantly although the 'wakers' are still executing
-in the root cpu cgroup:
-
-Cpu(s): 19.1%us, 48.7%sy,  0.0%ni, 31.6%id,  0.0%wa,  0.0%hi,  0.7%si
-Events: 230K cycles
- 24.56%  [kernel]            [k] tg_load_down
-  5.76%  [kernel]            [k] __schedule
-
-This happens because this particular kind of load triggers 'new idle'
-rebalance very frequently, which requires calling update_h_load(),
-which, in turn, calls tg_load_down() for every *idle* cpu cgroup even
-though it is absolutely useless, because idle cpu cgroups have no tasks
-to pull.
-
-This patch tries to improve the situation by making h_load calculation
-proceed only when h_load is really necessary. To achieve this, it
-substitutes update_h_load() with update_cfs_rq_h_load(), which computes
-h_load only for a given cfs_rq and all its ascendants, and makes the
-load balancer call this function whenever it considers if a task should
-be pulled, i.e. it moves h_load calculations directly to task_h_load().
-For h_load of the same cfs_rq not to be updated multiple times (in case
-several tasks in the same cgroup are considered during the same balance
-run), the patch keeps the time of the last h_load update for each cfs_rq
-and breaks calculation when it finds h_load to be uptodate.
-
-The benefit of it is that h_load is computed only for those cfs_rq's,
-which really need it, in particular all idle task groups are skipped.
-Although this, in fact, moves h_load calculation under rq lock, it
-should not affect latency much, because the amount of work done under rq
-lock while trying to pull tasks is limited by sched_nr_migrate.
-
-After the patch applied with the setup described above (1000 wakers in
-the root cgroup and 10000 idle cgroups), I get:
-
-Cpu(s): 16.9%us, 24.8%sy,  0.0%ni, 58.4%id,  0.0%wa,  0.0%hi,  0.0%si
-Events: 242K cycles
-  7.57%  [kernel]                  [k] __schedule
-  6.70%  [kernel]                  [k] timerqueue_add
-  5.93%  libc-2.12.so              [.] usleep
-
-Changes in v2:
- * use jiffies instead of rq->clock for last_h_load_update.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- kernel/sched/fair.c  |   58 +++++++++++++++++++++++---------------------------
- kernel/sched/sched.h |    7 +++---
- 2 files changed, 30 insertions(+), 35 deletions(-)
+ drivers/crypto/ux500/hash/hash_core.c               | 2 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c | 4 ++--
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c      | 2 +-
+ drivers/net/wireless/cw1200/wsm.c                   | 2 +-
+ drivers/net/wireless/iwlwifi/mvm/time-event.c       | 2 +-
+ drivers/net/wireless/rtlwifi/rtl8188ee/fw.c         | 4 ++--
+ drivers/net/wireless/rtlwifi/rtl8723ae/fw.c         | 4 ++--
+ drivers/power/88pm860x_charger.c                    | 4 ++--
+ drivers/power/pm2301_charger.c                      | 2 +-
+ drivers/scsi/lpfc/lpfc_attr.c                       | 8 ++++----
+ drivers/scsi/qla2xxx/qla_mr.c                       | 2 +-
+ 11 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f77f9c5..12d0137 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4171,47 +4171,48 @@ static void update_blocked_averages(int cpu)
- }
+diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+index 496ae6a..33693d9 100644
+--- a/drivers/crypto/ux500/hash/hash_core.c
++++ b/drivers/crypto/ux500/hash/hash_core.c
+@@ -282,7 +282,7 @@ static int get_empty_message_digest(
+ 			}
+ 		} else {
+ 			dev_dbg(device_data->dev, "[%s] Continue hash "
+-					"calculation, since hmac key avalable",
++					"calculation, since hmac key available",
+ 					__func__);
+ 		}
+ 	}
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
+index 0913c62..3c51b77 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c
+@@ -1637,7 +1637,7 @@ int qlcnic_83xx_nic_set_promisc(struct qlcnic_adapter *adapter, u32 mode)
+ 	err = qlcnic_issue_cmd(adapter, &cmd);
+ 	if (err)
+ 		dev_info(&adapter->pdev->dev,
+-			 "Promiscous mode config failed\n");
++			 "Promiscuous mode config failed\n");
  
- /*
-- * Compute the cpu's hierarchical load factor for each task group.
-+ * Compute the hierarchical load factor for cfs_rq and all its ascendants.
-  * This needs to be done in a top-down fashion because the load of a child
-  * group is a fraction of its parents load.
-  */
--static int tg_load_down(struct task_group *tg, void *data)
-+static void update_cfs_rq_h_load(struct cfs_rq *cfs_rq)
- {
--	unsigned long load;
--	long cpu = (long)data;
--
--	if (!tg->parent) {
--		load = cpu_rq(cpu)->avg.load_avg_contrib;
--	} else {
--		load = tg->parent->cfs_rq[cpu]->h_load;
--		load = div64_ul(load * tg->se[cpu]->avg.load_avg_contrib,
--				tg->parent->cfs_rq[cpu]->runnable_load_avg + 1);
--	}
--
--	tg->cfs_rq[cpu]->h_load = load;
--
--	return 0;
--}
--
--static void update_h_load(long cpu)
--{
--	struct rq *rq = cpu_rq(cpu);
-+	struct rq *rq = rq_of(cfs_rq);
-+	struct sched_entity *se = cfs_rq->tg->se[cpu_of(rq)];
- 	unsigned long now = jiffies;
-+	unsigned long load;
+ 	qlcnic_free_mbx_args(&cmd);
+ 	return err;
+@@ -3082,7 +3082,7 @@ int qlcnic_83xx_set_settings(struct qlcnic_adapter *adapter,
+ 	status = qlcnic_83xx_set_port_config(adapter);
+ 	if (status) {
+ 		dev_info(&adapter->pdev->dev,
+-			 "Faild to Set Link Speed and autoneg.\n");
++			 "Failed to Set Link Speed and autoneg.\n");
+ 		adapter->ahw->port_config = config;
+ 	}
+ 	return status;
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+index d3f8797..2fe15c5 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+@@ -1652,7 +1652,7 @@ static int qlcnic_83xx_process_rcv_ring(struct qlcnic_host_sds_ring *sds_ring,
+ 			break;
+ 		default:
+ 			dev_info(&adapter->pdev->dev,
+-				 "Unkonwn opcode: 0x%x\n", opcode);
++				 "Unknown opcode: 0x%x\n", opcode);
+ 			goto skip;
+ 		}
  
--	if (rq->h_load_throttle == now)
-+	if (cfs_rq->last_h_load_update == now)
- 		return;
+diff --git a/drivers/net/wireless/cw1200/wsm.c b/drivers/net/wireless/cw1200/wsm.c
+index cbb74d7..9e0ca30 100644
+--- a/drivers/net/wireless/cw1200/wsm.c
++++ b/drivers/net/wireless/cw1200/wsm.c
+@@ -1199,7 +1199,7 @@ bool wsm_flush_tx(struct cw1200_common *priv)
  
--	rq->h_load_throttle = now;
-+	cfs_rq->h_load_next = NULL;
-+	for_each_sched_entity(se) {
-+		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_load_next = se;
-+		if (cfs_rq->last_h_load_update == now)
-+			break;
-+	}
+ 	if (priv->bh_error) {
+ 		/* In case of failure do not wait for magic. */
+-		pr_err("[WSM] Fatal error occured, will not flush TX.\n");
++		pr_err("[WSM] Fatal error occurred, will not flush TX.\n");
+ 		return false;
+ 	} else {
+ 		/* Get a timestamp of "oldest" frame */
+diff --git a/drivers/net/wireless/iwlwifi/mvm/time-event.c b/drivers/net/wireless/iwlwifi/mvm/time-event.c
+index ad9bbca..39b3ffb 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/time-event.c
++++ b/drivers/net/wireless/iwlwifi/mvm/time-event.c
+@@ -184,7 +184,7 @@ static void iwl_mvm_te_handle_notif(struct iwl_mvm *mvm,
+ 		    (!te_data->vif->bss_conf.assoc ||
+ 		     !te_data->vif->bss_conf.dtim_period)) {
+ 			IWL_ERR(mvm,
+-				"No assocation and the time event is over already...\n");
++				"No association and the time event is over already...\n");
+ 			ieee80211_connection_loss(te_data->vif);
+ 		}
  
--	rcu_read_lock();
--	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
--	rcu_read_unlock();
-+	if (!se) {
-+		cfs_rq->h_load = rq->avg.load_avg_contrib;
-+		cfs_rq->last_h_load_update = now;
-+	}
-+
-+	while ((se = cfs_rq->h_load_next) != NULL) {
-+		load = cfs_rq->h_load;
-+		load = div64_ul(load * se->avg.load_avg_contrib,
-+				cfs_rq->runnable_load_avg + 1);
-+		cfs_rq = group_cfs_rq(se);
-+		cfs_rq->h_load = load;
-+		cfs_rq->last_h_load_update = now;
-+	}
- }
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
+index 57e4cc5..557bc5b 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
+@@ -341,7 +341,7 @@ static void _rtl88e_fill_h2c_command(struct ieee80211_hw *hw,
+ 			wait_h2c_limit--;
+ 			if (wait_h2c_limit == 0) {
+ 				RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
+-					 "Wating too long for FW read "
++					 "Waiting too long for FW read "
+ 					 "clear HMEBox(%d)!\n", boxnum);
+ 				break;
+ 			}
+@@ -351,7 +351,7 @@ static void _rtl88e_fill_h2c_command(struct ieee80211_hw *hw,
+ 			isfw_read = _rtl88e_check_fw_read_last_h2c(hw, boxnum);
+ 			u1b_tmp = rtl_read_byte(rtlpriv, 0x130);
+ 			RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
+-				 "Wating for FW read clear HMEBox(%d)!!! "
++				 "Waiting for FW read clear HMEBox(%d)!!! "
+ 				 "0x130 = %2x\n", boxnum, u1b_tmp);
+ 		}
  
- static unsigned long task_h_load(struct task_struct *p)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c
+index dedfa1e..ba1502b 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/fw.c
+@@ -330,7 +330,7 @@ static void _rtl8723ae_fill_h2c_command(struct ieee80211_hw *hw,
+ 			wait_h2c_limmit--;
+ 			if (wait_h2c_limmit == 0) {
+ 				RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
+-					 "Wating too long for FW read clear HMEBox(%d)!\n",
++					 "Waiting too long for FW read clear HMEBox(%d)!\n",
+ 					 boxnum);
+ 				break;
+ 			}
+@@ -340,7 +340,7 @@ static void _rtl8723ae_fill_h2c_command(struct ieee80211_hw *hw,
+ 			isfw_rd = rtl8723ae_check_fw_read_last_h2c(hw, boxnum);
+ 			u1tmp = rtl_read_byte(rtlpriv, 0x1BF);
+ 			RT_TRACE(rtlpriv, COMP_CMD, DBG_LOUD,
+-				 "Wating for FW read clear HMEBox(%d)!!! "
++				 "Waiting for FW read clear HMEBox(%d)!!! "
+ 				 "0x1BF = %2x\n", boxnum, u1tmp);
+ 		}
  
-+	update_cfs_rq_h_load(cfs_rq);
- 	return div64_ul(p->se.avg.load_avg_contrib * cfs_rq->h_load,
- 			cfs_rq->runnable_load_avg + 1);
- }
-@@ -4220,10 +4221,6 @@ static inline void update_blocked_averages(int cpu)
- {
- }
+diff --git a/drivers/power/88pm860x_charger.c b/drivers/power/88pm860x_charger.c
+index ffff66b..2c843ca 100644
+--- a/drivers/power/88pm860x_charger.c
++++ b/drivers/power/88pm860x_charger.c
+@@ -554,7 +554,7 @@ static irqreturn_t pm860x_vchg_handler(int irq, void *data)
+ 					OVTEMP_AUTORECOVER,
+ 					OVTEMP_AUTORECOVER);
+ 			dev_dbg(info->dev,
+-				"%s, pm8606 over-temp occure\n", __func__);
++				"%s, pm8606 over-temp occur\n", __func__);
+ 		}
+ 	}
  
--static inline void update_h_load(long cpu)
--{
--}
--
- static unsigned long task_h_load(struct task_struct *p)
- {
- 	return p->se.avg.load_avg_contrib;
-@@ -5108,7 +5105,6 @@ redo:
- 		env.src_rq    = busiest;
- 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+@@ -562,7 +562,7 @@ static irqreturn_t pm860x_vchg_handler(int irq, void *data)
+ 		set_vchg_threshold(info, VCHG_OVP_LOW, 0);
+ 		info->allowed = 0;
+ 		dev_dbg(info->dev,
+-			"%s,pm8607 over-vchg occure,vchg = %dmv\n",
++			"%s,pm8607 over-vchg occur,vchg = %dmv\n",
+ 			__func__, vchg);
+ 	} else if (vchg < VCHG_OVP_LOW) {
+ 		set_vchg_threshold(info, VCHG_NORMAL_LOW,
+diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
+index 1c0bfcb..ffa10ed 100644
+--- a/drivers/power/pm2301_charger.c
++++ b/drivers/power/pm2301_charger.c
+@@ -386,7 +386,7 @@ static int pm2_int_reg2(void *pm2_data, int val)
+ 	if (val & (PM2XXX_INT3_ITCHPRECHARGEWD |
+ 				PM2XXX_INT3_ITCHCCWD | PM2XXX_INT3_ITCHCVWD)) {
+ 		dev_dbg(pm2->dev,
+-			"Watchdog occured for precharge, CC and CV charge\n");
++			"Watchdog occurred for precharge, CC and CV charge\n");
+ 	}
  
--		update_h_load(env.src_cpu);
- more_balance:
- 		local_irq_save(flags);
- 		double_rq_lock(env.dst_rq, busiest);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ef0a7b2..5e129ef 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -285,7 +285,6 @@ struct cfs_rq {
- 	/* Required to track per-cpu representation of a task_group */
- 	u32 tg_runnable_contrib;
- 	unsigned long tg_load_contrib;
--#endif /* CONFIG_FAIR_GROUP_SCHED */
+ 	return ret;
+diff --git a/drivers/scsi/lpfc/lpfc_attr.c b/drivers/scsi/lpfc/lpfc_attr.c
+index 5cb08ae..f4360c5 100644
+--- a/drivers/scsi/lpfc/lpfc_attr.c
++++ b/drivers/scsi/lpfc/lpfc_attr.c
+@@ -818,7 +818,7 @@ lpfc_issue_reset(struct device *dev, struct device_attribute *attr,
+  * the readyness after performing a firmware reset.
+  *
+  * Returns:
+- * zero for success, -EPERM when port does not have privilage to perform the
++ * zero for success, -EPERM when port does not have privilege to perform the
+  * reset, -EIO when port timeout from recovering from the reset.
+  *
+  * Note:
+@@ -835,7 +835,7 @@ lpfc_sli4_pdev_status_reg_wait(struct lpfc_hba *phba)
+ 	lpfc_readl(phba->sli4_hba.u.if_type2.STATUSregaddr,
+ 		   &portstat_reg.word0);
  
- 	/*
- 	 *   h_load = weight * f(tg)
-@@ -294,6 +293,9 @@ struct cfs_rq {
- 	 * this group.
- 	 */
- 	unsigned long h_load;
-+	u64 last_h_load_update;
-+	struct sched_entity *h_load_next;
-+#endif /* CONFIG_FAIR_GROUP_SCHED */
- #endif /* CONFIG_SMP */
+-	/* verify if privilaged for the request operation */
++	/* verify if privileged for the request operation */
+ 	if (!bf_get(lpfc_sliport_status_rn, &portstat_reg) &&
+ 	    !bf_get(lpfc_sliport_status_err, &portstat_reg))
+ 		return -EPERM;
+@@ -927,9 +927,9 @@ lpfc_sli4_pdev_reg_request(struct lpfc_hba *phba, uint32_t opcode)
+ 	rc = lpfc_sli4_pdev_status_reg_wait(phba);
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
-@@ -429,9 +431,6 @@ struct rq {
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	/* list of leaf cfs_rq on this cpu: */
- 	struct list_head leaf_cfs_rq_list;
--#ifdef CONFIG_SMP
--	unsigned long h_load_throttle;
--#endif /* CONFIG_SMP */
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
- #ifdef CONFIG_RT_GROUP_SCHED
+ 	if (rc == -EPERM) {
+-		/* no privilage for reset */
++		/* no privilege for reset */
+ 		lpfc_printf_log(phba, KERN_ERR, LOG_SLI,
+-				"3150 No privilage to perform the requested "
++				"3150 No privilege to perform the requested "
+ 				"access: x%x\n", reg_val);
+ 	} else if (rc == -EIO) {
+ 		/* reset failed, there is nothing more we can do */
+diff --git a/drivers/scsi/qla2xxx/qla_mr.c b/drivers/scsi/qla2xxx/qla_mr.c
+index d799379..ab4be10 100644
+--- a/drivers/scsi/qla2xxx/qla_mr.c
++++ b/drivers/scsi/qla2xxx/qla_mr.c
+@@ -1779,7 +1779,7 @@ qlafx00_fx_disc(scsi_qla_host_t *vha, fc_port_t *fcport, uint16_t fx_type)
+ 		p_sysid = utsname();
+ 		if (!p_sysid) {
+ 			ql_log(ql_log_warn, vha, 0x303c,
+-			    "Not able to get the system informtion\n");
++			    "Not able to get the system information\n");
+ 			goto done_free_sp;
+ 		}
+ 		break;
 -- 
-1.7.10.4
+1.8.3.2.804.g0da7a53
 
