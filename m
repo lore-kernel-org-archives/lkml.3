@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab3GOHH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 03:07:59 -0400
+	id S1754267Ab3GOHI6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 03:08:58 -0400
 Received: from rtits2.realtek.com ([60.250.210.242]:49471 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159Ab3GOHH4 (ORCPT
+	with ESMTP id S1754160Ab3GOHH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 03:07:56 -0400
+	Mon, 15 Jul 2013 03:07:58 -0400
 X-Greylist: delayed 671 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Jul 2013 03:07:51 EDT
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6F6uLJw017591, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6F6uP1I017605, This message is accepted by code: ctloc85258
 From: <wei_wang@realsil.com.cn>
 To: <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
         <adam.lee@canonical.com>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH 3/5] mfd:rtsx: Move some actions from rtsx_pci_init_hw to individual extra_init_hw
-Date: Mon, 15 Jul 2013 14:56:12 +0800
-Message-ID: <0be94b5e6d39d710335c5bbe79f2947b5255edd8.1373871137.git.wei_wang@realsil.com.cn>
+Subject: [PATCH 5/5] mfd:rtsx: Configure to enter a deeper power-saving mode in S3
+Date: Mon, 15 Jul 2013 14:56:14 +0800
+Message-ID: <be9c5c69b407039de185acaaf58cdc4011c5a71a.1373871138.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1373871135.git.wei_wang@realsil.com.cn>
 References: <cover.1373871135.git.wei_wang@realsil.com.cn>
@@ -29,96 +29,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-These actions are individual for each reader model, so should be put in
-extra_init_hw instead of rtsx_pci_init_hw.
+Set a bit to enable rts5227 and rts5249 to enter a deeper internal
+power-saving mode in S3, and recover it after resuming.
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- drivers/mfd/rts5209.c  |    4 ++++
- drivers/mfd/rts5227.c  |    2 ++
- drivers/mfd/rts5229.c  |    4 ++++
- drivers/mfd/rts5249.c  |    2 ++
- drivers/mfd/rtsx_pcr.c |    4 ----
- 5 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/mfd/rtl8411.c        |    2 +-
+ drivers/mfd/rts5209.c        |    2 +-
+ drivers/mfd/rts5227.c        |    6 +++++-
+ drivers/mfd/rts5229.c        |    2 +-
+ drivers/mfd/rts5249.c        |    6 +++++-
+ drivers/mfd/rtsx_pcr.c       |    2 +-
+ include/linux/mfd/rtsx_pci.h |    5 ++---
+ 7 files changed, 16 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+index dd3981a..7af3f63 100644
+--- a/drivers/mfd/rtl8411.c
++++ b/drivers/mfd/rtl8411.c
+@@ -82,7 +82,7 @@ static void rtl8411b_init_settings(struct rtsx_pcr *pcr)
+ 	}
+ }
+ 
+-static void rtl8411_force_power_down(struct rtsx_pcr *pcr)
++static void rtl8411_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
+ {
+ 	rtsx_pci_write_register(pcr, FPDCTL, 0x07, 0x07);
+ }
 diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
-index 49360d1..eed8b18 100644
+index eed8b18..a07c6ff 100644
 --- a/drivers/mfd/rts5209.c
 +++ b/drivers/mfd/rts5209.c
-@@ -67,6 +67,10 @@ static int rts5209_extra_init_hw(struct rtsx_pcr *pcr)
+@@ -56,7 +56,7 @@ static void rts5209_init_settings(struct rtsx_pcr *pcr)
+ 	}
+ }
  
- 	/* Turn off LED */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO, 0xFF, 0x03);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
-+	/* Force CLKREQ# PIN to drive 0 to request clock */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO_DIR, 0xFF, 0x03);
- 	/* Configure driving */
+-static void rts5209_force_power_down(struct rtsx_pcr *pcr)
++static void rts5209_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
+ {
+ 	rtsx_pci_write_register(pcr, FPDCTL, 0x07, 0x07);
+ }
 diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-index 4fe9ed1..fa4bf80 100644
+index fa4bf80..e6ef305 100644
 --- a/drivers/mfd/rts5227.c
 +++ b/drivers/mfd/rts5227.c
-@@ -98,6 +98,8 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+@@ -80,13 +80,16 @@ static void rts5227_init_settings(struct rtsx_pcr *pcr)
+ 	}
+ }
  
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
- 	/* Switch LDO3318 source from DV33 to card_3v3 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+-static void rts5227_force_power_down(struct rtsx_pcr *pcr)
++static void rts5227_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
+ {
+ 	/* Set relink_time to 0 */
+ 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 1, 0xFF, 0);
+ 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 2, 0xFF, 0);
+ 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 3, 0x01, 0);
+ 
++	if (pm_state == HOST_ENTER_S3)
++		rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x10);
++
+ 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
+ }
+ 
+@@ -120,6 +123,7 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+ 	else
+ 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+ 				AUTOLOAD_CFG_BASE + 3, 0xB8, 0x88);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
+ 
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
 diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
-index da9fcc7..549a1bd 100644
+index 549a1bd..b2bdc91 100644
 --- a/drivers/mfd/rts5229.c
 +++ b/drivers/mfd/rts5229.c
-@@ -64,6 +64,10 @@ static int rts5229_extra_init_hw(struct rtsx_pcr *pcr)
+@@ -53,7 +53,7 @@ static void rts5229_init_settings(struct rtsx_pcr *pcr)
+ 	}
+ }
  
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
-+	/* Force CLKREQ# PIN to drive 0 to request clock */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
- 	/* Switch LDO3318 source from DV33 to card_3v3 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+-static void rts5229_force_power_down(struct rtsx_pcr *pcr)
++static void rts5229_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
+ {
+ 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
+ }
 diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 24683d1..3bf9296 100644
+index 3bf9296..1db034c 100644
 --- a/drivers/mfd/rts5249.c
 +++ b/drivers/mfd/rts5249.c
-@@ -103,6 +103,8 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+@@ -87,13 +87,16 @@ static void rts5249_init_settings(struct rtsx_pcr *pcr)
+ 	}
+ }
  
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
- 	/* Switch LDO3318 source from DV33 to card_3v3 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+-static void rts5249_force_power_down(struct rtsx_pcr *pcr)
++static void rts5249_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
+ {
+ 	/* Set relink_time to 0 */
+ 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 1, 0xFF, 0);
+ 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 2, 0xFF, 0);
+ 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 3, 0x01, 0);
+ 
++	if (pm_state == HOST_ENTER_S3)
++		rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x10);
++
+ 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
+ }
+ 
+@@ -118,6 +121,7 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+ 	else
+ 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+ 				AUTOLOAD_CFG_BASE + 3, 0xB0, 0x80);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
+ 
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
 diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index f97d5a7..0ae5996 100644
+index 0ae5996..dcbad1a 100644
 --- a/drivers/mfd/rtsx_pcr.c
 +++ b/drivers/mfd/rtsx_pcr.c
-@@ -971,8 +971,6 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, HOST_SLEEP_STATE, 0x03, 0x00);
- 	/* Disable card clock */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_CLK_EN, 0x1E, 0);
--	/* Reset ASPM state to default value */
--	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
- 	/* Reset delink mode */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CHANGE_LINK_STATE, 0x0A, 0);
- 	/* Card driving select */
-@@ -1002,8 +1000,6 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
- 	 *	0: ELBI interrupt flag[31:22] & [7:0] only can be write clear
- 	 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, NFTS_TX_CTRL, 0x02, 0);
--	/* Force CLKREQ# PIN to drive 0 to request clock */
--	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
+@@ -938,7 +938,7 @@ static void rtsx_pci_power_off(struct rtsx_pcr *pcr, u8 pm_state)
+ 	rtsx_pci_write_register(pcr, HOST_SLEEP_STATE, 0x03, pm_state);
  
- 	err = rtsx_pci_send_cmd(pcr, 100);
- 	if (err < 0)
+ 	if (pcr->ops->force_power_down)
+-		pcr->ops->force_power_down(pcr);
++		pcr->ops->force_power_down(pcr, pm_state);
+ }
+ 
+ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index c19044e..f0a7bfb 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -24,8 +24,7 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/pci.h>
+-
+-#include "rtsx_common.h"
++#include <linux/mfd/rtsx_common.h>
+ 
+ #define MAX_RW_REG_CNT			1024
+ 
+@@ -764,7 +763,7 @@ struct pcr_ops {
+ 	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
+ 	int		(*conv_clk_and_div_n)(int clk, int dir);
+ 	void		(*init_settings)(struct rtsx_pcr *pcr);
+-	void		(*force_power_down)(struct rtsx_pcr *pcr);
++	void		(*force_power_down)(struct rtsx_pcr *pcr, u8 pm_state);
+ };
+ 
+ enum PDEV_STAT  {PDEV_STAT_IDLE, PDEV_STAT_RUN};
 -- 
 1.7.9.5
 
