@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3GOIej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:34:39 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15755 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab3GOIei (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:34:38 -0400
-Message-ID: <51E3B3B2.4080307@huawei.com>
-Date: Mon, 15 Jul 2013 16:32:50 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754552Ab3GOIex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:34:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1966 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754527Ab3GOIeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 04:34:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,667,1367996400"; 
+   d="scan'208";a="370364929"
+Message-ID: <51E3B262.6030005@intel.com>
+Date: Mon, 15 Jul 2013 16:27:14 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] tracing: typo fix on ring buffer comments
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
+        stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have some mismatch between comments with
-real function name, update it.
+On 2013年07月12日 06:15, Srivatsa S. Bhat wrote:
+> 
+> Hi,
+> 
+> Commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume) caused
+> some subtle regressions in the cpufreq subsystem during suspend/resume.
+> This patchset is aimed at rectifying those problems, by fixing the regression
+> as well as achieving the original goal of that commit in a proper way.
+> 
+> Patch 1 reverts the above commit, and is CC'ed to stable.
+> 
+> Patches 2 - 5 reorganize the code and have no functional impact, and can go
+> in as general cleanups as well. This reorganization builds a base that the
+> rest of the patches will make use of.
+> 
+> Patch 6 and 7 add a mechanism to perform light-weight init/tear-down of CPUs
+> in the cpufreq subsystem and finally patch 8 uses it to preserve sysfs files
+> across suspend/resume.
+> 
+> All the patches apply on current mainline.
+> 
+> 
+> Robert, Durgadoss, it would be great if you could try it out and see if it works
+> well for your usecase. I tested it locally and cpufreq related files did retain
+> their permissions across suspend/resume. Let me know if it works fine in your
+> setup too.
+> 
+> And I'd of course appreciate to hear from Dirk, Tianyu and Toralf to know
+> whether their systems work fine after:
+> a. applying only the first commit (this is what gets backported to stable)
+> b. applying all the commits
 
-This patch also add some missed function arguments
-description.
+Hi, I tested this patchset on my machine and the issue in bug 59781 has
+been resolved.
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
----
- kernel/trace/ring_buffer.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+Tested-by: Tianyu Lan <tianyu.lan@intel.com>
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index eef2e56..cc2f66f 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1066,7 +1066,7 @@ static int rb_check_list(struct ring_buffer_per_cpu *cpu_buffer,
- }
 
- /**
-- * check_pages - integrity check of buffer pages
-+ * rb_check_pages - integrity check of buffer pages
-  * @cpu_buffer: CPU buffer with pages to test
-  *
-  * As a safety measure we check to make sure the data pages have not
-@@ -1258,7 +1258,7 @@ static int rb_cpu_notify(struct notifier_block *self,
- #endif
+> 
+> (Note: I had to use Michael's fix[1] to avoid CPU hotplug deadlock while
+> testing this patchset. Though that patch also touches cpufreq subsystem, it
+> doesn't affect this patchset in any way and there is absolutely no dependency
+> between the two in terms of code. That fix just makes basic CPU hotplug work
+> without locking up on current mainline).
+> 
+> [1]. https://lkml.org/lkml/2013/7/10/611
+> 
+> 
+> Thank you very much!
+> 
+> 
+>  Srivatsa S. Bhat (8):
+>       cpufreq: Revert commit a66b2e to fix cpufreq regression during suspend/resume
+>       cpufreq: Fix misplaced call to cpufreq_update_policy()
+>       cpufreq: Add helper to perform alloc/free of policy structure
+>       cpufreq: Extract non-interface related stuff from cpufreq_add_dev_interface
+>       cpufreq: Extract the handover of policy cpu to a helper function
+>       cpufreq: Introduce a flag ('frozen') to separate full vs temporary init/teardown
+>       cpufreq: Preserve policy structure across suspend/resume
+>       cpufreq: Perform light-weight init/teardown during suspend/resume
+> 
+>  drivers/cpufreq/cpufreq.c       |  297 ++++++++++++++++++++++++++-------------
+>  drivers/cpufreq/cpufreq_stats.c |   10 -
+>  2 files changed, 199 insertions(+), 108 deletions(-)
+> 
+> 
+> Thanks,
+> Srivatsa S. Bhat
+> IBM Linux Technology Center
+> 
 
- /**
-- * ring_buffer_alloc - allocate a new ring_buffer
-+ * __ring_buffer_alloc - allocate a new ring_buffer
-  * @size: the size in bytes per cpu that is needed.
-  * @flags: attributes to set for the ring buffer.
-  *
-@@ -1607,6 +1607,7 @@ static void update_pages_handler(struct work_struct *work)
-  * ring_buffer_resize - resize the ring buffer
-  * @buffer: the buffer to resize.
-  * @size: the new size.
-+ * @cpu_id: the cpu buffer to resize
-  *
-  * Minimum size is 2 * BUF_PAGE_SIZE.
-  *
-@@ -3956,11 +3957,11 @@ EXPORT_SYMBOL_GPL(ring_buffer_consume);
-  * expected.
-  *
-  * After a sequence of ring_buffer_read_prepare calls, the user is
-- * expected to make at least one call to ring_buffer_prepare_sync.
-+ * expected to make at least one call to ring_buffer_read_prepare_sync.
-  * Afterwards, ring_buffer_read_start is invoked to get things going
-  * for real.
-  *
-- * This overall must be paired with ring_buffer_finish.
-+ * This overall must be paired with ring_buffer_read_finish.
-  */
- struct ring_buffer_iter *
- ring_buffer_read_prepare(struct ring_buffer *buffer, int cpu)
-@@ -4009,7 +4010,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_read_prepare_sync);
-  * an intervening ring_buffer_read_prepare_sync must have been
-  * performed.
-  *
-- * Must be paired with ring_buffer_finish.
-+ * Must be paired with ring_buffer_read_finish.
-  */
- void
- ring_buffer_read_start(struct ring_buffer_iter *iter)
-@@ -4031,7 +4032,7 @@ ring_buffer_read_start(struct ring_buffer_iter *iter)
- EXPORT_SYMBOL_GPL(ring_buffer_read_start);
 
- /**
-- * ring_buffer_finish - finish reading the iterator of the buffer
-+ * ring_buffer_read_finish - finish reading the iterator of the buffer
-  * @iter: The iterator retrieved by ring_buffer_start
-  *
-  * This re-enables the recording to the buffer, and frees the
-@@ -4346,6 +4347,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
- /**
-  * ring_buffer_alloc_read_page - allocate a page to read from buffer
-  * @buffer: the buffer to allocate for.
-+ * @cpu: the cpu buffer to allocate.
-  *
-  * This function is used in conjunction with ring_buffer_read_page.
-  * When reading a full page from the ring buffer, these functions
-@@ -4403,7 +4405,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_free_read_page);
-  * to swap with a page in the ring buffer.
-  *
-  * for example:
-- *	rpage = ring_buffer_alloc_read_page(buffer);
-+ *	rpage = ring_buffer_alloc_read_page(buffer, cpu);
-  *	if (!rpage)
-  *		return error;
-  *	ret = ring_buffer_read_page(buffer, &rpage, len, cpu, 0);
 -- 
-1.7.9.7
-
-
+Best regards
+Tianyu Lan
