@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab3GOSah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:30:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41397 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab3GOSaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:30:35 -0400
-Date: Mon, 15 Jul 2013 21:31:49 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, asias@redhat.com,
-        mst@redhat.com
-Subject: [PULL] vhost: cleanups and fixes
-Message-ID: <20130715183149.GA8215@redhat.com>
+	id S1754097Ab3GOShT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:37:19 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:46392 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab3GOShR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 14:37:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+In-Reply-To: <51E43ACD.9080307@zytor.com>
+References: <20130712225017.GA5366@www.outflux.net>
+	<tip-c0b3450f101523a49823fa93d155f1d258e5ac6f@git.kernel.org>
+	<CAE9FiQXvfopU1SYs3OFQk8rXVgq-Hbhw6gB49u5H4O70Tx12+A@mail.gmail.com>
+	<51E43ACD.9080307@zytor.com>
+Date: Mon, 15 Jul 2013 11:37:16 -0700
+X-Google-Sender-Auth: w13rm-sMD7QQYNEZ7RNMhyc8MRM
+Message-ID: <CAGXu5jJOJTb_rd5gqZ8Omz=0V=jwONk8BRCzQN6jqO1fO6DfQg@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86: Make sure IDT is page aligned
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        pageexec@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 09a34c8404c1d4c5782de319c02e1d742c57875c:
+Hi,
 
-  vhost/test: update test after vhost cleanups (2013-07-07 18:02:25 +0300)
+On Mon, Jul 15, 2013 at 11:09 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/13/2013 02:34 PM, Yinghai Lu wrote:
+>>
+>> can we use put all idt_table related in to __bss.aligned section ...?
+>>
+>> like
+>> gate_desc idt_table[NR_VECTORS] __page_aligned_bss;
+>>
+>
+> I think this is the best solution all around... it not only solves the
+> initializer problem but also reduces the size of data.
+>
+> A long, long time ago in a galaxy far, far away I believe the IDT got
+> set up before we cleared bss, but that is no longer the case as we now
+> clear bss very, very early (on 32 bits before paging is even enabled.)
+>
+> Still, it would seem that the minimal solution, if we need something for
+> 3.11/stable, is to simply fix the alignment statement in head_64.S
+> (optionally move to .bss..page_aligned) and then do the proper cleanup
+> for 3.12.  If you could prepare a patch for the former (please include
+> the descriptions we discussed over IRC) and a patchset for the latter it
+> would be good.
 
-are available in the git repository at:
+Sorry for the trouble I caused on this. I've reorganized how I do test
+builds now, which should hopefully cut down on my stupid mistakes.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
+I'll send two patches, one for 3.11/stable with the absolute minimal
+change to alignment, and another for 3.12 that moves all the IDT
+variables into common places using __page_aligned_bss as Yinghai Lu
+recommended.
 
-for you to fetch changes up to 22fa90c7fb479694d6affebc049d21f06b714be6:
+Thanks,
 
-  vhost: Remove custom vhost rcu usage (2013-07-11 15:38:40 +0300)
+-Kees
 
-----------------------------------------------------------------
-vhost: more fixes for 3.11
 
-This includes some fixes for vhost net and scsi drivers.
-The test module has already been reworked to avoid rcu
-usage, but the necessary core changes are missing,
-we fixed this.
-Unlikely to affect any real-world users, but it's
-early in the cycle so, let's merge them.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-----------------------------------------------------------------
-Asias He (3):
-      vhost-net: Always access vq->private_data under vq mutex
-      vhost-scsi: Always access vq->private_data under vq mutex
-      vhost: Remove custom vhost rcu usage
-
- drivers/vhost/net.c   | 37 ++++++++++++++++---------------------
- drivers/vhost/scsi.c  | 17 ++++++-----------
- drivers/vhost/test.c  |  6 ++----
- drivers/vhost/vhost.h | 10 ++--------
- 4 files changed, 26 insertions(+), 44 deletions(-)
+--
+Kees Cook
+Chrome OS Security
