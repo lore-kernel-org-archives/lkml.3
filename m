@@ -1,127 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab3GOXVD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 19:21:03 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:57580 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab3GOXVB (ORCPT
+	id S1758324Ab3GOXVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 19:21:37 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:45344 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755239Ab3GOXVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 19:21:01 -0400
-X-Originating-IP: 50.43.39.152
-Date: Mon, 15 Jul 2013 16:20:53 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Parag Warudkar <parag.lkml@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: BGRT Pointer in System RAM
-Message-ID: <20130715232053.GB2649@leaf>
-References: <CAOULuOY5VMiiuYmesaGxVWWKtby4Cj9Pc9ctQZeOKfoUzV46dA@mail.gmail.com>
- <CALCETrVk=ovYjHwALtzB3E3nP4TMivhppM42yw7rMRpzA68cbw@mail.gmail.com>
- <20130715230418.GA2649@leaf>
- <CALCETrX_Qjmdo5JtRPzhW6kBaNgwAstG1g8p8pKNy4e+kPYdMQ@mail.gmail.com>
+	Mon, 15 Jul 2013 19:21:34 -0400
+Date: Tue, 16 Jul 2013 02:20:57 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
+Message-ID: <20130715232057.GA2486@swordfish>
+References: <20130625211544.GA2270@swordfish>
+ <51D10899.1080501@linux.vnet.ibm.com>
+ <20130710231305.GA4046@swordfish>
+ <51DE1BE1.3090707@linux.vnet.ibm.com>
+ <20130714114721.GB2178@swordfish>
+ <20130714120629.GA4067@swordfish>
+ <51E37194.1080103@linux.vnet.ibm.com>
+ <51E3AA3B.9090003@linux.vnet.ibm.com>
+ <20130715082918.GA2435@swordfish>
+ <51E3F6EB.2050807@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrX_Qjmdo5JtRPzhW6kBaNgwAstG1g8p8pKNy4e+kPYdMQ@mail.gmail.com>
+In-Reply-To: <51E3F6EB.2050807@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 04:08:13PM -0700, Andy Lutomirski wrote:
-> On Mon, Jul 15, 2013 at 4:04 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > On Mon, Jul 15, 2013 at 01:28:36PM -0700, Andy Lutomirski wrote:
-> >> On Sun, Jul 14, 2013 at 12:07 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
-> >> > Saw this warning running latest git (Ubuntu daily mainline.) It looked
-> >> > similar to what Andy saw on MSI hardware -
-> >> > http://www.spinics.net/lists/linux-acpi/msg43410.html . The patch for
-> >> > it doesn't seem to be merged, although it won't help in my case -
-> >> > different hardware with valid status instead of invalid and image
-> >> > address falling in system RAM instead of just being wild.
-> >> >
-> >> > Unsure  how this should be handled - moving the is_ram() check in
-> >> > efi_bgrt_init and ignoring the BGRT in case where the check succeeds?
-> >> > Doesn't sound completely right to me - since the BGRT is valid and
-> >> > exists somewhere, but..
-> >> >
-> >> > [    0.015141] ------------[ cut here ]------------
-> >> > [    0.015147] WARNING: CPU: 0 PID: 0 at
-> >> > /home/apw/COD/linux/arch/x86/mm/ioremap.c:102
-> >> > __ioremap_caller+0x312/0x390()
-> >> > [ snip ]
-> >> > [    0.015160] Call Trace:
-> >> > [    0.015165]  [<ffffffff8170a704>] dump_stack+0x46/0x58
-> >> > [    0.015169]  [<ffffffff8106406c>] warn_slowpath_common+0x8c/0xc0
-> >> > [    0.015171]  [<ffffffff810640ba>] warn_slowpath_null+0x1a/0x20
-> >> > [    0.015173]  [<ffffffff81054e32>] __ioremap_caller+0x312/0x390
-> >> > [    0.015176]  [<ffffffff814013d4>] ? acpi_tb_verify_table+0x54/0x58
-> >> > [    0.015179]  [<ffffffff81d35551>] ? efi_bgrt_init+0x8f/0x143
-> >> > [    0.015181]  [<ffffffff81054f07>] ioremap_nocache+0x17/0x20
-> >> > [    0.015183]  [<ffffffff81d35551>] efi_bgrt_init+0x8f/0x143
-> >> > [    0.015186]  [<ffffffff81401d36>] ? acpi_tb_initialize_facs+0x32/0x34
-> >> > [    0.015188]  [<ffffffff81d34e7f>] efi_late_init+0x9/0xb
-> >> > [    0.015190]  [<ffffffff81d18f17>] start_kernel+0x3fd/0x419
-> >> > [    0.015192]  [<ffffffff81d189ac>] ? do_early_param+0x87/0x87
-> >> > [    0.015194]  [<ffffffff81d18120>] ? early_idt_handlers+0x120/0x120
-> >> > [    0.015196]  [<ffffffff81d185e6>] x86_64_start_reservations+0x2a/0x2c
-> >> >
-> >> > ioremap.c:102
-> >> >     /*
-> >> >          * Don't allow anybody to remap normal RAM that we're using..
-> >> >          */
-> >> >         last_pfn = last_addr >> PAGE_SHIFT;
-> >> >         for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
-> >> >                 int is_ram = page_is_ram(pfn);
-> >> >
-> >> >                 if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
-> >> >                         return NULL;
-> >> >                 WARN_ON_ONCE(is_ram);
-> >> >         }
-> >> >
-> >> > Looking at the BGRT table from IASL, the status seems to be valid but
-> >> > the image address *seems* to me that is falling under system RAM.
-> >>
-> >> Interesting.  My BGRT says:
-> >>
-> >> [028h 0040   8]                Image Address : 0D06801800000001
-> >>
-> >> If I reverse the high and low 32-bit dwords, then I get an address in
-> >> system RAM.
-> >
-> > Does that address in RAM start with a BMP header?
+On (07/15/13 18:49), Srivatsa S. Bhat wrote:
+[..]
+> So here is the solution:
 > 
-> No idea.  I'd presumably have to modify the driver to find out --
-> otherwise something else will overwrite it.
-
-You could boot with a mem= command-line argument that reserves that
-memory.
-
-> > Because that would be *special*.  I don't think it's worth trying to
-> > cope with that bug; better to just write off the BGRT as invalid if the
-> > BIOS can't get endianness right.
-> >
-> > In theory we could guess at that bug if the unmangled address points to
-> > a location in RAM starting with a BMP header.  In practice, let's not; a
-> > missing BGRT is a purely cosmetic issue, and BIOS vendors can learn to
-> > get that one right if they want to see their logo during Linux boot.
-> > This won't break fastboot support, it just breaks fancy crossfades from
-> > the BIOS logo to a Linux desktop or splash.
+> On 3.11-rc1, apply these patches in the order mentioned below, and check
+> whether it fixes _all_ problems (both the warnings about IPI as well as the
+> lockdep splat).
 > 
-> FWIW, the address that my BIOS gives is non-canonical.  Maybe that's
-> good enough.
-
-What do you mean by "non-canonical".
-
-> > So, a "firmware bug" message in dmesg seems sufficent for that case.  We
-> > do need to handle the case of a valid pointer into memory that e820
-> > calls system RAM, as well as the case of a valid pointer into memory
-> > reserved for the BIOS or similar, but not the case of an invalid
-> > pointer.
+> 1. Patch given in:  https://lkml.org/lkml/2013/7/11/661
+>    (Just apply patch 1, not the entire patchset).
 > 
-> Is the efi_bgrt code called early enough that data in system RAM will
-> still be there?
+> 2. Apply the patch shown below, on top of the above patch:
+> 
+> ---------------------------------------------------------------------------
+> 
 
-In theory, it should always point to data in EFI's "reserved until after
-boot time" memory.
+Hello Srivatsa,
+Thanks, I'll test a bit later -- in the morning. (laptop stopped resuming from
+suspend, probably radeon dmp).
 
-- Josh Triplett
+
+
+Shouldn't we also kick the console lock?
+
+
+ kernel/printk.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index d37d45c..3e20233 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1926,8 +1926,11 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
+ {
+ 	switch (action) {
+ 	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
+ 	case CPU_DEAD:
++	case CPU_DEAD_FROZEN:
+ 	case CPU_DOWN_FAILED:
++	case CPU_DOWN_FAILED_FROZEN:
+ 	case CPU_UP_CANCELED:
+ 		console_lock();
+ 		console_unlock();
+
+
+
+> 
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH] cpufreq: Revert commit 2f7021a to fix CPU hotplug regression
+> 
+> commit 2f7021a (cpufreq: protect 'policy->cpus' from offlining during
+> __gov_queue_work()) caused a regression in CPU hotplug, because it lead
+> to a deadlock between cpufreq governor worker thread and the CPU hotplug
+> writer task.
+> 
+> Lockdep splat corresponding to this deadlock is shown below:
+> 
+> [   60.277396] ======================================================
+> [   60.277400] [ INFO: possible circular locking dependency detected ]
+> [   60.277407] 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744 Not tainted
+> [   60.277411] -------------------------------------------------------
+> [   60.277417] bash/2225 is trying to acquire lock:
+> [   60.277422]  ((&(&j_cdbs->work)->work)){+.+...}, at: [<ffffffff810621b5>] flush_work+0x5/0x280
+> [   60.277444] but task is already holding lock:
+> [   60.277449]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
+> [   60.277465] which lock already depends on the new lock.
+> 
+> [   60.277472] the existing dependency chain (in reverse order) is:
+> [   60.277477] -> #2 (cpu_hotplug.lock){+.+.+.}:
+> [   60.277490]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
+> [   60.277503]        [<ffffffff815b6157>] mutex_lock_nested+0x67/0x410
+> [   60.277514]        [<ffffffff81042cbc>] get_online_cpus+0x3c/0x60
+> [   60.277522]        [<ffffffff814b842a>] gov_queue_work+0x2a/0xb0
+> [   60.277532]        [<ffffffff814b7891>] cs_dbs_timer+0xc1/0xe0
+> [   60.277543]        [<ffffffff8106302d>] process_one_work+0x1cd/0x6a0
+> [   60.277552]        [<ffffffff81063d31>] worker_thread+0x121/0x3a0
+> [   60.277560]        [<ffffffff8106ae2b>] kthread+0xdb/0xe0
+> [   60.277569]        [<ffffffff815bb96c>] ret_from_fork+0x7c/0xb0
+> [   60.277580] -> #1 (&j_cdbs->timer_mutex){+.+...}:
+> [   60.277592]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
+> [   60.277600]        [<ffffffff815b6157>] mutex_lock_nested+0x67/0x410
+> [   60.277608]        [<ffffffff814b785d>] cs_dbs_timer+0x8d/0xe0
+> [   60.277616]        [<ffffffff8106302d>] process_one_work+0x1cd/0x6a0
+> [   60.277624]        [<ffffffff81063d31>] worker_thread+0x121/0x3a0
+> [   60.277633]        [<ffffffff8106ae2b>] kthread+0xdb/0xe0
+> [   60.277640]        [<ffffffff815bb96c>] ret_from_fork+0x7c/0xb0
+> [   60.277649] -> #0 ((&(&j_cdbs->work)->work)){+.+...}:
+> [   60.277661]        [<ffffffff810ab826>] __lock_acquire+0x1766/0x1d30
+> [   60.277669]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
+> [   60.277677]        [<ffffffff810621ed>] flush_work+0x3d/0x280
+> [   60.277685]        [<ffffffff81062d8a>] __cancel_work_timer+0x8a/0x120
+> [   60.277693]        [<ffffffff81062e53>] cancel_delayed_work_sync+0x13/0x20
+> [   60.277701]        [<ffffffff814b89d9>] cpufreq_governor_dbs+0x529/0x6f0
+> [   60.277709]        [<ffffffff814b76a7>] cs_cpufreq_governor_dbs+0x17/0x20
+> [   60.277719]        [<ffffffff814b5df8>] __cpufreq_governor+0x48/0x100
+> [   60.277728]        [<ffffffff814b6b80>] __cpufreq_remove_dev.isra.14+0x80/0x3c0
+> [   60.277737]        [<ffffffff815adc0d>] cpufreq_cpu_callback+0x38/0x4c
+> [   60.277747]        [<ffffffff81071a4d>] notifier_call_chain+0x5d/0x110
+> [   60.277759]        [<ffffffff81071b0e>] __raw_notifier_call_chain+0xe/0x10
+> [   60.277768]        [<ffffffff815a0a68>] _cpu_down+0x88/0x330
+> [   60.277779]        [<ffffffff815a0d46>] cpu_down+0x36/0x50
+> [   60.277788]        [<ffffffff815a2748>] store_online+0x98/0xd0
+> [   60.277796]        [<ffffffff81452a28>] dev_attr_store+0x18/0x30
+> [   60.277806]        [<ffffffff811d9edb>] sysfs_write_file+0xdb/0x150
+> [   60.277818]        [<ffffffff8116806d>] vfs_write+0xbd/0x1f0
+> [   60.277826]        [<ffffffff811686fc>] SyS_write+0x4c/0xa0
+> [   60.277834]        [<ffffffff815bbbbe>] tracesys+0xd0/0xd5
+> [   60.277842] other info that might help us debug this:
+> 
+> [   60.277848] Chain exists of:
+>   (&(&j_cdbs->work)->work) --> &j_cdbs->timer_mutex --> cpu_hotplug.lock
+> 
+> [   60.277864]  Possible unsafe locking scenario:
+> 
+> [   60.277869]        CPU0                    CPU1
+> [   60.277873]        ----                    ----
+> [   60.277877]   lock(cpu_hotplug.lock);
+> [   60.277885]                                lock(&j_cdbs->timer_mutex);
+> [   60.277892]                                lock(cpu_hotplug.lock);
+> [   60.277900]   lock((&(&j_cdbs->work)->work));
+> [   60.277907]  *** DEADLOCK ***
+> 
+> [   60.277915] 6 locks held by bash/2225:
+> [   60.277919]  #0:  (sb_writers#6){.+.+.+}, at: [<ffffffff81168173>] vfs_write+0x1c3/0x1f0
+> [   60.277937]  #1:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811d9e3c>] sysfs_write_file+0x3c/0x150
+> [   60.277954]  #2:  (s_active#61){.+.+.+}, at: [<ffffffff811d9ec3>] sysfs_write_file+0xc3/0x150
+> [   60.277972]  #3:  (x86_cpu_hotplug_driver_mutex){+.+...}, at: [<ffffffff81024cf7>] cpu_hotplug_driver_lock+0x17/0x20
+> [   60.277990]  #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff815a0d32>] cpu_down+0x22/0x50
+> [   60.278007]  #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
+> [   60.278023] stack backtrace:
+> [   60.278031] CPU: 3 PID: 2225 Comm: bash Not tainted 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744
+> [   60.278037] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+> [   60.278042]  ffffffff8204e110 ffff88014df6b9f8 ffffffff815b3d90 ffff88014df6ba38
+> [   60.278055]  ffffffff815b0a8d ffff880150ed3f60 ffff880150ed4770 3871c4002c8980b2
+> [   60.278068]  ffff880150ed4748 ffff880150ed4770 ffff880150ed3f60 ffff88014df6bb00
+> [   60.278081] Call Trace:
+> [   60.278091]  [<ffffffff815b3d90>] dump_stack+0x19/0x1b
+> [   60.278101]  [<ffffffff815b0a8d>] print_circular_bug+0x2b6/0x2c5
+> [   60.278111]  [<ffffffff810ab826>] __lock_acquire+0x1766/0x1d30
+> [   60.278123]  [<ffffffff81067e08>] ? __kernel_text_address+0x58/0x80
+> [   60.278134]  [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
+> [   60.278142]  [<ffffffff810621b5>] ? flush_work+0x5/0x280
+> [   60.278151]  [<ffffffff810621ed>] flush_work+0x3d/0x280
+> [   60.278159]  [<ffffffff810621b5>] ? flush_work+0x5/0x280
+> [   60.278169]  [<ffffffff810a9b14>] ? mark_held_locks+0x94/0x140
+> [   60.278178]  [<ffffffff81062d77>] ? __cancel_work_timer+0x77/0x120
+> [   60.278188]  [<ffffffff810a9cbd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+> [   60.278196]  [<ffffffff81062d8a>] __cancel_work_timer+0x8a/0x120
+> [   60.278206]  [<ffffffff81062e53>] cancel_delayed_work_sync+0x13/0x20
+> [   60.278214]  [<ffffffff814b89d9>] cpufreq_governor_dbs+0x529/0x6f0
+> [   60.278225]  [<ffffffff814b76a7>] cs_cpufreq_governor_dbs+0x17/0x20
+> [   60.278234]  [<ffffffff814b5df8>] __cpufreq_governor+0x48/0x100
+> [   60.278244]  [<ffffffff814b6b80>] __cpufreq_remove_dev.isra.14+0x80/0x3c0
+> [   60.278255]  [<ffffffff815adc0d>] cpufreq_cpu_callback+0x38/0x4c
+> [   60.278265]  [<ffffffff81071a4d>] notifier_call_chain+0x5d/0x110
+> [   60.278275]  [<ffffffff81071b0e>] __raw_notifier_call_chain+0xe/0x10
+> [   60.278284]  [<ffffffff815a0a68>] _cpu_down+0x88/0x330
+> [   60.278292]  [<ffffffff81024cf7>] ? cpu_hotplug_driver_lock+0x17/0x20
+> [   60.278302]  [<ffffffff815a0d46>] cpu_down+0x36/0x50
+> [   60.278311]  [<ffffffff815a2748>] store_online+0x98/0xd0
+> [   60.278320]  [<ffffffff81452a28>] dev_attr_store+0x18/0x30
+> [   60.278329]  [<ffffffff811d9edb>] sysfs_write_file+0xdb/0x150
+> [   60.278337]  [<ffffffff8116806d>] vfs_write+0xbd/0x1f0
+> [   60.278347]  [<ffffffff81185950>] ? fget_light+0x320/0x4b0
+> [   60.278355]  [<ffffffff811686fc>] SyS_write+0x4c/0xa0
+> [   60.278364]  [<ffffffff815bbbbe>] tracesys+0xd0/0xd5
+> [   60.280582] smpboot: CPU 1 is now offline
+> 
+> 
+> The intent of this commit was to avoid warnings during CPU hotplug, which
+> indicated that offline CPUs were getting IPIs from the cpufreq governor's
+> work items. But the real root-cause of that problem was commit a66b2e5
+> (cpufreq: Preserve sysfs files across suspend/resume) because it totally
+> skipped all the cpufreq callbacks during CPU hotplug in the suspend/resume
+> path, and hence it never actually shut down the cpufreq governor's worker
+> threads during CPU offline in the suspend/resume path.
+> 
+> Reflecting back, the reason why we never suspected that commit as the
+> root-cause earlier, was that the original issue was reported with just the
+> halt command and nobody had brought in suspend/resume to the equation.
+> 
+> The reason for _that_ in turn, it turns out is that, earlier halt/shutdown
+> was being done by disabling non-boot CPUs while tasks were frozen, just like
+> suspend/resume....  but commit cf7df378a (reboot: rigrate shutdown/reboot to
+> boot cpu) which came somewhere along that very same time changed that logic:
+> shutdown/halt no longer takes CPUs offline.
+> Thus, the test-cases for reproducing the bug were vastly different and thus
+> we went totally off the trail.
+> 
+> Overall, it was one hell of a confusion with so many commits affecting
+> each other and also affecting the symptoms of the problems in subtle
+> ways. Finally, now since the original problematic commit (a66b2e5) has been
+> completely reverted, revert this intermediate fix too (2f7021a), to fix the
+> CPU hotplug deadlock. Phew!
+> 
+> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+> 
+>  drivers/cpufreq/cpufreq_governor.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 4645876..7b839a8 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/slab.h>
+>  #include <linux/types.h>
+>  #include <linux/workqueue.h>
+> -#include <linux/cpu.h>
+>  
+>  #include "cpufreq_governor.h"
+>  
+> @@ -137,10 +136,8 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>  	if (!all_cpus) {
+>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+>  	} else {
+> -		get_online_cpus();
+>  		for_each_cpu(i, policy->cpus)
+>  			__gov_queue_work(i, dbs_data, delay);
+> -		put_online_cpus();
+>  	}
+>  }
+>  EXPORT_SYMBOL_GPL(gov_queue_work);
+> 
