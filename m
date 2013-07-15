@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3GOF6D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 01:58:03 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:4313 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3GOF6B (ORCPT
+	id S1753928Ab3GOGAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 02:00:49 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39371 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3GOGAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 01:58:01 -0400
-Message-ID: <1373867877.2072.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] sched: smart wake-affine
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@intel.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Sun, 14 Jul 2013 22:57:57 -0700
-In-Reply-To: <51E38517.5040300@linux.vnet.ibm.com>
-References: <51D29EE5.8080307@linux.vnet.ibm.com>
-	 <20130704091339.GK18898@dyad.programming.kicks-ass.net>
-	 <51D5428D.7080805@linux.vnet.ibm.com>
-	 <1372934013.9046.16.camel@marge.simpson.net>
-	 <51D633DB.5010508@linux.vnet.ibm.com>
-	 <1372997318.7315.23.camel@marge.simpson.net>
-	 <51D64C84.5080100@linux.vnet.ibm.com>
-	 <1373002865.8318.11.camel@marge.simpson.net>
-	 <51D664B9.7010407@linux.vnet.ibm.com>
-	 <1373179405.19316.41.camel@marge.simpson.net>
-	 <20130708082106.GW23916@twins.programming.kicks-ass.net>
-	 <1373309998.1744.3.camel@buesod1.americas.hpqcorp.net>
-	 <51DB75D4.6050302@linux.vnet.ibm.com>
-	 <1373337407.1744.20.camel@buesod1.americas.hpqcorp.net>
-	 <51DB7AF7.50708@linux.vnet.ibm.com> <51E38517.5040300@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Mon, 15 Jul 2013 02:00:47 -0400
+Message-ID: <51E390D5.3000707@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 11:34:05 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 18/18] kvm hypervisor: Add directed yield in vcpu
+ block path
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124415.27508.74230.sendpatchset@codeblue.in.ibm.com> <20130714141818.GD11772@redhat.com>
+In-Reply-To: <20130714141818.GD11772@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071505-1396-0000-0000-000003423760
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 13:13 +0800, Michael Wang wrote:
-> Hi, Davidlohr
-> 
-> On 07/09/2013 10:52 AM, Michael Wang wrote:
-> > On 07/09/2013 10:36 AM, Davidlohr Bueso wrote:
-> > [snip]
-> >>> 2. is the 3.10-rc5 in image also disabled the hyperthreading?
-> >>
-> >> Yes, I happened to have data already collected for 3.10-rc5. While the
-> >> runs with this patch was with -rc7, unless there was some performance
-> >> related commit I missed, I don't think the performance difference was
-> >> because of that.
-> >>
-> >>> 3. is the v3 patch set show the same issue?
-> >>
-> >> Uhmmm shoot, I didn't realize there was a v3, sorry about that.
-> >>
-> >> /me takes another look at the thread.
-> > 
-> > V3 will reduce the overhead, should make things better, especially when
-> > workload is high and platform is big (your box is really what I desired
-> > ;-), honestly).
-> > 
-> > And if it is possible, comparison based on the same basement will be
-> > better :)
-> 
-> I have done some tests with reaim high_systime workfile, and I could not
-> find regression on my box (the tool itself has some issue, but I got the
-> results), v3 works well.
+On 07/14/2013 07:48 PM, Gleb Natapov wrote:
+> On Mon, Jun 24, 2013 at 06:14:15PM +0530, Raghavendra K T wrote:
+>> kvm hypervisor: Add directed yield in vcpu block path
+>>
+>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>
+>> We use the improved PLE handler logic in vcpu block patch for
+>> scheduling rather than plain schedule, so that we can make
+>> intelligent decisions.
+>>
+> What kind of improvement this provides? Doesn't it screw up our pause
+> exit heuristics?
 
-Sorry for the delay. I'm glad you reminded me since I already had the
-data.
-> 
-> I suppose the issue have been addressed, but please let us know if v3
-> also show regression on your box, we could try to solve the problem ;-)
+No. it does not affect negatively from what I saw. ( and even from
+results).
 
-It has, high_systime no longer shows a hit and all workloads remain
-basically the same.
+So it will make ple handler to avoid yield_to to those vcpus,
+still looping in  halt handler.
+May be vcpus which are pv_unhalted but not running, may miss this.
+but haven't seen anything bad happening with that.
+But yes, planning to do some experiments around this. Thanks for
+bringing this up.
 
-Tested-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Between another good point about this is, though non PLE hardwares are
+becoming obsolete, they can potentially take the advantage of PLE
+handler.
 
-Thanks.
+>
+>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>> ---
+>>   arch/ia64/include/asm/kvm_host.h    |    5 +++++
+>>   arch/powerpc/include/asm/kvm_host.h |    5 +++++
+>>   arch/s390/include/asm/kvm_host.h    |    5 +++++
+>>   arch/x86/include/asm/kvm_host.h     |    2 +-
+>>   arch/x86/kvm/x86.c                  |    8 ++++++++
+>>   include/linux/kvm_host.h            |    2 +-
+>>   virt/kvm/kvm_main.c                 |    6 ++++--
+> This miss some arches.
 
-> 
-> Regards,
-> Michael Wang
-> 
-> > 
-> > Regards,
-> > Michael Wang
-> > 
-> >>
-> >> Thanks,
-> >> Davidlohr
-> >>
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
-
+Thanks for pointing that. arm and mips were not around at V8 time, I 
+missed them.
 
