@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab3GOS3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:29:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14870 "EHLO mga03.intel.com"
+	id S1754044Ab3GOS3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:29:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43534 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105Ab3GOS3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:29:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,670,1367996400"; 
-   d="scan'208";a="268604145"
-Date: Mon, 15 Jul 2013 21:34:38 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] pinctrl-baytrail: miscellaneous minor fixes
-Message-ID: <20130715183438.GT4898@intel.com>
-References: <1373457340-16666-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1373883870.24799.244.camel@smile>
+	id S1753082Ab3GOS3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 14:29:51 -0400
+Message-ID: <51E43F91.1040906@zytor.com>
+Date: Mon, 15 Jul 2013 11:29:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373883870.24799.244.camel@smile>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Robin Holt <holt@sgi.com>
+CC: Nathan Zimmer <nzimmer@sgi.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
+References: <1373594635-131067-1-git-send-email-holt@sgi.com> <1373594635-131067-5-git-send-email-holt@sgi.com> <CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com> <20130715174551.GA58640@asylum.americas.sgi.com> <51E4375E.1010704@zytor.com> <20130715182615.GF3421@sgi.com>
+In-Reply-To: <20130715182615.GF3421@sgi.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 01:24:30PM +0300, Andy Shevchenko wrote:
-> On Wed, 2013-07-10 at 14:55 +0300, Andy Shevchenko wrote: 
-> > This is a set of small minor fixes against pinctrl-baytrail driver.
-> 
-> Linus, Mika, anyone do you have any comment on the series?
+On 07/15/2013 11:26 AM, Robin Holt wrote:
+> Is there a fairly cheap way to determine definitively that the struct
+> page is not initialized?
 
-Well, looks good to me but I don't know the HW details. Anyway, I reviewed
-the code so:
+By definition I would assume no.  The only way I can think of would be
+to unmap the memory associated with the struct page in the TLB and
+initialize the struct pages at trap time.
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> I think this patch set can change fairly drastically if we have that.
+> I think I will start working up those changes and code a heavy-handed
+> check until I hear of an alternative way to cheaply check.
+
+	-hpa
+
+
