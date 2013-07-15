@@ -1,202 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3GOVN5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:13:57 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:40304 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755086Ab3GOVNz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:13:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=LjDEjfNXzSmerr9/Nm7
-	WCvcU/t3CT1/uRwHmMd8OeoJ7mflgo0QDCGfQ759K7v2q+oYNKea4uf9D0d3MEk1
-	ldDOPK7COZZNLIZVDJp39uLNCqZv33m02XBes889XyQ2PYcDG0UDh+XPCa5HRVk+
-	Ycad3qqQKR27z70aTGyTiFFY=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.3.3
-Date: Mon, 15 Jul 2013 14:13:46 -0700
-Message-ID: <7vk3kra5md.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1756913Ab3GOVQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:16:24 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:58679 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755227Ab3GOVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 17:16:23 -0400
+Message-ID: <51E466A3.4010503@schinagl.nl>
+Date: Mon, 15 Jul 2013 23:16:19 +0200
+From: Oliver Schinagl <oliver+list@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130613 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 70F8FCDE-ED93-11E2-9D5E-E84251E3A03C-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+To: linux-sunxi@googlegroups.com
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
+        linus.walleij@linaro.org, Oliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [linux-sunxi] Re: [PATCH 1/2] Initial support for Allwinner's
+ Security ID fuses
+References: <20130617225847.GA9494@kroah.com> <20130624092942.GG26008@lukather> <20130624160440.GA15201@kroah.com> <51C87DC7.50005@schinagl.nl> <20130624181509.GA8847@kroah.com> <51C8B84C.3020200@schinagl.nl> <20130624214615.GA17604@kroah.com> <51CAA709.4060801@schinagl.nl> <20130626175144.GC2222@kroah.com> <51D674BF.9030207@schinagl.nl> <20130706193646.GB9778@kroah.com>
+In-Reply-To: <20130706193646.GB9778@kroah.com>
+Content-Type: multipart/mixed;
+ boundary="------------010201060703050506050901"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.3.3 is now available at
-the usual places.
+This is a multi-part message in MIME format.
+--------------010201060703050506050901
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-The release tarballs are found at:
+On 07/06/13 21:36, Greg KH wrote:
+> On Fri, Jul 05, 2013 at 09:24:47AM +0200, Oliver Schinagl wrote:
+>> The other 'broken' drivers that where linked earlier, also use the
+>> BINARY attributes.
+>>
+>> So Greg, if you could be so kind and give me an example how to
+>> implement this properly, I am at loss and don't know :(
+>
+> Ah crap, devices don't have a binary attribute group, like struct class
+> does.  I'll go add that on Monday and send you the patch to see if that
+> helps you out.  I'll also go through and fix up all of the binary
+> attribute drivers to keep them from doing that...
+>
+> Sorry, I missed that earlier, but thanks for trying and pointing out my
+> mistake.
+>
+> greg k-h
+>
 
-    http://code.google.com/p/git-core/downloads/list
+Greg,
 
-and their SHA-1 checksums are:
+I know you are a busy man and I hate take away some of your time, but 
+could you be so kind and point me into the right direction and show me 
+what I should do?
 
-417cb12660446702bffc5c2c83cbb6e7f1e60c79  git-1.8.3.3.tar.gz
-c6104064c1276b2405a281e104fc54ff86f7299d  git-htmldocs-1.8.3.3.tar.gz
-07361cfd38b8c57207b9a5f8bf0c4456b7229b52  git-manpages-1.8.3.3.tar.gz
+With your latest patches for binary attributes and your blog post, I 
+thought that you want to create your binary attributes before the probe 
+function, to avoid the userspace race. To do that, we have two options, 
+create them in init (ugly?) or fill the .group member if available so it 
+gets automatically created from the register function.
 
-The following public repositories all have a copy of the v1.8.3.3
-tag and the maint branch that the tag points at:
+Well in my case, I'm using the module_platform_driver() macro which 
+expects the struct platform_driver. Platform_driver has a device_driver 
+member .driver where the .groups is located. Great, using that works and 
+we should have the sysfs entry race-free. However I don't know hot to 
+exchange data between that and the rest of my driver.
 
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+Before I used to_platform_device(kobj_to_dev(kobj)) as passed via the 
+.read function to obtain a platform_device where i could use 
+platform_get_drvdata on. All was good, but that doesn't fly now and my 
+knowledge is a bit short as to why.
 
-Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
-release tarballs.
+The second method is finding some other shared structure given that we 
+get a platform_device in the probe function, yet I couldn't find 
+anything and this platform_device isn't the same as the one from the .read.
 
-Git v1.8.3.3 Release Notes
-==========================
+Of course using a global var bypasses this issue, but I'm sure it won't 
+pass review ;)
 
-Fixes since v1.8.3.2
---------------------
+So using these new patches for binary attributes, how can I pass data 
+between my driver and the sysfs files using a platform_driver? Or are 
+other 'hacks' needed and using the .groups attribute from 
+platform_driver->device_driver->groups is really the wrong approach.
 
- * "git apply" parsed patches that add new files, generated by programs
-   other than Git, incorrectly.  This is an old breakage in v1.7.11.
+I did ask around and still haven't figured it out so far, so I do 
+apologize if you feel I'm wasting your precious time.
 
- * Older cURL wanted piece of memory we call it with to be stable, but
-   we updated the auth material after handing it to a call.
+Oliver
 
- * "git pull" into nothing trashed "local changes" that were in the
-   index.
+--------------010201060703050506050901
+Content-Type: text/x-csrc;
+ name="sunxi_sid.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="sunxi_sid.c"
 
- * Many "git submodule" operations did not work on a submodule at a
-   path whose name is not in ASCII.
+/*
+ * Copyright (c) 2013 Oliver Schinagl
+ * http://www.linux-sunxi.org
+ *
+ * Oliver Schinagl <oliver@schinagl.nl>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * This driver exposes the Allwinner security ID, a 128 bit eeprom, in byte
+ * sized chunks.
+ */
 
- * "cherry-pick" had a small leak in its error codepath.
+#include <linux/compiler.h>
+#include <linux/device.h>
+#include <linux/err.h>
+#include <linux/export.h>
+#include <linux/fs.h>
+#include <linux/init.h>
+#include <linux/io.h>
+#include <linux/kernel.h>
+#include <linux/kobject.h>
+#include <linux/module.h>
+#include <linux/platform_device.h>
+#include <linux/random.h>
+#include <linux/sysfs.h>
+#include <linux/types.h>
 
- * Logic used by git-send-email to suppress cc mishandled names like
-   "A U. Thor" <author@example.xz>, where the human readable part
-   needs to be quoted (the user input may not have the double quotes
-   around the name, and comparison was done between quoted and
-   unquoted strings).  It also mishandled names that need RFC2047
-   quoting.
+#define DRV_NAME "sunxi-sid"
 
- * "gitweb" forgot to clear a global variable $search_regexp upon each
-   request, mistakenly carrying over the previous search to a new one
-   when used as a persistent CGI.
+/* There are 4 32-bit keys */
+#define SID_KEYS 4
+/* Each key is 4 bytes long */
+#define SID_SIZE (SID_KEYS * 4)
 
- * The wildmatch engine did not honor WM_CASEFOLD option correctly.
+/* We read the entire key, due to a 32 bit read alignment requirement. Since we
+ * want to return the requested byte, this resuls in somewhat slower code and
+ * uses 4 times more reads as needed but keeps code simpler. Since the SID is
+ * only very rarly probed, this is not really an issue.
+ */
+static u8 sunxi_sid_read_byte(const void __iomem *sid_reg_base,
+			      const unsigned int offset)
+{
+	u32 sid_key;
 
- * "git log -c --follow $path" segfaulted upon hitting the commit that
-   renamed the $path being followed.
+	if (offset >= SID_SIZE)
+		return 0;
 
- * When a reflog notation is used for implicit "current branch",
-   e.g. "git log @{u}", we did not say which branch and worse said
-   "branch ''" in the error messages.
+	sid_key = ioread32be(sid_reg_base + round_down(offset, 4));
+	sid_key >>= (offset % 4) * 8;
 
- * Mac OS X does not like to write(2) more than INT_MAX number of
-   bytes; work it around by chopping write(2) into smaller pieces.
+	return sid_key; /* Only return the last byte */
+}
 
- * Newer MacOS X encourages the programs to compile and link with
-   their CommonCrypto, not with OpenSSL.
+static ssize_t eeprom_read(struct file *fd, struct kobject *kobj,
+			struct bin_attribute *attr, char *buf,
+			loff_t pos, size_t size)
+{
+	struct platform_device *pdev;
+	void __iomem *sid_reg_base;
+	int i;
 
-Also contains various minor documentation updates.
+	pdev = to_platform_device(kobj_to_dev(kobj));
+	sid_reg_base = (void __iomem *)platform_get_drvdata(pdev);
+	printk("0x%x, 0x%x 0x%x 0x%x\n", kobj, kobj_to_dev(kobj), pdev, sid_reg_base);
 
-----------------------------------------------------------------
+	if (pos < 0 || pos >= SID_SIZE)
+		return 0;
+	if (size > SID_SIZE - pos)
+		size = SID_SIZE - pos;
 
-Changes since v1.8.3.2 are as follows:
+	for (i = 0; i < size; i++)
+		buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
 
-Andrew Pimlott (2):
-      lib-rebase: document exec_ in FAKE_LINES
-      t7500: fix flipped actual/expect
+	return i;
+}
 
-Anthony Ramine (1):
-      wildmatch: properly fold case everywhere
+static const struct of_device_id sunxi_sid_of_match[] = {
+	{ .compatible = "allwinner,sun4i-sid", },
+	{/* sentinel */},
+};
+MODULE_DEVICE_TABLE(of, sunxi_sid_of_match);
 
-Brandon Casey (1):
-      http.c: don't rewrite the user:passwd string multiple times
+static int sunxi_sid_remove(struct platform_device *pdev)
+{
+	dev_dbg(&pdev->dev, "%s driver unloaded\n", DRV_NAME);
 
-Charles McGarvey (1):
-      gitweb: fix problem causing erroneous project list
+	return 0;
+}
 
-Chris Rorvick (1):
-      git.txt: remove stale comment regarding GIT_WORK_TREE
+static int __init sunxi_sid_probe(struct platform_device *pdev)
+{
+	struct resource *res;
+	void __iomem *sid_reg_base;
+	u8 entropy[SID_SIZE];
+	unsigned int i;
 
-Clemens Buchacher (1):
-      fix segfault with git log -c --follow
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(sid_reg_base))
+		return PTR_ERR(sid_reg_base);
+	platform_set_drvdata(pdev, sid_reg_base);
+	printk("0x%x, 0%x, 0x%x\n", sid_reg_base, pdev, &pdev->dev.kobj);
 
-David Aguilar (4):
-      Makefile: fix default regex settings on Darwin
-      Makefile: add support for Apple CommonCrypto facility
-      cache.h: eliminate SHA-1 deprecation warnings on Mac OS X
-      imap-send: eliminate HMAC deprecation warnings on Mac OS X
+	for (i = 0; i < SID_SIZE; i++)
+		entropy[i] = sunxi_sid_read_byte(sid_reg_base, i);
+	add_device_randomness(entropy, SID_SIZE);
+	dev_dbg(&pdev->dev, "%s loaded\n", DRV_NAME);
 
-Dmitry Marakasov (1):
-      contrib/git-subtree: Use /bin/sh interpreter instead of /bin/bash
+	return 0;
+}
 
-Felipe Contreras (4):
-      read-cache: fix wrong 'the_index' usage
-      read-cache: trivial style cleanups
-      sequencer: remove useless indentation
-      sequencer: avoid leaking message buffer when refusing to create an empty commit
+struct bin_attribute sunxi_sid_bin_attr = __BIN_ATTR_RO(eeprom, SID_SIZE);
 
-Filipe Cabecinhas (1):
-      compate/clipped-write.c: large write(2) fails on Mac OS X/XNU
+struct bin_attribute *sunxi_sid_bin_attrs[] = {
+	&sunxi_sid_bin_attr,
+	NULL,
+};
 
-Fredrik Gustafsson (1):
-      handle multibyte characters in name
+static const struct attribute_group sunxi_sid_bin_group = {
+	.bin_attrs = sunxi_sid_bin_attrs,
+};
 
-Jeff King (1):
-      pull: update unborn branch tip after index
+static const struct attribute_group *sunxi_sid_bin_groups[] = {
+	&sunxi_sid_bin_group,
+	NULL,
+};
 
-John Keeping (1):
-      git-config: update doc for --get with multiple values
+static struct platform_driver sunxi_sid_driver = {
+	.probe = sunxi_sid_probe,
+	.remove = sunxi_sid_remove,
+	.driver = {
+		.name = DRV_NAME,
+		.owner = THIS_MODULE,
+		.of_match_table = sunxi_sid_of_match,
+		.groups = sunxi_sid_bin_groups,
+	},
+};
+module_platform_driver(sunxi_sid_driver);
 
-Junio C Hamano (6):
-      deprecate core.statinfo at Git 2.0 boundary
-      t5551: do not use unportable sed '\+'
-      Documentation/diff-index: mention two modes of operation
-      Start preparing for 1.8.3.3
-      Update draft release notes to 1.8.3.3
-      Git 1.8.3.3
+MODULE_AUTHOR("Oliver Schinagl <oliver@schinagl.nl>");
+MODULE_DESCRIPTION("Allwinner sunxi security id driver");
+MODULE_LICENSE("GPL");
 
-Michael S. Tsirkin (9):
-      t/send-email.sh: add test for suppress-cc=self
-      send-email: fix suppress-cc=self on cccmd
-      t/send-email: test suppress-cc=self on cccmd
-      send-email: make --suppress-cc=self sanitize input
-      t/send-email: add test with quoted sender
-      t/send-email: test suppress-cc=self with non-ascii
-      test-send-email: test for pre-sanitized self name
-      send-email: add test for duplicate utf8 name
-      send-email: sanitize author when writing From line
-
-Ramkumar Ramachandra (6):
-      sha1_name: fix error message for @{u}
-      sha1_name: fix error message for @{<N>}, @{<date>}
-      diffcore-pickaxe: make error messages more consistent
-      diffcore-pickaxe doc: document -S and -G properly
-      check-ignore doc: fix broken link to ls-files page
-      fixup-builtins: retire an old transition helper script
-
-René Scharfe (2):
-      t5004: avoid using tar for checking emptiness of archive
-      t5004: resurrect original empty tar archive test
-
-Richard Hansen (1):
-      Documentation/merge-options.txt: restore `-e` option
-
-SZEDER Gábor (1):
-      test: spell 'ls-files --delete' option correctly in test descriptions
-
-Thomas Rast (2):
-      pull: merge into unborn by fast-forwarding from empty tree
-      apply: carefully strdup a possibly-NULL name
-
-Torsten Bögershausen (1):
-      t7400: test of UTF-8 submodule names pass under Mac OS
-
-Vikrant Varma (2):
-      help: add help_unknown_ref()
-      merge: use help_unknown_ref()
-
+--------------010201060703050506050901--
