@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933336Ab3GOPxX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 11:53:23 -0400
-Received: from smtp-out-191.synserver.de ([212.40.185.191]:1098 "EHLO
-	smtp-out-191.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933126Ab3GOPxT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 11:53:19 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 23150
-Message-ID: <51E41B1B.7000100@metafoo.de>
-Date: Mon, 15 Jul 2013 17:54:03 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	id S933356Ab3GOPxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 11:53:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56017 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932920Ab3GOPxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 11:53:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,669,1367996400"; 
+   d="scan'208";a="365501246"
+Date: Mon, 15 Jul 2013 08:52:48 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130715155202.GC29526@xanatos>
 MIME-Version: 1.0
-To: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-CC: Oleksandr Kravchenko <x0199363@ti.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        jic23@cam.ac.uk, Peter Meerwald <pmeerw@pmeerw.net>,
-        holler@ahsoftware.de, srinivas.pandruvada@intel.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] iio: add APDS9300 ambilent light sensor driver
-References: <1373461729-11261-1-git-send-email-x0199363@ti.com> <51E03720.1010806@metafoo.de> <CAGH3drqEPxW=QwadCLj=ZOQe0gp_c7mdSiNQnq1_-BMKL9CgJw@mail.gmail.com> <51E3EC8B.3090601@metafoo.de> <CAGH3dro7MxDJRB=5gsBysiKVvXLskZFuagiBMznUnAjCMoZsTQ@mail.gmail.com>
-In-Reply-To: <CAGH3dro7MxDJRB=5gsBysiKVvXLskZFuagiBMznUnAjCMoZsTQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 04:54 PM, Oleksandr Kravchenko wrote:
-> I can't to find devm_iio_device_alloc() in my kernel v3.11-rc1
+On Fri, 12 Jul 2013 18:17:08 +0200, Ingo Molnar <mingo@kernel.org> wrote:
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
 > 
-
-It doesn't exist yet, but it should be too hard to implement one.
-
-- Lars
-
-> On Mon, Jul 15, 2013 at 3:35 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> On 07/15/2013 02:27 PM, Oleksandr Kravchenko wrote:
->>> Thank you for review! But I don't completely understand one of your comment:
->>>
->>>>> +static int als_probe(struct i2c_client *client, const struct i2c_device_id *id)
->>> [...]
->>>>> +     if (client->irq) {
->>>>> +             ret = devm_request_threaded_irq(&client->dev, client->irq,
->>>>> +                             NULL, als_interrupt_handler,
->>>>> +                             IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
->>>>> +                             ALS_IRQ_NAME, indio_dev);
->>>>
->>>> This is a bit racy, you access memory in the irq handler that is freed
->>>> before the irq is freed.
->>>
->>> Do you mean than that indio_dev may be used in interrupt handler after
->>> iio_device_free(indio_dev) called in als_remove() function?
->>>
->>> If so, can I use disable_irq() in als_remove() before iio_device_free()
->>> to avoid this problem?
->>>
->>
->> Just add a devm_iio_device_alloc() and use that, instead of trying to bodch
->> around the issue.
->>
+> > On Fri, Jul 12, 2013 at 8:47 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > >
+> > > I tend to hold things off after -rc4 because you scare me more than Greg
+> > > does ;-)
+> > 
+> > Have you guys *seen* Greg? The guy is a freakish giant. He *should*
+> > scare you. He might squish you without ever even noticing.
 > 
+> Greg might be a giant and he might squish people without ever even 
+> noticing, but that's just a grave, deadly physical threat no real kernel 
+> hacker ever feels threatened by. (Not much can hurt us deep in our dark 
+> basements after all, except maybe earthquakes, gamma ray eruptions and Mom 
+> trying to clean up around the computers.)
 > 
-> 
+> So Greg, if you want it all to change, create some _real_ threat: be frank 
+> with contributors and sometimes swear a bit. That will cut your mailqueue 
+> in half, promise!
 
+On Fri, 12 Jul 2013 08:22:27 -0700, Linus wrote:
+> Greg, the reason you get a lot of stable patches seems to be that you
+> make it easy to act as a door-mat. Clearly at least some people say "I
+> know this patch isn't important enough to send to Linus, but I know Greg
+> will silently accept it after the fact, so I'll just wait and mark it
+> for stable".
+>
+> You may need to learn to shout at people.
+
+Seriously, guys?  Is this what we need in order to get improve -stable?
+Linus Torvalds is advocating for physical intimidation and violence.
+Ingo Molnar and Linus are advocating for verbal abuse.
+
+Not *fucking* cool.  Violence, whether it be physical intimidation,
+verbal threats or verbal abuse is not acceptable.  Keep it professional
+on the mailing lists.
+
+Let's discuss this at Kernel Summit where we can at least yell at each
+other in person.  Yeah, just try yelling at me about this.  I'll roar
+right back, louder, for all the people who lose their voice when they
+get yelled at by top maintainers.  I won't be the nice girl anymore.
+
+Sarah Sharp
