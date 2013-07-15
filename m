@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab3GOEzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 00:55:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20518 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab3GOEzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 00:55:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,667,1367996400"; 
-   d="scan'208";a="268321980"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: RE: [3.10.1 MEI_ME] strange kernel crash
-Thread-Topic: [3.10.1 MEI_ME] strange kernel crash
-Thread-Index: AQHOgQR72w8jR9RSRkCx0mBY87vJnZllLLwg
-Date: Mon, 15 Jul 2013 04:55:13 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B028E903A@HASMSX106.ger.corp.intel.com>
-References: <51E2FE1C.207@openvz.org> <51E360C1.10204@openvz.org>
-In-Reply-To: <51E360C1.10204@openvz.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="utf-8"
+	id S1752916Ab3GOE6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 00:58:49 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:50162 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab3GOE6s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 00:58:48 -0400
 MIME-Version: 1.0
+Date: Mon, 15 Jul 2013 12:58:47 +0800
+Message-ID: <CA+k=oDz9vKmw6TQ2033gugHLCDuHD-RhkkMB6UMTWNWvxK_PCA@mail.gmail.com>
+Subject: [PATCH] usb: udc: add gadget state kobject uevent
+From: Rong Wang <wr011235813@gmail.com>
+To: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>
+Cc: arnd@arndb.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rong.Wang@csr.com, Binghua.Duan@csr.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6F4tPua006309
 
+    usb: udc: add gadget state kobject uevent
 
+    Add USB_UDC_STATE environment variable in udc uevent
+    callback and trigger kobject_uevent in usb_gadget_set_state
+    to inform the user-space the state of the gadget.
 
-> -----Original Message-----
-> From: Konstantin Khlebnikov [mailto:koct9i@gmail.com] On Behalf Of
-> Konstantin Khlebnikov
-> Sent: Monday, July 15, 2013 05:39
-> To: linux-kernel@vger.kernel.org; Winkler, Tomas; linux-
-> wireless@vger.kernel.org
-> Subject: Re: [3.10.1 MEI_ME] strange kernel crash
-> 
-> This has happened again. This time without warnings and without suspend-
-> resume.
-> Seems like 'mei_me' corrupts kernel memory.
+    Signed-off-by: Rong Wang <Rong.Wang@csr.com>
 
-I will post the fix today I hope.
+diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
+index ffd8fa5..05715d1 100644
+--- a/drivers/usb/gadget/udc-core.c
++++ b/drivers/usb/gadget/udc-core.c
+@@ -101,11 +101,32 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
 
-Thanks
-Tomas
+ /* ------------------------------------------------------------------------- */
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
++/**
++ * usb_gadget_set_state - set usb gadget state
++ * @gadget: gadget device
++ * @state: state defined in USB specification ch9
++ * Context: !in_interrupt()
++ */
+ void usb_gadget_set_state(struct usb_gadget *gadget,
+                enum usb_device_state state)
+ {
++       struct usb_udc          *udc = NULL;
++
+        gadget->state = state;
+        sysfs_notify(&gadget->dev.kobj, NULL, "status");
++
++       mutex_lock(&udc_lock);
++       list_for_each_entry(udc, &udc_list, list)
++               if (udc->gadget == gadget)
++                       goto found;
++
++       dev_err(gadget->dev.parent, "gadget not registered.\n");
++       mutex_unlock(&udc_lock);
++       return;
++
++found:
++       mutex_unlock(&udc_lock);
++       kobject_uevent(&udc->dev.kobj, KOBJ_CHANGE);
+ }
+ EXPORT_SYMBOL_GPL(usb_gadget_set_state);
+
+@@ -538,6 +559,15 @@ static int usb_udc_uevent(struct device *dev,
+struct kobj_uevent_env *env)
+                }
+        }
+
++       if (udc->gadget) {
++               ret = add_uevent_var(env, "USB_UDC_STATE=%s",
++                               usb_state_string(udc->gadget->state));
++               if (ret) {
++                       dev_err(dev, "failed to add uevent USB_UDC_STATE\n");
++                       return ret;
++               }
++       }
++
+        return 0;
+ }
