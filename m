@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab3GORjF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 13:39:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283Ab3GORjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 13:39:03 -0400
-Date: Mon, 15 Jul 2013 13:38:48 -0400
-From: Dave Jones <davej@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        rostedt@goodmis.org
-Subject: Re: nohz: Warn if the machine can not perform nohz_full
-Message-ID: <20130715173848.GA1066@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	rostedt@goodmis.org
-References: <20130715170859.GA25570@redhat.com>
- <20130715171800.GD6442@somewhere>
- <20130715172423.GA27745@redhat.com>
+	id S1753215Ab3GORq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 13:46:29 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:63080 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab3GORqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 13:46:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130715172423.GA27745@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130715172431.GA8034@phenom.dumpdata.com>
+References: <20130715154050.GA5941@phenom.dumpdata.com>
+	<20130715170244.GA29883@kroah.com>
+	<20130715172431.GA8034@phenom.dumpdata.com>
+Date: Mon, 15 Jul 2013 10:46:17 -0700
+X-Google-Sender-Auth: E-0LVJChuTObkdtvibwyMAAVoyc
+Message-ID: <CA+55aFx0rLqQUig9VHsfckRX650H=kq6hXH35m=yev17zfi0EA@mail.gmail.com>
+Subject: Re: CONFIG_* used by user-space to figure out whether a feature is on/off
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 01:24:23PM -0400, Dave Jones wrote:
- > On Mon, Jul 15, 2013 at 07:18:02PM +0200, Frederic Weisbecker wrote:
- >  
- >  > > So I guess you guys never want this to be enabled on distro kernels ?
- >  > > If that's the case, can you add something to that effect in Kconfig ?
- >  > 
- >  > I believe we want it to be enabled on distros in the long term. But right now it would
- >  > be a bad idea until the off case (nohz_full= parameter empty) is carefully optimized.
- >  > I'm currently working on that.
- >  > 
- >  > Now for the unstable tsc, which is what it's about on the above code block, we need
- >  > the tick to be there to leverage the sched clock madness. May be there could be some
- >  > other solution that could work along full dynticks but for now we chose the easy path.
- >  > 
- >  > Are broken TSCs that common?
- >  
- > I just hit one apparently.  http://paste.fedoraproject.org/25421/73907845/raw/
- > That's a fairly recent Atom board, so I suspect it's not uncommon on that platform.
+On Mon, Jul 15, 2013 at 10:24 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>
+> If life was that simple.. This particular issue was with inhibiting certain
+> config stanzas if certain features were not built in the kernel. Here is the
+> bug that started it:
+>   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=633127
 
-And here's a Core Duo from circa 2008.
-http://paste.fedoraproject.org/25429/13739098/raw
+Can somebody please open a grub/xen ticket that says all of this is
+just too confusing and broken, and that it should just be removed
+entirely instead of expanded upon?
 
-Two for two so far. I get the feeling you guys are going to get a ton of these reports.
+This is a grub bug. It really is that simple. Treat it as one.
 
-	Dave
+I don't want to break user space applications, but this isn't a
+"user-space app". This is "broken kernel support", and when that
+happens, we call them out for being buggy and don't support them
+(example: all the gcc bugs that have caused us problems over the
+years).
 
+                 Linus
