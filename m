@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab3GOOXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:23:07 -0400
-Received: from mail-ye0-f175.google.com ([209.85.213.175]:49446 "EHLO
-	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab3GOOXE (ORCPT
+	id S932122Ab3GOOXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:23:03 -0400
+Received: from mail-gh0-f170.google.com ([209.85.160.170]:34791 "EHLO
+	mail-gh0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757480Ab3GOOXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:23:04 -0400
+	Mon, 15 Jul 2013 10:23:00 -0400
 From: Otavio Salvador <otavio@ossystems.com.br>
 To: Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Otavio Salvador <otavio@ossystems.com.br>,
         Russell King <linux@arm.linux.org.uk>,
         Shawn Guo <shawn.guo@linaro.org>,
         Fabio Estevam <fabio.estevam@freescale.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Fadil Berisha <f.koliqi@gmail.com>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/5] ARM: dts: imx23-olinuxino: enable Low Resolution ADC
-Date: Mon, 15 Jul 2013 11:22:39 -0300
-Message-Id: <1373898160-8460-4-git-send-email-otavio@ossystems.com.br>
+Subject: [PATCH 3/5] ARM: dts: imx23-evk: enable Low Resolution ADC
+Date: Mon, 15 Jul 2013 11:22:38 -0300
+Message-Id: <1373898160-8460-3-git-send-email-otavio@ossystems.com.br>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1373898160-8460-1-git-send-email-otavio@ossystems.com.br>
 References: <1373898160-8460-1-git-send-email-otavio@ossystems.com.br>
@@ -31,24 +29,25 @@ for this device.
 
 Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
 ---
- arch/arm/boot/dts/imx23-olinuxino.dts | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/boot/dts/imx23-evk.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/boot/dts/imx23-olinuxino.dts b/arch/arm/boot/dts/imx23-olinuxino.dts
-index d107c4a..fc766ae 100644
---- a/arch/arm/boot/dts/imx23-olinuxino.dts
-+++ b/arch/arm/boot/dts/imx23-olinuxino.dts
-@@ -69,6 +69,10 @@
+diff --git a/arch/arm/boot/dts/imx23-evk.dts b/arch/arm/boot/dts/imx23-evk.dts
+index dc3ab45..185c7c0 100644
+--- a/arch/arm/boot/dts/imx23-evk.dts
++++ b/arch/arm/boot/dts/imx23-evk.dts
+@@ -90,6 +90,11 @@
  		};
  
  		apbx@80040000 {
 +			lradc@80050000 {
 +				status = "okay";
++				fsl,lradc-touchscreen-wires = <4>;
 +			};
 +
- 			duart: serial@80070000 {
+ 			pwm: pwm@80064000 {
  				pinctrl-names = "default";
- 				pinctrl-0 = <&duart_pins_a>;
+ 				pinctrl-0 = <&pwm2_pins_a>;
 -- 
 1.8.3.2
 
