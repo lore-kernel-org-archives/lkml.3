@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab3GOLCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 07:02:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:8786 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575Ab3GOLCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 07:02:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
-   d="scan'208";a="331506166"
-Date: Mon, 15 Jul 2013 15:53:33 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Matt Porter <matt@ohporter.com>
-Subject: Re: [PATCH] dmaengine: add dma_slave_get_caps api
-Message-ID: <20130715102332.GS16653@intel.com>
-References: <1373273650-31097-1-git-send-email-vinod.koul@intel.com>
- <1373882236-9566-1-git-send-email-vinod.koul@intel.com>
- <51E3D463.3040200@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E3D463.3040200@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755431Ab3GOLEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 07:04:04 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:63819 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754299Ab3GOLEC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 07:04:02 -0400
+Message-ID: <1373886239.2591.26.camel@x61.thuisdomein>
+Subject: [PATCH] RDMA/cma: silence GCC warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 15 Jul 2013 13:03:59 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 15 Jul 2013 11:03:59.0909 (UTC) FILETIME=[0228ED50:01CE814B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 12:52:19PM +0200, Lars-Peter Clausen wrote:
-> On 07/15/2013 11:57 AM, Vinod Koul wrote:
-> > add new device callback .device_slave_caps api which can be used by clients to
-> > query the dma channel capablties before they program the channel. This can help
-> > is removing errors during the channel programming. Also add helper
-> > dma_slave_get_caps API
-> > 
-> > This patch folds the work done by Matt earlier
-> > https://patchwork.kernel.org/patch/2094891/
-> > 
-> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> > --
-> > this version
-> > 	changes api to include struct dma_slave_caps as arg
-> > 	removed burst lengths, can be added when we have users
-> 
-> Hi,
-> 
-> it looks like you did send out v1 by accident.
-Yes but problem wasnt sending wrong patch but generating patch without
-comitting!
+Building cma.o triggers this GCC warning:
+    drivers/infiniband/core/cma.c: In function ‘rdma_resolve_addr’:
+    drivers/infiniband/core/cma.c:465:23: warning: ‘port’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    drivers/infiniband/core/cma.c:426:5: note: ‘port’ was declared here
 
-resent now...
+This is a false positive, as "port" will always be initialized if we're
+at "found".
 
-I am planning to keep this on a branch which I wont rebase. That way users
-(mostly ASoC for now), can merge this and get drivers converted.
+Help GCC by initializing "port" to 0. Since valid port numbers
+apparently start at 1, this is an invalid value. That could help in
+analyzing the code and tracking down errors.
 
-~Vinod
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Compile tested only.
+
+1) Perhaps a better way to silence GCC is to drop "port" entirely, and
+assign to "id_priv->id.port_num" directly. Would that be acceptable?
+
+ drivers/infiniband/core/cma.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
+index f1c279f..c6c0a5f 100644
+--- a/drivers/infiniband/core/cma.c
++++ b/drivers/infiniband/core/cma.c
+@@ -426,6 +426,7 @@ static int cma_resolve_ib_dev(struct rdma_id_private *id_priv)
+ 	u8 port, p;
+ 	int i;
+ 
++	port = 0; /* silence GCC */
+ 	cma_dev = NULL;
+ 	addr = (struct sockaddr_ib *) cma_dst_addr(id_priv);
+ 	dgid = (union ib_gid *) &addr->sib_addr;
+-- 
+1.8.1.4
+
