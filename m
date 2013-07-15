@@ -1,125 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3GOVu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:50:59 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:44519 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756845Ab3GOVu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:50:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130715204135.GH15531@xanatos>
-References: <20130715155202.GC29526@xanatos>
-	<CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
-	<20130715174659.GC15531@xanatos>
-	<CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	<20130715180403.GD15531@xanatos>
-	<CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	<20130715184642.GE15531@xanatos>
-	<CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	<20130715195316.GF15531@xanatos>
-	<20130715204135.GH15531@xanatos>
-Date: Mon, 15 Jul 2013 14:50:55 -0700
-X-Google-Sender-Auth: pKD8hzYN4L78FD6DaQGr3MFy3DQ
-Message-ID: <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1758148Ab3GOVvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:51:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49644 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758104Ab3GOVvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 17:51:12 -0400
+Message-ID: <1373925066.8441.272.camel@ul30vt.home>
+Subject: Re: [Qemu-devel] [PATCH] QEMU-AER: Qemu changes to support AER for
+ VFIO-PCI devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+Cc: gleb@redhat.com, bhelgaas@google.com, blauwirbel@gmail.com,
+        lance.oritz@hp.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 15 Jul 2013 15:51:06 -0600
+In-Reply-To: <1373788124-64423-1-git-send-email-vijaymohan.pandarathil@hp.com>
+References: <1373788124-64423-1-git-send-email-vijaymohan.pandarathil@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 1:41 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
->
-> Oh, FFS, I just called out on private email for "playing the victim
-> card".  I will repeat: this is not just about me, or other minorities.
-> I should not have to ask for professional behavior on the mailing lists.
-> Professional behavior should be the default.
+On Sun, 2013-07-14 at 01:48 -0600, Vijay Mohan Pandarathil wrote:
+> Add support for error containment when a VFIO device assigned to a KVM
+> guest encounters an error. This is for PCIe devices/drivers that support AER
+> functionality. When the host OS is notified of an error in a device either
+> through the firmware first approach or through an interrupt handled by the AER
+> root port driver, the error handler registered by the vfio-pci driver gets
+> invoked. The qemu process is signaled through an eventfd registered per
+> VFIO device by the qemu process. In the eventfd handler, qemu decides on
+> what action to take. In this implementation, guest is brought down to
+> contain the error.
+> 
+> The kernel patches for the above functionality has been already accepted.
+> 
+> This is a refresh of the QEMU patch which was reviewed earlier. 
+> http://marc.info/?l=linux-kernel&m=136281557608087&w=2
+> This patch has the same contents and has been built after refreshing 
+> to latest upstream and after the linux headers have been updated in qemu.
+> 
+> 	- Create eventfd per vfio device assigned to a guest and register an
+>           event handler
+> 
+> 	- This fd is passed to the vfio_pci driver through the SET_IRQ ioctl
+> 
+> 	- When the device encounters an error, the eventfd is signalled
+>           and the qemu eventfd handler gets invoked.
+> 
+> 	- In the handler decide what action to take. Current action taken
+>           is to stop the guest.
+> 
+> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+> ---
+>  hw/misc/vfio.c | 123 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 123 insertions(+)
 
-Bullshit.
+Applied.  Thanks,
 
-The thing is, the "victim card" is exactly about trying to enforce
-your particular expectations on others, and trying to do so in a very
-particular way. It's the old "think of the children" argument.  And
-it's bogus.  Calling things "professional" is just more of the same -
-trying to enforce some kind of convention on others by trying to claim
-that it's the only acceptable way.
+Alex
 
-  [ Since you seem to want to keep this in public, I'll just
-cut-and-paste from my reply, so you have already seen this part of my
-argument, it's only slightly edited because now I'm no longer typing
-on my cellphone ]
+> diff --git a/hw/misc/vfio.c b/hw/misc/vfio.c
+> index 540c377..414c999 100644
+> --- a/hw/misc/vfio.c
+> +++ b/hw/misc/vfio.c
+> @@ -158,6 +158,7 @@ typedef struct VFIODevice {
+>      PCIHostDeviceAddress host;
+>      QLIST_ENTRY(VFIODevice) next;
+>      struct VFIOGroup *group;
+> +    EventNotifier err_notifier;
+>      uint32_t features;
+>  #define VFIO_FEATURE_ENABLE_VGA_BIT 0
+>  #define VFIO_FEATURE_ENABLE_VGA (1 << VFIO_FEATURE_ENABLE_VGA_BIT)
+> @@ -165,6 +166,7 @@ typedef struct VFIODevice {
+>      uint8_t pm_cap;
+>      bool reset_works;
+>      bool has_vga;
+> +    bool pci_aer;
+>  } VFIODevice;
+>  
+>  typedef struct VFIOGroup {
+> @@ -2781,6 +2783,7 @@ static int vfio_get_device(VFIOGroup *group, const char *name, VFIODevice *vdev)
+>  {
+>      struct vfio_device_info dev_info = { .argsz = sizeof(dev_info) };
+>      struct vfio_region_info reg_info = { .argsz = sizeof(reg_info) };
+> +    struct vfio_irq_info irq_info = { .argsz = sizeof(irq_info) };
+>      int ret, i;
+>  
+>      ret = ioctl(group->fd, VFIO_GROUP_GET_DEVICE_FD, name);
+> @@ -2924,6 +2927,18 @@ static int vfio_get_device(VFIOGroup *group, const char *name, VFIODevice *vdev)
+>  
+>          vdev->has_vga = true;
+>      }
+> +    irq_info.index = VFIO_PCI_ERR_IRQ_INDEX;
+> +
+> +    ret = ioctl(vdev->fd, VFIO_DEVICE_GET_IRQ_INFO, &irq_info);
+> +    if (ret) {
+> +        /* This can fail for an old kernel or legacy PCI dev */
+> +        DPRINTF("VFIO_DEVICE_GET_IRQ_INFO failure ret=%d\n", ret);
+> +        ret = 0;
+> +    } else if (irq_info.count == 1) {
+> +        vdev->pci_aer = true;
+> +    } else {
+> +        error_report("vfio: Warning: Could not enable error recovery for the device\n");
+> +    }
+>  
+>  error:
+>      if (ret) {
+> @@ -2946,6 +2961,112 @@ static void vfio_put_device(VFIODevice *vdev)
+>      }
+>  }
+>  
+> +static void vfio_err_notifier_handler(void *opaque)
+> +{
+> +    VFIODevice *vdev = opaque;
+> +
+> +    if (!event_notifier_test_and_clear(&vdev->err_notifier)) {
+> +        return;
+> +    }
+> +
+> +    /*
+> +     * TBD. Retrieve the error details and decide what action
+> +     * needs to be taken. One of the actions could be to pass
+> +     * the error to the guest and have the guest driver recover
+> +     * from the error. This requires that PCIe capabilities be
+> +     * exposed to the guest. For now, we just terminate the
+> +     * guest to contain the error.
+> +     */
+> +
+> +    error_report("%s (%04x:%02x:%02x.%x)"
+> +        "Unrecoverable error detected...\n"
+> +        "Please collect any data possible and then kill the guest",
+> +        __func__, vdev->host.domain, vdev->host.bus,
+> +        vdev->host.slot, vdev->host.function);
+> +
+> +    vm_stop(RUN_STATE_IO_ERROR);
+> +}
+> +
+> +/*
+> + * Registers error notifier for devices supporting error recovery.
+> + * If we encounter a failure in this function, we report an error
+> + * and continue after disabling error recovery support for the
+> + * device.
+> + */
+> +static void vfio_register_err_notifier(VFIODevice *vdev)
+> +{
+> +    int ret;
+> +    int argsz;
+> +    struct vfio_irq_set *irq_set;
+> +    int32_t *pfd;
+> +
+> +    if (!vdev->pci_aer) {
+> +        return;
+> +    }
+> +
+> +    if (event_notifier_init(&vdev->err_notifier, 0)) {
+> +        error_report("vfio: Warning: Unable to init event notifier for error detection\n");
+> +        vdev->pci_aer = false;
+> +        return;
+> +    }
+> +
+> +    argsz = sizeof(*irq_set) + sizeof(*pfd);
+> +
+> +    irq_set = g_malloc0(argsz);
+> +    irq_set->argsz = argsz;
+> +    irq_set->flags = VFIO_IRQ_SET_DATA_EVENTFD |
+> +                     VFIO_IRQ_SET_ACTION_TRIGGER;
+> +    irq_set->index = VFIO_PCI_ERR_IRQ_INDEX;
+> +    irq_set->start = 0;
+> +    irq_set->count = 1;
+> +    pfd = (int32_t *)&irq_set->data;
+> +
+> +    *pfd = event_notifier_get_fd(&vdev->err_notifier);
+> +    qemu_set_fd_handler(*pfd, vfio_err_notifier_handler, NULL, vdev);
+> +
+> +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_IRQS, irq_set);
+> +    if (ret) {
+> +        error_report("vfio: Failed to set up error notification\n");
+> +        qemu_set_fd_handler(*pfd, NULL, NULL, vdev);
+> +        event_notifier_cleanup(&vdev->err_notifier);
+> +        vdev->pci_aer = false;
+> +    }
+> +    g_free(irq_set);
+> +}
+> +
+> +static void vfio_unregister_err_notifier(VFIODevice *vdev)
+> +{
+> +    int argsz;
+> +    struct vfio_irq_set *irq_set;
+> +    int32_t *pfd;
+> +    int ret;
+> +
+> +    if (!vdev->pci_aer) {
+> +        return;
+> +    }
+> +
+> +    argsz = sizeof(*irq_set) + sizeof(*pfd);
+> +
+> +    irq_set = g_malloc0(argsz);
+> +    irq_set->argsz = argsz;
+> +    irq_set->flags = VFIO_IRQ_SET_DATA_EVENTFD |
+> +                     VFIO_IRQ_SET_ACTION_TRIGGER;
+> +    irq_set->index = VFIO_PCI_ERR_IRQ_INDEX;
+> +    irq_set->start = 0;
+> +    irq_set->count = 1;
+> +    pfd = (int32_t *)&irq_set->data;
+> +    *pfd = -1;
+> +
+> +    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_IRQS, irq_set);
+> +    if (ret) {
+> +        error_report("vfio: Failed to de-assign error fd: %d\n", ret);
+> +    }
+> +    g_free(irq_set);
+> +    qemu_set_fd_handler(event_notifier_get_fd(&vdev->err_notifier),
+> +                        NULL, NULL, vdev);
+> +    event_notifier_cleanup(&vdev->err_notifier);
+> +}
+> +
+>  static int vfio_initfn(PCIDevice *pdev)
+>  {
+>      VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
+> @@ -3078,6 +3199,7 @@ static int vfio_initfn(PCIDevice *pdev)
+>      }
+>  
+>      add_boot_device_path(vdev->bootindex, &pdev->qdev, NULL);
+> +    vfio_register_err_notifier(vdev);
+>  
+>      return 0;
+>  
+> @@ -3097,6 +3219,7 @@ static void vfio_exitfn(PCIDevice *pdev)
+>      VFIODevice *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
+>      VFIOGroup *group = vdev->group;
+>  
+> +    vfio_unregister_err_notifier(vdev);
+>      pci_device_set_intx_routing_notifier(&vdev->pdev, NULL);
+>      vfio_disable_interrupts(vdev);
+>      if (vdev->intx.mmap_timer) {
 
-The thing is, different people act and react differently. On both
-sides. And I think we should recognize that and also *allow* for that.
-And sometimes it means, for example, that people interact primarily
-with certain people that they like more - because they are a better
-"fit".
 
-I think we actually do it very naturally, simply because we are human,
-and this is how people interact in real life too. Sometimes we do it
-consciously - the way we have people at various companies that act as
-go-betweens - but most of the time we do it just because humans are
-all about social interactions and we don't even think about what we do
-and why.
 
-For example, you work mostly through Greg. I don't think either of you
-*planned* it that way, but it's likely because you guys work well
-together.
-
-See what I'm saying? People are different. I'm not polite, and I get
-upset easily but generally don't hold a grudge - I have these
-explosive emails. And that works well for some people. And it probably
-doesn't work well with you.
-
-And you know what? That's fine. Not everybody had to get along or work
-well with each other. But the fact that it doesn't work with you
-doesn't make it "wrong".
-
-This isn't all that different from working around language issues etc
-by having certain people work as in-betweens on that front.
-
-And where we differ is in thinking either side has to necessarily
-change. You think people need to act "nicer". While I think it's
-*natural* that people have different behavior - and different
-expectations. We all have issues somewhere and don't all like each
-other. There are certain people I refuse to work with, for example.
-They may be good engineers, but they just aren't people I can work
-with.
-
-And hey, I don't actually think we've personally even had any
-problems. And I realize that you may react very strongly and get
-nervous about us having problems, but realistically, do you actually
-expect to like all the other kernel engineers?
-
-And equally importantly, not everybody has to like you, or necessarily
-think they have to be liked by you. OK?
-
-So as far as I'm concerned, the discussion is about "how to work
-together DESPITE people being different". Not about trying to make
-everybody please each other. Because I can pretty much guarantee that
-I'll continue cursing. To me, the discussion would be about how to
-work together despite these kinds of cultural differences, not about
-"how do we make everybody nice and sing songs sound the campfire"
-
-Do you think you might be interested in *that* kind of discussion
-instead of the "you are abusing me" kind of discussion?
-
-Because if you want me to "act professional", I can tell you that I'm
-not interested. I'm sitting in my home office wearign a bathrobe. The
-same way I'm not going to start wearing ties, I'm *also* not going to
-buy into the fake politeness, the lying, the office politics and
-backstabbing, the passive aggressiveness, and the buzzwords. Because
-THAT is what "acting professionally" results in: people resort to all
-kinds of really nasty things because they are forced to act out their
-normal urges in unnatural ways.
-
-               Linus
