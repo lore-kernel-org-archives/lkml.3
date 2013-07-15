@@ -1,92 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab3GOUI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:08:57 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58528 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab3GOUI4 (ORCPT
+	id S1754690Ab3GOULY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:11:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48501 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab3GOULX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:08:56 -0400
-Date: Mon, 15 Jul 2013 21:08:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Message-ID: <20130715200851.GD11538@sirena.org.uk>
-References: <20130715103644.04e57749@armhf>
- <20130715153101.GK11538@sirena.org.uk>
- <20130715203756.68abbf10@armhf>
+	Mon, 15 Jul 2013 16:11:23 -0400
+Date: Mon, 15 Jul 2013 22:11:10 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 18/18] sched: Swap tasks when reschuling if a CPU on a
+ target node is imbalanced
+Message-ID: <20130715201110.GO17211@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <1373901620-2021-19-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h+CsNYkJBPxpZ+B/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130715203756.68abbf10@armhf>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: kirkwood-i2s: fix a compilation warning
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1373901620-2021-19-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 15, 2013 at 04:20:20PM +0100, Mel Gorman wrote:
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 53d8465..d679b01 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4857,10 +4857,13 @@ fail:
+>  
+>  #ifdef CONFIG_NUMA_BALANCING
+>  /* Migrate current task p to target_cpu */
+> -int migrate_task_to(struct task_struct *p, int target_cpu)
+> +int migrate_task_to(struct task_struct *p, int target_cpu,
+> +		    struct task_struct *swap_p)
+>  {
+>  	struct migration_arg arg = { p, target_cpu };
+>  	int curr_cpu = task_cpu(p);
+> +	struct rq *rq;
+> +	int retval;
+>  
+>  	if (curr_cpu == target_cpu)
+>  		return 0;
+> @@ -4868,7 +4871,39 @@ int migrate_task_to(struct task_struct *p, int target_cpu)
+>  	if (!cpumask_test_cpu(target_cpu, tsk_cpus_allowed(p)))
+>  		return -EINVAL;
+>  
+> -	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
+> +	if (swap_p == NULL)
+> +		return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
+> +
+> +	/* Make sure the target is still running the expected task */
+> +	rq = cpu_rq(target_cpu);
+> +	local_irq_disable();
+> +	raw_spin_lock(&rq->lock);
 
---h+CsNYkJBPxpZ+B/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+raw_spin_lock_irq() :-)
 
-On Mon, Jul 15, 2013 at 08:37:56PM +0200, Jean-Francois Moine wrote:
-> Mark Brown <broonie@kernel.org> wrote:
+> +	if (rq->curr != swap_p) {
+> +		raw_spin_unlock(&rq->lock);
+> +		local_irq_enable();
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* Take a reference on the running task on the target cpu */
+> +	get_task_struct(swap_p);
+> +	raw_spin_unlock(&rq->lock);
+> +	local_irq_enable();
 
-> > I'd really like to see an analysis explaining why this can never happen,
-> > the driver explicitly supports running without extclk being provided.
-> > Simply asserting that we should never get such a rate isn't really
-> > enough detail...
+raw_spin_unlock_irq()
 
-> Russell explained this in the message below dated Wed, 27 Mar 2013
->   (http://www.spinics.net/lists/arm-kernel/msg233819.html)
+> +
+> +	/* Move current running task to target CPU */
+> +	retval = stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
+> +	if (raw_smp_processor_id() != target_cpu) {
+> +		put_task_struct(swap_p);
+> +		return retval;
+> +	}
 
-This is no good, the information needs to be in the commit message.
-Right now the change just looks like a bug supported by wishful
-thinking, you're not providing enough analysis and inspection of the
-code suggests a bug.
+(1)
 
-> Sebastian is correct in that such a path should _never_ be reached
-> because ALSA will reject anything but 44.1, 48 or 96kHz rates if we
-> don't have an extclk.
+> +	/* Move the remote task to the CPU just vacated */
+> +	local_irq_disable();
+> +	if (raw_smp_processor_id() == target_cpu)
+> +		__migrate_task(swap_p, target_cpu, curr_cpu);
+> +	local_irq_enable();
+> +
+> +	put_task_struct(swap_p);
+> +	return retval;
+>  }
 
-There's no obvious code that handles anything differently with extclk.
-Indeed if you think about it for a minute you'll realise there's no way
-the driver will ever use an extclk - set_rate() is badly implemented,
-look at how other drivers select between clocks.
+So I know this is very much like what Ingo did in his patches, but
+there's a whole heap of 'problems' with this approach to task flipping.
 
-Fixing the driver so it can make use of an extclk would be more
-useful...
+So at (1) we just moved ourselves to the remote cpu. This might have
+left our original cpu idle and we might have done a newidle balance,
+even though we intend another task to run here.
 
---h+CsNYkJBPxpZ+B/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+At (1) we just moved ourselves to the remote cpu, however we might not
+be eligible to run, so moving the other task to our original CPU might
+take a while -- exacerbating the previously mention issue.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Since (1) might take a whole lot of time, it might become rather
+unlikely that our task @swap_p is still queued on the cpu where we
+expected him to be.
 
-iQIcBAEBAgAGBQJR5FbQAAoJELSic+t+oim9YM8P/2iWVdFmrzFFDmPF3q8L45zb
-mTbT95onKjYQpte1o9wlQrfd5pc7YVSRuKkm1rlb9/PUaF3Ac8phTGi/gyz1ip4t
-QLfjNfdX6azITBPQGb4AUa5mpcYQr3HhsmYjKlrHPcM74qtuAxhPtTeALQzXWO2w
-4MhKUVZmyg8DldIOAVRPtREUJ18HuD/G0GYrxgWjorlk9VZtbl//scVatIrVaaOL
-v69LRjqh0MdJdad6TjPbBalVmTRthmqN1wlM3Dqx1q5gf0xcY1dtNl/n6daDv7Oq
-bSck/BjAuOxTKnvZxHc9aJjyWdIJN3xRCGKTElJ9rI8XDDQ0lMYGqPWmTMe+2olF
-h3aa1ngSEdw/L8yu7Z1q4YdU6eU37rYcbUnTNI5+IuD56wDaWVa9J/8oebflW4Si
-fE+yAKtjqqvBTckuknSpl11og7G+aPj/kiD7n4BihKA2apicM41bXrTyQWwbQA6U
-QSeWE/7GcpCZiWtANixXbX8RNyy+7gNlZ639ZqPFTQbVAuGy9ybGTR5s7atCsx17
-0wdcGMIcVfvc6tIINS+HVoCExmBVBDKSkKy8AbXhKfIij3pRQ2S3NmUzsxo+7Mi3
-2nE/7sFYgtt2+k4eRpEpDeNhHk0wWLW1ImpOkLw0lTVpFhFf9EcJHku/Crp9XqD6
-DIFS/y3dExhRuoqs4enT
-=F2Ug
------END PGP SIGNATURE-----
 
---h+CsNYkJBPxpZ+B/--
