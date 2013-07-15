@@ -1,137 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab3GOIM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:12:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26642 "EHLO mx1.redhat.com"
+	id S1754396Ab3GOIMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:12:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:13628 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284Ab3GOIMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:12:24 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Honza Brazdil <jbrazdil@redhat.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] HID: kye: Add report fixup for Genius Gx Imperator Keyboard
-Date: Mon, 15 Jul 2013 10:12:18 +0200
-Message-Id: <1373875938-10165-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1754366Ab3GOIMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 04:12:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,667,1367996400"; 
+   d="scan'208";a="331446081"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.jf.intel.com>, h.mitake@gmail.com,
+        kirill.shutemov@linux.jf.intel.com
+In-Reply-To: <1373675551-18684-1-git-send-email-andi@firstfloor.org>
+References: <1373675551-18684-1-git-send-email-andi@firstfloor.org>
+Subject: RE: [PATCH] perf, tools, bench: Fix memcpy benchmark for large sizes
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130715081532.52D85E0090@blue.fi.intel.com>
+Date: Mon, 15 Jul 2013 11:15:32 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Genius Gx Imperator Keyboard presents the same problem in its report
-descriptors than Genius Gila Gaming Mouse.
-Use the same fixup for both.
+Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> glibc calloc() has an optimization to not explicitely memset()
+> very large calloc allocations that just came from mmap(),
+> because they are known to be zero.
+> 
+> This could result in the perf memcpy benchmark reading only from
+> the zero page, which gives unrealistic results.
+> 
+> Always call memset explicitly on the source area to avoid this problem.
+> 
+> Cc: h.mitake@gmail.com
+> Cc: kirill.shutemov@linux.intel.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=928561
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Reported-and-tested-by: Honza Brazdil <jbrazdil@redhat.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+> ---
+>  tools/perf/bench/mem-memcpy.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+> index 93c83e3..690f75f 100644
+> --- a/tools/perf/bench/mem-memcpy.c
+> +++ b/tools/perf/bench/mem-memcpy.c
+> @@ -117,6 +117,8 @@ static void alloc_mem(void **dst, void **src, size_t length)
+>  	*src = zalloc(length);
+>  	if (!src)
+>  		die("memory allocation failed - maybe length is too large?\n");
+> +	/* Make sure to always replace the zero pages even if MMAP_THRESH is crossed */
+> +	memset(src, 0, length);
+>  }
+>  
+>  static u64 do_memcpy_cycle(memcpy_t fn, size_t len, bool prefault)
+> -- 
+> 1.8.1.4
 
-with the proper blacklist in hid-core this time.
-
-Cheers,
-Benjamin
-
- drivers/hid/hid-core.c |  1 +
- drivers/hid/hid-ids.h  |  1 +
- drivers/hid/hid-kye.c  | 45 ++++++++++++++++++++++++++++-----------------
- 3 files changed, 30 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 8de5cb8..b0f2f45 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1594,6 +1594,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_I405X) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index c5aea29..0288531 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -479,6 +479,7 @@
- #define USB_VENDOR_ID_KYE		0x0458
- #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
- #define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
-+#define USB_DEVICE_ID_GENIUS_GX_IMPERATOR	0x4018
- #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
- #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
- #define USB_DEVICE_ID_KYE_MOUSEPEN_I608X	0x5011
-diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
-index 1e2ee2aa..7384512 100644
---- a/drivers/hid/hid-kye.c
-+++ b/drivers/hid/hid-kye.c
-@@ -268,6 +268,26 @@ static __u8 easypen_m610x_rdesc_fixed[] = {
- 	0xC0                          /*  End Collection                  */
- };
- 
-+static __u8 *kye_consumer_control_fixup(struct hid_device *hdev, __u8 *rdesc,
-+		unsigned int *rsize, int offset, const char *device_name) {
-+	/*
-+	 * the fixup that need to be done:
-+	 *   - change Usage Maximum in the Comsumer Control
-+	 *     (report ID 3) to a reasonable value
-+	 */
-+	if (*rsize >= offset + 31 &&
-+	    /* Usage Page (Consumer Devices) */
-+	    rdesc[offset] == 0x05 && rdesc[offset + 1] == 0x0c &&
-+	    /* Usage (Consumer Control) */
-+	    rdesc[offset + 2] == 0x09 && rdesc[offset + 3] == 0x01 &&
-+	    /*   Usage Maximum > 12287 */
-+	    rdesc[offset + 10] == 0x2a && rdesc[offset + 12] > 0x2f) {
-+		hid_info(hdev, "fixing up %s report descriptor\n", device_name);
-+		rdesc[offset + 12] = 0x2f;
-+	}
-+	return rdesc;
-+}
-+
- static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
-@@ -315,23 +335,12 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		}
- 		break;
- 	case USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE:
--		/*
--		 * the fixup that need to be done:
--		 *   - change Usage Maximum in the Comsumer Control
--		 *     (report ID 3) to a reasonable value
--		 */
--		if (*rsize >= 135 &&
--			/* Usage Page (Consumer Devices) */
--			rdesc[104] == 0x05 && rdesc[105] == 0x0c &&
--			/* Usage (Consumer Control) */
--			rdesc[106] == 0x09 && rdesc[107] == 0x01 &&
--			/*   Usage Maximum > 12287 */
--			rdesc[114] == 0x2a && rdesc[116] > 0x2f) {
--			hid_info(hdev,
--				 "fixing up Genius Gila Gaming Mouse "
--				 "report descriptor\n");
--			rdesc[116] = 0x2f;
--		}
-+		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
-+					"Genius Gila Gaming Mouse");
-+		break;
-+	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
-+		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
-+					"Genius Gx Imperator Keyboard");
- 		break;
- 	}
- 	return rdesc;
-@@ -428,6 +437,8 @@ static const struct hid_device_id kye_devices[] = {
- 				USB_DEVICE_ID_KYE_EASYPEN_M610X) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
- 				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
-+				USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, kye_devices);
 -- 
-1.8.3.1
-
+ Kirill A. Shutemov
