@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab3GORJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 13:09:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227Ab3GORJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 13:09:13 -0400
-Date: Mon, 15 Jul 2013 13:08:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: rostedt@goodmis.org, fweisbec@gmail.com
-Subject: Re: nohz: Warn if the machine can not perform nohz_full
-Message-ID: <20130715170859.GA25570@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	rostedt@goodmis.org, fweisbec@gmail.com
+	id S1757910Ab3GORJa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 13:09:30 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51435 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922Ab3GORJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 13:09:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51E2FF42.2090507@gmail.com>
+References: <1371923055-29623-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1371923055-29623-3-git-send-email-prabhakar.csengg@gmail.com>
+ <51D05568.3090009@gmail.com> <CA+V-a8sW+D8trces5AXu__Lw9F7TO6fCcQW+LGZKRhA41uOEfw@mail.gmail.com>
+ <51DF2BF6.30509@gmail.com> <CA+V-a8u0G6m+VoSc4FPmDxEYmE_vQaL7zu3fUFk3iVKnOywnRA@mail.gmail.com>
+ <51E2FF42.2090507@gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 15 Jul 2013 22:39:06 +0530
+Message-ID: <CA+V-a8tCTVzyE0YWjYexuXMD1QYHJa-OTmwZq7rVpdfn-262iA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] media: i2c: tvp7002: add OF support
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=e12d0271774fea9fddf1e2a7952a0bffb2ee8e8b
- > Commit:     e12d0271774fea9fddf1e2a7952a0bffb2ee8e8b
- > Parent:     7d132055814ef17a6c7b69f342244c410a5e000f
- > Author:     Steven Rostedt <rostedt@goodmis.org>
- > AuthorDate: Fri May 10 17:12:28 2013 -0400
- > Committer:  Frederic Weisbecker <fweisbec@gmail.com>
- > CommitDate: Thu Jun 20 01:15:51 2013 +0200
- > 
- >     nohz: Warn if the machine can not perform nohz_full
- >     
- >     If the user configures NO_HZ_FULL and defines nohz_full=XXX on the
- >     kernel command line, or enables NO_HZ_FULL_ALL, but nohz fails
- >     due to the machine having a unstable clock, warn about it.
- >     
- >     We do not want users thinking that they are getting the benefit
- >     of nohz when their machine can not support it.
- > ---
- >  kernel/time/tick-sched.c |    5 +++++
- >  1 files changed, 5 insertions(+), 0 deletions(-)
- > 
- > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
- > index f420813..d87d22c 100644
- > --- a/kernel/time/tick-sched.c
- > +++ b/kernel/time/tick-sched.c
- > @@ -178,6 +178,11 @@ static bool can_stop_full_tick(void)
- >  	 */
- >  	if (!sched_clock_stable) {
- >  		trace_tick_stop(0, "unstable sched clock\n");
- > +		/*
- > +		 * Don't allow the user to think they can get
- > +		 * full NO_HZ with this machine.
- > +		 */
- > +		WARN_ONCE(1, "NO_HZ FULL will not work with unstable sched clock");
- >  		return false;
- 
-So I guess you guys never want this to be enabled on distro kernels ?
-If that's the case, can you add something to that effect in Kconfig ?
+Hi Sylwester,
 
-	Dave
+On Mon, Jul 15, 2013 at 1:12 AM, Sylwester Nawrocki
+<sylvester.nawrocki@gmail.com> wrote:
+> Hi Prabhakar,
+>
+[Snip]
+>> Something similar to fid_polarity.
+>
+>
+> Then as I suggested earlier, let's just add 'sync-on-green-active' DT
+> property for that. I wouldn't expect the DT properties to be directly
+> replacing your driver platform_data members. Saying in the binding that
+> this is a normal operation and that is an inverted one is not very useful
+> in general, as you would need to dig in the binding's description what
+> "normal" exactly means. sync-on-green-active = <1>; seems much more
+> explicit than, e.g. sync-on-green-inverted. By looking at the
+> sync-on-green-active property each device driver would determine whether
+> it means normal or inverted operation for its device.
+>
+Ok so I'll add 'sync-on-green-active' property and parse it in
+v4l2_of_parse_parallel_bus()
+and add it as part of flags. and define the following flags in mediabus.h
 
+V4L2_MBUS_VIDEO_SOG_ACTIVE_{HIGH,LOW}.
+
+Hope you are OK with it.
+
+--
+Regards,
+Prabhakar Lad
