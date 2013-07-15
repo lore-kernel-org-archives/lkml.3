@@ -1,145 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab3GOVkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:40:32 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:36495 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab3GOVkb (ORCPT
+	id S1758056Ab3GOVtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:49:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59466 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755239Ab3GOVtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:40:31 -0400
-Message-ID: <51E46C3B.5020104@windriver.com>
-Date: Mon, 15 Jul 2013 17:40:11 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 15 Jul 2013 17:49:11 -0400
+X-Sasl-enc: vQaFRj7QZs36hFAGuoieYwtHc1E53HQlh0brAmCoDhcu 1373924950
+Date: Mon, 15 Jul 2013 14:44:22 -0700
+From: Greg KH <greg@kroah.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: KS Topic request: Handling the Stable kernel, let's dump the cc:
+ stable tag
+Message-ID: <20130715214422.GA2478@kroah.com>
+References: <1373916476.2748.69.camel@dabdike>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: update git pull info in SubmittingPatches
-References: <1373923096-25674-1-git-send-email-paul.gortmaker@windriver.com> <51E46A4D.6060108@infradead.org>
-In-Reply-To: <51E46A4D.6060108@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373916476.2748.69.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-07-15 05:31 PM, Randy Dunlap wrote:
-> On 07/15/13 14:18, Paul Gortmaker wrote:
->> The info in this section was overdue for an update; it had manual
->> individual steps listed for collecting the information that a
->> pull request should contain, and no mention of having a proper
->> overall summary in the pull request that could be used for a
->> merge commit.
->>
->> There are other chunks of this file that need updates to match
->> current git workflows, but giant wholesale updates are more likely
->> to get caught up in bike shedding discussions over small details,
->> so lets start somewhere and attack the problem piece-wise.
->>
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+On Mon, Jul 15, 2013 at 11:27:56PM +0400, James Bottomley wrote:
+> Before the "3.10.1-stable review" thread degenerated into a disagreement
+> about habits of politeness, there were some solid points being made
+> which, I think, bear consideration and which may now be lost.
 > 
-> Did some "git <command>" create this patch?
+> The problem, as Ji???? Kosina put is succinctly is that the distributions
+> are finding stable less useful because it contains to much stuff they'd
+> classify as not stable material.
+> 
+> The question that arises from this is who is stable aiming at ...
+> because if it's the distributions (and that's what people seem to be
+> using it for) then we need to take this feedback seriously.
+> 
+> The next question is how should we, the maintainers, be policing commits
+> to stable.  As I think has been demonstrated in the discussion the
+> "stable rules" are more sort of guidelines (apologies for the pirates
+> reference).  In many ways, this is as it should be, because people
+> should have enough taste to know what constitutes a stable fix.  The
+> real root cause of the problem is that the cc: stable tag can't be
+> stripped once it's in the tree, so maintainers only get to police things
+> they put in the tree.  Stuff they pull from others is already tagged and
+> that tag can't be changed.  This effectively pushes the problem out to
+> the lowest (and possibly more inexperienced) leaves of the Maintainer
+> tree.  In theory we have a review stage for stable, but the review
+> patches don't automatically get routed to the right mailing list and the
+> first round usually comes out in the merge window when Maintainers'
+> attention is elsewhere.
+> 
+> The solution, to me, looks simple:  Let's co-opt a process we already
+> know how to do: mailing list review and tree handling.  So the proposal
+> is simple:
+> 
+>      1. Drop the cc: stable@ tag: it makes it way too easy to add an ill
+>         reviewed patch to stable
+>      2. All patches to stable should follow current review rules: They
+>         should go to the mailing list the original patch was sent to
+>         once the original is upstream as a request for stable.
+>      3. Following debate on the list, the original maintainer would be
+>         responsible for collecting the patches (including the upstream
+>         commit) adjudicating on them and passing them on to stable after
+>         list review (either by git tree pull or email to stable@).
+> 
+> I contend this raises the bar for adding patches to stable much higher,
+> which seems to be needed, and adds a review stage which involves all the
+> original reviewers.
 
-git format-patch -p ....
+I don't like this at all, just for the simple reason that it will push
+the majority of the work of stable kernel development on to the
+subsystem maintainers, who have enough work to do as it is.
 
-> It is missing <quote>
->   - A marker line containing simply "---".
-> </quote> just after the S-O-B line.
+Stable tree stuff should cause almost _no_ extra burden on the kernel
+developers, because it is something that I, and a few other people, have
+agreed to do with our time.  It has taken me 8 _years_ to finally get
+maintainers to agree to mark stuff for the stable tree, and fine-tune a
+development process that makes it easy for us to do this backport work.
 
-Not missing, just optional, and only required when you want to
-temporarily pass on some transient information outside of the
-commit log, such as diffstat, which I'd intentionally opted out
-of here.
+I _want_ the exact same commit that is in Linus's tree for the backport
+because if I have to rely on a maintainer to do the backport and resend
+it, I _know_ it will usually be a changed patch, and the git commit id
+will be lost.
 
-Paul.
---
+I know this because it happens today.  I get patches from maintainers
+that are radically changed from what is in Linus's tree without any
+justification for why that is.  That's not ok.
 
-> 
-> 
->>
->> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
->> index 6e97e73..6102da9 100644
->> --- a/Documentation/SubmittingPatches
->> +++ b/Documentation/SubmittingPatches
->> @@ -590,33 +590,32 @@ See more details on the proper patch format in the following
->>  references.
->>  
->>  
->> -16) Sending "git pull" requests  (from Linus emails)
->> -
->> -Please write the git repo address and branch name alone on the same line
->> -so that I can't even by mistake pull from the wrong branch, and so
->> -that a triple-click just selects the whole thing.
->> -
->> -So the proper format is something along the lines of:
->> -
->> -	"Please pull from
->> -
->> -		git://jdelvare.pck.nerim.net/jdelvare-2.6 i2c-for-linus
->> -
->> -	 to get these changes:"
->> -
->> -so that I don't have to hunt-and-peck for the address and inevitably
->> -get it wrong (actually, I've only gotten it wrong a few times, and
->> -checking against the diffstat tells me when I get it wrong, but I'm
->> -just a lot more comfortable when I don't have to "look for" the right
->> -thing to pull, and double-check that I have the right branch-name).
->> -
->> -
->> -Please use "git diff -M --stat --summary" to generate the diffstat:
->> -the -M enables rename detection, and the summary enables a summary of
->> -new/deleted or renamed files.
->> -
->> -With rename detection, the statistics are rather different [...]
->> -because git will notice that a fair number of the changes are renames.
->> +16) Sending "git pull" requests
->> +
->> +For a long time now, the "git request-pull" command has existed,
->> +and gives a uniform pre-canned text with all the expected information
->> +within it.  Use this as the basis of your pull request e-mail, and
->> +prefix it with a sensible description of what the overall series
->> +of commits achieves.  Assume that this text will be used by the
->> +maintainer in their merge commit of your changes, and hence be part
->> +of the git history, just like the changelog of each commit.  Use
->> +the triple dash described above to separate the merge commit text
->> +in the top of your mail from the output from "git request-pull".
->> +
->> +You are strongly discouraged against manually creating your own
-> 
->                     discouraged from
-> (I would say, but no big deal.)
-> 
->> +pull request text.  Doing so just increases the odds of having
->> +a typo in the repo location, the branch name, or other missing
->> +information.  In addition to creating all the required text output,
->> +the command also validates that your commits are actually reachable
->> +at the specified location, ensuring you don't waste the maintainer's
->> +time with having to hunt around trying find the location that you
->> +really meant.
->> +
->> +Your mail subject should be prefixed with "[GIT PULL]" and also
->> +mention the subsystem it is for, and if possible a very brief
->> +theme of what the changes achieve, e.g.
->> +
->> +   "[GIT PULL] x86: Remove uniprocessor support"
-> 
-> Lots of pull requests $Subject line also includes a kernel version number
-> that the pull is for, e.g.,
-> 
-> [GIT pull] x86 updates for 3.11
-> 
-> I find that helpful in searching.  IOW, I would prefer to see that instead
-> of 12 emails with the same subject of
-> 
-> [GIT pull] x86 updates
-> 
-> for kernel versions 3.0 thru 3.11.
-> 
->>  
->>  -----------------------------------
->>  SECTION 2 - HINTS, TIPS, AND TRICKS
->>
-> 
-> 
+Let me work with the distros on the issues they have raised.  So far I
+have the following issues they have complained about:
+  - patches that shouldn't be there because they don't really do
+    anything.
+  - patches that aren't obvious why they are there.
+
+The first one I am going to be pushing back on, and have already, much
+to the dismay of some subsystem maintainers.
+
+The second one is almost always due to security issues that were unknown
+to the distro.  The announcement of security problems to the distros has
+now been addressed, and since that has changed, I haven't heard any
+problems about this.
+
+Have I missed anything else that the distros are objecting to?  The
+"smaller" distros (i.e. ones without lots of kernel developers) have
+been giving me nothing but _thanks_ and appreciation with the way that
+I've been sucking in all of the different fixes.  Do we want to mess
+with a process that is really working out well for them, and only causes
+annoyance at times by the larger ones?
+
+thanks,
+
+greg k-h
