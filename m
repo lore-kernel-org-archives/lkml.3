@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab3GOWI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 18:08:57 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59811 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755310Ab3GOWIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 18:08:55 -0400
-Date: Mon, 15 Jul 2013 16:37:30 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: vaughan <vaughan.cao@oracle.com>
-Cc: dgilbert@interlog.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/1] [SCSI] sg: fix race condition when do exclusive
- open
-Message-ID: <20130715203730.GA21804@logfs.org>
-References: <51AF0269.9070900@oracle.com>
- <20130605132746.GA1690@logfs.org>
- <51AF646D.7030903@oracle.com>
- <20130605154106.GA2737@logfs.org>
- <51BF0ADD.1080604@oracle.com>
- <20130705173953.GA15089@logfs.org>
- <51D852DC.4070808@oracle.com>
- <51D9C74D.6060708@oracle.com>
+	id S932288Ab3GOWJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 18:09:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45942 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755310Ab3GOWJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 18:09:44 -0400
+Message-ID: <51E472D4.5060307@zytor.com>
+Date: Mon, 15 Jul 2013 15:08:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51D9C74D.6060708@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, Kyungsik Lee <kyungsik.lee@lge.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
+        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
+        Florian Fainelli <florian@openwrt.org>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Chanho Min <chanho.min@lge.com>
+Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
+ streaming format
+References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com> <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com> <20130712075602.GA4002@gmail.com> <20130715150342.35f7620ffe0835e3e2bc37d0@linux-foundation.org>
+In-Reply-To: <20130715150342.35f7620ffe0835e3e2bc37d0@linux-foundation.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 July 2013 03:53:49 +0800, vaughan wrote:
+On 07/15/2013 03:03 PM, Andrew Morton wrote:
 > 
-> Use rwsem to aid opens. Exclusive open has to get write lock and non-exclusive open should get read lock.
-> Replace global sg_open_exclusive_lock with a per device lock - sfd_lock. Since sfds list is now protected by the lock owned by the same sg_device, sg_index_lock becomes a real global lock to only protect sg devices lookup.
+> I don't know how to do this.  Any suggestions?
 > 
-> Please pay attention to sdp->detached. Previously sg_open may also race with sg_remove. Now there are two points for sg_open to detect detached and finish itself. One is at sg_device lookup and the other is when trying to link new sfp into the sfds list in sg_add_sfp.
-> I don't think it's necessary to do extra set_exclude and wake_up o_excl_wait in sg_release before, so I remove them and only do the cleanup in sg_remove_sfp.
-> Although simple testcases are passed, I'm not certain if I've fixed it well, please give me any comments as you wish.
+> It has to be done at `make config' time.  We'd need to probe for the
+> presence of lz4c and then....  what?
 > 
-> Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
-> ---
->  drivers/scsi/sg.c | 187 ++++++++++++++++++++++++++----------------------------
->  1 file changed, 89 insertions(+), 98 deletions(-)
+> Is there any precedent for this?
+> 
+> I don't think we can just ignore the absence of lz4c - the user has
+> selected a config which his system cannot build.  The problem lies
+> within randconfig itself.
+> 
 
-Had a quick read and I think I like the code.  What I still dislike is
-that it merges several independent functional changes into one patch.
+We keep running over the need to be able to have kconfig run tests on
+the build system (for toolchain support or for optional tools needed);
+running them in the Makefiles (i.e. at Kbuild time) is simply too late.
 
-Can you create three patches, one for the rwsem part, one for pushing
-the locking down to per-device locking and one for the rest?  That
-would make it easier for me to understand and trust the individual
-patches and for James/Linus to revert one, if it turns out to be bad.
+	-hpa
 
-Jörn
-
---
-There are two ways of constructing a software design: one way is to make
-it so simple that there are obviously no deficiencies, and the other is
-to make it so complicated that there are no obvious deficiencies.
--- C. A. R. Hoare
