@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab3GOGHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 02:07:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45938 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab3GOGHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 02:07:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,667,1367996400"; 
-   d="scan'208";a="331404377"
-Message-ID: <51E3932C.5000905@intel.com>
-Date: Mon, 15 Jul 2013 09:14:04 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+	id S1754013Ab3GOGMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 02:12:35 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:55013 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab3GOGMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 02:12:34 -0400
+Message-ID: <51E392CE.9000605@kernel.org>
+Date: Mon, 15 Jul 2013 09:12:30 +0300
+From: Pekka Enberg <penberg@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
-References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com> <1373548341-24119-10-git-send-email-adrian.hunter@intel.com> <20130712095600.GT25631@dyad.programming.kicks-ass.net> <51DFFCE1.1070203@intel.com> <20130712145515.GI17211@twins.programming.kicks-ass.net>
-In-Reply-To: <20130712145515.GI17211@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] SLAB changes for v3.11-rc0
+References: <alpine.LFD.2.03.1307142205090.2124@kernel.org> <CA+55aFytd8NZeX1ux8U56uQk65N3jcq_7UMv1RrFgAPmLJc-dw@mail.gmail.com>
+In-Reply-To: <CA+55aFytd8NZeX1ux8U56uQk65N3jcq_7UMv1RrFgAPmLJc-dw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/13 17:55, Peter Zijlstra wrote:
-> On Fri, Jul 12, 2013 at 03:56:01PM +0300, Adrian Hunter wrote:
->>> There's events where this isn't a possible location; take PERF_RECORD_MMAP for
->>> instance; the tail is the complete filename.
+On 07/14/2013 10:58 PM, Linus Torvalds wrote:
+> On Sun, Jul 14, 2013 at 12:06 PM, Pekka Enberg <penberg@kernel.org> wrote:
 >>
->> PERF_RECORD_MMAP falls in the category I have called non-sample events.
->> Those events are appended with an ID sample.  perf tools parses the ID
->> sample backwards from header.size.  So the ID is at the last position
->> relative to header.size
-> 
-> But why? Why make it different per PERF_RECORD type? 
+>> The tree also contains Christoph's unification work that I merged in
+>> too late had to revert because it broke things. We'll try again for
+>> v3.12.
+>
+> Ugh. I'll merge the commits leading up to that, but not the actual
+> broken try at unification at all.
+>
+> There's just one one-liner patch in between the broken commits and
+> their reverts, I don't see the point of pulling that part at all, and
+> I can take the one-liner separately.
 
-There have always been two formats:
+OK, I'll requeue the oneliner commit. Thanks!
 
-	1. PERF_RECORD_SAMPLE as defined by perf_output_sample()
-
-	2. everything else as defined by __perf_event__output_id_sample()
-
-The two formats are not the same, and there is no reason for them to be.
-
-PERF_RECORD_SAMPLE is parsed forwards, so the ID is at the first position.
-
-ID samples are parsed backwards, so the ID is at the last position (i.e. the
-first position parsed).
+			Pekka
 
