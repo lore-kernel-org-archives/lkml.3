@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3GOSmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:42:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48211 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598Ab3GOSmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:42:16 -0400
-Date: Mon, 15 Jul 2013 11:40:30 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Peng Tao <bergwolf@gmail.com>, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH-v3 00/17] staging/lustre: fix various build issues
-Message-ID: <20130715184030.GA17220@kroah.com>
-References: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
- <1373908589.2062.18.camel@joe-AO722>
+	id S1754296Ab3GOSow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:44:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43658 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752846Ab3GOSov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 14:44:51 -0400
+Message-ID: <51E44204.4000802@zytor.com>
+Date: Mon, 15 Jul 2013 11:40:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373908589.2062.18.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tim Northover <t.p.northover@gmail.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Andi Kleen <ak@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LLVMdev <llvmdev@cs.uiuc.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [LLVMdev] [PATCH] x86/asm: avoid mnemonics without type suffix
+References: <1373806562-30422-1-git-send-email-artagnon@gmail.com> <CA+55aFwKQQtTrgm7O8MLkqGgno-CsLSTM8tjrjuGmmqPEAZghw@mail.gmail.com> <CAFHTzf+PTVBcMYy2NQBQDLQgsWjbUBc+FYp2Hokd-002hXrePA@mail.gmail.com> <CA+55aFwpfn9FjkYeVpA8aPiGy6o8Z-JgJUNFmKF3H7nGqmbi+w@mail.gmail.com> <CAFHTzf+O7sdeETp5nsnoQDFeg-zE4q6Kmq9rHPZEr5z2jm2zxg@mail.gmail.com> <CA+55aFwcxWR-SFD=QFXAb38sPnN-hcOBF-W+NuRBSMx-n+RnxQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwcxWR-SFD=QFXAb38sPnN-hcOBF-W+NuRBSMx-n+RnxQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 10:16:29AM -0700, Joe Perches wrote:
-> On Mon, 2013-07-15 at 22:27 +0800, Peng Tao wrote:
-> > Hi Greg,
-> > 
-> > Now that 3.11-rc1 is out, please consider queuing following patches to
-> > fix various Lustre client build issues. I've verified that we can now
-> > pass build on sparc/mips/s390/powerpc/x86, both 32bits and 64bits.
+On 07/14/2013 12:49 PM, Linus Torvalds wrote:
+> On Sun, Jul 14, 2013 at 12:30 PM, Tim Northover <t.p.northover@gmail.com> wrote:
+>>
+>> I don't think you've actually tested that, have you? (x86-64)
 > 
-> These patches apply to linus' current, but not to -next
-> where other lustre patches have already been applied.
+> Oh, you're right, for constants > 5 bits you have that other thing
+> going on. I didn't think about the fact that the constant changed in
+> the middle of the thread (it started out as 1).
+> 
+> We use the gcc constraint "I" (0-31) in the kernel for this reason.
+> 
+>              Linus
 
-What trees are those in?  I have nothing in my staging-next branch right
-now, so they didn't come from there, which is where I will be applying
-this to.
+This is also why the Intel manuals point out that "some assemblers" can
+take things like:
 
-thanks,
+	bt[l] $63,(%rsi)
 
-greg k-h
+... and turn it into:
+
+	btl $31,4(%rsi)
+
+This is definitely the friendly thing to do toward the human programmer.
+ Unfortunately gas doesn't, nor does e.g. NASM.
+
+	-hpa
+
+
