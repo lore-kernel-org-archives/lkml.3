@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab3GOIrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:47:43 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47566 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab3GOIrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:47:41 -0400
-Message-ID: <1373878026.19894.335.camel@pasglop>
-Subject: Re: [PATCH] module: ppc64 module CRC relocation fix causes perf
- issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Paul Mackerras <paulus@samba.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Neil Horman <nhorman@tuxdriver.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
-Date: Mon, 15 Jul 2013 18:47:06 +1000
-In-Reply-To: <20130715140450.573aab15@kryten>
-References: <20130715140450.573aab15@kryten>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754591Ab3GOIu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:50:26 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50634 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab3GOIuZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 04:50:25 -0400
+Message-ID: <51E3B6FB.7040002@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 14:16:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc/pseries: drop "select HOTPLUG"
+References: <1373799735.1370.5.camel@x61.thuisdomein>
+In-Reply-To: <1373799735.1370.5.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071508-8878-0000-0000-000007F30485
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 14:04 +1000, Anton Blanchard wrote:
-> Module CRCs are implemented as absolute symbols that get resolved by
-> a linker script. We build an intermediate .o that contains an
-> unresolved symbol for each CRC. genksysms parses this .o, calculates
-> the CRCs and writes a linker script that "resolves" the symbols to
-> the calc
-
-Scott, can somebody from FSL test that on 32-bit and Ack it ?
-
-Thanks !
-
-Cheers,
-Ben.
-
-> Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
-> that need relocating and relocates them at boot. Commit d4703aef
-> (module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
-> added a hook to reverse the bogus relocations. Part of this patch
-> created a symbol at 0x0:
+On 07/14/2013 04:32 PM, Paul Bolle wrote:
+> The Kconfig symbol HOTPLUG was removed with commit 40b313608a ("Finally
+> eradicate CONFIG_HOTPLUG"). But there's still one select statement for
+> that symbol. It seems that select statement was added after the patch to
+> remove CONFIG_HOTPLUG was submitted. Anyhow, it is useless and can be
+> dropped.
 > 
-> # head -2 /proc/kallsyms 
-> 0000000000000000 T reloc_start
-> c000000000000000 T .__start
-> 
-> This reloc_start symbol is causing lots of confusion to perf. It
-> thinks reloc_start is a massive function that stretches from 0x0 to
-> 0xc000000000000000 and we get various cryptic errors out of perf,
-> including:
-> 
-> problem incrementing symbol count, skipping event
-> 
-> This patch removes the  reloc_start linker script label and instead
-> defines it as PHYSICAL_START. We also need to wrap it with
-> CONFIG_PPC64 because the ppc32 kernel can set a non zero
-> PHYSICAL_START at compile time and we wouldn't want to subtract
-> it from the CRCs in that case.
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Cc: <stable@kernel.org>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > ---
-> 
-> This bug was originally reported on Fedora 19 (3.9.x), so I've marked
-> it for stable.
-> 
-> Index: b/arch/powerpc/include/asm/module.h
-> ===================================================================
-> --- a/arch/powerpc/include/asm/module.h
-> +++ b/arch/powerpc/include/asm/module.h
-> @@ -82,10 +82,9 @@ struct exception_table_entry;
->  void sort_ex_table(struct exception_table_entry *start,
->  		   struct exception_table_entry *finish);
->  
-> -#ifdef CONFIG_MODVERSIONS
-> +#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
->  #define ARCH_RELOCATES_KCRCTAB
-> -
-> -extern const unsigned long reloc_start[];
-> +#define reloc_start PHYSICAL_START
->  #endif
->  #endif /* __KERNEL__ */
->  #endif	/* _ASM_POWERPC_MODULE_H */
-> Index: b/arch/powerpc/kernel/vmlinux.lds.S
-> ===================================================================
-> --- a/arch/powerpc/kernel/vmlinux.lds.S
-> +++ b/arch/powerpc/kernel/vmlinux.lds.S
-> @@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
->  #endif
->  SECTIONS
->  {
-> -	. = 0;
-> -	reloc_start = .;
-> -
->  	. = KERNELBASE;
->  
->  /*
 
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+> 
+>  arch/powerpc/platforms/pseries/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
+> index 1bd3399..62b4f80 100644
+> --- a/arch/powerpc/platforms/pseries/Kconfig
+> +++ b/arch/powerpc/platforms/pseries/Kconfig
+> @@ -19,7 +19,6 @@ config PPC_PSERIES
+>  	select ZLIB_DEFLATE
+>  	select PPC_DOORBELL
+>  	select HAVE_CONTEXT_TRACKING
+> -	select HOTPLUG if SMP
+>  	select HOTPLUG_CPU if SMP
+>  	default y
+> 
+
+Regards,
+Srivatsa S. Bhat
 
