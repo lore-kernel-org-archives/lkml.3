@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab3GOUQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:16:09 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39008 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059Ab3GOUQG (ORCPT
+	id S1754952Ab3GOUTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:19:46 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:48939 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab3GOUTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:16:06 -0400
-Date: Mon, 15 Jul 2013 21:15:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
+	Mon, 15 Jul 2013 16:19:44 -0400
+Date: Mon, 15 Jul 2013 13:19:43 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Message-ID: <20130715201538.GE11538@sirena.org.uk>
-References: <1373917517.17876.193.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zljh9u/ceMLi+8mf"
-Content-Disposition: inline
-In-Reply-To: <1373917517.17876.193.camel@gandalf.local.home>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
 Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
  kernel, let's dump the cc: stable tag
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Message-ID: <20130715201943.GA22131@roeck-us.net>
+References: <1373916476.2748.69.camel@dabdike>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373916476.2748.69.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 15, 2013 at 11:27:56PM +0400, James Bottomley wrote:
+[ ... ]
+> 
+> The solution, to me, looks simple:  Let's co-opt a process we already
+> know how to do: mailing list review and tree handling.  So the proposal
+> is simple:
+> 
+>      1. Drop the cc: stable@ tag: it makes it way too easy to add an ill
+>         reviewed patch to stable
 
---Zljh9u/ceMLi+8mf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That seems to be a bit drastic. It is quite useful to have the tag,
+but maybe it should only be added by the maintainer and not in the initial
+patch submission. This would ensure that the maintainer(s) made the decision.
+If the original patch submitter thinks that the patch is stable material,
+that information could be added in the comments section.
 
-On Mon, Jul 15, 2013 at 03:45:17PM -0400, Steven Rostedt wrote:
+This would also ensure that patches are not accidentially sent to the stable
+mailing list prior to being accepted into the upstream kernel, and if necessary
+triggers a discussion on the subject mailing list if the patch is stable
+material or not - which addresses points 2 and 3 below.
 
-> Have Greg, or whoever, change his script to not take commits marked for
-> stable, but instead, forward the commit to the maintainer. Or as it
-> already does today, to everyone on the Cc, and -by: tags. Change the
-> script from being "stable review" to say "Look to see what you want, and
-> resend what is needed for stable".
+Guenter
 
-This sounds fairly close what James was suggesting, though with central
-automation of the mail it out stage.
-
-> Then the maintainer needs to look at all the patches that were marked
-> for stable, and resend them to Greg saying which ones should go into
-> stable.
-
-One thing I don't particularly like about this is having to resend the
-patches in response to mail; it seems cumbersome to do that rather than
-reply to mail or something.  Requiring a positive acknowledgement or
-action seems useful but the particular one seems a bit annoying; I'd
-rather either just send the patch as part of the mark for stable
-workflow or ack something in mail.
-
-> Also, we could mandate that the maintainers do the backports too.
-
-That's what happens already isn't it?
-
---Zljh9u/ceMLi+8mf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5FhmAAoJELSic+t+oim9b8MP/0/FN3ADnlU11gziqgq7dM15
-sNElUix9h2yiPeBl9Uh3nJYOBMM2Ul4GMDaHRL9dmgnq/mqBH5muHi5dsyiuh8zs
-Te88zYi8Y4kTOJBnlt8wm7gf5W6McR1yF0CFAOv4/tttWrWgOjPWGnAG3KH6bvcN
-gpWXyeb+YlRAwcv8QMfH5x90R5UPgF3dcEx3XzirO5rnpr1rcgSM4s5VhjJEMoeb
-ibqv/iU4yKaG56RGpX3j42/1z1QSkJAnITWHi1MhFe/Qzjnwbm+4scfHF7dWd47r
-oczupTRpJggLCo0i4yco7Puw4lIwwBATBDpgIO14SKndOgl8xXe+kMUDq0p7HjGp
-MDccOzkTZqVSOsef6wJWCPEorSXdl1624epXJT1WmSF5ts0C9aW+sgO2hTpiS6j+
-PvLD3oPuDWuaPKnTwkHTEZFrrXOlQTLgdoczFyN3+B2yS/0KLjO/zGqSxEW4lFHu
-TP1b+L8KaPgWsElmnIhxdvyLGUH+iDRS/ihXPrgWIrkTcnEbWABj4cMwhfXj8cDJ
-h/343AUllG9Vk9+bJGvbPxf/uLPzJgRgdhVPVkwRhXe92QlgfkY0WPgkm+tyOzFG
-msqp9lMRAz1xcgla4Ed8fhLYK2bWYsNN09iVAvZojQfYizJ9eqPg6VxSjV15XaqJ
-abMPYu5OmrPOstNGB1I4
-=zcw4
------END PGP SIGNATURE-----
-
---Zljh9u/ceMLi+8mf--
+>      2. All patches to stable should follow current review rules: They
+>         should go to the mailing list the original patch was sent to
+>         once the original is upstream as a request for stable.
+>      3. Following debate on the list, the original maintainer would be
+>         responsible for collecting the patches (including the upstream
+>         commit) adjudicating on them and passing them on to stable after
+>         list review (either by git tree pull or email to stable@).
+> 
+> I contend this raises the bar for adding patches to stable much higher,
+> which seems to be needed, and adds a review stage which involves all the
+> original reviewers.
+> 
+> Oh, and did someone mention plum brandy ...?
+> 
+> James
+> 
+> 
+> _______________________________________________
+> Ksummit-2013-discuss mailing list
+> Ksummit-2013-discuss@lists.linuxfoundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
