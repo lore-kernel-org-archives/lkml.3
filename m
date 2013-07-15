@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3GOKVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:21:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26616 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754869Ab3GOKVa convert rfc822-to-8bit (ORCPT
+	id S1755109Ab3GOKVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:21:53 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:33135 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab3GOKVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:21:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
-   d="scan'208";a="370358210"
-Message-ID: <1373883677.24799.243.camel@smile>
-Subject: Re: [PATCH 00/12] dma: various minor clean ups for slave drivers
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Williams <djbw@fb.com>, Li Yang <leoli@freescale.com>,
-        Zhang Wei <zw@melbourneit.hotkeysparking.com>,
-        linuxppc-dev@lists.ozlabs.org, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>
-Date: Mon, 15 Jul 2013 13:21:17 +0300
-In-Reply-To: <20130715093748.GO16653@intel.com>
-References: <1369656882-25241-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20130530174727.GE3767@intel.com>
-	 <CAHp75VcZCVskWnQuNeO4A0keZJS27vaWe5zTDomAgSa_ezyUQQ@mail.gmail.com>
-	 <20130715093748.GO16653@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Mon, 15 Jul 2013 06:21:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <51E3C950.90503@linux.vnet.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+	<20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com>
+	<CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com>
+	<51E3C950.90503@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 15:51:51 +0530
+Message-ID: <CAKohponudZ+f=0k9xYhHv3FAKv3Mw6Lc-4MoV9+++VqBsvCNDg@mail.gmail.com>
+Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 15:07 +0530, Vinod Koul wrote: 
-> On Thu, May 30, 2013 at 09:32:19PM +0300, Andy Shevchenko wrote:
-> > >> Here is a set of small independent patches that clean up or fix minor things
-> > >> across DMA slave drivers.
-> 
-> Applied thanks
+On 15 July 2013 15:35, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> Actually even I was wondering about this while writing the patch and
+> I even tested shutdown after multiple suspend/resume cycles, to verify that
+> the refcount is messed up. But surprisingly, things worked just fine.
 
-Thank you. You were faster than me, I was just about to send rebased
-version.
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+What kind of system have you tested it on?
