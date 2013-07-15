@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3GOTy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:54:27 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16247 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab3GOTyX (ORCPT
+	id S1755399Ab3GOTyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:54:21 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11141 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab3GOTyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:54:23 -0400
+	Mon, 15 Jul 2013 15:54:18 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 15 Jul 2013 12:53:33 -0700
+	by hqnvupgp08.nvidia.com on Mon, 15 Jul 2013 12:53:26 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 9/9] usb: phy: tegra: Use DT helpers for dr_mode
-Date: Mon, 15 Jul 2013 22:53:49 +0300
-Message-ID: <1373918029-28977-10-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v2 6/9] usb: host: tegra: Locate a PHY via standard API
+Date: Mon, 15 Jul 2013 22:53:46 +0300
+Message-ID: <1373918029-28977-7-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
@@ -27,98 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new of_usb_get_dr_mode helper function for parsing dr_mode
-from the device tree. Also replace the usage of the custom
-tegra_usb_phy_mode enum with the standard enum.
+Use devm_get_phy_by_phandle to get a PHY device instead of the custom
+Tegra functions.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- drivers/usb/phy/phy-tegra-usb.c   | 24 ++++++++++++------------
- include/linux/usb/tegra_usb_phy.h |  8 +-------
- 2 files changed, 13 insertions(+), 19 deletions(-)
+ drivers/usb/host/ehci-tegra.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 3ded872..b7ad8b3 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -377,7 +377,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 		UTMIP_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
- 	writel(val, base + UTMIP_PLL_CFG1);
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index a208cea..db8031f 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -328,7 +328,6 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	struct tegra_ehci_hcd *tegra;
+ 	int err = 0;
+ 	int irq;
+-	struct device_node *np_phy;
+ 	struct usb_phy *u_phy;
  
--	if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE) {
-+	if (phy->mode == USB_DR_MODE_PERIPHERAL) {
- 		val = readl(base + USB_SUSP_CTRL);
- 		val &= ~(USB_WAKE_ON_CNNT_EN_DEV | USB_WAKE_ON_DISCON_EN_DEV);
- 		writel(val, base + USB_SUSP_CTRL);
-@@ -412,7 +412,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 	/* Right now device-tree probed devices don't get dma_mask set.
+@@ -367,13 +366,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	udelay(1);
+ 	tegra_periph_reset_deassert(tegra->clk);
  
- 	if (phy->is_legacy_phy) {
- 		val = readl(base + UTMIP_SPARE_CFG0);
--		if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE)
-+		if (phy->mode == USB_DR_MODE_PERIPHERAL)
- 			val &= ~FUSE_SETUP_SEL;
- 		else
- 			val |= FUSE_SETUP_SEL;
-@@ -453,7 +453,7 @@ static int utmi_phy_power_off(struct tegra_usb_phy *phy)
- 
- 	utmi_phy_clk_disable(phy);
- 
--	if (phy->mode == TEGRA_USB_PHY_MODE_DEVICE) {
-+	if (phy->mode == USB_DR_MODE_PERIPHERAL) {
- 		val = readl(base + USB_SUSP_CTRL);
- 		val &= ~USB_WAKEUP_DEBOUNCE_COUNT(~0);
- 		val |= USB_WAKE_ON_CNNT_EN_DEV | USB_WAKEUP_DEBOUNCE_COUNT(5);
-@@ -906,15 +906,15 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	err = of_property_match_string(np, "dr_mode", "otg");
--	if (err < 0) {
--		err = of_property_match_string(np, "dr_mode", "peripheral");
--		if (err < 0)
--			tegra_phy->mode = TEGRA_USB_PHY_MODE_HOST;
--		else
--			tegra_phy->mode = TEGRA_USB_PHY_MODE_DEVICE;
--	} else
--		tegra_phy->mode = TEGRA_USB_PHY_MODE_OTG;
-+	if (of_find_property(np, "dr_mode", NULL))
-+		tegra_phy->mode = of_usb_get_dr_mode(np);
-+	else
-+		tegra_phy->mode = USB_DR_MODE_HOST;
-+
-+	if (tegra_phy->mode == USB_DR_MODE_UNKNOWN) {
-+		dev_err(&pdev->dev, "dr_mode is invalid\n");
-+		return -EINVAL;
-+	}
- 
- 	/* On some boards, the VBUS regulator doesn't need to be controlled */
- 	if (of_find_property(np, "vbus-supply", NULL)) {
-diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index a095c98..d3db274 100644
---- a/include/linux/usb/tegra_usb_phy.h
-+++ b/include/linux/usb/tegra_usb_phy.h
-@@ -34,12 +34,6 @@ enum tegra_usb_phy_port_speed {
- 	TEGRA_USB_PHY_PORT_SPEED_HIGH,
- };
- 
--enum tegra_usb_phy_mode {
--	TEGRA_USB_PHY_MODE_DEVICE,
--	TEGRA_USB_PHY_MODE_HOST,
--	TEGRA_USB_PHY_MODE_OTG,
--};
+-	np_phy = of_parse_phandle(pdev->dev.of_node, "nvidia,phy", 0);
+-	if (!np_phy) {
+-		err = -ENODEV;
+-		goto cleanup_clk_en;
+-	}
 -
- struct tegra_xtal_freq;
- 
- struct tegra_usb_phy {
-@@ -51,7 +45,7 @@ struct tegra_usb_phy {
- 	struct clk *pll_u;
- 	struct clk *pad_clk;
- 	struct regulator *vbus;
--	enum tegra_usb_phy_mode mode;
-+	enum usb_dr_mode mode;
- 	void *config;
- 	struct usb_phy *ulpi;
- 	struct usb_phy u_phy;
+-	u_phy = tegra_usb_get_phy(np_phy);
++	u_phy = devm_usb_get_phy_by_phandle(&pdev->dev, "nvidia,phy", 0);
+ 	if (IS_ERR(u_phy)) {
+ 		err = PTR_ERR(u_phy);
+ 		goto cleanup_clk_en;
 -- 
 1.8.1.5
 
