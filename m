@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab3GOG1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 02:27:40 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:44675 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab3GOG1j (ORCPT
+	id S1754074Ab3GOGaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 02:30:05 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43484 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab3GOGaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 02:27:39 -0400
-Message-ID: <51E39583.5090601@linux.vnet.ibm.com>
-Date: Mon, 15 Jul 2013 11:54:03 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 15 Jul 2013 02:30:04 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH] video: remove unused variable "dev" in vga16fb_destroy()
+Date: Mon, 15 Jul 2013 14:29:25 +0800
+Message-ID: <1373869765-52572-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
-        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
-        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] cpufreq: Add helper to perform alloc/free of policy
- structure
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <20130711221605.547.69988.stgit@srivatsabhat.in.ibm.com> <CAKohponVobWCLNf3ryPiEXpmru+qrp=EYLyX0zLh2SSabpf-SQ@mail.gmail.com>
-In-Reply-To: <CAKohponVobWCLNf3ryPiEXpmru+qrp=EYLyX0zLh2SSabpf-SQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071506-5816-0000-0000-000008E84518
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 12:39 PM, Viresh Kumar wrote:
-> On 12 July 2013 03:46, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Separate out the allocation of the cpufreq policy structure (along with
->> its error handling) to a helper function. This makes the code easier to
->> read and also helps with some upcoming code reorganization.
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  drivers/cpufreq/cpufreq.c |   50 ++++++++++++++++++++++++++++++++-------------
->>  1 file changed, 35 insertions(+), 15 deletions(-)
->>
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> index f8c3100..ca14dc2 100644
->> --- a/drivers/cpufreq/cpufreq.c
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -943,6 +943,37 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
->>  }
->>  #endif
->>
->> +static struct cpufreq_policy *cpufreq_policy_alloc(void)
->> +{
->> +       struct cpufreq_policy *policy;
->> +
->> +       policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
-> 
-> sizeof(*policy) ??
+Delete unused variable "dev" to fix build warning in
+drivers/video/vga16fb.c
 
-Ah, thanks for pointing that. That must be a remnant from the old code.
-But, to make it easier for people testing this patchset to fix their
-cpufreq regressions, I'll hold off on posting newer versions of this patchset,
-to avoid confusion. We can revisit this at a later point in time, IMHO.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/vga16fb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+index 830ded4..2827333 100644
+--- a/drivers/video/vga16fb.c
++++ b/drivers/video/vga16fb.c
+@@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+ 
+ static void vga16fb_destroy(struct fb_info *info)
+ {
+-	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
+ 	iounmap(info->screen_base);
+ 	fb_dealloc_cmap(&info->cmap);
+ 	/* XXX unshare VGA regions */
+-- 
+1.7.1
+
 
