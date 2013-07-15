@@ -1,93 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab3GOEEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 00:04:42 -0400
-Received: from ozlabs.org ([203.10.76.45]:58155 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab3GOEEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 00:04:41 -0400
-Date: Mon, 15 Jul 2013 14:04:50 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Neil Horman <nhorman@tuxdriver.com>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] module: ppc64 module CRC relocation fix causes perf issues
-Message-ID: <20130715140450.573aab15@kryten>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751591Ab3GOERg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 00:17:36 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:40023 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab3GOERe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 00:17:34 -0400
+Message-ID: <51E37694.30608@huawei.com>
+Date: Mon, 15 Jul 2013 12:12:04 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Willy Tarreau <w@1wt.eu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+References: <20130711222935.GA11340@redhat.com> <20130711224455.GA17222@kroah.com> <20130712141530.GA3629@roeck-us.net> <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com> <20130712173150.GA5534@roeck-us.net> <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com> <20130712195051.GB32054@1wt.eu> <20130713062223.GA15155@kroah.com> <20130713063607.GI32054@1wt.eu> <20130713064801.GA1305@kroah.com> <20130713071239.GJ32054@1wt.eu>
+In-Reply-To: <20130713071239.GJ32054@1wt.eu>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> It is *my* conception of the stable branch, but I think that many people
+> have different expectations about what should be merged or not. For example
+> in old LTS branches, I used to merge what was relevant for servers only,
 
-Module CRCs are implemented as absolute symbols that get resolved by
-a linker script. We build an intermediate .o that contains an
-unresolved symbol for each CRC. genksysms parses this .o, calculates
-the CRCs and writes a linker script that "resolves" the symbols to
-the calculated CRC.
+We have lots of embeded systems running 2.6.32 kernel. And we encountered
+a critical bug, and we had to backported some patches which are not bug fixes
+to prevent the bug from happening.
 
-Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
-that need relocating and relocates them at boot. Commit d4703aef
-(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
-added a hook to reverse the bogus relocations. Part of this patch
-created a symbol at 0x0:
+> because I saw no reason why an old kernel would be used on a laptop (eg:
+> 2.4). So I always skipped wifi, alsa, drm, etc... With 2.6.32, the Debian
+> kernel guys provided me with a lot of fixes in these areas, explaining
+> that these fixes addressed issues that their users were facing, and they
+> were perfectly right. It's just that I didn't expect this at all.
 
-# head -2 /proc/kallsyms 
-0000000000000000 T reloc_start
-c000000000000000 T .__start
 
-This reloc_start symbol is causing lots of confusion to perf. It
-thinks reloc_start is a massive function that stretches from 0x0 to
-0xc000000000000000 and we get various cryptic errors out of perf,
-including:
-
-problem incrementing symbol count, skipping event
-
-This patch removes the  reloc_start linker script label and instead
-defines it as PHYSICAL_START. We also need to wrap it with
-CONFIG_PPC64 because the ppc32 kernel can set a non zero
-PHYSICAL_START at compile time and we wouldn't want to subtract
-it from the CRCs in that case.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Cc: <stable@kernel.org>
----
-
-This bug was originally reported on Fedora 19 (3.9.x), so I've marked
-it for stable.
-
-Index: b/arch/powerpc/include/asm/module.h
-===================================================================
---- a/arch/powerpc/include/asm/module.h
-+++ b/arch/powerpc/include/asm/module.h
-@@ -82,10 +82,9 @@ struct exception_table_entry;
- void sort_ex_table(struct exception_table_entry *start,
- 		   struct exception_table_entry *finish);
- 
--#ifdef CONFIG_MODVERSIONS
-+#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
- #define ARCH_RELOCATES_KCRCTAB
--
--extern const unsigned long reloc_start[];
-+#define reloc_start PHYSICAL_START
- #endif
- #endif /* __KERNEL__ */
- #endif	/* _ASM_POWERPC_MODULE_H */
-Index: b/arch/powerpc/kernel/vmlinux.lds.S
-===================================================================
---- a/arch/powerpc/kernel/vmlinux.lds.S
-+++ b/arch/powerpc/kernel/vmlinux.lds.S
-@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
- #endif
- SECTIONS
- {
--	. = 0;
--	reloc_start = .;
--
- 	. = KERNELBASE;
- 
- /*
