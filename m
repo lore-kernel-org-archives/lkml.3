@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3GOPJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 11:09:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40979 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932245Ab3GOPJf (ORCPT
+	id S932557Ab3GOPL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 11:11:28 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:38503 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932531Ab3GOPLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 11:09:35 -0400
-Date: Mon, 15 Jul 2013 16:09:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Robin Gong <b38343@freescale.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, lgirdwood@gmail.com, shawn.guo@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        rob@landley.net
-Message-ID: <20130715150928.GI11538@sirena.org.uk>
-References: <1373604855-17714-1-git-send-email-b38343@freescale.com>
- <20130712144037.GJ24508@sirena.org.uk>
- <20130712161511.GA21203@Robin-OptiPlex-780>
+	Mon, 15 Jul 2013 11:11:25 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 7/9] mm, hugetlb: add VM_NORESERVE check in vma_has_reserves()
+In-Reply-To: <1373881967-16153-8-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com> <1373881967-16153-8-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 15 Jul 2013 20:41:12 +0530
+Message-ID: <87li57j1tb.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4LwthZj+AV2mq5CX"
-Content-Disposition: inline
-In-Reply-To: <20130712161511.GA21203@Robin-OptiPlex-780>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regulator: pfuze100: add pfuze100 regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071602-3568-0000-0000-000003ED97AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
---4LwthZj+AV2mq5CX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> If we map the region with MAP_NORESERVE and MAP_SHARED,
+> we can skip to check reserve counting and eventually we cannot be ensured
+> to allocate a huge page in fault time.
+> With following example code, you can easily find this situation.
+>
+> Assume 2MB, nr_hugepages = 100
+>
+>         fd = hugetlbfs_unlinked_fd();
+>         if (fd < 0)
+>                 return 1;
+>
+>         size = 200 * MB;
+>         flag = MAP_SHARED;
+>         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+>         if (p == MAP_FAILED) {
+>                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+>                 return -1;
+>         }
+>
+>         size = 2 * MB;
+>         flag = MAP_ANONYMOUS | MAP_SHARED | MAP_HUGETLB | MAP_NORESERVE;
+>         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, -1, 0);
+>         if (p == MAP_FAILED) {
+>                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+>         }
+>         p[0] = '0';
+>         sleep(10);
+>
+> During executing sleep(10), run 'cat /proc/meminfo' on another process.
+> You'll find a mentioned problem.
+>
+> Solution is simple. We should check VM_NORESERVE in vma_has_reserves().
+> This prevent to use a pre-allocated huge page if free count is under
+> the reserve count.
 
-On Sat, Jul 13, 2013 at 12:15:12AM +0800, Robin Gong wrote:
+You have a problem with this patch, which i guess you are fixing in
+patch 9. Consider two process
 
-Please fix your mail program to word wrap between paragraphs.
+a) MAP_SHARED  on fd
+b) MAP_SHARED | MAP_NORESERVE on fd
 
-> On Fri, Jul 12, 2013 at 03:40:37PM +0100, Mark Brown wrote:
+We should allow the (b) to access the page even if VM_NORESERVE is set
+and we are out of reserve space .
 
-> > > +static const int pfuze100_swbst[] = {
-> > > +	5000000, 5050000, 5100000, 5150000,
-> > > +};
+so may be you should rearrange the patch ?
 
-> > This looks like a linear map, the steps are all 50mV?
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 6c1eb9b..f6a7a4e 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -464,6 +464,8 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+>  /* Returns true if the VMA has associated reserve pages */
+>  static int vma_has_reserves(struct vm_area_struct *vma)
+>  {
+> +	if (vma->vm_flags & VM_NORESERVE)
+> +		return 0;
+>  	if (vma->vm_flags & VM_MAYSHARE)
+>  		return 1;
+>  	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
+> -- 
+> 1.7.9.5
 
-> Yes, but the swbst regulator share the same define type with the vsnvs
-> regulator, and the later voltage table is not linear, so I use
-> volt_table in swbst regulator . I don't want to  add another regulator
-> type for this.
-
-You should do so; it's not hard.
-
-> > You should just register all the regulators rather than only registering
-> > those that the user explicitly selects.  This allows users to inpect the
-> > current configuration and simplifies the code - for example you don't
-> > need to count the DT nodes and you can just have a simple array in the
-> > platform data (see how wm831x does this for an example).
-
-> Yes, it will simplifies the code, but sometimes we will not use all
-> the regulators on boards, in this case, Is it better that only
-> register the available regulators?
-
-It's better to have everything, that way the framework can do things
-like power down unused regualtors that got left enabled.
-
-> > You should really be doing this on a copy of the regulators table rather
-> > than on the table itself.
-
-> everyone of the four regulators(SW2~SW4) has two different linear
-> voltage table which decided by the specific bit(one regulator ,one
-> different bit) . So  will modify the voltage table dynamically before
-> regulator register. I think this way is more simple , although looks
-> little weird and uncomfortable.
-
-You're missing the point here.  You shouldn't be modifying global data
-(which should be marked as const) at all, you should be working on a
-copy of it if it needs modifying.
-
---4LwthZj+AV2mq5CX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5BClAAoJELSic+t+oim9mV0P/RzMvdKJZf9ShSrVbMD/voMd
-NjzL+U56WlO+pcWnK+g8UcImz1mNvQ8RXBQvCrpCgDZbEPAKzbyfholgAzXnB9BH
-OvOaivUX6M1sjxQe+7qNi0kUt+T2GuB9YJHw51g4KxRzD2nkdu/IzDD19cHWC5GE
-lxTSO+5P+Cw7XomMweg+iG5p1ivHBbFEv4vaiqDY9Y2Avv2hLvp6dAjeMoCZjqFe
-o8hxvMsF+R/xLyQEojwW0dNESJBYFJZws3i5hjCWANaUTZEHVNzoUvDTZKY+P7wd
-dpnp3qgGSNGMPbGlY5IaeLYWLid9KDaySSNACxderUl4n7dT76wiJ4Dyt8pdXuxZ
-xXiaE4PKabn95VXLCw0r/Gh+4hrCPjuhVZZY8MTg7QAR025l0PWm8RN3kyNPetDI
-DP6U7bnH9N9R8G4o5U0cCU/GeiWkHrbcEZ2FJaTS15kX7RRyOajJZWKzCLumhEDF
-l3Nx3xtBwAcXXnitvNzHusPaUX6/rpd4cbGwf2v+TpX3EV3TVymNT6AMaW2FrZMw
-4JfLoCE0jkHLSyZMpdcvj2Xv/GByXPOP/MuLH9YeHWLJjz6oAXnFe3AnnpLKeVmg
-7IwnqxzQfuMF+VAIYdLIFndB9/35IYhNOeKdkGWs5bTz/ii5FM4m8Pgk1QQDzkIv
-orQb6BmowYMEsWM8aR0M
-=dHUS
------END PGP SIGNATURE-----
-
---4LwthZj+AV2mq5CX--
