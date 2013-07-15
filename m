@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab3GOR2U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 13:28:20 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:51186 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3GOR2T (ORCPT
+	id S1752891Ab3GOR3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 13:29:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7012 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab3GOR3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 13:28:19 -0400
+	Mon, 15 Jul 2013 13:29:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 15 Jul 2013 10:28:59 -0700
+Message-ID: <51E43189.5050805@nvidia.com>
+Date: Mon, 15 Jul 2013 13:29:45 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1373361330-3946-1-git-send-email-realmz6@kernel.org>
-References: <1373361330-3946-1-git-send-email-realmz6@kernel.org>
-Date: Mon, 15 Jul 2013 19:28:18 +0200
-X-Google-Sender-Auth: iw-wi0MVoLsovGTn6a0Yymm1F3A
-Message-ID: <CAMuHMdWR12v9vHYZM1RJC3zJA0JCdr5K8VY3Gn2+HaR+5iNfzw@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.11
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Steven Miao <realmz6@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH V2] ARM: tegra: enable palmas device for dalmore
+References: <1373441852-27176-1-git-send-email-ldewangan@nvidia.com> <51E427D6.7090702@wwwdotorg.org> <51E43129.7080602@nvidia.com>
+In-Reply-To: <51E43129.7080602@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On 7/15/2013 1:28 PM, Laxman Dewangan wrote:
+> On Monday 15 July 2013 10:18 PM, Stephen Warren wrote:
+>> On 07/10/2013 01:37 AM, Laxman Dewangan wrote:
+>>> Make the entry of Dalmore Power Management Unit device TPS65913
+>>> in dalmore DTS file. The Palma driver support this device.
+>>>
+>>> Enable following submodule of the TPS65913:
+>>> - GPIO driver
+>>> - RTC driver.
+>>> - Power regulator driver.
+>> If I apply this, (at least) the SD card no longer works. I assume the
+>> regulator for it is being turned off somehow.
+> 
+> As per downstream power tree, smps9 is feeding power to sd slot and I 
+> make this rail as always ON. So there should not be any issue.
+> 
+> Rhyland,
+> Do you see any differences on this power tree with your power tree with 
+> DT? There was discussion sometime ago on the sdcard. Am I missing 
+> anything here?
+> 
+> Thanks,
+> Laxman
+> 
 
-On Tue, Jul 9, 2013 at 11:15 AM, Steven Miao <realmz6@kernel.org> wrote:
-> Steven Miao (2):
->       smp: refine bf561 smpboot code
 
-Unfortunately this landed too late in -next to notice:
+I noticed a couple differences between this and what we are using...
 
-arch/blackfin/mach-common/smp.c:150:2: error: conversion to non-scalar
-type requested
-arch/blackfin/mach-common/smp.c:185:23: error: incompatible types when
-assigning to type 'atomic_t' from type 'int'
-arch/blackfin/mach-common/smp.c:186:24: error: incompatible types when
-assigning to type 'atomic_t' from type 'int'
-make[2]: *** [arch/blackfin/mach-common/smp.o] Error 1
+Yours:
++			    ldo8-in-supply = <&tps65090_dcdc3_reg>;
++			    ldo9-in-supply = <&palmas_smps9_reg>;
+Ours:
+                            ldo8-in-supply = <&tps65090_dcdc2_reg>;
+                            ldo9-in-supply = <&tps65090_dcdc2_reg>;
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/9115952/
+We also specify supplies (floating) for smps6 and smps10.  I don't think
+that matters though.
 
-It's a bit embarrassing to break your own core code (with a patch that was
-submitted for public review in August 2012?).
+Also we have the vmmc-supply and sd-slot-supply propeties set for the sd
+card slot, like so:
 
-The last two can be trivially-fixed with the following
-(whitespace-damaged gmail)
-patch:
+                vmmc-supply = <&palmas_smps3_reg>;
+                sd-slot-supply = <&palmas_smps9_reg>;
 
---- a/arch/blackfin/mach-common/smp.c
-+++ b/arch/blackfin/mach-common/smp.c
-@@ -182,8 +182,8 @@ static void bfin_ipi_init(void)
-  struct ipi_data *bfin_ipi_data;
-  for_each_possible_cpu(cpu) {
-  bfin_ipi_data = &per_cpu(bfin_ipi, cpu);
-- bfin_ipi_data->bits = 0;
-- bfin_ipi_data->count = 0;
-+ atomic_set(&bfin_ipi_data->bits, 0);
-+ atomic_set(&bfin_ipi_data->count, 0);
-  }
- }
+Also, we have the interrupt trigger mode different for the palmas:
 
-but the first one is non-trivial: using xchg() on atomic_t is a bit gross...
+Yours:
++			interrupts = <0 86 0x4>;
+Ours:
+                        interrupts = <0 86 0x8>;
 
-Gr{oetje,eeting}s,
 
-                        Geert
+I think other than that they should be the same.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+-Rhyland
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+nvpublic
