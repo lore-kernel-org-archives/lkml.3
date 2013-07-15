@@ -1,48 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab3GONgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:36:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62726 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756552Ab3GONgt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:36:49 -0400
-Message-ID: <1373895406.7353.99.camel@marge.simpson.net>
-Subject: Re: 3.10.0: Full dynticks = high load
-From: Mike Galbraith <bitbucket@online.de>
-To: =?ISO-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 15 Jul 2013 15:36:46 +0200
-In-Reply-To: <ks0s36$ntc$1@ger.gmane.org>
-References: <krlv29$jbp$1@ger.gmane.org>
-	 <20130712065227.GC1985@fancy-poultry.org> <ks0s36$ntc$1@ger.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:kYKBAvCTL+hAnsXsARiQ+9NbImQFcYfeB6Wpm4oKOah
- RmGz3g/RN3wsN9EZA1NzXVKvhJHXySliShM89ATv1yRbHctVoa
- TbD6ETshGZ8GGsQBLMpq5TwGf81TwkF9/kRPNz1748IIVPoiAW
- AFDR+RGluDSca5BvaLnpKfY05dD02tyVUGaOCF9VicJlbi+X2a
- EiizEajMWEjEMG6raEAjc/bVCW2EOGpqzDQF2LGYFA+ttMA4xm
- Hd1IZlzJDt/DKmGtBonM6HJrHz/tIawWmw+UYRB/jz0HB+W7rA
- jCJEc4h4mGMoKhF6kGudQshgwa9skW4Lj4nkVHnFL9T39QY+Lb
- CxNqBuZaxPxNty1DPewSx0B0XKJxRcoUGOixM4M9B/Aa/LTHZE
- pnXkP20IsZkLw==
+	id S1757014Ab3GONhS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:37:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35772 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756323Ab3GONhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 09:37:16 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] input/uinput: support abs resolution
+Date: Mon, 15 Jul 2013 15:37:08 +0200
+Message-Id: <1373895429-8846-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(add cc)
+From: Peter Hutterer <peter.hutterer@who-t.net>
 
-On Mon, 2013-07-15 at 10:05 -0300, Dâniel Fraga wrote: 
-> On Fri, 12 Jul 2013 08:52:27 +0200
-> Heinz Diehl <htd@fancy-poultry.org> wrote:
-> 
-> > This describes exactly what I have encountered, and "tickless idle"
-> > fixed it for me, too. So I'll second that.
-> 
-> 	Thanks for the confirmation. I hope Ingo Molnar fixes it.
-> 
+Input resolution has been added in kernel v2.6.31 with commit
+ec20a022aa24fc63. However, uinput was never updated since, meaning that
+devices cannot be emulated in full. User-space processes that rely on the
+resolution to be accurate need this.
 
+Resolution is added in struct uinput_user_dev in a way it won't break
+current programs relying on the old implementation.
+
+Bump the UINPUT_VERSION number to 4 to aid detection of this in user-space.
+
+Signed-off-by: Peter Hutterer <peter.hutterer@who-t.net>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+---
+
+Sorry for that, I mixed up the "From:" field.
+This v2 contains the right From in the first patch , and this is the only
+difference...
+
+Cheers,
+Benjamin
+
+ drivers/input/misc/uinput.c | 17 ++++++++++++-----
+ include/linux/uinput.h      |  2 ++
+ include/uapi/linux/uinput.h |  3 +++
+ 3 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+index a0a4bba..7d518b4 100644
+--- a/drivers/input/misc/uinput.c
++++ b/drivers/input/misc/uinput.c
+@@ -20,6 +20,8 @@
+  * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
+  *
+  * Changes/Revisions:
++ *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
++ *		- update uinput_user_dev struct to allow abs resolution
+  *	0.3	09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
+  *		- updated ff support for the changes in kernel interface
+  *		- added MODULE_VERSION
+@@ -364,9 +366,9 @@ static int uinput_setup_device(struct uinput_device *udev,
+ 	struct input_dev	*dev;
+ 	int			i;
+ 	int			retval;
++	size_t			size;
+ 
+-	if (count != sizeof(struct uinput_user_dev))
+-		return -EINVAL;
++	size = min_t(size_t, count, sizeof(struct uinput_user_dev));
+ 
+ 	if (!udev->dev) {
+ 		retval = uinput_allocate_device(udev);
+@@ -376,9 +378,13 @@ static int uinput_setup_device(struct uinput_device *udev,
+ 
+ 	dev = udev->dev;
+ 
+-	user_dev = memdup_user(buffer, sizeof(struct uinput_user_dev));
+-	if (IS_ERR(user_dev))
+-		return PTR_ERR(user_dev);
++	user_dev = kzalloc(sizeof(struct uinput_user_dev), GFP_KERNEL);
++	if (!user_dev)
++		return -ENOMEM;
++	if (copy_from_user(user_dev, buffer, size)) {
++		retval = -EFAULT;
++		goto exit;
++	}
+ 
+ 	udev->ff_effects_max = user_dev->ff_effects_max;
+ 
+@@ -406,6 +412,7 @@ static int uinput_setup_device(struct uinput_device *udev,
+ 		input_abs_set_min(dev, i, user_dev->absmin[i]);
+ 		input_abs_set_fuzz(dev, i, user_dev->absfuzz[i]);
+ 		input_abs_set_flat(dev, i, user_dev->absflat[i]);
++		input_abs_set_res(dev, i, user_dev->absres[i]);
+ 	}
+ 
+ 	/* check if absmin/absmax/absfuzz/absflat are filled as
+diff --git a/include/linux/uinput.h b/include/linux/uinput.h
+index 0a4487d..6291a22 100644
+--- a/include/linux/uinput.h
++++ b/include/linux/uinput.h
+@@ -20,6 +20,8 @@
+  * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
+  *
+  * Changes/Revisions:
++ *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
++ *		- update uinput_user_dev struct to allow abs resolution
+  *	0.3	24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+  *		- update ff support for the changes in kernel interface
+  *		- add UINPUT_VERSION
+diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
+index fe46431..f6a393b 100644
+--- a/include/uapi/linux/uinput.h
++++ b/include/uapi/linux/uinput.h
+@@ -20,6 +20,8 @@
+  * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
+  *
+  * Changes/Revisions:
++ *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
++ *		- update uinput_user_dev struct to allow abs resolution
+  *	0.3	24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+  *		- update ff support for the changes in kernel interface
+  *		- add UINPUT_VERSION
+@@ -133,5 +135,6 @@ struct uinput_user_dev {
+ 	__s32 absmin[ABS_CNT];
+ 	__s32 absfuzz[ABS_CNT];
+ 	__s32 absflat[ABS_CNT];
++	__s32 absres[ABS_CNT];
+ };
+ #endif /* _UAPI__UINPUT_H_ */
+-- 
+1.8.3.1
 
