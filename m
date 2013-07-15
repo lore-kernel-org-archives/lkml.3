@@ -1,282 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758345Ab3GOWcC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 18:32:02 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52880 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733Ab3GOWb5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 18:31:57 -0400
-Date: Tue, 16 Jul 2013 00:31:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Waiman Long <Waiman.Long@hp.com>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+	id S1758373Ab3GOWgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 18:36:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7903 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758115Ab3GOWgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 18:36:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,671,1367996400"; 
+   d="scan'208";a="370769275"
+Date: Mon, 15 Jul 2013 15:36:15 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock
- implementation
-In-Reply-To: <1373679249-27123-2-git-send-email-Waiman.Long@hp.com>
-Message-ID: <alpine.DEB.2.02.1307151657540.11918@ionos.tec.linutronix.de>
-References: <1373679249-27123-1-git-send-email-Waiman.Long@hp.com> <1373679249-27123-2-git-send-email-Waiman.Long@hp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
+Message-ID: <20130715223615.GI15531@xanatos>
+References: <20130715174659.GC15531@xanatos>
+ <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+ <20130715180403.GD15531@xanatos>
+ <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+ <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+ <20130715195316.GF15531@xanatos>
+ <20130715204135.GH15531@xanatos>
+ <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+ <1373926109.17876.221.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373926109.17876.221.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Jul 2013, Waiman Long wrote:
-
-> This patch introduces a read/write lock implementation that put waiting
-> readers and writers into a queue instead of actively contending the
-> lock like the regular read/write lock. This will improve performance in
-> highly contended situation by reducing the cache line bouncing effect.
+On Mon, Jul 15, 2013 at 06:08:29PM -0400, Steven Rostedt wrote:
+> On Mon, 2013-07-15 at 14:50 -0700, Linus Torvalds wrote:
+> > On Mon, Jul 15, 2013 at 1:41 PM, Sarah Sharp
+> > <sarah.a.sharp@linux.intel.com> wrote:
+> > >
+> > > Oh, FFS, I just called out on private email for "playing the victim
+> > > card".  I will repeat: this is not just about me, or other minorities.
+> > > I should not have to ask for professional behavior on the mailing lists.
+> > > Professional behavior should be the default.
+> > 
+> > Bullshit.
+> > 
 > 
-> In addition, the queue read/write lock is more deterministic even
-> though there is still a smaller chance for lock stealing if the reader
-> or writer comes at the right moment. Other than that, lock granting
-> is done in a FIFO manner. The only downside is the size increase in
-> the lock structure by 4 bytes for 32-bit systems and by 12 bytes for
-> 64-bit systems.
-> 
-> This patch allows the replacement of architecture specific
-> implementation of read/write lock by this generic version of queue
-> read/write lock. Two new config parameters are introduced:
-> 
-> 1. QUEUE_RWLOCK
->    A select-able option that enables the building and replacement of
->    architecture specific read/write lock.
-> 2. ARCH_QUEUE_RWLOCK
->    Have to be defined in arch/$(arch)/Kconfig to enable QUEUE_RWLOCK
-> 
-> In term of single-thread performance (no contention), a 256K
-> lock/unlock loop was run on a 2.4GHz Westmere x86-64 CPU. The following
-> table shows the average time for a single lock/unlock sequence:
-> 
-> Lock Type		Time (ns)
-> ---------		---------
-> Ticket spinlock		  15.7
-> Read lock		  17.0
-> Write lock		  17.2
-> Queue read lock		  31.1
-> Queue write lock	  13.6
-> 
-> While the queue read lock is almost double the time of a read lock
-> or spinlock, the queue write lock is the fastest of them all. The
-> execution time can probably be reduced a bit by allowing inlining of
-> the lock fast paths like the other locks.
+> Can we please make this into a Kernel Summit discussion. I highly doubt
+> we would solve anything, but it certainly would be a fun segment to
+> watch :-)
 
-So you have the writer side faster than the ticket lock, but what
-about the reader side? And what about the contended case? What about
-high frequent readers with low frequent writers cases?
+I agree, KS is where this conversation should be taking place.
+Attendees for this conversation (so far) should be Greg KH, Linus,
+Darren Hart, Steve Rostedt, Willy Tarreau, and me.
 
-> To see how the queue write lock can be used as a replacement for ticket
-> spinlock (just like rwsem can be used as replacement of mutex), the
-> mb_cache_spinlock in fs/mbcache.c, which is a bottleneck in the disk
-> workload (ext4 FS) of the AIM7 benchmark, was converted to both a queue
-> write lock and a regular write lock. When running on a 8-socket 80-core
-> DL980 system, the performance improvement was shown in the table below.
-> 
-> +-----------------+------------+------------+-----------+---------+
-> |  Configuration  |  Mean JPM  |  Mean JPM  | Mean JPM  | qrwlock |
-> |                 |Vanilla 3.10|3.10-qrwlock|3.10-rwlock| %Change |
-> +-----------------+-----------------------------------------------+
-> |                 |              User Range 10 - 100              |
-> +-----------------+-----------------------------------------------+
-> | 8 nodes, HT off |   441374   |   532774   |  637205   | +20.7%  |
-> | 8 nodes, HT on  |   449373   |   584387   |  641965   | +30.1%  |
-> +-----------------+-----------------------------------------------+
-> |                 |              User Range 200 - 1000            |
-> +-----------------+-----------------------------------------------+
-> | 8 nodes, HT off |   226870   |   354490   |  371593   | +56.3%  |
-> | 8 nodes, HT on  |   205997   |   314891   |  306378   | +52.9%  |
-> +-----------------+-----------------------------------------------+
-> |                 |              User Range 1100 - 2000           |
-> +-----------------+-----------------------------------------------+
-> | 8 nodes, HT off |   208234   |   321420   |  343694   | +54.4%  |
-> | 8 nodes, HT on  |   199612   |   297853   |  252569   | +49.2%  |
-> +-----------------+------------+------------+-----------+---------+
-> 
-> Apparently, the regular read/write lock performs even better than
-> the queue read/write lock in some cases.  This is probably due to the
+> > So as far as I'm concerned, the discussion is about "how to work
+> > together DESPITE people being different". Not about trying to make
+> > everybody please each other. Because I can pretty much guarantee that
+> > I'll continue cursing. To me, the discussion would be about how to
+> > work together despite these kinds of cultural differences, not about
+> > "how do we make everybody nice and sing songs sound the campfire"
+> > 
+> > Do you think you might be interested in *that* kind of discussion
+> > instead of the "you are abusing me" kind of discussion?
+> > 
+> > Because if you want me to "act professional", I can tell you that I'm
+> > not interested. I'm sitting in my home office wearign a bathrobe. The
+> > same way I'm not going to start wearing ties, I'm *also* not going to
+> > buy into the fake politeness, the lying, the office politics and
+> > backstabbing, the passive aggressiveness, and the buzzwords. Because
+> > THAT is what "acting professionally" results in: people resort to all
+> > kinds of really nasty things because they are forced to act out their
+> > normal urges in unnatural ways.
 
-The regular rwlock performs better in most cases. This is the full
-list comparing both against the ticket lock.
+Yes, let's move this conversation into the "how to work together DESPITE
+people being different" realm.  I would be happy to have that
+discussion.  As Linus said, some people work together better than
+others.  Some people have different expectations of appropriate ways to
+interact with co-workers.  Sometimes that means that people only work
+with certain other co-workers, like Greg and I.
 
-    qrlock  	   rwlock
-    +20.7  	   +44.4 
-    +30.1  	   +42.9
+The people who want to work together in a civil manner should get
+together and create a "Kernel maintainer's code of conduct" that
+outlines what they expect from fellow kernel developers.  The people who
+want to continue acting "unprofessionally" should document what
+behaviors set off their cursing streaks, so that others can avoid that
+behavior.  Somewhere in the middle is the community behavior all
+developers can thrive in.
 
-    +56.3  	   +63.3
-    +52.9  	   +48.8
+Some people won't agree with everything in that document.  The point is,
+they don't have to agree.  They can read the document, figure out what
+the community expects, and figure out whether they can modify their
+behavior to match.  If they are unwilling to change, they simply don't
+have to work with the developers who have signed it.
 
-    +54.4  	   +65.1
-    +49.2  	   +26.5
+Perhaps a trusted third party could take a stab at a first draft of this
+document?  Greg KH?  Steve Rostedt?  Darren Hart?
 
-So you try to sell that qrwlock as a replacement for ticket spinlocks,
-while at the same time you omit the fact that we have an even better
-implementation (except for the last test case) already in the
-kernel. What's the point of this exercise?
-
-> fact that mb_cache_spinlock is in a separate cache line from the data
-> being manipulated.
-
-This is not about probably. What has the fact that the spinlock is in
-a different cache line to do with the replacement by a different
-implementation? Exactly nothing.
-
-All three candidates ticket spinlocks, qrwlocks and rwlocks are in a
-different cache line than the data which is protected by it.
-
-So what makes the performance difference between the three
-implementations? Definitely not the cache line association as that is
-the same for all implementations. And just for the record, we have
-tools to measure that.
-
-We really need proper explanations and not some guess based drivel to
-assess that.
-
-Further down you write in the code:
-
-> + * Compared with regular read/write lock, the queue read/write lock has
-> + * has the following advantages:
-> + * 1. It is more deterministic. Even though there is a slight chance of
-
-Why is it more deterministic than the existing implementation?
-
-> + *    stealing the lock if come at the right moment, the granting of the
-> + *    lock is mostly in FIFO order.
-
-> + * 2. It is faster in high contention situation.
-
-Again, why is it faster?
-
-> + * The only downside is that the lock is 4 bytes larger in 32-bit systems
-> + * and 12 bytes larger in 64-bit systems.
-> + *
-> + * There are two queues for writers. The writer field of the lock is a
-> + * one-slot waiting queue. The writers that follows will have to wait
-> + * in the combined reader/writer queue (waitq).
-> + *
-> + * Compared with x86 ticket spinlock, the queue read/write lock is faster
-> + * in high contention situation. The writer lock is also faster in single
-> + * thread operations. Therefore, queue read/write lock can be considered as
-> + * a replacement for those spinlocks that are highly contended as long as
-> + * an increase in lock size is not an issue.
-
-So is it faster in the general case or only for the high contention or
-single thread operation cases?
-
-And you still miss to explain WHY it is faster. Can you please explain
-proper WHY it is faster and WHY we can't apply that technique you
-implemented for qrwlocks to writer only locks (aka spinlocks) with a
-smaller lock size?
-
-> Looking at the fserver and new_fserver workloads (ext4 FS) where the
-> journal->j_state_lock (a read/write lock) is a bottleneck especially
-> when HT is on, we see a slight different story. The j_state_lock is
-> an embedded read/write lock which is in the same cacheline as some
-> of the data being manipulated. The replacement by a queue read/write
-> lock gives the following improvement.
-
-Again, the fact that the lock is embedded and in the same cache line
-is not explaining anything here. Especially not why this is only
-relevant when HT is enabled. Please provide profound arguments backed
-by solid data collected with the proper tools.
-
-> +--------------------+-------------+--------------+---------------+
-> |      Workload      |mean % change|mean % change |mean % change  |
-> |                    |10-100 users |200-1000 users|1100-2000 users|
-> +--------------------+-------------+--------------+---------------+
-> |fserver (HT off)    |    +0.3%    |    -0.1%     |    +1.9%      |
-> |fserver (HT on)     |    -0.1%    |   +32.2%     |   +34.7%      |
-> |new_fserver (HT on) |    +0.8%    |    +0.9%     |    +0.9%      |
-> |new_fserver (HT off)|    -1.2%    |   +29.8%     |   +40.5%      |
-> +--------------------+-------------+--------------+---------------+
-
-So fserver gets a 34% improvement for HT ON, while new_fserver gets a
-40% improvement for HT OFF. Any useful explanations except that the HT
-on/off annotations are swapped? 
-
-Without explanations this is completely useless, really.
-
-And again we want to see the behaviour on machines which do not have a
-gazillion of sockets before we enable this unconditionally, as you try
-to do in the next patch. Just get it: 8 socket machines are nice toys,
-but 99% of the users do not have one.
-
-Aside of that, you are replacing all RW locks unconditionally by this
-new fangled thing, but did you actually run tests which look at other
-rwlock usage sites than the particular one you care about?
-
-I really doubt that. Why? Because it depends on the workload. And
-fserver triggers high frequency writers on the j_state_lock. But
-there are enough usage sites of rwlocks where the writer frequency is
-extremly low. So how does the almost doubled reader time affect those
-users of rwlocks?
-
-And reading further down your patch, I can confirm my suspicion.
-
-> +void queue_write_lock(struct qrwlock *lock)
-> +{
-....
-> +	/*
-> +	 * At the head of the wait queue now, wait until no writer is pending
-> +	 * and then atomically set it again.
-> +	 */
-
-You are optimizing for the high frequency writer case. And that's not
-the primary use case for rwlocks. That's the special use case for the
-jbd2 journal_state_lock which CANNOT be generalized for all other
-rwlock usage sites.
-
-So how can you justify:
-
-> +config QUEUE_RWLOCK
-> +	bool "Generic queue read/write lock"
-> +	depends on ARCH_QUEUE_RWLOCK
-> +	help
-> +	  Use a NUMA optimized queue read/write lock implementation. This
-> +	  improves performance under lock contention on systems with more
-> +	  than two sockets.
-> +
-
-And in Patch 2/2:
-
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2344,6 +2344,9 @@ config X86_DMA_REMAP
-        bool
-        depends on STA2X11
- 
-+config ARCH_QUEUE_RWLOCK
-+       def_bool y
-+
-
-It's not justified at all, unless you provide enough proof that it
-does not hurt workloads which have totally different rwlock usage
-patterns. And proof means numbers, not some handwaving about probably
-related  to cachelines or whatever.
-
-Thanks,
-
-	tglx
+Sarah Sharp
