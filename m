@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3GOOVN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:21:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21327 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756287Ab3GOOVM (ORCPT
+	id S1757438Ab3GOOVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:21:49 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:44781 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab3GOOVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:21:12 -0400
-Date: Mon, 15 Jul 2013 17:20:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: wei_wang@realsil.com.cn
-Cc: sameo@linux.intel.com, gregkh@linuxfoundation.org, adam.lee@canonical.com,
-        linux-kernel@vger.kernel.org, rogerable@realtek.com,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH 1/5] mfd:rtsx: Read vendor setting from config space
-Message-ID: <20130715142046.GD5100@mwanda>
-References: <cover.1373871135.git.wei_wang@realsil.com.cn>
- <d0a47d6128605ecd9888657ce36b81ad51116876.1373871136.git.wei_wang@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d0a47d6128605ecd9888657ce36b81ad51116876.1373871136.git.wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 15 Jul 2013 10:21:48 -0400
+From: Julien Grall <julien.grall@linaro.org>
+To: stefano.stabellini@eu.citrix.com
+Cc: ian.campbell@citrix.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org, Julien Grall <julien.grall@linaro.org>
+Subject: [PATCH] xen/arm: disable cpuidle when linux is running as dom0
+Date: Mon, 15 Jul 2013 15:21:41 +0100
+Message-Id: <1373898101-15633-1-git-send-email-julien.grall@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code has a lot of undocumented magic flags and terrible naming
-in it.
+When linux is running as dom0, Xen doesn't show the physical cpu but a
+virtual CPU.
+On some ARM SOC (for instance the exynos 5250), linux registers callbacks
+for cpuidle. When these callbacks are called, they will modify
+directly the physical cpu not the virtual one. It can impact the whole board
+instead of dom0.
 
-> +static void rtl8411_init_settings(struct rtsx_pcr *pcr)
-> +{
-> +	u32 val1;
-> +	u8 val2;
+Signed-off-by: Julien Grall <julien.grall@linaro.org>
+---
+ arch/arm/xen/enlighten.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-These names are 100% useless.  "val" means nothing.  "1" means
-nothing.  "2" means nothing.  In fact, val1 is REG1 and val2 is
-REG3 as opposed to REG2 as one would expect from the name so it is
-misleading.
-
-> +
-> +	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &val1);
-> +	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, val1);
-> +
-> +	if (!(val1 & 0x1000000)) {
-
-What is 0x1000000?  We do this test over and over so it should be
-an inline function.
-
-> +		pcr->aspm_val = (u8)((val1 >> 28) & 0x03);
-
-The "_val" in "apsm_val" is useless.
-What does "aspm" stand for?
-No need to cast.  0-3 is less than 255 so casting to u8 is just
-noise.
-These shift masks are used over and over so they should be defined
-as macros or inline functions in a header file:
-
-#define rtl8411_reg_to_XXX(reg)		((reg >> 25) & 0x01)
-#define rtl8411_reg_to_sdXXX(reg)	((reg >> 26) & 0x03)
-#define rtl8411_reg_to_aspm(reg)	((reg >> 28) & 0x03)
-
-(Choose your own names which make sense).
-
-> +		pcr->sd30_drive_sel_1v8 = map_sd_drive((val1 >> 26) & 0x03);
-> +		pcr->card_drive_sel &= 0x3F;
-> +		pcr->card_drive_sel |= (u8)((val1 >> 25) & 0x01) << 6;
-
-Again, no need to cast.  This should be a macro or an inline
-function.
-
-Pretty much the same comments apply throughout.  I'm not going to
-comment on it line by line.
-
-regards,
-dan carpenter
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 49839d8..a98999f 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -24,6 +24,8 @@
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
++#include <linux/cpuidle.h>
++#include <linux/cpufreq.h>
+ 
+ #include <linux/mm.h>
+ 
+@@ -292,6 +294,11 @@ static int __init xen_pm_init(void)
+ {
+ 	pm_power_off = xen_power_off;
+ 	arm_pm_restart = xen_restart;
++	/*
++	 * Making sure board specific code will not set up ops for
++	 * cpu idle.
++	 */
++	disable_cpuidle();
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
 
