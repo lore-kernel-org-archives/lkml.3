@@ -1,109 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758373Ab3GOWgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 18:36:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7903 "EHLO mga09.intel.com"
+	id S1758370Ab3GOWhE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 18:37:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46157 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758115Ab3GOWgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 18:36:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,671,1367996400"; 
-   d="scan'208";a="370769275"
-Date: Mon, 15 Jul 2013 15:36:15 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
-Message-ID: <20130715223615.GI15531@xanatos>
-References: <20130715174659.GC15531@xanatos>
- <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
- <20130715180403.GD15531@xanatos>
- <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
- <1373926109.17876.221.camel@gandalf.local.home>
+	id S1754823Ab3GOWhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 18:37:02 -0400
+Message-ID: <51E47924.9030005@zytor.com>
+Date: Mon, 15 Jul 2013 15:35:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373926109.17876.221.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Chen Gang <gang.chen@asianux.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH, re-send] Always trap on BUG()
+References: <201307051738.35930.arnd@arndb.de> <20130715151612.9499c2b2ad40e88d183a4600@linux-foundation.org> <20130715222755.GY24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130715222755.GY24642@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 06:08:29PM -0400, Steven Rostedt wrote:
-> On Mon, 2013-07-15 at 14:50 -0700, Linus Torvalds wrote:
-> > On Mon, Jul 15, 2013 at 1:41 PM, Sarah Sharp
-> > <sarah.a.sharp@linux.intel.com> wrote:
-> > >
-> > > Oh, FFS, I just called out on private email for "playing the victim
-> > > card".  I will repeat: this is not just about me, or other minorities.
-> > > I should not have to ask for professional behavior on the mailing lists.
-> > > Professional behavior should be the default.
-> > 
-> > Bullshit.
-> > 
+On 07/15/2013 03:27 PM, Russell King - ARM Linux wrote:
+> On Mon, Jul 15, 2013 at 03:16:12PM -0700, Andrew Morton wrote:
+>> I've been thinking for a while that CONFIG_BUG=n is a pretty dumb thing
+>> to do, and that maintaining it (and trying to fix the warnings it
+>> produces) aren't worth the effort and that we should remove the whole
+>> thing.  Perhaps your patch changes that calculus, dunno.  Please discuss.
 > 
-> Can we please make this into a Kernel Summit discussion. I highly doubt
-> we would solve anything, but it certainly would be a fun segment to
-> watch :-)
+> This isn't about introducing "CONFIG_BUG=n" - this is about making a
+> kernel with CONFIG_BUG=n build without producing tonnes and tonnes of
+> warnings, as it does today.  It makes building randconfig pretty
+> useless to find what could be more important warnings.
+> 
 
-I agree, KS is where this conversation should be taking place.
-Attendees for this conversation (so far) should be Greg KH, Linus,
-Darren Hart, Steve Rostedt, Willy Tarreau, and me.
+Well, there are three alternatives here, right:
 
-> > So as far as I'm concerned, the discussion is about "how to work
-> > together DESPITE people being different". Not about trying to make
-> > everybody please each other. Because I can pretty much guarantee that
-> > I'll continue cursing. To me, the discussion would be about how to
-> > work together despite these kinds of cultural differences, not about
-> > "how do we make everybody nice and sing songs sound the campfire"
-> > 
-> > Do you think you might be interested in *that* kind of discussion
-> > instead of the "you are abusing me" kind of discussion?
-> > 
-> > Because if you want me to "act professional", I can tell you that I'm
-> > not interested. I'm sitting in my home office wearign a bathrobe. The
-> > same way I'm not going to start wearing ties, I'm *also* not going to
-> > buy into the fake politeness, the lying, the office politics and
-> > backstabbing, the passive aggressiveness, and the buzzwords. Because
-> > THAT is what "acting professionally" results in: people resort to all
-> > kinds of really nasty things because they are forced to act out their
-> > normal urges in unnatural ways.
+1. We can use unreachable(), which means that the compiler can assume it
+never happens.
 
-Yes, let's move this conversation into the "how to work together DESPITE
-people being different" realm.  I would be happy to have that
-discussion.  As Linus said, some people work together better than
-others.  Some people have different expectations of appropriate ways to
-interact with co-workers.  Sometimes that means that people only work
-with certain other co-workers, like Greg and I.
+2. We can trap without metadata.
 
-The people who want to work together in a civil manner should get
-together and create a "Kernel maintainer's code of conduct" that
-outlines what they expect from fellow kernel developers.  The people who
-want to continue acting "unprofessionally" should document what
-behaviors set off their cursing streaks, so that others can avoid that
-behavior.  Somewhere in the middle is the community behavior all
-developers can thrive in.
+3. We can trap with metadata (current CONFIG_BUG=y).
 
-Some people won't agree with everything in that document.  The point is,
-they don't have to agree.  They can read the document, figure out what
-the community expects, and figure out whether they can modify their
-behavior to match.  If they are unwilling to change, they simply don't
-have to work with the developers who have signed it.
+I am *guessing* this does 2, but it isn't clear.
 
-Perhaps a trusted third party could take a stab at a first draft of this
-document?  Greg KH?  Steve Rostedt?  Darren Hart?
+	-hpa
 
-Sarah Sharp
+
