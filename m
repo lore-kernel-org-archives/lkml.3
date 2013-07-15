@@ -1,121 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3GOJer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 05:34:47 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:61798 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab3GOJeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 05:34:44 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org (open list)
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
-Date: Mon, 15 Jul 2013 11:34:34 +0200
-Message-Id: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754739Ab3GOJqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 05:46:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58485 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754547Ab3GOJqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 05:46:35 -0400
+Date: Mon, 15 Jul 2013 11:46:33 +0200
+From: Jan Kara <jack@suse.cz>
+To: Paul Taysom <taysom@google.com>
+Cc: Jan Kara <jack@suse.cz>, Paul Taysom <taysom@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sonnyrao@chromium.org
+Subject: Re: [PATCH] fs: sync: fixed performance regression
+Message-ID: <20130715094633.GA3747@quack.suse.cz>
+References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
+ <20130711105346.GA5349@quack.suse.cz>
+ <20130711115832.GB5349@quack.suse.cz>
+ <20130712154314.GC22823@quack.suse.cz>
+ <CAKwO_5HZN1LW6CMJ3V9K-MBpPrYpo6aLpVh9dccUNPC7MJ=3Dw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKwO_5HZN1LW6CMJ3V9K-MBpPrYpo6aLpVh9dccUNPC7MJ=3Dw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most DMA engines have limitations regarding the number of DMA segments
-(sg-buffers) that they can handle. Videobuffers can easily spread through
-houndreds of pages.
+On Fri 12-07-13 09:59:00, Paul Taysom wrote:
+> `On Fri, Jul 12, 2013 at 8:43 AM, Jan Kara <jack@suse.cz> wrote:
+> > On Thu 11-07-13 13:58:32, Jan Kara wrote:
+> >> On Thu 11-07-13 12:53:46, Jan Kara wrote:
+> >> > On Wed 10-07-13 16:12:36, Paul Taysom wrote:
+> >> > > The following commit introduced a 10x regression for
+> >> > > syncing inodes in ext4 with relatime enabled where just
+> >> > > the atime had been modified.
+> >> > >
+> >> > >     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
+> >> > >     Author: Jan Kara <jack@suse.cz>
+> >> > >     Date:   Tue Jul 3 16:45:34 2012 +0200
+> >> > >     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
+> >> > >
+> >> > >     See also: http://www.kernelhub.org/?msg=93100&p=2
+> >> > >
+> >> > > Fixed by putting back in the call to writeback_inodes_sb.
+> >> > >
+> >> > > I'll attach the test in a reply to this e-mail.
+> >> > >
+> >> > > The test starts by creating 512 files, syncing, reading one byte
+> >> > > from each of those files, syncing, and then deleting each file
+> >> > > and syncing. The time to do each sync is printed. The process
+> >> > > is then repeated for 1024 files and then the next power of
+> >> > > two up to 262144 files.
+> >> > >
+> >> > > Note, when running the test, the slow down doesn't always happen
+> >> > > but most of the tests will show a slow down.
+> >> > >
+> >> > > In response to crbug.com/240422
+> >> > >
+> >> > > Signed-off-by: Paul Taysom <taysom@chromium.org>
+> >> >   Thanks for report. Rather than blindly reverting the change, I'd like to
+> >> > understand why you see so huge regression. As the changelog in the patch
+> >> > says, flusher thread should be doing async writeback equivalent to the
+> >> > removed one because it gets woken via wakeup_flusher_threads(). But my
+> >> > guess is that for some reason we end up doing all the writeback from
+> >> > sync_inodes_one_sb(). I'll try to reproduce your results and investigate...
+> >>   Hum, so it must be something timing sensitive. I wasn't able to reproduce
+> >> the issue on my test machine in 4 runs of your test program. I was able to
+> >> reproduce it on my laptop on every second run of the test program but once
+> >> I've enabled some tracepoints, the issue disappeared and I didn't see it in
+> >> about 10 runs.
+> >>
+> >> That being said I think that reverting my patch is just papering over the
+> >> problem. We will do the async pass over inodes twice instead of once
+> >> and thus the timing changes enough that you aren't able to observe the
+> >> problem.
+> >>
+> >> I'm looking into this more...
+> >   So I finally understood what's going on. If the system has no dirty pages
+> > at all wakeup_flusher_threads() will submit work with nr_pages == 0.  So
+> > wb_writeback() will bail out immediately without doing anything and all the
+> > writeback is left for WB_SYNC_ALL pass of sync(1) which is slow. Attached
+> > patch fixes the problem for me.
+> >
+> >                                                                 Honza
+> > --
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
+> 
+> Jan,
+> Your fix is a clear win! Not only did it fix the sync after read
+> problem but it made the sync after create faster too.
+  Thanks for testing! I've sent the patch to Al for inclusion.
 
-In the previous aproach, the pages were allocated individually, this
-could led to the creation houndreds of dma segments (sg-buffers) that
-could not be handled by some DMA engines.
-
-This patch tries to minimize the number of DMA segments by using
-alloc_pages_exact. In the worst case it will behave as before, but most
-of the times it will reduce the number fo dma segments
-
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/media/v4l2-core/videobuf2-dma-sg.c |   49 +++++++++++++++++++++-------
- 1 file changed, 38 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c b/drivers/media/v4l2-core/videobuf2-dma-sg.c
-index 16ae3dc..67a94ab 100644
---- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
-+++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
-@@ -42,10 +42,44 @@ struct vb2_dma_sg_buf {
- 
- static void vb2_dma_sg_put(void *buf_priv);
- 
-+static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
-+		gfp_t gfp_flags)
-+{
-+	unsigned int last_page = 0;
-+	void *vaddr = NULL;
-+	unsigned int req_pages;
-+
-+	while (last_page < buf->sg_desc.num_pages) {
-+		req_pages = buf->sg_desc.num_pages-last_page;
-+		while (req_pages >= 1) {
-+			vaddr = alloc_pages_exact(req_pages*PAGE_SIZE,
-+				GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN);
-+			if (vaddr)
-+				break;
-+			req_pages >>= 1;
-+		}
-+		if (!vaddr) {
-+			while (--last_page >= 0)
-+				__free_page(buf->pages[last_page]);
-+			return -ENOMEM;
-+		}
-+		while (req_pages) {
-+			buf->pages[last_page] = virt_to_page(vaddr);
-+			sg_set_page(&buf->sg_desc.sglist[last_page],
-+					buf->pages[last_page], PAGE_SIZE, 0);
-+			vaddr += PAGE_SIZE;
-+			last_page++;
-+			req_pages--;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_flags)
- {
- 	struct vb2_dma_sg_buf *buf;
--	int i;
-+	int ret;
- 
- 	buf = kzalloc(sizeof *buf, GFP_KERNEL);
- 	if (!buf)
-@@ -69,14 +103,9 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fla
- 	if (!buf->pages)
- 		goto fail_pages_array_alloc;
- 
--	for (i = 0; i < buf->sg_desc.num_pages; ++i) {
--		buf->pages[i] = alloc_page(GFP_KERNEL | __GFP_ZERO |
--					   __GFP_NOWARN | gfp_flags);
--		if (NULL == buf->pages[i])
--			goto fail_pages_alloc;
--		sg_set_page(&buf->sg_desc.sglist[i],
--			    buf->pages[i], PAGE_SIZE, 0);
--	}
-+	ret = vb2_dma_sg_alloc_compacted(buf, gfp_flags);
-+	if (ret)
-+		goto fail_pages_alloc;
- 
- 	buf->handler.refcount = &buf->refcount;
- 	buf->handler.put = vb2_dma_sg_put;
-@@ -89,8 +118,6 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fla
- 	return buf;
- 
- fail_pages_alloc:
--	while (--i >= 0)
--		__free_page(buf->pages[i]);
- 	kfree(buf->pages);
- 
- fail_pages_array_alloc:
+								Honza
 -- 
-1.7.10.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
