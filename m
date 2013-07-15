@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab3GOWwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 18:52:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19194 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758326Ab3GOWwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 18:52:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,672,1367996400"; 
-   d="scan'208";a="331831318"
-Message-ID: <51E47D30.5030203@linux.intel.com>
-Date: Mon, 15 Jul 2013 15:52:32 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1758395Ab3GOW45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 18:56:57 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:52044 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754474Ab3GOW4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 18:56:55 -0400
+Date: Tue, 16 Jul 2013 01:56:48 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Felipe Balbi <balbi@ti.com>, Daniel Mack <zonque@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: v3.11-rc1 USB regressions
+Message-ID: <20130715225647.GE3296@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
-        corbet@lwn.net, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <20130713064909.GW25631@dyad.programming.kicks-ass.net> <51E166C8.3000902@linux.intel.com> <20130715195914.GC23818@dyad.programming.kicks-ass.net> <51E45E8B.705@linux.intel.com> <20130715210650.GF23818@dyad.programming.kicks-ass.net> <20130715211230.GG23818@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130715211230.GG23818@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/15/2013 2:12 PM, Peter Zijlstra wrote:
-> On Mon, Jul 15, 2013 at 11:06:50PM +0200, Peter Zijlstra wrote:
->> OK, but isn't that part of why the micro controller might not make you go
->> faster even if you do program a higher P state?
->>
->> But yes, I understand this issue in the 'traditional' cpufreq sense. There's no
->> point in ramping the speed if all you do is stall more.
->>
->> But I was under the impression the 'hardware' was doing this. If not then we
->> need the whole go-faster and go-slower thing and places to call them and means
->> to determine to call them etc.
->
->
-> So with the scheduler measuring cpu utilization we could say to go-faster when
-> u>0.8 and go-slower when u<0.75 or so. Lacking any better metrics like the
-> stall stuff etc.
->
-> So I understand that ondemand spends quite a lot of time 'sampling' what the
->  system does while the scheduler mostly already knows this.
+Hi,
 
-yeah ondemand does this, but ondemand is actually a pretty bad governor.
-not because of the sampling, but because of its algorithm.
+I think USB tree introduced regressions in v3.11-rc1, at least for some
+OMAP devices using legacy boot. I have only bisected these; I have no
+idea what the real fixes are but the following reverts make Nokia OMAP2+
+boards again usable for kernel development work (they need working USB
+connection for interacting with the device):
 
-if you look at what the ondemand algorithm tries to do, it's trying to
-manage the cpu "frequency" primarily for when the system is idle.
-Ten to twelve years ago, this was actually important and it does a decent
-job on that.
+1) USB peripheral mode (g_ether) is broken on Nokia N900, N950 and N9
+   (USB_MUSB_OMAP2PLUS). To make it it work, I need to revert three
+   commits:
 
-HOWEVER, on modern CPUs, even many of the ARM ones, the frequency
-when you're idle is zero anyway regardless of what you as OS ask for.
+	09fc7d22b024692b2fe8a943b246de1af307132b
+	usb: musb: fix incorrect usage of resource pointer
+	(Reverting this fixes the g_ether probe failure "couldn't find
+	 an available UDC")
 
-And when Linux went tickless, ondemand went to deferred timers, which make it
-even worse.
+	fe4cb0912f8e737f8e4b8b38b9e692f8062f5423
+	usb: musb: gadget: remove hcd initialization
+	(Reverting this fixes error "cdc_ether: probe of 4-1:1.0 failed
+	 with error -110" seen on the host side.)
 
-btw technically ondemand does not sample things, you may (or may not) understand
-what it does.
-Every 10 (or 100) milliseconds, ondemand makes a new P state decision.
-It does this by asking the scheduler the time used, does a delta and
-ends up at a utilization %age which then goes into a formula.
-It's not that ondemand samples inbetween decision moments to see if the system
-is busy or not; the microaccounting that the scheduler does is used instead,
-and only at decision moments.
+	8b125df5b24cfb0ec7fa1971e343cc0badc1827d
+	usb: musb: eliminate musb_to_hcd	
+	(Reverting this fixes compilation error cause by the previous
+	 revert.)
 
+2) USB peripheral mode (g_ether) is broken also on Nokia N800 and N810
+   (USB_MUSB_TUSB6010). In addition to the above, I need to also revert
+   the following:
 
+	b7e2e75a8c6062afe1dd88b0b299938e5d36dff8
+	usb: gadget: drop unused USB_GADGET_MUSB_HDRC
+
+   (This commit is clearly incorrect - code checking for this still
+   remain in the tree (see e.g. N8x0 board file), so it's not "unused".)
+
+A.
