@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab3GOE6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 00:58:49 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:50162 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab3GOE6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 00:58:48 -0400
-MIME-Version: 1.0
-Date: Mon, 15 Jul 2013 12:58:47 +0800
-Message-ID: <CA+k=oDz9vKmw6TQ2033gugHLCDuHD-RhkkMB6UMTWNWvxK_PCA@mail.gmail.com>
-Subject: [PATCH] usb: udc: add gadget state kobject uevent
-From: Rong Wang <wr011235813@gmail.com>
-To: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>
-Cc: arnd@arndb.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rong.Wang@csr.com, Binghua.Duan@csr.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752904Ab3GOFAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 01:00:12 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:53032
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751909Ab3GOFAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 01:00:10 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 0/2] Drivers: hv: balloon: Fix some issues in the balloon driver  
+Date: Sun, 14 Jul 2013 22:37:49 -0700
+Message-Id: <1373866669-9314-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    usb: udc: add gadget state kobject uevent
+This patch set adresses a couple of issues discovered in the balloon driver:
 
-    Add USB_UDC_STATE environment variable in udc uevent
-    callback and trigger kobject_uevent in usb_gadget_set_state
-    to inform the user-space the state of the gadget.
+1. Prevent stale pressure report being posted.
+2. If memory is not brought online within the allowed time,
+   do not roll back hot add state if hot add succeeded.
 
-    Signed-off-by: Rong Wang <Rong.Wang@csr.com>
+In this version of the patch set, I have added additional comments to the
+patch: 0001-Drivers-hv-balloon-Fix-a-bug-in-the-hot-add-code.patch based on
+the comments from Ben Hutchings <ben@decadent.org.uk>.
 
-diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
-index ffd8fa5..05715d1 100644
---- a/drivers/usb/gadget/udc-core.c
-+++ b/drivers/usb/gadget/udc-core.c
-@@ -101,11 +101,32 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
+K. Y. Srinivasan (2):
+  Drivers: hv: balloon: Fix a bug in the hot-add code
+  Drivers: hv: balloon: Do not post pressure status if interrupted
 
- /* ------------------------------------------------------------------------- */
+ drivers/hv/hv_balloon.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
 
-+/**
-+ * usb_gadget_set_state - set usb gadget state
-+ * @gadget: gadget device
-+ * @state: state defined in USB specification ch9
-+ * Context: !in_interrupt()
-+ */
- void usb_gadget_set_state(struct usb_gadget *gadget,
-                enum usb_device_state state)
- {
-+       struct usb_udc          *udc = NULL;
-+
-        gadget->state = state;
-        sysfs_notify(&gadget->dev.kobj, NULL, "status");
-+
-+       mutex_lock(&udc_lock);
-+       list_for_each_entry(udc, &udc_list, list)
-+               if (udc->gadget == gadget)
-+                       goto found;
-+
-+       dev_err(gadget->dev.parent, "gadget not registered.\n");
-+       mutex_unlock(&udc_lock);
-+       return;
-+
-+found:
-+       mutex_unlock(&udc_lock);
-+       kobject_uevent(&udc->dev.kobj, KOBJ_CHANGE);
- }
- EXPORT_SYMBOL_GPL(usb_gadget_set_state);
+-- 
+1.7.4.1
 
-@@ -538,6 +559,15 @@ static int usb_udc_uevent(struct device *dev,
-struct kobj_uevent_env *env)
-                }
-        }
-
-+       if (udc->gadget) {
-+               ret = add_uevent_var(env, "USB_UDC_STATE=%s",
-+                               usb_state_string(udc->gadget->state));
-+               if (ret) {
-+                       dev_err(dev, "failed to add uevent USB_UDC_STATE\n");
-+                       return ret;
-+               }
-+       }
-+
-        return 0;
- }
