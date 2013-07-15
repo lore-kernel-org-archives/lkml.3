@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3GOTyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:54:21 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11141 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab3GOTyS (ORCPT
+	id S1756329Ab3GOTzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:55:12 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16239 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755058Ab3GOTyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:54:18 -0400
+	Mon, 15 Jul 2013 15:54:19 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 15 Jul 2013 12:53:26 -0700
+	by hqnvupgp07.nvidia.com on Mon, 15 Jul 2013 12:54:19 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 6/9] usb: host: tegra: Locate a PHY via standard API
-Date: Mon, 15 Jul 2013 22:53:46 +0300
-Message-ID: <1373918029-28977-7-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v2 8/9] usb: phy: tegra: Use DT helpers for phy_type
+Date: Mon, 15 Jul 2013 22:53:48 +0300
+Message-ID: <1373918029-28977-9-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
@@ -27,41 +27,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_get_phy_by_phandle to get a PHY device instead of the custom
-Tegra functions.
+Use the new of_usb_get_phy_mode helper function for parsing phy_type
+from the device tree.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- drivers/usb/host/ehci-tegra.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/usb/phy/phy-tegra-usb.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index a208cea..db8031f 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -328,7 +328,6 @@ static int tegra_ehci_probe(struct platform_device *pdev)
- 	struct tegra_ehci_hcd *tegra;
- 	int err = 0;
- 	int irq;
--	struct device_node *np_phy;
- 	struct usb_phy *u_phy;
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index 0d48f4e..3ded872 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -31,6 +31,7 @@
+ #include <linux/of_gpio.h>
+ #include <linux/usb/otg.h>
+ #include <linux/usb/ulpi.h>
++#include <linux/usb/of.h>
+ #include <asm/mach-types.h>
+ #include <linux/usb/ehci_def.h>
+ #include <linux/usb/tegra_usb_phy.h>
+@@ -859,6 +860,7 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct tegra_usb_phy *tegra_phy = NULL;
+ 	struct device_node *np = pdev->dev.of_node;
++	enum usb_phy_interface phy_type;
+ 	int err;
  
- 	/* Right now device-tree probed devices don't get dma_mask set.
-@@ -367,13 +366,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
- 	udelay(1);
- 	tegra_periph_reset_deassert(tegra->clk);
+ 	tegra_phy = devm_kzalloc(&pdev->dev, sizeof(*tegra_phy), GFP_KERNEL);
+@@ -883,12 +885,12 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 	tegra_phy->is_legacy_phy =
+ 		of_property_read_bool(np, "nvidia,has-legacy-mode");
  
--	np_phy = of_parse_phandle(pdev->dev.of_node, "nvidia,phy", 0);
--	if (!np_phy) {
--		err = -ENODEV;
--		goto cleanup_clk_en;
--	}
+-	err = of_property_match_string(np, "phy_type", "ulpi");
+-	if (err < 0) {
++	phy_type = of_usb_get_phy_mode(np);
++	if (phy_type == USBPHY_INTERFACE_MODE_UTMI) {
+ 		err = utmi_phy_probe(tegra_phy, pdev);
+ 		if (err < 0)
+ 			return err;
+-	} else {
++	} else if (phy_type == USBPHY_INTERFACE_MODE_ULPI) {
+ 		tegra_phy->is_ulpi_phy = true;
+ 
+ 		tegra_phy->reset_gpio =
+@@ -898,8 +900,10 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 				tegra_phy->reset_gpio);
+ 			return tegra_phy->reset_gpio;
+ 		}
 -
--	u_phy = tegra_usb_get_phy(np_phy);
-+	u_phy = devm_usb_get_phy_by_phandle(&pdev->dev, "nvidia,phy", 0);
- 	if (IS_ERR(u_phy)) {
- 		err = PTR_ERR(u_phy);
- 		goto cleanup_clk_en;
+ 		tegra_phy->config = NULL;
++	} else {
++		dev_err(&pdev->dev, "phy_type is invalid or unsupported\n");
++		return -EINVAL;
+ 	}
+ 
+ 	err = of_property_match_string(np, "dr_mode", "otg");
 -- 
 1.8.1.5
 
