@@ -1,183 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3GOHI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 03:08:58 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:49471 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab3GOHH6 (ORCPT
+	id S1754171Ab3GOHOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 03:14:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23506 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab3GOHN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 03:07:58 -0400
-X-Greylist: delayed 671 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Jul 2013 03:07:51 EDT
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6F6uP1I017605, This message is accepted by code: ctloc85258
-From: <wei_wang@realsil.com.cn>
-To: <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        <adam.lee@canonical.com>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH 5/5] mfd:rtsx: Configure to enter a deeper power-saving mode in S3
-Date: Mon, 15 Jul 2013 14:56:14 +0800
-Message-ID: <be9c5c69b407039de185acaaf58cdc4011c5a71a.1373871138.git.wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1373871135.git.wei_wang@realsil.com.cn>
-References: <cover.1373871135.git.wei_wang@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.8]
+	Mon, 15 Jul 2013 03:13:59 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-e9-51e3a135f7ec
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Yijing Wang'" <wangyijing@huawei.com>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        "'Hanjun Guo'" <guohanjun@huawei.com>, jiang.liu@huawei.com,
+        Jingoo Han <jg1.han@samsung.com>
+References: <1373869765-52572-1-git-send-email-wangyijing@huawei.com>
+In-reply-to: <1373869765-52572-1-git-send-email-wangyijing@huawei.com>
+Subject: Re: [PATCH] video: remove unused variable "dev" in vga16fb_destroy()
+Date: Mon, 15 Jul 2013 16:13:56 +0900
+Message-id: <000101ce812a$dec735d0$9c55a170$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIR3w7P7IUBkl/d02cHm24xWRKEIJjel0NQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zfV3ThY8DDX5OEbB4eUjT4uDOmewW
+	lxdeYrW4/30um8WJvg+sFpd3zWGzWPfwBZPF+vm32CzuXJvG5MDp0XLkLavHqwt3WDz6tqxi
+	9Dh+YzuTx+dNcgGsUVw2Kak5mWWpRfp2CVwZ6xtXsBbcZK+40/+MtYFxKVsXIyeHhICJRPf7
+	+6wQtpjEhXvrgeJcHEICyxgl9t/bzAhTtGP9DSaIxHRGiZ/X1zJCOL8YJaZ3zmQCqWITUJP4
+	8uUwO0hCRGAyo8SSX+tZQBLMAvMYJbZN0QexhQRcJe60nwaLcwq4SSy8OgesWVjAV6J5XT9Y
+	nEVAVeLShcVgq3kFLCW2LdnPBGELSvyYfA9qppbE+p3HmSBseYnNa94yQ5yqILHj7GuwXhEB
+	I4kd79qg6kUk9r14B3a1hMBPdom+dztYIZYJSHybfAioiAMoISux6QDUHEmJgytusExglJiF
+	ZPUsJKtnIVk9C8mKBYwsqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNzNzFCorp/B+PdA9aHGJOB
+	1k9klhJNzgcmhbySeENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovii0pzUosP
+	MTJxcEo1MIp0PWdxE3t0a8U93euq1RMdehfqbbO/+V33qOzbxbpip/fWeN9vfi/yU+S7sqBN
+	zltNNi6lP7mFqpGpZ4+8Zd4jsafA7lpxAke1csoVTp/X/SkbZcU9rD58upO+6LUj45dbp9U0
+	Z261tDv5Xiixe3vpD7+Pf8NnnlS9x1BUUhHVeG7fz2KVt0osxRmJhlrMRcWJAO6DsfYAAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jQV3ThY8DDaZf4bZ4eUjT4uDOmewW
+	lxdeYrW4/30um8WJvg+sFpd3zWGzWPfwBZPF+vm32CzuXJvG5MDp0XLkLavHqwt3WDz6tqxi
+	9Dh+YzuTx+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2
+	Si4+AbpumTlABykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM9Y3rmAt
+	uMlecaf/GWsD41K2LkZODgkBE4kd628wQdhiEhfurQeKc3EICUxnlPh5fS0jhPOLUWJ650yw
+	KjYBNYkvXw6zgyREBCYzSiz5tZ4FJMEsMI9RYtsUfRBbSMBV4k77abA4p4CbxMKrc8CahQV8
+	JZrX9YPFWQRUJS5dWMwIYvMKWEpsW7KfCcIWlPgx+R7UTC2J9TuPM0HY8hKb17xlhjhVQWLH
+	2ddgvSICRhI73rVB1YtI7HvxjnECo9AsJKNmIRk1C8moWUhaFjCyrGIUTS1ILihOSs811CtO
+	zC0uzUvXS87P3cQIThnPpHYwrmywOMQowMGoxMN7QONxoBBrYllxZe4hRgkOZiUR3mXKjwKF
+	eFMSK6tSi/Lji0pzUosPMSYDfTqRWUo0OR+YzvJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0o
+	JJCeWJKanZpakFoEs4WJg1OqgbHnaw5/5YVDYaoXTwcIh+7XEJgbO70077A9i0WP4imZDKs9
+	a+YxflNhUl20ZJ6q8NxTmtm63Alv1dh+eq/c67ik4Xu4xB47I9vKG1oiU96mVsfGb97SFWo2
+	8RX/7DP7F7/M+nU1a06S0FNFi9jP7uoTdq9Rf3FS2Udr4pq69Z3/fv2IumYY7qHEUpyRaKjF
+	XFScCAA2M8sKXQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+On Monday, July 15, 2013 3:29 PM, Yijing Wang wrote:
+> 
+> Delete unused variable "dev" to fix build warning in
+> drivers/video/vga16fb.c
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
 
-Set a bit to enable rts5227 and rts5249 to enter a deeper internal
-power-saving mode in S3, and recover it after resuming.
+It looks good.
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- drivers/mfd/rtl8411.c        |    2 +-
- drivers/mfd/rts5209.c        |    2 +-
- drivers/mfd/rts5227.c        |    6 +++++-
- drivers/mfd/rts5229.c        |    2 +-
- drivers/mfd/rts5249.c        |    6 +++++-
- drivers/mfd/rtsx_pcr.c       |    2 +-
- include/linux/mfd/rtsx_pci.h |    5 ++---
- 7 files changed, 16 insertions(+), 9 deletions(-)
+Best regards,
+Jingoo Han
 
-diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
-index dd3981a..7af3f63 100644
---- a/drivers/mfd/rtl8411.c
-+++ b/drivers/mfd/rtl8411.c
-@@ -82,7 +82,7 @@ static void rtl8411b_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rtl8411_force_power_down(struct rtsx_pcr *pcr)
-+static void rtl8411_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x07, 0x07);
- }
-diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
-index eed8b18..a07c6ff 100644
---- a/drivers/mfd/rts5209.c
-+++ b/drivers/mfd/rts5209.c
-@@ -56,7 +56,7 @@ static void rts5209_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5209_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5209_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x07, 0x07);
- }
-diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-index fa4bf80..e6ef305 100644
---- a/drivers/mfd/rts5227.c
-+++ b/drivers/mfd/rts5227.c
-@@ -80,13 +80,16 @@ static void rts5227_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5227_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5227_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	/* Set relink_time to 0 */
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 1, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 2, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 3, 0x01, 0);
- 
-+	if (pm_state == HOST_ENTER_S3)
-+		rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x10);
-+
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
- }
- 
-@@ -120,6 +123,7 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
- 	else
- 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
- 				AUTOLOAD_CFG_BASE + 3, 0xB8, 0x88);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
- 
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
-diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
-index 549a1bd..b2bdc91 100644
---- a/drivers/mfd/rts5229.c
-+++ b/drivers/mfd/rts5229.c
-@@ -53,7 +53,7 @@ static void rts5229_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5229_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5229_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
- }
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 3bf9296..1db034c 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -87,13 +87,16 @@ static void rts5249_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5249_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5249_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	/* Set relink_time to 0 */
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 1, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 2, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 3, 0x01, 0);
- 
-+	if (pm_state == HOST_ENTER_S3)
-+		rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x10);
-+
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
- }
- 
-@@ -118,6 +121,7 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
- 	else
- 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
- 				AUTOLOAD_CFG_BASE + 3, 0xB0, 0x80);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
- 
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 0ae5996..dcbad1a 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -938,7 +938,7 @@ static void rtsx_pci_power_off(struct rtsx_pcr *pcr, u8 pm_state)
- 	rtsx_pci_write_register(pcr, HOST_SLEEP_STATE, 0x03, pm_state);
- 
- 	if (pcr->ops->force_power_down)
--		pcr->ops->force_power_down(pcr);
-+		pcr->ops->force_power_down(pcr, pm_state);
- }
- 
- static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index c19044e..f0a7bfb 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -24,8 +24,7 @@
- 
- #include <linux/sched.h>
- #include <linux/pci.h>
--
--#include "rtsx_common.h"
-+#include <linux/mfd/rtsx_common.h>
- 
- #define MAX_RW_REG_CNT			1024
- 
-@@ -764,7 +763,7 @@ struct pcr_ops {
- 	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
- 	int		(*conv_clk_and_div_n)(int clk, int dir);
- 	void		(*init_settings)(struct rtsx_pcr *pcr);
--	void		(*force_power_down)(struct rtsx_pcr *pcr);
-+	void		(*force_power_down)(struct rtsx_pcr *pcr, u8 pm_state);
- };
- 
- enum PDEV_STAT  {PDEV_STAT_IDLE, PDEV_STAT_RUN};
--- 
-1.7.9.5
+> ---
+>  drivers/video/vga16fb.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+> index 830ded4..2827333 100644
+> --- a/drivers/video/vga16fb.c
+> +++ b/drivers/video/vga16fb.c
+> @@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+> 
+>  static void vga16fb_destroy(struct fb_info *info)
+>  {
+> -	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
+>  	iounmap(info->screen_base);
+>  	fb_dealloc_cmap(&info->cmap);
+>  	/* XXX unshare VGA regions */
+> --
+> 1.7.1
+
 
