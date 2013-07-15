@@ -1,54 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab3GOTzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:55:40 -0400
-Received: from fep19.mx.upcmail.net ([62.179.121.39]:42574 "EHLO
-	fep19.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3GOTzh (ORCPT
+	id S1757252Ab3GOT4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:56:24 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16229 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab3GOTyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:55:37 -0400
-X-Greylist: delayed 919 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Jul 2013 15:55:36 EDT
-X-SourceIP: 77.56.27.120
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <51E4501D.3010001@odi.ch>
-Date: Mon, 15 Jul 2013 21:40:13 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 15 Jul 2013 15:54:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 15 Jul 2013 12:54:10 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH v2 4/9] ARM: tegra: Remove USB platform data
+Date: Mon, 15 Jul 2013 22:53:44 +0300
+Message-ID: <1373918029-28977-5-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, sgruszka@redhat.com,
-        linux-wireless@vger.kernel.org
-Subject: [BUG] 3.10 regression: hang on suspend
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+USB-related platform data is not used anymore in the Tegra USB drivers,
+so remove all of it.
 
-My Samsung ultrabook hangs when suspending to RAM since this commit (bisected). 
-Disabling wifi before suspend works around the issue. All works fine with 3.9.y.
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+---
+ arch/arm/mach-tegra/tegra.c             | 38 +--------------------------------
+ include/linux/platform_data/tegra_usb.h | 32 ---------------------------
+ include/linux/usb/tegra_usb_phy.h       |  5 -----
+ 3 files changed, 1 insertion(+), 74 deletions(-)
+ delete mode 100644 include/linux/platform_data/tegra_usb.h
 
-12e7f517029dad819c45eca9ca01fdb9ba57616b 
+diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+index 0d1e412..fc97cfd 100644
+--- a/arch/arm/mach-tegra/tegra.c
++++ b/arch/arm/mach-tegra/tegra.c
+@@ -29,7 +29,6 @@
+ #include <linux/of_fdt.h>
+ #include <linux/of_platform.h>
+ #include <linux/pda_power.h>
+-#include <linux/platform_data/tegra_usb.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
+ #include <linux/sys_soc.h>
+@@ -46,40 +45,6 @@
+ #include "fuse.h"
+ #include "iomap.h"
+ 
+-static struct tegra_ehci_platform_data tegra_ehci1_pdata = {
+-	.operating_mode = TEGRA_USB_OTG,
+-	.power_down_on_bus_suspend = 1,
+-	.vbus_gpio = -1,
+-};
+-
+-static struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config = {
+-	.reset_gpio = -1,
+-	.clk = "cdev2",
+-};
+-
+-static struct tegra_ehci_platform_data tegra_ehci2_pdata = {
+-	.phy_config = &tegra_ehci2_ulpi_phy_config,
+-	.operating_mode = TEGRA_USB_HOST,
+-	.power_down_on_bus_suspend = 1,
+-	.vbus_gpio = -1,
+-};
+-
+-static struct tegra_ehci_platform_data tegra_ehci3_pdata = {
+-	.operating_mode = TEGRA_USB_HOST,
+-	.power_down_on_bus_suspend = 1,
+-	.vbus_gpio = -1,
+-};
+-
+-static struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5000000, "tegra-ehci.0",
+-		       &tegra_ehci1_pdata),
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5004000, "tegra-ehci.1",
+-		       &tegra_ehci2_pdata),
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5008000, "tegra-ehci.2",
+-		       &tegra_ehci3_pdata),
+-	{}
+-};
+-
+ static void __init tegra_dt_init(void)
+ {
+ 	struct soc_device_attribute *soc_dev_attr;
+@@ -112,8 +77,7 @@ static void __init tegra_dt_init(void)
+ 	 * devices
+ 	 */
+ out:
+-	of_platform_populate(NULL, of_default_bus_match_table,
+-				tegra20_auxdata_lookup, parent);
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
+ }
+ 
+ static void __init trimslice_init(void)
+diff --git a/include/linux/platform_data/tegra_usb.h b/include/linux/platform_data/tegra_usb.h
+deleted file mode 100644
+index 66c673f..0000000
+--- a/include/linux/platform_data/tegra_usb.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * Copyright (C) 2010 Google, Inc.
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#ifndef _TEGRA_USB_H_
+-#define _TEGRA_USB_H_
+-
+-enum tegra_usb_operating_modes {
+-	TEGRA_USB_DEVICE,
+-	TEGRA_USB_HOST,
+-	TEGRA_USB_OTG,
+-};
+-
+-struct tegra_ehci_platform_data {
+-	enum tegra_usb_operating_modes operating_mode;
+-	/* power down the phy on bus suspend */
+-	int power_down_on_bus_suspend;
+-	void *phy_config;
+-	int vbus_gpio;
+-};
+-
+-#endif /* _TEGRA_USB_H_ */
+diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
+index c2bc710..8474153 100644
+--- a/include/linux/usb/tegra_usb_phy.h
++++ b/include/linux/usb/tegra_usb_phy.h
+@@ -28,11 +28,6 @@ struct tegra_utmip_config {
+ 	u8 xcvr_lsrslew;
+ };
+ 
+-struct tegra_ulpi_config {
+-	int reset_gpio;
+-	const char *clk;
+-};
+-
+ enum tegra_usb_phy_port_speed {
+ 	TEGRA_USB_PHY_PORT_SPEED_FULL = 0,
+ 	TEGRA_USB_PHY_PORT_SPEED_LOW,
+-- 
+1.8.1.5
 
-Author: Stanislaw Gruszka <sgruszka@redhat.com> 
-
-Date:   Thu Feb 28 10:55:26 2013 +0100
-
-     mac80211: cleanup generic suspend/resume procedures
-
-     Since now we disconnect before suspend, various code which save
-     connection state can now be removed from suspend and resume
-     procedure. Cleanup on resume side is smaller as ieee80211_reconfig()
-     is also used for H/W restart.
-
-     Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-     Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-
-
-Hardware:
-01:00.0 Network controller: Intel Corporation Centrino Advanced-N 6235 (rev 24)
-
-Sorry for not noticing this earlier.
-
-Ortwin
