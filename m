@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab3GOLZR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 07:25:17 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57826 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711Ab3GOLZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 07:25:15 -0400
-Date: Mon, 15 Jul 2013 12:25:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+	id S1755860Ab3GOL0K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 07:26:10 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43345 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755772Ab3GOL0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 07:26:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, toralf.foerster@gmx.de,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
+        stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-ID: <20130715112503.GB11538@sirena.org.uk>
-References: <1373804812.1370.23.camel@x61.thuisdomein>
- <20130714124538.GA11538@sirena.org.uk>
- <1373807896.1370.43.camel@x61.thuisdomein>
+Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
+Date: Mon, 15 Jul 2013 13:35:56 +0200
+Message-ID: <5802844.Fghi6KKD2P@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51E3C950.90503@linux.vnet.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com> <51E3C950.90503@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bn2rw/3z4jIqBvZU"
-Content-Disposition: inline
-In-Reply-To: <1373807896.1370.43.camel@x61.thuisdomein>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ARM: EXYNOS: remove references to non-DT SoCs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, July 15, 2013 03:35:04 PM Srivatsa S. Bhat wrote:
+> On 07/15/2013 03:25 PM, Viresh Kumar wrote:
+> > Hi Srivatsa,
+> > 
+> > I may be wrong but it looks something is wrong in this patch.
+> > 
+> > On 12 July 2013 03:47, Srivatsa S. Bhat
+> > <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> >> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> > 
+> >> @@ -1239,29 +1263,40 @@ static int __cpufreq_remove_dev(struct device *dev,
+> >>         if ((cpus == 1) && (cpufreq_driver->target))
+> >>                 __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+> >>
+> >> -       pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+> >> -       cpufreq_cpu_put(data);
+> >> +       if (!frozen) {
+> >> +               pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+> >> +               cpufreq_cpu_put(data);
+> > 
+> > So, we don't decrement usage count here. But we are still increasing
+> > counts on cpufreq_add_dev after resume, isn't it?
+> > 
+> > So, we wouldn't be able to free policy struct once all the cpus of a
+> > policy are removed after suspend/resume has happened once.
+> > 
+> 
+> Actually even I was wondering about this while writing the patch and
+> I even tested shutdown after multiple suspend/resume cycles, to verify that
+> the refcount is messed up. But surprisingly, things worked just fine.
+> 
+> Logically there should've been a refcount mismatch and things should have
+> failed, but everything worked fine during my tests. Apart from suspend/resume
+> and shutdown tests, I even tried mixing a few regular CPU hotplug operations
+> (echo 0/1 to sysfs online files), but nothing stood out.
+> 
+> Sorry, I forgot to document this in the patch. Either the patch is wrong
+> or something else is silently fixing this up. Not sure what is the exact
+> situation.
 
---Bn2rw/3z4jIqBvZU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+OK, so I'm not going to queue [2-8/8] up until we find out what's going on
+here (and until Toralf tells me that it doesn't break his system any more).
 
-On Sun, Jul 14, 2013 at 03:18:16PM +0200, Paul Bolle wrote:
-> On Sun, 2013-07-14 at 13:45 +0100, Mark Brown wrote:
+I've queued up [1/8] for 3.11 already.
 
-> > Simply removing the dependencies is not going to give the clearly
-> > intended effect here.  The dependency on the DT only machine needs to be
-> > replaced with something, not just deleted, otherwise the driver can't be
-> > enabled in Kconfig.
+Thanks,
+Rafael
 
-> I interpreted commit 383ffda2fa as a commit that just removed a lot of
 
-Always provide human readable descriptions of commits in email.
-
-> stuff: see its commit explanation and its diffstat (it adds one line and
-> deletes over 900 lines). Moreover, after that commit the references to
-> MACH_SMDKV310 and MACH_SMDKC210 both are nops. Deleting them can't
-> possibly change anything.
-
-This still doesn't have much to do with your commit message or indicate
-much understanding of what the change is actually doing or why it might
-be a problem.
-
-> But, anyhow, what would be the symbols to use here?
-
-Well, let's think about this for a minute - what is going on when
-someone does a device tree conversion on a platform?  What is replacing
-the board files?  What would an equivalent change be for the audio
-driver?
-
-> Besides, this patch was intended as a follow up to commit 383ffda2fa, to
-> clean up two references it apparently forgot to remove, and therefor
-> basically copied the subject line used in that commit.
-
-That doesn't really help - putting in a completely irrelevant subject
-line is a really good way to get your patch ignored.
-
---Bn2rw/3z4jIqBvZU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIbBAEBAgAGBQJR49wMAAoJELSic+t+oim9Wg4P90u6ZwB9wtBBV0kO8DY4xmTy
-l5CtbU7W+vdv/7EX6rVwfjHU9u+KUh+JH7+B0NpuFjSmdSYkYYt64nE8kUF5c7dy
-yn7NiHsCgpkmGhCCIUBK0DAHjhJWGWeiQAWFPuUNS5ObvGATPcdftikEnlr9x1cn
-KCsRB5DpRsTU5tDjWz6BEPaK5BskPrD0Vt/9otxsbzU6RpZ60IUUjhePY8uH0Ry5
-TUSXJYyt+QBW50Is1xQbIdepHnDNa/ruZFpHtaBJU3RLq7k9+n5aWfFOnV2FA5Ie
-Db0dLW38E/fnIiuRrfSZjNlIrmmCXyysp2/3JWl6mZCb4r5OdVQDbFxl/vR/gOQR
-QsslRFWGo0uqd+DofkDzvUMz/o2/VVnbrp2jeWstFSOiEEkOb3RKsfvqxFRw8bUv
-f5/toDuYXz+OtTGOo0jiPKFep6RnIaeMGFBQUREgzrX071yzLNmrqENzTPmZTVwG
-D3ULj+VvJVrxKRUKnVD3iRs0xqhrLdqttnX7IHUvI3GFtnEMYsTQJHZAccU2pIFD
-whgfi30qZ77Ugnex3exFKztfgItc90wbg6uOSMMXAJbGwd/EQNnoxutPBMohf25P
-i+KbW+MTp7oqTyxR0DV9dukOVDF0Zkra0FrdwV1mHNyP1xPjIYWY3wkxp6H6UpYi
-7722I36asRmVY9FgZD4=
-=L/lZ
------END PGP SIGNATURE-----
-
---Bn2rw/3z4jIqBvZU--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
