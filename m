@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933383Ab3GOQMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 12:12:09 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:43983 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab3GOQMH (ORCPT
+	id S933374Ab3GOQRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 12:17:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24302 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932613Ab3GOQRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 12:12:07 -0400
-Message-ID: <1373904672.24916.46.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 15 Jul 2013 10:11:12 -0600
-In-Reply-To: <1628443.pD3ROIrBQn@vostro.rjw.lan>
-References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com>
-	 <1907509.WiI0tI5uDZ@vostro.rjw.lan>
-	 <1373668116.24916.43.camel@misato.fc.hp.com>
-	 <1628443.pD3ROIrBQn@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Jul 2013 12:17:22 -0400
+Date: Mon, 15 Jul 2013 19:17:05 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] Squashfs: sanity check information from disk
+Message-ID: <20130715161058.GA23687@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent-mail-2013-07
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-07-13 at 01:53 +0200, Rafael J. Wysocki wrote:
-> On Friday, July 12, 2013 04:28:36 PM Toshi Kani wrote:
-> > On Fri, 2013-07-12 at 23:40 +0200, Rafael J. Wysocki wrote:
-> > > On Friday, July 12, 2013 03:12:24 PM Toshi Kani wrote:
-> > > > On Fri, 2013-07-12 at 23:13 +0200, Rafael J. Wysocki wrote:
-> > > > > On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
-> > > > > > On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > > > > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
-> > > > > > > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
-> > > > > > > > > (2013/07/11 1:47), Toshi Kani wrote:
-> > > > > > > > > > device->driver_data needs to be cleared when releasing its data,
-> > > > > > > > > > mem_device, in an error path of acpi_memory_device_add().
-> > > > > > > > > > 
-> > > > > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > > > > > > > > ---
-> > > > > > > > > 
-> > > > > > > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > > > > > > > 
-> > > > > > > > Thanks Yasuaki!
-> > > > > > > 
-> > > > > > > Queued up as a fix for 3.11.
-> > > > > > 
-> > > > > > Thanks!
-> > > > > > 
-> > > > > > > Do we need that in -stable as well?
-> > > > > > 
-> > > > > > Good point.  Yes, we need that in -stable as well.
-> > > > > 
-> > > > > What's the oldest mainline major release that fix is applicable to?
-> > > > 
-> > > > The fix is applicable all ways up to 2.6.32.
-> > > 
-> > > For -stable I'll need to say some more about what practical consequences of
-> > > the bug are.  Is it difficult to trigger?
-> > 
-> > The function evaluates _CRS of memory device objects, and fails when it
-> > gets an unexpected resource or cannot allocate a memory.
-> 
-> OK, so this is essentially about surviving unexpected external input, which
-> I suppose is serious enough.
->
-> > A kernel crash
-> > or data corruption may occur when the kernel accessed a stale pointer.
-> > That said, I am not sure how critical this issue is for old kernels
-> > since I do not think there are many platforms that support memory
-> > hotplug today.
-> 
-> Which doesn't matter.  People may want to run 3.10.y on future hardware too.
+We read the size of the name from the disk, but a larger name than
+expected would cause memory corruption.
 
-Good point.  Thanks for the clarification!
--Toshi
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+I don't know this code very well, but to me it looks like there is an
+off by one bug here as well.
 
+We say:
 
+	size = le32_to_cpu(index->size) + 1;
+
+The "+ 1" is presumably for the NUL terminator.  Then we do:
+
+	index->name[size] = '\0';
+
+That means we are putting a NUL character one space beyond the end of
+the array.  Presumably the first character of the next thing saved to
+the disk is usually zero so that's why we don't notice that we are
+reading a extra character when we read "size" number of bytes.
+
+diff --git a/fs/squashfs/namei.c b/fs/squashfs/namei.c
+index 7834a51..bc1334c 100644
+--- a/fs/squashfs/namei.c
++++ b/fs/squashfs/namei.c
+@@ -79,7 +79,8 @@ static int get_dir_index_using_name(struct super_block *sb,
+ 			int len)
+ {
+ 	struct squashfs_sb_info *msblk = sb->s_fs_info;
+-	int i, size, length = 0, err;
++	int i, length = 0, err;
++	unsigned int size;
+ 	struct squashfs_dir_index *index;
+ 	char *str;
+ 
+@@ -103,6 +104,10 @@ static int get_dir_index_using_name(struct super_block *sb,
+ 
+ 
+ 		size = le32_to_cpu(index->size) + 1;
++		if (size >= SQUASHFS_NAME_LEN + 1) {
++			err = -EINVAL;
++			break;
++		}
+ 
+ 		err = squashfs_read_metadata(sb, index->name, &index_start,
+ 					&index_offset, size);
