@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab3GOJMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 05:12:35 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33781 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab3GOJMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 05:12:34 -0400
-Date: Mon, 15 Jul 2013 11:12:32 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, akpm@linux-foundation.org,
-        jslaby@suse.cz, rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
-        Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Steev Klimaszewski <steev@genesi-usa.com>
-Subject: Re: [PATCH] Route kbd LEDs through the generic LEDs layer
-Message-ID: <20130715091230.GA8786@amd.pavel.ucw.cz>
-References: <20110102103210.GA25662@core.coreip.homeip.net>
- <20110102225741.GX5480@const.famille.thibault.fr>
- <20110112182702.GA9168@core.coreip.homeip.net>
- <20111114040613.GA4992@type.famille.thibault.fr>
- <20121221003449.GA6999@type.youpi.perso.aquilenet.fr>
- <20130707101028.GD5651@type.youpi.perso.aquilenet.fr>
- <20130712113655.GA4227@amd.pavel.ucw.cz>
- <20130712124242.GA5876@type>
- <20130712233301.GA3646@amd.pavel.ucw.cz>
- <20130713093552.GU8252@type>
+	id S1754637Ab3GOJOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 05:14:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57318 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754434Ab3GOJOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 05:14:31 -0400
+Date: Mon, 15 Jul 2013 11:14:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130715091428.GA26199@dhcp22.suse.cz>
+References: <20130629025509.GG9047@dastard>
+ <20130630183349.GA23731@dhcp22.suse.cz>
+ <20130701012558.GB27780@dastard>
+ <20130701075005.GA28765@dhcp22.suse.cz>
+ <20130701081056.GA4072@dastard>
+ <20130702092200.GB16815@dhcp22.suse.cz>
+ <20130702121947.GE14996@dastard>
+ <20130702124427.GG16815@dhcp22.suse.cz>
+ <20130703112403.GP14996@dastard>
+ <20130704163643.GF7833@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130713093552.GU8252@type>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130704163643.GF7833@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > > > This permits to reassign keyboard LEDs to something else than keyboard "leds"
-> > > > > state, by adding keyboard led and modifier triggers connected to a series
-> > > > > of VT input LEDs, themselves connected to VT input triggers, which
-> > > > > per-input device LEDs use by default.  Userland can thus easily change the LED
-> > > > > behavior of (a priori) all input devices, or of particular input devices.
-> > > > 
-> > > > Nice! Leds now have proper /sys interface.
-> > > > 
-> > > > But... I boot up, switch from X to console, press capslock, and no
-> > > > reaction anywhere.
+On Thu 04-07-13 18:36:43, Michal Hocko wrote:
+> On Wed 03-07-13 21:24:03, Dave Chinner wrote:
+> > On Tue, Jul 02, 2013 at 02:44:27PM +0200, Michal Hocko wrote:
+> > > On Tue 02-07-13 22:19:47, Dave Chinner wrote:
+> > > [...]
+> > > > Ok, so it's been leaked from a dispose list somehow. Thanks for the
+> > > > info, Michal, it's time to go look at the code....
 > > > 
-> > > Is it working without the patch?  Console-setup for instance is known to
-> > > have broken the capslock LED, which is precisely one of the reasons for
-> > > this patch, which will provide console-setup with a way to bring back
-> > > caps lock working properly.
+> > > OK, just in case we will need it, I am keeping the machine in this state
+> > > for now. So we still can play with crash and check all the juicy
+> > > internals.
 > > 
-> > You are right, it was broken before.
+> > My current suspect is the LRU_RETRY code. I don't think what it is
+> > doing is at all valid - list_for_each_safe() is not safe if you drop
+> > the lock that protects the list. i.e. there is nothing that protects
+> > the stored next pointer from being removed from the list by someone
+> > else. Hence what I think is occurring is this:
+> > 
+> > 
+> > thread 1			thread 2
+> > lock(lru)
+> > list_for_each_safe(lru)		lock(lru)
+> >   isolate			......
+> >     lock(i_lock)
+> >     has buffers
+> >       __iget
+> >       unlock(i_lock)
+> >       unlock(lru)
+> >       .....			(gets lru lock)
+> >       				list_for_each_safe(lru)
+> > 				  walks all the inodes
+> > 				  finds inode being isolated by other thread
+> > 				  isolate
+> > 				    i_count > 0
+> > 				      list_del_init(i_lru)
+> > 				      return LRU_REMOVED;
+> > 				   moves to next inode, inode that
+> > 				   other thread has stored as next
+> > 				   isolate
+> > 				     i_state |= I_FREEING
+> > 				     list_move(dispose_list)
+> > 				     return LRU_REMOVED
+> > 				 ....
+> > 				 unlock(lru)
+> >       lock(lru)
+> >       return LRU_RETRY;
+> >   if (!first_pass)
+> >     ....
+> >   --nr_to_scan
+> >   (loop again using next, which has already been removed from the
+> >   LRU by the other thread!)
+> >   isolate
+> >     lock(i_lock)
+> >     if (i_state & ~I_REFERENCED)
+> >       list_del_init(i_lru)	<<<<< inode is on dispose list!
+> > 				<<<<< inode is now isolated, with I_FREEING set
+> >       return LRU_REMOVED;
+> > 
+> > That fits the corpse left on your machine, Michal. One thread has
+> > moved the inode to a dispose list, the other thread thinks it is
+> > still on the LRU and should be removed, and removes it.
+> > 
+> > This also explains the lru item count going negative - the same item
+> > is being removed from the lru twice. So it seems like all the
+> > problems you've been seeing are caused by this one problem....
+> > 
+> > Patch below that should fix this.
 > 
-> Ok. You then may want fix your setup by configuring your caps lock led
-> the way console-setup will be supposed to do in the future:
+> Good news! The test was running since morning and it didn't hang nor
+> crashed. So this really looks like the right fix. It will run also
+> during weekend to be 100% sure. But I guess it is safe to say
 > 
-> echo ctrlllock > /sys/class/leds/vt::capsl/trigger
+> Tested-by: Michal Hocko <mhocko@suse.cz>
 
-And this indeed makes capslock led work on console, again. Nice!
+And I can finally confirm this after over weekend testing on ext3.
 
-Richard, could we get this applied for 3.12 or something? It makes
-keyboard LEDs sane...
-
-Thanks,
-									Pavel
-
+Thanks a lot for your help Dave!
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Michal Hocko
+SUSE Labs
