@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3GOH3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 03:29:32 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:18262 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052Ab3GOH3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 03:29:31 -0400
-Date: Mon, 15 Jul 2013 09:29:22 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Wei Ni <wni@nvidia.com>
-Cc: linux@roeck-us.net, thierry.reding@gmail.com, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] hwmon: (lm90) split set&show temp as common
- codes
-Message-ID: <20130715092922.36a7960a@endymion.delvare>
-In-Reply-To: <51E39114.505@nvidia.com>
-References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
-	<1373615287-18502-2-git-send-email-wni@nvidia.com>
-	<20130712152615.23464a6b@endymion.delvare>
-	<51E39114.505@nvidia.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+	id S1754211Ab3GOHfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 03:35:11 -0400
+Received: from plane.gmane.org ([80.91.229.3]:34649 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752026Ab3GOHfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 03:35:09 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: dorcas <reception@ssh.co.za>
+Subject: Re: Important news finance?yes
+Date: Mon, 15 Jul 2013 07:09:38 +0000 (UTC)
+Message-ID: <loom.20130715T090512-729@post.gmane.org>
+References: <f778bde3-5e24-4d50-aa98-17810368068f@MAIL1.tusculum.edu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 165.145.114.249 (Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; FBSMTWB; GTB7.5; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729; WinTSU 16.11.2009))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
+Richard <bbrimer <at> tusculum.edu> writes:
 
-On Mon, 15 Jul 2013 14:05:08 +0800, Wei Ni wrote:
-> On 07/12/2013 09:26 PM, Jean Delvare wrote:
-> > Can I see a recent version of the code which will need this change? It
-> > makes no sense to apply this first part which makes the code more
-> > complex with no benefit, without the second part which needs it, so
-> > they should be applied together or not at all.
 > 
-> In my RFC patches, there had many codes about thermal fw, which need
-> this patch, so I put them together.
-> And now I split the RFC patches, this series is preparing to use the
-> thermal fw.
-> As you said, I want to register lm90 as the thermal zone device, it need
-> to hook some callback, such as .get_temp. if apply this patch, I can
-> write the .get_temp simply, something like:
+> Hello dear how is life treating you over there? Do you currently need 
+financial loan help that will change
+> your status? Contact us today via E-mail: openup_center22 <at> mail.mn
 > 
-> +static int lm90_read_temp2_temp(struct thermal_zone_device *thz,
-> unsigned long *temp)
-> +{
-> +        struct lm90_data *data = thz->devdata;
-> +        struct i2c_client *client = to_i2c_client(data->hwmon_dev->parent);
-> +        struct device *dev = &client->dev;+
-> +
-> +        *temp = (long)read_temp11(dev, TEMP11_REMOTE_TEMP);
-> +
-> +        return 0;
-> +}
-> +
-> +static struct thermal_zone_device_ops remote_ops = {
-> +        .get_temp = lm90_read_temp2_temp,
-> +};
-> 
-> If without this patch, I have to rewrite the lm90_read_temp2_temp(),
-> which almost same as the show_temp11(), I think it's not good. When use
-> this patch and following 3/3 patch, the code will be more readable and
-> clear.
 
-I understand the idea.
 
-> Anyway, if you want, I can send this patch as a separate one. :)
 
-Yes please, I think it would help me do a better code review and
-testing as well.
 
--- 
-Jean Delvare
