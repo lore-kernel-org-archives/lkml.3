@@ -1,232 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab3GODBb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 23:01:31 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:11676 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab3GODBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 23:01:30 -0400
-X-IronPort-AV: E=Sophos;i="4.89,666,1367996400"; 
-   d="scan'208,223";a="33844039"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: =?utf-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: sunrpc/clnt.c: BUG kmalloc-256 (Not tainted): Poison overwritten
-Thread-Topic: sunrpc/clnt.c: BUG kmalloc-256 (Not tainted): Poison
- overwritten
-Thread-Index: AQHOgGiLT646xY/oxUW17zHw0TEPi5llg7gA
-Date: Mon, 15 Jul 2013 03:01:28 +0000
-Message-ID: <1373857286.3181.1.camel@leira.trondhjem.org>
-References: <51E25B20.7030906@gmx.de>
-In-Reply-To: <51E25B20.7030906@gmx.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: multipart/mixed;
-	boundary="_002_137385728631811camelleiratrondhjemorg_"
-MIME-Version: 1.0
+	id S1753918Ab3GODQw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 23:16:52 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:28312 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab3GODQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 23:16:51 -0400
+Message-ID: <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mm/hugetlb: per-vma instantiation mutexes
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 14 Jul 2013 20:16:44 -0700
+In-Reply-To: <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_137385728631811camelleiratrondhjemorg_
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <7A1BA6C9556E2B4687A1E99B4BDBC854@hq.netapp.com>
-Content-Transfer-Encoding: base64
+On Fri, 2013-07-12 at 17:54 -0700, Hugh Dickins wrote:
+> Adding the essential David Gibson to the Cc list.
+> 
+> On Fri, 12 Jul 2013, Davidlohr Bueso wrote:
+> 
+> > The hugetlb_instantiation_mutex serializes hugepage allocation and instantiation
+> > in the page directory entry. It was found that this mutex can become quite contended
+> > during the early phases of large databases which make use of huge pages - for instance
+> > startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
+> > reports that this mutex can be one of the top 5 most contended locks in the kernel during
+> > the first few minutes:
+> > 
+> > hugetlb_instantiation_mutex:      10678     10678
+> >              ---------------------------
+> >              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+> >              ---------------------------
+> >              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+> > 
+> > contentions:          10678
+> > acquisitions:         99476
+> > waittime-total: 76888911.01 us
+> > 
+> > Instead of serializing each hugetlb fault, we can deal with concurrent faults for pages
+> > in different vmas. The per-vma mutex is initialized when creating a new vma. So, back to
+> > the example above, we now get much less contention:
+> > 
+> >  &vma->hugetlb_instantiation_mutex:  1         1
+> >        ---------------------------------
+> >        &vma->hugetlb_instantiation_mutex       1   [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+> >        ---------------------------------
+> >        &vma->hugetlb_instantiation_mutex       1    [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+> > 
+> > contentions:          1
+> > acquisitions:    108092
+> > waittime-total:  621.24 us
+> > 
+> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> 
+> I agree this is a problem worth solving,
+> but I doubt this patch is the right solution.
+> 
+> > ---
+> >  include/linux/mm_types.h |  3 +++
+> >  mm/hugetlb.c             | 12 +++++-------
+> >  mm/mmap.c                |  3 +++
+> >  3 files changed, 11 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> > index fb425aa..b45fd87 100644
+> > --- a/include/linux/mm_types.h
+> > +++ b/include/linux/mm_types.h
+> > @@ -289,6 +289,9 @@ struct vm_area_struct {
+> >  #ifdef CONFIG_NUMA
+> >  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+> >  #endif
+> > +#ifdef CONFIG_HUGETLB_PAGE
+> > +	struct mutex hugetlb_instantiation_mutex;
+> > +#endif
+> >  };
+> 
+> Bloating every vm_area_struct with a rarely useful mutex:
+> I'm sure you can construct cases where per-vma mutex would win over
+> per-mm mutex, but they will have to be very common to justify the bloat.
+> 
 
-T24gU3VuLCAyMDEzLTA3LTE0IGF0IDEwOjAyICswMjAwLCBUb3JhbGYgRsO2cnN0ZXIgd3JvdGU6
-DQo+IFRoaXMgYmlzZWN0ZWQgY29tbWl0IHByb2R1Y2VzIGF0IGEgMzIgYml0IHVzZXIgbW9kZSBs
-aW51eCBndWVzdCB0aGUgYXR0YWNoZWQgQlVHIDoNCj4gDQo+IGNvbW1pdCBlZWVlMjQ1MjY4Yzk1
-MTI2MmI4NjFiYzFiZTRlOWRjODEyMzUyNDk5DQo+IEF1dGhvcjogVHJvbmQgTXlrbGVidXN0IDxU
-cm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbT4NCj4gRGF0ZTogICBXZWQgSnVsIDEwIDE1OjMzOjAx
-IDIwMTMgLTA0MDANCj4gDQo+ICAgICBTVU5SUEM6IEZpeCBhIGRlYWRsb2NrIGluIHJwY19jbGll
-bnRfcmVnaXN0ZXIoKQ0KPiANCj4gICAgIENvbW1pdCAzODQ4MTYwNTFjYTkxMjVjZDU0NzUwZTU5
-Yzc4MGMyYTI2NTVmYTRmIChTVU5SUEM6IGZpeCByYWNlcyBvbg0KPiAgICAgUGlwZUZTIE1PVU5U
-IG5vdGlmaWNhdGlvbnMpIGludHJvZHVjZXMgYSByZWdyZXNzaW9uIHdoZW4gd2UgY2FsbA0KPiAg
-ICAgcnBjX3NldHVwX3BpcGVkaXIoKSB3aXRoIFJQQ1NFQ19HU1MgYXMgdGhlIGF1dGggZmxhdm91
-ci4NCj4gDQo+ICAgICBCeSBjYWxsaW5nIHJwY2F1dGhfY3JlYXRlKCkgd2hpbGUgaG9sZGluZyB0
-aGUgc24tPnBpcGVmc19zYl9sb2NrLCB3ZQ0KPiAgICAgZW5kIHVwIGRlYWRsb2NraW5nIGluIGdz
-c19waXBlc19kZW50cmllc19jcmVhdGVfbmV0KCkuDQo+ICAgICBGaXggaXMgdG8gcmVnaXN0ZXIg
-dGhlIGNsaWVudCBhbmQgcmVsZWFzZSB0aGUgbXV0ZXggYmVmb3JlIGNhbGxpbmcNCj4gICAgIHJw
-Y2F1dGhfY3JlYXRlKCkuDQo+IA0KPiAgICAgUmVwb3J0ZWQtYnk6IFdlc3RvbiBBbmRyb3MgQWRh
-bXNvbiA8ZHJvc0BuZXRhcHAuY29tPg0KPiAgICAgVGVzdGVkLWJ5OiBXZXN0b24gQW5kcm9zIEFk
-YW1zb24gPGRyb3NAbmV0YXBwLmNvbT4NCj4gICAgIENjOiBTdGFuaXNsYXYgS2luc2J1cnNreSA8
-c2tpbnNidXJza3lAcGFyYWxsZWxzLmNvbT4NCj4gICAgIENjOiA8c3RhYmxlQHZnZXIua2VybmVs
-Lm9yZz4gIyA6IDM4NDgxNjA6IFNVTlJQQzogZml4IHJhY2VzIG9uIFBpcGVGUyBNT1VOVA0KPiAg
-ICAgQ2M6IDxzdGFibGVAdmdlci5rZXJuZWwub3JnPiAjIDogZTczZjRjYzogU1VOUlBDOiBzcGxp
-dCBjbGllbnQgY3JlYXRpb24NCj4gICAgIFNpZ25lZC1vZmYtYnk6IFRyb25kIE15a2xlYnVzdCA8
-VHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20+DQo+IA0KPiANCj4gDQo+IA0KPiANCj4gDQo+IDIw
-MTMtMDctMTNUMjI6MDk6MDcuMDAwKzAyOjAwIHRyaW5pdHkgc20tbm90aWZ5WzEwNDJdOiBWZXJz
-aW9uIDEuMi42IHN0YXJ0aW5nDQo+IDIwMTMtMDctMTNUMjI6MDk6MDcuMDAwKzAyOjAwIHRyaW5p
-dHkgc20tbm90aWZ5WzEwNDJdOiBCYWNrZ3JvdW5kaW5nIHRvIG5vdGlmeSBob3N0cy4uLg0KPiAy
-MDEzLTA3LTEzVDIyOjA5OjA3LjAwMCswMjowMCB0cmluaXR5IHNtLW5vdGlmeVsxMDQzXTogUnVu
-bmluZyBhcyByb290LiAgY2hvd24gL3Zhci9saWIvbmZzIHRvIGNob29zZSBkaWZmZXJlbnQgdXNl
-cg0KPiAyMDEzLTA3LTEzVDIyOjA5OjEwLjAwMCswMjowMCB0cmluaXR5IG1vdW50WzEwNDddOiBt
-b3VudCB0byBORlMgc2VydmVyICduMjJzdGFiNCcgZmFpbGVkOiBObyByb3V0ZSB0byBob3N0LCBy
-ZXRyeWluZw0KPiAyMDEzLTA3LTEzVDIyOjA5OjExLjAwMCswMjowMCB0cmluaXR5IGRoY3BjZFs5
-NzFdOiBldGgwOiBzZW5kaW5nIElQdjYgUm91dGVyIFNvbGljaXRhdGlvbg0KPiAyMDEzLTA3LTEz
-VDIyOjA5OjExLjAwMCswMjowMCB0cmluaXR5IGRoY3BjZFs5NzFdOiBldGgwOiBubyBJUHY2IFJv
-dXRlcnMgYXZhaWxhYmxlDQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuMDAwKzAyOjAwIHRyaW5pdHkg
-bW91bnRbMTA0OF06IG1vdW50IHRvIE5GUyBzZXJ2ZXIgJ24yMnN0YWI0JyBmYWlsZWQ6IE5vIHJv
-dXRlIHRvIGhvc3QsIHJldHJ5aW5nDQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjQ3KzAyOjAwIHRy
-aW5pdHkga2VybmVsOiA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQ0KPiAyMDEzLTA3LTEzVDIyOjA5OjEz
-LjY0NyswMjowMCB0cmluaXR5IGtlcm5lbDogQlVHIGttYWxsb2MtMjU2IChOb3QgdGFpbnRlZCk6
-IFBvaXNvbiBvdmVyd3JpdHRlbg0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY0NyswMjowMCB0cmlu
-aXR5IGtlcm5lbDogLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NCj4gMjAxMy0wNy0xM1QyMjowOToxMy42
-NDcrMDI6MDAgdHJpbml0eSBrZXJuZWw6DQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjQ3KzAyOjAw
-IHRyaW5pdHkga2VybmVsOiBEaXNhYmxpbmcgbG9jayBkZWJ1Z2dpbmcgZHVlIHRvIGtlcm5lbCB0
-YWludA0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY0NyswMjowMCB0cmluaXR5IGtlcm5lbDogSU5G
-TzogMHg0OWIxZWQxOC0weDQ5YjFlZDFiLiBGaXJzdCBieXRlIDB4NzQgaW5zdGVhZCBvZiAweDZi
-DQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjQ3KzAyOjAwIHRyaW5pdHkga2VybmVsOiBJTkZPOiBB
-bGxvY2F0ZWQgaW4gcnBjX25ld19jbGllbnQrMHg4MS8weDNhMCBhZ2U9MzAwIGNwdT0wIHBpZD0x
-MDQ5DQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjQ3KzAyOjAwIHRyaW5pdHkga2VybmVsOiBJTkZP
-OiBGcmVlZCBpbiBycGNfbmV3X2NsaWVudCsweDM1YS8weDNhMCBhZ2U9MzAwIGNwdT0wIHBpZD0x
-MDQ5DQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjQ3KzAyOjAwIHRyaW5pdHkga2VybmVsOiBJTkZP
-OiBTbGFiIDB4MGI4N2JhYzAgb2JqZWN0cz0xMyB1c2VkPTEzIGZwPTB4ICAobnVsbCkgZmxhZ3M9
-MHgwMDgwDQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjQ3KzAyOjAwIHRyaW5pdHkga2VybmVsOiBJ
-TkZPOiBPYmplY3QgMHg0OWIxZWQxMCBAb2Zmc2V0PTMzNDQgZnA9MHg0OWIxZWU0MA0KPiAyMDEz
-LTA3LTEzVDIyOjA5OjEzLjY1MyswMjowMCB0cmluaXR5IGtlcm5lbDoNCj4gMjAxMy0wNy0xM1Qy
-MjowOToxMy42NTMrMDI6MDAgdHJpbml0eSBrZXJuZWw6IEJ5dGVzIGI0IDQ5YjFlZDAwOiBmNiAw
-MyAwMCAwMCBiZCA5NCBmZiBmZiA1YSA1YSA1YSA1YSA1YSA1YSA1YSA1YSAgLi4uLi4uLi5aWlpa
-WlpaWg0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY1MyswMjowMCB0cmluaXR5IGtlcm5lbDogT2Jq
-ZWN0IDQ5YjFlZDEwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA3NCAzYSA4NSA0OSA2YiA2YiA2
-YiA2YiAga2tra2tra2t0Oi5Ja2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY1MyswMjowMCB0
-cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZDIwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIy
-OjA5OjEzLjY1MyswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZDMwOiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2tr
-aw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY1MyswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0
-IDQ5YjFlZDQwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2
-YiAga2tra2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY1MyswMjowMCB0cmlu
-aXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZDUwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5
-OjEzLjY1MyswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZDYwOiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0K
-PiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY1MyswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5
-YjFlZDcwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAg
-a2tra2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY1MyswMjowMCB0cmluaXR5
-IGtlcm5lbDogT2JqZWN0IDQ5YjFlZDgwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEz
-LjY2MCswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZDkwOiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAy
-MDEzLTA3LTEzVDIyOjA5OjEzLjY2MCswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFl
-ZGEwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tr
-a2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY2MCswMjowMCB0cmluaXR5IGtl
-cm5lbDogT2JqZWN0IDQ5YjFlZGIwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY2
-MCswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZGMwOiA2YiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAyMDEz
-LTA3LTEzVDIyOjA5OjEzLjY2MCswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZGQw
-OiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tr
-a2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY2MCswMjowMCB0cmluaXR5IGtlcm5l
-bDogT2JqZWN0IDQ5YjFlZGUwOiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY2MCsw
-MjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZGYwOiA2YiA2YiA2YiA2YiA2YiA2YiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiAga2tra2tra2tra2tra2traw0KPiAyMDEzLTA3
-LTEzVDIyOjA5OjEzLjY2MCswMjowMCB0cmluaXR5IGtlcm5lbDogT2JqZWN0IDQ5YjFlZTAwOiA2
-YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiA2YiBhNSAga2tra2tra2tr
-a2tra2trLg0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY2MCswMjowMCB0cmluaXR5IGtlcm5lbDog
-UmVkem9uZSA0OWIxZWUxMDogYmIgYmIgYmIgYmIgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgIC4uLi4NCj4gMjAxMy0wNy0xM1QyMjowOToxMy42NjArMDI6MDAgdHJpbml0eSBr
-ZXJuZWw6IFBhZGRpbmcgNDliMWVlMzg6IDVhIDVhIDVhIDVhIDVhIDVhIDVhIDVhICAgICAgICAg
-ICAgICAgICAgICAgICAgICBaWlpaWlpaWg0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY2NSswMjow
-MCB0cmluaXR5IGtlcm5lbDogQ1BVOiAwIFBJRDogMTAzMCBDb21tOiBycGMuaWRtYXBkIFRhaW50
-ZWQ6IEcgICAgQiAgICAgICAgMy4xMC4wLTA5MjkyLWc2MjFmYTI4ICMxDQo+IDIwMTMtMDctMTNU
-MjI6MDk6MTMuNjY1KzAyOjAwIHRyaW5pdHkga2VybmVsOiA0ODk1N2ExYyA0ODk1N2E0OCAwODBm
-NzhiMCAwODRhYjBmOCA0OWIxZWQxMCAwMDAwMGQxMCA0OWIxZWU0MCAwYjg3YmFjMA0KPiAyMDEz
-LTA3LTEzVDIyOjA5OjEzLjY2NSswMjowMCB0cmluaXR5IGtlcm5lbDogNDliMWVkMTggMDAwMDAw
-MDQgNDliMWVkMWIgNDg5NTdhODAgMDgwZjdlODggMDg0YWIxZDggNDliMWVkMTggNDliMWVkMWIN
-Cj4gMjAxMy0wNy0xM1QyMjowOToxMy42NjUrMDI6MDAgdHJpbml0eSBrZXJuZWw6IDAwMDAwMDc0
-IDAwMDAwMDZiIDAwMDAwMDVhIDQ5YjFlZDEwIDBiODdiYWMwIDQ5ODQ5YzAwIDQ5ODQ5YzAwIDQ5
-YjFlZDEwIDQ4OTU3OWYwOiAgWzwwODA1ZmIxZj5dIHNob3dfc3RhY2srMHhjZi8weDEwMA0KPiAy
-MDEzLTA3LTEzVDIyOjA5OjEzLjY2NSswMjowMCB0cmluaXR5IGtlcm5lbDogNDg5NTdhMTQ6ICBb
-PDA4NDAzNDVkPl0gZHVtcF9zdGFjaysweDI2LzB4MjgNCj4gMjAxMy0wNy0xM1QyMjowOToxMy42
-NjUrMDI6MDAgdHJpbml0eSBrZXJuZWw6IDQ4OTU3YTI0OiAgWzwwODBmNzhiMD5dIHByaW50X3Ry
-YWlsZXIrMHhlMC8weGYwDQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjY1KzAyOjAwIHRyaW5pdHkg
-a2VybmVsOiA0ODk1N2E0YzogIFs8MDgwZjdlODg+XSBjaGVja19ieXRlc19hbmRfcmVwb3J0KzB4
-YTgvMHgxMDANCj4gMjAxMy0wNy0xM1QyMjowOToxMy42NjUrMDI6MDAgdHJpbml0eSBrZXJuZWw6
-IDQ4OTU3YTg0OiAgWzwwODBmN2ZiOD5dIGNoZWNrX29iamVjdCsweGQ4LzB4MjEwDQo+IDIwMTMt
-MDctMTNUMjI6MDk6MTMuNjY1KzAyOjAwIHRyaW5pdHkga2VybmVsOiA0ODk1N2FjMDogIFs8MDg0
-MDFhODQ+XSBhbGxvY19kZWJ1Z19wcm9jZXNzaW5nKzB4N2QvMHgxMGUNCj4gMjAxMy0wNy0xM1Qy
-MjowOToxMy42NjUrMDI6MDAgdHJpbml0eSBrZXJuZWw6IDQ4OTU3YWU0OiAgWzwwODQwMjNjZD5d
-IF9fc2xhYl9hbGxvYy5jb25zdHByb3AuNzQrMHgzNTYvMHgzYTQNCj4gMjAxMy0wNy0xM1QyMjow
-OToxMy42NzMrMDI6MDAgdHJpbml0eSBrZXJuZWw6IDQ4OTU3YjcwOiAgWzwwODBmYWU4NT5dIF9f
-a21hbGxvY190cmFja19jYWxsZXIrMHg4NS8weDE2MA0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY3
-MyswMjowMCB0cmluaXR5IGtlcm5lbDogNDg5NTdiOTg6ICBbPDA4MmM5MGYzPl0gX19rbWFsbG9j
-X3Jlc2VydmUuaXNyYS40NysweDMzLzB4OTANCj4gMjAxMy0wNy0xM1QyMjowOToxMy42NzMrMDI6
-MDAgdHJpbml0eSBrZXJuZWw6IDQ4OTU3YmMwOiAgWzwwODJjOTI3Nj5dIF9fYWxsb2Nfc2tiKzB4
-NzYvMHgyMTANCj4gMjAxMy0wNy0xM1QyMjowOToxMy42NzMrMDI6MDAgdHJpbml0eSBrZXJuZWw6
-IDQ4OTU3YmVjOiAgWzwwODJjNjVhMT5dIHNvY2tfYWxsb2Nfc2VuZF9wc2tiKzB4YjEvMHgzMjAN
-Cj4gMjAxMy0wNy0xM1QyMjowOToxMy42NzMrMDI6MDAgdHJpbml0eSBrZXJuZWw6IDQ4OTU3YzM0
-OiAgWzwwODJjNjgzZT5dIHNvY2tfYWxsb2Nfc2VuZF9za2IrMHgyZS8weDMwDQo+IDIwMTMtMDct
-MTNUMjI6MDk6MTMuNjczKzAyOjAwIHRyaW5pdHkga2VybmVsOiA0ODk1N2M1MDogIFs8MDgzNDQ4
-MzE+XSB1bml4X3N0cmVhbV9zZW5kbXNnKzB4MTYxLzB4M2IwDQo+IDIwMTMtMDctMTNUMjI6MDk6
-MTMuNjczKzAyOjAwIHRyaW5pdHkga2VybmVsOiA0ODk1N2NhODogIFs8MDgyYzIzYmU+XSBzb2Nr
-X3NlbmRtc2crMHg3ZS8weGEwDQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjczKzAyOjAwIHRyaW5p
-dHkga2VybmVsOiA0ODk1N2Q2YzogIFs8MDgyYzM3OGE+XSBTeVNfc2VuZHRvKzB4ZWEvMHgxMjAN
-Cj4gMjAxMy0wNy0xM1QyMjowOToxMy42NzMrMDI6MDAgdHJpbml0eSBrZXJuZWw6IDQ4OTU3ZTQ0
-OiAgWzwwODJjMzdmNj5dIFN5U19zZW5kKzB4MzYvMHg0MA0KPiAyMDEzLTA3LTEzVDIyOjA5OjEz
-LjY3MyswMjowMCB0cmluaXR5IGtlcm5lbDogNDg5NTdlNjQ6ICBbPDA4MmM0MjQ3Pl0gU3lTX3Nv
-Y2tldGNhbGwrMHgxNjcvMHgzMDANCj4gMjAxMy0wNy0xM1QyMjowOToxMy42NzgrMDI6MDAgdHJp
-bml0eSBrZXJuZWw6IDQ4OTU3ZWFjOiAgWzwwODA2MThlMj5dIGhhbmRsZV9zeXNjYWxsKzB4ODIv
-MHhiMA0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY3OCswMjowMCB0cmluaXR5IGtlcm5lbDogNDg5
-NTdlZjQ6ICBbPDA4MDczZDZkPl0gdXNlcnNwYWNlKzB4NDZkLzB4NTkwDQo+IDIwMTMtMDctMTNU
-MjI6MDk6MTMuNjc4KzAyOjAwIHRyaW5pdHkga2VybmVsOiA0ODk1N2ZlYzogIFs8MDgwNWU2NWM+
-XSBmb3JrX2hhbmRsZXIrMHg2Yy8weDcwDQo+IDIwMTMtMDctMTNUMjI6MDk6MTMuNjc4KzAyOjAw
-IHRyaW5pdHkga2VybmVsOiA0ODk1N2ZmYzogIFs8MDAwMDAwMDA+XSAweDANCj4gMjAxMy0wNy0x
-M1QyMjowOToxMy42NzgrMDI6MDAgdHJpbml0eSBrZXJuZWw6DQo+IDIwMTMtMDctMTNUMjI6MDk6
-MTMuNjc4KzAyOjAwIHRyaW5pdHkga2VybmVsOiBGSVgga21hbGxvYy0yNTY6IFJlc3RvcmluZyAw
-eDQ5YjFlZDE4LTB4NDliMWVkMWI9MHg2Yg0KPiAyMDEzLTA3LTEzVDIyOjA5OjEzLjY3OCswMjow
-MCB0cmluaXR5IGtlcm5lbDoNCj4gMjAxMy0wNy0xM1QyMjowOToxMy42NzgrMDI6MDAgdHJpbml0
-eSBrZXJuZWw6IEZJWCBrbWFsbG9jLTI1NjogTWFya2luZyBhbGwgb2JqZWN0cyB1c2VkDQo+IDIw
-MTMtMDctMTNUMjI6MDk6MTMuMDAwKzAyOjAwIHRyaW5pdHkgbW91bnRbMTA0OV06IG1vdW50IHRv
-IE5GUyBzZXJ2ZXIgJ24yMnN0YWI0JyBmYWlsZWQ6IE5vIHJvdXRlIHRvIGhvc3QsIHJldHJ5aW5n
-DQo+IDIwMTMtMDctMTNUMjI6MDk6MTYuMDAwKzAyOjAwIHRyaW5pdHkgbW91bnRbMTA0OF06IG1v
-dW50IHRvIE5GUyBzZXJ2ZXIgJ24yMnN0YWI0JyBmYWlsZWQ6IE5vIHJvdXRlIHRvIGhvc3QsIHJl
-dHJ5aW5nDQo+IDIwMTMtMDctMTNUMjI6MDk6MTYuNjQ4KzAyOjAwIHRyaW5pdHkga2VybmVsOiA9
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PQ0KPiAyMDEzLTA3LTEzVDIyOjA5OjE2LjY0OCswMjowMCB0cmlu
-aXR5IGtlcm5lbDogQlVHIGttYWxsb2MtMjU2IChUYWludGVkOiBHICAgIEIgICAgICAgKTogUG9p
-c29uIG92ZXJ3cml0dGVuDQo+IDIwMTMtMDctMTNUMjI6MDk6MTYuNjQ4KzAyOjAwIHRyaW5pdHkg
-a2VybmVsOiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQ0KPiAyMDEzLTA3LTEzVDIyOjA5OjE2LjY0OCsw
-MjowMCB0cmluaXR5IGtlcm5lbDoNCg0KRG9lcyB0aGUgYXR0YWNoZWQgcGF0Y2ggZml4IHRoZSBw
-cm9ibGVtPw0KDQotLSANClRyb25kIE15a2xlYnVzdA0KTGludXggTkZTIGNsaWVudCBtYWludGFp
-bmVyDQoNCk5ldEFwcA0KVHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20NCnd3dy5uZXRhcHAuY29t
-DQo=
+I cannot disagree here, this was my main concern about this patch, and,
+as you mentioned, if we can just get rid of the need for the lock, much
+better.
 
---_002_137385728631811camelleiratrondhjemorg_
-Content-Type: text/x-patch;
-	name="0001-SUNRPC-Fix-another-issue-with-rpc_client_register.patch"
-Content-Description: 0001-SUNRPC-Fix-another-issue-with-rpc_client_register.patch
-Content-Disposition: attachment;
-	filename="0001-SUNRPC-Fix-another-issue-with-rpc_client_register.patch";
-	size=806; creation-date="Mon, 15 Jul 2013 03:01:28 GMT";
-	modification-date="Mon, 15 Jul 2013 03:01:28 GMT"
-Content-ID: <78BBBE9A037C574DB61EAD7F8C99183F@hq.netapp.com>
-Content-Transfer-Encoding: base64
+> >  
+> >  struct core_thread {
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 83aff0a..12e665b 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -137,12 +137,12 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
+> >   * The region data structures are protected by a combination of the mmap_sem
+> >   * and the hugetlb_instantion_mutex.  To access or modify a region the caller
+> >   * must either hold the mmap_sem for write, or the mmap_sem for read and
+> > - * the hugetlb_instantiation mutex:
+> > + * the vma's hugetlb_instantiation mutex:
+> 
+> Reading the existing comment, this change looks very suspicious to me.
+> A per-vma mutex is just not going to provide the necessary exclusion, is
+> it?  (But I recall next to nothing about these regions and reservations.)
+> 
+> >   *
+> >   *	down_write(&mm->mmap_sem);
+> >   * or
+> >   *	down_read(&mm->mmap_sem);
+> > - *	mutex_lock(&hugetlb_instantiation_mutex);
+> > + *	mutex_lock(&vma->hugetlb_instantiation_mutex);
+> >   */
+> >  struct file_region {
+> >  	struct list_head link;
+> > @@ -2547,7 +2547,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  
+> >  /*
+> >   * Hugetlb_cow() should be called with page lock of the original hugepage held.
+> > - * Called with hugetlb_instantiation_mutex held and pte_page locked so we
+> > + * Called with the vma's hugetlb_instantiation_mutex held and pte_page locked so we
+> >   * cannot race with other handlers or page migration.
+> >   * Keep the pte_same checks anyway to make transition from the mutex easier.
+> >   */
+> > @@ -2847,7 +2847,6 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  	int ret;
+> >  	struct page *page = NULL;
+> >  	struct page *pagecache_page = NULL;
+> > -	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+> >  	struct hstate *h = hstate_vma(vma);
+> >  
+> >  	address &= huge_page_mask(h);
+> > @@ -2872,7 +2871,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  	 * get spurious allocation failures if two CPUs race to instantiate
+> >  	 * the same page in the page cache.
+> >  	 */
+> > -	mutex_lock(&hugetlb_instantiation_mutex);
+> > +	mutex_lock(&vma->hugetlb_instantiation_mutex);
+> >  	entry = huge_ptep_get(ptep);
+> >  	if (huge_pte_none(entry)) {
+> >  		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
+> > @@ -2943,8 +2942,7 @@ out_page_table_lock:
+> >  	put_page(page);
+> >  
+> >  out_mutex:
+> > -	mutex_unlock(&hugetlb_instantiation_mutex);
+> > -
+> > +	mutex_unlock(&vma->hugetlb_instantiation_mutex);
+> >  	return ret;
+> >  }
+> >  
+> > diff --git a/mm/mmap.c b/mm/mmap.c
+> > index fbad7b0..8f0b034 100644
+> > --- a/mm/mmap.c
+> > +++ b/mm/mmap.c
+> > @@ -1543,6 +1543,9 @@ munmap_back:
+> >  	vma->vm_page_prot = vm_get_page_prot(vm_flags);
+> >  	vma->vm_pgoff = pgoff;
+> >  	INIT_LIST_HEAD(&vma->anon_vma_chain);
+> > +#ifdef CONFIG_HUGETLB_PAGE
+> > +	mutex_init(&vma->hugetlb_instantiation_mutex);
+> > +#endif
+> >  
+> >  	error = -EINVAL;	/* when rejecting VM_GROWSDOWN|VM_GROWSUP */
+> >  
+> > -- 
+> > 1.7.11.7
+> 
+> The hugetlb_instantiation_mutex has always been rather an embarrassment:
+> it would be much more satisfying to remove the need for it, than to split
+> it in this way.  (Maybe a technique like THP sometimes uses, marking an
+> entry as in transition while the new entry is prepared.)
 
-RnJvbSA4MGI1YTA1OGIxZWVkNWMyNjcxMTBkZjdlMDQxZDAzMDJlYWZmODFjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0
-YXBwLmNvbT4NCkRhdGU6IFN1biwgMTQgSnVsIDIwMTMgMjI6NTc6NTAgLTA0MDANClN1YmplY3Q6
-IFtQQVRDSF0gU1VOUlBDOiBGaXggYW5vdGhlciBpc3N1ZSB3aXRoIHJwY19jbGllbnRfcmVnaXN0
-ZXIoKQ0KDQpGaXggdGhlIGVycm9yIHBhdGh3YXkgaWYgcnBjYXV0aF9jcmVhdGUoKSBmYWlscy4N
-Cg0KU2lnbmVkLW9mZi1ieTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0YXBw
-LmNvbT4NCi0tLQ0KIG5ldC9zdW5ycGMvY2xudC5jIHwgMSArDQogMSBmaWxlIGNoYW5nZWQsIDEg
-aW5zZXJ0aW9uKCspDQoNCmRpZmYgLS1naXQgYS9uZXQvc3VucnBjL2NsbnQuYyBiL25ldC9zdW5y
-cGMvY2xudC5jDQppbmRleCBhYTQwMTU2Li40YTM1ZTFkIDEwMDY0NA0KLS0tIGEvbmV0L3N1bnJw
-Yy9jbG50LmMNCisrKyBiL25ldC9zdW5ycGMvY2xudC5jDQpAQCAtMzEzLDYgKzMxMyw3IEBAIHN0
-YXRpYyBpbnQgcnBjX2NsaWVudF9yZWdpc3Rlcihjb25zdCBzdHJ1Y3QgcnBjX2NyZWF0ZV9hcmdz
-ICphcmdzLA0KIAlyZXR1cm4gMDsNCiBlcnJfYXV0aDoNCiAJcGlwZWZzX3NiID0gcnBjX2dldF9z
-Yl9uZXQobmV0KTsNCisJcnBjX3VucmVnaXN0ZXJfY2xpZW50KGNsbnQpOw0KIAlfX3JwY19jbG50
-X3JlbW92ZV9waXBlZGlyKGNsbnQpOw0KIG91dDoNCiAJaWYgKHBpcGVmc19zYikNCi0tIA0KMS44
-LjMuMQ0KDQo=
+I didn't realize this was a known issue. Doing some googling I can see
+some additional alternatives to getting rid of the lock:
 
---_002_137385728631811camelleiratrondhjemorg_--
+- [PATCH] remove hugetlb_instantiation_mutex:
+https://lkml.org/lkml/2007/7/27/46
+
+- Commit 3935baa (hugepage: serialize hugepage allocation and
+instantiation): David mentioned a way to possibly avoid the need for
+this lock.
+
+> 
+> But I suppose it would not have survived so long if that were easy,
+> and I think it may have grown some subtle dependants over the years -
+> as the region comment indicates.
+
+Indeed. I'm not very acquainted with hugetlb code, so, assuming this
+patch's approach isn't valid, and we can figure out some way of getting
+rid of the mutex, I'd like to get some mm folks feedback on this.
+
+Thanks,
+Davidlohr
+
