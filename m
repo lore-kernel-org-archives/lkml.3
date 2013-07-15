@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab3GORp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 13:45:59 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:34635 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752016Ab3GORp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 13:45:57 -0400
-Date: Mon, 15 Jul 2013 12:45:55 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
+	id S1753098Ab3GORrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 13:47:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6604 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016Ab3GORrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 13:47:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,670,1367996400"; 
+   d="scan'208";a="370634929"
+Date: Mon, 15 Jul 2013 10:46:59 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
-Message-ID: <20130715174551.GA58640@asylum.americas.sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com> <1373594635-131067-5-git-send-email-holt@sgi.com> <CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com>
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130715174659.GC15531@xanatos>
+References: <20130715155202.GC29526@xanatos>
+ <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 09:19:12PM -0700, Yinghai Lu wrote:
-> On Thu, Jul 11, 2013 at 7:03 PM, Robin Holt <holt@sgi.com> wrote:
-> > +
-> >                 page = pfn_to_page(pfn);
-> >                 __init_single_page(page, zone, nid, 1);
-> > +
-> > +               if (pfns > 1)
-> > +                       SetPageUninitialized2Mib(page);
-> > +
-> > +               pfn += pfns;
-> >         }
-> >  }
+On Mon, Jul 15, 2013 at 10:08:13AM -0700, Linus Torvalds wrote:
+> On Mon, Jul 15, 2013 at 8:52 AM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
 > >
-> > @@ -6196,6 +6302,7 @@ static const struct trace_print_flags pageflag_names[] = {
-> >         {1UL << PG_owner_priv_1,        "owner_priv_1"  },
-> >         {1UL << PG_arch_1,              "arch_1"        },
-> >         {1UL << PG_reserved,            "reserved"      },
-> > +       {1UL << PG_uninitialized2mib,   "Uninit_2MiB"   },
+> >                                                             I'll roar
+> > right back, louder, for all the people who lose their voice when they
+> > get yelled at by top maintainers.  I won't be the nice girl anymore.
 > 
-> PG_uninitialized_2m ?
+> That's the spirit.
 > 
-> >         {1UL << PG_private,             "private"       },
-> >         {1UL << PG_private_2,           "private_2"     },
-> >         {1UL << PG_writeback,           "writeback"     },
+> Greg has taught you well. You have controlled your fear. Now, release
+> your anger. Only your hatred can destroy me.
 > 
-> Yinghai
+> Come to the dark side, Sarah. We have cookies.
 
+But, but, the light side has brownies.  Pot brownies that will make
+everyone feel sleepy and peaceful and possibly hungry.  For more pot
+brownies...
 
-I hadn't actually been very happy with having a PG_uninitialized2mib flag.
-It implies if we want to jump to 1Gb pages we would need a second flag,
-PG_uninitialized1gb, for that.  I was thinking of changing it to
-PG_uninitialized and setting page->private to the correct order.
-Thoughts?
-
-Nate
-
+Sarah Sharp
