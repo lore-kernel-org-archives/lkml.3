@@ -1,195 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3GOKh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:37:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754912Ab3GOKhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:37:55 -0400
-Date: Mon, 15 Jul 2013 13:36:49 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-Message-ID: <20130715103648.GN11772@redhat.com>
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
- <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com>
- <20130714131241.GA11772@redhat.com>
- <51E3C5CE.7000009@linux.vnet.ibm.com>
+	id S1755270Ab3GOKiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:38:16 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:6662
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755089Ab3GOKiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:38:12 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <vakul@freescale.com>, Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v3 2/2] DMA: Freescale: update driver to support 8-channel DMA engine
+Date: Mon, 15 Jul 2013 18:34:59 +0800
+Message-ID: <1373884499-24079-3-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373884499-24079-1-git-send-email-hongbo.zhang@freescale.com>
+References: <1373884499-24079-1-git-send-email-hongbo.zhang@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E3C5CE.7000009@linux.vnet.ibm.com>
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 03:20:06PM +0530, Raghavendra K T wrote:
-> On 07/14/2013 06:42 PM, Gleb Natapov wrote:
-> >On Mon, Jun 24, 2013 at 06:13:42PM +0530, Raghavendra K T wrote:
-> >>kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
-> >>
-> >>From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> >>
-> trimming
-> [...]
-> >>+
-> >>+static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-> >>+{
-> >>+	struct kvm_lock_waiting *w;
-> >>+	int cpu;
-> >>+	u64 start;
-> >>+	unsigned long flags;
-> >>+
-> >>+	w = &__get_cpu_var(lock_waiting);
-> >>+	cpu = smp_processor_id();
-> >>+	start = spin_time_start();
-> >>+
-> >>+	/*
-> >>+	 * Make sure an interrupt handler can't upset things in a
-> >>+	 * partially setup state.
-> >>+	 */
-> >>+	local_irq_save(flags);
-> >>+
-> >>+	/*
-> >>+	 * The ordering protocol on this is that the "lock" pointer
-> >>+	 * may only be set non-NULL if the "want" ticket is correct.
-> >>+	 * If we're updating "want", we must first clear "lock".
-> >>+	 */
-> >>+	w->lock = NULL;
-> >>+	smp_wmb();
-> >>+	w->want = want;
-> >>+	smp_wmb();
-> >>+	w->lock = lock;
-> >>+
-> >>+	add_stats(TAKEN_SLOW, 1);
-> >>+
-> >>+	/*
-> >>+	 * This uses set_bit, which is atomic but we should not rely on its
-> >>+	 * reordering gurantees. So barrier is needed after this call.
-> >>+	 */
-> >>+	cpumask_set_cpu(cpu, &waiting_cpus);
-> >>+
-> >>+	barrier();
-> >>+
-> >>+	/*
-> >>+	 * Mark entry to slowpath before doing the pickup test to make
-> >>+	 * sure we don't deadlock with an unlocker.
-> >>+	 */
-> >>+	__ticket_enter_slowpath(lock);
-> >>+
-> >>+	/*
-> >>+	 * check again make sure it didn't become free while
-> >>+	 * we weren't looking.
-> >>+	 */
-> >>+	if (ACCESS_ONCE(lock->tickets.head) == want) {
-> >>+		add_stats(TAKEN_SLOW_PICKUP, 1);
-> >>+		goto out;
-> >>+	}
-> >>+
-> >>+	/* Allow interrupts while blocked */
-> >>+	local_irq_restore(flags);
-> >>+
-> >So what happens if an interrupt comes here and an interrupt handler
-> >takes another spinlock that goes into the slow path? As far as I see
-> >lock_waiting will become overwritten and cpu will be cleared from
-> >waiting_cpus bitmap by nested kvm_lock_spinning(), so when halt is
-> >called here after returning from the interrupt handler nobody is going
-> >to wake this lock holder. Next random interrupt will "fix" it, but it
-> >may be several milliseconds away, or never. We should probably check
-> >if interrupt were enabled and call native_safe_halt() here.
-> >
-> 
-> Okay you mean something like below should be done.
-> if irq_enabled()
->   native_safe_halt()
-> else
->   halt()
-> 
-> It is been a complex stuff for analysis for me.
-> 
-> So in our discussion stack would looking like this.
-> 
-> spinlock()
->   kvm_lock_spinning()
->                   <------ interrupt here
->           halt()
-> 
-> 
-> From the halt if we trace
-> 
-It is to early to trace the halt since it was not executed yet. Guest
-stack trace will look something like this:
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-spinlock(a)
-  kvm_lock_spinning(a)
-   lock_waiting = a
-   set bit in waiting_cpus
-                <------ interrupt here
-                spinlock(b)
-                  kvm_lock_spinning(b)
-                    lock_waiting = b
-                    set bit in waiting_cpus
-                    halt()
-                    unset bit in waiting_cpus
-                    lock_waiting = NULL
-     ----------> ret from interrupt
-   halt()
+This patch adds support to 8-channel DMA engine, thus the driver works for both
+the new 8-channel and the legacy 4-channel DMA engines.
 
-Now at the time of the last halt above lock_waiting == NULL and
-waiting_cpus is empty and not interrupt it pending, so who will unhalt
-the waiter?
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+---
+ drivers/dma/Kconfig  |    9 +++++----
+ drivers/dma/fsldma.c |    9 ++++++---
+ drivers/dma/fsldma.h |    2 +-
+ 3 files changed, 12 insertions(+), 8 deletions(-)
 
->   halt()
->     kvm_vcpu_block()
->        kvm_arch_vcpu_runnable())
-> 	 kvm_make_request(KVM_REQ_UNHALT)
-> 		
-> This would drive us out of halt handler, and we are fine when it
-> happens since we would revisit kvm_lock_spinning.
-> 
-> But I see that
-> 
-> kvm_arch_vcpu_runnable() has this condition
->  (kvm_arch_interrupt_allowed(vcpu) &&  kvm_cpu_has_interrupt(vcpu));
-> 
-> which means that if we going process the interrupt here we would set
-> KVM_REQ_UNHALT. and we are fine.
-> 
-> But if we are in the situation kvm_arch_interrupt_allowed(vcpu) =
-> true, but we already processed interrupt and
-> kvm_cpu_has_interrupt(vcpu) is false, we have problem till next
-> random interrupt.
-> 
-> The confusing part to me is the case
-> kvm_cpu_has_interrupt(vcpu)=false and irq
-> already handled and overwritten the lock_waiting. can this
-> situation happen? or is it that we will process the interrupt only
-> after this point (kvm_vcpu_block). Because if that is the case we are
-> fine.
-kvm_vcpu_block has nothing to do with processing interrupt. All the code in kvm_arch_vcpu_runnable()
-is just to make sure that interrupt unhalts vcpu if vcpu is already in
-halt. Interrupts are injected as soon as they happen and CPU is in a
-right state to receive them and it will be after local_irq_restore()
-before halt. X86 inhibits interrupt till next instruction after sti to
-solve exactly this kind of races. native_safe_halt() evaluates to "sti;
-hlt" to make interrupt enablement and halt atomic with regards to
-interrupts and NMIs.
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index e992489..b916800 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -107,14 +107,15 @@ config AT_HDMAC
+ 	  Support the Atmel AHB DMA controller.
+ 
+ config FSL_DMA
+-	tristate "Freescale Elo and Elo Plus DMA support"
++	tristate "Freescale Elo series DMA support"
+ 	depends on FSL_SOC
+ 	select DMA_ENGINE
+ 	select ASYNC_TX_ENABLE_CHANNEL_SWITCH
+ 	---help---
+-	  Enable support for the Freescale Elo and Elo Plus DMA controllers.
+-	  The Elo is the DMA controller on some 82xx and 83xx parts, and the
+-	  Elo Plus is the DMA controller on 85xx and 86xx parts.
++	  Enable support for the Freescale Elo series DMA controllers.
++	  The Elo is the DMA controller on some 82xx and 83xx parts, the Elo
++	  Plus is the DMA controller on 85xx and 86xx parts, and the Elo3 is
++	  DMA controller on QorIQ T and B parts.
+ 
+ config MPC512X_DMA
+ 	tristate "Freescale MPC512x built-in DMA engine support"
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 4fc2980..76252ce 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
+ 	WARN_ON(fdev->feature != chan->feature);
+ 
+ 	chan->dev = fdev->dev;
+-	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
++	chan->id = (res.start & 0xfff) < 0x300 ?
++		   ((res.start - 0x100) & 0xfff) >> 7 :
++		   ((res.start - 0x200) & 0xfff) >> 7;
+ 	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
+ 		dev_err(fdev->dev, "too many channels for device\n");
+ 		err = -EINVAL;
+@@ -1435,6 +1437,7 @@ static int fsldma_of_remove(struct platform_device *op)
+ }
+ 
+ static const struct of_device_id fsldma_of_ids[] = {
++	{ .compatible = "fsl,elo3-dma", },
+ 	{ .compatible = "fsl,eloplus-dma", },
+ 	{ .compatible = "fsl,elo-dma", },
+ 	{}
+@@ -1456,7 +1459,7 @@ static struct platform_driver fsldma_of_driver = {
+ 
+ static __init int fsldma_init(void)
+ {
+-	pr_info("Freescale Elo / Elo Plus DMA driver\n");
++	pr_info("Freescale Elo series DMA driver\n");
+ 	return platform_driver_register(&fsldma_of_driver);
+ }
+ 
+@@ -1468,5 +1471,5 @@ static void __exit fsldma_exit(void)
+ subsys_initcall(fsldma_init);
+ module_exit(fsldma_exit);
+ 
+-MODULE_DESCRIPTION("Freescale Elo / Elo Plus DMA driver");
++MODULE_DESCRIPTION("Freescale Elo series DMA driver");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
+index f5c3879..1ffc244 100644
+--- a/drivers/dma/fsldma.h
++++ b/drivers/dma/fsldma.h
+@@ -112,7 +112,7 @@ struct fsldma_chan_regs {
+ };
+ 
+ struct fsldma_chan;
+-#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
++#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
+ 
+ struct fsldma_device {
+ 	void __iomem *regs;	/* DGSR register base */
+-- 
+1.7.9.5
 
-> 
-> Please let me know.
 
---
-			Gleb.
+
