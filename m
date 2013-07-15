@@ -1,47 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab3GOERg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 00:17:36 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:40023 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab3GOERe (ORCPT
+	id S1751746Ab3GOESj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 00:18:39 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:53186 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab3GOESi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 00:17:34 -0400
-Message-ID: <51E37694.30608@huawei.com>
-Date: Mon, 15 Jul 2013 12:12:04 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 15 Jul 2013 00:18:38 -0400
+Message-ID: <51E37819.8020207@openvz.org>
+Date: Mon, 15 Jul 2013 08:18:33 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-References: <20130711222935.GA11340@redhat.com> <20130711224455.GA17222@kroah.com> <20130712141530.GA3629@roeck-us.net> <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com> <20130712173150.GA5534@roeck-us.net> <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com> <20130712195051.GB32054@1wt.eu> <20130713062223.GA15155@kroah.com> <20130713063607.GI32054@1wt.eu> <20130713064801.GA1305@kroah.com> <20130713071239.GJ32054@1wt.eu>
-In-Reply-To: <20130713071239.GJ32054@1wt.eu>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/hugetlb: per-vma instantiation mutexes
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It is *my* conception of the stable branch, but I think that many people
-> have different expectations about what should be merged or not. For example
-> in old LTS branches, I used to merge what was relevant for servers only,
+This seems incorrect. hugetlb_instantiation_mutex protects chains of struct file_region
+in inode->i_mapping->private_list (VM_MAYSHARE) or vma_resv_map(vma)->regions (!VM_MAYSHARE)
+These chains obviously can be shared between several vmas, so per-vma lock cannot protect them.
 
-We have lots of embeded systems running 2.6.32 kernel. And we encountered
-a critical bug, and we had to backported some patches which are not bug fixes
-to prevent the bug from happening.
-
-> because I saw no reason why an old kernel would be used on a laptop (eg:
-> 2.4). So I always skipped wifi, alsa, drm, etc... With 2.6.32, the Debian
-> kernel guys provided me with a lot of fixes in these areas, explaining
-> that these fixes addressed issues that their users were facing, and they
-> were perfectly right. It's just that I didn't expect this at all.
-
+Davidlohr Bueso wrote:
+> The hugetlb_instantiation_mutex serializes hugepage allocation and instantiation
+> in the page directory entry. It was found that this mutex can become quite contended
+> during the early phases of large databases which make use of huge pages - for instance
+> startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
+> reports that this mutex can be one of the top 5 most contended locks in the kernel during
+> the first few minutes:
+>
+> hugetlb_instantiation_mutex:      10678     10678
+>               ---------------------------
+>               hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+>               ---------------------------
+>               hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+>
+> contentions:          10678
+> acquisitions:         99476
+> waittime-total: 76888911.01 us
+>
+> Instead of serializing each hugetlb fault, we can deal with concurrent faults for pages
+> in different vmas. The per-vma mutex is initialized when creating a new vma. So, back to
+> the example above, we now get much less contention:
+>
+>   &vma->hugetlb_instantiation_mutex:  1         1
+>         ---------------------------------
+>         &vma->hugetlb_instantiation_mutex       1   [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+>         ---------------------------------
+>         &vma->hugetlb_instantiation_mutex       1    [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+>
+> contentions:          1
+> acquisitions:    108092
+> waittime-total:  621.24 us
+>
+> Signed-off-by: Davidlohr Bueso<davidlohr.bueso@hp.com>
+> ---
+>   include/linux/mm_types.h |  3 +++
+>   mm/hugetlb.c             | 12 +++++-------
+>   mm/mmap.c                |  3 +++
+>   3 files changed, 11 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index fb425aa..b45fd87 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -289,6 +289,9 @@ struct vm_area_struct {
+>   #ifdef CONFIG_NUMA
+>   	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+>   #endif
+> +#ifdef CONFIG_HUGETLB_PAGE
+> +	struct mutex hugetlb_instantiation_mutex;
+> +#endif
+>   };
+>
+>   struct core_thread {
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 83aff0a..12e665b 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -137,12 +137,12 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
+>    * The region data structures are protected by a combination of the mmap_sem
+>    * and the hugetlb_instantion_mutex.  To access or modify a region the caller
+>    * must either hold the mmap_sem for write, or the mmap_sem for read and
+> - * the hugetlb_instantiation mutex:
+> + * the vma's hugetlb_instantiation mutex:
+>    *
+>    *	down_write(&mm->mmap_sem);
+>    * or
+>    *	down_read(&mm->mmap_sem);
+> - *	mutex_lock(&hugetlb_instantiation_mutex);
+> + *	mutex_lock(&vma->hugetlb_instantiation_mutex);
+>    */
+>   struct file_region {
+>   	struct list_head link;
+> @@ -2547,7 +2547,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+>
+>   /*
+>    * Hugetlb_cow() should be called with page lock of the original hugepage held.
+> - * Called with hugetlb_instantiation_mutex held and pte_page locked so we
+> + * Called with the vma's hugetlb_instantiation_mutex held and pte_page locked so we
+>    * cannot race with other handlers or page migration.
+>    * Keep the pte_same checks anyway to make transition from the mutex easier.
+>    */
+> @@ -2847,7 +2847,6 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>   	int ret;
+>   	struct page *page = NULL;
+>   	struct page *pagecache_page = NULL;
+> -	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+>   	struct hstate *h = hstate_vma(vma);
+>
+>   	address&= huge_page_mask(h);
+> @@ -2872,7 +2871,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>   	 * get spurious allocation failures if two CPUs race to instantiate
+>   	 * the same page in the page cache.
+>   	 */
+> -	mutex_lock(&hugetlb_instantiation_mutex);
+> +	mutex_lock(&vma->hugetlb_instantiation_mutex);
+>   	entry = huge_ptep_get(ptep);
+>   	if (huge_pte_none(entry)) {
+>   		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
+> @@ -2943,8 +2942,7 @@ out_page_table_lock:
+>   	put_page(page);
+>
+>   out_mutex:
+> -	mutex_unlock(&hugetlb_instantiation_mutex);
+> -
+> +	mutex_unlock(&vma->hugetlb_instantiation_mutex);
+>   	return ret;
+>   }
+>
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index fbad7b0..8f0b034 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1543,6 +1543,9 @@ munmap_back:
+>   	vma->vm_page_prot = vm_get_page_prot(vm_flags);
+>   	vma->vm_pgoff = pgoff;
+>   	INIT_LIST_HEAD(&vma->anon_vma_chain);
+> +#ifdef CONFIG_HUGETLB_PAGE
+> +	mutex_init(&vma->hugetlb_instantiation_mutex);
+> +#endif
+>
+>   	error = -EINVAL;	/* when rejecting VM_GROWSDOWN|VM_GROWSUP */
+>
 
