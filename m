@@ -1,163 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab3GODsm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 23:48:42 -0400
-Received: from powered.by.root24.eu ([91.121.15.64]:44836 "EHLO Root24.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753916Ab3GODsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 23:48:41 -0400
-Message-ID: <51E37115.3030308@ionic.de>
-Date: Mon, 15 Jul 2013 05:48:37 +0200
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753961Ab3GODu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 23:50:56 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:45474 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab3GODux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 23:50:53 -0400
+Message-ID: <51E37194.1080103@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 11:50:44 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Oops (NULL ptr deref) while loading some module
-References: <51E33A4F.4040500@ionic.de>
-In-Reply-To: <51E33A4F.4040500@ionic.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms080201040209050900080402"
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
+References: <20130625211544.GA2270@swordfish> <51D10899.1080501@linux.vnet.ibm.com> <20130710231305.GA4046@swordfish> <51DE1BE1.3090707@linux.vnet.ibm.com> <20130714114721.GB2178@swordfish> <20130714120629.GA4067@swordfish>
+In-Reply-To: <20130714120629.GA4067@swordfish>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071503-8878-0000-0000-000007F22872
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On 07/14/2013 08:06 PM, Sergey Senozhatsky wrote:
+> On (07/14/13 14:47), Sergey Senozhatsky wrote:
+>>
+>> Now, as I fixed radeon kms, I can see:
+>>
+>> [  806.660530] ------------[ cut here ]------------
+>> [  806.660539] WARNING: CPU: 0 PID: 2389 at arch/x86/kernel/smp.c:124
+>> native_smp_send_reschedule+0x57/0x60()
+> 
+> Well, this one is obviously not a lockdep error, I meant that previous
+> tests with disabled lockdep were invalid. Will re-do.
+> 
 
---------------ms080201040209050900080402
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+And may be we could try below patch to get more info, I've moved the timing
+of restore stop flag from 'after STOP' to 'before START', I suppose that
+could create a window to prevent the work re-queue, it could at least provide
+us more info...
 
-* On 15.07.2013 01:54 AM, Mihai Moldovan wrote:
-> This is obviously happening while booting and udev is loading *some* mo=
-dule, but
-> I have no idea which module is affected as such.
+I think I may need to setup a environment for debug now, what's the steps to
+produce this WARN?
 
-Quick correction: actually, at that time udev hasn't even started. udev i=
-s being
-started by my initramfs one good second later, so at the time of those Oo=
-pses,
-the root fs wasn't even mounted yet. Maybe the initramfs, but I'm not too=
- sure
-either.
-
-[    4.769188] dracut: dracut-029
-[    4.789227] systemd-udevd[1984]: starting version 204
-
-What is the kernel trying to modprobe? Off what location, exactly?
-
-It can't be /, as that isn't even mounted yet.
-
-The initramfs? Maybe, but this has NO modules packed up whatsoever. I jus=
-t
-double-checked.
-
-root@valery/tmp/foo# ls lib/modules/3.10.1-OSS4.2-dirty
-modules.alias  modules.alias.bin  modules.builtin  modules.builtin.bin=20
-modules.dep  modules.dep.bin  modules.devname  modules.order  modules.sof=
-tdep=20
-modules.symbols  modules.symbols.bin
-
-The initramfs is solely used for assembling the RAID arrays when booting =
-and
-does not include any modules.
-
-I just upgraded to 3.10.1 and am still seeing this.
-
-Interesting issue, isn't it? :)
+Regards,
+Michael Wang
 
 
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index dc9b72e..b1446fe 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -178,13 +178,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ {
+ 	int i;
+ 
++	if (!dbs_data->queue_start)
++		return;
++
+ 	if (!all_cpus) {
+ 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+ 	} else {
+-		get_online_cpus();
+ 		for_each_cpu(i, policy->cpus)
+ 			__gov_queue_work(i, dbs_data, delay);
+-		put_online_cpus();
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(gov_queue_work);
+@@ -193,12 +194,26 @@ static inline void gov_cancel_work(struct dbs_data *dbs_data,
+ 		struct cpufreq_policy *policy)
+ {
+ 	struct cpu_dbs_common_info *cdbs;
+-	int i;
++	int i, round = 2;
+ 
++	dbs_data->queue_start = 0;
++redo:
++	round--;
+ 	for_each_cpu(i, policy->cpus) {
+ 		cdbs = dbs_data->cdata->get_cpu_cdbs(i);
+ 		cancel_delayed_work_sync(&cdbs->work);
+ 	}
++
++	/*
++	 * Since there is no lock to prvent re-queue the
++	 * cancelled work, some early cancelled work might
++	 * have been queued again by later cancelled work.
++	 *
++	 * Flush the work again with dbs_data->queue_stop
++	 * enabled, this time there will be no survivors.
++	 */
++	if (round)
++		goto redo;
+ }
+ 
+ /* Will return if we need to evaluate cpu load again or not */
+@@ -391,6 +406,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 
+ 		/* Initiate timer time stamp */
+ 		cpu_cdbs->time_stamp = ktime_get();
++		dbs_data->queue_start = 1;
+ 
+ 		gov_queue_work(dbs_data, policy,
+ 				delay_for_sampling_rate(sampling_rate), true);
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index e16a961..9116135 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -213,6 +213,7 @@ struct dbs_data {
+ 	unsigned int min_sampling_rate;
+ 	int usage_count;
+ 	void *tuners;
++	int queue_start;
+ 
+ 	/* dbs_mutex protects dbs_enable in governor start/stop */
+ 	struct mutex mutex;
 
-Mihai
 
 
---------------ms080201040209050900080402
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+> 	-ss
+> 
+>>> Regards,
+>>> Michael Wang
+>>>
+>>> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+>>> index dc9b72e..a64b544 100644
+>>> --- a/drivers/cpufreq/cpufreq_governor.c
+>>> +++ b/drivers/cpufreq/cpufreq_governor.c
+>>> @@ -178,13 +178,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>>>  {
+>>>  	int i;
+>>>  
+>>> +	if (dbs_data->queue_stop)
+>>> +		return;
+>>> +
+>>>  	if (!all_cpus) {
+>>>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+>>>  	} else {
+>>> -		get_online_cpus();
+>>>  		for_each_cpu(i, policy->cpus)
+>>>  			__gov_queue_work(i, dbs_data, delay);
+>>> -		put_online_cpus();
+>>>  	}
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(gov_queue_work);
+>>> @@ -193,12 +194,27 @@ static inline void gov_cancel_work(struct dbs_data *dbs_data,
+>>>  		struct cpufreq_policy *policy)
+>>>  {
+>>>  	struct cpu_dbs_common_info *cdbs;
+>>> -	int i;
+>>> +	int i, round = 2;
+>>>  
+>>> +	dbs_data->queue_stop = 1;
+>>> +redo:
+>>> +	round--;
+>>>  	for_each_cpu(i, policy->cpus) {
+>>>  		cdbs = dbs_data->cdata->get_cpu_cdbs(i);
+>>>  		cancel_delayed_work_sync(&cdbs->work);
+>>>  	}
+>>> +
+>>> +	/*
+>>> +	 * Since there is no lock to prvent re-queue the
+>>> +	 * cancelled work, some early cancelled work might
+>>> +	 * have been queued again by later cancelled work.
+>>> +	 *
+>>> +	 * Flush the work again with dbs_data->queue_stop
+>>> +	 * enabled, this time there will be no survivors.
+>>> +	 */
+>>> +	if (round)
+>>> +		goto redo;
+>>> +	dbs_data->queue_stop = 0;
+>>>  }
+>>>  
+>>>  /* Will return if we need to evaluate cpu load again or not */
+>>> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+>>> index e16a961..9116135 100644
+>>> --- a/drivers/cpufreq/cpufreq_governor.h
+>>> +++ b/drivers/cpufreq/cpufreq_governor.h
+>>> @@ -213,6 +213,7 @@ struct dbs_data {
+>>>  	unsigned int min_sampling_rate;
+>>>  	int usage_count;
+>>>  	void *tuners;
+>>> +	int queue_stop;
+>>>  
+>>>  	/* dbs_mutex protects dbs_enable in governor start/stop */
+>>>  	struct mutex mutex;
+>>>
+>>>>
+>>>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>>>>
+>>>> ---
+>>>>
+>>>>  drivers/cpufreq/cpufreq.c          |  5 +----
+>>>>  drivers/cpufreq/cpufreq_governor.c | 17 +++++++++++------
+>>>>  drivers/cpufreq/cpufreq_stats.c    |  2 +-
+>>>>  3 files changed, 13 insertions(+), 11 deletions(-)
+>>>>
+>>>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>>>> index 6a015ad..f8aacf1 100644
+>>>> --- a/drivers/cpufreq/cpufreq.c
+>>>> +++ b/drivers/cpufreq/cpufreq.c
+>>>> @@ -1943,13 +1943,10 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+>>>>  		case CPU_ONLINE:
+>>>>  			cpufreq_add_dev(dev, NULL);
+>>>>  			break;
+>>>> -		case CPU_DOWN_PREPARE:
+>>>> +		case CPU_POST_DEAD:
+>>>>  		case CPU_UP_CANCELED_FROZEN:
+>>>>  			__cpufreq_remove_dev(dev, NULL);
+>>>>  			break;
+>>>> -		case CPU_DOWN_FAILED:
+>>>> -			cpufreq_add_dev(dev, NULL);
+>>>> -			break;
+>>>>  		}
+>>>>  	}
+>>>>  	return NOTIFY_OK;
+>>>> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+>>>> index 4645876..681d5d6 100644
+>>>> --- a/drivers/cpufreq/cpufreq_governor.c
+>>>> +++ b/drivers/cpufreq/cpufreq_governor.c
+>>>> @@ -125,7 +125,11 @@ static inline void __gov_queue_work(int cpu, struct dbs_data *dbs_data,
+>>>>  		unsigned int delay)
+>>>>  {
+>>>>  	struct cpu_dbs_common_info *cdbs = dbs_data->cdata->get_cpu_cdbs(cpu);
+>>>> -
+>>>> +	/* cpu offline might block existing gov_queue_work() user,
+>>>> +	 * unblocking it after CPU_DEAD and before CPU_POST_DEAD.
+>>>> +	 * thus potentially we can hit offlined CPU */
+>>>> +	if (unlikely(cpu_is_offline(cpu)))
+>>>> +		return;
+>>>>  	mod_delayed_work_on(cpu, system_wq, &cdbs->work, delay);
+>>>>  }
+>>>>
+>>>> @@ -133,15 +137,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>>>>  		unsigned int delay, bool all_cpus)
+>>>>  {
+>>>>  	int i;
+>>>> -
+>>>> +	get_online_cpus();
+>>>>  	if (!all_cpus) {
+>>>>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+>>>>  	} else {
+>>>> -		get_online_cpus();
+>>>>  		for_each_cpu(i, policy->cpus)
+>>>>  			__gov_queue_work(i, dbs_data, delay);
+>>>> -		put_online_cpus();
+>>>>  	}
+>>>> +	put_online_cpus();
+>>>>  }
+>>>>  EXPORT_SYMBOL_GPL(gov_queue_work);
+>>>>
+>>>> @@ -354,8 +357,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>>>>  		/* Initiate timer time stamp */
+>>>>  		cpu_cdbs->time_stamp = ktime_get();
+>>>>
+>>>> -		gov_queue_work(dbs_data, policy,
+>>>> -				delay_for_sampling_rate(sampling_rate), true);
+>>>> +		/* hotplug lock already held */
+>>>> +		for_each_cpu(j, policy->cpus)
+>>>> +			__gov_queue_work(j, dbs_data,
+>>>> +				delay_for_sampling_rate(sampling_rate));
+>>>>  		break;
+>>>>
+>>>>  	case CPUFREQ_GOV_STOP:
+>>>> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+>>>> index cd9e817..833816e 100644
+>>>> --- a/drivers/cpufreq/cpufreq_stats.c
+>>>> +++ b/drivers/cpufreq/cpufreq_stats.c
+>>>> @@ -355,7 +355,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+>>>>  	case CPU_DOWN_PREPARE:
+>>>>  		cpufreq_stats_free_sysfs(cpu);
+>>>>  		break;
+>>>> -	case CPU_DEAD:
+>>>> +	case CPU_POST_DEAD:
+>>>>  		cpufreq_stats_free_table(cpu);
+>>>>  		break;
+>>>>  	case CPU_UP_CANCELED_FROZEN:
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgjCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRjCCBi6gAwIBAgICHn8wDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjAzMjEyMzU3NTda
-Fw0xNDAzMjMxNTE0MzlaMIGRMRkwFwYDVQQNExAwSjh4RlU1aWNwTGFuNHlLMQswCQYDVQQG
-EwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMaylRRCBj2U12flvhmZMgwADN/0
-P/ej3O9uLe8XWsr6McU8my6GYxfTXFxfcLl8MxqugflmQQqq1c1Qt69n3zHi+qTvZnHBCBHs
-G1CkuL3Of7Srx6ulz0/zgNRMlDnJ7EUAIQDoYkUzn69y/4ap3n/nQf7EmO9o3FnSCX27td5Y
-J21uJp/PLvbwvG9kdWMVeiyBubwdBSoMu1D9Cy6YlqFE1DIgPO9RR6EOkie4BgMr/3eliAoK
-j7HAOkFhsqTrVy81YtxQDYNrpeMZ2imSQUP1wN1X0NNkdcIWpUNYkRdvzrmpFXxYNhwPPPiE
-BIKctzMt00Pss2ziyMqpkQFzcI8CAwEAAaOCA6kwggOlMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUypNX2Sx5I6PQ
-yCj0Lgno1pTiwnswHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggIhBgNVHSAEggIYMIICFDCCAhAGCysGAQQBgbU3AQICMIIB
-/zAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCB9wYI
-KwYBBQUHAgIwgeowJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBARqB
-vlRoaXMgY2VydGlmaWNhdGUgd2FzIGlzc3VlZCBhY2NvcmRpbmcgdG8gdGhlIENsYXNzIDIg
-VmFsaWRhdGlvbiByZXF1aXJlbWVudHMgb2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeSwgcmVs
-aWFuY2Ugb25seSBmb3IgdGhlIGludGVuZGVkIHB1cnBvc2UgaW4gY29tcGxpYW5jZSBvZiB0
-aGUgcmVseWluZyBwYXJ0eSBvYmxpZ2F0aW9ucy4wgZwGCCsGAQUFBwICMIGPMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQIaZExpYWJpbGl0eSBhbmQgd2FycmFu
-dGllcyBhcmUgbGltaXRlZCEgU2VlIHNlY3Rpb24gIkxlZ2FsIGFuZCBMaW1pdGF0aW9ucyIg
-b2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeS4wNgYDVR0fBC8wLTAroCmgJ4YlaHR0cDovL2Ny
-bC5zdGFydHNzbC5jb20vY3J0dTItY3JsLmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEF
-BQcwAYYtaHR0cDovL29jc3Auc3RhcnRzc2wuY29tL3N1Yi9jbGFzczIvY2xpZW50L2NhMEIG
-CCsGAQUFBzAChjZodHRwOi8vYWlhLnN0YXJ0c3NsLmNvbS9jZXJ0cy9zdWIuY2xhc3MyLmNs
-aWVudC5jYS5jcnQwIwYDVR0SBBwwGoYYaHR0cDovL3d3dy5zdGFydHNzbC5jb20vMA0GCSqG
-SIb3DQEBBQUAA4IBAQAWDJnVeIEl30sEHVyZ43IOK1RrYRyNJFAoClulBqL229p3whd4mtCY
-hE25avnoZIMPTxhjZJlnmIlr0Ahh8hjSeqzjeEIVzBV//vVRBwI1DnaJ2u965og2FBhp3KXc
-5pIHJA6aqJFqZE8EoI+81gdPB9Rc4cDAa0S4Bd4YtsLFfmxgR33EPC0MhEkwE2cihRTbF5Ye
-yW1j4sUmnaJKlv9mxAs79D6n3Ggx8YBAOnkmg/tCTbTrJcqrB67NUpFhEcgFNRNqaL2oxE3u
-qO7IjtyOzIlD+5dOJragt5dJJjXZF3NqWjsohcyYMECY8WEKUJlE0lPFQ4bPNfzWWdh16ooV
-MYID2jCCA9YCAQEwgZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
-MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
-Ey9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICHn8w
-CQYFKw4DAhoFAKCCAhswGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTMwNzE1MDM0ODM3WjAjBgkqhkiG9w0BCQQxFgQULzzgfnXE3sVZHT4dLWDmnJYwWscw
-bAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMH
-MA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIB
-KDCBpAYJKwYBBAGCNxAEMYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4
-MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQg
-Q0ECAh5/MIGmBgsqhkiG9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUg
-Q2xpZW50IENBAgIefzANBgkqhkiG9w0BAQEFAASCAQB/jaVilSI1/lem0Ze5bfO95BLwRgIU
-5wOcWqs7+b8k2BVZqszoJTSk37SRqxK0WuEWrW7Jc/jIPiKo5dvqoqoUFNZrsiQ7tPfc4Fcy
-fgmmeLOjOOKuhTaNjHOEcmtJ0jH32uimaUUE7JXgksh8BMVgNXxeWL7e7rSqKzouNzB+W8w7
-Ej3m13bog2sUJz9w4LIFJREekV+LNtKrx8uh8AE/n7RR7fUpIFvvNo94JtZNjdMaDGn/MDob
-JxmJ0RRHahH0FPa6ngJJM8WM8VqqKjX4wHu96z062NLykykJ+N23W6j1Quu00OHJJuIQ0e3x
-K5Bp29KrQFaYMD1YhPa1HwDuAAAAAAAA
---------------ms080201040209050900080402--
