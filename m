@@ -1,122 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab3GOQ5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 12:57:21 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46366 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab3GOQ5T (ORCPT
+	id S933402Ab3GOQ5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 12:57:43 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45358 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932297Ab3GOQ5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 12:57:19 -0400
-Subject: [PATCH 11/11] pstore/ram: Read and write to the 'compressed' flag
- of pstore
-To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
-        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
-        cbouatmailru@gmail.com, keescook@chromium.org
-Date: Mon, 15 Jul 2013 22:27:00 +0530
-Message-ID: <20130715165700.1520.61365.stgit@aruna-ThinkPad-T420>
-In-Reply-To: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
-References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 15 Jul 2013 12:57:41 -0400
+Date: Mon, 15 Jul 2013 18:57:27 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Wei Ni <wni@nvidia.com>, Guenter Roeck <linux@roeck-us.net>
+Cc: <thierry.reding@gmail.com>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status
+ bit
+Message-ID: <20130715185727.4ebde8c4@endymion.delvare>
+In-Reply-To: <1373615287-18502-3-git-send-email-wni@nvidia.com>
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
+ <1373615287-18502-3-git-send-email-wni@nvidia.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071516-8256-0000-0000-000008597428
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In pstore write, add character 'C'(compressed) or 'D'(decompressed)
-in the header while writing to Ram persistent buffer. In pstore read,
-read the header and update the 'compressed' flag accordingly.
+Hi Wei, Guenter,
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
----
- fs/pstore/ram.c |   36 ++++++++++++++++++++++++++++--------
- 1 file changed, 28 insertions(+), 8 deletions(-)
+On Fri, 12 Jul 2013 15:48:05 +0800, Wei Ni wrote:
+> Add bit defines for the status register.
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 2927223..4027c20 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -131,6 +131,27 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
- 	return prz;
- }
- 
-+static void ramoops_read_kmsg_hdr(char *buffer, struct timespec *time,
-+				  bool *compressed)
-+{
-+	char data_type;
-+
-+	if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu-%c\n",
-+			&time->tv_sec, &time->tv_nsec, &data_type) == 3) {
-+		if (data_type == 'C')
-+			*compressed = true;
-+		else
-+			*compressed = false;
-+	} else if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
-+			&time->tv_sec, &time->tv_nsec) == 2) {
-+			*compressed = false;
-+	} else {
-+		time->tv_sec = 0;
-+		time->tv_nsec = 0;
-+		*compressed = false;
-+	}
-+}
-+
- static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 				   int *count, struct timespec *time,
- 				   char **buf, bool *compressed,
-@@ -153,10 +174,6 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	if (!prz)
- 		return 0;
- 
--	/* TODO(kees): Bogus time for the moment. */
--	time->tv_sec = 0;
--	time->tv_nsec = 0;
--
- 	size = persistent_ram_old_size(prz);
- 
- 	/* ECC correction notice */
-@@ -167,12 +184,14 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 		return -ENOMEM;
- 
- 	memcpy(*buf, persistent_ram_old(prz), size);
-+	ramoops_read_kmsg_hdr(*buf, time, compressed);
- 	persistent_ram_ecc_string(prz, *buf + size, ecc_notice_size + 1);
- 
- 	return size + ecc_notice_size;
- }
- 
--static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
-+static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz,
-+				     bool compressed)
- {
- 	char *hdr;
- 	struct timespec timestamp;
-@@ -183,8 +202,9 @@ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
- 		timestamp.tv_sec = 0;
- 		timestamp.tv_nsec = 0;
- 	}
--	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
--		(long)timestamp.tv_sec, (long)(timestamp.tv_nsec / 1000));
-+	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu-%c\n",
-+		(long)timestamp.tv_sec, (long)(timestamp.tv_nsec / 1000),
-+		compressed ? 'C' : 'D');
- 	WARN_ON_ONCE(!hdr);
- 	len = hdr ? strlen(hdr) : 0;
- 	persistent_ram_write(prz, hdr, len);
-@@ -243,7 +263,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
- 
- 	prz = cxt->przs[cxt->dump_write_cnt];
- 
--	hlen = ramoops_write_kmsg_hdr(prz);
-+	hlen = ramoops_write_kmsg_hdr(prz, compressed);
- 	if (size + hlen > prz->buffer_size)
- 		size = prz->buffer_size - hlen;
- 	persistent_ram_write(prz, buf, size);
+Regarding the subject: for me these are constants, not macros. AFAIK
+the term "macro" refers to defines with parameters only.
 
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>  drivers/hwmon/lm90.c |   72 ++++++++++++++++++++++++++++++++++----------------
+>  1 file changed, 49 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+> index 5f30f90..c90037f 100644
+> --- a/drivers/hwmon/lm90.c
+> +++ b/drivers/hwmon/lm90.c
+> @@ -179,6 +179,19 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
+>  #define LM90_HAVE_TEMP3		(1 << 6) /* 3rd temperature sensor	*/
+>  #define LM90_HAVE_BROKEN_ALERT	(1 << 7) /* Broken alert		*/
+>  
+> +/* LM90 status */
+> +#define LM90_STATUS_LTHRM	(1 << 0) /* local THERM limit tripped */
+> +#define LM90_STATUS_RTHRM	(1 << 1) /* remote THERM limit tripped */
+> +#define LM90_STATUS_OPEN	(1 << 2) /* remote is an open circuit */
+> +#define LM90_STATUS_RLOW	(1 << 3) /* remote low temp limit tripped */
+> +#define LM90_STATUS_RHIGH	(1 << 4) /* remote high temp limit tripped */
+> +#define LM90_STATUS_LLOW	(1 << 5) /* local low temp limit tripped */
+> +#define LM90_STATUS_LHIGH	(1 << 6) /* local high temp limit tripped */
+> +#define LM90_STATUS_BUSY	(1 << 7) /* ADC is converting */
+
+LM90_STATUS_BUSY is never used anywhere so please don't define it.
+
+> +
+> +#define MAX6696_STATUS2_RLOW	(1 << 3) /* remote2 low temp limit tripped */
+> +#define MAX6696_STATUS2_RHIGH	(1 << 4) /* remote2 high temp limit tripped */
+> +
+>  /*
+>   * Driver data (common to all clients)
+>   */
+> @@ -1417,6 +1430,36 @@ static void lm90_init_client(struct i2c_client *client)
+>  		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+>  }
+>  
+> +static bool lm90_is_tripped(struct i2c_client *client)
+> +{
+> +	struct lm90_data *data = i2c_get_clientdata(client);
+> +	u8 status, status2 = 0;
+> +
+> +	lm90_read_reg(client, LM90_REG_R_STATUS, &status);
+> +
+> +	if (data->kind == max6696)
+> +		lm90_read_reg(client, MAX6696_REG_R_STATUS2, &status2);
+> +
+> +	if ((status & 0x7f) == 0 && (status2 & 0xfe) == 0)
+> +		return false;
+
+It's a bit disappointing to not use the freshly introduced constants.
+That being said I agree it would make the code hard to read, so you can
+leave it as is.
+
+Unrelated to this patch, but Guenter, I am worried about the MAX6696
+handling here. I realize that I am the one who accepted your code, but
+now it looks wrong. Specifically:
+* We check for (status2 & 0xfe) i.e. 7 alarm bits, but the code below
+  only reports 2 alarms bits. So if any of the 5 other alarm bits in
+  STATUS2 are, we may return true (chip is tripped) but not print the
+  cause.
+* At least bits 1 and 2 of STATUS 2 fit totally fine in the driver as
+  it currently exists, so I can't think of any reason for not handling
+  them. Why are we not? Ideally we should print a message for every
+  alarm bit so that we never return "true" without printing a message.
+  Even though OT2 limits aren't handled by the driver...
+* If you think this piece of code shouldn't deal with OT/THERM limits
+  because they do not trigger an SMBus alarm, this can be discussed,
+  but all chips should be handled the same in this respect then.
+* Why in the first place is max6696's data->alert_alarms set to 0x187c
+  and not 0x1c7c? Including 1OPEN but not 2OPEN makes no sense.
+
+> +
+> +	if (status & (LM90_STATUS_LLOW | LM90_STATUS_LHIGH | LM90_STATUS_LTHRM))
+> +		dev_warn(&client->dev,
+> +			 "temp%d out of range, please check!\n", 1);
+> +	if (status & (LM90_STATUS_RLOW | LM90_STATUS_RHIGH | LM90_STATUS_RTHRM))
+> +		dev_warn(&client->dev,
+> +			 "temp%d out of range, please check!\n", 2);
+> +	if (status & LM90_STATUS_OPEN)
+> +		dev_warn(&client->dev,
+> +			 "temp%d diode open, please check!\n", 2);
+> +
+> +	if (status2 & (MAX6696_STATUS2_RLOW | MAX6696_STATUS2_RHIGH))
+> +		dev_warn(&client->dev,
+> +			 "temp%d out of range, please check!\n", 3);
+> +
+> +	return true;
+> +}
+> +
+>  static int lm90_probe(struct i2c_client *client,
+>  		      const struct i2c_device_id *id)
+>  {
+> @@ -1515,36 +1558,19 @@ static int lm90_remove(struct i2c_client *client)
+>  
+>  static void lm90_alert(struct i2c_client *client, unsigned int flag)
+>  {
+> -	struct lm90_data *data = i2c_get_clientdata(client);
+> -	u8 config, alarms, alarms2 = 0;
+> -
+> -	lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
+> -
+> -	if (data->kind == max6696)
+> -		lm90_read_reg(client, MAX6696_REG_R_STATUS2, &alarms2);
+> -
+> -	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
+> +	if (!lm90_is_tripped(client)) {
+
+You could swap the success and failure cases to avoid this negation.
+
+>  		dev_info(&client->dev, "Everything OK\n");
+>  	} else {
+> -		if (alarms & 0x61)
+> -			dev_warn(&client->dev,
+> -				 "temp%d out of range, please check!\n", 1);
+> -		if (alarms & 0x1a)
+> -			dev_warn(&client->dev,
+> -				 "temp%d out of range, please check!\n", 2);
+> -		if (alarms & 0x04)
+> -			dev_warn(&client->dev,
+> -				 "temp%d diode open, please check!\n", 2);
+> -
+> -		if (alarms2 & 0x18)
+> -			dev_warn(&client->dev,
+> -				 "temp%d out of range, please check!\n", 3);
+> -
+>  		/*
+>  		 * Disable ALERT# output, because these chips don't implement
+>  		 * SMBus alert correctly; they should only hold the alert line
+>  		 * low briefly.
+>  		 */
+> +		struct lm90_data *data = i2c_get_clientdata(client);
+> +		u8 config, alarms;
+> +
+> +		lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
+
+You end up reading LM90_REG_R_STATUS, which is not OK. This register
+contains self-clearing bits, so there is no guarantee that the second
+read will return the same value as the first read. You'll have to come
+up with a different approach that reads LM90_REG_R_STATUS only once.
+
+> +
+>  		if ((data->flags & LM90_HAVE_BROKEN_ALERT)
+>  		 && (alarms & data->alert_alarms)) {
+>  			dev_dbg(&client->dev, "Disabling ALERT#\n");
+
+
+-- 
+Jean Delvare
