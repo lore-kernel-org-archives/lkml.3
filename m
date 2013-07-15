@@ -1,127 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab3GOReJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 13:34:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26037 "EHLO mga02.intel.com"
+	id S1753163Ab3GORg2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 13:36:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11031 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752962Ab3GOReF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 13:34:05 -0400
+	id S1752264Ab3GORg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 13:36:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,670,1367996400"; 
-   d="scan'208";a="345957455"
-Message-ID: <1373909635.3475.173.camel@envy.home>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Darren Hart <dvhart@linux.intel.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Date: Mon, 15 Jul 2013 10:33:55 -0700
-In-Reply-To: <20130715155202.GC29526@xanatos>
-References: <20130715155202.GC29526@xanatos>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+   d="asc'?scan'208";a="365581378"
+Date: Mon, 15 Jul 2013 22:27:21 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] ASoC: dmaengine-pcm: Add support for querying DMA
+ capabilities
+Message-ID: <20130715165721.GV16653@intel.com>
+References: <1373906531-6938-1-git-send-email-lars@metafoo.de>
+ <20130715172643.GZ11538@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XMCwj5IQnwKtuyBG"
+Content-Disposition: inline
+In-Reply-To: <20130715172643.GZ11538@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 08:52 -0700, Sarah Sharp wrote:
-> On Fri, 12 Jul 2013 18:17:08 +0200, Ingo Molnar <mingo@kernel.org> wrote:
-> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > 
-> > > On Fri, Jul 12, 2013 at 8:47 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > >
-> > > > I tend to hold things off after -rc4 because you scare me more than Greg
-> > > > does ;-)
-> > > 
-> > > Have you guys *seen* Greg? The guy is a freakish giant. He *should*
-> > > scare you. He might squish you without ever even noticing.
-> > 
-> > Greg might be a giant and he might squish people without ever even 
-> > noticing, but that's just a grave, deadly physical threat no real kernel 
-> > hacker ever feels threatened by. (Not much can hurt us deep in our dark 
-> > basements after all, except maybe earthquakes, gamma ray eruptions and Mom 
-> > trying to clean up around the computers.)
-> > 
-> > So Greg, if you want it all to change, create some _real_ threat: be frank 
-> > with contributors and sometimes swear a bit. That will cut your mailqueue 
-> > in half, promise!
-> 
-> On Fri, 12 Jul 2013 08:22:27 -0700, Linus wrote:
-> > Greg, the reason you get a lot of stable patches seems to be that you
-> > make it easy to act as a door-mat. Clearly at least some people say "I
-> > know this patch isn't important enough to send to Linus, but I know Greg
-> > will silently accept it after the fact, so I'll just wait and mark it
-> > for stable".
-> >
-> > You may need to learn to shout at people.
-> 
-> Seriously, guys?  Is this what we need in order to get improve -stable?
-> Linus Torvalds is advocating for physical intimidation and violence.
-> Ingo Molnar and Linus are advocating for verbal abuse.
-> 
-> Not *fucking* cool.  Violence, whether it be physical intimidation,
-> verbal threats or verbal abuse is not acceptable.  Keep it professional
-> on the mailing lists.
->
-> Let's discuss this at Kernel Summit where we can at least yell at each
-> other in person.  Yeah, just try yelling at me about this.  I'll roar
-> right back, louder, for all the people who lose their voice when they
-> get yelled at by top maintainers.  I won't be the nice girl anymore.
-> 
-> Sarah Sharp
 
+--XMCwj5IQnwKtuyBG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Having sent Greg an inappropriate device support patch (for stable)
-right smack dab in the middle of this thread, what I can say as a
-developer who tends to have to work all over the place in the kernel,
-is that deriving the rules is still difficult (as Guenter Roeck has
-alluded to in his posts here).
+On Mon, Jul 15, 2013 at 06:26:43PM +0100, Mark Brown wrote:
+> On Mon, Jul 15, 2013 at 06:42:10PM +0200, Lars-Peter Clausen wrote:
+>=20
+> > +	hw.period_bytes_min =3D 16;
+> > +	hw.period_bytes_max =3D dma_caps.max_sg_len;
+>=20
+> We can't read the minimum period size from dmaengine? Seems like
+> something might have a restriction other than 16 bytes here.
+max would be how many list items the engine supports so queried therotical =
+min
+would be 1 byte, not sure how 16 bytes is assumed above but my guess is tha=
+t if
+engine is able to push min burst lengths which would be 1 and give you
+interrupt. But seriously, that would not be practical. So this should be a
+realistic limit which system can cope with.
 
-Greg's response to me was direct, informative, and maybe just a little
-bit shame-inducing "You know better than that." I know Greg well enough
-not to take that personally and I can see him saying that with a smile
-on his face, so no complaints there. However, the truth is, I didn't
-know better because despite having read the docs, it wasn't clear to
-me. Part of the reason there is the language used wasn't clear to me,
-specifically "New device IDs and quirks are also accepted". I took
-quirks to mean augmenting existing drivers to handle new devices with
-subtle changes when in fact it meant something more along the lines of
-a couple of lines to add device IDs and existing quirks to a new
-device. Greg provided me with example commit IDs which met that
-requirement (and perhaps such examples should be added to the docs).
+~Vinod
 
-I believe we could improve that documentation to help clarify the
-requirements to people that don't work with it everyday. I have offered
-to have a look and see what would have made it more clear to me, and I
-will do that.
+--XMCwj5IQnwKtuyBG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-I do believe our processes are becoming a bit fragmented. While every
-maintainer certainly needs some autonomy to be able to define how
-people work with them in order to maximize their efficiency, the
-difference (or lack thereof) between -RC4 and stable wasn't clear to
-me, and couldn't be deduced from stable_kernel_rules. Guenter mentioned
-some tribal-knowledge associated with /net rules (which I had just
-unwittingly violated in the patch mentioned above). I wonder if we
-could somehow merge policies where possible, and document those that
-should be different in a place where people are likely to find them -
-perhaps associated with get_maintainer.pl since anyone submitting
-patches should be checking that output anyway.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-In summary, better consolidated documentation using language that is
-clear to non-subsystem-experts and less tribal knowledge. If people
-don't read the documentation that we put in front of their nose....
-well, then I suppose we can scold them a bit.
+iQIcBAEBAgAGBQJR5CnxAAoJEHwUBw8lI4NHZAcP/iQpHY9iOiISuLMZGIeSwLvW
+eL+kP7VznOyOJCXXyhi45pFcdjC9USRAy+ZBSW+oEmMxUdM0pBHPm61Iz0lA1xNM
+H6CwJ9Rk8G4ETH4dnXWDzy30qwASzB+i0RAfXvYvb0ds2Ajgm74of3Q+u8ICAWmU
+pt68t2w8fMlYnh5V7Ntpqbv9Dc6ThEyao5Qo6EOqUm8hxi9Qu+JmeZHS9PmLL9Cj
+o2QdDuHl9Q/bOwAvsYp8HUfcggQsRMY6iO7iwvH3pWVun3pB8Wpww+vbc86swOE1
+NJadAJTXtuVfY3IkneqmJf9Dt1GvtNK/vOSYX2v7M6uu1IBQjRHsBAlNMbpxXLS5
+qxdER2g6UIa/pH70tu9D3432TEUzl15Sqoe5rKuEiduKuVIF1SfMH9ZglQ7QTx3N
+NsrrzdZczwE2qyNZXCFZeLjypZ2uoQcMXM/yvTYm/Ch+9lWaWynsKcO3OPqPhbyz
+BO19rWlFdVU6pvoUCqsd9KMayT0mPzWocLgz50fXIybJncIyeXs922wobANAZkof
+Dabya0mfZUMR+0r0rh/kSaBVFByMBqAZrTPQ3L6C29ZzyTn7Y8TdBawMw+nUf5pz
+VG779UdORJUAbGdjeFHop45vnYeab+VVDXi1pw+bYX6dAiR6+16xR1HOx+CA3vmR
+YLKA2HoqN1ncANNxc8ME
+=nejS
+-----END PGP SIGNATURE-----
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
-
+--XMCwj5IQnwKtuyBG--
