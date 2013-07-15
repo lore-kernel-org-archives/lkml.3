@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3GOTD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:03:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48141 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab3GOTDZ (ORCPT
+	id S1754642Ab3GOTE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:04:26 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:65220 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab3GOTEY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:03:25 -0400
-Date: Mon, 15 Jul 2013 15:03:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Paul Bolle <pebolle@tiscali.nl>
+	Mon, 15 Jul 2013 15:04:24 -0400
+Date: Mon, 15 Jul 2013 14:04:19 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [ 00/19] 3.10.1-stable review
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: Re: CONFIG_* used by user-space to figure out whether a feature is
- on/off
-Message-ID: <20130715190311.GA3385@phenom.dumpdata.com>
-References: <20130715154050.GA5941@phenom.dumpdata.com>
- <20130715170244.GA29883@kroah.com>
- <20130715172431.GA8034@phenom.dumpdata.com>
- <CA+55aFx0rLqQUig9VHsfckRX650H=kq6hXH35m=yev17zfi0EA@mail.gmail.com>
- <20130715180202.GB2433@phenom.dumpdata.com>
- <1373912743.2591.34.camel@x61.thuisdomein>
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+In-Reply-To: <20130715155202.GC29526@xanatos> (from
+	sarah.a.sharp@linux.intel.com on Mon Jul 15 10:52:48 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1373915059.3719.4@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <1373912743.2591.34.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 08:25:43PM +0200, Paul Bolle wrote:
-> On Mon, 2013-07-15 at 14:02 -0400, Konrad Rzeszutek Wilk wrote:
-> > How about I make you proud and post a patch. See:
-> > 
-> >  http://article.gmane.org/gmane.comp.boot-loaders.grub.devel/20332 
-> 
-> And you're now also taking Michael's patch, that triggered this
-> discussion, aren't you?
+On 07/15/2013 10:52:48 AM, Sarah Sharp wrote:
+> On Fri, 12 Jul 2013 18:17:08 +0200, Ingo Molnar <mingo@kernel.org>  
+> wrote:
+> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> Let's discuss this at Kernel Summit where we can at least yell at each
+> other in person.  Yeah, just try yelling at me about this.  I'll roar
+> right back, louder, for all the people who lose their voice when they
+> get yelled at by top maintainers.  I won't be the nice girl anymore.
 
-I believe there is a better way of doing this that I had enumerated
-in the thread (see "xen: remove unused Kconfig parameter"). That was to
-remove the CONFIG_XEN_PRIVILIGED and XEN_CONFIG_DOM0 and instead have an
-CONFIG_XEN_HARDWARE_DOMAIN and CONFIG_XEN_CONTROL_DOMAIN which reflect the
-reality a lot better.
+Not _all_ of us lose our voice when yelled at by Linus's lieutenants.  
+Some of us just post updates to the same darn patch series for 5 years  
+(yes really; my perl removal series started in 2008 and was applied  
+earlier this year), on the theory it's useful to the people actually  
+applying it to their own trees (at one point, gentoo), and that someday  
+the stars might be right and cthulu will arise from the deep and accept  
+the patch series into his tree. (Or in my case, Andrew Morton.)
 
-P.S.
-That idea had been percolating a bit - and it started way back with Andrew Jones
-proposing an Kconfig patch a year ago - see:
-http://lists.xen.org/archives/html/xen-devel/2012-01/msg00500.html for some
-backstory.
+Hoping initmpfs has an easier time of it, it's already being used in  
+supercomputers.
+
+Rob
