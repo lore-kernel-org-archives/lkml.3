@@ -1,81 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab3GOPbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 11:31:08 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40446 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790Ab3GOPbH (ORCPT
+	id S932506Ab3GOPct (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 11:32:49 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60965 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab3GOPcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 11:31:07 -0400
-Date: Mon, 15 Jul 2013 16:31:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Message-ID: <20130715153101.GK11538@sirena.org.uk>
-References: <20130715103644.04e57749@armhf>
+	Mon, 15 Jul 2013 11:32:47 -0400
+Message-ID: <51E416ED.3090604@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 21:06:13 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7Ke/meiCZutM6I/"
-Content-Disposition: inline
-In-Reply-To: <20130715103644.04e57749@armhf>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: kirkwood-i2s: fix a compilation warning
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 16/18] kvm hypervisor : Simplify kvm_for_each_vcpu
+ with kvm_irq_delivery_to_apic
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124353.27508.94224.sendpatchset@codeblue.in.ibm.com> <20130714132402.GB11772@redhat.com>
+In-Reply-To: <20130714132402.GB11772@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071515-4790-0000-0000-000009464417
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/14/2013 06:54 PM, Gleb Natapov wrote:
+> On Mon, Jun 24, 2013 at 06:13:53PM +0530, Raghavendra K T wrote:
+>> Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
+>>
+>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>
+>> Note that we are using APIC_DM_REMRD which has reserved usage.
+>> In future if APIC_DM_REMRD usage is standardized, then we should
+>> find some other way or go back to old method.
+>>
+>> Suggested-by: Gleb Natapov <gleb@redhat.com>
+>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>> ---
+>>   arch/x86/kvm/lapic.c |    5 ++++-
+>>   arch/x86/kvm/x86.c   |   25 ++++++-------------------
+>>   2 files changed, 10 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+>> index e1adbb4..3f5f82e 100644
+>> --- a/arch/x86/kvm/lapic.c
+>> +++ b/arch/x86/kvm/lapic.c
+>> @@ -706,7 +706,10 @@ out:
+>>   		break;
+>>
+>>   	case APIC_DM_REMRD:
+>> -		apic_debug("Ignoring delivery mode 3\n");
+>> +		result = 1;
+>> +		vcpu->arch.pv.pv_unhalted = 1;
+>> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
+>> +		kvm_vcpu_kick(vcpu);
+>>   		break;
+>>
+>>   	case APIC_DM_SMI:
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 92a9932..b963c86 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -5456,27 +5456,14 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+>>    */
+>>   static void kvm_pv_kick_cpu_op(struct kvm *kvm, int apicid)
+>>   {
+>> -	struct kvm_vcpu *vcpu = NULL;
+>> -	int i;
+>> +	struct kvm_lapic_irq lapic_irq;
+>>
+>> -	kvm_for_each_vcpu(i, vcpu, kvm) {
+>> -		if (!kvm_apic_present(vcpu))
+>> -			continue;
+>> +	lapic_irq.shorthand = 0;
+>> +	lapic_irq.dest_mode = 0;
+>> +	lapic_irq.dest_id = apicid;
+>>
+>> -		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
+>> -			break;
+>> -	}
+>> -	if (vcpu) {
+>> -		/*
+>> -		 * Setting unhalt flag here can result in spurious runnable
+>> -		 * state when unhalt reset does not happen in vcpu_block.
+>> -		 * But that is harmless since that should soon result in halt.
+>> -		 */
+>> -		vcpu->arch.pv.pv_unhalted = true;
+>> -		/* We need everybody see unhalt before vcpu unblocks */
+>> -		smp_wmb();
+>> -		kvm_vcpu_kick(vcpu);
+>> -	}
+>> +	lapic_irq.delivery_mode = APIC_DM_REMRD;
+> Need to make sure that delivery_mode cannot be set to APIC_DM_REMRD
+> from MSI/IOAPIC/IPI path.
 
---C7Ke/meiCZutM6I/
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I Gleb,
+I need your help here since I do not know much about apic.
 
-On Mon, Jul 15, 2013 at 10:36:44AM +0200, Jean-Francois Moine wrote:
-> In the function kirkwood_set_rate, when the rate cannot be satisfied
-> by the internal nor by an external clock, the clock source in undefined:
+so are you saying explicitly checking that, kvm_set_msi_irq, 
+apic_send_ipi, native_setup_ioapic_entry, does not have APIC_DM_REMRD as 
+delivery_mode set?
 
->  warning: =E2=80=98clks_ctrl=E2=80=99 may be used uninitialized in this f=
-unction
 
-> As the ALSA subsystem should never gives such a rate, this patch removes
-> the check of the external clock pointer.
 
-> -	} else if (!IS_ERR(priv->extclk)) {
-> +	} else {
-
-I'd really like to see an analysis explaining why this can never happen,
-the driver explicitly supports running without extclk being provided.
-Simply asserting that we should never get such a rate isn't really
-enough detail...
-
---C7Ke/meiCZutM6I/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5BWyAAoJELSic+t+oim9kIYP/1Zb5f5ipqAdT4fmcHCRNsMZ
-bB/yGsK1LGnB62zj96RneZL5UvnVR+WfAzXef0jVrtct0FBjXM3kP5SHhBfRllg4
-djjlAUVI/JNlgJcNQFB+84B/HcRNWrOVB8i+3qusmfpzFxPniwa10QC+3iRqqa17
-NuNtDt4YN3YGje9A8sUYqIlti6MxZZtNdrOMpJ2TzpaEdiSTpCed9f7HLxfbLw3U
-P9h88y6VIeKkVMSTDyRcSArO4OLN7TbpUiZs6eKEcLx3//9fY6InppDOGK/RIedW
-SlBwYU5lHQHIrJqdCB+2KDTck21qIBUod8ZsoNMp3TQKrCVT1r5yzjyqb1oR0uVz
-xiugyjL1fqS1tmncN7eqVEx6xBSXkwin6KpZHPERW8iYaWJ4OSRLcT6FnIHG37CT
-wAt8b6IclsabCs84Nj4uqxUoguMYssWpg34JY0noXA1XmAkFKXviC80sWPFBGEUq
-S079u1r3D1OFTMsjkYV2Yxm/EKULWYCa1eg27YoG6UG5G8Nnt7q8EE7k3UypOIdA
-QwImetc3I4PRgLlaY2Hfy8mU3cbG8st0u9A3LIhHu9OVFCVxRh+LKgwHOTIFh/z4
-xIAkJkjCCsDZgbvYOdo97JmOSsO3z8wHY1LR7bpFhgaGF1STTW/3CDglQ43Nf5qg
-BiOJN5k2NeGCdlAUrwKo
-=NyJd
------END PGP SIGNATURE-----
-
---C7Ke/meiCZutM6I/--
