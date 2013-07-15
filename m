@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab3GOMJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 08:09:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20255 "EHLO
+	id S1756494Ab3GOMJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 08:09:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:20269 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765Ab3GOMJn (ORCPT
+	with ESMTP id S1755971Ab3GOMJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 08:09:43 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-02-51e3e6853cdb
+	Mon, 15 Jul 2013 08:09:54 -0400
+X-AuditID: cbfee68e-b7f276d000002279-05-51e3e691aaec
 From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>
-Cc: "'Chris Ball'" <cjb@laptop.org>, "'Olof Johansson'" <olof@lixom.net>,
+To: "'Doug Anderson'" <dianders@chromium.org>, "'Chris Ball'" <cjb@laptop.org>
+Cc: "'Olof Johansson'" <olof@lixom.net>,
         "'Jaehoon Chung'" <jh80.chung@samsung.com>,
         "'James Hogan'" <james.hogan@imgtec.com>,
         "'Grant Grundler'" <grundler@chromium.org>,
         "'Alim Akhtar'" <alim.akhtar@samsung.com>,
         "'Abhilash Kesavan'" <a.kesavan@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-References: <1373391071-6312-1-git-send-email-dianders@chromium.org>
- <1373411961-23812-1-git-send-email-dianders@chromium.org>
- <1373411961-23812-4-git-send-email-dianders@chromium.org>
- <002a01ce7d7d$6bd9e870$438db950$%jun@samsung.com>
- <CAD=FV=UtX0Z1ABdi5h270ks8Py2o1iPK4DonOHJH3N0Q1YShTQ@mail.gmail.com>
-In-reply-to: <CAD=FV=UtX0Z1ABdi5h270ks8Py2o1iPK4DonOHJH3N0Q1YShTQ@mail.gmail.com>
-Subject: RE: [PATCH v2 3/5] mmc: dw_mmc: Add exynos resume_noirq callback to
- clear WAKEUP_INT
-Date: Mon, 15 Jul 2013 21:09:40 +0900
-Message-id: <003f01ce8154$2f5ea1d0$8e1be570$%jun@samsung.com>
+References: <1373411961-23812-1-git-send-email-dianders@chromium.org>
+ <1373470926-19314-1-git-send-email-dianders@chromium.org>
+ <1373470926-19314-3-git-send-email-dianders@chromium.org>
+In-reply-to: <1373470926-19314-3-git-send-email-dianders@chromium.org>
+Subject: RE: [PATCH v3 2/5] mmc: dw_mmc: Add suspend_noirq/resume_noirq
+ callbacks for dw_mmc-pltfm
+Date: Mon, 15 Jul 2013 21:09:53 +0900
+Message-id: <004001ce8154$36753510$a35f9f30$%jun@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
+Content-type: text/plain; charset=ks_c_5601-1987
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac59ft5YgylTFv29RESKj3xBbjzWoADoyOzA
+Thread-index: Ac59hEEAjATtZxCfR5qJ4+1zzo7o/ADy7a+w
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t8zI93WZ48DDdYskLZ4vGYxk8WDedvY
-	LLa/3shmcXbZQTaLV0d+MFm8m/eC2eLGrzZWi94FV9ksNj2+xmpxedccNosj//sZLWac38dk
-	cer6ZzaLVbv+MDrwecxuuMjisXPWXXaPnp1nGD0OXVnL6LF5Sb3HlRNNrB59W1YxenzeJBfA
-	EcVlk5Kak1mWWqRvl8CV8enWfbaCWbIVUx98ZWpgPCLWxcjJISFgIvHp/HtWCFtM4sK99Wxd
-	jFwcQgLLGCXO9x9nhinafnEWWJGQwHRGiZmXzCCK/jBKzH1/nR0kwSagJfH3zRuwBhEBbYmX
-	D1YygxQxC/SwSHz89JYRomM7k8S61iVMIFWcAsES14/NAbOFBeIlfu+7AzaJRUBV4v7LBjYQ
-	m1fAVmJRzwxWCFtQ4sfkeywgNrOAnsTHP7cZIWx5ic1r3gJt4wA6VV3i0V9diCOMJN5/uAJV
-	IiKx78U7sBskBHZwSDxZ9IQJYpeAxLfJh1ggemUlNh2A+lhS4uCKGywTGCVmIdk8C8nmWUg2
-	z0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkBQxcQfj/QPWhxiTgdZPZJYSTc4H
-	ppi8knhDYzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTCK
-	fPxxg0fX6M6kV6880x4bCVaf0GVJzKmxWh1yUSNhrsvOWbwrpXWC/G0cZnHNF2wU3PjriZL4
-	zZo70zqrBTX8klTrF4VwcCrt/BeyWi1wZcnWqR+3qN/hX6xkbC968Ee3b2HPReajF97nm2zM
-	XvJg/QrN7Acx94sj5m+9t4BLj9Vi93pp4dNKLMUZiYZazEXFiQDtcy5OJwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIKsWRmVeSWpSXmKPExsVy+t9jQd3WZ48DDaZ1ilo8XrOYyeLBvG1s
-	Fttfb2SzOLvsIJvFqyM/mCzezXvBbHHjVxurRe+Cq2wWmx5fY7W4vGsOm8WR//2MFjPO72Oy
-	OHX9M5vFql1/GB34PGY3XGTx2DnrLrtHz84zjB6Hrqxl9Ni8pN7jyokmVo++LasYPT5vkgvg
-	iGpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOlxJ
-	oSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmPHp1n22glmyFVMffGVqYDwi
-	1sXIySEhYCKx/eIsVghbTOLCvfVsILaQwHRGiZmXzLoYuYDsP4wSc99fZwdJsAloSfx984YZ
-	xBYR0JZ4+WAlM0gRs0APi8THT28ZITq2M0msa13CBFLFKRAscf3YHDBbWCBe4ve+O2CTWARU
-	Je6/bABbxytgK7GoZwYrhC0o8WPyPRYQm1lAT+Ljn9uMELa8xOY1b4G2cQCdqi7x6K8uxBFG
-	Eu8/XIEqEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66X
-	nJ+7iRGcgJ5J7WBc2WBxiFGAg1GJh/eAxuNAIdbEsuLK3EOMEhzMSiK8Sy8ChXhTEiurUovy
-	44tKc1KLDzEmAz06kVlKNDkfmBzzSuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2a
-	WpBaBLOFiYNTqoGx58m/uXveyXCHeMe58qgbHhPRsxTa7vpq8cmC97efuKdcuOpnu1pQU179
-	f3/vtfexpTWiLI+Nsv/dFFl/4Ocv7uLzD41qftz7eVFU5XOoemzOQT/zWZv3Wv9cO0HUJXZh
-	kli+QX3llv/70mNvcuZPtRPu35v85cecF8z8/1e8nml67ltLR1KKEktxRqKhFnNRcSIA8mUZ
-	7YQDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+Zvu7EZ48DDbYfk7V4vGYxk8WDedvY
+	LLa/3shmcXbZQTaLV0d+MFm8m/eC2eLGrzZWi8u75rBZHPnfz2hx6vpnNotVu/4wOnB7zG64
+	yOKxc9Zddo+enWcYPQ5dWcvoceVEE6tH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZXxu7GYv
+	eK9cMaNxJXsD427ZLkZODgkBE4kZPRdYIGwxiQv31rN1MXJxCAksY5Q4vuYbI0xR0+OnLBCJ
+	6YwSpzqeMUE4fxglFq89xAxSxSagJfH3zRswW0TAS+LF7gfMIEXMAk+YJK59vAY2SkhgL6PE
+	2SXlIDangJvE6Rf7wXYLC6RIzPv2iR3EZhFQlZh9fhEbiM0rYCuxY+9GZghbUOLH5Htg9cwC
+	BhLvZ/WxQtjyEpvXvAWq4QA6VV3i0V9diBuMJDb8Xg5VLiKx78U7RpB7JARmckg079rBCrFL
+	QOLb5EMsEL2yEpsOMEN8LClxcMUNlgmMErOQbJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSepGR
+	XnFibnFpXrpecn7uJkZI9PftYLx5wPoQYzLQ+onMUqLJ+cDkkVcSb2hsZmRhamJqbGRuaUaa
+	sJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRvZku3M7xDjnsRyquayyiavWceV0
+	vla9Y7fv83Q+6ooJ7Fn57VPBhx7vvZ2XU7YI36+fFmIgGxRrz2EbOu21leuX/oQTS+4wn+H4
+	ecvURkY1rj61mUlBS2LF7lrlqg5tn4A4drUDAaUbGOLfnV/vsLjhWPrnyyFx2yU3BJt3PbAW
+	3qk4qemQEktxRqKhFnNRcSIAkVVODxQDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHKsWRmVeSWpSXmKPExsVy+t9jQd2Jzx4HGmy+LWHxeM1iJosH87ax
+	WWx/vZHN4uyyg2wWr478YLJ4N+8Fs8WNX22sFpd3zWGzOPK/n9Hi1PXPbBardv1hdOD2mN1w
+	kcVj56y77B49O88wehy6spbR48qJJlaPvi2rGD0+b5ILYI9qYLTJSE1MSS1SSM1Lzk/JzEu3
+	VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpSSaEsMacUKBSQWFyspG+HaUJoiJuu
+	BUxjhK5vSBBcj5EBGkhYx5jxubGbveC9csWMxpXsDYy7ZbsYOTkkBEwkmh4/ZYGwxSQu3FvP
+	1sXIxSEkMJ1R4lTHMyYI5w+jxOK1h5hBqtgEtCT+vnkDZosIeEm82P2AGaSIWeAJk8S1j9cY
+	QRJCAnsZJc4uKQexOQXcJE6/2A+2QlggRWLet0/sIDaLgKrE7POL2EBsXgFbiR17NzJD2IIS
+	PybfA6tnFjCQeD+rjxXClpfYvOYtUA0H0KnqEo/+6kLcYCSx4fdyqHIRiX0v3jFOYBSahWTS
+	LCSTZiGZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwanlmdQOxpUNFocYBTgY
+	lXh4D2g8DhRiTSwrrsw9xCjBwawkwrv0IlCINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84Fp
+	L68k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGKfM9eCvVFdN
+	+2kkyWtUer9HsN61dbnBiqL+/1bTpoa9F0ooORZqsGHRl6Xbuy8fNJwssHPzMrGl4dXGVut/
+	Gq55y3frSXem5w0dX/1r6xe6OglxXcz8dvZNt8mV38uXXD09P3fXbYHVzSZHrXoTghidj55w
+	rSk0j46WPhaydqWJ6P7pHrLlp5VYijMSDbWYi4oTAcVUqHpxAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -73,88 +67,119 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, July 11, 2013, Doug Anderson wrote:
-> Seungwon,
+> On some devices (like exynos5420) the dw_mmc controller may be in a
+> strange state after we wake up from sleep.  Add callbacks to allow for
+> dealing with these quirks.  We use the "_noirq" versions of the
+> callbacks since in the case of exynos5420 the strange state caused
+> interrupts to fire so we need to deal with it while interrupts are
+> still off.
 > 
-> On Wed, Jul 10, 2013 at 7:54 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> > On Wed, July 10, 2013, Doug Anderson wrote:
-> >> If the WAKEUP_INT is asserted at wakeup and not cleared, we'll end up
-> >> looping around forever.  This has been seen to happen on exynos5420
-> >> silicon despite the fact that we haven't enabled any wakeup events.
-> >>
-> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> >> ---
-> >> Changes in v2:
-> >> - Use suspend_noirq as per James Hogan.
-> >>
-> >>  drivers/mmc/host/dw_mmc-exynos.c | 23 +++++++++++++++++++++++
-> >>  1 file changed, 23 insertions(+)
-> >>
-> >> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-> >> index f013e7e..36b9620 100644
-> >> --- a/drivers/mmc/host/dw_mmc-exynos.c
-> >> +++ b/drivers/mmc/host/dw_mmc-exynos.c
-> >> @@ -30,6 +30,7 @@
-> >>  #define SDMMC_CLKSEL_TIMING(x, y, z) (SDMMC_CLKSEL_CCLK_SAMPLE(x) |  \
-> >>                                       SDMMC_CLKSEL_CCLK_DRIVE(y) |    \
-> >>                                       SDMMC_CLKSEL_CCLK_DIVIDER(z))
-> >> +#define SDMMC_CLKSEL_WAKEUP_INT              BIT(11)
-> >>
-> >>  #define SDMMC_CMD_USE_HOLD_REG               BIT(29)
-> >>
-> >> @@ -102,6 +103,27 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
-> >>       return 0;
-> >>  }
-> >>
-> >> +/**
-> >> + * dw_mci_exynos_resume_noirq - Exynos-specific resume code
-> >> + *
-> >> + * We have seen cases (at least on the exynos5420) where turning off the INT
-> >> + * power rail during suspend will leave the WAKEUP_INT bit in the CLKSEL
-> >> + * register asserted.  This bit is 1 to indicate that it fired and we can
-> >> + * clear it by writing a 1 back.  Clear it to prevent interrupts from going off
-> >> + * constantly.
-> >> + */
-> > As I know this bit is auto-cleared.
-> > Did you find the cause of this problem?
-> > How about your GPIO setting in sleep?
-> > Currently, we don't know why the problem is happened.
-> > At least, we should make it clear.
-> 
-> Yes, the documentation that I have says that this bit is "auto
-> cleared" as well but doesn't indicate under what conditions it is auto
-> cleared.  From testing how this bit reacts I have found that writing a
-> 1 to it clears the bit--in other words it behaves like bits in
-> RINTSTS.  That's a terrible design for a bit in a register with shared
-> config but appears to be how it works.
-> 
-> Note: in a sense it will be "auto cleared" because doing a
-> read-modify-write of any other bits in this register will clear the
-> interrupt.
-> 
-> I have asked for official confirmation.
-> 
-> We have found that on exynos5420 bits 8-10 of CLKSEL are marked as
-> RESERVED.  Those bits are documented to enable the WAKEUP_INT on
-> exynos5250.  My best guess is that these bits are not used on
-> exynos5420 and the WAKEUP_INT line is left floating, which means it
-> can fire randomly.  I have also asked for official confirmation about
-> this.
-Sorry for late response.
-Yes, it's not clear.
-If you get the confirmation, could you share this problem?
-Possibly, auto-clear may not be implemented.
-Then, manual should be correct.
+> At the moment this support is only added to dw_mmc-pltfm which calls
+> straight to the callback, since nobody but exynos needs it.  We can
+> add some levels of indirection (a call into the generic dw_mmc code)
+> when someone finds a need.
+I think It would be better to add _noirq only to dw_mmc-exynos.
+That is we can add dev_pm_ops for dw_mmc-exynos's own.
+As you recognize, there is no common routine which is not introduced for dw_mmc xxx_noirq now.
+I feel like it is for handling quirk.
+If we meet use case for that in some day, it could be added commonly.
+How do you think?
 
 Thanks,
 Seungwon Jeon
 > 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> ---
+> Changes in v3:
+> - Add freeze/thaw and poweroff/restore noirq entries.
 > 
-> I will likely merge this change locally in our kernel tree while
-> waiting for a response.  If you would like to wait before Acking
-> that's very reasonable.  Do you have any other problems with this
-> change assuming my understanding above is correct?
+> Changes in v2:
+> - Use suspend_noirq as per James Hogan.
 > 
-> -Doug
+>  drivers/mmc/host/dw_mmc-pltfm.c | 41 ++++++++++++++++++++++++++++++++++++++---
+>  drivers/mmc/host/dw_mmc.h       |  4 ++++
+>  2 files changed, 42 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+> index 41c27b7..742ef76 100644
+> --- a/drivers/mmc/host/dw_mmc-pltfm.c
+> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
+> @@ -105,12 +105,47 @@ static int dw_mci_pltfm_resume(struct device *dev)
+> 
+>  	return 0;
+>  }
+> +
+> +static int dw_mci_pltfm_suspend_noirq(struct device *dev)
+> +{
+> +	struct dw_mci *host = dev_get_drvdata(dev);
+> +	const struct dw_mci_drv_data *drv_data = host->drv_data;
+> +
+> +	if (drv_data && drv_data->suspend_noirq)
+> +		return drv_data->suspend_noirq(host);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dw_mci_pltfm_resume_noirq(struct device *dev)
+> +{
+> +	struct dw_mci *host = dev_get_drvdata(dev);
+> +	const struct dw_mci_drv_data *drv_data = host->drv_data;
+> +
+> +	if (drv_data && drv_data->resume_noirq)
+> +		return drv_data->resume_noirq(host);
+> +
+> +	return 0;
+> +}
+> +
+> +
+>  #else
+> -#define dw_mci_pltfm_suspend	NULL
+> -#define dw_mci_pltfm_resume	NULL
+> +#define dw_mci_pltfm_suspend		NULL
+> +#define dw_mci_pltfm_resume		NULL
+> +#define dw_mci_pltfm_suspend_noirq	NULL
+> +#define dw_mci_pltfm_resume_noirq	NULL
+>  #endif /* CONFIG_PM_SLEEP */
+> 
+> -SIMPLE_DEV_PM_OPS(dw_mci_pltfm_pmops, dw_mci_pltfm_suspend, dw_mci_pltfm_resume);
+> +const struct dev_pm_ops dw_mci_pltfm_pmops = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(dw_mci_pltfm_suspend, dw_mci_pltfm_resume)
+> +	.suspend_noirq = dw_mci_pltfm_suspend_noirq,
+> +	.resume_noirq = dw_mci_pltfm_resume_noirq,
+> +	.freeze_noirq = dw_mci_pltfm_suspend_noirq,
+> +	.thaw_noirq = dw_mci_pltfm_resume_noirq,
+> +	.poweroff_noirq = dw_mci_pltfm_suspend_noirq,
+> +	.restore_noirq = dw_mci_pltfm_resume_noirq,
+> +};
+> +
+>  EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+> 
+>  static const struct of_device_id dw_mci_pltfm_match[] = {
+> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+> index 0b74189..5d0398f 100644
+> --- a/drivers/mmc/host/dw_mmc.h
+> +++ b/drivers/mmc/host/dw_mmc.h
+> @@ -190,6 +190,8 @@ extern int dw_mci_resume(struct dw_mci *host);
+>   * @prepare_command: handle CMD register extensions.
+>   * @set_ios: handle bus specific extensions.
+>   * @parse_dt: parse implementation specific device tree properties.
+> + * @suspend_noirq: called late in the suspend process
+> + * @resume_noirq: called early in the resume process
+>   *
+>   * Provide controller implementation specific extensions. The usage of this
+>   * data structure is fully optional and usage of each member in this structure
+> @@ -202,5 +204,7 @@ struct dw_mci_drv_data {
+>  	void		(*prepare_command)(struct dw_mci *host, u32 *cmdr);
+>  	void		(*set_ios)(struct dw_mci *host, struct mmc_ios *ios);
+>  	int		(*parse_dt)(struct dw_mci *host);
+> +	int		(*suspend_noirq)(struct dw_mci *host);
+> +	int		(*resume_noirq)(struct dw_mci *host);
+>  };
+>  #endif /* _DW_MMC_H_ */
+> --
+> 1.8.3
+> 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
 > the body of a message to majordomo@vger.kernel.org
