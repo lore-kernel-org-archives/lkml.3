@@ -1,158 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab3GOESj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 00:18:39 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:53186 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab3GOESi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 00:18:38 -0400
-Message-ID: <51E37819.8020207@openvz.org>
-Date: Mon, 15 Jul 2013 08:18:33 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	id S1752105Ab3GOEXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 00:23:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:55514 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab3GOEXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 00:23:38 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: mst@redhat.com, netdev@vger.kernel.org, jasowang@redhat.com,
+        amwang@redhat.com, akong@redhat.com, davej@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] virtio-net: put virtio net header inline with data
+In-Reply-To: <20130709.213807.350021632586146971.davem@davemloft.net>
+References: <871u78eavc.fsf@rustcorp.com.au> <20130709051824.GA3234@redhat.com> <87vc4kcfzg.fsf@rustcorp.com.au> <20130709.213807.350021632586146971.davem@davemloft.net>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 15 Jul 2013 11:13:25 +0930
+Message-ID: <8761wc38ea.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/hugetlb: per-vma instantiation mutexes
-References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This seems incorrect. hugetlb_instantiation_mutex protects chains of struct file_region
-in inode->i_mapping->private_list (VM_MAYSHARE) or vma_resv_map(vma)->regions (!VM_MAYSHARE)
-These chains obviously can be shared between several vmas, so per-vma lock cannot protect them.
+From: Michael S. Tsirkin <mst@redhat.com>
 
-Davidlohr Bueso wrote:
-> The hugetlb_instantiation_mutex serializes hugepage allocation and instantiation
-> in the page directory entry. It was found that this mutex can become quite contended
-> during the early phases of large databases which make use of huge pages - for instance
-> startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
-> reports that this mutex can be one of the top 5 most contended locks in the kernel during
-> the first few minutes:
->
-> hugetlb_instantiation_mutex:      10678     10678
->               ---------------------------
->               hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
->               ---------------------------
->               hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
->
-> contentions:          10678
-> acquisitions:         99476
-> waittime-total: 76888911.01 us
->
-> Instead of serializing each hugetlb fault, we can deal with concurrent faults for pages
-> in different vmas. The per-vma mutex is initialized when creating a new vma. So, back to
-> the example above, we now get much less contention:
->
->   &vma->hugetlb_instantiation_mutex:  1         1
->         ---------------------------------
->         &vma->hugetlb_instantiation_mutex       1   [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
->         ---------------------------------
->         &vma->hugetlb_instantiation_mutex       1    [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
->
-> contentions:          1
-> acquisitions:    108092
-> waittime-total:  621.24 us
->
-> Signed-off-by: Davidlohr Bueso<davidlohr.bueso@hp.com>
-> ---
->   include/linux/mm_types.h |  3 +++
->   mm/hugetlb.c             | 12 +++++-------
->   mm/mmap.c                |  3 +++
->   3 files changed, 11 insertions(+), 7 deletions(-)
->
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index fb425aa..b45fd87 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -289,6 +289,9 @@ struct vm_area_struct {
->   #ifdef CONFIG_NUMA
->   	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
->   #endif
-> +#ifdef CONFIG_HUGETLB_PAGE
-> +	struct mutex hugetlb_instantiation_mutex;
-> +#endif
->   };
->
->   struct core_thread {
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 83aff0a..12e665b 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -137,12 +137,12 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
->    * The region data structures are protected by a combination of the mmap_sem
->    * and the hugetlb_instantion_mutex.  To access or modify a region the caller
->    * must either hold the mmap_sem for write, or the mmap_sem for read and
-> - * the hugetlb_instantiation mutex:
-> + * the vma's hugetlb_instantiation mutex:
->    *
->    *	down_write(&mm->mmap_sem);
->    * or
->    *	down_read(&mm->mmap_sem);
-> - *	mutex_lock(&hugetlb_instantiation_mutex);
-> + *	mutex_lock(&vma->hugetlb_instantiation_mutex);
->    */
->   struct file_region {
->   	struct list_head link;
-> @@ -2547,7 +2547,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
->
->   /*
->    * Hugetlb_cow() should be called with page lock of the original hugepage held.
-> - * Called with hugetlb_instantiation_mutex held and pte_page locked so we
-> + * Called with the vma's hugetlb_instantiation_mutex held and pte_page locked so we
->    * cannot race with other handlers or page migration.
->    * Keep the pte_same checks anyway to make transition from the mutex easier.
->    */
-> @@ -2847,7 +2847,6 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->   	int ret;
->   	struct page *page = NULL;
->   	struct page *pagecache_page = NULL;
-> -	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
->   	struct hstate *h = hstate_vma(vma);
->
->   	address&= huge_page_mask(h);
-> @@ -2872,7 +2871,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->   	 * get spurious allocation failures if two CPUs race to instantiate
->   	 * the same page in the page cache.
->   	 */
-> -	mutex_lock(&hugetlb_instantiation_mutex);
-> +	mutex_lock(&vma->hugetlb_instantiation_mutex);
->   	entry = huge_ptep_get(ptep);
->   	if (huge_pte_none(entry)) {
->   		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
-> @@ -2943,8 +2942,7 @@ out_page_table_lock:
->   	put_page(page);
->
->   out_mutex:
-> -	mutex_unlock(&hugetlb_instantiation_mutex);
-> -
-> +	mutex_unlock(&vma->hugetlb_instantiation_mutex);
->   	return ret;
->   }
->
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index fbad7b0..8f0b034 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1543,6 +1543,9 @@ munmap_back:
->   	vma->vm_page_prot = vm_get_page_prot(vm_flags);
->   	vma->vm_pgoff = pgoff;
->   	INIT_LIST_HEAD(&vma->anon_vma_chain);
-> +#ifdef CONFIG_HUGETLB_PAGE
-> +	mutex_init(&vma->hugetlb_instantiation_mutex);
-> +#endif
->
->   	error = -EINVAL;	/* when rejecting VM_GROWSDOWN|VM_GROWSUP */
->
+For small packets we can simplify xmit processing
+by linearizing buffers with the header:
+most packets seem to have enough head room
+we can use for this purpose.
+Since existing hypervisors require that header
+is the first s/g element, we need a feature bit
+for this.
 
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ drivers/net/virtio_net.c        | 42 +++++++++++++++++++++++++++++++++--------
+ include/uapi/linux/virtio_net.h |  4 +++-
+ 2 files changed, 37 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 3d2a90a..f216002 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -106,6 +106,9 @@ struct virtnet_info {
+ 	/* Has control virtqueue */
+ 	bool has_cvq;
+ 
++	/* Host can handle any s/g split between our header and packet data */
++	bool any_header_sg;
++
+ 	/* enable config space updates */
+ 	bool config_enable;
+ 
+@@ -669,12 +672,28 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+ 
+ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ {
+-	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
++	struct skb_vnet_hdr *hdr;
+ 	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
+ 	struct virtnet_info *vi = sq->vq->vdev->priv;
+ 	unsigned num_sg;
++	unsigned hdr_len;
++	bool can_push;
+ 
+ 	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
++	if (vi->mergeable_rx_bufs)
++		hdr_len = sizeof hdr->mhdr;
++	else
++		hdr_len = sizeof hdr->hdr;
++
++	can_push = vi->any_header_sg &&
++		!((unsigned long)skb->data & (__alignof__(*hdr) - 1)) &&
++		!skb_header_cloned(skb) && skb_headroom(skb) >= hdr_len;
++	/* Even if we can, don't push here yet as this would skew
++	 * csum_start offset below. */
++	if (can_push)
++		hdr = (struct skb_vnet_hdr *)(skb->data - hdr_len);
++	else
++		hdr = skb_vnet_hdr(skb);
+ 
+ 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		hdr->hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+@@ -703,15 +722,18 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ 		hdr->hdr.gso_size = hdr->hdr.hdr_len = 0;
+ 	}
+ 
+-	hdr->mhdr.num_buffers = 0;
+-
+-	/* Encode metadata header at front. */
+ 	if (vi->mergeable_rx_bufs)
+-		sg_set_buf(sq->sg, &hdr->mhdr, sizeof hdr->mhdr);
+-	else
+-		sg_set_buf(sq->sg, &hdr->hdr, sizeof hdr->hdr);
++		hdr->mhdr.num_buffers = 0;
+ 
+-	num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
++	if (can_push) {
++		__skb_push(skb, hdr_len);
++		num_sg = skb_to_sgvec(skb, sq->sg, 0, skb->len);
++		/* Pull header back to avoid skew in tx bytes calculations. */
++		__skb_pull(skb, hdr_len);
++	} else {
++		sg_set_buf(sq->sg, hdr, hdr_len);
++		num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
++	}
+ 	return virtqueue_add_outbuf(sq->vq, sq->sg, num_sg, skb, GFP_ATOMIC);
+ }
+ 
+@@ -1552,6 +1574,9 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+ 		vi->mergeable_rx_bufs = true;
+ 
++	if (virtio_has_feature(vdev, VIRTIO_F_ANY_LAYOUT))
++		vi->any_header_sg = true;
++
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+ 		vi->has_cvq = true;
+ 
+@@ -1727,6 +1752,7 @@ static unsigned int features[] = {
+ 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
+ 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
+ 	VIRTIO_NET_F_CTRL_MAC_ADDR,
++	VIRTIO_F_ANY_LAYOUT,
+ };
+ 
+ static struct virtio_driver virtio_net_driver = {
+diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
+index c520203..227d4ce 100644
+--- a/include/uapi/linux/virtio_net.h
++++ b/include/uapi/linux/virtio_net.h
+@@ -70,7 +70,9 @@ struct virtio_net_config {
+ 	__u16 max_virtqueue_pairs;
+ } __attribute__((packed));
+ 
+-/* This is the first element of the scatter-gather list.  If you don't
++/* This header comes first in the scatter-gather list.
++ * If VIRTIO_F_ANY_LAYOUT is not negotiated, it must
++ * be the first element of the scatter-gather list.  If you don't
+  * specify GSO or CSUM features, you can simply ignore the header. */
+ struct virtio_net_hdr {
+ #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
