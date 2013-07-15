@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab3GONLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:11:40 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:44680 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab3GONLd (ORCPT
+	id S1757113Ab3GONLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:11:49 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63298 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097Ab3GONLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:11:33 -0400
+	Mon, 15 Jul 2013 09:11:47 -0400
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-v2 13/17] staging/lustre: fix build warnning on 32bit system
-Date: Mon, 15 Jul 2013 21:08:11 +0800
-Message-Id: <1373893695-4094-14-git-send-email-bergwolf@gmail.com>
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH-v2 17/17] staging/lustre: drop CONFIG_BROKEN
+Date: Mon, 15 Jul 2013 21:08:15 +0800
+Message-Id: <1373893695-4094-18-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
 References: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building on 32bit system, I got warnings like below:
-drivers/staging/lustre/lustre/llite/../include/lprocfs_status.h:666:7: note: expected ‘long unsigned int *’ but argument is of type ‘size_t *’
- char *lprocfs_find_named_value(const char *buffer, const char *name,
+This reverts commit 0ad1ea69545b1965be4c93ee03fdc685c6beb23d
 
-drivers/staging/lustre/lustre/lov/lov_io.c: In function ‘lov_io_rw_iter_init’:
-include/asm-generic/div64.h:43:28: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-  (void)(((typeof((n)) *)0) == ((uint64_t *)0)); \
+I didn't use git revert because it can not be done cleanly.
+Hopefully it will be the last time we do it...
 
-Signed-off-by: Peng Tao <tao.peng@emc.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../staging/lustre/lustre/include/lprocfs_status.h |    4 ++--
- drivers/staging/lustre/lustre/lov/lov_io.c         |    2 +-
- .../lustre/lustre/obdclass/lprocfs_status.c        |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/lustre/lustre/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lprocfs_status.h b/drivers/staging/lustre/lustre/include/lprocfs_status.h
-index 55f1822..294fb78 100644
---- a/drivers/staging/lustre/lustre/include/lprocfs_status.h
-+++ b/drivers/staging/lustre/lustre/include/lprocfs_status.h
-@@ -663,8 +663,8 @@ extern int lprocfs_write_u64_helper(const char *buffer, unsigned long count,
- extern int lprocfs_write_frac_u64_helper(const char *buffer,
- 					 unsigned long count,
- 					 __u64 *val, int mult);
--char *lprocfs_find_named_value(const char *buffer, const char *name,
--				unsigned long *count);
-+extern char *lprocfs_find_named_value(const char *buffer, const char *name,
-+				      size_t *count);
- void lprocfs_oh_tally(struct obd_histogram *oh, unsigned int value);
- void lprocfs_oh_tally_log2(struct obd_histogram *oh, unsigned int value);
- void lprocfs_oh_clear(struct obd_histogram *oh);
-diff --git a/drivers/staging/lustre/lustre/lov/lov_io.c b/drivers/staging/lustre/lustre/lov/lov_io.c
-index 1a87abd..022e0f4 100644
---- a/drivers/staging/lustre/lustre/lov/lov_io.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_io.c
-@@ -430,7 +430,7 @@ static int lov_io_rw_iter_init(const struct lu_env *env,
- 	struct lov_io	*lio = cl2lov_io(env, ios);
- 	struct cl_io	 *io  = ios->cis_io;
- 	struct lov_stripe_md *lsm = lio->lis_object->lo_lsm;
--	loff_t start = io->u.ci_rw.crw_pos;
-+	__u64 start = io->u.ci_rw.crw_pos;
- 	loff_t next;
- 	unsigned long ssize = lsm->lsm_stripe_size;
- 
-diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-index f7af3d6..85163f4 100644
---- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-+++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-@@ -1873,7 +1873,7 @@ static char *lprocfs_strnstr(const char *s1, const char *s2, size_t len)
-  * If \a name is not found the original \a buffer is returned.
-  */
- char *lprocfs_find_named_value(const char *buffer, const char *name,
--				unsigned long *count)
-+			       size_t *count)
- {
- 	char *val;
- 	size_t buflen = *count;
+diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
+index c59ea55..893a3c6 100644
+--- a/drivers/staging/lustre/lustre/Kconfig
++++ b/drivers/staging/lustre/lustre/Kconfig
+@@ -1,6 +1,6 @@
+ config LUSTRE_FS
+ 	tristate "Lustre file system client support"
+-	depends on STAGING && INET && m && BROKEN
++	depends on STAGING && INET && m
+ 	select LNET
+ 	select CRYPTO
+ 	select CRYPTO_CRC32
 -- 
 1.7.9.5
 
