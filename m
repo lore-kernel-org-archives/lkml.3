@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab3GOPYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 11:24:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46094 "EHLO mx2.suse.de"
+	id S933016Ab3GOPYh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 11:24:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46075 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932670Ab3GOPU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 11:20:28 -0400
+	id S932504Ab3GOPU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 11:20:27 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/18] sched: Select a preferred node with the most numa hinting faults
-Date: Mon, 15 Jul 2013 16:20:07 +0100
-Message-Id: <1373901620-2021-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/18] sched: Track NUMA hinting faults on per-node basis
+Date: Mon, 15 Jul 2013 16:20:04 +0100
+Message-Id: <1373901620-2021-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
 References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
@@ -22,76 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch selects a preferred node for a task to run on based on the
-NUMA hinting faults. This information is later used to migrate tasks
-towards the node during balancing.
+This patch tracks what nodes numa hinting faults were incurred on.  Greater
+weight is given if the pages were to be migrated on the understanding
+that such faults cost significantly more. If a task has paid the cost to
+migrating data to that node then in the future it would be preferred if the
+task did not migrate the data again unnecessarily. This information is later
+used to schedule a task on the node incurring the most NUMA hinting faults.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/sched.h |  1 +
- kernel/sched/core.c   |  1 +
- kernel/sched/fair.c   | 17 +++++++++++++++--
- 3 files changed, 17 insertions(+), 2 deletions(-)
+ include/linux/sched.h |  2 ++
+ kernel/sched/core.c   |  3 +++
+ kernel/sched/fair.c   | 12 +++++++++++-
+ kernel/sched/sched.h  | 11 +++++++++++
+ 4 files changed, 27 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 72861b4..ba46a64 100644
+index e692a02..72861b4 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1507,6 +1507,7 @@ struct task_struct {
+@@ -1505,6 +1505,8 @@ struct task_struct {
+ 	unsigned int numa_scan_period;
+ 	u64 node_stamp;			/* migration stamp  */
  	struct callback_head numa_work;
- 
- 	unsigned long *numa_faults;
-+	int numa_preferred_nid;
++
++	unsigned long *numa_faults;
  #endif /* CONFIG_NUMA_BALANCING */
  
  	struct rcu_head rcu;
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f332ec0..ed4e785 100644
+index 67d0465..f332ec0 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1593,6 +1593,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+@@ -1594,6 +1594,7 @@ static void __sched_fork(struct task_struct *p)
  	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
-+	p->numa_preferred_nid = -1;
  	p->numa_work.next = &p->numa_work;
- 	p->numa_faults = NULL;
++	p->numa_faults = NULL;
  #endif /* CONFIG_NUMA_BALANCING */
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 904fd6f..731ee9e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -793,7 +793,8 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
- 
- static void task_numa_placement(struct task_struct *p)
- {
--	int seq;
-+	int seq, nid, max_nid = -1;
-+	unsigned long max_faults = 0;
- 
- 	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
- 		return;
-@@ -802,7 +803,19 @@ static void task_numa_placement(struct task_struct *p)
- 		return;
- 	p->numa_scan_seq = seq;
- 
--	/* FIXME: Scheduling placement policy hints go here */
-+	/* Find the node with the highest number of faults */
-+	for (nid = 0; nid < nr_node_ids; nid++) {
-+		unsigned long faults = p->numa_faults[nid];
-+		p->numa_faults[nid] >>= 1;
-+		if (faults > max_faults) {
-+			max_faults = faults;
-+			max_nid = nid;
-+		}
-+	}
-+
-+	/* Update the tasks preferred node if necessary */
-+	if (max_faults && max_nid != p->numa_preferred_nid)
-+		p->numa_preferred_nid = max_nid;
  }
  
- /*
+@@ -1853,6 +1854,8 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	if (mm)
+ 		mmdrop(mm);
+ 	if (unlikely(prev_state == TASK_DEAD)) {
++		task_numa_free(prev);
++
+ 		/*
+ 		 * Remove function-return probe instances associated with this
+ 		 * task and put them back on the free list.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..904fd6f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -815,7 +815,14 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 	if (!sched_feat_numa(NUMA))
+ 		return;
+ 
+-	/* FIXME: Allocate task-specific structure for placement policy here */
++	/* Allocate buffer to track faults on a per-node basis */
++	if (unlikely(!p->numa_faults)) {
++		int size = sizeof(*p->numa_faults) * nr_node_ids;
++
++		p->numa_faults = kzalloc(size, GFP_KERNEL);
++		if (!p->numa_faults)
++			return;
++	}
+ 
+ 	/*
+ 	 * If pages are properly placed (did not migrate) then scan slower.
+@@ -826,6 +833,9 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 			p->numa_scan_period + jiffies_to_msecs(10));
+ 
+ 	task_numa_placement(p);
++
++	/* Record the fault, double the weight if pages were migrated */
++	p->numa_faults[node] += pages << migrated;
+ }
+ 
+ static void reset_ptenuma_scan(struct task_struct *p)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index cc03cfd..c5f773d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -503,6 +503,17 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
++#ifdef CONFIG_NUMA_BALANCING
++static inline void task_numa_free(struct task_struct *p)
++{
++	kfree(p->numa_faults);
++}
++#else /* CONFIG_NUMA_BALANCING */
++static inline void task_numa_free(struct task_struct *p)
++{
++}
++#endif /* CONFIG_NUMA_BALANCING */
++
+ #ifdef CONFIG_SMP
+ 
+ #define rcu_dereference_check_sched_domain(p) \
 -- 
 1.8.1.4
 
