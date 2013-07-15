@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab3GOObg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:31:36 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53898 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757583Ab3GOObe (ORCPT
+	id S932288Ab3GOO1u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:27:50 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:56529 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932229Ab3GOO1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:31:34 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 5/9] mm, hugetlb: remove redundant list_empty check in gather_surplus_pages()
-In-Reply-To: <1373881967-16153-6-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com> <1373881967-16153-6-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 15 Jul 2013 20:01:24 +0530
-Message-ID: <87vc4bj3nn.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071514-1396-0000-0000-00000342B9C2
+	Mon, 15 Jul 2013 10:27:45 -0400
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH-v3 03/17] staging/lustre: don't assert module owner
+Date: Mon, 15 Jul 2013 22:27:06 +0800
+Message-Id: <1373898440-14208-4-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
+References: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+It can well be NULL if Lustre is builtin.
 
-> If list is empty, list_for_each_entry_safe() doesn't do anything.
-> So, this check is redundant. Remove it.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Peng Tao <tao.peng@emc.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+---
+ drivers/staging/lustre/lustre/obdclass/lu_object.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index a838e6b..d4a1695 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1019,10 +1019,8 @@ free:
->  	spin_unlock(&hugetlb_lock);
->
->  	/* Free unnecessary surplus pages to the buddy allocator */
-> -	if (!list_empty(&surplus_list)) {
-> -		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
-> -			put_page(page);
-> -		}
-> +	list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
-> +		put_page(page);
->  	}
-
-You can now remove '{' 
-
-
->  	spin_lock(&hugetlb_lock);
->
-> -- 
-> 1.7.9.5
+diff --git a/drivers/staging/lustre/lustre/obdclass/lu_object.c b/drivers/staging/lustre/lustre/obdclass/lu_object.c
+index fdaf4f8..5559732 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lu_object.c
++++ b/drivers/staging/lustre/lustre/obdclass/lu_object.c
+@@ -1315,7 +1315,6 @@ int lu_context_key_register(struct lu_context_key *key)
+ 	LASSERT(key->lct_init != NULL);
+ 	LASSERT(key->lct_fini != NULL);
+ 	LASSERT(key->lct_tags != 0);
+-	LASSERT(key->lct_owner != NULL);
+ 
+ 	result = -ENFILE;
+ 	spin_lock(&lu_keys_guard);
+@@ -1349,7 +1348,6 @@ static void key_fini(struct lu_context *ctx, int index)
+ 		lu_ref_del(&key->lct_reference, "ctx", ctx);
+ 		atomic_dec(&key->lct_used);
+ 
+-		LASSERT(key->lct_owner != NULL);
+ 		if ((ctx->lc_tags & LCT_NOREF) == 0) {
+ #ifdef CONFIG_MODULE_UNLOAD
+ 			LINVRNT(module_refcount(key->lct_owner) > 0);
+@@ -1557,7 +1555,6 @@ static int keys_fill(struct lu_context *ctx)
+ 			if (unlikely(IS_ERR(value)))
+ 				return PTR_ERR(value);
+ 
+-			LASSERT(key->lct_owner != NULL);
+ 			if (!(ctx->lc_tags & LCT_NOREF))
+ 				try_module_get(key->lct_owner);
+ 			lu_ref_add_atomic(&key->lct_reference, "ctx", ctx);
+-- 
+1.7.9.5
 
