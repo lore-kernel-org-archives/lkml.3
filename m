@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758469Ab3GOXu4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 19:50:56 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44748 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758272Ab3GOXuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 19:50:54 -0400
-Message-ID: <1373932252.2062.55.camel@joe-AO722>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Joe Perches <joe@perches.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Date: Mon, 15 Jul 2013 16:50:52 -0700
-In-Reply-To: <20130716094241.43dbabb0@notabene.brown>
-References: <20130715155202.GC29526@xanatos>
-	 <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
-	 <20130715174659.GC15531@xanatos>
-	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	 <20130715180403.GD15531@xanatos>
-	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	 <20130715190505.GA3336@fieldses.org>
-	 <1373915984.17876.176.camel@gandalf.local.home>
-	 <20130716094241.43dbabb0@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757351Ab3GOX4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 19:56:30 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:37842 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab3GOX43 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 19:56:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130715230418.GA2649@leaf>
+References: <CAOULuOY5VMiiuYmesaGxVWWKtby4Cj9Pc9ctQZeOKfoUzV46dA@mail.gmail.com>
+	<CALCETrVk=ovYjHwALtzB3E3nP4TMivhppM42yw7rMRpzA68cbw@mail.gmail.com>
+	<20130715230418.GA2649@leaf>
+Date: Mon, 15 Jul 2013 19:56:27 -0400
+Message-ID: <CAOULuOY=F5H_=Q1BcbrBxTAj9_9tXvOnm+KAtAksfDw2ei3hVw@mail.gmail.com>
+Subject: Re: BGRT Pointer in System RAM
+From: Parag Warudkar <parag.lkml@gmail.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, LKML <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 09:42 +1000, NeilBrown wrote:
-> Being "polite" without being "nice" is quite possible.
-> It even has a name:  Diplomacy.
+On Mon, Jul 15, 2013 at 7:04 PM, Josh Triplett <josh@joshtriplett.org> wrote:
 
-And we all know how circular/indirect/implied/useless
-some of those diplomatic conversations can be.
+> We do need to handle the case of a valid pointer into memory that e820
+> calls system RAM, as well as the case of a valid pointer into memory
+> reserved for the BIOS or similar, but not the case of an invalid
+> pointer.
 
-Just remember to bring a 'Big Stick' and don't be shy
-when it's necessary to display it.
+Would that be as simple as
 
+                     page_is_ram(
