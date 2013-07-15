@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab3GOVId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:08:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54472 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755439Ab3GOVIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:08:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,671,1367996400"; 
-   d="scan'208";a="370685772"
-From: "Hefty, Sean" <sean.hefty@intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>, Roland Dreier <roland@kernel.org>,
-        "Hal Rosenstock" <hal.rosenstock@gmail.com>
-CC: "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] RDMA/cma: silence GCC warning
-Thread-Topic: [PATCH] RDMA/cma: silence GCC warning
-Thread-Index: AQHOgUsIWMHwxd3x2kS4IP/5yaflNJlmO93Q
-Date: Mon, 15 Jul 2013 21:08:30 +0000
-Message-ID: <1828884A29C6694DAF28B7E6B8A82373805A65C0@ORSMSX110.amr.corp.intel.com>
-References: <1373886239.2591.26.camel@x61.thuisdomein>
-In-Reply-To: <1373886239.2591.26.camel@x61.thuisdomein>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1757438Ab3GOVJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:09:56 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55124 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755296Ab3GOVJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 17:09:55 -0400
+Message-ID: <1373922593.2062.36.camel@joe-AO722>
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Willy Tarreau <w@1wt.eu>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Mon, 15 Jul 2013 14:09:53 -0700
+In-Reply-To: <1373921779.17876.200.camel@gandalf.local.home>
+References: <1373916476.2748.69.camel@dabdike>
+	 <1373917517.17876.193.camel@gandalf.local.home>
+	 <20130715195505.GE10157@1wt.eu>
+	 <1373921779.17876.200.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6FL8fLS012119
 
-> 1) Perhaps a better way to silence GCC is to drop "port" entirely, and
-> assign to "id_priv->id.port_num" directly. Would that be acceptable?
+On Mon, 2013-07-15 at 16:56 -0400, Steven Rostedt wrote:
+> It may not be efficient for maintainers, but as maintainers we should
+> spend a bit more time on stable releases.
 
-Yes, this would work.
+The MAINTAINERS file specifies a difference between a
+section that's Maintained vs Supported.
 
-- Sean
- 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Do please remember there's a difference between a maintainer
+and someone that's paid to support a particular thing.
+
+My feeling is if you're a maintainer you can just say
+"use the current version" and not spend even a moments
+effort or thought on backports.
+
+When you're getting paid however, different issues...
+
+
