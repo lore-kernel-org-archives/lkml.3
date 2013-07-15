@@ -1,154 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab3GOCjE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 22:39:04 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:52654 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab3GOCjC (ORCPT
+	id S1753896Ab3GOCnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 22:43:16 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44904 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab3GOCnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 22:39:02 -0400
-Message-ID: <51E360C1.10204@openvz.org>
-Date: Mon, 15 Jul 2013 06:38:57 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	Sun, 14 Jul 2013 22:43:14 -0400
+Message-ID: <51E3619B.6060901@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 10:42:35 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: [3.10.1 MEI_ME] strange kernel crash
-References: <51E2FE1C.207@openvz.org>
-In-Reply-To: <51E2FE1C.207@openvz.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
+References: <20130625211544.GA2270@swordfish> <51D10899.1080501@linux.vnet.ibm.com> <20130710231305.GA4046@swordfish> <51DE1BE1.3090707@linux.vnet.ibm.com> <20130714114721.GB2178@swordfish>
+In-Reply-To: <20130714114721.GB2178@swordfish>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071502-5140-0000-0000-000003847BA7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has happened again. This time without warnings and without suspend-resume.
-Seems like 'mei_me' corrupts kernel memory.
+On 07/14/2013 07:47 PM, Sergey Senozhatsky wrote:
+[snip]
+> 
+> Hello,
+> 
+> I just realized that lockdep was disabling itself at startup (after recent AMD
+> radeon patch set) due to radeon kms error:
+> 
+> [    4.790019] [drm] Loading CEDAR Microcode
+> [    4.790943] r600_cp: Failed to load firmware "radeon/CEDAR_smc.bin"
+> [    4.791152] [drm:evergreen_startup] *ERROR* Failed to load firmware!
+> [    4.791330] radeon 0000:01:00.0: disabling GPU acceleration
+> [    4.792633] INFO: trying to register non-static key.
+> [    4.792792] the code is fine but needs lockdep annotation.
+> [    4.792953] turning off the locking correctness validator.
+> 
+> 
+> Now, as I fixed radeon kms, I can see:
+> 
+> [  806.660530] ------------[ cut here ]------------
+> [  806.660539] WARNING: CPU: 0 PID: 2389 at arch/x86/kernel/smp.c:124
+> native_smp_send_reschedule+0x57/0x60()
+> 
+> [  806.660572] Workqueue: events od_dbs_timer
+> [  806.660575]  0000000000000009 ffff8801531cfbd8 ffffffff816044ee
+> 0000000000000000
+> [  806.660577]  ffff8801531cfc10 ffffffff8104995d 0000000000000003
+> ffff8801531f8000
+> [  806.660579]  000000010001ee39 0000000000000003 0000000000000003
+> ffff8801531cfc20
+> [  806.660580] Call Trace:
+> [  806.660587]  [<ffffffff816044ee>] dump_stack+0x4e/0x82
+> [  806.660591]  [<ffffffff8104995d>] warn_slowpath_common+0x7d/0xa0
+> [  806.660593]  [<ffffffff81049a3a>] warn_slowpath_null+0x1a/0x20
+> [  806.660595]  [<ffffffff8102ca07>] native_smp_send_reschedule+0x57/0x60
+> [  806.660599]  [<ffffffff81085211>] wake_up_nohz_cpu+0x61/0xb0
+> [  806.660603]  [<ffffffff8105cb6d>] add_timer_on+0x8d/0x1e0
+> [  806.660607]  [<ffffffff8106cc66>] __queue_delayed_work+0x166/0x1a0
+> [  806.660609]  [<ffffffff8106d6a9>] ? try_to_grab_pending+0xd9/0x1a0
+> [  806.660611]  [<ffffffff8106d7bf>] mod_delayed_work_on+0x4f/0x90
+> [  806.660613]  [<ffffffff8150f436>] gov_queue_work+0x56/0xd0
+> [  806.660615]  [<ffffffff8150e740>] od_dbs_timer+0xc0/0x160
+> [  806.660617]  [<ffffffff8106dbcd>] process_one_work+0x1cd/0x6a0
+> [  806.660619]  [<ffffffff8106db63>] ? process_one_work+0x163/0x6a0
+> [  806.660622]  [<ffffffff8106e8d1>] worker_thread+0x121/0x3a0
+> [  806.660627]  [<ffffffff810b668d>] ? trace_hardirqs_on+0xd/0x10
+> [  806.660629]  [<ffffffff8106e7b0>] ? manage_workers.isra.24+0x2a0/0x2a0
+> [  806.660633]  [<ffffffff810760cb>] kthread+0xdb/0xe0
+> [  806.660635]  [<ffffffff81075ff0>] ? insert_kthread_work+0x70/0x70
+> [  806.660639]  [<ffffffff8160de6c>] ret_from_fork+0x7c/0xb0
+> [  806.660640]  [<ffffffff81075ff0>] ? insert_kthread_work+0x70/0x70
+> [  806.660642] ---[ end trace 01ae278488a0ad6d ]---
 
-My setup is simple: it's thinkpad x220 which receives flow of wake-on-lan packets via the ethernet.
+So it back again...
 
-[ 6596.895370] mei_me 0000:00:16.0: version message writet failed
-[ 6596.895373] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[ 6596.895376] mei_me 0000:00:16.0: version message writet failed
-[ 6596.895378] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[ 6596.895381] mei_me 0000:00:16.0: version message writet failed
-[ 6596.895383] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[ 6596.895386] mei_me 0000:00:16.0: version message writet failed
-[ 6596.895388] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[ 6596.895391] mei_me 0000:00:16.0: version message writet failed
-[ 6596.895394] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[ 6596.895397] mei_me 0000:00:16.0: version message writet failed
-[ 6596.895399] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-[ 6596.895402] general protection fault: 0000 [#1] SMP
-[ 6596.895423] Modules linked in: iwldvm iwlwifi nfsd auth_rpcgss oid_registry nfs_acl nfs lockd sunrpc bridge stp llc 
-tun fuse snd_hda_codec_hdmi snd_hda_codec_conexant iTCO_wdt snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc 
-intel_powerclamp coretemp snd_seq_midi snd_seq_midi_event kvm_intel kvm snd_rawmidi cdc_ncm usbnet mii uvcvideo cdc_acm 
-cdc_wdm snd_seq videobuf2_vmalloc snd_seq_device snd_timer videobuf2_memops videobuf2_core videodev lpc_ich mfd_core 
-thinkpad_acpi snd wmi i915 soundcore drm_kms_helper hid_logitech_dj sdhci_pci sdhci e1000e ptp
-[ 6596.895425] CPU: 2 PID: 0 Comm: swapper/2 Not tainted 3.10.1-zurg-00001-gaa457b5 #107
-[ 6596.895426] Hardware name: LENOVO 4291QY6/4291QY6, BIOS 8DET51WW (1.21 ) 08/02/2011
-[ 6596.895427] task: ffff88040c0bc560 ti: ffff88040c12e000 task.ti: ffff88040c12e000
-[ 6596.895433] RIP: 0010:[<ffffffff8107a471>]  [<ffffffff8107a471>] load_cr3+0x21/0x30
-[ 6596.895434] RSP: 0018:ffff88040c12fe78  EFLAGS: 00010002
-[ 6596.895435] RAX: 000077ff80000000 RBX: ffff88040abf1380 RCX: 0000000000000002
-[ 6596.895436] RDX: 0000000080000000 RSI: ffff88040595be70 RDI: 0000780000000001
-[ 6596.895436] RBP: ffff88040c12fe78 R08: 0000000000000000 R09: 0000000000000001
-[ 6596.895437] R10: 0000000000000001 R11: 7fffffffffffffff R12: ffff88041e292dc0
-[ 6596.895438] R13: ffff88040abf1380 R14: 0000000000000000 R15: ffff88040595be70
-[ 6596.895440] FS:  0000000000000000(0000) GS:ffff88041e280000(0000) knlGS:0000000000000000
-[ 6596.895440] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 6596.895441] CR2: 00007f3ec00571e8 CR3: 0000000408848000 CR4: 00000000000407e0
-[ 6596.895442] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 6596.895443] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 6596.895443] Stack:
-[ 6596.895445]  ffff88040c12fed8 ffffffff81626aa4 ffff88040c12ffd8 0000000000012dc0
-[ 6596.895446]  ffff88040c12ffd8 0000000000012dc0 ffff88040c0bc560 ffff88040c12ffd8
-[ 6596.895447]  ffff88040c12ffd8 ffff88040c12ffd8 ffff88040c12ffd8 ffff88040c12ffd8
-[ 6596.895448] Call Trace:
-[ 6596.895454]  [<ffffffff81626aa4>] __schedule+0x784/0x7c0
-[ 6596.895456]  [<ffffffff816278d9>] schedule_preempt_disabled+0x29/0x70
-[ 6596.895459]  [<ffffffff8108ec45>] cpu_startup_entry+0x1f5/0x230
-[ 6596.895461]  [<ffffffff81096588>] ? clockevents_config_and_register+0x28/0x30
-[ 6596.895464]  [<ffffffff81617ce0>] start_secondary+0x209/0x20b
-[ 6596.895479] Code: e8 05 b1 5a 00 5b 41 5c 5d c3 ba 00 00 00 80 48 b8 00 00 00 80 ff 77 00 00 55 48 01 d7 48 0f 42 05 
-a5 6b b9 00 48 89 e5 48 01 c7 <0f> 22 df 66 66 66 90 5d c3 66 0f 1f 44 00 00 66 66 66 66 90 48
-[ 6596.895481] RIP  [<ffffffff8107a471>] load_cr3+0x21/0x30
-[ 6596.895481]  RSP <ffff88040c12fe78>
+Currently I have some assumptions in my mind:
+1. we still failed to stop od_dbs_timer after STOP notify.
+2. there is some code else which restart the work after STOP notify.
+3. policy->cpus is broken.
 
+I think we need a more detail investigation this time, let's catch the
+mouse out ;-)
 
-Konstantin Khlebnikov wrote:
-> first and only warning had happened here:
->
-> Jul 14 22:49:33 zurg kernel: [ 6169.400920] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> Jul 14 22:50:03 zurg kernel: [ 6199.422111] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> Jul 14 22:50:33 zurg kernel: [ 6229.443292] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> Jul 14 22:51:03 zurg kernel: [ 6259.464476] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> Jul 14 22:51:33 zurg kernel: [ 6289.485675] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> Jul 14 22:52:03 zurg kernel: [ 6319.506868] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
->
-> soon after that kernel had crashed
->
-> [ 6349.664704] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> [ 6349.664709] mei_me 0000:00:16.0: version message writet failed
-> [ 6349.664711] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> [ 6349.664714] mei_me 0000:00:16.0: version message writet failed
-> [ 6349.664716] mei_me 0000:00:16.0: unexpected reset: dev_state = RESETTING
-> [ 6349.664719] mei_me 0000:00:16.0: version message writet failed
-> [ 6349.988121] kernel tried to execute NX-protected page - exploit attempt? (uid: 1000)
-> [ 6349.988162] BUG: unable to handle kernel paging request at ffff88040b242000
-> [ 6349.988199] IP: [<ffff88040b242000>] 0xffff88040b241fff
-> [ 6349.988227] PGD 1ed4067 PUD 1ed7067 PMD 800000040b2001e3
-> [ 6349.988257] Oops: 0011 [#1] SMP
-> [ 6349.988276] Modules linked in: iwldvm iwlwifi nfsd auth_rpcgss oid_registry nfs_acl nfs lockd sunrpc bridge stp llc
-> tun fuse snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc
-> thinkpad_acpi snd_seq_midi snd_seq_midi_event iTCO_wdt snd_rawmidi intel_powerclamp coretemp hid_logitech_dj cdc_ncm
-> uvcvideo kvm_intel kvm usbnet videobuf2_vmalloc videobuf2_memops mii videobuf2_core videodev cdc_wdm cdc_acm snd_seq
-> snd_seq_device snd_timer i915 snd soundcore lpc_ich mfd_core wmi drm_kms_helper sdhci_pci sdhci e1000e ptp
-> [ 6349.988581] CPU: 3 PID: 5297 Comm: xfce4-panel Tainted: G W 3.10.1-zurg-00001-gaa457b5 #107
-> [ 6349.988622] Hardware name: LENOVO 4291QY6/4291QY6, BIOS 8DET51WW (1.21 ) 08/02/2011
-> [ 6349.988658] task: ffff88040a623e70 ti: ffff880409aec000 task.ti: ffff880409aec000
-> [ 6349.988691] RIP: 0010:[<ffff88040b242000>] [<ffff88040b242000>] 0xffff88040b241fff
-> [ 6349.988728] RSP: 0018:ffff880409aedb98 EFLAGS: 00010006
-> [ 6349.988752] RAX: ffff8803f554b120 RBX: 00000000f554b138 RCX: 00000000000000c3
-> [ 6349.988785] RDX: 0000000000000001 RSI: 0000000000000001 RDI: ffff8803f554b120
-> [ 6349.988816] RBP: ffff880409aedbd8 R08: 00000000000000c3 R09: 001300360002051e
-> [ 6349.988849] R10: 010043e70007033e R11: 0100003201000004 R12: ffff88040a84c8c8
-> [ 6349.988880] R13: ffff8803f554b148 R14: 0000000000000001 R15: 0000000000000001
-> [ 6349.988913] FS: 00007f3779c239c0(0000) GS:ffff88041e2c0000(0000) knlGS:0000000000000000
-> [ 6349.988949] CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [ 6349.988975] CR2: ffff88040b242000 CR3: 000000040a390000 CR4: 00000000000407e0
-> [ 6349.989008] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 6349.989040] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [ 6349.989071] Stack:
-> [ 6349.989082] ffffffff8107a7a8 0000000100000000 00000000000000c3 ffff88040a84c8c0
-> [ 6349.989121] 0000000000000001 0000000000000001 00000000000000c3 0000000000000286
-> [ 6349.989159] ffff880409aedc10 ffffffff8107b994 ffff880405458340 00000000000000e4
-> [ 6349.989198] Call Trace:
-> [ 6349.989215] [<ffffffff8107a7a8>] ? __wake_up_common+0x58/0x90
-> [ 6349.989244] [<ffffffff8107b994>] __wake_up_sync_key+0x44/0x60
-> [ 6349.989272] [<ffffffff8147b0da>] sock_def_readable+0x3a/0x70
-> [ 6349.989300] [<ffffffff8153c6a8>] unix_stream_sendmsg+0x1f8/0x3f0
-> [ 6349.989330] [<ffffffff81477a53>] sock_aio_write+0xe3/0x100
-> [ 6349.989357] [<ffffffff811300dc>] do_sync_readv_writev+0x6c/0xa0
-> [ 6349.989386] [<ffffffff8113138b>] do_readv_writev+0xbb/0x240
-> [ 6349.989414] [<ffffffff8147865d>] ? SYSC_recvfrom+0x10d/0x140
-> [ 6349.989441] [<ffffffff8113574f>] ? SYSC_newstat+0x2f/0x40
-> [ 6349.989468] [<ffffffff811315a5>] vfs_writev+0x35/0x60
-> [ 6349.989493] [<ffffffff811316b9>] SyS_writev+0x49/0xa0
-> [ 6349.989518] [<ffffffff811439e5>] ? SyS_poll+0x65/0x100
-> [ 6349.989545] [<ffffffff81630919>] system_call_fastpath+0x16/0x1b
-> [ 6349.989572] Code: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00 00 00 00 00 00 00 00 00 00 <00> 40 97 0b 04 88 ff ff 08 20 24 0b 04 88 ff ff 08 20 24 0b 04
-> [ 6349.989748] RIP [<ffff88040b242000>] 0xffff88040b241fff
-> [ 6349.989775] RSP <ffff880409aedb98>
-> [ 6349.989792] CR2: ffff88040b242000
->
-> There was only one mine patch for intel gpu (https://bugs.freedesktop.org/show_bug.cgi?id=54089)
+Regards,
+Michael Wang
+
+> 
+> 
+> The same problem why get/put_online_cpus() has been added to  __gov_queue_work()
+> 
+> commit 2f7021a815f20f3481c10884fe9735ce2a56db35
+> Author: Michael Wang
+> 
+>     cpufreq: protect 'policy->cpus' from offlining during
+>     __gov_queue_work()
+> 
+> 	-ss
+> 
+>> Regards,
+>> Michael Wang
+>>
+>> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+>> index dc9b72e..a64b544 100644
+>> --- a/drivers/cpufreq/cpufreq_governor.c
+>> +++ b/drivers/cpufreq/cpufreq_governor.c
+>> @@ -178,13 +178,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>>  {
+>>  	int i;
+>>  
+>> +	if (dbs_data->queue_stop)
+>> +		return;
+>> +
+>>  	if (!all_cpus) {
+>>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+>>  	} else {
+>> -		get_online_cpus();
+>>  		for_each_cpu(i, policy->cpus)
+>>  			__gov_queue_work(i, dbs_data, delay);
+>> -		put_online_cpus();
+>>  	}
+>>  }
+>>  EXPORT_SYMBOL_GPL(gov_queue_work);
+>> @@ -193,12 +194,27 @@ static inline void gov_cancel_work(struct dbs_data *dbs_data,
+>>  		struct cpufreq_policy *policy)
+>>  {
+>>  	struct cpu_dbs_common_info *cdbs;
+>> -	int i;
+>> +	int i, round = 2;
+>>  
+>> +	dbs_data->queue_stop = 1;
+>> +redo:
+>> +	round--;
+>>  	for_each_cpu(i, policy->cpus) {
+>>  		cdbs = dbs_data->cdata->get_cpu_cdbs(i);
+>>  		cancel_delayed_work_sync(&cdbs->work);
+>>  	}
+>> +
+>> +	/*
+>> +	 * Since there is no lock to prvent re-queue the
+>> +	 * cancelled work, some early cancelled work might
+>> +	 * have been queued again by later cancelled work.
+>> +	 *
+>> +	 * Flush the work again with dbs_data->queue_stop
+>> +	 * enabled, this time there will be no survivors.
+>> +	 */
+>> +	if (round)
+>> +		goto redo;
+>> +	dbs_data->queue_stop = 0;
+>>  }
+>>  
+>>  /* Will return if we need to evaluate cpu load again or not */
+>> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+>> index e16a961..9116135 100644
+>> --- a/drivers/cpufreq/cpufreq_governor.h
+>> +++ b/drivers/cpufreq/cpufreq_governor.h
+>> @@ -213,6 +213,7 @@ struct dbs_data {
+>>  	unsigned int min_sampling_rate;
+>>  	int usage_count;
+>>  	void *tuners;
+>> +	int queue_stop;
+>>  
+>>  	/* dbs_mutex protects dbs_enable in governor start/stop */
+>>  	struct mutex mutex;
+>>
+>>>
+>>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>>>
+>>> ---
+>>>
+>>>  drivers/cpufreq/cpufreq.c          |  5 +----
+>>>  drivers/cpufreq/cpufreq_governor.c | 17 +++++++++++------
+>>>  drivers/cpufreq/cpufreq_stats.c    |  2 +-
+>>>  3 files changed, 13 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>>> index 6a015ad..f8aacf1 100644
+>>> --- a/drivers/cpufreq/cpufreq.c
+>>> +++ b/drivers/cpufreq/cpufreq.c
+>>> @@ -1943,13 +1943,10 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+>>>  		case CPU_ONLINE:
+>>>  			cpufreq_add_dev(dev, NULL);
+>>>  			break;
+>>> -		case CPU_DOWN_PREPARE:
+>>> +		case CPU_POST_DEAD:
+>>>  		case CPU_UP_CANCELED_FROZEN:
+>>>  			__cpufreq_remove_dev(dev, NULL);
+>>>  			break;
+>>> -		case CPU_DOWN_FAILED:
+>>> -			cpufreq_add_dev(dev, NULL);
+>>> -			break;
+>>>  		}
+>>>  	}
+>>>  	return NOTIFY_OK;
+>>> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+>>> index 4645876..681d5d6 100644
+>>> --- a/drivers/cpufreq/cpufreq_governor.c
+>>> +++ b/drivers/cpufreq/cpufreq_governor.c
+>>> @@ -125,7 +125,11 @@ static inline void __gov_queue_work(int cpu, struct dbs_data *dbs_data,
+>>>  		unsigned int delay)
+>>>  {
+>>>  	struct cpu_dbs_common_info *cdbs = dbs_data->cdata->get_cpu_cdbs(cpu);
+>>> -
+>>> +	/* cpu offline might block existing gov_queue_work() user,
+>>> +	 * unblocking it after CPU_DEAD and before CPU_POST_DEAD.
+>>> +	 * thus potentially we can hit offlined CPU */
+>>> +	if (unlikely(cpu_is_offline(cpu)))
+>>> +		return;
+>>>  	mod_delayed_work_on(cpu, system_wq, &cdbs->work, delay);
+>>>  }
+>>>
+>>> @@ -133,15 +137,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>>>  		unsigned int delay, bool all_cpus)
+>>>  {
+>>>  	int i;
+>>> -
+>>> +	get_online_cpus();
+>>>  	if (!all_cpus) {
+>>>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+>>>  	} else {
+>>> -		get_online_cpus();
+>>>  		for_each_cpu(i, policy->cpus)
+>>>  			__gov_queue_work(i, dbs_data, delay);
+>>> -		put_online_cpus();
+>>>  	}
+>>> +	put_online_cpus();
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(gov_queue_work);
+>>>
+>>> @@ -354,8 +357,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>>>  		/* Initiate timer time stamp */
+>>>  		cpu_cdbs->time_stamp = ktime_get();
+>>>
+>>> -		gov_queue_work(dbs_data, policy,
+>>> -				delay_for_sampling_rate(sampling_rate), true);
+>>> +		/* hotplug lock already held */
+>>> +		for_each_cpu(j, policy->cpus)
+>>> +			__gov_queue_work(j, dbs_data,
+>>> +				delay_for_sampling_rate(sampling_rate));
+>>>  		break;
+>>>
+>>>  	case CPUFREQ_GOV_STOP:
+>>> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+>>> index cd9e817..833816e 100644
+>>> --- a/drivers/cpufreq/cpufreq_stats.c
+>>> +++ b/drivers/cpufreq/cpufreq_stats.c
+>>> @@ -355,7 +355,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+>>>  	case CPU_DOWN_PREPARE:
+>>>  		cpufreq_stats_free_sysfs(cpu);
+>>>  		break;
+>>> -	case CPU_DEAD:
+>>> +	case CPU_POST_DEAD:
+>>>  		cpufreq_stats_free_table(cpu);
+>>>  		break;
+>>>  	case CPU_UP_CANCELED_FROZEN:
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
