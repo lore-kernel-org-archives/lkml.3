@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3GOJzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 05:55:50 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:65296 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab3GOJzs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 05:55:48 -0400
+	id S1754786Ab3GOJ4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 05:56:43 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:53061 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754696Ab3GOJ4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 05:56:42 -0400
+Message-ID: <51E3C756.1080807@mev.co.uk>
+Date: Mon, 15 Jul 2013 10:56:38 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130701 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com>
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-	<20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com>
-Date: Mon, 15 Jul 2013 15:25:47 +0530
-Message-ID: <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com>
-Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
-        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
-        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ian Abbott <ian.abbott@mev.co.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oliver@schinagl.nl" <oliver@schinagl.nl>,
+        "linux@roeck-us.net" <linux@roeck-us.net>
+Subject: Re: [PATCH v3 01/10] Driver core and sysfs changes for attribute
+ groups
+References: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org> <51E3C3E0.1050906@mev.co.uk>
+In-Reply-To: <51E3C3E0.1050906@mev.co.uk>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srivatsa,
-
-I may be wrong but it looks something is wrong in this patch.
-
-On 12 July 2013 03:47, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-
-> @@ -1239,29 +1263,40 @@ static int __cpufreq_remove_dev(struct device *dev,
->         if ((cpus == 1) && (cpufreq_driver->target))
->                 __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+On 2013-07-15 10:41, Ian Abbott wrote:
+> On 2013-07-15 00:05, Greg Kroah-Hartman wrote:
+>> Ian, I didn't add a DEVICE_PATTR() macro yet, that can come later.  I
+>> considered it, but that would also mean a BUS_PATTR() and the like, which I
+>> guess works, but I hate even a _hint_ of "Hungarian" notation, which this
+>> implies.
+>>
+>> Anyone else have a better name for this macro:
+>> 	#define DEVICE_PATTR(_name)	&dev_attr_##_name.attr
+>> that they can think of?  It will cut down on the typing done for
+>> attribute lists.
 >
-> -       pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-> -       cpufreq_cpu_put(data);
-> +       if (!frozen) {
-> +               pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-> +               cpufreq_cpu_put(data);
+> DEVICE_ATTR_P or DEV_ATTR_P to save typing.  Or would that be confused
+> with the P convention[1]?  If so, DEVICE_ATTR_PTR or DEV_ATTR_PTR could
+> be used.
+>
+> [1] see Jargon File.
 
-So, we don't decrement usage count here. But we are still increasing
-counts on cpufreq_add_dev after resume, isn't it?
+Then again, those follow the naming of DEVICE_ATTR_RO and DEVICE_ATTR_RW 
+too closely.  Time for someone else to do a bit of bike-shedding.
 
-So, we wouldn't be able to free policy struct once all the cpus of a
-policy are removed after suspend/resume has happened once.
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
