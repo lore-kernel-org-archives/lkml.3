@@ -1,101 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab3GOJqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 05:46:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58485 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547Ab3GOJqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 05:46:35 -0400
-Date: Mon, 15 Jul 2013 11:46:33 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paul Taysom <taysom@google.com>
-Cc: Jan Kara <jack@suse.cz>, Paul Taysom <taysom@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sonnyrao@chromium.org
-Subject: Re: [PATCH] fs: sync: fixed performance regression
-Message-ID: <20130715094633.GA3747@quack.suse.cz>
-References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
- <20130711105346.GA5349@quack.suse.cz>
- <20130711115832.GB5349@quack.suse.cz>
- <20130712154314.GC22823@quack.suse.cz>
- <CAKwO_5HZN1LW6CMJ3V9K-MBpPrYpo6aLpVh9dccUNPC7MJ=3Dw@mail.gmail.com>
+	id S1754775Ab3GOJqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 05:46:47 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42976 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab3GOJqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 05:46:42 -0400
+Message-ID: <51E3C5CE.7000009@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 15:20:06 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKwO_5HZN1LW6CMJ3V9K-MBpPrYpo6aLpVh9dccUNPC7MJ=3Dw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com> <20130714131241.GA11772@redhat.com>
+In-Reply-To: <20130714131241.GA11772@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071509-2674-0000-0000-000009CD39AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 12-07-13 09:59:00, Paul Taysom wrote:
-> `On Fri, Jul 12, 2013 at 8:43 AM, Jan Kara <jack@suse.cz> wrote:
-> > On Thu 11-07-13 13:58:32, Jan Kara wrote:
-> >> On Thu 11-07-13 12:53:46, Jan Kara wrote:
-> >> > On Wed 10-07-13 16:12:36, Paul Taysom wrote:
-> >> > > The following commit introduced a 10x regression for
-> >> > > syncing inodes in ext4 with relatime enabled where just
-> >> > > the atime had been modified.
-> >> > >
-> >> > >     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
-> >> > >     Author: Jan Kara <jack@suse.cz>
-> >> > >     Date:   Tue Jul 3 16:45:34 2012 +0200
-> >> > >     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
-> >> > >
-> >> > >     See also: http://www.kernelhub.org/?msg=93100&p=2
-> >> > >
-> >> > > Fixed by putting back in the call to writeback_inodes_sb.
-> >> > >
-> >> > > I'll attach the test in a reply to this e-mail.
-> >> > >
-> >> > > The test starts by creating 512 files, syncing, reading one byte
-> >> > > from each of those files, syncing, and then deleting each file
-> >> > > and syncing. The time to do each sync is printed. The process
-> >> > > is then repeated for 1024 files and then the next power of
-> >> > > two up to 262144 files.
-> >> > >
-> >> > > Note, when running the test, the slow down doesn't always happen
-> >> > > but most of the tests will show a slow down.
-> >> > >
-> >> > > In response to crbug.com/240422
-> >> > >
-> >> > > Signed-off-by: Paul Taysom <taysom@chromium.org>
-> >> >   Thanks for report. Rather than blindly reverting the change, I'd like to
-> >> > understand why you see so huge regression. As the changelog in the patch
-> >> > says, flusher thread should be doing async writeback equivalent to the
-> >> > removed one because it gets woken via wakeup_flusher_threads(). But my
-> >> > guess is that for some reason we end up doing all the writeback from
-> >> > sync_inodes_one_sb(). I'll try to reproduce your results and investigate...
-> >>   Hum, so it must be something timing sensitive. I wasn't able to reproduce
-> >> the issue on my test machine in 4 runs of your test program. I was able to
-> >> reproduce it on my laptop on every second run of the test program but once
-> >> I've enabled some tracepoints, the issue disappeared and I didn't see it in
-> >> about 10 runs.
-> >>
-> >> That being said I think that reverting my patch is just papering over the
-> >> problem. We will do the async pass over inodes twice instead of once
-> >> and thus the timing changes enough that you aren't able to observe the
-> >> problem.
-> >>
-> >> I'm looking into this more...
-> >   So I finally understood what's going on. If the system has no dirty pages
-> > at all wakeup_flusher_threads() will submit work with nr_pages == 0.  So
-> > wb_writeback() will bail out immediately without doing anything and all the
-> > writeback is left for WB_SYNC_ALL pass of sync(1) which is slow. Attached
-> > patch fixes the problem for me.
-> >
-> >                                                                 Honza
-> > --
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
-> 
-> Jan,
-> Your fix is a clear win! Not only did it fix the sync after read
-> problem but it made the sync after create faster too.
-  Thanks for testing! I've sent the patch to Al for inclusion.
+On 07/14/2013 06:42 PM, Gleb Natapov wrote:
+> On Mon, Jun 24, 2013 at 06:13:42PM +0530, Raghavendra K T wrote:
+>> kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
+>>
+>> From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+>>
+trimming
+[...]
+>> +
+>> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+>> +{
+>> +	struct kvm_lock_waiting *w;
+>> +	int cpu;
+>> +	u64 start;
+>> +	unsigned long flags;
+>> +
+>> +	w = &__get_cpu_var(lock_waiting);
+>> +	cpu = smp_processor_id();
+>> +	start = spin_time_start();
+>> +
+>> +	/*
+>> +	 * Make sure an interrupt handler can't upset things in a
+>> +	 * partially setup state.
+>> +	 */
+>> +	local_irq_save(flags);
+>> +
+>> +	/*
+>> +	 * The ordering protocol on this is that the "lock" pointer
+>> +	 * may only be set non-NULL if the "want" ticket is correct.
+>> +	 * If we're updating "want", we must first clear "lock".
+>> +	 */
+>> +	w->lock = NULL;
+>> +	smp_wmb();
+>> +	w->want = want;
+>> +	smp_wmb();
+>> +	w->lock = lock;
+>> +
+>> +	add_stats(TAKEN_SLOW, 1);
+>> +
+>> +	/*
+>> +	 * This uses set_bit, which is atomic but we should not rely on its
+>> +	 * reordering gurantees. So barrier is needed after this call.
+>> +	 */
+>> +	cpumask_set_cpu(cpu, &waiting_cpus);
+>> +
+>> +	barrier();
+>> +
+>> +	/*
+>> +	 * Mark entry to slowpath before doing the pickup test to make
+>> +	 * sure we don't deadlock with an unlocker.
+>> +	 */
+>> +	__ticket_enter_slowpath(lock);
+>> +
+>> +	/*
+>> +	 * check again make sure it didn't become free while
+>> +	 * we weren't looking.
+>> +	 */
+>> +	if (ACCESS_ONCE(lock->tickets.head) == want) {
+>> +		add_stats(TAKEN_SLOW_PICKUP, 1);
+>> +		goto out;
+>> +	}
+>> +
+>> +	/* Allow interrupts while blocked */
+>> +	local_irq_restore(flags);
+>> +
+> So what happens if an interrupt comes here and an interrupt handler
+> takes another spinlock that goes into the slow path? As far as I see
+> lock_waiting will become overwritten and cpu will be cleared from
+> waiting_cpus bitmap by nested kvm_lock_spinning(), so when halt is
+> called here after returning from the interrupt handler nobody is going
+> to wake this lock holder. Next random interrupt will "fix" it, but it
+> may be several milliseconds away, or never. We should probably check
+> if interrupt were enabled and call native_safe_halt() here.
+>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Okay you mean something like below should be done.
+if irq_enabled()
+   native_safe_halt()
+else
+   halt()
+
+It is been a complex stuff for analysis for me.
+
+So in our discussion stack would looking like this.
+
+spinlock()
+   kvm_lock_spinning()
+                   <------ interrupt here
+           halt()
+
+
+ From the halt if we trace
+
+   halt()
+     kvm_vcpu_block()
+        kvm_arch_vcpu_runnable())
+	 kvm_make_request(KVM_REQ_UNHALT)
+		
+This would drive us out of halt handler, and we are fine when it
+happens since we would revisit kvm_lock_spinning.
+
+But I see that
+
+kvm_arch_vcpu_runnable() has this condition
+  (kvm_arch_interrupt_allowed(vcpu) &&  kvm_cpu_has_interrupt(vcpu));
+
+which means that if we going process the interrupt here we would set 
+KVM_REQ_UNHALT. and we are fine.
+
+But if we are in the situation kvm_arch_interrupt_allowed(vcpu) = true, 
+but we already processed interrupt and kvm_cpu_has_interrupt(vcpu) is 
+false, we have problem till next random interrupt.
+
+The confusing part to me is the case kvm_cpu_has_interrupt(vcpu)=false 
+and irq
+already handled and overwritten the lock_waiting. can this
+situation happen? or is it that we will process the interrupt only
+after this point (kvm_vcpu_block). Because if that is the case we are
+fine.
+
+Please let me know.
+
