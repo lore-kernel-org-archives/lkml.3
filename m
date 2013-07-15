@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757258Ab3GOO3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:29:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15453 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757681Ab3GOO23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:28:29 -0400
-Date: Mon, 15 Jul 2013 10:27:08 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-Message-ID: <20130715142708.GB23772@redhat.com>
-References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
- <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com>
- <20130702154214.GC22603@redhat.com>
- <20130715154451.02a3a767@holzheu>
+	id S932392Ab3GOO3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:29:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46527 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757777Ab3GOO2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 10:28:25 -0400
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH-v3 13/17] staging/lustre: fix build warnning on 32bit system
+Date: Mon, 15 Jul 2013 22:27:16 +0800
+Message-Id: <1373898440-14208-14-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
+References: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130715154451.02a3a767@holzheu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 03:44:51PM +0200, Michael Holzheu wrote:
-> On Tue, 2 Jul 2013 11:42:14 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > On Mon, Jul 01, 2013 at 09:32:37PM +0200, Michael Holzheu wrote:
-> > > For zfcpdump we can't map the HSA storage because it is only available
-> > > via a read interface. Therefore, for the new vmcore mmap feature we have
-> > > introduce a new mechanism to create mappings on demand.
-> > > 
-> > > This patch introduces a new architecture function remap_oldmem_pfn_range()
-> > > that should be used to create mappings with remap_pfn_range() for oldmem
-> > > areas that can be directly mapped. For zfcpdump this is everything besides
-> > > of the HSA memory. For the areas that are not mapped by remap_oldmem_pfn_range()
-> > > a generic vmcore a new generic vmcore fault handler mmap_vmcore_fault()
-> > > is called.
-> > > 
-> > > This handler works as follows:
-> > > 
-> > > * Get already available or new page from page cache (find_or_create_page)
-> > > * Check if /proc/vmcore page is filled with data (PageUptodate)
-> > > * If yes:
-> > >   Return that page
-> > > * If no:
-> > >   Fill page using __vmcore_read(), set PageUptodate, and return page
-> > > 
-> > > Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > 
-> > In general vmcore related changes look fine to me. I am not very familiar
-> > with the logic of finding pages in page cache and using page uptodate
-> > flag.
-> > 
-> > Hatayama, can you please review it.
-> > 
-> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> 
-> Hello Vivek and Andrew,
-> 
-> We just realized that Hatayama's mmap patches went into v3.11-rc1. This currently
-> breaks s390 kdump because of the following two issues:
-> 
-> 1) The copy_oldmem_page() is now used for copying to vmalloc memory
-> 2) The mmap() implementation is not compatible with the current
->    s390 crashkernel swap:
->    See: http://marc.info/?l=kexec&m=136940802511603&w=2
-> 
-> The "kdump: Introduce ELF header in new memory feature" patch series will
-> fix both issues for s390.
-> 
-> There is the one small open discussion left:
-> 
-> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg464856.html
-> 
-> But once we have finished that, would it be possible to get the
-> patches in 3.11?
+Building on 32bit system, I got warnings like below:
+drivers/staging/lustre/lustre/llite/../include/lprocfs_status.h:666:7: note: expected ‘long unsigned int *’ but argument is of type ‘size_t *’
+ char *lprocfs_find_named_value(const char *buffer, const char *name,
 
-How about taking mmap() fault handler patches in 3.12. And in 3.11, deny
-mmap() on s390 forcing makedumpfile to fall back on read() interface. That
-way there will be no regression and mmap() related speedup will show up
-in next release on s390.
+drivers/staging/lustre/lustre/lov/lov_io.c: In function ‘lov_io_rw_iter_init’:
+include/asm-generic/div64.h:43:28: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+  (void)(((typeof((n)) *)0) == ((uint64_t *)0)); \
 
-Thanks
-Vivek
+Signed-off-by: Peng Tao <tao.peng@emc.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+---
+ .../staging/lustre/lustre/include/lprocfs_status.h |    4 ++--
+ drivers/staging/lustre/lustre/lov/lov_io.c         |    2 +-
+ .../lustre/lustre/obdclass/lprocfs_status.c        |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/include/lprocfs_status.h b/drivers/staging/lustre/lustre/include/lprocfs_status.h
+index 55f1822..294fb78 100644
+--- a/drivers/staging/lustre/lustre/include/lprocfs_status.h
++++ b/drivers/staging/lustre/lustre/include/lprocfs_status.h
+@@ -663,8 +663,8 @@ extern int lprocfs_write_u64_helper(const char *buffer, unsigned long count,
+ extern int lprocfs_write_frac_u64_helper(const char *buffer,
+ 					 unsigned long count,
+ 					 __u64 *val, int mult);
+-char *lprocfs_find_named_value(const char *buffer, const char *name,
+-				unsigned long *count);
++extern char *lprocfs_find_named_value(const char *buffer, const char *name,
++				      size_t *count);
+ void lprocfs_oh_tally(struct obd_histogram *oh, unsigned int value);
+ void lprocfs_oh_tally_log2(struct obd_histogram *oh, unsigned int value);
+ void lprocfs_oh_clear(struct obd_histogram *oh);
+diff --git a/drivers/staging/lustre/lustre/lov/lov_io.c b/drivers/staging/lustre/lustre/lov/lov_io.c
+index 1a87abd..022e0f4 100644
+--- a/drivers/staging/lustre/lustre/lov/lov_io.c
++++ b/drivers/staging/lustre/lustre/lov/lov_io.c
+@@ -430,7 +430,7 @@ static int lov_io_rw_iter_init(const struct lu_env *env,
+ 	struct lov_io	*lio = cl2lov_io(env, ios);
+ 	struct cl_io	 *io  = ios->cis_io;
+ 	struct lov_stripe_md *lsm = lio->lis_object->lo_lsm;
+-	loff_t start = io->u.ci_rw.crw_pos;
++	__u64 start = io->u.ci_rw.crw_pos;
+ 	loff_t next;
+ 	unsigned long ssize = lsm->lsm_stripe_size;
+ 
+diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+index f7af3d6..85163f4 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
++++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+@@ -1873,7 +1873,7 @@ static char *lprocfs_strnstr(const char *s1, const char *s2, size_t len)
+  * If \a name is not found the original \a buffer is returned.
+  */
+ char *lprocfs_find_named_value(const char *buffer, const char *name,
+-				unsigned long *count)
++			       size_t *count)
+ {
+ 	char *val;
+ 	size_t buflen = *count;
+-- 
+1.7.9.5
+
