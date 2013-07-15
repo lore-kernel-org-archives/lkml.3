@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3GOTwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:52:17 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47292 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab3GOTwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:52:16 -0400
-Date: Mon, 15 Jul 2013 20:51:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130715195145.GB11538@sirena.org.uk>
-References: <1373906531-6938-1-git-send-email-lars@metafoo.de>
- <20130715172643.GZ11538@sirena.org.uk>
- <20130715165721.GV16653@intel.com>
- <20130715175726.GA11538@sirena.org.uk>
- <51E43D6C.1050000@metafoo.de>
+	id S1754249Ab3GOTxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:53:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10735 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753848Ab3GOTxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 15:53:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,671,1367996400"; 
+   d="scan'208";a="370694733"
+Date: Mon, 15 Jul 2013 12:53:16 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130715195316.GF15531@xanatos>
+References: <20130715155202.GC29526@xanatos>
+ <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+ <20130715174659.GC15531@xanatos>
+ <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+ <20130715180403.GD15531@xanatos>
+ <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+ <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qjo19A2vmS5T5MQB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E43D6C.1050000@metafoo.de>
-X-Cookie: Advancement in position.
+In-Reply-To: <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 1/2] ASoC: dmaengine-pcm: Add support for querying DMA
- capabilities
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 15, 2013 at 12:07:56PM -0700, Linus Torvalds wrote:
+> On Mon, Jul 15, 2013 at 11:46 AM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+> >
+> > Bullshit.  I've seen you be polite, and explain to clueless maintainers
+> > why there's no way you can revert their merge that caused regressions,
+> > and ask them to fit it without resorting to tearing them down
+> > emotionally:
+> 
+> Oh, I'll be polite when it's called for.
+> 
+> But when people who know better send me crap, I'll curse at them.
+> 
+> I suspect you'll notice me cursing *way* more at top developers than
+> random people on the list. I expect more from them, and conversely
+> I'll be a lot more upset when they do something that I really think
+> was not great.
+> 
+> For example, my latest cursing explosion was for the x86 maintainers,
+> and it comes from the fact that I *know* they know to do better. The
+> x86 tip pulls have generally been through way more testing than most
+> other pulls I get (not just compiling, but even booting randconfigs
+> etc). So when an x86 pull request comes in that clearly missed that
+> expected level of quality, I go to town.
 
---Qjo19A2vmS5T5MQB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Good lord.  So anyone that is one of your "top maintainers" could be
+exposed to your verbal abuse just because they "should have known
+better"?
 
-On Mon, Jul 15, 2013 at 08:20:28PM +0200, Lars-Peter Clausen wrote:
-> On 07/15/2013 07:57 PM, Mark Brown wrote:
-> >On Mon, Jul 15, 2013 at 10:27:21PM +0530, Vinod Koul wrote:
+You know what the definition of an abuser is?  Someone that seeks out
+victims that they know will "just take it" and keep the abuse "between
+the two of them".  They pick victims that won't fight back or report the
+abuse.
 
-> >Right, we probably want to set an artificial floor here but it still
-> >seems like we should be checking that the device actually supports this.
-> >If the hardware can only support 64 bytes then the above code won't work
-> >properly.
+> Similarly, you will see fireworks if some long-term maintainer makes
+> excuses for breaking user space etc. That will make me go into
+> incoherent rages.
+> 
+> The "polite Linus" example that you point to? That was a maintainer
+> asking for direction for when things went wrong and *before* sending
+> me something dubious. Of course I'm polite then.
+> 
+> Sarah, I don't have Tourettes syndrome. You seem to think that my
+> cursing is uncontrolled and random. I argue that it has causes. Big
+> difference.
 
-> It shouldn't be to hard to extend the dma_caps API with a
-> min_sg_len. But is this something you've actually seen in existing
-> hardware for that the driver would make use of the dmaengine PCM
-> framework? If it is more of theoretical nature we can still easily
-> add it later if it becomes necessary.
+It does not matter if your cursing fits have causes.  The fact is that
+if you misjudge someone's emotional state for the day, you yelling at
+them is not productive.
 
-I'm not aware of anything but equally well I made zero effort to look
-and note that quite a few existing drivers appear to have minimum values
-quite a bit above 16 though I doubt they are all actual restrictions.
+In karate, or any other sport, if your opponent is motionless on the
+floor, you stop.  You can't see the person you're emailing.  You can't
+see if the first conversation-disabling blow has completely knocked them
+out.  You can't see if you've misjudged their mental strength for the
+day and completely wiped out their ability to use their brain to correct
+the technical mistake you're trying to get them to fix.
 
-> That said it is not uncommon that the segment size needs to be a
-> multiple of the burst size. Adding support for that is still on my
-> TODO list but will require some changes to some of the existing
-> users, since implementing this will be a lot easier if all users use
-> the snd_dmaengine_dai_dma_data struct for their DAI DMA data.
+Ask them to fix their mistake.  If they protest, then lay into them.  If
+you *know* they don't take verbal abuse well, don't.
 
-Yes, burst sizes are one source of restriction I've seen - probably the
-main one.
+Let's get this personal baggage out of the way right now, before anyone
+else brings it up:
 
---Qjo19A2vmS5T5MQB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I've been through verbal abuse before.  I won't take that shit from you,
+or any of the other Linux kernel developers.  Tell me, politely, what I
+have done wrong, and I will fix it.  You don't need to SHOUT, call me
+names, or tell me to SHUT THE FUCK UP!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+I'm not the only one that won't take verbal abuse.  Stop abusing your
+developers.
 
-iQIcBAEBAgAGBQJR5FLOAAoJELSic+t+oim9krYP/2y0qZUmOdKfMWeQ9oNGrz/l
-cEbADdh5mLSM4svQ++ooXQ29wGURoqL0JwdBNosoqfmXVB3HBGL1hdMQo9S8kHkE
-K8+jfg5K7j0nyhqr80bUqy3IzdTAc0vkTWD87+6FWvMoIoiJ5dMbbBi5U/iHF0bk
-9OaFxDArFMQ2GROdy+pOXhDE6CNiiZOVnIKpG1UtcqVOLs/JzzNVrJ2RYssOvaHw
-HKWX44m7YsAcCLsNgvP5jNOLsreKwh41ALbm2y7rpaZntUI2v/LVQeLKUatp9SLJ
-RK7jEXdKwGHhbZHV7KSaQYrJJfyVl3VcboRqjljW+ExNUvq60fcVLnEvTdw9RLFW
-anHpDEOJqhyasxe0wHvzhvuuJzNQM5YB3t5Jrxsvy1UsHZTVIx9wa06YolB5VcsT
-rFHpbIx3Nh1bLRcEI/nJXv1hqrgI8ICSnaDcdtvjL8NLKXu/dNTvkagqhcUsaqjR
-ktiWf0iQX0K6JPysuU9gymJWmBeC4t0Vb62dsUvSOv3EiX6DqUETrZfdQAjv3eke
-K3u1+MjfKuqrtfY4bQTNE0APpc21/6qq6bB4V2bcR3eKzyGESDP98DyWruriumPr
-XsL8jkiKrbBTE5W+sKwyBAoDaItwpL7REMiP1fYKpwLxOt88QzLJt+7M5CSOL6R0
-eU0Sieez3PYlycIZuHhp
-=Nh1Z
------END PGP SIGNATURE-----
-
---Qjo19A2vmS5T5MQB--
+Sarah Sharp
