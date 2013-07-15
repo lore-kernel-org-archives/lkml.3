@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab3GOLia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 07:38:30 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49812 "EHLO
+	id S1755938Ab3GOLjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 07:39:13 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49830 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672Ab3GOLi3 (ORCPT
+	with ESMTP id S1755789Ab3GOLjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 07:38:29 -0400
-Date: Mon, 15 Jul 2013 12:38:05 +0100
+	Mon, 15 Jul 2013 07:39:12 -0400
+Date: Mon, 15 Jul 2013 12:39:09 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>
-Message-ID: <20130715113805.GD11538@sirena.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20130715113909.GE11538@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZJcv+A0YCCLh2VIg"
+	protocol="application/pgp-signature"; boundary="IU5/I01NYhRvwH70"
 Content-Disposition: inline
 X-Cookie: Advancement in position.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] SPI updates for v3.11
+Subject: [GIT PULL] regmap updates for v3.11
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,77 +28,55 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ZJcv+A0YCCLh2VIg
+--IU5/I01NYhRvwH70
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+The following changes since commit 8bb495e3f02401ee6f76d1b1d77f3ac9f079e376:
 
-  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
+  Linux 3.10 (2013-06-30 15:13:29 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3.11-rc1
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.11-rc1
 
-for you to fetch changes up to 70f092a58520b26ef6222ae1b42bd08732fdf6b9:
+for you to fetch changes up to f2e055e7c9c6084bfbaa68701e52562acf96419e:
 
-  Merge remote-tracking branch 'spi/fix/xilinx' into spi-linus (2013-07-15 11:46:16 +0100)
-
-----------------------------------------------------------------
-
-spi: Fixes for v3.11
-
-A couple of things missed during the v3.11 work here:
-
- - The spi-bitbang core requires a setup() function even if it does
-   nothing which caused breakage when some empty setup functions were
-   removed after their contents were factored out into the core.  While
-   this is clearly silly and will be fixed for v3.12 for now we just
-   restore the functions.
-
- - A missing case handled in the s3c64xx driver.
+  regmap: cache: bail in regmap_async_complete() for bus-less maps (2013-07-04 13:54:44 +0100)
 
 ----------------------------------------------------------------
-Girish K S (1):
-      spi: s3c64xx: add missing check for polling mode
+regmap: Fix crash for async operation on busless maps
 
-Mark Brown (3):
-      Merge remote-tracking branch 'spi/fix/s3c64xx' into spi-linus
-      Merge remote-tracking branch 'spi/fix/setup' into spi-linus
-      Merge remote-tracking branch 'spi/fix/xilinx' into spi-linus
+This fixes a crash if something tries to do an asynchronous operation on
+busless maps which was introduced during the merge window.
 
-Michal Simek (1):
-      spi/xilinx: Revert master->setup function removal
+----------------------------------------------------------------
+Daniel Mack (1):
+      regmap: cache: bail in regmap_async_complete() for bus-less maps
 
-Stephen Warren (1):
-      spi: revert master->setup function removal for altera and nuc900
+ drivers/base/regmap/regmap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/spi/spi-altera.c  | 12 ++++++++++++
- drivers/spi/spi-nuc900.c  | 13 +++++++++++++
- drivers/spi/spi-s3c64xx.c |  3 +++
- drivers/spi/spi-xilinx.c  | 16 ++++++++++++++++
- 4 files changed, 44 insertions(+)
-
---ZJcv+A0YCCLh2VIg
+--IU5/I01NYhRvwH70
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR498aAAoJELSic+t+oim9qm4P/A4a1rF/RukrSaqEQDnEirgy
-UY5JLyLHROVgpEG6yQzHmlOw8E52yNVFBSSQNsIBXZyoCaKG3Gi+DldpkIohav5T
-XGAPL+UdCx77sungLt2QOWcxNuIOppwiLTszwGjNOK5XaU7JGqUai2CNKZO6nNC/
-/SkXlQ/W5TBeTqiVspB31L9B/7CZN7cHEw1WHrbsrB/bgTMlopxBBZ9yfNAFUzuv
-0oUO1KxWMhcQRAptgikDA86piF68RpIm2JuNc6BfNreweXN28xpp21MwXAp6stPP
-q2Q36j5oXstW/hde+su3oZg3wOOOx4INE60mZAa0ImiXstvJcjGTxtsvA43jspVG
-0TP6vml2lSfGOvxnxq2NZa6oAqk916raYVoBT3TJd5m9PSGCYLC29gz/omFmbvCa
-94RKK9dADyFrgtn0+QSeJZpclw/bmkbjfajX5huVVc2negmgAi/vHnrifWW/DD8+
-YiH7iKhkDTV9R9Koixfesckv7Vsc9ruEbKExpYBymo37ls6CnTIOAOB9pZRPkOFz
-SG4aERaU0eDvhu3WNU1ZiVusSAAeJjeCN7Rh0FR32Tr3+EmRmRkXXFSAelv5UcsJ
-U1ve9aIRSWZUNwiP/GJMjNE5IesHrc9agT10u2B/3CczVewT0/Ou8kF3vHZxMOuV
-a3tN7aX9hNBs3PrynOcJ
-=1RSC
+iQIcBAEBAgAGBQJR499aAAoJELSic+t+oim9Fh4P/RsNA5EH+HO/WMrt2hIY38Vj
+x+Cifzi9TG1j1xIzNo8yx+0PJsVpNjt12BY+lNxOsaxc4tkT8+8VAbU5hWWhBp4L
+HIbiRbr9danwgSiSOzN0qdTQCOSNShkTgqHOLI/9Z8wT7Q9pO2GDqiDQxgPuZj1X
+NrGSQpaofGtGgqiP2IKW1OnEKOJzuz6TF4pZ77Z5Sm5pV+SJsQRzu3+Vnir9gr+/
+q9KQsHvhEbzU1g+mEEyLy9nGp4TEtsIAOUZCDscXJefJnYOi6ITcGFVlzd9+nyBz
+zQaUkzDX0L3DQ4fr/uaKBdGhhqZ6uPJykNtEeuPLthpp3HjShqe+ZeJs6LiwAYjy
+qNXhKn3RT/m5hIW8vUdVYl2pYoWIE32XaR/vC0OdnzG1LGErP2Q3vJPV2X0oLk0V
+pqSlYq8amDxhVVd9L/hbYCrV0qxip8o+EqTMzgMOBq0Czgar/SN3ysU+0ts4VWKr
+NatSrTqsNSM1u0uk9IIAUCoSFoJ4UeEou2qg0yWNTNFrHaJYt08BKUo/R2dS0eUK
+gZLyNFaszvHqouOyOZBQnm6Zq4PbKqvzocGKUacbjPxih7qtNHAVAppd8uGnICFD
+CR0wG7VsozU90BKIa76TAnmR/3UCkUXpXpxtWZq5JljtKgR5XYVXsXmTdxkVEndL
+npLGEGfHytH0g4LQW4Hl
+=Vho1
 -----END PGP SIGNATURE-----
 
---ZJcv+A0YCCLh2VIg--
+--IU5/I01NYhRvwH70--
