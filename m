@@ -1,208 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab3GOBYK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 21:24:10 -0400
-Received: from outbound-mail03.westnet.com.au ([203.10.1.244]:24336 "EHLO
-	outbound-mail03.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753724Ab3GOBYI (ORCPT
+	id S1753801Ab3GOBiw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 21:38:52 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50854 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762Ab3GOBiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 21:24:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAI5O41GVhxBY/2dsb2JhbAANTcVYgSKDFwEBAQEDeAEQCxgJFg8JAwIBAgFFBg0BBQIBAat7kVSPZAeDeAOhfopP
-X-IronPort-AV: E=Sophos;i="4.89,666,1367942400"; 
-   d="scan'208";a="348859510"
-X-WN-REMOTEIP: 149.135.16.88
-X-WN-ENVELOPESENDER: gerg@uclinux.org
-X-WN-MID: 348859510
-X-WN-SMTPAUTHID: gregungerer
-Message-ID: <51E34ED2.8060207@uclinux.org>
-Date: Mon, 15 Jul 2013 11:22:26 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Sun, 14 Jul 2013 21:38:51 -0400
+Message-ID: <51E3529F.6070909@gmail.com>
+Date: Mon, 15 Jul 2013 09:38:39 +0800
+From: Sam Ben <sam.bennn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: uclinux-dev@uclinux.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68knommu: Mark functions only called from setup_arch()
- __init
-References: <1372586320-1151-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1372586320-1151-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, Robin Holt <holt@sgi.com>,
+        Robert Richter <rric@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: boot tracing
+References: <1373594635-131067-1-git-send-email-holt@sgi.com> <20130712082756.GA4328@gmail.com> <20130712084712.GD24008@pd.tnic> <20130712085341.GC4328@gmail.com>
+In-Reply-To: <20130712085341.GC4328@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On 07/12/2013 04:53 PM, Ingo Molnar wrote:
+> * Borislav Petkov <bp@alien8.de> wrote:
+>
+>> On Fri, Jul 12, 2013 at 10:27:56AM +0200, Ingo Molnar wrote:
+>>> Robert Richter and Boris Petkov are working on 'persistent events'
+>>> support for perf, which will eventually allow boot time profiling -
+>>> I'm not sure if the patches and the tooling support is ready enough
+>>> yet for your purposes.
+>> Nope, not yet but we're getting there.
+>>
+>>> Robert, Boris, the following workflow would be pretty intuitive:
+>>>
+>>>   - kernel developer sets boot flag: perf=boot,freq=1khz,size=16MB
+>> What does perf=boot mean? I assume boot tracing.
+> In this case it would mean boot profiling - i.e. a cycles hardware-PMU
+> event collecting into a perf trace buffer as usual.
+>
+> Essentially a 'perf record -a' work-alike, just one that gets activated as
+> early as practical, and which would allow the profiling of memory
+> initialization.
+>
+> Now, one extra complication here is that to be able to profile buddy
+> allocator this persistent event would have to work before the buddy
+> allocator is active :-/ So this sort of profiling would have to use
+> memblock_alloc().
 
-On 30/06/13 19:58, Geert Uytterhoeven wrote:
-> Some functions that are only called (indirectly) from setup_arch() lack
-> __init annotations.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Could perf=boot be used to sample the performance of memblock subsystem? 
+I think the perf subsystem is too late to be initialized and monitor this.
 
-Thanks. Applied to m68knommu git tree.
-
-Regards
-Greg
-
-
-> ---
-> This is sort of a v2 of "m68knommu: Mark config_BSP() __init", adding
-> parse_uboot_commandline(), init_hardware(), m360_cpm_reset()
-> 
->  arch/m68k/kernel/setup_no.c         |    2 +-
->  arch/m68k/platform/68000/m68328.c   |    3 ++-
->  arch/m68k/platform/68000/m68EZ328.c |    3 ++-
->  arch/m68k/platform/68000/m68VZ328.c |    9 +++++----
->  arch/m68k/platform/68360/commproc.c |    3 ++-
->  arch/m68k/platform/68360/config.c   |    3 ++-
->  6 files changed, 14 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
-> index 911ba47..5b16f5d 100644
-> --- a/arch/m68k/kernel/setup_no.c
-> +++ b/arch/m68k/kernel/setup_no.c
-> @@ -118,7 +118,7 @@ void (*mach_power_off)(void);
->   *
->   * Returns:
->   */
-> -void parse_uboot_commandline(char *commandp, int size)
-> +static void __init parse_uboot_commandline(char *commandp, int size)
->  {
->  	extern unsigned long _init_sp;
->  	unsigned long *sp;
-> diff --git a/arch/m68k/platform/68000/m68328.c b/arch/m68k/platform/68000/m68328.c
-> index a86eb66..e53caf4 100644
-> --- a/arch/m68k/platform/68000/m68328.c
-> +++ b/arch/m68k/platform/68000/m68328.c
-> @@ -15,6 +15,7 @@
->  
->  /***************************************************************************/
->  
-> +#include <linux/init.h>
->  #include <linux/types.h>
->  #include <linux/kernel.h>
->  #include <linux/rtc.h>
-> @@ -42,7 +43,7 @@ void m68328_reset (void)
->  
->  /***************************************************************************/
->  
-> -void config_BSP(char *command, int len)
-> +void __init config_BSP(char *command, int len)
->  {
->    printk(KERN_INFO "\n68328 support D. Jeff Dionne <jeff@uclinux.org>\n");
->    printk(KERN_INFO "68328 support Kenneth Albanowski <kjahds@kjshds.com>\n");
-> diff --git a/arch/m68k/platform/68000/m68EZ328.c b/arch/m68k/platform/68000/m68EZ328.c
-> index a6eb72d..332b5e8 100644
-> --- a/arch/m68k/platform/68000/m68EZ328.c
-> +++ b/arch/m68k/platform/68000/m68EZ328.c
-> @@ -13,6 +13,7 @@
->  
->  /***************************************************************************/
->  
-> +#include <linux/init.h>
->  #include <linux/types.h>
->  #include <linux/kernel.h>
->  #include <linux/rtc.h>
-> @@ -52,7 +53,7 @@ _bsc1(unsigned char *, gethwaddr, int, a)
->  _bsc1(char *, getbenv, char *, a)
->  #endif
->  
-> -void config_BSP(char *command, int len)
-> +void __init config_BSP(char *command, int len)
->  {
->    unsigned char *p;
->  
-> diff --git a/arch/m68k/platform/68000/m68VZ328.c b/arch/m68k/platform/68000/m68VZ328.c
-> index eb6964f..fd66583 100644
-> --- a/arch/m68k/platform/68000/m68VZ328.c
-> +++ b/arch/m68k/platform/68000/m68VZ328.c
-> @@ -14,6 +14,7 @@
->  
->  /***************************************************************************/
->  
-> +#include <linux/init.h>
->  #include <linux/types.h>
->  #include <linux/kernel.h>
->  #include <linux/kd.h>
-> @@ -59,7 +60,7 @@ static void m68vz328_reset(void)
->  	);
->  }
->  
-> -static void init_hardware(char *command, int size)
-> +static void __init init_hardware(char *command, int size)
->  {
->  #ifdef CONFIG_DIRECT_IO_ACCESS
->  	SCR = 0x10;					/* allow user access to internal registers */
-> @@ -145,7 +146,7 @@ _bsc0(char *, getserialnum)
->  _bsc1(unsigned char *, gethwaddr, int, a)
->  _bsc1(char *, getbenv, char *, a)
->  
-> -static void init_hardware(char *command, int size)
-> +static void __init init_hardware(char *command, int size)
->  {
->  	char *p;
->  
-> @@ -167,7 +168,7 @@ static void m68vz328_reset(void)
->  {
->  }
->  
-> -static void init_hardware(char *command, int size)
-> +static void __init init_hardware(char *command, int size)
->  {
->  }
->  
-> @@ -175,7 +176,7 @@ static void init_hardware(char *command, int size)
->  #endif
->  /***************************************************************************/
->  
-> -void config_BSP(char *command, int size)
-> +void __init config_BSP(char *command, int size)
->  {
->  	printk(KERN_INFO "68VZ328 DragonBallVZ support (c) 2001 Lineo, Inc.\n");
->  
-> diff --git a/arch/m68k/platform/68360/commproc.c b/arch/m68k/platform/68360/commproc.c
-> index 8e4e10c..315727b 100644
-> --- a/arch/m68k/platform/68360/commproc.c
-> +++ b/arch/m68k/platform/68360/commproc.c
-> @@ -31,6 +31,7 @@
->   */
->  
->  #include <linux/errno.h>
-> +#include <linux/init.h>
->  #include <linux/sched.h>
->  #include <linux/kernel.h>
->  #include <linux/param.h>
-> @@ -77,7 +78,7 @@ void m360_cpm_reset(void);
->  
->  
->  
-> -void m360_cpm_reset()
-> +void __init m360_cpm_reset()
->  {
->  /* 	pte_t		   *pte; */
->  
-> diff --git a/arch/m68k/platform/68360/config.c b/arch/m68k/platform/68360/config.c
-> index 9877cef..0570741 100644
-> --- a/arch/m68k/platform/68360/config.c
-> +++ b/arch/m68k/platform/68360/config.c
-> @@ -11,6 +11,7 @@
->   */
->  
->  #include <stdarg.h>
-> +#include <linux/init.h>
->  #include <linux/types.h>
->  #include <linux/kernel.h>
->  #include <linux/mm.h>
-> @@ -140,7 +141,7 @@ _bsc1(char *, getbenv, char *, a)
->  #endif
->  
->  
-> -void config_BSP(char *command, int len)
-> +void __init config_BSP(char *command, int len)
->  {
->    unsigned char *p;
->  
-> 
+>
+> Just wanted to highlight this usecase, we might eventually want to support
+> it.
+>
+> [ Note that this is different from boot tracing of one or more trace
+>    events - but it's a conceptually pretty close cousin. ]
+>   
+> Thanks,
+>
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
