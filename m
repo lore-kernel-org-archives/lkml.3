@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab3GOMEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 08:04:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9086 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756188Ab3GOMEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756180Ab3GOMEx (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 15 Jul 2013 08:04:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40939 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755900Ab3GOMEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 08:04:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
-   d="scan'208";a="370443002"
+   d="scan'208";a="370393517"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org, spear-devel@list.st.com
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 4/6] dma: dw: allow shared interrupts
-Date: Mon, 15 Jul 2013 15:04:39 +0300
-Message-Id: <1373889881-21075-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 1/6] acpi-dma: fix sparse warning
+Date: Mon, 15 Jul 2013 15:04:36 +0300
+Message-Id: <1373889881-21075-1-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1373889881-21075-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1373889881-21075-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the PC world is quite possible that devices are sharing the same interrupt
-line. The patch prepares dw_dmac driver to such cases.
+This patch fixes sparse warning:
+	drivers/dma/acpi-dma.c:76:21: sparse: cast to restricted __le32
+
+Since everything in all ACPI tables is little-endian, by definition, the used
+types in practice are uXX. Thus, we have to enforce __leXX if we want to
+convert them to CPU order.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/dma/dw/core.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/dma/acpi-dma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
-index a0aa6f9..f70c6b4 100644
---- a/drivers/dma/dw/core.c
-+++ b/drivers/dma/dw/core.c
-@@ -650,10 +650,13 @@ static void dw_dma_tasklet(unsigned long data)
- static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
- {
- 	struct dw_dma *dw = dev_id;
--	u32 status;
-+	u32 status = dma_readl(dw, STATUS_INT);
+diff --git a/drivers/dma/acpi-dma.c b/drivers/dma/acpi-dma.c
+index 5a18f82..ba7f932 100644
+--- a/drivers/dma/acpi-dma.c
++++ b/drivers/dma/acpi-dma.c
+@@ -73,7 +73,7 @@ static int acpi_dma_parse_resource_group(const struct acpi_csrt_group *grp,
+ 	if (si->mmio_base_low != mem || si->gsi_interrupt != irq)
+ 		return 0;
  
--	dev_vdbg(dw->dma.dev, "%s: status=0x%x\n", __func__,
--			dma_readl(dw, STATUS_INT));
-+	dev_vdbg(dw->dma.dev, "%s: status=0x%x\n", __func__, status);
-+
-+	/* Check if we have any interrupt from the DMAC */
-+	if (!status)
-+		return IRQ_NONE;
- 
- 	/*
- 	 * Just disable the interrupts. We'll turn them back on in the
-@@ -1567,8 +1570,8 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
- 	/* Disable BLOCK interrupts as well */
- 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
- 
--	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt, 0,
--			       "dw_dmac", dw);
-+	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt,
-+			       IRQF_SHARED, "dw_dmac", dw);
- 	if (err)
- 		return err;
+-	vendor_id = le32_to_cpu(grp->vendor_id);
++	vendor_id = le32_to_cpu((__force __le32)grp->vendor_id);
+ 	dev_dbg(&adev->dev, "matches with %.4s%04X (rev %u)\n",
+ 		(char *)&vendor_id, grp->device_id, grp->revision);
  
 -- 
 1.8.3.2
