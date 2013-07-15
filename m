@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab3GOUTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:19:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48621 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020Ab3GOUTv (ORCPT
+	id S1755202Ab3GOUUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:20:43 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64954 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153Ab3GOUUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:19:51 -0400
-Date: Mon, 15 Jul 2013 22:19:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] sched: Add logic to handle parallel try_to_wake_up() of
- the same task
-Message-ID: <20130715201945.GQ17211@twins.programming.kicks-ass.net>
-References: <1517081373730349@web23d.yandex.ru>
- <20130715063150.GL17211@twins.programming.kicks-ass.net>
- <449471373897674@web23d.yandex.ru>
+	Mon, 15 Jul 2013 16:20:41 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18JevfpuNO0GlpBtPHzDONJ88rDHMFzX+w=
+Date: Mon, 15 Jul 2013 16:20:37 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: KS Topic request: Handling the Stable kernel, let's dump the
+ cc: stable tag
+Message-ID: <20130715202037.GB12062@titan.lakedaemon.net>
+References: <1373916476.2748.69.camel@dabdike>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <449471373897674@web23d.yandex.ru>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1373916476.2748.69.camel@dabdike>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 06:14:34PM +0400, Kirill Tkhai wrote:
-> >>
-> >>   #ifdef CONFIG_SMP
-> >>  + p->state = TASK_WAKING;
-> >>  + smp_wmb();
-> >>  +
-> >
-> > This too is broken; the loop below needs to be completed first,
-> > otherwise we change p->state while the task is still on the CPU and it
-> > might read the wrong p->state.
+On Mon, Jul 15, 2013 at 11:27:56PM +0400, James Bottomley wrote:
+...
+> The solution, to me, looks simple:  Let's co-opt a process we already
+> know how to do: mailing list review and tree handling.  So the proposal
+> is simple:
 > 
-> This place is below (on_rq && ttwu_remote) check, so the task
-> either 'dequeued and on_cpu == 0'
-> or it's in the middle of schedule() on arch, which wants unlocked
-> context switch.
+>      1. Drop the cc: stable@ tag: it makes it way too easy to add an ill
+>         reviewed patch to stable
+>      2. All patches to stable should follow current review rules: They
+>         should go to the mailing list the original patch was sent to
+>         once the original is upstream as a request for stable.
+>      3. Following debate on the list, the original maintainer would be
+>         responsible for collecting the patches (including the upstream
+>         commit) adjudicating on them and passing them on to stable after
+>         list review (either by git tree pull or email to stable@).
 > 
-> Nobody scheduler's probes p->state between prepare_lock_switch() and
-> finish_lock_switch(). Archs with unlocked ctx switch (mips and ia64)
-> don't change or probe state of previous process during context_switch.
+> I contend this raises the bar for adding patches to stable much higher,
+> which seems to be needed, and adds a review stage which involves all the
+> original reviewers.
 
-It means its after deactivate_task(), but before context_switch(). It so
-happens that
-context_switch()->prepare_task_switch()->trace_sched_switch() inspects
-p->state.
+If I may expand on the 'tree-handling' with an idea:
 
-Even if this was not the case, touching a task that is 'life' on another
-CPU is very _very_ bad practise.
+When I'm collecting up patches for mvebu, the first thing I do is
+classify the patch as a fix for the current -rc cycle, or for next.  It
+would be very easy to maintain a stable branch "ahead of" fixes.  More
+accurately, one for each stable version.  eg:
+
+stable-3.2
+stable-3.4
+stable-3.9
+stable-3.10
+fixes
+cleanup (or next)
+...
+
+Each branch would need to be based on a commit in the mainline tree, eg
+stable-3.2 would be based on v3.2, not v3.2.48.
+
+Anything I suspect is stable material goes in the earliest relevant
+stable branch, and I send an email series to the linux-stable list.
+Discussion ensues, maybe I remove one or two patches from the stable
+branch and only put them in fixes (so, for -rcX), and send the PR.  The
+stable team can then merge the PR, once they see the commit in mainline.
+
+The big advantage of this proposal is that the patch would have the same
+commit id in both trees.  'git branch -a --contains <commit-ish>' would
+work.
+
+The main problem with this is that maintainers would need to do the
+legwork themselves to figure out how far back a patch is relevant for.
+Maybe this would be a feature? ;-)
+
+Unfortunately, since most of the time there's just a single patch, I'm
+not sure the cost of the merge commits is worth the benefit of having
+the same commit id in stable and mainline.
+
+thx,
+
+Jason.
