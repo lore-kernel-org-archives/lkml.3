@@ -1,60 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab3GOVNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:13:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49771 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab3GOVNa (ORCPT
+	id S1757274Ab3GOVN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:13:57 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:40304 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755086Ab3GOVNz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:13:30 -0400
-Date: Mon, 15 Jul 2013 23:12:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
-        corbet@lwn.net, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-Message-ID: <20130715211230.GG23818@dyad.programming.kicks-ass.net>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <20130713064909.GW25631@dyad.programming.kicks-ass.net>
- <51E166C8.3000902@linux.intel.com>
- <20130715195914.GC23818@dyad.programming.kicks-ass.net>
- <51E45E8B.705@linux.intel.com>
- <20130715210650.GF23818@dyad.programming.kicks-ass.net>
+	Mon, 15 Jul 2013 17:13:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=LjDEjfNXzSmerr9/Nm7
+	WCvcU/t3CT1/uRwHmMd8OeoJ7mflgo0QDCGfQ759K7v2q+oYNKea4uf9D0d3MEk1
+	ldDOPK7COZZNLIZVDJp39uLNCqZv33m02XBes889XyQ2PYcDG0UDh+XPCa5HRVk+
+	Ycad3qqQKR27z70aTGyTiFFY=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.3.3
+Date: Mon, 15 Jul 2013 14:13:46 -0700
+Message-ID: <7vk3kra5md.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130715210650.GF23818@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 70F8FCDE-ED93-11E2-9D5E-E84251E3A03C-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 11:06:50PM +0200, Peter Zijlstra wrote:
-> OK, but isn't that part of why the micro controller might not make you go
-> faster even if you do program a higher P state?
-> 
-> But yes, I understand this issue in the 'traditional' cpufreq sense. There's no
-> point in ramping the speed if all you do is stall more.
-> 
-> But I was under the impression the 'hardware' was doing this. If not then we
-> need the whole go-faster and go-slower thing and places to call them and means
-> to determine to call them etc.
+The latest maintenance release Git v1.8.3.3 is now available at
+the usual places.
 
+The release tarballs are found at:
 
-So with the scheduler measuring cpu utilization we could say to go-faster when
-u>0.8 and go-slower when u<0.75 or so. Lacking any better metrics like the
-stall stuff etc.
+    http://code.google.com/p/git-core/downloads/list
 
-So I understand that ondemand spends quite a lot of time 'sampling' what the
-system does while the scheduler mostly already knows this. It also has problems
-because of the whole sampling thing, either it samples too often and becomes
-too expensive/disruptive or it samples too little and misses world+dog.
+and their SHA-1 checksums are:
 
-I was hoping we could do better.
+417cb12660446702bffc5c2c83cbb6e7f1e60c79  git-1.8.3.3.tar.gz
+c6104064c1276b2405a281e104fc54ff86f7299d  git-htmldocs-1.8.3.3.tar.gz
+07361cfd38b8c57207b9a5f8bf0c4456b7229b52  git-manpages-1.8.3.3.tar.gz
 
+The following public repositories all have a copy of the v1.8.3.3
+tag and the maint branch that the tag points at:
+
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
+release tarballs.
+
+Git v1.8.3.3 Release Notes
+==========================
+
+Fixes since v1.8.3.2
+--------------------
+
+ * "git apply" parsed patches that add new files, generated by programs
+   other than Git, incorrectly.  This is an old breakage in v1.7.11.
+
+ * Older cURL wanted piece of memory we call it with to be stable, but
+   we updated the auth material after handing it to a call.
+
+ * "git pull" into nothing trashed "local changes" that were in the
+   index.
+
+ * Many "git submodule" operations did not work on a submodule at a
+   path whose name is not in ASCII.
+
+ * "cherry-pick" had a small leak in its error codepath.
+
+ * Logic used by git-send-email to suppress cc mishandled names like
+   "A U. Thor" <author@example.xz>, where the human readable part
+   needs to be quoted (the user input may not have the double quotes
+   around the name, and comparison was done between quoted and
+   unquoted strings).  It also mishandled names that need RFC2047
+   quoting.
+
+ * "gitweb" forgot to clear a global variable $search_regexp upon each
+   request, mistakenly carrying over the previous search to a new one
+   when used as a persistent CGI.
+
+ * The wildmatch engine did not honor WM_CASEFOLD option correctly.
+
+ * "git log -c --follow $path" segfaulted upon hitting the commit that
+   renamed the $path being followed.
+
+ * When a reflog notation is used for implicit "current branch",
+   e.g. "git log @{u}", we did not say which branch and worse said
+   "branch ''" in the error messages.
+
+ * Mac OS X does not like to write(2) more than INT_MAX number of
+   bytes; work it around by chopping write(2) into smaller pieces.
+
+ * Newer MacOS X encourages the programs to compile and link with
+   their CommonCrypto, not with OpenSSL.
+
+Also contains various minor documentation updates.
+
+----------------------------------------------------------------
+
+Changes since v1.8.3.2 are as follows:
+
+Andrew Pimlott (2):
+      lib-rebase: document exec_ in FAKE_LINES
+      t7500: fix flipped actual/expect
+
+Anthony Ramine (1):
+      wildmatch: properly fold case everywhere
+
+Brandon Casey (1):
+      http.c: don't rewrite the user:passwd string multiple times
+
+Charles McGarvey (1):
+      gitweb: fix problem causing erroneous project list
+
+Chris Rorvick (1):
+      git.txt: remove stale comment regarding GIT_WORK_TREE
+
+Clemens Buchacher (1):
+      fix segfault with git log -c --follow
+
+David Aguilar (4):
+      Makefile: fix default regex settings on Darwin
+      Makefile: add support for Apple CommonCrypto facility
+      cache.h: eliminate SHA-1 deprecation warnings on Mac OS X
+      imap-send: eliminate HMAC deprecation warnings on Mac OS X
+
+Dmitry Marakasov (1):
+      contrib/git-subtree: Use /bin/sh interpreter instead of /bin/bash
+
+Felipe Contreras (4):
+      read-cache: fix wrong 'the_index' usage
+      read-cache: trivial style cleanups
+      sequencer: remove useless indentation
+      sequencer: avoid leaking message buffer when refusing to create an empty commit
+
+Filipe Cabecinhas (1):
+      compate/clipped-write.c: large write(2) fails on Mac OS X/XNU
+
+Fredrik Gustafsson (1):
+      handle multibyte characters in name
+
+Jeff King (1):
+      pull: update unborn branch tip after index
+
+John Keeping (1):
+      git-config: update doc for --get with multiple values
+
+Junio C Hamano (6):
+      deprecate core.statinfo at Git 2.0 boundary
+      t5551: do not use unportable sed '\+'
+      Documentation/diff-index: mention two modes of operation
+      Start preparing for 1.8.3.3
+      Update draft release notes to 1.8.3.3
+      Git 1.8.3.3
+
+Michael S. Tsirkin (9):
+      t/send-email.sh: add test for suppress-cc=self
+      send-email: fix suppress-cc=self on cccmd
+      t/send-email: test suppress-cc=self on cccmd
+      send-email: make --suppress-cc=self sanitize input
+      t/send-email: add test with quoted sender
+      t/send-email: test suppress-cc=self with non-ascii
+      test-send-email: test for pre-sanitized self name
+      send-email: add test for duplicate utf8 name
+      send-email: sanitize author when writing From line
+
+Ramkumar Ramachandra (6):
+      sha1_name: fix error message for @{u}
+      sha1_name: fix error message for @{<N>}, @{<date>}
+      diffcore-pickaxe: make error messages more consistent
+      diffcore-pickaxe doc: document -S and -G properly
+      check-ignore doc: fix broken link to ls-files page
+      fixup-builtins: retire an old transition helper script
+
+René Scharfe (2):
+      t5004: avoid using tar for checking emptiness of archive
+      t5004: resurrect original empty tar archive test
+
+Richard Hansen (1):
+      Documentation/merge-options.txt: restore `-e` option
+
+SZEDER Gábor (1):
+      test: spell 'ls-files --delete' option correctly in test descriptions
+
+Thomas Rast (2):
+      pull: merge into unborn by fast-forwarding from empty tree
+      apply: carefully strdup a possibly-NULL name
+
+Torsten Bögershausen (1):
+      t7400: test of UTF-8 submodule names pass under Mac OS
+
+Vikrant Varma (2):
+      help: add help_unknown_ref()
+      merge: use help_unknown_ref()
 
