@@ -1,134 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab3GOSy6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:54:58 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:50367 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752842Ab3GOSy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:54:57 -0400
-Date: Mon, 15 Jul 2013 11:54:35 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        PaX Team <pageexec@gmail.com>
-Subject: [PATCH v4] x86: make sure IDT is page aligned
-Message-ID: <20130715185435.GA1065@www.outflux.net>
+	id S1754713Ab3GOS4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:56:23 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:54311 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab3GOS4W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 14:56:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <51E44204.4000802@zytor.com>
+References: <1373806562-30422-1-git-send-email-artagnon@gmail.com>
+	<CA+55aFwKQQtTrgm7O8MLkqGgno-CsLSTM8tjrjuGmmqPEAZghw@mail.gmail.com>
+	<CAFHTzf+PTVBcMYy2NQBQDLQgsWjbUBc+FYp2Hokd-002hXrePA@mail.gmail.com>
+	<CA+55aFwpfn9FjkYeVpA8aPiGy6o8Z-JgJUNFmKF3H7nGqmbi+w@mail.gmail.com>
+	<CAFHTzf+O7sdeETp5nsnoQDFeg-zE4q6Kmq9rHPZEr5z2jm2zxg@mail.gmail.com>
+	<CA+55aFwcxWR-SFD=QFXAb38sPnN-hcOBF-W+NuRBSMx-n+RnxQ@mail.gmail.com>
+	<51E44204.4000802@zytor.com>
+Date: Mon, 15 Jul 2013 11:56:21 -0700
+X-Google-Sender-Auth: rMuldEObCxybj6o-ORDyACOAYhU
+Message-ID: <CA+55aFy=w6v9MqcVn1H6X7jqJq+QrEx7TfA6Kr+vC4SYJRjUyQ@mail.gmail.com>
+Subject: Re: [LLVMdev] [PATCH] x86/asm: avoid mnemonics without type suffix
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tim Northover <t.p.northover@gmail.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Andi Kleen <ak@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LLVMdev <llvmdev@cs.uiuc.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the IDT is referenced from a fixmap, make sure it is page aligned.
-Merge with 32-bit one, since it was already aligned to deal with the F00F
-bug. Since bss is cleared before IDT setup, it can live there. This also
-moves the other *_idt_table variables into common locations.
+On Mon, Jul 15, 2013 at 11:40 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/14/2013 12:49 PM, Linus Torvalds wrote:
+>
+> This is also why the Intel manuals point out that "some assemblers" can
+> take things like:
+>
+>         bt[l] $63,(%rsi)
+>
+> ... and turn it into:
+>
+>         btl $31,4(%rsi)
+>
+> This is definitely the friendly thing to do toward the human programmer.
+>  Unfortunately gas doesn't, nor does e.g. NASM.
 
-This avoids the risk of the IDT ever being moved in the bss and having
-the mapping be offset, resulting in calling incorrect handlers. In the
-current upstream kernel this is not a manifested bug, but heavily patched
-kernels (such as those using the PaX patch series) did encounter this bug.
+Yeah, that's definitely a "quality of implementation" issue. Clearly
+"bt $63,mem" is talking about bit 63, and a quality assembler would
+either warn about it or just do the RightThing(tm) like the intel
+manual says.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: PaX Team <pageexec@gmail.com>
----
-v4:
- - rework using __page_aligned_bss, suggested by Yinghai LU
- - move all the other IDT variables as well, suggested by HPA
-v3:
- - merge 32-bit and 64-bit idt_table definition
-v2:
- - 32-bit was already aligned
----
- arch/x86/kernel/head_64.S    |   15 ---------------
- arch/x86/kernel/tracepoint.c |    5 +----
- arch/x86/kernel/traps.c      |   11 +++++------
- 3 files changed, 6 insertions(+), 25 deletions(-)
+I'd actually like to say "think you" to the gas people, because gas
+today may not do the above, but gas today is still *lightyears* ahead
+of where it used to be two decades ago. Back in those dark ages, GNU
+as was even documented to be *only* about turning compiler output into
+object code, and gas was the ghastliest assembler on the planet - it
+silently did horrible horrible things, and didn't do *anything*
+user-friendly or clever. It would entirely ignore things like implied
+sizes from register names etc, and generate code that was obviously
+not at all what the user expected, but because cc1 always used
+explicit sizes etc and only generated very specific syntax, it "wasn't
+an issue".
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 5e4d8a8..e1aabdb 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -512,21 +512,6 @@ ENTRY(phys_base)
- 
- #include "../../x86/xen/xen-head.S"
- 	
--	.section .bss, "aw", @nobits
--	.align L1_CACHE_BYTES
--ENTRY(idt_table)
--	.skip IDT_ENTRIES * 16
--
--	.align L1_CACHE_BYTES
--ENTRY(debug_idt_table)
--	.skip IDT_ENTRIES * 16
--
--#ifdef CONFIG_TRACING
--	.align L1_CACHE_BYTES
--ENTRY(trace_idt_table)
--	.skip IDT_ENTRIES * 16
--#endif
--
- 	__PAGE_ALIGNED_BSS
- NEXT_PAGE(empty_zero_page)
- 	.skip PAGE_SIZE
-diff --git a/arch/x86/kernel/tracepoint.c b/arch/x86/kernel/tracepoint.c
-index 4e584a8..33bdf55 100644
---- a/arch/x86/kernel/tracepoint.c
-+++ b/arch/x86/kernel/tracepoint.c
-@@ -12,10 +12,7 @@ atomic_t trace_idt_ctr = ATOMIC_INIT(0);
- struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
- 				(unsigned long) trace_idt_table };
- 
--#ifndef CONFIG_X86_64
--gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
--					= { { { { 0, 0 } } }, };
--#endif
-+gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
- 
- static int trace_irq_vector_refcount;
- static DEFINE_MUTEX(irq_vector_mutex);
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b0865e8..f47fc35 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -63,19 +63,18 @@
- #include <asm/x86_init.h>
- #include <asm/pgalloc.h>
- #include <asm/proto.h>
-+
-+gate_desc debug_idt_table[NR_VECTORS] __page_aligned_bss;
- #else
- #include <asm/processor-flags.h>
- #include <asm/setup.h>
- 
- asmlinkage int system_call(void);
--
--/*
-- * The IDT has to be page-aligned to simplify the Pentium
-- * F0 0F bug workaround.
-- */
--gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
- #endif
- 
-+/* Since it is used in a fixmap, the IDT has to be page-aligned. */
-+gate_desc idt_table[NR_VECTORS] __page_aligned_bss;
-+
- DECLARE_BITMAP(used_vectors, NR_VECTORS);
- EXPORT_SYMBOL_GPL(used_vectors);
- 
--- 
-1.7.9.5
+gas has improved immensely in this regard, and the fact that it
+silently takes a $63 and effectively turns it into $31 is something I
+think is not nice and not a good QoI, but considering where gas came
+from, I'm not going to complain about it too much. It's
+"understandable", even if it isn't great.
 
+But quite frankly, partly because of just how bad gas used to be wrt
+issues like this, I think that any other assembler should aim to be at
+_least_ as good as gas, if not better. Because I definitely don't want
+to go back to the bad old days. I've been there, done that. Assemblers
+that are worse than gas are not worth working with. gas should be
+considered the minimal implementation quality, and llvm-as should
+strive to do better rather than worse..
 
--- 
-Kees Cook
-Chrome OS Security
+(NASM used to be *much* more pleasant to work with than gas. Maybe you
+should strive to make nasm DTRT wrt bt and constants, and maintain
+that lead?)
+
+                   Linus
