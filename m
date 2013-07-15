@@ -1,200 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757841Ab3GOO2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:28:41 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:57380 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab3GOO2i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:28:38 -0400
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <tao.peng@emc.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-v3 16/17] staging/lustre/llite: readdir convert to iterate
-Date: Mon, 15 Jul 2013 22:27:19 +0800
-Message-Id: <1373898440-14208-17-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
-References: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
+	id S1757258Ab3GOO3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:29:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757681Ab3GOO23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 10:28:29 -0400
+Date: Mon, 15 Jul 2013 10:27:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
+Message-ID: <20130715142708.GB23772@redhat.com>
+References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
+ <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com>
+ <20130702154214.GC22603@redhat.com>
+ <20130715154451.02a3a767@holzheu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130715154451.02a3a767@holzheu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peng Tao <tao.peng@emc.com>
+On Mon, Jul 15, 2013 at 03:44:51PM +0200, Michael Holzheu wrote:
+> On Tue, 2 Jul 2013 11:42:14 -0400
+> Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> > On Mon, Jul 01, 2013 at 09:32:37PM +0200, Michael Holzheu wrote:
+> > > For zfcpdump we can't map the HSA storage because it is only available
+> > > via a read interface. Therefore, for the new vmcore mmap feature we have
+> > > introduce a new mechanism to create mappings on demand.
+> > > 
+> > > This patch introduces a new architecture function remap_oldmem_pfn_range()
+> > > that should be used to create mappings with remap_pfn_range() for oldmem
+> > > areas that can be directly mapped. For zfcpdump this is everything besides
+> > > of the HSA memory. For the areas that are not mapped by remap_oldmem_pfn_range()
+> > > a generic vmcore a new generic vmcore fault handler mmap_vmcore_fault()
+> > > is called.
+> > > 
+> > > This handler works as follows:
+> > > 
+> > > * Get already available or new page from page cache (find_or_create_page)
+> > > * Check if /proc/vmcore page is filled with data (PageUptodate)
+> > > * If yes:
+> > >   Return that page
+> > > * If no:
+> > >   Fill page using __vmcore_read(), set PageUptodate, and return page
+> > > 
+> > > Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > 
+> > In general vmcore related changes look fine to me. I am not very familiar
+> > with the logic of finding pages in page cache and using page uptodate
+> > flag.
+> > 
+> > Hatayama, can you please review it.
+> > 
+> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> 
+> Hello Vivek and Andrew,
+> 
+> We just realized that Hatayama's mmap patches went into v3.11-rc1. This currently
+> breaks s390 kdump because of the following two issues:
+> 
+> 1) The copy_oldmem_page() is now used for copying to vmalloc memory
+> 2) The mmap() implementation is not compatible with the current
+>    s390 crashkernel swap:
+>    See: http://marc.info/?l=kexec&m=136940802511603&w=2
+> 
+> The "kdump: Introduce ELF header in new memory feature" patch series will
+> fix both issues for s390.
+> 
+> There is the one small open discussion left:
+> 
+> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg464856.html
+> 
+> But once we have finished that, would it be possible to get the
+> patches in 3.11?
 
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
----
- drivers/staging/lustre/lustre/llite/dir.c          |   45 +++++++++-----------
- .../staging/lustre/lustre/llite/llite_internal.h   |    4 +-
- drivers/staging/lustre/lustre/llite/llite_nfs.c    |   13 +++---
- 3 files changed, 28 insertions(+), 34 deletions(-)
+How about taking mmap() fault handler patches in 3.12. And in 3.11, deny
+mmap() on s390 forcing makedumpfile to fall back on read() interface. That
+way there will be no regression and mmap() related speedup will show up
+in next release on s390.
 
-diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
-index e2afb97..1084999 100644
---- a/drivers/staging/lustre/lustre/llite/dir.c
-+++ b/drivers/staging/lustre/lustre/llite/dir.c
-@@ -483,12 +483,11 @@ fail:
- 	goto out_unlock;
- }
- 
--int ll_dir_read(struct inode *inode, __u64 *_pos, void *cookie,
--		filldir_t filldir)
-+int ll_dir_read(struct inode *inode, struct dir_context *ctx)
- {
- 	struct ll_inode_info *info       = ll_i2info(inode);
- 	struct ll_sb_info    *sbi	= ll_i2sbi(inode);
--	__u64		 pos	= *_pos;
-+	__u64		   pos		= ctx->pos;
- 	int		   api32      = ll_need_32bit_api(sbi);
- 	int		   hash64     = sbi->ll_flags & LL_SBI_64BIT_HASH;
- 	struct page	  *page;
-@@ -548,12 +547,14 @@ int ll_dir_read(struct inode *inode, __u64 *_pos, void *cookie,
- 				fid_le_to_cpu(&fid, &ent->lde_fid);
- 				ino = cl_fid_build_ino(&fid, api32);
- 				type = ll_dirent_type_get(ent);
-+				ctx->pos = lhash;
- 				/* For 'll_nfs_get_name_filldir()', it will try
- 				 * to access the 'ent' through its 'lde_name',
--				 * so the parameter 'name' for 'filldir()' must
--				 * be part of the 'ent'. */
--				done = filldir(cookie, ent->lde_name, namelen,
--					       lhash, ino, type);
-+				 * so the parameter 'name' for 'ctx->actor()'
-+				 * must be part of the 'ent'.
-+				 */
-+				done = !dir_emit(ctx, ent->lde_name,
-+						 namelen, ino, type);
- 			}
- 			next = le64_to_cpu(dp->ldp_hash_end);
- 			if (!done) {
-@@ -594,50 +595,44 @@ int ll_dir_read(struct inode *inode, __u64 *_pos, void *cookie,
- 		}
- 	}
- 
--	*_pos = pos;
-+	ctx->pos = pos;
- 	ll_dir_chain_fini(&chain);
- 	RETURN(rc);
- }
- 
--static int ll_readdir(struct file *filp, void *cookie, filldir_t filldir)
-+static int ll_readdir(struct file *filp, struct dir_context *ctx)
- {
- 	struct inode		*inode	= filp->f_dentry->d_inode;
- 	struct ll_file_data	*lfd	= LUSTRE_FPRIVATE(filp);
- 	struct ll_sb_info	*sbi	= ll_i2sbi(inode);
--	__u64			pos	= lfd->lfd_pos;
- 	int			hash64	= sbi->ll_flags & LL_SBI_64BIT_HASH;
- 	int			api32	= ll_need_32bit_api(sbi);
- 	int			rc;
--	struct path		path;
- 	ENTRY;
- 
- 	CDEBUG(D_VFSTRACE, "VFS Op:inode=%lu/%u(%p) pos %lu/%llu "
- 	       " 32bit_api %d\n", inode->i_ino, inode->i_generation,
--	       inode, (unsigned long)pos, i_size_read(inode), api32);
-+	       inode, (unsigned long)lfd->lfd_pos, i_size_read(inode), api32);
- 
--	if (pos == MDS_DIR_END_OFF)
-+	if (lfd->lfd_pos == MDS_DIR_END_OFF)
- 		/*
- 		 * end-of-file.
- 		 */
- 		GOTO(out, rc = 0);
- 
--	rc = ll_dir_read(inode, &pos, cookie, filldir);
--	lfd->lfd_pos = pos;
--	if (pos == MDS_DIR_END_OFF) {
-+	ctx->pos = lfd->lfd_pos;
-+	rc = ll_dir_read(inode, ctx);
-+	lfd->lfd_pos = ctx->pos;
-+	if (ctx->pos == MDS_DIR_END_OFF) {
- 		if (api32)
--			filp->f_pos = LL_DIR_END_OFF_32BIT;
-+			ctx->pos = LL_DIR_END_OFF_32BIT;
- 		else
--			filp->f_pos = LL_DIR_END_OFF;
-+			ctx->pos = LL_DIR_END_OFF;
- 	} else {
- 		if (api32 && hash64)
--			filp->f_pos = pos >> 32;
--		else
--			filp->f_pos = pos;
-+			ctx->pos >>= 32;
- 	}
- 	filp->f_version = inode->i_version;
--	path.mnt = filp->f_path.mnt;
--	path.dentry = filp->f_dentry;
--	touch_atime(&path);
- 
- out:
- 	if (!rc)
-@@ -1976,7 +1971,7 @@ struct file_operations ll_dir_operations = {
- 	.open     = ll_dir_open,
- 	.release  = ll_dir_release,
- 	.read     = generic_read_dir,
--	.readdir  = ll_readdir,
-+	.iterate  = ll_readdir,
- 	.unlocked_ioctl   = ll_dir_ioctl,
- 	.fsync    = ll_fsync,
- };
-diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
-index cbcd118..0534665 100644
---- a/drivers/staging/lustre/lustre/llite/llite_internal.h
-+++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
-@@ -90,6 +90,7 @@ extern struct file_operations ll_pgcache_seq_fops;
- #define REMOTE_PERM_HASHSIZE 16
- 
- struct ll_getname_data {
-+	struct dir_context ctx;
- 	char	    *lgd_name;      /* points to a buffer with NAME_MAX+1 size */
- 	struct lu_fid    lgd_fid;       /* target fid we are looking for */
- 	int	      lgd_found;     /* inode matched? */
-@@ -679,8 +680,7 @@ extern struct file_operations ll_dir_operations;
- extern struct inode_operations ll_dir_inode_operations;
- struct page *ll_get_dir_page(struct inode *dir, __u64 hash,
- 			     struct ll_dir_chain *chain);
--int ll_dir_read(struct inode *inode, __u64 *_pos, void *cookie,
--		filldir_t filldir);
-+int ll_dir_read(struct inode *inode, struct dir_context *ctx);
- 
- int ll_get_mdt_idx(struct inode *inode);
- /* llite/namei.c */
-diff --git a/drivers/staging/lustre/lustre/llite/llite_nfs.c b/drivers/staging/lustre/lustre/llite/llite_nfs.c
-index 28cc41e..f142a1e 100644
---- a/drivers/staging/lustre/lustre/llite/llite_nfs.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_nfs.c
-@@ -214,9 +214,12 @@ static int ll_get_name(struct dentry *dentry, char *name,
- 		       struct dentry *child)
- {
- 	struct inode *dir = dentry->d_inode;
--	struct ll_getname_data lgd;
--	__u64 offset = 0;
- 	int rc;
-+	struct ll_getname_data lgd = {
-+		.lgd_name = name,
-+		.lgd_fid = ll_i2info(child->d_inode)->lli_fid,
-+		.ctx.actor = ll_nfs_get_name_filldir,
-+	};
- 	ENTRY;
- 
- 	if (!dir || !S_ISDIR(dir->i_mode))
-@@ -225,12 +228,8 @@ static int ll_get_name(struct dentry *dentry, char *name,
- 	if (!dir->i_fop)
- 		GOTO(out, rc = -EINVAL);
- 
--	lgd.lgd_name = name;
--	lgd.lgd_fid = ll_i2info(child->d_inode)->lli_fid;
--	lgd.lgd_found = 0;
--
- 	mutex_lock(&dir->i_mutex);
--	rc = ll_dir_read(dir, &offset, &lgd, ll_nfs_get_name_filldir);
-+	rc = ll_dir_read(dir, &lgd.ctx);
- 	mutex_unlock(&dir->i_mutex);
- 	if (!rc && !lgd.lgd_found)
- 		rc = -ENOENT;
--- 
-1.7.9.5
-
+Thanks
+Vivek
