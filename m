@@ -1,103 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab3GOOFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:05:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47903 "EHLO comal.ext.ti.com"
+	id S1757274Ab3GOOIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:08:54 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:54666 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756878Ab3GOOFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:05:44 -0400
-Message-ID: <51E40199.9070906@ti.com>
-Date: Mon, 15 Jul 2013 17:05:13 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757218Ab3GOOIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 10:08:52 -0400
+Message-ID: <51E40272.6000806@sgi.com>
+Date: Mon, 15 Jul 2013 09:08:50 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: <tony@atomide.com>
-CC: Roger Quadros <rogerq@ti.com>, <benoit.cousson@linaro.org>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: [PATCH v2 4/4] ARM: OMAP2+: Provide alias to USB PHY clock
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com> <1371571487-14389-5-git-send-email-rogerq@ti.com>
-In-Reply-To: <1371571487-14389-5-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Robin Holt <holt@sgi.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
+References: <1373594635-131067-1-git-send-email-holt@sgi.com> <1373594635-131067-5-git-send-email-holt@sgi.com> <CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com> <51E0DA05.4090107@zytor.com> <CAE9FiQWFdQC_YZ1S-oyJbaWzpDHW4i_XT6SnWuwsoWzcL8_NLA@mail.gmail.com>
+In-Reply-To: <CAE9FiQWFdQC_YZ1S-oyJbaWzpDHW4i_XT6SnWuwsoWzcL8_NLA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.140]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+On 07/13/2013 12:31 AM, Yinghai Lu wrote:
+> On Fri, Jul 12, 2013 at 9:39 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 07/12/2013 09:19 PM, Yinghai Lu wrote:
+>>>>          PG_reserved,
+>>>> +       PG_uninitialized2mib,   /* Is this the right spot? ntz - Yes - rmh */
+>>>>          PG_private,             /* If pagecache, has fs-private data */
+>> The comment here is WTF...
+> ntz: Nate Zimmer?
+> rmh: Robin Holt?
 
-On 06/18/2013 07:04 PM, Roger Quadros wrote:
-> Till the OMAP clocks are correctly defined in device tree, use
-> this temporary hack to provide clock alias to the USB PHY clocks.
-> 
-> Without this, USB Host & Ethernet will not be functional with
-> device tree boots on Panda and uEVM.
+Yea that comment was supposed to be removed.
+Sorry about that.
 
-Looks like this one got missed out.
-
-USB host no longer works on Panda with DT boot.
-Could you please queue this for next 3.11-rc? Thanks.
-
-cheers,
--roger
-
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/mach-omap2/board-generic.c |   23 ++++++++++++++++++++++-
->  1 files changed, 22 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 88aa6b1..7428733 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -15,6 +15,7 @@
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/irqdomain.h>
-> +#include <linux/clk.h>
->  
->  #include <asm/mach/arch.h>
->  
-> @@ -35,6 +36,21 @@ static struct of_device_id omap_dt_match_table[] __initdata = {
->  	{ }
->  };
->  
-> +/*
-> + * Create alias for USB host PHY clock.
-> + * Remove this when clock phandle can be provided via DT
-> + */
-> +static void __init legacy_init_ehci_clk(char *clkname)
-> +{
-> +	int ret;
-> +
-> +	ret = clk_add_alias("main_clk", NULL, clkname, NULL);
-> +	if (ret) {
-> +		pr_err("%s:Failed to add main_clk alias to %s :%d\n",
-> +						__func__, clkname, ret);
-> +	}
-> +}
-> +
->  static void __init omap_generic_init(void)
->  {
->  	omap_sdrc_init(NULL, NULL);
-> @@ -45,10 +61,15 @@ static void __init omap_generic_init(void)
->  	 * HACK: call display setup code for selected boards to enable omapdss.
->  	 * This will be removed when omapdss supports DT.
->  	 */
-> -	if (of_machine_is_compatible("ti,omap4-panda"))
-> +	if (of_machine_is_compatible("ti,omap4-panda")) {
->  		omap4_panda_display_init_of();
-> +		legacy_init_ehci_clk("auxclk3_ck");
-> +
-> +	}
->  	else if (of_machine_is_compatible("ti,omap4-sdp"))
->  		omap_4430sdp_display_init_of();
-> +	else if (of_machine_is_compatible("ti,omap5-uevm"))
-> +		legacy_init_ehci_clk("auxclk1_ck");
->  }
->  
->  #ifdef CONFIG_SOC_OMAP2420
-> 
-
+Nate
