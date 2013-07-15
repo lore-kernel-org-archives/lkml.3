@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358Ab3GOS1X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:27:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29635 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab3GOS1W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:27:22 -0400
-Message-ID: <51E43EE2.6020602@oracle.com>
-Date: Mon, 15 Jul 2013 14:26:42 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754084Ab3GOS3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:29:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14870 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752105Ab3GOS3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 14:29:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,670,1367996400"; 
+   d="scan'208";a="268604145"
+Date: Mon, 15 Jul 2013 21:34:38 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] pinctrl-baytrail: miscellaneous minor fixes
+Message-ID: <20130715183438.GT4898@intel.com>
+References: <1373457340-16666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1373883870.24799.244.camel@smile>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: dipankar@in.ibm.com, LKML <linux-kernel@vger.kernel.org>,
-        peterz@infradead.org
-Subject: Re: rcu: qs related lockup on boot
-References: <51E06841.50701@oracle.com> <20130712211524.GH16780@linux.vnet.ibm.com>
-In-Reply-To: <20130712211524.GH16780@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373883870.24799.244.camel@smile>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 05:15 PM, Paul E. McKenney wrote:
-> Might be we figured out a new way to deadlock RCU and the scheduler,
-> but just in case you rediscovered an old way, could you please try this
-> patch from Peter Zijlstra?
->
-> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg464708.html
->
-> If that doesn't help and you don't have lockdep enabled, could you
-> please enable it?
+On Mon, Jul 15, 2013 at 01:24:30PM +0300, Andy Shevchenko wrote:
+> On Wed, 2013-07-10 at 14:55 +0300, Andy Shevchenko wrote: 
+> > This is a set of small minor fixes against pinctrl-baytrail driver.
+> 
+> Linus, Mika, anyone do you have any comment on the series?
 
-I've been unable to reproduce it again with or without the patch.
+Well, looks good to me but I don't know the HW details. Anyway, I reviewed
+the code so:
 
-I'll update when it shows up again.
-
-
-Thanks,
-Sasha
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
