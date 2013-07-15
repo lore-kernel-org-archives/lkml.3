@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab3GOQLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 12:11:47 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:58134 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab3GOQLq (ORCPT
+	id S933383Ab3GOQMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 12:12:09 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:43983 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272Ab3GOQMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 12:11:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1373898160-8460-4-git-send-email-otavio@ossystems.com.br>
-References: <1373898160-8460-1-git-send-email-otavio@ossystems.com.br>
-	<1373898160-8460-4-git-send-email-otavio@ossystems.com.br>
-Date: Mon, 15 Jul 2013 13:11:46 -0300
-Message-ID: <CAAAP30FpVgmBhU3=cXciVbNJ4yGtfr2Rt9i_3+T+sTw4VeXycg@mail.gmail.com>
-Subject: Re: [PATCH 4/5] ARM: dts: imx23-olinuxino: enable Low Resolution ADC
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Otavio Salvador <otavio@ossystems.com.br>
-Cc: Jonathan Cameron <jic23@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Fadil Berisha <f.koliqi@gmail.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Jul 2013 12:12:07 -0400
+Message-ID: <1373904672.24916.46.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 15 Jul 2013 10:11:12 -0600
+In-Reply-To: <1628443.pD3ROIrBQn@vostro.rjw.lan>
+References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com>
+	 <1907509.WiI0tI5uDZ@vostro.rjw.lan>
+	 <1373668116.24916.43.camel@misato.fc.hp.com>
+	 <1628443.pD3ROIrBQn@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 11:22 AM, Otavio Salvador
-<otavio@ossystems.com.br> wrote:
-> The i.XM23 has a internal Low Resolution ADC; this enables the support
-> for this device.
+On Sat, 2013-07-13 at 01:53 +0200, Rafael J. Wysocki wrote:
+> On Friday, July 12, 2013 04:28:36 PM Toshi Kani wrote:
+> > On Fri, 2013-07-12 at 23:40 +0200, Rafael J. Wysocki wrote:
+> > > On Friday, July 12, 2013 03:12:24 PM Toshi Kani wrote:
+> > > > On Fri, 2013-07-12 at 23:13 +0200, Rafael J. Wysocki wrote:
+> > > > > On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
+> > > > > > On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > > > > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
+> > > > > > > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
+> > > > > > > > > (2013/07/11 1:47), Toshi Kani wrote:
+> > > > > > > > > > device->driver_data needs to be cleared when releasing its data,
+> > > > > > > > > > mem_device, in an error path of acpi_memory_device_add().
+> > > > > > > > > > 
+> > > > > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > > > > > > ---
+> > > > > > > > > 
+> > > > > > > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > > > > > > > 
+> > > > > > > > Thanks Yasuaki!
+> > > > > > > 
+> > > > > > > Queued up as a fix for 3.11.
+> > > > > > 
+> > > > > > Thanks!
+> > > > > > 
+> > > > > > > Do we need that in -stable as well?
+> > > > > > 
+> > > > > > Good point.  Yes, we need that in -stable as well.
+> > > > > 
+> > > > > What's the oldest mainline major release that fix is applicable to?
+> > > > 
+> > > > The fix is applicable all ways up to 2.6.32.
+> > > 
+> > > For -stable I'll need to say some more about what practical consequences of
+> > > the bug are.  Is it difficult to trigger?
+> > 
+> > The function evaluates _CRS of memory device objects, and fails when it
+> > gets an unexpected resource or cannot allocate a memory.
+> 
+> OK, so this is essentially about surviving unexpected external input, which
+> I suppose is serious enough.
 >
-> Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
+> > A kernel crash
+> > or data corruption may occur when the kernel accessed a stale pointer.
+> > That said, I am not sure how critical this issue is for old kernels
+> > since I do not think there are many platforms that support memory
+> > hotplug today.
+> 
+> Which doesn't matter.  People may want to run 3.10.y on future hardware too.
 
-Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Good point.  Thanks for the clarification!
+-Toshi
+
+
