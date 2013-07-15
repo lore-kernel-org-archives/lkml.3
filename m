@@ -1,58 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab3GOCIY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 22:08:24 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57240 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815Ab3GOCIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 22:08:22 -0400
-Message-ID: <1373854080.19894.322.camel@pasglop>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Date: Mon, 15 Jul 2013 12:08:00 +1000
-In-Reply-To: <CA+55aFx7Lax+m6wvPyfu_Om2aL-gYBEmfcrEqiC_nqCm1pwW6Q@mail.gmail.com>
-References: <20130711214830.611455274@linuxfoundation.org>
-	 <20130711222935.GA11340@redhat.com> <20130711224455.GA17222@kroah.com>
-	 <20130712141530.GA3629@roeck-us.net>
-	 <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
-	 <20130712173150.GA5534@roeck-us.net>
-	 <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
-	 <1373845958.19894.320.camel@pasglop>
-	 <CA+55aFx7Lax+m6wvPyfu_Om2aL-gYBEmfcrEqiC_nqCm1pwW6Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1753851Ab3GOCNO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Jul 2013 22:13:14 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:46597 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab3GOCNM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Jul 2013 22:13:12 -0400
+X-Spam-Score: -100.8
+Message-ID: <51E35A7D.8000008@asianux.com>
+Date: Mon, 15 Jul 2013 10:12:13 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: trace: remove __init from race_selftest_startup_function()
+ and trace_selftest_startup_function_graph()
+References: <51DDFCF8.2090808@asianux.com>   <1373561279.17876.45.camel@gandalf.local.home>   <51DF44FA.9060000@asianux.com>  <1373593261.17876.61.camel@gandalf.local.home>  <51DF62DB.3010409@asianux.com> <1373596735.17876.84.camel@gandalf.local.home> <51DF7250.9020209@asianux.com> <51DFAE5A.2060005@asianux.com>
+In-Reply-To: <51DFAE5A.2060005@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-07-14 at 18:40 -0700, Linus Torvalds wrote:
-> Not before it's been in the distro, no. Something like a PCI change
-> *definitely* should never be marked for stable, unless it causes
-> crashes or is a _new_ regression that causes dead machines.
+On 07/12/2013 03:20 PM, Chen Gang wrote:
+> On 07/12/2013 11:04 AM, Chen Gang wrote:
+>> On 07/12/2013 10:38 AM, Steven Rostedt wrote:
+>>> On Fri, 2013-07-12 at 09:58 +0800, Chen Gang wrote:
+>>>> On 07/12/2013 09:41 AM, Steven Rostedt wrote:
+>>>>> On Fri, 2013-07-12 at 07:51 +0800, Chen Gang wrote:
+>>>>>
+>>>>>>> Hmm, can all trace_selftest_startup_* (*selftest* in trace_selftest.c)
+>>>>>>> use '__init', so not waste memory keeping them around ?
+>>>>> Yeah, they should all be set to __init, but that's pretty low on the
+>>>>> totem poll, as distros don't enable selftests in their main kernels.
+>>>>
+>>>> Excuse me, my English is not quite well, I guess your meaning is:
+>>>>
+>>>>   they should all be set to '__init', although it is minor in real world.
+>>>>
+>>>> Is it correct ?
+>>>
+>>> Correct.
+>>>
+>>>>
+>>>>
+>>>> For me, I recommend to let all *selftest* as the same: "all add '
+>>>> __init' or none add '__init'" (if choose add, all report warnings).
+>>>>
+>>>> Is it suitable to still send new related patch for it ? If so, could
+>>>> you provide your suggesting choice (all add, or none add) ?
+>>>
+>>> Does this patch fix your warning?
+>>>
+>>> -- Steve
+>>>
+>>
 > 
-> Because the likelihood that that 4-5 line "obvious" change breaks
-> things is pretty high. It needs testing elsewhere - on the machines
-> that weren't broken - in a big way first.
+> After the test, they will not report the related warning.
 > 
-> And don't bother talking about "obvious fix". Especially not when it
-> comes to the PCI code.
+> Hmm..., but that will let another none *selftest* functions miss
+> '__read_mostly'.
+> 
+> Do the original *selftest* intend to have no '__init' so can fit other
+> none *selftest* with '__read_mostly', and without warnings ?
+> 
+> Welcome any members' suggestions or completions.
+> 
+> Thanks.
+> 
 
-PCI resource allocation code for sure. A bug specific to the hotplug
-code path not so ... (for example, a too short reset delay or shit like
-that). I agree with you overall but there's still a judgement call
-happening at some point I assume and we get at least *some* flexibility
-as maintainers as to what we want going there or not right ? :-)
+Hello Frederic and Ingo:
 
-Cheers,
-Ben.
+Could you provide your suggestions or completions for it ?
+
+The trace_selftest_startup_* funcitons are mostly added by you without
+'__init', do you have additional considerations about it (intend to have
+no '__init') ?
+
+If no reply, I recommend to keep no '__init': apply this patch or
+regress part of the patch "f1ed7c7 ftrace: Do not run selftest if
+command line parameter is set" (at least, it can avoid related warnings
+and treat all *selftest* fair).
 
 
+Thanks.
+
+
+>> I guess it can (although I do not give a compiling test), it seems a
+>> better fixing.
+>>
+>> And is it suitable to let all *selftest* as the same ? (all add, or none
+>> add '__init').
+>>
+>> Thanks.
+>>
+>>> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+>>> index a4ed382..5e794d1 100644
+>>> --- a/kernel/trace/trace.h
+>>> +++ b/kernel/trace/trace.h
+>>> @@ -680,6 +680,15 @@ extern int trace_selftest_startup_sched_switch(struct tracer *trace,
+>>>  					       struct trace_array *tr);
+>>>  extern int trace_selftest_startup_branch(struct tracer *trace,
+>>>  					 struct trace_array *tr);
+>>> +/*
+>>> + * Tracer data references selftest functions that only occur
+>>> + * on boot up. These can be __init functions. Thus, when selftests
+>>> + * are enabled, then the tracers need to reference __init functions.
+>>> + */
+>>> +#define __tracer_data		__refdata
+>>> +#else
+>>> +/* Tracers are seldom changed. Optimize when selftests are disabled. */
+>>> +#define __tracer_data		__read_mostly
+>>>  #endif /* CONFIG_FTRACE_STARTUP_TEST */
+>>>  
+>>>  extern void *head_page(struct trace_array_cpu *data);
+>>> diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+>>> index b863f93..38fe148 100644
+>>> --- a/kernel/trace/trace_functions.c
+>>> +++ b/kernel/trace/trace_functions.c
+>>> @@ -199,7 +199,7 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
+>>>  	return 0;
+>>>  }
+>>>  
+>>> -static struct tracer function_trace __read_mostly =
+>>> +static struct tracer function_trace __tracer_data =
+>>>  {
+>>>  	.name		= "function",
+>>>  	.init		= function_trace_init,
+>>>
+>>>
+>>>
+>>>
+>>
+>>
+> 
+> 
+
+
+-- 
+Chen Gang
