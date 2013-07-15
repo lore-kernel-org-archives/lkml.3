@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758411Ab3GOXEp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 19:04:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36983 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758227Ab3GOXEn (ORCPT
+	id S1758394Ab3GOXIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 19:08:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50612 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757620Ab3GOXIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 19:04:43 -0400
-Date: Tue, 16 Jul 2013 00:04:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Jean-Francois Moine <moinejf@free.fr>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH] ASoC: kirkwood-i2s: fix a compilation warning
-Message-ID: <20130715230429.GA24642@n2100.arm.linux.org.uk>
-References: <20130715103644.04e57749@armhf> <20130715153101.GK11538@sirena.org.uk> <20130715203756.68abbf10@armhf> <20130715200851.GD11538@sirena.org.uk> <20130715213727.GW24642@n2100.arm.linux.org.uk> <20130715225836.GG11538@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130715225836.GG11538@sirena.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 15 Jul 2013 19:08:04 -0400
+Date: Mon, 15 Jul 2013 16:08:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/hugetlb: per-vma instantiation mutexes
+Message-Id: <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+In-Reply-To: <20130715072432.GA28053@voom.fritz.box>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+	<alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+	<1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+	<20130715072432.GA28053@voom.fritz.box>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 11:58:36PM +0100, Mark Brown wrote:
-> The only thing I can see which is pushing a constraint up the stack is
-> KIRKWOOD_I2S_RATES in the DAIs which only allows 44.1kHz, 48kHz and
-> 96kHz, the rates for which the internal clock is used.
+On Mon, 15 Jul 2013 17:24:32 +1000 David Gibson <david@gibson.dropbear.id.au> wrote:
 
-Take a closer look, because you are mistaken.
+> I have previously proposed a correct method of improving scalability,
+> although it doesn't eliminate the lock.  That's to use a set of hashed
+> mutexes.
 
-Particularly note how there are two struct snd_soc_dai_driver's, one
-which gets used if we don't have an external clock, and the other
-which does.  They differ in their .rates initializer.
+Yep - hashing the mutexes is an obvious and nicely localized way of
+improving this.  It's a tweak, not a design change.
+
+The changelog should describe the choice of the hash key with great
+precision, please.  It's important and is the first thing which
+reviewers and readers will zoom in on.
+
+Should the individual mutexes be cacheline aligned?  Depends on the
+acquisition frequency, I guess.  Please let's work through that.
+
+Let's not damage uniprocesor kernels too much.  AFACIT the main offender
+here is fault_mutex_hash(), which is the world's most obfuscated "return
+0;".
+
+>  It wasn't merged before, but I don't recall the reasons
+> why. 
+
+Me either.
