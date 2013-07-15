@@ -1,184 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933402Ab3GOQ5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 12:57:43 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45358 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab3GOQ5l (ORCPT
+	id S933392Ab3GOQ6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 12:58:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58583 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134Ab3GOQ6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 12:57:41 -0400
-Date: Mon, 15 Jul 2013 18:57:27 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Wei Ni <wni@nvidia.com>, Guenter Roeck <linux@roeck-us.net>
-Cc: <thierry.reding@gmail.com>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status
- bit
-Message-ID: <20130715185727.4ebde8c4@endymion.delvare>
-In-Reply-To: <1373615287-18502-3-git-send-email-wni@nvidia.com>
-References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
- <1373615287-18502-3-git-send-email-wni@nvidia.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Jul 2013 12:58:00 -0400
+Date: Mon, 15 Jul 2013 17:57:35 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Steve Twiss <stwiss.opensource@diasemi.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20130715165735.GU11538@sirena.org.uk>
+References: <201307151518.r6FFIve6031479@swsrvapps-01.diasemi.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FfX2iGK5t5ehHnsE"
+Content-Disposition: inline
+In-Reply-To: <201307151518.r6FFIve6031479@swsrvapps-01.diasemi.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V1] DA9210 driver files
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei, Guenter,
 
-On Fri, 12 Jul 2013 15:48:05 +0800, Wei Ni wrote:
-> Add bit defines for the status register.
+--FfX2iGK5t5ehHnsE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regarding the subject: for me these are constants, not macros. AFAIK
-the term "macro" refers to defines with parameters only.
+On Mon, Jul 15, 2013 at 03:06:59PM +0100, Steve Twiss wrote:
+> From: Steve Twiss <stwiss.opensource@diasemi.com>
+>=20
+> This patch describes the regulator driver for the DA9210 Multi-phase Buck
+> from Dialog Semiconductor Ltd. It has been made aginst kernel version
+> linux-next next-20130715
 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->  drivers/hwmon/lm90.c |   72 ++++++++++++++++++++++++++++++++++----------------
->  1 file changed, 49 insertions(+), 23 deletions(-)
-> 
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index 5f30f90..c90037f 100644
-> --- a/drivers/hwmon/lm90.c
-> +++ b/drivers/hwmon/lm90.c
-> @@ -179,6 +179,19 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
->  #define LM90_HAVE_TEMP3		(1 << 6) /* 3rd temperature sensor	*/
->  #define LM90_HAVE_BROKEN_ALERT	(1 << 7) /* Broken alert		*/
->  
-> +/* LM90 status */
-> +#define LM90_STATUS_LTHRM	(1 << 0) /* local THERM limit tripped */
-> +#define LM90_STATUS_RTHRM	(1 << 1) /* remote THERM limit tripped */
-> +#define LM90_STATUS_OPEN	(1 << 2) /* remote is an open circuit */
-> +#define LM90_STATUS_RLOW	(1 << 3) /* remote low temp limit tripped */
-> +#define LM90_STATUS_RHIGH	(1 << 4) /* remote high temp limit tripped */
-> +#define LM90_STATUS_LLOW	(1 << 5) /* local low temp limit tripped */
-> +#define LM90_STATUS_LHIGH	(1 << 6) /* local high temp limit tripped */
-> +#define LM90_STATUS_BUSY	(1 << 7) /* ADC is converting */
+To repeat *again* you should submit patches in the format covered in
+SubmittingPatches.  This includes things like the commit message, if
+your commit message doesn't look like other commit messages for the code
+you're changing that's an issue.
 
-LM90_STATUS_BUSY is never used anywhere so please don't define it.
+> +struct da9210 {
+> +	struct device *dev;
 
-> +
-> +#define MAX6696_STATUS2_RLOW	(1 << 3) /* remote2 low temp limit tripped */
-> +#define MAX6696_STATUS2_RHIGH	(1 << 4) /* remote2 high temp limit tripped */
-> +
->  /*
->   * Driver data (common to all clients)
->   */
-> @@ -1417,6 +1430,36 @@ static void lm90_init_client(struct i2c_client *client)
->  		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
->  }
->  
-> +static bool lm90_is_tripped(struct i2c_client *client)
-> +{
-> +	struct lm90_data *data = i2c_get_clientdata(client);
-> +	u8 status, status2 = 0;
-> +
-> +	lm90_read_reg(client, LM90_REG_R_STATUS, &status);
-> +
-> +	if (data->kind == max6696)
-> +		lm90_read_reg(client, MAX6696_REG_R_STATUS2, &status2);
-> +
-> +	if ((status & 0x7f) == 0 && (status2 & 0xfe) == 0)
-> +		return false;
+This is never used as far as I can tell.
 
-It's a bit disappointing to not use the freshly introduced constants.
-That being said I agree it would make the code hard to read, so you can
-leave it as is.
+> +MODULE_ALIAS("platform: da9210");
 
-Unrelated to this patch, but Guenter, I am worried about the MAX6696
-handling here. I realize that I am the one who accepted your code, but
-now it looks wrong. Specifically:
-* We check for (status2 & 0xfe) i.e. 7 alarm bits, but the code below
-  only reports 2 alarms bits. So if any of the 5 other alarm bits in
-  STATUS2 are, we may return true (chip is tripped) but not print the
-  cause.
-* At least bits 1 and 2 of STATUS 2 fit totally fine in the driver as
-  it currently exists, so I can't think of any reason for not handling
-  them. Why are we not? Ideally we should print a message for every
-  alarm bit so that we never return "true" without printing a message.
-  Even though OT2 limits aren't handled by the driver...
-* If you think this piece of code shouldn't deal with OT/THERM limits
-  because they do not trigger an SMBus alarm, this can be discussed,
-  but all chips should be handled the same in this respect then.
-* Why in the first place is max6696's data->alert_alarms set to 0x187c
-  and not 0x1c7c? Including 1OPEN but not 2OPEN makes no sense.
+This is for a platform device but this is an I2C device so would never
+match.  Also for a platform device the string should have no space in
+it.
 
-> +
-> +	if (status & (LM90_STATUS_LLOW | LM90_STATUS_LHIGH | LM90_STATUS_LTHRM))
-> +		dev_warn(&client->dev,
-> +			 "temp%d out of range, please check!\n", 1);
-> +	if (status & (LM90_STATUS_RLOW | LM90_STATUS_RHIGH | LM90_STATUS_RTHRM))
-> +		dev_warn(&client->dev,
-> +			 "temp%d out of range, please check!\n", 2);
-> +	if (status & LM90_STATUS_OPEN)
-> +		dev_warn(&client->dev,
-> +			 "temp%d diode open, please check!\n", 2);
-> +
-> +	if (status2 & (MAX6696_STATUS2_RLOW | MAX6696_STATUS2_RHIGH))
-> +		dev_warn(&client->dev,
-> +			 "temp%d out of range, please check!\n", 3);
-> +
-> +	return true;
-> +}
-> +
->  static int lm90_probe(struct i2c_client *client,
->  		      const struct i2c_device_id *id)
->  {
-> @@ -1515,36 +1558,19 @@ static int lm90_remove(struct i2c_client *client)
->  
->  static void lm90_alert(struct i2c_client *client, unsigned int flag)
->  {
-> -	struct lm90_data *data = i2c_get_clientdata(client);
-> -	u8 config, alarms, alarms2 = 0;
-> -
-> -	lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
-> -
-> -	if (data->kind == max6696)
-> -		lm90_read_reg(client, MAX6696_REG_R_STATUS2, &alarms2);
-> -
-> -	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
-> +	if (!lm90_is_tripped(client)) {
+Otherwise this looks OK, though it'd be better to fill in the register
+map information more (listing the valid registers for example).
 
-You could swap the success and failure cases to avoid this negation.
+--FfX2iGK5t5ehHnsE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->  		dev_info(&client->dev, "Everything OK\n");
->  	} else {
-> -		if (alarms & 0x61)
-> -			dev_warn(&client->dev,
-> -				 "temp%d out of range, please check!\n", 1);
-> -		if (alarms & 0x1a)
-> -			dev_warn(&client->dev,
-> -				 "temp%d out of range, please check!\n", 2);
-> -		if (alarms & 0x04)
-> -			dev_warn(&client->dev,
-> -				 "temp%d diode open, please check!\n", 2);
-> -
-> -		if (alarms2 & 0x18)
-> -			dev_warn(&client->dev,
-> -				 "temp%d out of range, please check!\n", 3);
-> -
->  		/*
->  		 * Disable ALERT# output, because these chips don't implement
->  		 * SMBus alert correctly; they should only hold the alert line
->  		 * low briefly.
->  		 */
-> +		struct lm90_data *data = i2c_get_clientdata(client);
-> +		u8 config, alarms;
-> +
-> +		lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-You end up reading LM90_REG_R_STATUS, which is not OK. This register
-contains self-clearing bits, so there is no guarantee that the second
-read will return the same value as the first read. You'll have to come
-up with a different approach that reads LM90_REG_R_STATUS only once.
+iQIcBAEBAgAGBQJR5Cn8AAoJELSic+t+oim9TpwP/jTT02gyI8nD4GdBb0S531Q7
+eh1jvHegWGbQjnta2iW1q/IgDanOLu03lvLWxD/WV9E1UXFezNpiRMwB/YbIjnni
+CRPTI5GvBEXLh+yy6bYdXHuGv+/qI6jKmdVisJ8lKrsT5OHrtND11Sqz8xrTQ7Gy
+4bwqDC3VMHrHFaBhv9vmD1saHe9Od6BPzAyXR+YVVWI2HOSqyJzumtI0EDErBfaN
+PRoOZtySfxlp2zOTAj2dao1kOhzgbiR0Yds4M8Mg3o6PqevVGNfBjhjWzpFKR+kN
+jcTN2nDnL6C+i9++jAbAJoYre2Pa8kTBWraY4OBCKaYmjrSyKK8JaRWyarIn0oxa
+zW6/YigrbF8g3SVkSx9unZangMuX9YQk5UdcUFWvhuxoU0OOrXclZFcXk07WUtfn
+O/KAwcylw6ngvnlM5AQ57NbeWQguup5xugGSRXmen3t9kCY459atK2ZEnZTbnCZ1
+a+qGA3rerWOnqJcnSbpbVWbK15MH6pDUAyDxbfUkBfNkaGM8wIGgzvbTnuCZcD+V
+irC/aB1ttQBShqXntwpzhau48Q116a38tGUJA+b6iAwoVZ4Hb6Ma6SPdZLyhZkiS
+XVyeY/+PthcwbSS8jUx043WbacHk+spyFgI7eipmQOalSruqnU88eCgHMmolpYmC
+ow+1qGPvy26C+Jc5Q2TX
+=q199
+-----END PGP SIGNATURE-----
 
-> +
->  		if ((data->flags & LM90_HAVE_BROKEN_ALERT)
->  		 && (alarms & data->alert_alarms)) {
->  			dev_dbg(&client->dev, "Disabling ALERT#\n");
-
-
--- 
-Jean Delvare
+--FfX2iGK5t5ehHnsE--
