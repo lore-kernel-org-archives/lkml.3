@@ -1,59 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab3GOKf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:35:26 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:42541 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885Ab3GOKfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:35:24 -0400
-MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <CAPB2xN89n=1JLQe7w_+J8A246HsUDv0oP1WCjQ=4OFJnDDGchQ@mail.gmail.com>
-References: <20130705155113.3586.78292.stgit@maximpc.sw.ru>
-	<20130711185104.GC5349@quack.suse.cz>
-	<CAPB2xN89n=1JLQe7w_+J8A246HsUDv0oP1WCjQ=4OFJnDDGchQ@mail.gmail.com>
-Date: Mon, 15 Jul 2013 12:35:23 +0200
-Message-ID: <CAJfpegtNRxacv3Lw0XOK7zuQJB0_NttNzw7p3fQE+J7T_dZHyQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: strictlimit feature -v3
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        riel@redhat.com, Kirill Korotaev <dev@parallels.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Brian Foster <bfoster@redhat.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>, linux-mm@kvack.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, fengguang.wu@intel.com,
-        devel@openvz.org, Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1755158Ab3GOKgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:36:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6377 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754898Ab3GOKgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:36:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
+   d="scan'208";a="370410685"
+From: Vinod Koul <vinod.koul@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Williams <djbw@fb.com>, Matt Porter <matt@ohporter.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH] dmaengine: add dma_slave_get_caps api
+Date: Mon, 15 Jul 2013 15:27:16 +0530
+Message-Id: <1373882236-9566-1-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1373273650-31097-1-git-send-email-vinod.koul@intel.com>
+References: <1373273650-31097-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 11:50 PM, Maxim Patlasov
-<MPatlasov@parallels.com> wrote:
-> On Thu, Jul 11, 2013 at 10:51 PM, Jan Kara <jack@suse.cz> wrote:
+add new device callback .device_slave_caps api which can be used by clients to
+query the dma channel capablties before they program the channel. This can help
+is removing errors during the channel programming. Also add helper
+dma_slave_get_caps API
 
-[snipped]
+This patch folds the work done by Matt earlier
+https://patchwork.kernel.org/patch/2094891/
 
->> If I'm right in the above, then removing NR_WRITEBACK_TEMP would be a nice
->> followup patch.
->
-> I'd rather introduce the notion of trusted fuse filesystem. If system
-> administrator believe given fuse fs "trusted", it works w/o
-> strictlimit, but fuse daemon is supposed to notify the kernel
-> explicitly about threads related to processing writeback. The kernel
-> would raise a per-task flag for those threads. And, calculating
-> nr_dirty in balance_dirty_pages, we'd add NR_WRITEBACK_TEMP for all,
-> excepting tasks with the flag set.  This is very simple and will work
-> perfectly.
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+--
+this version
+	changes api to include struct dma_slave_caps as arg
+	removed burst lengths, can be added when we have users
+--
 
-Yes, doing a trusted mode for fuse is a good idea, I think.  And it
-should have a new filesystem type (can't think of a good name though,
-"fusetrusted" is a bit too long).
+ include/linux/dmaengine.h |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
-Thanks,
-Miklos
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index cb286b1..f247660 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -370,6 +370,37 @@ struct dma_slave_config {
+ 	unsigned int slave_id;
+ };
+ 
++/* struct dma_slave_caps - expose capabilities of a slave channel only
++ *
++ * @src_addr_widths: bit mask of src addr widths the channel supports
++ * @dstn_addr_widths: bit mask of dstn addr widths the channel supports
++ * @src_burst_lengths: bit mask of src slave burst lengths supported
++ * @dstn_burst_lengths: bit mask of dstn slave burst lengths supported
++ * @directions: bit mask of slave direction the channel supported
++ * 	since the enum dma_transfer_direction is not defined as bits for each
++ * 	type of direction, the dma controller should fill (1 << <TYPE>) and same
++ * 	should be checked by controller as well
++ * @cmd_pause: true, if pause and thereby resume is supported
++ * @cmd_terminate: true, if terminate cmd is supported
++ *
++ * @max_seg_nr: maximum number of SG segments supported
++ * 	0 for no maximum
++ * @max_seg_len: maximum length of a SG segment supported
++ * 	0 for no maximum
++ */
++struct dma_slave_caps {
++	u32 src_addr_widths;
++	u32 dstn_addr_widths;
++	u32 src_burst_lengths;
++	u32 dstn_burst_lengths;
++	u32 directions;
++	bool cmd_pause;
++	bool cmd_terminate;
++
++	u32 max_sg_nr;
++	u32 max_sg_len;
++};
++
+ static inline const char *dma_chan_name(struct dma_chan *chan)
+ {
+ 	return dev_name(&chan->dev->device);
+@@ -532,6 +563,7 @@ struct dma_tx_state {
+  *	struct with auxiliary transfer status information, otherwise the call
+  *	will just return a simple status code
+  * @device_issue_pending: push pending transactions to hardware
++ * @device_slave_caps: return the slave channel capabilities
+  */
+ struct dma_device {
+ 
+@@ -597,6 +629,7 @@ struct dma_device {
+ 					    dma_cookie_t cookie,
+ 					    struct dma_tx_state *txstate);
+ 	void (*device_issue_pending)(struct dma_chan *chan);
++	struct dma_slave_caps *(*device_slave_caps)(struct dma_chan *chan);
+ };
+ 
+ static inline int dmaengine_device_control(struct dma_chan *chan,
+@@ -670,6 +703,18 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
+ 	return chan->device->device_prep_interleaved_dma(chan, xt, flags);
+ }
+ 
++static inline struct dma_slave_caps *dma_get_slave_caps(struct dma_chan *chan)
++{
++	/* check if the channel supports slave transactions */
++	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
++		return NULL;
++
++	if (chan->device->device_slave_caps)
++		return chan->device->device_slave_caps(chan);
++
++	return NULL;
++}
++
+ static inline int dmaengine_terminate_all(struct dma_chan *chan)
+ {
+ 	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+-- 
+1.7.0.4
+
