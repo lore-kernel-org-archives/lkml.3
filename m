@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab3GOSUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:20:33 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:59644 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753156Ab3GOSUb (ORCPT
+	id S1754030Ab3GOSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:22:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25050 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab3GOSWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:20:31 -0400
-Message-ID: <51E43D6C.1050000@metafoo.de>
-Date: Mon, 15 Jul 2013 20:20:28 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Vinod Koul <vinod.koul@intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] ASoC: dmaengine-pcm: Add support for querying DMA capabilities
-References: <1373906531-6938-1-git-send-email-lars@metafoo.de> <20130715172643.GZ11538@sirena.org.uk> <20130715165721.GV16653@intel.com> <20130715175726.GA11538@sirena.org.uk>
-In-Reply-To: <20130715175726.GA11538@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 15 Jul 2013 14:22:14 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=E3gBSPWCDXAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=6m4_6qrbAAAA:8 a=NkygDhyOX8U1t8uLD5cA:9 a=QEXdDO2ut3YA:10 a=pJyaStJBytYA:10 a=gzpgg7MOXaMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373912531.17876.152.camel@gandalf.local.home>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Date: Mon, 15 Jul 2013 14:22:11 -0400
+In-Reply-To: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+References: <20130715155202.GC29526@xanatos>
+	 <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 07:57 PM, Mark Brown wrote:
-> On Mon, Jul 15, 2013 at 10:27:21PM +0530, Vinod Koul wrote:
->> On Mon, Jul 15, 2013 at 06:26:43PM +0100, Mark Brown wrote:
->>> On Mon, Jul 15, 2013 at 06:42:10PM +0200, Lars-Peter Clausen wrote:
->
->>>> +	hw.period_bytes_min = 16;
->>>> +	hw.period_bytes_max = dma_caps.max_sg_len;
->
->>> We can't read the minimum period size from dmaengine? Seems like
->>> something might have a restriction other than 16 bytes here.
->
->> max would be how many list items the engine supports so queried therotical min
->> would be 1 byte, not sure how 16 bytes is assumed above but my guess is that if
->> engine is able to push min burst lengths which would be 1 and give you
->> interrupt. But seriously, that would not be practical. So this should be a
->> realistic limit which system can cope with.
->
-> Right, we probably want to set an artificial floor here but it still
-> seems like we should be checking that the device actually supports this.
-> If the hardware can only support 64 bytes then the above code won't work
-> properly.
->
+On Mon, 2013-07-15 at 10:08 -0700, Linus Torvalds wrote:
 
-It shouldn't be to hard to extend the dma_caps API with a min_sg_len. But is 
-this something you've actually seen in existing hardware for that the driver 
-would make use of the dmaengine PCM framework? If it is more of theoretical 
-nature we can still easily add it later if it becomes necessary.
+> Greg has taught you well. You have controlled your fear. Now, release
+> your anger. Only your hatred can destroy me.
+> 
+> Come to the dark side, Sarah. We have cookies.
 
-That said it is not uncommon that the segment size needs to be a multiple of 
-the burst size. Adding support for that is still on my TODO list but will 
-require some changes to some of the existing users, since implementing this 
-will be a lot easier if all users use the snd_dmaengine_dai_dma_data struct for 
-their DAI DMA data.
+http://rostedt.homelinux.com/private/darth-cookie.png
 
-- Lars
+-- Steve
+
+
