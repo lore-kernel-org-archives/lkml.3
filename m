@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab3GOIoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:44:09 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:64605 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754529Ab3GOIoI (ORCPT
+	id S1754587Ab3GOIr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:47:28 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:49711 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754536Ab3GOIr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:44:08 -0400
-Message-ID: <1373877845.2591.9.camel@x61.thuisdomein>
-Subject: 9P: hook up rdma_cancelled() into p9_rdma_trans?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
+	Mon, 15 Jul 2013 04:47:26 -0400
+Message-ID: <51E3B645.8070705@linux.vnet.ibm.com>
+Date: Mon, 15 Jul 2013 14:13:49 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Lan Tianyu <tianyu.lan@intel.com>
+CC: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
+        stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Mon, 15 Jul 2013 10:44:05 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <51E3B262.6030005@intel.com>
+In-Reply-To: <51E3B262.6030005@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 15 Jul 2013 08:44:06.0035 (UTC) FILETIME=[77056630:01CE8137]
-X-RcptDomain: vger.kernel.org
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071508-8878-0000-0000-000007F301D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0) Building trans_rdma.o (in v3.11-rc1) triggers a warning:
-    net/9p/trans_rdma.c:594:12: warning: ‘rdma_cancelled’ defined but not used [-Wunused-function]
+On 07/15/2013 01:57 PM, Lan Tianyu wrote:
+> On 2013年07月12日 06:15, Srivatsa S. Bhat wrote:
+>>
+>> Hi,
+>>
+>> Commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume) caused
+>> some subtle regressions in the cpufreq subsystem during suspend/resume.
+>> This patchset is aimed at rectifying those problems, by fixing the regression
+>> as well as achieving the original goal of that commit in a proper way.
+>>
+>> Patch 1 reverts the above commit, and is CC'ed to stable.
+>>
+>> Patches 2 - 5 reorganize the code and have no functional impact, and can go
+>> in as general cleanups as well. This reorganization builds a base that the
+>> rest of the patches will make use of.
+>>
+>> Patch 6 and 7 add a mechanism to perform light-weight init/tear-down of CPUs
+>> in the cpufreq subsystem and finally patch 8 uses it to preserve sysfs files
+>> across suspend/resume.
+>>
+>> All the patches apply on current mainline.
+>>
+>>
+>> Robert, Durgadoss, it would be great if you could try it out and see if it works
+>> well for your usecase. I tested it locally and cpufreq related files did retain
+>> their permissions across suspend/resume. Let me know if it works fine in your
+>> setup too.
+>>
+>> And I'd of course appreciate to hear from Dirk, Tianyu and Toralf to know
+>> whether their systems work fine after:
+>> a. applying only the first commit (this is what gets backported to stable)
+>> b. applying all the commits
+> 
+> Hi, I tested this patchset on my machine and the issue in bug 59781 has
+> been resolved.
+> 
+> Tested-by: Tianyu Lan <tianyu.lan@intel.com>
+> 
 
-1) Did commit 80b45261a0 ("9P: Add cancelled() to the transport
-functions.") forget to actually hook up rdma_cancelled() into
-p9_rdma_trans()? Say, like this:
+Awesome! Thanks a lot!
 
-diff --git a/net/9p/trans_rdma.c b/net/9p/trans_rdma.c
-index 928f2bb..0c42b1c 100644
---- a/net/9p/trans_rdma.c
-+++ b/net/9p/trans_rdma.c
-@@ -732,6 +732,7 @@ static struct p9_trans_module p9_rdma_trans = {
- 	.close = rdma_close,
- 	.request = rdma_request,
- 	.cancel = rdma_cancel,
-+	.cancelled = rdma_cancelled,
- };
- 
- /**
-
-That (compile tested only) patch silences this warning. Is there a patch
-queued to do something like this? I couldn't find it.
-
-
-Paul Bolle
+Regards,
+Srivatsa S. Bhat
 
