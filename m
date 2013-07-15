@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab3GOUlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:41:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8496 "EHLO mga09.intel.com"
+	id S1756174Ab3GOUly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:41:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8596 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342Ab3GOUlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:41:12 -0400
+	id S1754391Ab3GOUlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 16:41:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,671,1367996400"; 
-   d="scan'208";a="370717013"
-Message-ID: <1373920870.3475.200.camel@envy.home>
-Subject: Re: [PATCH 3/3] pch_gbe: Add MinnowBoard support
-From: Darren Hart <dvhart@linux.intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
-        netdev@vger.kernel.org, stable@vger.kernel.org
-Date: Mon, 15 Jul 2013 13:41:10 -0700
-In-Reply-To: <1373877289.24799.242.camel@smile>
-References: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
-	 <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
-	 <1373877289.24799.242.camel@smile>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="346053402"
+Date: Mon, 15 Jul 2013 13:41:35 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130715204135.GH15531@xanatos>
+References: <20130715155202.GC29526@xanatos>
+ <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+ <20130715174659.GC15531@xanatos>
+ <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+ <20130715180403.GD15531@xanatos>
+ <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+ <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+ <20130715195316.GF15531@xanatos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130715195316.GF15531@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 11:34 +0300, Andy Shevchenko wrote:
-> On Fri, 2013-07-12 at 17:58 -0700, Darren Hart wrote: 
-
-... 
-> > +/* The AR803X PHY on the MinnowBoard requires a physical pin to be toggled to
-> > + * ensure it is awake for probe and init. Request the line and reset the PHY.
-> > + */
-> > +static int pch_gbe_minnow_platform_init(struct pci_dev *pdev)
-> > +{
-> > +	int ret = 0;
-> > +	int flags = GPIOF_DIR_OUT | GPIOF_INIT_HIGH | GPIOF_EXPORT;
-> > +	int gpio = MINNOW_PHY_RESET_GPIO;
-> > +
-> > +	ret = gpio_request_one(gpio, flags, "minnow_phy_reset");
-> > +	if (ret){
-> > +		dev_err(&pdev->dev,
-> > +			"ERR: Can't request PHY reset GPIO line '%d'\n", gpio);
-> > +		return ret;
-> > +	}
-> > +
-> > +	gpio_set_value(gpio, 0);
-> > +	usleep_range(1250, 1500);
-> > +	gpio_set_value(gpio, 1);
-> > +	usleep_range(1250, 1500);
+On Mon, Jul 15, 2013 at 12:53:16PM -0700, Sarah Sharp wrote:
+> Good lord.  So anyone that is one of your "top maintainers" could be
+> exposed to your verbal abuse just because they "should have known
+> better"?
 > 
-> First of all, who is going to release gpio? Perhaps
-> devm_gpio_request_one?
+> You know what the definition of an abuser is?  Someone that seeks out
+> victims that they know will "just take it" and keep the abuse "between
+> the two of them".  They pick victims that won't fight back or report the
+> abuse.
 
-Thanks for the pointer, this works and appears to be the best way to
-handle this.
+Oh, FFS, I just called out on private email for "playing the victim
+card".  I will repeat: this is not just about me, or other minorities.
+I should not have to ask for professional behavior on the mailing lists.
+Professional behavior should be the default.
 
-...
-> > + */
-> > +int pch_gbe_phy_tx_clk_delay(struct pch_gbe_hw *hw)
-> > +{
-> > +	/* The RGMII interface requires a ~2ns TX clock delay. This is typically
-> > +	 * done in layout with a longer trace or via PHY strapping, but can also
-> > +	 * be done via PHY configuration registers.
-> > +	 */
-> > +	struct pch_gbe_adapter *adapter = pch_gbe_hw_to_adapter(hw);
-> > +	u16 mii_reg;
-> > +	int ret = 0;
+"The standard you walk past is the standard you accept."
+
+http://www.smh.com.au/federal-politics/political-news/unlikely-feminist-hero-army-chiefs-video-message-draws-plaudits-20130614-2o86b.html
+
+"Those who think that it is ok to behave in a way that demeans or
+exploits their colleagues have no place in this army. If that does not
+suit you, then get out.
+
+The same goes for those that think that toughness is built on
+humiliating others.  Every one of us is responsible for the culture and
+reputation of our Army, and the environment in which we work. If you
+become aware of any individual degrading another, then show moral
+courage and take a stand against it."
+
+> In karate, or any other sport, if your opponent is motionless on the
+> floor, you stop.  You can't see the person you're emailing.  You can't
+> see if the first conversation-disabling blow has completely knocked them
+> out.  You can't see if you've misjudged their mental strength for the
+> day and completely wiped out their ability to use their brain to correct
+> the technical mistake you're trying to get them to fix.
 > 
-> No need to assign. Are you trying to shut (sparse?) warning?
+> Ask them to fix their mistake.  If they protest, then lay into them.  If
+> you *know* they don't take verbal abuse well, don't.
 
-On this point, I did find one instance where I initialized init only to
-have my first line of executable code assign to ret, that's obviously
-silly, so I fixed that one.
-
-Here, where the first assignment is nested inside case statements or
-skipped altogether with explicit returns of error codes, I prefer to
-assign it explicitly. A quick survey lists 4k initialized "int ret;"
-lines and 16k uninitialized.  The latter appears to be the more common,
-but there is certainly precedent for the former.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
-
+Sarah Sharp
