@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab3GOUEA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:04:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754839Ab3GOUD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:03:59 -0400
-Message-ID: <51E456B6.8050601@redhat.com>
-Date: Mon, 15 Jul 2013 16:08:22 -0400
-From: Brian Foster <bfoster@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754969Ab3GOUI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:08:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58528 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab3GOUI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 16:08:56 -0400
+Date: Mon, 15 Jul 2013 21:08:51 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Message-ID: <20130715200851.GD11538@sirena.org.uk>
+References: <20130715103644.04e57749@armhf>
+ <20130715153101.GK11538@sirena.org.uk>
+ <20130715203756.68abbf10@armhf>
 MIME-Version: 1.0
-To: Niels de Vos <ndevos@redhat.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [fuse-devel] [PATCH] fuse: fix occasional dentry leak when readdirplus
- is used
-References: <1373893160-30601-1-git-send-email-ndevos@redhat.com>
-In-Reply-To: <1373893160-30601-1-git-send-email-ndevos@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="h+CsNYkJBPxpZ+B/"
+Content-Disposition: inline
+In-Reply-To: <20130715203756.68abbf10@armhf>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: kirkwood-i2s: fix a compilation warning
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 08:59 AM, Niels de Vos wrote:
-> In case d_lookup() returns a dentry with d_inode == NULL, the dentry is
-> not returned with dput(). This results in triggering a BUG() in
-> shrink_dcache_for_umount_subtree():
-> 
->   BUG: Dentry ...{i=0,n=...} still in use (1) [unmount of fuse fuse]
-> 
-> Reported-by: Justin Clift <jclift@redhat.com>
-> Signed-off-by: Niels de Vos <ndevos@redhat.com>
-> 
-> --
-> Reproducing the BUG() on kernels with fuse that support READDIRPLUS can
-> be done with the GlusterFS tests:
-> - http://www.gluster.org/community/documentation/index.php/Using_the_Gluster_Test_Framework
-> 
-> After some stressing of the VFS and fuse mountpoints, bug-860663.t will
-> hit the BUG(). It does not happen on running this test stand-alone.
 
-Hi Neils,
+--h+CsNYkJBPxpZ+B/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-FYI, this is fairly easy to reproduce on-demand with gluster:
+On Mon, Jul 15, 2013 at 08:37:56PM +0200, Jean-Francois Moine wrote:
+> Mark Brown <broonie@kernel.org> wrote:
 
-- mount a volume to two local mountpoints (i.e., I used a single
-storage/posix translator volume):
-	glusterfs --volfile=./test.vol /mnt/{1,2} --use-readdirp=1
-- create a negative dentry in one mountpoint:
-	ls /mnt/1/file (results in ENOENT)
-- create the file via the second mountpoint:
-	touch /mnt/2/file
-- run a readdirp on the first mountpoint:
-	ls /mnt/1/
-- umount /mnt/2 /mnt/1
+> > I'd really like to see an analysis explaining why this can never happen,
+> > the driver explicitly supports running without extclk being provided.
+> > Simply asserting that we should never get such a rate isn't really
+> > enough detail...
 
-> ---
->  fs/fuse/dir.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> index 0eda527..da67a15 100644
-> --- a/fs/fuse/dir.c
-> +++ b/fs/fuse/dir.c
-> @@ -1246,7 +1246,9 @@ static int fuse_direntplus_link(struct file *file,
->  		if (err)
->  			goto out;
->  		dput(dentry);
-> -		dentry = NULL;
-> +	} else if (dentry) {
-> +		/* this dentry does not have a d_inode, just drop it */
-> +		dput(dentry);
->  	}
+> Russell explained this in the message below dated Wed, 27 Mar 2013
+>   (http://www.spinics.net/lists/arm-kernel/msg233819.html)
 
-I'm not really familiar with the dcache code, but is it appropriate to
-also d_invalidate() the dentry in this case (as the previous code block
-does)? Perhaps Miklos or somebody more familiar with dcache can confirm...
+This is no good, the information needs to be in the commit message.
+Right now the change just looks like a bug supported by wishful
+thinking, you're not providing enough analysis and inspection of the
+code suggests a bug.
 
-Brian
+> Sebastian is correct in that such a path should _never_ be reached
+> because ALSA will reject anything but 44.1, 48 or 96kHz rates if we
+> don't have an extclk.
 
->  
->  	dentry = d_alloc(parent, &name);
-> 
+There's no obvious code that handles anything differently with extclk.
+Indeed if you think about it for a minute you'll realise there's no way
+the driver will ever use an extclk - set_rate() is badly implemented,
+look at how other drivers select between clocks.
 
+Fixing the driver so it can make use of an extclk would be more
+useful...
+
+--h+CsNYkJBPxpZ+B/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR5FbQAAoJELSic+t+oim9YM8P/2iWVdFmrzFFDmPF3q8L45zb
+mTbT95onKjYQpte1o9wlQrfd5pc7YVSRuKkm1rlb9/PUaF3Ac8phTGi/gyz1ip4t
+QLfjNfdX6azITBPQGb4AUa5mpcYQr3HhsmYjKlrHPcM74qtuAxhPtTeALQzXWO2w
+4MhKUVZmyg8DldIOAVRPtREUJ18HuD/G0GYrxgWjorlk9VZtbl//scVatIrVaaOL
+v69LRjqh0MdJdad6TjPbBalVmTRthmqN1wlM3Dqx1q5gf0xcY1dtNl/n6daDv7Oq
+bSck/BjAuOxTKnvZxHc9aJjyWdIJN3xRCGKTElJ9rI8XDDQ0lMYGqPWmTMe+2olF
+h3aa1ngSEdw/L8yu7Z1q4YdU6eU37rYcbUnTNI5+IuD56wDaWVa9J/8oebflW4Si
+fE+yAKtjqqvBTckuknSpl11og7G+aPj/kiD7n4BihKA2apicM41bXrTyQWwbQA6U
+QSeWE/7GcpCZiWtANixXbX8RNyy+7gNlZ639ZqPFTQbVAuGy9ybGTR5s7atCsx17
+0wdcGMIcVfvc6tIINS+HVoCExmBVBDKSkKy8AbXhKfIij3pRQ2S3NmUzsxo+7Mi3
+2nE/7sFYgtt2+k4eRpEpDeNhHk0wWLW1ImpOkLw0lTVpFhFf9EcJHku/Crp9XqD6
+DIFS/y3dExhRuoqs4enT
+=F2Ug
+-----END PGP SIGNATURE-----
+
+--h+CsNYkJBPxpZ+B/--
