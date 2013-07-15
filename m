@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab3GONMt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:12:49 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:53641 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987Ab3GONLh (ORCPT
+	id S1756980Ab3GONL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:11:26 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:63221 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756670Ab3GONLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:11:37 -0400
+	Mon, 15 Jul 2013 09:11:17 -0400
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
         Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-v2 14/17] staging/lustre: fix for invalidatepage() API change
-Date: Mon, 15 Jul 2013 21:08:12 +0800
-Message-Id: <1373893695-4094-15-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH-v2 09/17] staging/lustre/llite: add missing include file for prefetchw
+Date: Mon, 15 Jul 2013 21:08:07 +0800
+Message-Id: <1373893695-4094-10-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
 References: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
@@ -21,54 +21,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
+Got below errors on s390 build:
+  CC [M]  drivers/staging/lustre/lustre/llite/dir.o
+drivers/staging/lustre/lustre/llite/dir.c: In function 'll_dir_filler':
+drivers/staging/lustre/lustre/llite/dir.c:225:3: error: implicit declaration of function 'prefetchw' [-Werror=implicit-function-declaration]
 
-somehow this got dropped during merge window...
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Peng Tao <tao.peng@emc.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/include/linux/lustre_patchless_compat.h |    2 +-
- drivers/staging/lustre/lustre/llite/rw26.c         |    5 +++--
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/llite/dir.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
-index a8e9c0c..a260e99 100644
---- a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
-+++ b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
-@@ -53,7 +53,7 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
- 		return;
+diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
+index 23c61fe..13a6426 100644
+--- a/drivers/staging/lustre/lustre/llite/dir.c
++++ b/drivers/staging/lustre/lustre/llite/dir.c
+@@ -45,6 +45,7 @@
+ #include <asm/uaccess.h>
+ #include <linux/buffer_head.h>   // for wait_on_buffer
+ #include <linux/pagevec.h>
++#include <linux/prefetch.h>
  
- 	if (PagePrivate(page))
--		page->mapping->a_ops->invalidatepage(page, 0);
-+		page->mapping->a_ops->invalidatepage(page, 0, PAGE_CACHE_SIZE);
+ #define DEBUG_SUBSYSTEM S_LLITE
  
- 	cancel_dirty_page(page, PAGE_SIZE);
- 	ClearPageMappedToDisk(page);
-diff --git a/drivers/staging/lustre/lustre/llite/rw26.c b/drivers/staging/lustre/lustre/llite/rw26.c
-index 27e4e64..f1a1c5f 100644
---- a/drivers/staging/lustre/lustre/llite/rw26.c
-+++ b/drivers/staging/lustre/lustre/llite/rw26.c
-@@ -72,7 +72,8 @@
-  * aligned truncate). Lustre leaves partially truncated page in the cache,
-  * relying on struct inode::i_size to limit further accesses.
-  */
--static void ll_invalidatepage(struct page *vmpage, unsigned long offset)
-+static void ll_invalidatepage(struct page *vmpage, unsigned int offset,
-+			      unsigned int length)
- {
- 	struct inode     *inode;
- 	struct lu_env    *env;
-@@ -89,7 +90,7 @@ static void ll_invalidatepage(struct page *vmpage, unsigned long offset)
- 	 * below because they are run with page locked and all our io is
- 	 * happening with locked page too
- 	 */
--	if (offset == 0) {
-+	if (offset == 0 && length == PAGE_CACHE_SIZE) {
- 		env = cl_env_get(&refcheck);
- 		if (!IS_ERR(env)) {
- 			inode = vmpage->mapping->host;
 -- 
 1.7.9.5
 
