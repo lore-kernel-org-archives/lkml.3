@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab3GOQU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 12:20:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28764 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566Ab3GOQU5 (ORCPT
+	id S933387Ab3GOQWH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 12:22:07 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:48694 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932566Ab3GOQWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 12:20:57 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=TyVgHLz5XD0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oLtpoGhtZv4A:10 a=UeIhxjOg6hr-157farYA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373905251.17876.150.camel@gandalf.local.home>
-Subject: Re: [PATCH] kernel: trace: remove __init from
- race_selftest_startup_function() and trace_selftest_startup_function_graph()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 15 Jul 2013 12:20:51 -0400
-In-Reply-To: <51E35A7D.8000008@asianux.com>
-References: <51DDFCF8.2090808@asianux.com>
-	   <1373561279.17876.45.camel@gandalf.local.home>
-	   <51DF44FA.9060000@asianux.com>
-	  <1373593261.17876.61.camel@gandalf.local.home>
-	  <51DF62DB.3010409@asianux.com>
-	 <1373596735.17876.84.camel@gandalf.local.home>
-	 <51DF7250.9020209@asianux.com> <51DFAE5A.2060005@asianux.com>
-	 <51E35A7D.8000008@asianux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Mon, 15 Jul 2013 12:22:05 -0400
+Message-ID: <51E421A8.1010302@linaro.org>
+Date: Mon, 15 Jul 2013 17:22:00 +0100
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130704 Icedove/17.0.7
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Xen-devel] [PATCH] xen/arm: disable cpuidle when linux is running
+ as dom0
+References: <1373898101-15633-1-git-send-email-julien.grall@linaro.org> <20130715152532.GC5774@phenom.dumpdata.com>
+In-Reply-To: <20130715152532.GC5774@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 10:12 +0800, Chen Gang wrote:
-
-> Hello Frederic and Ingo:
-
-Are you trying to go around me? I wrote this code and I'm one of the
-maintainers for it. Your issue is very minor, and can wait till other
-things get done first.
-
-You said my previous patch fixed your problem, right? Then I'll add your
-tested by and push it in due course.
-
-I'll also get around to adding __init's to other functions too. But it
-is *very* low on the totem pole of importance.
-
+On 07/15/2013 04:25 PM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jul 15, 2013 at 03:21:41PM +0100, Julien Grall wrote:
+>> When linux is running as dom0, Xen doesn't show the physical cpu but a
+>> virtual CPU.
+>> On some ARM SOC (for instance the exynos 5250), linux registers callbacks
+>> for cpuidle. When these callbacks are called, they will modify
+>> directly the physical cpu not the virtual one. It can impact the whole board
+>> instead of dom0.
 > 
-> Could you provide your suggestions or completions for it ?
-> 
-> The trace_selftest_startup_* funcitons are mostly added by you without
-> '__init', do you have additional considerations about it (intend to have
-> no '__init') ?
-> 
-> If no reply, I recommend to keep no '__init': apply this patch or
-> regress part of the patch "f1ed7c7 ftrace: Do not run selftest if
-> command line parameter is set" (at least, it can avoid related warnings
-> and treat all *selftest* fair).
+> Should you also call disable_cpufreq() ?
 
-It's a compile time warning that's a false positive. Not a run time
-crash or other issue of importance. It can wait, relax. Otherwise you
-are starting to become annoying.
+I had some issue on the versatile express when cpufreq was disabled.
+I will give another try and see the exact error.
 
--- Steve
-
+-- 
+Julien
 
