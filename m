@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab3GOR5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 13:57:21 -0400
-Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:36938
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753462Ab3GOR5S convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 13:57:18 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-Date: Mon, 15 Jul 2013 12:57:05 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v3 1/2] DMA: Freescale: Add new 8-channel DMA engine
- device tree nodes
-To: <hongbo.zhang@freescale.com>
-CC: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <vakul@freescale.com>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-References: <1373884499-24079-1-git-send-email-hongbo.zhang@freescale.com>
-	<1373884499-24079-2-git-send-email-hongbo.zhang@freescale.com>
-In-Reply-To: <1373884499-24079-2-git-send-email-hongbo.zhang@freescale.com>
-	(from hongbo.zhang@freescale.com on Mon Jul 15 05:34:58 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1373911025.8183.308@snotra>
+	id S1753806Ab3GOR5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 13:57:51 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56894 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab3GOR5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 13:57:49 -0400
+Date: Mon, 15 Jul 2013 18:57:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20130715175726.GA11538@sirena.org.uk>
+References: <1373906531-6938-1-git-send-email-lars@metafoo.de>
+ <20130715172643.GZ11538@sirena.org.uk>
+ <20130715165721.GV16653@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LG5jgFgJbJFFiAfj"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20130715165721.GV16653@intel.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 1/2] ASoC: dmaengine-pcm: Add support for querying DMA
+ capabilities
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 05:34:58 AM, hongbo.zhang@freescale.com wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> 
-> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this  
-> patch add
-> the device tree nodes for them.
-> 
-> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> ---
->  .../devicetree/bindings/powerpc/fsl/dma.txt        |    8 +-
->  arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   90  
-> ++++++++++++++++++++
->  arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   90  
-> ++++++++++++++++++++
->  arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
->  4 files changed, 187 insertions(+), 5 deletions(-)
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
-> 
-> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt  
-> b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-> index 2a4b4bc..8ee5732 100644
-> --- a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-> +++ b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-> @@ -76,10 +76,10 @@ Freescale PowerPC 85xx/86xx have on chip general  
-> purpose DMA controllers.
-> 
->  Required properties:
-> 
-> -- compatible        : compatible list, contains 2 entries, first is
-> +- compatible        : compatible list, contains 3 entries, first is
->  		 "fsl,CHIP-dma", where CHIP is the processor
->  		 (mpc8540, mpc8540, etc.) and the second is
-> -		 "fsl,eloplus-dma"
-> +		 "fsl,eloplus-dma", the third is "fsl,elo3-dma"
 
-The new device tree nodes have only one compatible in the list, not  
-three.  And if you were to both fsl,eloplus-dma and fsl,elo3-dma on the  
-same node, fsl,elo3-dma should come first.
+--LG5jgFgJbJFFiAfj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->  - reg               : <registers mapping for DMA general status reg>
->  - cell-index        : controller index.  0 for controller @ 0x21000,
->                                           1 for controller @ 0xc000
-> @@ -100,7 +100,7 @@ Example:
->  	dma@21300 {
->  		#address-cells = <1>;
->  		#size-cells = <1>;
-> -		compatible = "fsl,mpc8540-dma", "fsl,eloplus-dma";
-> +		compatible = "fsl,mpc8540-dma", "fsl,eloplus-dma",  
-> "fsl,elo3-dma";
+On Mon, Jul 15, 2013 at 10:27:21PM +0530, Vinod Koul wrote:
+> On Mon, Jul 15, 2013 at 06:26:43PM +0100, Mark Brown wrote:
+> > On Mon, Jul 15, 2013 at 06:42:10PM +0200, Lars-Peter Clausen wrote:
 
-In addition to the above issue about ordering, mpc8540 does not have  
-elo3.
+> > > +	hw.period_bytes_min = 16;
+> > > +	hw.period_bytes_max = dma_caps.max_sg_len;
 
--Scott
+> > We can't read the minimum period size from dmaengine? Seems like
+> > something might have a restriction other than 16 bytes here.
+
+> max would be how many list items the engine supports so queried therotical min
+> would be 1 byte, not sure how 16 bytes is assumed above but my guess is that if
+> engine is able to push min burst lengths which would be 1 and give you
+> interrupt. But seriously, that would not be practical. So this should be a
+> realistic limit which system can cope with.
+
+Right, we probably want to set an artificial floor here but it still
+seems like we should be checking that the device actually supports this.
+If the hardware can only support 64 bytes then the above code won't work
+properly.
+
+--LG5jgFgJbJFFiAfj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR5DgDAAoJELSic+t+oim9OuUP/ArcS/0NdnJ7kanUhVn7Ax0/
+/caC6QIKNerQWOD48ly7PxKtsG9EBPCj/UEbQkAi9GpcsIaCOvmV+n0tFhpTzgPO
+OoJAzgxFMYsMCXjzQnyFZpHbsniz+Pkliz8cCX5xgkmXac9kYGd8DYshkQO9Ws5+
+Z9FAkYt9VlE14e8q9jVd3tMNilkCWbo1nE3LhZiuQ9OoezZHWaZtCCBvx8/6VqwE
+bLnDLfoP96kVxFq7Fb7CD/rNyPk3NynrFOiAdgCuwJDGCSR6d6KxJnKdUucD/xoE
+laj3cVDMRPUGJpeSI/1d27SHFiDZJwPKOmaKs2k62qaNavN8vgAQnnO6oDxIkP9T
+duN/+QQrdjNhX6zjTFXbIgUxtKZeF4BHN4W6I7nJUn/gPYOPZWt9vXju41wXdWQF
+6WwJaBlXVg+aKGWFHZQidZBpeOkgVTyNZGPF7wS7cdhFxMUxZp0A6B9ondOS5MRz
+fPlczj7vd2REJ5BDf+QfZXScSWn4EJQWXwqUHI5flXhlMHyJ9v/k7RSIgJI3SX95
+zkTElOOU2pYOdnQlZgnElkUJUt5D6P/IEmYlgkMtPOlmIIHv1OU5IRTght7pcdjc
+gWB0aKPjbZrurThLfqLbeddDtlq7z9Qe5vxEM/e5FXoBgCzxJLUNn2Q96+GrWY8C
+fAhD9sB9Of3VeocJoedn
+=h2Cj
+-----END PGP SIGNATURE-----
+
+--LG5jgFgJbJFFiAfj--
