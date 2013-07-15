@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab3GOOJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:09:26 -0400
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:1635
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757219Ab3GOOIx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:08:53 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1155h)
-X-WSS-ID: 0MPZDYH-01-9LN-02
-X-M-MSG: 
-Message-ID: <51E40268.3030009@amd.com>
-Date: Mon, 15 Jul 2013 09:08:40 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757405Ab3GOOJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:09:44 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:43465
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757259Ab3GOOJn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 10:09:43 -0400
+X-Forefront-Antispam-Report: CIP:192.65.42.18;KIP:(null);UIP:(null);IPV:NLI;H:mx.danahertm.com;RD:mx.danahertm.com;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VPS-6(z21eIz98dI9371I146fI542I1432I1418I4015Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz4ejz17326ah8275dhz2dh2a8h668h839h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
+From: "Rich, Jason" <jason.rich@tekcomms.com>
+To: Willy Tarreau <w@1wt.eu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Panic at _blk_run_queue on 2.6.32
+Thread-Topic: Panic at _blk_run_queue on 2.6.32
+Thread-Index: Ac58y6RwiDajJiLlQbi1pm9xZ49xQgBCipKAAOOG4PA=
+Date: Mon, 15 Jul 2013 14:09:32 +0000
+Message-ID: <636295BFF4A001418A00F46569A2CD2B161DF7B0@US-PLNO-EXM01-P.global.tektronix.net>
+References: <636295BFF4A001418A00F46569A2CD2B161CE88B@US-PLNO-EXM01-P.global.tektronix.net>
+ <20130710202729.GA18877@1wt.eu>
+In-Reply-To: <20130710202729.GA18877@1wt.eu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [129.196.128.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: <agordeev@redhat.com>, <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: AHCI: ahci Driver crash in ahci_host_activate
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-OriginatorOrg: tekcomms.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I ran into a crash during booting with the latest 3.11.0-rc1.  After 
-investigation, the crash was triggered by the patch below where the "pp" 
-is NULL in some cases.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Willy Tarreau
+> Sent: Wednesday, July 10, 2013 3:27 PM
+> To: Rich, Jason
+> Cc: linux-kernel@vger.kernel.org
+> Subject: Re: Panic at _blk_run_queue on 2.6.32
+> 
+> Hi Jason,
+> 
+> On Tue, Jul 09, 2013 at 05:42:29PM +0000, Rich, Jason wrote:
+> > Greetings,
+> > I've recently encountered an issue where multiple hosts are failing to
+> > boot up about 1/5 of the time.  So far I have confirmed this issue on three
+> seperate host machines.  The issue presents itself after updating 2.6.32.39 to
+> patch 50 and patch 61.
+> > Both patch levels result in the failure described below.  Since this occurs on
+> multiple hosts, I feel I can safely rule out hardware.
+> 
+> First, thank you for your very detailed report. Do you think you could narrow
+> this down to a specific kernel version ? Given that there are exactly 10
+> versions between .39 and .50, I think that a version-level bisect would take
+> 3 or 4 builds (so probably around 20 reboots).
 
-Suravee
+I was out of town for a little while there, but I plan to do just that in a little while.  I will let you know what I find.  Hopefully it won't take me too terribly long.
 
-commit b29900e62598cecd519c9ab2b8e4d03f8ebf702d
-Author: Alexander Gordeev <agordeev@redhat.com>
-Date:   Wed May 22 08:53:48 2013 +0900
+> 
+> It would help us spot the faulty patch. Right now, there are 546 patches
+> between .39 and .50 so it's quite hard to find the culprit, even with your full
+> trace. That does not mean we'll immediately spot it, maybe a deeper bisect
+> will be needed, but it should be easier.
+> 
+> > It is also of note that I have not seen this behavior on the 3.4.26 kernel, or
+> on any of my 32bit hosts.
+> 
+> This is a good news, because we're probably missing one fix from a more
+> recent version that addressed a similar regression and that we might
+> backport into 2.6.32.62.
+> 
+> > That said, I have to support this software release (which runs on the 2.6
+> kernel) for at least another two years.
+> 
+> Be careful on this point, 2.6.32 is planned for EOL next year :
+> 
+>    https://www.kernel.org/category/releases.html
+> 
+> You might want to consider migrating to a supported distro kernel or to 3.2
+> instead. That said, if you follow carefully the updates from later kernels, you
+> might prefer to maintain your own backports of the patches that are relevant
+> to your usage.
 
-     AHCI: Make distinct names for ports in /proc/interrupts
+Thanks, we already have pulled in 3.4 to our released product, but I still have to support my product's previous releases for a time.  My goal is to patch up to .61 plus a fix to this issue and never touch the release again.   Worst case, I'll stay on 2.6.32.39 and cherry pick.  I'd really hate to do that, however.  Anyway, as stated earlier, I'll bisect and try to narrow this down.  Appreciate the help so far and really hope we just have to back patch a fix.
 
-     Currently all interrupts assigned to AHCI ports show up in
-     '/proc/interrupts' as 'ahci'. This fix adds port numbers as
-     suffixes and hence makes the descriptions distinct.
+Jason
+> 
+> Best regards,
+> Willy
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-     Reported-by: Jan Beulich <JBeulich@suse.com>
-     Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-     Signed-off-by: Tejun Heo <tj@kernel.org>
-
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 251e57d..4d1c672 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1142,9 +1142,11 @@ int ahci_host_activate(struct ata_host *host, int 
-irq, unsigned int n_msis)
-                 return rc;
-
-         for (i = 0; i < host->n_ports; i++) {
-+               struct ahci_port_priv *pp = host->ports[i]->private_data;
-+
-                 rc = devm_request_threaded_irq(host->dev,
-                         irq + i, ahci_hw_interrupt, ahci_thread_fn, 
-IRQF_SHARED,
--                       dev_driver_string(host->dev), host->ports[i]);
-+                       pp->irq_desc, host->ports[i]);
-                 if (rc)
-                         goto out_free_irqs;
-         }
 
