@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab3GOKWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:22:31 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41636 "EHLO
+	id S1755208Ab3GOKXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:23:15 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41589 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab3GOKW3 (ORCPT
+	with ESMTP id S1755207Ab3GOKW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Jul 2013 06:22:29 -0400
 From: Sudeep.KarkadaNagesha@arm.com
@@ -16,20 +16,20 @@ Cc: cpufreq@vger.kernel.org, arnd@arndb.de, olof@lixom.net,
         gregkh@linuxfoundation.org, gregory.clement@free-electrons.com,
         kernel@pengutronix.de, shawn.guo@linaro.org, linux@arm.linux.org.uk,
         Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [RFC PATCH 07/11] cpufreq: cpufreq-cpu0: remove device tree parsing for cpu nodes
-Date: Mon, 15 Jul 2013 11:22:08 +0100
-Message-Id: <1373883732-26303-8-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Subject: [RFC PATCH 09/11] cpufreq: spear-cpufreq: remove device tree parsing for cpu nodes
+Date: Mon, 15 Jul 2013 11:22:10 +0100
+Message-Id: <1373883732-26303-10-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373883732-26303-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 References: <1373883732-26303-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 15 Jul 2013 10:22:24.0081 (UTC) FILETIME=[3287CC10:01CE8145]
-X-MC-Unique: 113071511222713501
+X-OriginalArrivalTime: 15 Jul 2013 10:22:25.0737 (UTC) FILETIME=[33847B90:01CE8145]
+X-MC-Unique: 113071511222701501
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6FAN57r007626
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6FANRH1007630
 
 From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
@@ -40,63 +40,42 @@ This patch removes all DT parsing and uses cpu->of_node instead.
 
 Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 ---
- drivers/cpufreq/cpufreq-cpu0.c | 23 ++++-------------------
- 1 file changed, 4 insertions(+), 19 deletions(-)
+ drivers/cpufreq/spear-cpufreq.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index ad1fde2..5b05c26 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -174,29 +174,17 @@ static struct cpufreq_driver cpu0_cpufreq_driver = {
+diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
+index c3efa7f..eb73c47 100644
+--- a/drivers/cpufreq/spear-cpufreq.c
++++ b/drivers/cpufreq/spear-cpufreq.c
+@@ -14,6 +14,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
- static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ #include <linux/clk.h>
++#include <linux/cpu.h>
+ #include <linux/cpufreq.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+@@ -218,12 +219,19 @@ static struct cpufreq_driver spear_cpufreq_driver = {
+ static int spear_cpufreq_driver_init(void)
  {
--	struct device_node *np, *parent;
-+	struct device_node *np;
- 	int ret;
+ 	struct device_node *np;
++	struct device *cpu_dev;
+ 	const struct property *prop;
+ 	struct cpufreq_frequency_table *freq_tbl;
+ 	const __be32 *val;
+ 	int cnt, i, ret;
  
--	parent = of_find_node_by_path("/cpus");
--	if (!parent) {
--		pr_err("failed to find OF /cpus\n");
--		return -ENOENT;
--	}
--
--	for_each_child_of_node(parent, np) {
--		if (of_get_property(np, "operating-points", NULL))
--			break;
--	}
-+	cpu_dev = &pdev->dev;
- 
+-	np = of_find_node_by_path("/cpus/cpu@0");
++	cpu_dev = get_cpu_device(0);
++	if (!cpu_dev) {
++		pr_err("failed to get cpu device\n");
++		return -ENODEV;
++	}
++
 +	np = of_node_get(cpu_dev->of_node);
  	if (!np) {
- 		pr_err("failed to find cpu0 node\n");
--		ret = -ENOENT;
--		goto out_put_parent;
-+		return -ENOENT;
- 	}
- 
--	cpu_dev = &pdev->dev;
--	cpu_dev->of_node = np;
--
- 	cpu_reg = devm_regulator_get(cpu_dev, "cpu0");
- 	if (IS_ERR(cpu_reg)) {
- 		/*
-@@ -269,15 +257,12 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 	}
- 
- 	of_node_put(np);
--	of_node_put(parent);
- 	return 0;
- 
- out_free_table:
- 	opp_free_cpufreq_table(cpu_dev, &freq_table);
- out_put_node:
- 	of_node_put(np);
--out_put_parent:
--	of_node_put(parent);
- 	return ret;
- }
- 
+ 		pr_err("No cpu node found");
+ 		return -ENODEV;
 -- 
 1.8.1.2
 
