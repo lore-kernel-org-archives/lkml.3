@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab3GORL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 13:11:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28066 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3GORL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 13:11:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,670,1367996400"; 
-   d="scan'208";a="268565608"
-Date: Mon, 15 Jul 2013 22:02:47 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Dan Williams <djbw@fb.com>, Jassi Brar <jaswinder.singh@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: pl330: Implement device_slave_caps
-Message-ID: <20130715163247.GU16653@intel.com>
-References: <1373903588-19358-1-git-send-email-lars@metafoo.de>
+	id S1752285Ab3GORMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 13:12:24 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:32036
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751855Ab3GORMW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 13:12:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+Date: Mon, 15 Jul 2013 12:12:17 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH V2 1/2] DMA: Freescale: Add new 8-channel DMA engine
+ device tree nodes
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: "<hongbo.zhang@freescale.com>" <hongbo.zhang@freescale.com>,
+        <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <vakul@freescale.com>
+References: <1373005626-20726-1-git-send-email-hongbo.zhang@freescale.com>
+	<1373005626-20726-2-git-send-email-hongbo.zhang@freescale.com>
+	<6482CAC0-9C6A-4A1E-B158-28D2E1BB2CCE@kernel.crashing.org>
+In-Reply-To: <6482CAC0-9C6A-4A1E-B158-28D2E1BB2CCE@kernel.crashing.org>
+	(from galak@kernel.crashing.org on Mon Jul 15 08:35:07 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1373908337.8183.301@snotra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
 Content-Disposition: inline
-In-Reply-To: <1373903588-19358-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 05:53:08PM +0200, Lars-Peter Clausen wrote:
-> Implemnt the device_slave_caps() callback for the pl330 driver. This allows
-typo ^^^^
-> dmaengine users like the generic ALSA dmaengine PCM driver to query the
-> capabilities of the driver. The PL330 supports all buswidths and both
-> mem-to-dev as well as dev-to-mem transfers. In theory there is no limit on the
-> number of segments that can be transferred (in practice you'll run out of memory
-> eventually) and the number of bytes per segment is limited by the size of the
-> PL330 program buffer. Due to the nature of the PL330 the maximum number of bytes
-> per segment depends on the burstsize, the driver sets it to the value for a
-> 1-byte burstsize, since it is the smallest.
+On 07/15/2013 08:35:07 AM, Kumar Gala wrote:
 > 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  drivers/dma/pl330.c | 27 +++++++++++++++++++++++++++
->  1 file changed, 27 insertions(+)
+> On Jul 5, 2013, at 1:27 AM, <hongbo.zhang@freescale.com>  
+> <hongbo.zhang@freescale.com> wrote:
 > 
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 593827b..2bf578c 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2855,6 +2855,32 @@ static irqreturn_t pl330_irq_handler(int irq, void *data)
->  		return IRQ_NONE;
->  }
->  
-> +#define PL330_DMA_BUSWIDTHS \
-> +	BIT(DMA_SLAVE_BUSWIDTH_UNDEFINED) | \
-> +	BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
-> +	BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
-> +	BIT(DMA_SLAVE_BUSWIDTH_4_BYTES) | \
-> +	BIT(DMA_SLAVE_BUSWIDTH_8_BYTES)
-checkpatch cribs that this is complex macro and should be enclosed in a
-parenthesis, I have ignored it as usage doesnt justify it, yet!
-> +
-> +static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
-> +	struct dma_slave_caps *caps)
-> +{
-> +	caps->src_addr_widths = PL330_DMA_BUSWIDTHS;
-> +	caps->dstn_addr_widths = PL330_DMA_BUSWIDTHS;
-> +	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-> +	caps->cmd_pause = false;
-> +	caps->cmd_terminate = true;
-> +
-> +	/* 
-trailing whitepsace here!
-> +	 * This is the limit for transfers with a buswidth of 1, larger buswidths
-you could have sticked to 80 char rule here very easily...
-> +	 * will have larger limits.
-> +	 */
-Now, i am catching a plane for a work trip tomorrow, so have fixed checkpatch
-and typo and applied this.
+> > +dma0: dma@100300 {
+> > +	#address-cells = <1>;
+> > +	#size-cells = <1>;
+> > +	compatible = "fsl,elo3-dma";
+> 
+> why does this require a new compatible?
 
-~Vinod
+The binding has changed -- there is now a second reg entry.
+
+-Scott
