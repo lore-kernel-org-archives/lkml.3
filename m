@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933305Ab3GOPxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 11:53:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43358 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933126Ab3GOPxD (ORCPT
+	id S933336Ab3GOPxX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 11:53:23 -0400
+Received: from smtp-out-191.synserver.de ([212.40.185.191]:1098 "EHLO
+	smtp-out-191.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933126Ab3GOPxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 11:53:03 -0400
-Message-ID: <51E41AB2.3020905@infradead.org>
-Date: Mon, 15 Jul 2013 08:52:18 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 15 Jul 2013 11:53:19 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 23150
+Message-ID: <51E41B1B.7000100@metafoo.de>
+Date: Mon, 15 Jul 2013 17:54:03 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: netdev@vger.kernel.org, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Eli Cohen <eli@mellanox.com>
-Subject: Re: [PATCH 3.11-rc1] mlx5 core: Fix __udivdi3 when compiling for
- 32 bit arches
-References: <1373900205-69711-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1373900205-69711-1-git-send-email-tim.gardner@canonical.com>
+To: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+CC: Oleksandr Kravchenko <x0199363@ti.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        jic23@cam.ac.uk, Peter Meerwald <pmeerw@pmeerw.net>,
+        holler@ahsoftware.de, srinivas.pandruvada@intel.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] iio: add APDS9300 ambilent light sensor driver
+References: <1373461729-11261-1-git-send-email-x0199363@ti.com> <51E03720.1010806@metafoo.de> <CAGH3drqEPxW=QwadCLj=ZOQe0gp_c7mdSiNQnq1_-BMKL9CgJw@mail.gmail.com> <51E3EC8B.3090601@metafoo.de> <CAGH3dro7MxDJRB=5gsBysiKVvXLskZFuagiBMznUnAjCMoZsTQ@mail.gmail.com>
+In-Reply-To: <CAGH3dro7MxDJRB=5gsBysiKVvXLskZFuagiBMznUnAjCMoZsTQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/13 07:56, Tim Gardner wrote:
-> Cc: Eli Cohen <eli@mellanox.com>
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-
-I reported this last week and Eli wrote:
-
-"I have this fixed in my tree and we run the driver on i386. I will check on Sunday why it is not in the patches submitted."
-
-Anyway, the patch works for me.
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-> ---
->  drivers/net/ethernet/mellanox/mlx5/core/debugfs.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/mellanox/mlx5/core/debugfs.c b/drivers/net/ethernet/mellanox/mlx5/core/debugfs.c
-> index 4273c06..9c7194b 100644
-> --- a/drivers/net/ethernet/mellanox/mlx5/core/debugfs.c
-> +++ b/drivers/net/ethernet/mellanox/mlx5/core/debugfs.c
-> @@ -156,7 +156,7 @@ static ssize_t average_read(struct file *filp, char __user *buf, size_t count,
->  	stats = filp->private_data;
->  	spin_lock(&stats->lock);
->  	if (stats->n)
-> -		field = stats->sum / stats->n;
-> +		field = div64_u64(stats->sum, stats->n);
->  	spin_unlock(&stats->lock);
->  	ret = snprintf(tbuf, sizeof(tbuf), "%llu\n", field);
->  	if (ret > 0) {
+On 07/15/2013 04:54 PM, Oleksandr Kravchenko wrote:
+> I can't to find devm_iio_device_alloc() in my kernel v3.11-rc1
 > 
 
+It doesn't exist yet, but it should be too hard to implement one.
 
--- 
-~Randy
+- Lars
+
+> On Mon, Jul 15, 2013 at 3:35 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> On 07/15/2013 02:27 PM, Oleksandr Kravchenko wrote:
+>>> Thank you for review! But I don't completely understand one of your comment:
+>>>
+>>>>> +static int als_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>>> [...]
+>>>>> +     if (client->irq) {
+>>>>> +             ret = devm_request_threaded_irq(&client->dev, client->irq,
+>>>>> +                             NULL, als_interrupt_handler,
+>>>>> +                             IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>>>>> +                             ALS_IRQ_NAME, indio_dev);
+>>>>
+>>>> This is a bit racy, you access memory in the irq handler that is freed
+>>>> before the irq is freed.
+>>>
+>>> Do you mean than that indio_dev may be used in interrupt handler after
+>>> iio_device_free(indio_dev) called in als_remove() function?
+>>>
+>>> If so, can I use disable_irq() in als_remove() before iio_device_free()
+>>> to avoid this problem?
+>>>
+>>
+>> Just add a devm_iio_device_alloc() and use that, instead of trying to bodch
+>> around the issue.
+>>
+> 
+> 
+> 
+
