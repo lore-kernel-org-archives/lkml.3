@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab3GOL0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 07:26:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43345 "EHLO hydra.sisk.pl"
+	id S1755889Ab3GOL1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 07:27:43 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43357 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755772Ab3GOL0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 07:26:08 -0400
+	id S1755794Ab3GOL1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 07:27:41 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>, toralf.foerster@gmx.de,
@@ -13,12 +13,12 @@ Cc: Viresh Kumar <viresh.kumar@linaro.org>, toralf.foerster@gmx.de,
         lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
         stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
-Date: Mon, 15 Jul 2013 13:35:56 +0200
-Message-ID: <5802844.Fghi6KKD2P@vostro.rjw.lan>
+Subject: Re: [PATCH 2/8] cpufreq: Fix misplaced call to cpufreq_update_policy()
+Date: Mon, 15 Jul 2013 13:37:35 +0200
+Message-ID: <2436314.Felxb6Mvh0@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51E3C950.90503@linux.vnet.ibm.com>
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com> <51E3C950.90503@linux.vnet.ibm.com>
+In-Reply-To: <51E394A8.1030001@linux.vnet.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <CAKohpo=DNhKTGdectgyWLW3XkfDOAiEhJ=hi+zW=6G6fWShybg@mail.gmail.com> <51E394A8.1030001@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,50 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 15, 2013 03:35:04 PM Srivatsa S. Bhat wrote:
-> On 07/15/2013 03:25 PM, Viresh Kumar wrote:
-> > Hi Srivatsa,
-> > 
-> > I may be wrong but it looks something is wrong in this patch.
-> > 
-> > On 12 July 2013 03:47, Srivatsa S. Bhat
+On Monday, July 15, 2013 11:50:24 AM Srivatsa S. Bhat wrote:
+> On 07/12/2013 12:36 PM, Viresh Kumar wrote:
+> > On 12 July 2013 03:45, Srivatsa S. Bhat
 > > <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> >> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> >> The call to cpufreq_update_policy() is placed in the CPU hotplug callback
+> >> of cpufreq_stats, which has a higher priority than the CPU hotplug callback
+> >> of cpufreq-core. As a result, during CPU_ONLINE/CPU_ONLINE_FROZEN, we end up
+> >> calling cpufreq_update_policy() *before* calling cpufreq_add_dev() !
+> >> And for uninitialized CPUs, it just returns silently, not doing anything.
 > > 
-> >> @@ -1239,29 +1263,40 @@ static int __cpufreq_remove_dev(struct device *dev,
-> >>         if ((cpus == 1) && (cpufreq_driver->target))
-> >>                 __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+> > Hmm..
+> > 
+> >> To add to it, cpufreq_stats is not even the right place to call
+> >> cpufreq_update_policy() to begin with. The cpufreq core ought to handle
+> >> this in its own callback, from an elegance/relevance perspective.
 > >>
-> >> -       pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-> >> -       cpufreq_cpu_put(data);
-> >> +       if (!frozen) {
-> >> +               pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-> >> +               cpufreq_cpu_put(data);
+> >> So move the invocation of cpufreq_update_policy() to cpufreq_cpu_callback,
+> >> and place it *after* cpufreq_add_dev().
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> ---
+> >>
+> >>  drivers/cpufreq/cpufreq.c       |    1 +
+> >>  drivers/cpufreq/cpufreq_stats.c |    6 ------
+> >>  2 files changed, 1 insertion(+), 6 deletions(-)
+> >>
+> >> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> >> index ccc6eab..f8c3100 100644
+> >> --- a/drivers/cpufreq/cpufreq.c
+> >> +++ b/drivers/cpufreq/cpufreq.c
+> >> @@ -1943,6 +1943,7 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+> >>                 case CPU_ONLINE:
+> >>                 case CPU_ONLINE_FROZEN:
+> >>                         cpufreq_add_dev(dev, NULL);
+> >> +                       cpufreq_update_policy(cpu);
 > > 
-> > So, we don't decrement usage count here. But we are still increasing
-> > counts on cpufreq_add_dev after resume, isn't it?
-> > 
-> > So, we wouldn't be able to free policy struct once all the cpus of a
-> > policy are removed after suspend/resume has happened once.
+> > Do we need to call this for every hotplug of cpu? I am not
+> > talking about suspend/resume here.
 > > 
 > 
-> Actually even I was wondering about this while writing the patch and
-> I even tested shutdown after multiple suspend/resume cycles, to verify that
-> the refcount is messed up. But surprisingly, things worked just fine.
-> 
-> Logically there should've been a refcount mismatch and things should have
-> failed, but everything worked fine during my tests. Apart from suspend/resume
-> and shutdown tests, I even tried mixing a few regular CPU hotplug operations
-> (echo 0/1 to sysfs online files), but nothing stood out.
-> 
-> Sorry, I forgot to document this in the patch. Either the patch is wrong
-> or something else is silently fixing this up. Not sure what is the exact
-> situation.
+> I don't think we need to, but I think it would be better to postpone
+> optimizations until all the cpufreq regressions get fixed. Later perhaps
+> we could revisit these minor optimizations if desired.
 
-OK, so I'm not going to queue [2-8/8] up until we find out what's going on
-here (and until Toralf tells me that it doesn't break his system any more).
-
-I've queued up [1/8] for 3.11 already.
+Agreed.
 
 Thanks,
 Rafael
