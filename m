@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab3GOKY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:24:26 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33823 "EHLO
+	id S1755155Ab3GOKZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:25:34 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33688 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab3GOKWZ (ORCPT
+	with ESMTP id S1755050Ab3GOKWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:22:25 -0400
+	Mon, 15 Jul 2013 06:22:24 -0400
 From: Sudeep.KarkadaNagesha@arm.com
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
@@ -16,82 +16,168 @@ Cc: cpufreq@vger.kernel.org, arnd@arndb.de, olof@lixom.net,
         gregkh@linuxfoundation.org, gregory.clement@free-electrons.com,
         kernel@pengutronix.de, shawn.guo@linaro.org, linux@arm.linux.org.uk,
         Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [RFC PATCH 05/11] drivers/bus: arm-cci: avoid parsing DT for cpu device nodes
-Date: Mon, 15 Jul 2013 11:22:06 +0100
-Message-Id: <1373883732-26303-6-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Subject: [RFC PATCH 03/11] ARM: topology: remove hwid/MPIDR dependency from cpu_capacity
+Date: Mon, 15 Jul 2013 11:22:04 +0100
+Message-Id: <1373883732-26303-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373883732-26303-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 References: <1373883732-26303-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 15 Jul 2013 10:22:22.0190 (UTC) FILETIME=[316740E0:01CE8145]
-X-MC-Unique: 113071511222310601
+X-OriginalArrivalTime: 15 Jul 2013 10:22:20.0331 (UTC) FILETIME=[304B97B0:01CE8145]
+X-MC-Unique: 113071511222209601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6FAPI1a007665
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6FAPiXN007673
 
 From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Since the CPU device nodes can be retrieved using arch_of_get_cpu_node,
-we can use it to avoid parsing the cpus node searching the cpu nodes and
-mapping to logical index.
+Currently the topology code computes cpu capacity and stores it in
+the list along with hwid(which is MPIDR) as it parses the CPU nodes
+in the device tree. This is required as it needs to be mapped to the
+logical CPU later.
 
-This patch removes parsing DT for cpu nodes by using arch_of_get_cpu_node.
+Since the CPU device nodes can be retrieved in the logical ordering
+using helpers, its possible to store cpu_capacity also in logical
+ordering and avoid storing hwid for each entry.
+
+This patch removes hwid by making use of arch_of_get_cpu_node.
 
 Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 ---
- drivers/bus/arm-cci.c | 28 +++++++---------------------
- 1 file changed, 7 insertions(+), 21 deletions(-)
+ arch/arm/kernel/topology.c | 61 +++++++++++++++-------------------------------
+ 1 file changed, 19 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/bus/arm-cci.c b/drivers/bus/arm-cci.c
-index 7332889..8de67c2 100644
---- a/drivers/bus/arm-cci.c
-+++ b/drivers/bus/arm-cci.c
-@@ -122,17 +122,8 @@ EXPORT_SYMBOL_GPL(cci_ace_get_port);
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index c5a5954..c1a8f05 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -74,12 +74,8 @@ struct cpu_efficiency table_efficiency[] = {
+ 	{NULL, },
+ };
  
- static void __init cci_ace_init_ports(void)
- {
--	int port, ac, cpu;
--	u64 hwid;
--	const u32 *cell;
--	struct device_node *cpun, *cpus;
+-struct cpu_capacity {
+-	unsigned long hwid;
+-	unsigned long capacity;
+-};
 -
--	cpus = of_find_node_by_path("/cpus");
--	if (WARN(!cpus, "Missing cpus node, bailing out\n"))
--		return;
--
--	if (WARN_ON(of_property_read_u32(cpus, "#address-cells", &ac)))
--		ac = of_n_addr_cells(cpus);
-+	int port, cpu;
-+	struct device_node *cpun;
+-struct cpu_capacity *cpu_capacity;
++unsigned long *__cpu_capacity;
++#define cpu_capacity(cpu)	__cpu_capacity[cpu]
  
- 	/*
- 	 * Port index look-up speeds up the function disabling ports by CPU,
-@@ -141,18 +132,13 @@ static void __init cci_ace_init_ports(void)
- 	 * The stashed index array is initialized for all possible CPUs
- 	 * at probe time.
- 	 */
--	for_each_child_of_node(cpus, cpun) {
--		if (of_node_cmp(cpun->type, "cpu"))
--			continue;
--		cell = of_get_property(cpun, "reg", NULL);
--		if (WARN(!cell, "%s: missing reg property\n", cpun->full_name))
--			continue;
--
--		hwid = of_read_number(cell, ac);
--		cpu = get_logical_index(hwid & MPIDR_HWID_BITMASK);
+ unsigned long middle_capacity = 1;
+ 
+@@ -100,15 +96,19 @@ static void __init parse_dt_topology(void)
+ 	unsigned long capacity = 0;
+ 	int alloc_size, cpu = 0;
+ 
+-	alloc_size = nr_cpu_ids * sizeof(struct cpu_capacity);
+-	cpu_capacity = kzalloc(alloc_size, GFP_NOWAIT);
++	alloc_size = nr_cpu_ids * sizeof(*__cpu_capacity);
++	__cpu_capacity = kzalloc(alloc_size, GFP_NOWAIT);
+ 
+-	while ((cn = of_find_node_by_type(cn, "cpu"))) {
+-		const u32 *rate, *reg;
 +	for_each_possible_cpu(cpu) {
-+		/* too early to use cpu->of_node */
-+		cpun = arch_of_get_cpu_node(cpu);
++		const u32 *rate;
+ 		int len;
  
--		if (cpu < 0 || !cpu_possible(cpu))
-+		if (WARN(!cpun, "Missing cpu device node\n"))
+-		if (cpu >= num_possible_cpus())
+-			break;
++		/* too early to use cpu->of_node */
++		cn = arch_of_get_cpu_node(cpu);
++		if (!cn) {
++			pr_err("missing device node for CPU %d\n", cpu);
++			continue;
++		}
+ 
+ 		for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
+ 			if (of_device_is_compatible(cn, cpu_eff->compatible))
+@@ -124,12 +124,6 @@ static void __init parse_dt_topology(void)
  			continue;
-+
- 		port = __cci_ace_get_port(cpun, ACE_PORT);
- 		if (port < 0)
- 			continue;
+ 		}
+ 
+-		reg = of_get_property(cn, "reg", &len);
+-		if (!reg || len != 4) {
+-			pr_err("%s missing reg property\n", cn->full_name);
+-			continue;
+-		}
+-
+ 		capacity = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
+ 
+ 		/* Save min capacity of the system */
+@@ -140,13 +134,9 @@ static void __init parse_dt_topology(void)
+ 		if (capacity > max_capacity)
+ 			max_capacity = capacity;
+ 
+-		cpu_capacity[cpu].capacity = capacity;
+-		cpu_capacity[cpu++].hwid = be32_to_cpup(reg);
++		cpu_capacity(cpu) = capacity;
+ 	}
+ 
+-	if (cpu < num_possible_cpus())
+-		cpu_capacity[cpu].hwid = (unsigned long)(-1);
+-
+ 	/* If min and max capacities are equals, we bypass the update of the
+ 	 * cpu_scale because all CPUs have the same capacity. Otherwise, we
+ 	 * compute a middle_capacity factor that will ensure that the capacity
+@@ -154,9 +144,7 @@ static void __init parse_dt_topology(void)
+ 	 * SCHED_POWER_SCALE, which is the default value, but with the
+ 	 * constraint explained near table_efficiency[].
+ 	 */
+-	if (min_capacity == max_capacity)
+-		cpu_capacity[0].hwid = (unsigned long)(-1);
+-	else if (4*max_capacity < (3*(max_capacity + min_capacity)))
++	if (4*max_capacity < (3*(max_capacity + min_capacity)))
+ 		middle_capacity = (min_capacity + max_capacity)
+ 				>> (SCHED_POWER_SHIFT+1);
+ 	else
+@@ -170,23 +158,12 @@ static void __init parse_dt_topology(void)
+  * boot. The update of all CPUs is in O(n^2) for heteregeneous system but the
+  * function returns directly for SMP system.
+  */
+-void update_cpu_power(unsigned int cpu, unsigned long hwid)
++void update_cpu_power(unsigned int cpu)
+ {
+-	unsigned int idx = 0;
+-
+-	/* look for the cpu's hwid in the cpu capacity table */
+-	for (idx = 0; idx < num_possible_cpus(); idx++) {
+-		if (cpu_capacity[idx].hwid == hwid)
+-			break;
+-
+-		if (cpu_capacity[idx].hwid == -1)
+-			return;
+-	}
+-
+-	if (idx == num_possible_cpus())
++	if (!cpu_capacity(cpu))
+ 		return;
+ 
+-	set_power_scale(cpu, cpu_capacity[idx].capacity / middle_capacity);
++	set_power_scale(cpu, cpu_capacity(cpu) / middle_capacity);
+ 
+ 	printk(KERN_INFO "CPU%u: update cpu_power %lu\n",
+ 		cpu, arch_scale_freq_power(NULL, cpu));
+@@ -194,7 +171,7 @@ void update_cpu_power(unsigned int cpu, unsigned long hwid)
+ 
+ #else
+ static inline void parse_dt_topology(void) {}
+-static inline void update_cpu_power(unsigned int cpuid, unsigned int mpidr) {}
++static inline void update_cpu_power(unsigned int cpuid) {}
+ #endif
+ 
+  /*
+@@ -281,7 +258,7 @@ void store_cpu_topology(unsigned int cpuid)
+ 
+ 	update_siblings_masks(cpuid);
+ 
+-	update_cpu_power(cpuid, mpidr & MPIDR_HWID_BITMASK);
++	update_cpu_power(cpuid);
+ 
+ 	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
+ 		cpuid, cpu_topology[cpuid].thread_id,
 -- 
 1.8.1.2
 
