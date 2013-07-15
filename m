@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab3GOStp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:49:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10963 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab3GOSto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:49:44 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=0OGBnBv_dtgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ringC-sgREwA:10 a=vTr9H3xdAAAA:8 a=CUcPWZCSape_4CGI3AMA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373914182.17876.165.camel@gandalf.local.home>
-Subject: Re: nohz: Warn if the machine can not perform nohz_full
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 15 Jul 2013 14:49:42 -0400
-In-Reply-To: <20130715173848.GA1066@redhat.com>
-References: <20130715170859.GA25570@redhat.com>
-	 <20130715171800.GD6442@somewhere> <20130715172423.GA27745@redhat.com>
-	 <20130715173848.GA1066@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754872Ab3GOSt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:49:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754782Ab3GOSt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 14:49:56 -0400
+Date: Mon, 15 Jul 2013 14:49:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, Tim Hockin <thockin@hockin.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130715184940.GG27338@redhat.com>
+References: <20130626212047.GB4536@htj.dyndns.org>
+ <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org>
+ <1372391198.5989.110.camel@marge.simpson.net>
+ <20130628040930.GC2500@htj.dyndns.org>
+ <1372394950.5989.128.camel@marge.simpson.net>
+ <20130628050138.GD2500@htj.dyndns.org>
+ <20130628150513.GD5125@dhcp22.suse.cz>
+ <20130628180155.GD16483@redhat.com>
+ <20130630183838.GB23731@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130630183838.GB23731@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 13:38 -0400, Dave Jones wrote:
-> On Mon, Jul 15, 2013 at 01:24:23PM -0400, Dave Jones wrote:
->  > On Mon, Jul 15, 2013 at 07:18:02PM +0200, Frederic Weisbecker wrote:
->  >  
->  >  > > So I guess you guys never want this to be enabled on distro kernels ?
->  >  > > If that's the case, can you add something to that effect in Kconfig ?
->  >  > 
->  >  > I believe we want it to be enabled on distros in the long term. But right now it would
->  >  > be a bad idea until the off case (nohz_full= parameter empty) is carefully optimized.
->  >  > I'm currently working on that.
->  >  > 
->  >  > Now for the unstable tsc, which is what it's about on the above code block, we need
->  >  > the tick to be there to leverage the sched clock madness. May be there could be some
->  >  > other solution that could work along full dynticks but for now we chose the easy path.
->  >  > 
->  >  > Are broken TSCs that common?
->  >  
->  > I just hit one apparently.  http://paste.fedoraproject.org/25421/73907845/raw/
->  > That's a fairly recent Atom board, so I suspect it's not uncommon on that platform.
+On Sun, Jun 30, 2013 at 08:38:38PM +0200, Michal Hocko wrote:
+> On Fri 28-06-13 14:01:55, Vivek Goyal wrote:
+> > On Fri, Jun 28, 2013 at 05:05:13PM +0200, Michal Hocko wrote:
+> [...]
+> > > OK, so libcgroup's rules daemon will still work and place my tasks in
+> > > appropriate cgroups?
+> > 
+> > Do you use that daemon in practice?
 > 
-> And here's a Core Duo from circa 2008.
-> http://paste.fedoraproject.org/25429/13739098/raw
-> 
-> Two for two so far. I get the feeling you guys are going to get a ton of these reports.
-> 
+> I am not but my users do. And that is why I care.
 
-Hmm, we should only warn if the user tried to enable nohz-full via the
-command line. But it looks like it warns even without enabling
-nohz-full, which wasn't the desired effect.
+Michael, 
 
-I'll look at this, and send a patch to make sure the warning only
-happens when the user tries to use nohz-full, and doesn't just compile
-it in. The point of the patch is to not let the user think they have
-nohz-full when they don't.
+would you have more details of how those users are exactly using
+rules engine daemon.
 
--- Steve
+To me rulesengined processed 3 kinds of rules.
 
+- uid based
+- gid based
+- exec file path based
 
+uid/gid based rule exection can be taken care by pam_cgroup module too.
+So I think one should not need cgrulesengined for that.
+
+I am curious what kind of exec rules are useful. Any placement of
+services one can do using systemd. So only executables we are left
+to manage are which are not services. 
+
+In practice is it very useful for an admin to say if "firefox" is launched
+by a user then it should run in xyz cgroup. And if user cares about
+firefox running in a sub cgroup, then it can always use cgexec to do
+that.
+
+Thanks
+Vivek
