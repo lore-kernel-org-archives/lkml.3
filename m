@@ -1,134 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3GOUDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:03:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48372 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab3GOUDp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:03:45 -0400
-Date: Mon, 15 Jul 2013 22:03:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/18] sched: Avoid overloading CPUs on a preferred NUMA
- node
-Message-ID: <20130715200321.GN17211@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <1373901620-2021-17-git-send-email-mgorman@suse.de>
+	id S1755066Ab3GOUEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:04:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42237 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754839Ab3GOUD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 16:03:59 -0400
+Message-ID: <51E456B6.8050601@redhat.com>
+Date: Mon, 15 Jul 2013 16:08:22 -0400
+From: Brian Foster <bfoster@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373901620-2021-17-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Niels de Vos <ndevos@redhat.com>
+CC: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [fuse-devel] [PATCH] fuse: fix occasional dentry leak when readdirplus
+ is used
+References: <1373893160-30601-1-git-send-email-ndevos@redhat.com>
+In-Reply-To: <1373893160-30601-1-git-send-email-ndevos@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 04:20:18PM +0100, Mel Gorman wrote:
-> ---
->  kernel/sched/fair.c | 105 +++++++++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 83 insertions(+), 22 deletions(-)
+On 07/15/2013 08:59 AM, Niels de Vos wrote:
+> In case d_lookup() returns a dentry with d_inode == NULL, the dentry is
+> not returned with dput(). This results in triggering a BUG() in
+> shrink_dcache_for_umount_subtree():
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 3f0519c..8ee1c8e 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -846,29 +846,92 @@ static inline int task_faults_idx(int nid, int priv)
->  	return 2 * nid + priv;
->  }
->  
-> -static unsigned long weighted_cpuload(const int cpu);
-> +static unsigned long source_load(int cpu, int type);
-> +static unsigned long target_load(int cpu, int type);
-> +static unsigned long power_of(int cpu);
-> +static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
-> +
-> +static int task_numa_find_cpu(struct task_struct *p, int nid)
-> +{
-> +	int node_cpu = cpumask_first(cpumask_of_node(nid));
-> +	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
-> +	unsigned long src_load, dst_load;
-> +	unsigned long min_load = ULONG_MAX;
-> +	struct task_group *tg = task_group(p);
-> +	s64 src_eff_load, dst_eff_load;
-> +	struct sched_domain *sd;
-> +	unsigned long weight;
-> +	bool balanced;
-> +	int imbalance_pct, idx = -1;
->  
-> +	/* No harm being optimistic */
-> +	if (idle_cpu(node_cpu))
-> +		return node_cpu;
->  
-> +	/*
-> +	 * Find the lowest common scheduling domain covering the nodes of both
-> +	 * the CPU the task is currently running on and the target NUMA node.
-> +	 */
-> +	rcu_read_lock();
-> +	for_each_domain(src_cpu, sd) {
-> +		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
-> +			/*
-> +			 * busy_idx is used for the load decision as it is the
-> +			 * same index used by the regular load balancer for an
-> +			 * active cpu.
-> +			 */
-> +			idx = sd->busy_idx;
-> +			imbalance_pct = sd->imbalance_pct;
-> +			break;
-> +		}
-> +	}
-> +	rcu_read_unlock();
->  
-> +	if (WARN_ON_ONCE(idx == -1))
-> +		return src_cpu;
->  
-> +	/*
-> +	 * XXX the below is mostly nicked from wake_affine(); we should
-> +	 * see about sharing a bit if at all possible; also it might want
-> +	 * some per entity weight love.
-> +	 */
-> +	weight = p->se.load.weight;
->  
-> +	src_load = source_load(src_cpu, idx);
-> +
-> +	src_eff_load = 100 + (imbalance_pct - 100) / 2;
-> +	src_eff_load *= power_of(src_cpu);
-> +	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
+>   BUG: Dentry ...{i=0,n=...} still in use (1) [unmount of fuse fuse]
+> 
+> Reported-by: Justin Clift <jclift@redhat.com>
+> Signed-off-by: Niels de Vos <ndevos@redhat.com>
+> 
+> --
+> Reproducing the BUG() on kernels with fuse that support READDIRPLUS can
+> be done with the GlusterFS tests:
+> - http://www.gluster.org/community/documentation/index.php/Using_the_Gluster_Test_Framework
+> 
+> After some stressing of the VFS and fuse mountpoints, bug-860663.t will
+> hit the BUG(). It does not happen on running this test stand-alone.
 
-So did you try with this effective_load() term 'missing'?
+Hi Neils,
 
-> +
-> +	for_each_cpu(cpu, cpumask_of_node(nid)) {
-> +		dst_load = target_load(cpu, idx);
-> +
-> +		/* If the CPU is idle, use it */
-> +		if (!dst_load)
-> +			return dst_cpu;
-> +
-> +		/* Otherwise check the target CPU load */
-> +		dst_eff_load = 100;
-> +		dst_eff_load *= power_of(cpu);
-> +		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
-> +
-> +		/*
-> +		 * Destination is considered balanced if the destination CPU is
-> +		 * less loaded than the source CPU. Unfortunately there is a
-> +		 * risk that a task running on a lightly loaded CPU will not
-> +		 * migrate to its preferred node due to load imbalances.
-> +		 */
-> +		balanced = (dst_eff_load <= src_eff_load);
-> +		if (!balanced)
-> +			continue;
-> +
-> +		if (dst_load < min_load) {
-> +			min_load = dst_load;
-> +			dst_cpu = cpu;
->  		}
+FYI, this is fairly easy to reproduce on-demand with gluster:
+
+- mount a volume to two local mountpoints (i.e., I used a single
+storage/posix translator volume):
+	glusterfs --volfile=./test.vol /mnt/{1,2} --use-readdirp=1
+- create a negative dentry in one mountpoint:
+	ls /mnt/1/file (results in ENOENT)
+- create the file via the second mountpoint:
+	touch /mnt/2/file
+- run a readdirp on the first mountpoint:
+	ls /mnt/1/
+- umount /mnt/2 /mnt/1
+
+> ---
+>  fs/fuse/dir.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+> index 0eda527..da67a15 100644
+> --- a/fs/fuse/dir.c
+> +++ b/fs/fuse/dir.c
+> @@ -1246,7 +1246,9 @@ static int fuse_direntplus_link(struct file *file,
+>  		if (err)
+>  			goto out;
+>  		dput(dentry);
+> -		dentry = NULL;
+> +	} else if (dentry) {
+> +		/* this dentry does not have a d_inode, just drop it */
+> +		dput(dentry);
 >  	}
+
+I'm not really familiar with the dcache code, but is it appropriate to
+also d_invalidate() the dentry in this case (as the previous code block
+does)? Perhaps Miklos or somebody more familiar with dcache can confirm...
+
+Brian
+
 >  
-> +	return dst_cpu;
->  }
+>  	dentry = d_alloc(parent, &name);
+> 
+
