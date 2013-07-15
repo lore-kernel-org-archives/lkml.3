@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab3GOV6Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 17:58:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45821 "EHLO mail.zytor.com"
+	id S1758156Ab3GOWBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 18:01:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45862 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754482Ab3GOV6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 17:58:23 -0400
-Message-ID: <51E47051.7030608@zytor.com>
-Date: Mon, 15 Jul 2013 14:57:37 -0700
+	id S1755347Ab3GOWBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 18:01:35 -0400
+Message-ID: <51E4712E.5010501@zytor.com>
+Date: Mon, 15 Jul 2013 15:01:18 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: update git pull info in SubmittingPatches
-References: <1373923096-25674-1-git-send-email-paul.gortmaker@windriver.com> <51E46A4D.6060108@infradead.org> <51E46C3B.5020104@windriver.com> <51E46E55.7090909@infradead.org>
-In-Reply-To: <51E46E55.7090909@infradead.org>
+To: Greg KH <greg@kroah.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: KS Topic request: Handling the Stable kernel, let's dump the
+ cc: stable tag
+References: <1373916476.2748.69.camel@dabdike> <20130715214422.GA2478@kroah.com> <20130715215504.GA3029@kroah.com>
+In-Reply-To: <20130715215504.GA3029@kroah.com>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -25,10 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Something else to put in there: if someone absolutely feels the need to
-put cover text before the patch, it should be separated from the patch
-proper by a scissor line (---8<---) or there is no support for
-automating the patch.
+Perhaps the KS topic should be about different stable workflows and what
+the maintainers' options are, rather than about a specific proposal.
+This seems like a good discussion topic.
 
 	-hpa
 
