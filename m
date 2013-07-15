@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab3GOQyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 12:54:35 -0400
-Received: from mout.gmx.net ([212.227.17.22]:57419 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754618Ab3GOQyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 12:54:33 -0400
-Message-ID: <51E42943.8040001@gmx.de>
-Date: Mon, 15 Jul 2013 18:54:27 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
+	id S1758026Ab3GOQzZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 12:55:25 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57876 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757736Ab3GOQzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 12:55:23 -0400
+Subject: [PATCH 00/11] Add compression support to pstore
+To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
+        mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
+        cbouatmailru@gmail.com, keescook@chromium.org
+Date: Mon, 15 Jul 2013 22:25:04 +0530
+Message-ID: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
+User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: sunrpc/clnt.c: BUG kmalloc-256 (Not tainted): Poison overwritten
-References: <51E25B20.7030906@gmx.de> <1373857286.3181.1.camel@leira.trondhjem.org>
-In-Reply-To: <1373857286.3181.1.camel@leira.trondhjem.org>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:0GDo8w+bpG3R/QjA40IuJiTWsUkpOBjWkr52TTruBLKxAjoSBNC
- 4tAEpXrwrZC6rN+A/5x09DS9P5qzhsgwau87LbX/THKtixiSM3zW95hN6oqHKL2Ev38KZhL
- eOQJS8mc9aOSyyIcLMpNMho9ZLK9BbRBIQp/jdxvPcMg2ZKFFpizwSMq9LtxogvZz01B8aR
- 3TvcnRF2P0fAB/gXCbSGA==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071516-5490-0000-0000-000003D2376C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 05:01 AM, Myklebust, Trond wrote:
-> On Sun, 2013-07-14 at 10:02 +0200, Toralf Förster wrote:
->> This bisected commit produces at a 32 bit user mode linux guest the attached BUG :
->>
->> commit eeee245268c951262b861bc1be4e9dc812352499
->> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
->> Date:   Wed Jul 10 15:33:01 2013 -0400
->>
->>     SUNRPC: Fix a deadlock in rpc_client_register()
->>
->>     Commit 384816051ca9125cd54750e59c780c2a2655fa4f (SUNRPC: fix races on
->>     PipeFS MOUNT notifications) introduces a regression when we call
->>     rpc_setup_pipedir() with RPCSEC_GSS as the auth flavour.
->>
->>     By calling rpcauth_create() while holding the sn->pipefs_sb_lock, we
->>     end up deadlocking in gss_pipes_dentries_create_net().
->>     Fix is to register the client and release the mutex before calling
->>     rpcauth_create().
->>
->>     Reported-by: Weston Andros Adamson <dros@netapp.com>
->>     Tested-by: Weston Andros Adamson <dros@netapp.com>
->>     Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>     Cc: <stable@vger.kernel.org> # : 3848160: SUNRPC: fix races on PipeFS MOUNT
->>     Cc: <stable@vger.kernel.org> # : e73f4cc: SUNRPC: split client creation
->>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->>
->>
->>
->>
->>
->>
->> 2013-07-13T22:09:07.000+02:00 trinity sm-notify[1042]: Version 1.2.6 starting
->> 2013-07-13T22:09:07.000+02:00 trinity sm-notify[1042]: Backgrounding to notify hosts...
->> 2013-07-13T22:09:07.000+02:00 trinity sm-notify[1043]: Running as root.  chown /var/lib/nfs to choose different user
->> 2013-07-13T22:09:10.000+02:00 trinity mount[1047]: mount to NFS server 'n22stab4' failed: No route to host, retrying
->> 2013-07-13T22:09:11.000+02:00 trinity dhcpcd[971]: eth0: sending IPv6 Router Solicitation
->> 2013-07-13T22:09:11.000+02:00 trinity dhcpcd[971]: eth0: no IPv6 Routers available
->> 2013-07-13T22:09:13.000+02:00 trinity mount[1048]: mount to NFS server 'n22stab4' failed: No route to host, retrying
->> 2013-07-13T22:09:13.647+02:00 trinity kernel: =============================================================================
->> 2013-07-13T22:09:13.647+02:00 trinity kernel: BUG kmalloc-256 (Not tainted): Poison overwritten
->> 2013-07-13T22:09:13.647+02:00 trinity kernel: -----------------------------------------------------------------------------
+The patchset adds compression support to pstore.
 
-<snip>
+As the non-volatile storage space is limited, adding compression
+support results in capturing more data within limited space.
 
->> 2013-07-13T22:09:13.647+02:00 trinity kernel:
+Size of dmesg file in a powerpc/pseries box with nvram's
+oops partition (to store oops-log) size 4k:
 
-> Does the attached patch fix the problem?
+Without compression:
+dmesg-nvram-1:  ~ 4k (3980)
+WIth compression:
+dmesg-nvram-1: ~8.8k (8844)
 
-Yes.
-
-And it solves another related problem too : a soft lookup of CPU0 during
-shutdown of the UML guest
-
-:-)
+Writing to persistent store
+----------------------------
+Compression will reduce the size of oops/panic report to atmost 45% of its
+original size. (Based on experiments done while providing compression support
+to nvram by Jim keniston).
+Hence buffer of size ( (100/45 approx 2.22) *<registered_buffer> is allocated). 
+The compression parameters selected based on some experiments:
+compression_level = 6, window_bits = 12, memory_level = 4  which achieved a
+significant compression of 12 % of uncompressed buffer size tried upto 36k.
+Data is compressed from the bigger buffer to registered buffer which is
+returned to backends.
+Pstore will indicate that with a flag 'compressed' which is passed to backends.
+Using this flag, backends will add a flag in their header to indicate the data
+is compressed or not while writing to persistent store.
 
 
+Reading from persistent store
+-----------------------------
+When backends read data from persistent store it will use the flag added by it
+while writing to persistent store to determine if the data is compressed or not.
+Using the information, it will set the flag in pstore's read call back.
+Pstore will decompress the data based on the flag and writes decompressed data
+to the file.
+
+Test results:
+
+Have tested the patches on powerpc/pseries.
+On Intel have only tested with erst backend.
+
+Efi-pstore and RAM persistent buffer requires testing.
+
+
+---
+
+Aruna Balakrishnaiah (11):
+      powerpc/pseries: Remove (de)compression in nvram with pstore enabled
+      pstore: Add new argument 'compressed' in pstore write callback
+      pstore/Kconfig: Select ZLIB_DEFLATE and ZLIB_INFLATE when PSTORE is selected
+      pstore: Add compression support to pstore
+      pstore: Introduce new argument 'compressed' in the read callback
+      pstore: Provide decompression support to pstore
+      pstore: Add file extension to pstore file if compressed
+      powerpc/pseries: Read and write to the 'compressed' flag of pstore
+      erst: Read and write to the 'compressed' flag of pstore
+      efi-pstore: Read and write to the 'compressed' flag of pstore
+      pstore/ram: Read and write to the 'compressed' flag of pstore
+
+
+ arch/powerpc/platforms/pseries/nvram.c |  131 ++++----------------
+ drivers/acpi/apei/erst.c               |   21 ++-
+ drivers/firmware/efi/efi-pstore.c      |   27 +++-
+ fs/pstore/Kconfig                      |    2 
+ fs/pstore/inode.c                      |    9 +
+ fs/pstore/internal.h                   |    5 -
+ fs/pstore/platform.c                   |  214 ++++++++++++++++++++++++++++++--
+ fs/pstore/ram.c                        |   41 +++++-
+ include/linux/pstore.h                 |    6 -
+ 9 files changed, 307 insertions(+), 149 deletions(-)
 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
