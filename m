@@ -1,263 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3GONXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:23:21 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43997 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab3GONXS (ORCPT
+	id S1756830Ab3GONb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:31:26 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46213 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756262Ab3GONbY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:23:18 -0400
-Message-ID: <51E3F6EB.2050807@linux.vnet.ibm.com>
-Date: Mon, 15 Jul 2013 18:49:39 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 15 Jul 2013 09:31:24 -0400
+From: "Kozaruk, Oleksandr" <oleksandr.kozaruk@ti.com>
+To: Jonathan Cameron <jic23@kernel.org>
+CC: "tony@atomide.com" <tony@atomide.com>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "Nayak, Rajendra" <rnayak@ti.com>,
+        "Ujfalusi, Peter" <peter.ujfalusi@ti.com>,
+        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "ch.naveen@samsung.com" <ch.naveen@samsung.com>,
+        "poeschel@lemonage.de" <poeschel@lemonage.de>,
+        "Kim, Milo" <Milo.Kim@ti.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH v3 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
+Thread-Topic: [PATCH v3 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC
+ driver
+Thread-Index: AQHOfzfrQz/LbRwjPkm/a2+YYG7+MZllwFMb
+Date: Mon, 15 Jul 2013 13:30:25 +0000
+Message-ID: <2A7ABDFCE21540479A5AEB0244A684D5E3D0E3@DNCE04.ent.ti.com>
+References: <1373613482-28390-1-git-send-email-oleksandr.kozaruk@ti.com>
+ <1373613482-28390-3-git-send-email-oleksandr.kozaruk@ti.com>,<51E05C0B.5050009@kernel.org>
+In-Reply-To: <51E05C0B.5050009@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.92]
+x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Michael Wang <wangyun@linux.vnet.ibm.com>, Jiri Kosina <jkosina@suse.cz>,
-        Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
-References: <20130625211544.GA2270@swordfish> <51D10899.1080501@linux.vnet.ibm.com> <20130710231305.GA4046@swordfish> <51DE1BE1.3090707@linux.vnet.ibm.com> <20130714114721.GB2178@swordfish> <20130714120629.GA4067@swordfish> <51E37194.1080103@linux.vnet.ibm.com> <51E3AA3B.9090003@linux.vnet.ibm.com> <20130715082918.GA2435@swordfish>
-In-Reply-To: <20130715082918.GA2435@swordfish>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071513-5816-0000-0000-000008EA1826
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 01:59 PM, Sergey Senozhatsky wrote:
-> On (07/15/13 15:52), Michael Wang wrote:
->>>
->>> And may be we could try below patch to get more info, I've moved the timing
->>> of restore stop flag from 'after STOP' to 'before START', I suppose that
->>> could create a window to prevent the work re-queue, it could at least provide
->>> us more info...
->>>
->>> I think I may need to setup a environment for debug now, what's the steps to
->>> produce this WARN?
->>
->> I have done some test, although I failed to reproduce this WARN, but I
->> found that the work is still running and re-queue itself after STOP,
->> even with my prev suggestion...
->>
->> However, enlarge the stop window as my suggestion below, the work do
->> stopped...I suppose it will also stop the first WARN too.
->>
->> Now we need to figure out the reason...
->>
-> 
-> Hello,
-> 
-> WARN is triggered during laptop suspend/hibernate phase.
-> I'll test your patch soon.
-> 
+Hello Jonathan,
+Thanks for the review.
 
-Hi,
+>Couple of things:
+>
+>1) It looks from the driver that a lot of the channels are not measuring
+>voltages but rather temperature or currents etc.  If so then their
+>types in the channel mask should be appropriately set.  Also if some
+>of the channels are entirely internal test networks, what is the benefit
+>of exposing them to userspace as readable channels?
+>If channels are merely 'suggested' as being used for temperatures etc
+>then it is fine to keep them as voltages.
+There are two kinds of channel for measuring temperature: die temperature
+and those that measure temperature indirectly measuring voltage on resistive
+load(NTC sensor).
+die temperature is calculated by some formulas which convert ADC code to
+temperature. This is not implemented in the driver.
+Channels intended to measure temperature with NTC sensor have inbuilt current
+sources. Voltage measured by this channels and specific NTC could be converted
+to temperature.
+This is the reason they chosen to be voltage channels.
+As for test network I'll remove them from exposing to userspace.
+[...]
 
-I think I finally found out what exactly is going wrong! :-)
+>> +static int twl6030_gpadc_get_raw(struct twl6030_gpadc_data *gpadc,
+>> +             int channel, int *res)
+>> +{
+>> +     u8 reg = gpadc->pdata->channel_to_reg(channel);
+>> +     u8 val[2];
+>
+>le16 val;
+>> +     int ret;
+>> +
+>ret = twl6030_gpadc_read(val, reg);
+>(note that (reg, val) ordering of parameters would be a more common choice)
+>
+>> +     ret = twl6030_gpadc_read(val, reg);
+>> +     if (ret) {
+>> +             dev_dbg(gpadc->dev, "unable to read register 0x%X\n", reg);
+>> +             return ret;
+>> +     }
+>> +
+>res = le16_to_cpup(val);
+>
+>> +     *res = (val[1] << 8) | val[0];
+>> +
+>> +     return ret;
+>> +}
+>> +
+You mean something like this:
+static int twl6030_gpadc_get_raw(struct twl6030_gpadc_data *gpadc,                                                                                                                                                  
+						int channel, int *res)                                                                                                                                                                              
+{                                                                                                                                                                                                                   
+	u8 reg = gpadc->pdata->channel_to_reg(channel);                                                                                                                                                             
+	__le16 val;                                                                                                                                                                                                 
+	int ret;                                                                                                                                                                                                    
 
-I tried reproducing the problem on my machine, and found that the problem
-(warning about IPIs to offline CPUs) happens *only* while doing suspend/resume
-and not during halt/shutdown/reboot or regular CPU hotplug via sysfs files.
-That got me thinking and I finally figured out that commit a66b2e5 is again
-the culprit.
+	ret = twl6030_gpadc_read(reg, (u8 *)&val);                                                                                                                                                                  
+	if (ret) {                                                                                                                                                                                                  
+		dev_dbg(gpadc->dev, "unable to read register 0x%X\n", reg);                                                                                                                                         
+		return ret;                                                                                                                                                                                         
+	}                                                                                                                                                                                                           
 
-So here is the solution:
+	*res = le16_to_cpup(&val);                                                                                                                                                                                  
 
-On 3.11-rc1, apply these patches in the order mentioned below, and check
-whether it fixes _all_ problems (both the warnings about IPI as well as the
-lockdep splat).
+	return ret;                                                                                                                                                                                                 
+}
+Note, that twl6030_gpadc_read() is just wrapper for twl_i2c_read() which takes
+"an array of num_bytes containing data to be read"
+I like the original implementation better then this(if I did it correctly)
+Do you insist on this change?
+[...]
 
-1. Patch given in:  https://lkml.org/lkml/2013/7/11/661
-   (Just apply patch 1, not the entire patchset).
+>> +static int twl6030_gpadc_get_processed(struct twl6030_gpadc_data *gpadc,
+>> +             int channel, int *val)
+>> +{
+>> +     int raw_code;
+>> +     int corrected_code;
+>> +     int channel_value;
+>> +     int ret;
+>> +
+>> +     ret = twl6030_gpadc_get_raw(gpadc, channel, &raw_code);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>
+>Might first thought on seeing this is that it would be better to return
+>raw for all channels and provide the scale and offset info_mask elements
+>where possible rather than doing the conversion in the kernel.  Note we
 
-2. Apply the patch shown below, on top of the above patch:
+In our custom kernel branch battery driver needs battery voltage and
+temperature.  Thus the conversion anyway is done in the kernel, either
+in ADC driver or battery driver.
 
----------------------------------------------------------------------------
+>allow really quite a bit of precision on those values so I doubt it
+>will be a problem.
+>
+>If nothing else it would make everything rather more consistent.
+>
+[...]
 
+>> +static int twl6032_calibration(struct twl6030_gpadc_data *gpadc)
+>> +{
+>> +     int chn, d1 = 0, d2 = 0, temp;
+>> +     u8 trim_regs[17];
+>> +     int ret;
+>> +
+>> +     ret = twl_i2c_read(TWL6030_MODULE_ID2, trim_regs + 1,
+>> +                     TWL6030_GPADC_TRIM1, 16);
+>> +     if (ret < 0) {
+>> +             dev_err(gpadc->dev, "calibration failed\n");
+>> +             return ret;
+>> +     }
+>> +
+>/*
+>* Loop
+>please for kernel code.
+>> +     /* Loop to calculate the value needed for returning voltages from
+>> +      * GPADC not values.
+>> +      *
+>> +      * gain is calculated to 3 decimal places fixed point.
+>> +      */
+>> +     for (chn = 0; chn < TWL6032_GPADC_MAX_CHANNELS; chn++) {
+>> +
+>> +             switch (chn) {
+>> +             case 0:
+>> +             case 1:
+>> +             case 2:
+>> +             case 3:
+>> +             case 4:
+>> +             case 5:
+>> +             case 6:
+>> +             case 11:
+>> +             case 12:
+>> +             case 13:
+>> +             case 14:
+>> +                     /* D1 */
+>> +                     d1 = (trim_regs[3] & 0x1F) << 2;
+>> +                     d1 |= (trim_regs[1] & 0x06) >> 1;
+>> +                     if (trim_regs[1] & 0x01)
+>> +                             d1 = -d1;
+>> +
+>> +                     /* D2 */
+>> +                     d2 = (trim_regs[4] & 0x3F) << 2;
+>> +                     d2 |= (trim_regs[2] & 0x06) >> 1;
+>> +                     if (trim_regs[2] & 0x01)
+>> +                             d2 = -d2;
+>> +                     break;
+>> +             case 8:
+>No coment on your code, but this is an 'interesting' bit
+>of bit packing...
+>I did vaguely wonder if this could be mapped to a big lookup table,
+>but having tried it I think I end up with something almost as tricky
+>to read.. Oh well that was a fun 10 minute diversion ;)
+This is inherited code from Graeme - original author of implementation
+for twl6032.
+[...]
 
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] cpufreq: Revert commit 2f7021a to fix CPU hotplug regression
-
-commit 2f7021a (cpufreq: protect 'policy->cpus' from offlining during
-__gov_queue_work()) caused a regression in CPU hotplug, because it lead
-to a deadlock between cpufreq governor worker thread and the CPU hotplug
-writer task.
-
-Lockdep splat corresponding to this deadlock is shown below:
-
-[   60.277396] ======================================================
-[   60.277400] [ INFO: possible circular locking dependency detected ]
-[   60.277407] 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744 Not tainted
-[   60.277411] -------------------------------------------------------
-[   60.277417] bash/2225 is trying to acquire lock:
-[   60.277422]  ((&(&j_cdbs->work)->work)){+.+...}, at: [<ffffffff810621b5>] flush_work+0x5/0x280
-[   60.277444] but task is already holding lock:
-[   60.277449]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
-[   60.277465] which lock already depends on the new lock.
-
-[   60.277472] the existing dependency chain (in reverse order) is:
-[   60.277477] -> #2 (cpu_hotplug.lock){+.+.+.}:
-[   60.277490]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.277503]        [<ffffffff815b6157>] mutex_lock_nested+0x67/0x410
-[   60.277514]        [<ffffffff81042cbc>] get_online_cpus+0x3c/0x60
-[   60.277522]        [<ffffffff814b842a>] gov_queue_work+0x2a/0xb0
-[   60.277532]        [<ffffffff814b7891>] cs_dbs_timer+0xc1/0xe0
-[   60.277543]        [<ffffffff8106302d>] process_one_work+0x1cd/0x6a0
-[   60.277552]        [<ffffffff81063d31>] worker_thread+0x121/0x3a0
-[   60.277560]        [<ffffffff8106ae2b>] kthread+0xdb/0xe0
-[   60.277569]        [<ffffffff815bb96c>] ret_from_fork+0x7c/0xb0
-[   60.277580] -> #1 (&j_cdbs->timer_mutex){+.+...}:
-[   60.277592]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.277600]        [<ffffffff815b6157>] mutex_lock_nested+0x67/0x410
-[   60.277608]        [<ffffffff814b785d>] cs_dbs_timer+0x8d/0xe0
-[   60.277616]        [<ffffffff8106302d>] process_one_work+0x1cd/0x6a0
-[   60.277624]        [<ffffffff81063d31>] worker_thread+0x121/0x3a0
-[   60.277633]        [<ffffffff8106ae2b>] kthread+0xdb/0xe0
-[   60.277640]        [<ffffffff815bb96c>] ret_from_fork+0x7c/0xb0
-[   60.277649] -> #0 ((&(&j_cdbs->work)->work)){+.+...}:
-[   60.277661]        [<ffffffff810ab826>] __lock_acquire+0x1766/0x1d30
-[   60.277669]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.277677]        [<ffffffff810621ed>] flush_work+0x3d/0x280
-[   60.277685]        [<ffffffff81062d8a>] __cancel_work_timer+0x8a/0x120
-[   60.277693]        [<ffffffff81062e53>] cancel_delayed_work_sync+0x13/0x20
-[   60.277701]        [<ffffffff814b89d9>] cpufreq_governor_dbs+0x529/0x6f0
-[   60.277709]        [<ffffffff814b76a7>] cs_cpufreq_governor_dbs+0x17/0x20
-[   60.277719]        [<ffffffff814b5df8>] __cpufreq_governor+0x48/0x100
-[   60.277728]        [<ffffffff814b6b80>] __cpufreq_remove_dev.isra.14+0x80/0x3c0
-[   60.277737]        [<ffffffff815adc0d>] cpufreq_cpu_callback+0x38/0x4c
-[   60.277747]        [<ffffffff81071a4d>] notifier_call_chain+0x5d/0x110
-[   60.277759]        [<ffffffff81071b0e>] __raw_notifier_call_chain+0xe/0x10
-[   60.277768]        [<ffffffff815a0a68>] _cpu_down+0x88/0x330
-[   60.277779]        [<ffffffff815a0d46>] cpu_down+0x36/0x50
-[   60.277788]        [<ffffffff815a2748>] store_online+0x98/0xd0
-[   60.277796]        [<ffffffff81452a28>] dev_attr_store+0x18/0x30
-[   60.277806]        [<ffffffff811d9edb>] sysfs_write_file+0xdb/0x150
-[   60.277818]        [<ffffffff8116806d>] vfs_write+0xbd/0x1f0
-[   60.277826]        [<ffffffff811686fc>] SyS_write+0x4c/0xa0
-[   60.277834]        [<ffffffff815bbbbe>] tracesys+0xd0/0xd5
-[   60.277842] other info that might help us debug this:
-
-[   60.277848] Chain exists of:
-  (&(&j_cdbs->work)->work) --> &j_cdbs->timer_mutex --> cpu_hotplug.lock
-
-[   60.277864]  Possible unsafe locking scenario:
-
-[   60.277869]        CPU0                    CPU1
-[   60.277873]        ----                    ----
-[   60.277877]   lock(cpu_hotplug.lock);
-[   60.277885]                                lock(&j_cdbs->timer_mutex);
-[   60.277892]                                lock(cpu_hotplug.lock);
-[   60.277900]   lock((&(&j_cdbs->work)->work));
-[   60.277907]  *** DEADLOCK ***
-
-[   60.277915] 6 locks held by bash/2225:
-[   60.277919]  #0:  (sb_writers#6){.+.+.+}, at: [<ffffffff81168173>] vfs_write+0x1c3/0x1f0
-[   60.277937]  #1:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811d9e3c>] sysfs_write_file+0x3c/0x150
-[   60.277954]  #2:  (s_active#61){.+.+.+}, at: [<ffffffff811d9ec3>] sysfs_write_file+0xc3/0x150
-[   60.277972]  #3:  (x86_cpu_hotplug_driver_mutex){+.+...}, at: [<ffffffff81024cf7>] cpu_hotplug_driver_lock+0x17/0x20
-[   60.277990]  #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff815a0d32>] cpu_down+0x22/0x50
-[   60.278007]  #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
-[   60.278023] stack backtrace:
-[   60.278031] CPU: 3 PID: 2225 Comm: bash Not tainted 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744
-[   60.278037] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
-[   60.278042]  ffffffff8204e110 ffff88014df6b9f8 ffffffff815b3d90 ffff88014df6ba38
-[   60.278055]  ffffffff815b0a8d ffff880150ed3f60 ffff880150ed4770 3871c4002c8980b2
-[   60.278068]  ffff880150ed4748 ffff880150ed4770 ffff880150ed3f60 ffff88014df6bb00
-[   60.278081] Call Trace:
-[   60.278091]  [<ffffffff815b3d90>] dump_stack+0x19/0x1b
-[   60.278101]  [<ffffffff815b0a8d>] print_circular_bug+0x2b6/0x2c5
-[   60.278111]  [<ffffffff810ab826>] __lock_acquire+0x1766/0x1d30
-[   60.278123]  [<ffffffff81067e08>] ? __kernel_text_address+0x58/0x80
-[   60.278134]  [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.278142]  [<ffffffff810621b5>] ? flush_work+0x5/0x280
-[   60.278151]  [<ffffffff810621ed>] flush_work+0x3d/0x280
-[   60.278159]  [<ffffffff810621b5>] ? flush_work+0x5/0x280
-[   60.278169]  [<ffffffff810a9b14>] ? mark_held_locks+0x94/0x140
-[   60.278178]  [<ffffffff81062d77>] ? __cancel_work_timer+0x77/0x120
-[   60.278188]  [<ffffffff810a9cbd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-[   60.278196]  [<ffffffff81062d8a>] __cancel_work_timer+0x8a/0x120
-[   60.278206]  [<ffffffff81062e53>] cancel_delayed_work_sync+0x13/0x20
-[   60.278214]  [<ffffffff814b89d9>] cpufreq_governor_dbs+0x529/0x6f0
-[   60.278225]  [<ffffffff814b76a7>] cs_cpufreq_governor_dbs+0x17/0x20
-[   60.278234]  [<ffffffff814b5df8>] __cpufreq_governor+0x48/0x100
-[   60.278244]  [<ffffffff814b6b80>] __cpufreq_remove_dev.isra.14+0x80/0x3c0
-[   60.278255]  [<ffffffff815adc0d>] cpufreq_cpu_callback+0x38/0x4c
-[   60.278265]  [<ffffffff81071a4d>] notifier_call_chain+0x5d/0x110
-[   60.278275]  [<ffffffff81071b0e>] __raw_notifier_call_chain+0xe/0x10
-[   60.278284]  [<ffffffff815a0a68>] _cpu_down+0x88/0x330
-[   60.278292]  [<ffffffff81024cf7>] ? cpu_hotplug_driver_lock+0x17/0x20
-[   60.278302]  [<ffffffff815a0d46>] cpu_down+0x36/0x50
-[   60.278311]  [<ffffffff815a2748>] store_online+0x98/0xd0
-[   60.278320]  [<ffffffff81452a28>] dev_attr_store+0x18/0x30
-[   60.278329]  [<ffffffff811d9edb>] sysfs_write_file+0xdb/0x150
-[   60.278337]  [<ffffffff8116806d>] vfs_write+0xbd/0x1f0
-[   60.278347]  [<ffffffff81185950>] ? fget_light+0x320/0x4b0
-[   60.278355]  [<ffffffff811686fc>] SyS_write+0x4c/0xa0
-[   60.278364]  [<ffffffff815bbbbe>] tracesys+0xd0/0xd5
-[   60.280582] smpboot: CPU 1 is now offline
-
-
-The intent of this commit was to avoid warnings during CPU hotplug, which
-indicated that offline CPUs were getting IPIs from the cpufreq governor's
-work items. But the real root-cause of that problem was commit a66b2e5
-(cpufreq: Preserve sysfs files across suspend/resume) because it totally
-skipped all the cpufreq callbacks during CPU hotplug in the suspend/resume
-path, and hence it never actually shut down the cpufreq governor's worker
-threads during CPU offline in the suspend/resume path.
-
-Reflecting back, the reason why we never suspected that commit as the
-root-cause earlier, was that the original issue was reported with just the
-halt command and nobody had brought in suspend/resume to the equation.
-
-The reason for _that_ in turn, it turns out is that, earlier halt/shutdown
-was being done by disabling non-boot CPUs while tasks were frozen, just like
-suspend/resume....  but commit cf7df378a (reboot: rigrate shutdown/reboot to
-boot cpu) which came somewhere along that very same time changed that logic:
-shutdown/halt no longer takes CPUs offline.
-Thus, the test-cases for reproducing the bug were vastly different and thus
-we went totally off the trail.
-
-Overall, it was one hell of a confusion with so many commits affecting
-each other and also affecting the symptoms of the problems in subtle
-ways. Finally, now since the original problematic commit (a66b2e5) has been
-completely reverted, revert this intermediate fix too (2f7021a), to fix the
-CPU hotplug deadlock. Phew!
-
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- drivers/cpufreq/cpufreq_governor.c |    3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 4645876..7b839a8 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -25,7 +25,6 @@
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/workqueue.h>
--#include <linux/cpu.h>
- 
- #include "cpufreq_governor.h"
- 
-@@ -137,10 +136,8 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
- 	if (!all_cpus) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
--		get_online_cpus();
- 		for_each_cpu(i, policy->cpus)
- 			__gov_queue_work(i, dbs_data, delay);
--		put_online_cpus();
- 	}
- }
- EXPORT_SYMBOL_GPL(gov_queue_work);
-
+Regards,
+OK.
