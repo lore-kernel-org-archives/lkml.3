@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab3GOPUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 11:20:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46130 "EHLO mx2.suse.de"
+	id S932978Ab3GOPUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 11:20:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46225 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932760Ab3GOPUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 11:20:32 -0400
+	id S932930Ab3GOPUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 11:20:38 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 10/18] sched: Increase NUMA PTE scanning when a new preferred node is selected
-Date: Mon, 15 Jul 2013 16:20:12 +0100
-Message-Id: <1373901620-2021-11-git-send-email-mgorman@suse.de>
+Subject: [PATCH 18/18] sched: Swap tasks when reschuling if a CPU on a target node is imbalanced
+Date: Mon, 15 Jul 2013 16:20:20 +0100
+Message-Id: <1373901620-2021-19-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
 References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
@@ -22,173 +22,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NUMA PTE scan is reset every sysctl_numa_balancing_scan_period_reset
-in case of phase changes. This is crude and it is clearly visible in graphs
-when the PTE scanner resets even if the workload is already balanced. This
-patch increases the scan rate if the preferred node is updated and the
-task is currently running on the node to recheck if the placement
-decision is correct. In the optimistic expectation that the placement
-decisions will be correct, the maximum period between scans is also
-increased to reduce overhead due to automatic NUMA balancing.
+The scheduler avoids adding load imbalance when scheduling a task on its
+preferred node. This unfortunately can mean that a task continues access
+remote memory. In the event the CPUs are relatively imbalanced this
+patch will check if the task running on the target CPU can be swapped
+with. An attempt will be made to swap with the task if it is not running
+on its preferred node and that moving it would not impair its locality.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- Documentation/sysctl/kernel.txt | 11 +++--------
- include/linux/mm_types.h        |  3 ---
- include/linux/sched/sysctl.h    |  1 -
- kernel/sched/core.c             |  1 -
- kernel/sched/fair.c             | 27 ++++++++++++---------------
- kernel/sysctl.c                 |  7 -------
- 6 files changed, 15 insertions(+), 35 deletions(-)
+ kernel/sched/core.c  | 39 +++++++++++++++++++++++++++++++++++++--
+ kernel/sched/fair.c  | 46 +++++++++++++++++++++++++++++++++++++++++-----
+ kernel/sched/sched.h |  3 ++-
+ 3 files changed, 80 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 246b128..a275042 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -373,15 +373,13 @@ guarantee. If the target workload is already bound to NUMA nodes then this
- feature should be disabled. Otherwise, if the system overhead from the
- feature is too high then the rate the kernel samples for NUMA hinting
- faults may be controlled by the numa_balancing_scan_period_min_ms,
--numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
--numa_balancing_scan_period_max_ms, numa_balancing_scan_size_mb and
--numa_balancing_settle_count sysctls.
-+numa_balancing_scan_delay_ms, numa_balancing_scan_period_max_ms,
-+numa_balancing_scan_size_mb and numa_balancing_settle_count sysctls.
- 
- ==============================================================
- 
- numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
--numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
--numa_balancing_scan_size_mb
-+numa_balancing_scan_period_max_ms, numa_balancing_scan_size_mb
- 
- Automatic NUMA balancing scans tasks address space and unmaps pages to
- detect if pages are properly placed or if the data should be migrated to a
-@@ -416,9 +414,6 @@ effectively controls the minimum scanning rate for each task.
- numa_balancing_scan_size_mb is how many megabytes worth of pages are
- scanned for a given scan.
- 
--numa_balancing_scan_period_reset is a blunt instrument that controls how
--often a tasks scan delay is reset to detect sudden changes in task behaviour.
--
- numa_balancing_settle_count is how many scan periods must complete before
- the schedule balancer stops pushing the task towards a preferred node. This
- gives the scheduler a chance to place the task on an alternative node if the
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index ace9a5f..de70964 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -421,9 +421,6 @@ struct mm_struct {
- 	 */
- 	unsigned long numa_next_scan;
- 
--	/* numa_next_reset is when the PTE scanner period will be reset */
--	unsigned long numa_next_reset;
--
- 	/* Restart point for scanning and setting pte_numa */
- 	unsigned long numa_scan_offset;
- 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index bf8086b..10d16c4f 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -47,7 +47,6 @@ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
- extern unsigned int sysctl_numa_balancing_scan_delay;
- extern unsigned int sysctl_numa_balancing_scan_period_min;
- extern unsigned int sysctl_numa_balancing_scan_period_max;
--extern unsigned int sysctl_numa_balancing_scan_period_reset;
- extern unsigned int sysctl_numa_balancing_scan_size;
- extern unsigned int sysctl_numa_balancing_settle_count;
- 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b67a102..53d8465 100644
+index 53d8465..d679b01 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1585,7 +1585,6 @@ static void __sched_fork(struct task_struct *p)
+@@ -4857,10 +4857,13 @@ fail:
+ 
  #ifdef CONFIG_NUMA_BALANCING
- 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
- 		p->mm->numa_next_scan = jiffies;
--		p->mm->numa_next_reset = jiffies;
- 		p->mm->numa_scan_seq = 0;
- 	}
+ /* Migrate current task p to target_cpu */
+-int migrate_task_to(struct task_struct *p, int target_cpu)
++int migrate_task_to(struct task_struct *p, int target_cpu,
++		    struct task_struct *swap_p)
+ {
+ 	struct migration_arg arg = { p, target_cpu };
+ 	int curr_cpu = task_cpu(p);
++	struct rq *rq;
++	int retval;
+ 
+ 	if (curr_cpu == target_cpu)
+ 		return 0;
+@@ -4868,7 +4871,39 @@ int migrate_task_to(struct task_struct *p, int target_cpu)
+ 	if (!cpumask_test_cpu(target_cpu, tsk_cpus_allowed(p)))
+ 		return -EINVAL;
+ 
+-	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
++	if (swap_p == NULL)
++		return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
++
++	/* Make sure the target is still running the expected task */
++	rq = cpu_rq(target_cpu);
++	local_irq_disable();
++	raw_spin_lock(&rq->lock);
++	if (rq->curr != swap_p) {
++		raw_spin_unlock(&rq->lock);
++		local_irq_enable();
++		return -EINVAL;
++	}
++
++	/* Take a reference on the running task on the target cpu */
++	get_task_struct(swap_p);
++	raw_spin_unlock(&rq->lock);
++	local_irq_enable();
++
++	/* Move current running task to target CPU */
++	retval = stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
++	if (raw_smp_processor_id() != target_cpu) {
++		put_task_struct(swap_p);
++		return retval;
++	}
++
++	/* Move the remote task to the CPU just vacated */
++	local_irq_disable();
++	if (raw_smp_processor_id() == target_cpu)
++		__migrate_task(swap_p, target_cpu, curr_cpu);
++	local_irq_enable();
++
++	put_task_struct(swap_p);
++	return retval;
+ }
+ #endif
  
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9590fcd..9002a4a 100644
+index 07a9f40..7a8f768 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -782,8 +782,7 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
-  * numa task sample period in ms
-  */
- unsigned int sysctl_numa_balancing_scan_period_min = 100;
--unsigned int sysctl_numa_balancing_scan_period_max = 100*50;
--unsigned int sysctl_numa_balancing_scan_period_reset = 100*600;
-+unsigned int sysctl_numa_balancing_scan_period_max = 100*600;
+@@ -851,10 +851,12 @@ static unsigned long target_load(int cpu, int type);
+ static unsigned long power_of(int cpu);
+ static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
  
- /* Portion of address space to scan in MB */
- unsigned int sysctl_numa_balancing_scan_size = 256;
-@@ -873,6 +872,7 @@ static void task_numa_placement(struct task_struct *p)
- 	 */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
- 		int preferred_cpu;
-+		int old_migrate_seq = p->numa_migrate_seq;
+-static int task_numa_find_cpu(struct task_struct *p, int nid)
++static int task_numa_find_cpu(struct task_struct *p, int nid,
++			      struct task_struct **swap_p)
+ {
+ 	int node_cpu = cpumask_first(cpumask_of_node(nid));
+ 	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
++	int src_cpu_node = cpu_to_node(src_cpu);
+ 	unsigned long src_load, dst_load;
+ 	unsigned long min_load = ULONG_MAX;
+ 	struct task_group *tg = task_group(p);
+@@ -864,6 +866,8 @@ static int task_numa_find_cpu(struct task_struct *p, int nid)
+ 	bool balanced;
+ 	int imbalance_pct, idx = -1;
  
- 		/*
- 		 * If the task is not on the preferred node then find the most
-@@ -888,6 +888,16 @@ static void task_numa_placement(struct task_struct *p)
- 		p->numa_preferred_nid = max_nid;
- 		p->numa_migrate_seq = 0;
- 		migrate_task_to(p, preferred_cpu);
++	*swap_p = NULL;
 +
-+		/*
-+		 * If preferred nodes changes frequently then the scan rate
-+		 * will be continually high. Mitigate this by increasing the
-+		 * scan rate only if the task was settled.
-+		 */
-+		if (old_migrate_seq >= sysctl_numa_balancing_settle_count) {
-+			p->numa_scan_period = max(p->numa_scan_period >> 1,
-+					sysctl_numa_balancing_scan_period_min);
+ 	/* No harm being optimistic */
+ 	if (idle_cpu(node_cpu))
+ 		return node_cpu;
+@@ -904,6 +908,8 @@ static int task_numa_find_cpu(struct task_struct *p, int nid)
+ 	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
+ 
+ 	for_each_cpu(cpu, cpumask_of_node(nid)) {
++		struct task_struct *swap_candidate = NULL;
++
+ 		dst_load = target_load(cpu, idx);
+ 
+ 		/* If the CPU is idle, use it */
+@@ -922,12 +928,41 @@ static int task_numa_find_cpu(struct task_struct *p, int nid)
+ 		 * migrate to its preferred node due to load imbalances.
+ 		 */
+ 		balanced = (dst_eff_load <= src_eff_load);
+-		if (!balanced)
+-			continue;
++		if (!balanced) {
++			struct rq *rq = cpu_rq(cpu);
++			unsigned long src_faults, dst_faults;
++
++			/* Do not move tasks off their preferred node */
++			if (rq->curr->numa_preferred_nid == nid)
++				continue;
++
++			/* Do not attempt an illegal migration */
++			if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(rq->curr)))
++				continue;
++
++			/*
++			 * Do not impair locality for the swap candidate.
++			 * Destination for the swap candidate is the source cpu
++			 */
++			if (rq->curr->numa_faults) {
++				src_faults = rq->curr->numa_faults[task_faults_idx(nid, 1)];
++				dst_faults = rq->curr->numa_faults[task_faults_idx(src_cpu_node, 1)];
++				if (src_faults > dst_faults)
++					continue;
++			}
++
++			/*
++			 * The destination is overloaded but running a task
++			 * that is not running on its preferred node. Consider
++			 * swapping the CPU tasks are running on.
++			 */
++			swap_candidate = rq->curr;
 +		}
+ 
+ 		if (dst_load < min_load) {
+ 			min_load = dst_load;
+ 			dst_cpu = cpu;
++			*swap_p = swap_candidate;
+ 		}
  	}
+ 
+@@ -938,6 +973,7 @@ static int task_numa_find_cpu(struct task_struct *p, int nid)
+ static void numa_migrate_preferred(struct task_struct *p)
+ {
+ 	int preferred_cpu = task_cpu(p);
++	struct task_struct *swap_p;
+ 
+ 	/* Success if task is already running on preferred CPU */
+ 	p->numa_migrate_retry = 0;
+@@ -945,8 +981,8 @@ static void numa_migrate_preferred(struct task_struct *p)
+ 		return;
+ 
+ 	/* Otherwise, try migrate to a CPU on the preferred node */
+-	preferred_cpu = task_numa_find_cpu(p, p->numa_preferred_nid);
+-	if (migrate_task_to(p, preferred_cpu) != 0)
++	preferred_cpu = task_numa_find_cpu(p, p->numa_preferred_nid, &swap_p);
++	if (migrate_task_to(p, preferred_cpu, swap_p) != 0)
+ 		p->numa_migrate_retry = jiffies + HZ*5;
  }
  
-@@ -984,19 +994,6 @@ void task_numa_work(struct callback_head *work)
- 	}
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 795346d..90ded64 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -504,7 +504,8 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
  
- 	/*
--	 * Reset the scan period if enough time has gone by. Objective is that
--	 * scanning will be reduced if pages are properly placed. As tasks
--	 * can enter different phases this needs to be re-examined. Lacking
--	 * proper tracking of reference behaviour, this blunt hammer is used.
--	 */
--	migrate = mm->numa_next_reset;
--	if (time_after(now, migrate)) {
--		p->numa_scan_period = sysctl_numa_balancing_scan_period_min;
--		next_scan = now + msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
--		xchg(&mm->numa_next_reset, next_scan);
--	}
--
--	/*
- 	 * Enforce maximal scan/migration frequency..
- 	 */
- 	migrate = mm->numa_next_scan;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 263486f..1fcbc68 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -373,13 +373,6 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
--		.procname	= "numa_balancing_scan_period_reset",
--		.data		= &sysctl_numa_balancing_scan_period_reset,
--		.maxlen		= sizeof(unsigned int),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
--	},
--	{
- 		.procname	= "numa_balancing_scan_period_max_ms",
- 		.data		= &sysctl_numa_balancing_scan_period_max,
- 		.maxlen		= sizeof(unsigned int),
+ #ifdef CONFIG_NUMA_BALANCING
+-extern int migrate_task_to(struct task_struct *p, int cpu);
++extern int migrate_task_to(struct task_struct *p, int cpu,
++			   struct task_struct *swap_p);
+ static inline void task_numa_free(struct task_struct *p)
+ {
+ 	kfree(p->numa_faults);
 -- 
 1.8.1.4
 
