@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab3GOKqX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:46:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3820 "EHLO mga03.intel.com"
+	id S1755443Ab3GOKpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:45:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23416 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755452Ab3GOKpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:45:13 -0400
+	id S1755406Ab3GOKpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:45:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
-   d="scan'208";a="365360385"
+   d="scan'208";a="331500284"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 3/8] thp: account anon transparent huge pages into NR_ANON_PAGES
-Date: Mon, 15 Jul 2013 13:47:49 +0300
-Message-Id: <1373885274-25249-4-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 7/8] thp: do_huge_pmd_anonymous_page() cleanup
+Date: Mon, 15 Jul 2013 13:47:53 +0300
+Message-Id: <1373885274-25249-8-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,117 +33,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-We use NR_ANON_PAGES as base for reporting AnonPages to user.
-There's not much sense in not accounting transparent huge pages there, but
-add them on printing to user.
+Minor cleanup: unindent most code of the fucntion by inverting one
+condition. It's preparation for the next patch.
 
-Let's account transparent huge pages in NR_ANON_PAGES in the first place.
+No functional changes.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- drivers/base/node.c |  6 ------
- fs/proc/meminfo.c   |  6 ------
- mm/huge_memory.c    |  1 -
- mm/rmap.c           | 18 +++++++++---------
- 4 files changed, 9 insertions(+), 22 deletions(-)
+ mm/huge_memory.c | 83 ++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 41 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 7616a77..bc9f43b 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -125,13 +125,7 @@ static ssize_t node_read_meminfo(struct device *dev,
- 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
- 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
- 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--		       nid, K(node_page_state(nid, NR_ANON_PAGES)
--			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
--			HPAGE_PMD_NR),
--#else
- 		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
--#endif
- 		       nid, K(node_page_state(nid, NR_SHMEM)),
- 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
- 				THREAD_SIZE / 1024,
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 5aa847a..59d85d6 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -132,13 +132,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 		K(i.freeswap),
- 		K(global_page_state(NR_FILE_DIRTY)),
- 		K(global_page_state(NR_WRITEBACK)),
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--		K(global_page_state(NR_ANON_PAGES)
--		  + global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
--		  HPAGE_PMD_NR),
--#else
- 		K(global_page_state(NR_ANON_PAGES)),
--#endif
- 		K(global_page_state(NR_FILE_MAPPED)),
- 		K(global_page_state(NR_SHMEM)),
- 		K(global_page_state(NR_SLAB_RECLAIMABLE) +
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index a92012a..04f0749 100644
+index ec735a9..82f0697 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1661,7 +1661,6 @@ static void __split_huge_page_refcount(struct page *page,
- 	BUG_ON(atomic_read(&page->_count) <= 0);
+@@ -785,55 +785,54 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
+ 	pte_t *pte;
  
- 	__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
--	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
- 
- 	ClearPageCompound(page);
- 	compound_unlock(page);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index cd356df..7066470 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1055,11 +1055,11 @@ void do_page_add_anon_rmap(struct page *page,
- {
- 	int first = atomic_inc_and_test(&page->_mapcount);
- 	if (first) {
--		if (!PageTransHuge(page))
--			__inc_zone_page_state(page, NR_ANON_PAGES);
--		else
-+		if (PageTransHuge(page))
- 			__inc_zone_page_state(page,
- 					      NR_ANON_TRANSPARENT_HUGEPAGES);
-+		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
-+				hpage_nr_pages(page));
+-	if (haddr >= vma->vm_start && haddr + HPAGE_PMD_SIZE <= vma->vm_end) {
+-		if (unlikely(anon_vma_prepare(vma)))
+-			return VM_FAULT_OOM;
+-		if (unlikely(khugepaged_enter(vma)))
++	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
++		goto out;
++	if (unlikely(anon_vma_prepare(vma)))
++		return VM_FAULT_OOM;
++	if (unlikely(khugepaged_enter(vma)))
++		return VM_FAULT_OOM;
++	if (!(flags & FAULT_FLAG_WRITE) &&
++			transparent_hugepage_use_zero_page()) {
++		pgtable_t pgtable;
++		struct page *zero_page;
++		bool set;
++		pgtable = pte_alloc_one(mm, haddr);
++		if (unlikely(!pgtable))
+ 			return VM_FAULT_OOM;
+-		if (!(flags & FAULT_FLAG_WRITE) &&
+-				transparent_hugepage_use_zero_page()) {
+-			pgtable_t pgtable;
+-			struct page *zero_page;
+-			bool set;
+-			pgtable = pte_alloc_one(mm, haddr);
+-			if (unlikely(!pgtable))
+-				return VM_FAULT_OOM;
+-			zero_page = get_huge_zero_page();
+-			if (unlikely(!zero_page)) {
+-				pte_free(mm, pgtable);
+-				count_vm_event(THP_FAULT_FALLBACK);
+-				goto out;
+-			}
+-			spin_lock(&mm->page_table_lock);
+-			set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
+-					zero_page);
+-			spin_unlock(&mm->page_table_lock);
+-			if (!set) {
+-				pte_free(mm, pgtable);
+-				put_huge_zero_page();
+-			}
+-			return 0;
+-		}
+-		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+-					  vma, haddr, numa_node_id(), 0);
+-		if (unlikely(!page)) {
++		zero_page = get_huge_zero_page();
++		if (unlikely(!zero_page)) {
++			pte_free(mm, pgtable);
+ 			count_vm_event(THP_FAULT_FALLBACK);
+ 			goto out;
+ 		}
+-		count_vm_event(THP_FAULT_ALLOC);
+-		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+-			put_page(page);
+-			goto out;
+-		}
+-		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
+-							  page))) {
+-			mem_cgroup_uncharge_page(page);
+-			put_page(page);
+-			goto out;
++		spin_lock(&mm->page_table_lock);
++		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
++				zero_page);
++		spin_unlock(&mm->page_table_lock);
++		if (!set) {
++			pte_free(mm, pgtable);
++			put_huge_zero_page();
+ 		}
+-
+ 		return 0;
  	}
- 	if (unlikely(PageKsm(page)))
- 		return;
-@@ -1088,10 +1088,10 @@ void page_add_new_anon_rmap(struct page *page,
- 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
- 	SetPageSwapBacked(page);
- 	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
--	if (!PageTransHuge(page))
--		__inc_zone_page_state(page, NR_ANON_PAGES);
--	else
-+	if (PageTransHuge(page))
- 		__inc_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
-+	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
-+			hpage_nr_pages(page));
- 	__page_set_anon_rmap(page, vma, address, 1);
- 	if (!mlocked_vma_newpage(vma, page)) {
- 		SetPageActive(page);
-@@ -1151,11 +1151,11 @@ void page_remove_rmap(struct page *page)
- 		goto out;
- 	if (anon) {
- 		mem_cgroup_uncharge_page(page);
--		if (!PageTransHuge(page))
--			__dec_zone_page_state(page, NR_ANON_PAGES);
--		else
-+		if (PageTransHuge(page))
- 			__dec_zone_page_state(page,
- 					      NR_ANON_TRANSPARENT_HUGEPAGES);
-+		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
-+				hpage_nr_pages(page));
- 	} else {
- 		__dec_zone_page_state(page, NR_FILE_MAPPED);
- 		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
++	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
++			vma, haddr, numa_node_id(), 0);
++	if (unlikely(!page)) {
++		count_vm_event(THP_FAULT_FALLBACK);
++		goto out;
++	}
++	count_vm_event(THP_FAULT_ALLOC);
++	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
++		put_page(page);
++		goto out;
++	}
++	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page))) {
++		mem_cgroup_uncharge_page(page);
++		put_page(page);
++		goto out;
++	}
++
++	return 0;
+ out:
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
 -- 
 1.8.3.2
 
