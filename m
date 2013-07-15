@@ -1,148 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758431Ab3GOXrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 19:47:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53125 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758148Ab3GOXrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 19:47:10 -0400
-Date: Tue, 16 Jul 2013 01:47:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Waiman Long <waiman.long@hp.com>
-cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1758444Ab3GOXte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 19:49:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46707 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757698Ab3GOXtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 19:49:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,672,1367996400"; 
+   d="scan'208";a="370762850"
+Message-ID: <1373932170.28142.24.camel@envy.home>
+Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
+From: Darren Hart <dvhart@linux.intel.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v5 01/12] spinlock: A new lockref structure for lockless
- update of refcount
-In-Reply-To: <51E468A4.3030605@hp.com>
-Message-ID: <alpine.DEB.2.02.1307160109490.11918@ionos.tec.linutronix.de>
-References: <1373035656-40600-1-git-send-email-Waiman.Long@hp.com> <1373035656-40600-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1307051911110.32106@ionos.tec.linutronix.de> <51DACADF.4000802@hp.com> <alpine.DEB.2.02.1307151612090.11918@ionos.tec.linutronix.de>
- <51E468A4.3030605@hp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Date: Mon, 15 Jul 2013 16:49:30 -0700
+In-Reply-To: <20130715223615.GI15531@xanatos>
+References: <20130715174659.GC15531@xanatos>
+	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	 <20130715180403.GD15531@xanatos>
+	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	 <20130715184642.GE15531@xanatos>
+	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
+	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	 <1373926109.17876.221.camel@gandalf.local.home>
+	 <20130715223615.GI15531@xanatos>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Jul 2013, Waiman Long wrote:
-> On 07/15/2013 10:41 AM, Thomas Gleixner wrote:
-> > On Mon, 8 Jul 2013, Waiman Long wrote:
-> > Sigh. GENERIC means, that you use the generic implementation, ARCH
-> > means the architecture has a private implementation of that code.
+On Mon, 2013-07-15 at 15:36 -0700, Sarah Sharp wrote:
+> On Mon, Jul 15, 2013 at 06:08:29PM -0400, Steven Rostedt wrote:
+> > On Mon, 2013-07-15 at 14:50 -0700, Linus Torvalds wrote:
+> > > On Mon, Jul 15, 2013 at 1:41 PM, Sarah Sharp
+> > > <sarah.a.sharp@linux.intel.com> wrote:
+> > > >
+> > > > Oh, FFS, I just called out on private email for "playing the victim
+> > > > card".  I will repeat: this is not just about me, or other minorities.
+> > > > I should not have to ask for professional behavior on the mailing lists.
+> > > > Professional behavior should be the default.
+> > > 
+> > > Bullshit.
+> > > 
 > > 
-> > The generic implementation can use arch specific includes and if there
-> > is none we simply fallback to the asm-generic one.
+> > Can we please make this into a Kernel Summit discussion. I highly doubt
+> > we would solve anything, but it certainly would be a fun segment to
+> > watch :-)
 > 
-> I used the ARCH+GENERIC to mean using the generic code but with arch specific
-> include.
-
-And what's the point of that? I just explained it to you that you do
-not need the ARCH=y and GENERIC=y at all.
- 
-> >   >  Let's start with a simple version because it IS simple and easy
-> > > > to analyze and debug and then incrementally build improvements on it
-> > > > instead of creating an heuristics monster in the first place, i.e.:
-> > > > 
-> > > >      if (!spin_is_locked(&lr->lock)&&   try_cmpxchg_once(lr))
-> > > >         return 0;
-> > > >      return 1;
-> > > > 
-> > > > Take numbers for this on a zoo of different machines: Intel and AMD,
-> > > > old and new.
-> > > > 
-> > > > Then you can add an incremental patch on that, which add loops and
-> > > > hoops. Along with numbers on the same zoo of machines.
-> > > I originally tried to do a cmpxchg without waiting and there was
-> > > practically no performance gain. I believe that as soon as
-> > Well, you did not see a difference on your particular machine. Still
-> > we don't have an idea how all of this works on a set of different
-> > machines. There is a world beside 8 socket servers.
+> I agree, KS is where this conversation should be taking place.
+> Attendees for this conversation (so far) should be Greg KH, Linus,
+> Darren Hart, Steve Rostedt, Willy Tarreau, and me.
 > 
-> I understand that. I can live with try_cmpxchg_once, though doing it
-> twice will give a slightly better performance. However, without
-
-I asked you several times now to explain and document the whole thing
-with numbers instead of your handwaving "slightly better performance"
-arguments.
-
-I CANNOT verify that at all simply because I have no access to a 8
-socket machine. Hint: Ask your boss to send me one :)
-
-> waiting for the lock to be free, this patch won't do much good. To
-> keep it simple, I can remove the ability to do customization while
-> doing cmpxchg once and wait until the lock is free. Please let me
-> know if this is acceptable to you.
-
-No, it's not acceptable at all if you are not able to provide data for
-1,2,4,8 socket machines (from single core to your precious big
-boxes). It's that simple. We are not accepting patches which optimize
-for a single use case and might negatively affect 99,9999% of the
-existing users which have no access to this kind of hardware unless
-proven otherwise.
-
-As I told you versus the qrwlocks: You are missing to explain WHY it
-improves your particular workloads and WHY this change wont affect
-other workloads. All I can see from your explanations is: Works better
-on 8 socket big iron. I have yet to see any numbers that this wont
-affect the vast majority of users.
-
-> > Also what's the approach to tune that? Running some random testbench
-> > and monitor the results for various settings?
-> > 
-> > If that's the case we better have a that as variables with generic
-> > initial values in the code, which can be modified by sysctl.
+> > > So as far as I'm concerned, the discussion is about "how to work
+> > > together DESPITE people being different". Not about trying to make
+> > > everybody please each other. Because I can pretty much guarantee that
+> > > I'll continue cursing. To me, the discussion would be about how to
+> > > work together despite these kinds of cultural differences, not about
+> > > "how do we make everybody nice and sing songs sound the campfire"
+> > > 
+> > > Do you think you might be interested in *that* kind of discussion
+> > > instead of the "you are abusing me" kind of discussion?
+> > > 
+> > > Because if you want me to "act professional", I can tell you that I'm
+> > > not interested. I'm sitting in my home office wearign a bathrobe. The
+> > > same way I'm not going to start wearing ties, I'm *also* not going to
+> > > buy into the fake politeness, the lying, the office politics and
+> > > backstabbing, the passive aggressiveness, and the buzzwords. Because
+> > > THAT is what "acting professionally" results in: people resort to all
+> > > kinds of really nasty things because they are forced to act out their
+> > > normal urges in unnatural ways.
 > 
-> As I said above, I can remove the customization. I may reintroduce user
-> customization using sysctl as you suggested in the a follow up patch after
-> this one is merged.
-
-And I asked for a step by step approach in the first review, but you
-decided to ignore that. And now you think that it's accetable for you
-as long as you get what you want. That's not the way it works, really.
-
-> > > > > +		getnstimeofday(&tv2);
-> > > > > +		ns = (tv2.tv_sec - tv1.tv_sec) * NSEC_PER_SEC +
-> > > > > +		     (tv2.tv_nsec - tv1.tv_nsec);
-> > > > > +		pr_info("lockref wait loop time = %lu ns\n", ns);
-> > > > Using getnstimeofday() for timestamping and spamming the logs with
-> > > > printouts? You can't be serious about that?
-> > > > 
-q > > > > Thats what tracepoints are for. Tracing is the only way to get proper
-> > > > numbers which take preemption, interrupts etc. into account without
-> > > > hurting runtime performace.
-> > > The _SHOW_WAIT_LOOP_TIME is for debugging and instrumentation purpose only
-> > > during development cycle. It is not supposed to be turned on at production
-> > > system. I will document that in the code.
-> > No, no, no! Again: That's what tracepoints are for.
-> > 
-> > This kind of debugging is completely pointless. Tracepoints are
-> > designed to be low overhead and can be enabled on production
-> > systems.
-> > 
-> > Your debugging depends on slow timestamps against CLOCK_REALTIME and
-> > an even slower output via printk. How useful is that if you want to
-> > really instrument the behaviour of this code?
+> Yes, let's move this conversation into the "how to work together DESPITE
+> people being different" realm.  I would be happy to have that
+> discussion.  As Linus said, some people work together better than
+> others.  Some people have different expectations of appropriate ways to
+> interact with co-workers.  Sometimes that means that people only work
+> with certain other co-workers, like Greg and I.
 > 
-> This code is not critical and I can certainly remove it.
+> The people who want to work together in a civil manner should get
+> together and create a "Kernel maintainer's code of conduct" that
+> outlines what they expect from fellow kernel developers.  The people who
+> want to continue acting "unprofessionally" should document what
+> behaviors set off their cursing streaks, so that others can avoid that
+> behavior.  Somewhere in the middle is the community behavior all
+> developers can thrive in.
+> 
+> Some people won't agree with everything in that document.  The point is,
+> they don't have to agree.  They can read the document, figure out what
+> the community expects, and figure out whether they can modify their
+> behavior to match.  If they are unwilling to change, they simply don't
+> have to work with the developers who have signed it.
+> 
+> Perhaps a trusted third party could take a stab at a first draft of this
+> document?  Greg KH?  Steve Rostedt?  Darren Hart?
+> 
 
-Did you even try to understand what I wrote? I did not ask you to
-remove instrumentation. I asked you to use useful instrumentation
-instead of some totally useless crap.
+Well, I admit this wasn't the contribution I've been working toward for
+my first KS invite, but if people think this would be valuable, I'm up
+for helping out where I can. Now are we talking more about a code of
+conduct or a process document. I'm more likely to help out on the
+latter, as the former often raises my hackles a bit. I'm fine with a
+few lines in the process document instructing people on the pitfalls of
+written communication and to keep it civil, but I will not enumerate
+the seven words you can't say on television as bad words that thou
+shalt no use. Such a document would be largely ignored, and indeed, may
+have the opposite of the desired result :-)
 
-Thanks,
+I do believe that someone from the intended audience of a document
+should be the one to write the first draft (or they should be among the
+reviewers if the authority drafts the document). For instance, I
+believe I would be able to document how to work with -tip or -stable as
+an individual contributor. I would not be a good candidate for writing
+the "how to be a lieutenant to Linus" because I am neither Linus nor
+one of his lieutenants. I concern myself with Thomas, Ingo, Peter Z.,
+and Greg K-H, and increasingly David Miller, but I don't worry about
+Linus because I trust these people to do that properly and I trust that
+their rules are the ones I need to follow: if it's good enough for
+them, it will make upstream eventually.
 
-	tglx
+I will re-iterate one more time though, that personally, I am much more
+interested in making it clear what sets people (OK, Linus) off in a
+document like stable_kernel_rules where we can point violators to. A
+document which eliminates the need to search LKML or -stable for
+similar patches to determine the preferred process of the month. Where
+possible, this would (IMO) be the default policy document and subsystem
+maintainers would only deviate from it for very good reasons. For
+example, having different comment formatting rules in checkpatch for
+different subsystems strikes me as cruel and unusual. If someone goes on
+a tirade for a violation that is not documented, the blame falls on them
+IMHO. If it's documented, a newcomer gets a referral, a repeat offender
+has opened themselves up to stronger forms of persuasion.
 
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
 
