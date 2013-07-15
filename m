@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab3GOTzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 15:55:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16239 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755058Ab3GOTyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 15:54:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 15 Jul 2013 12:54:19 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <balbi@ti.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 8/9] usb: phy: tegra: Use DT helpers for phy_type
-Date: Mon, 15 Jul 2013 22:53:48 +0300
-Message-ID: <1373918029-28977-9-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756580Ab3GOTzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 15:55:18 -0400
+Received: from 1wt.eu ([62.212.114.60]:34674 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755288Ab3GOTzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 15:55:15 -0400
+Date: Mon, 15 Jul 2013 21:55:05 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable kernel, let's dump the cc: stable tag
+Message-ID: <20130715195505.GE10157@1wt.eu>
+References: <1373916476.2748.69.camel@dabdike> <1373917517.17876.193.camel@gandalf.local.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373917517.17876.193.camel@gandalf.local.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new of_usb_get_phy_mode helper function for parsing phy_type
-from the device tree.
+Hi Steven,
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
----
- drivers/usb/phy/phy-tegra-usb.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+On Mon, Jul 15, 2013 at 03:45:17PM -0400, Steven Rostedt wrote:
+> How about this as a proposal.
+> 
+> Keep the Cc: stable@ tag as it is today.
+> 
+> Have Greg, or whoever, change his script to not take commits marked for
+> stable, but instead, forward the commit to the maintainer. Or as it
+> already does today, to everyone on the Cc, and -by: tags. Change the
+> script from being "stable review" to say "Look to see what you want, and
+> resend what is needed for stable".
+> 
+> Then the maintainer needs to look at all the patches that were marked
+> for stable, and resend them to Greg saying which ones should go into
+> stable.
+> 
+> This has a few advantages.
+> 
+> 1) lets anyone still mark their patch as a stable fix, even if at the
+> end isn't.
+> 
+> 2) Some commits can be marked for stable, for those that want to read
+> git logs, but not send to stable (the Fixes: tag as described in another
+> thread).
+> 
+> 2) Makes the stable decision go where it belongs. To the maintainer of
+> that system. It lets the maintainer think twice about what goes to
+> stable or not.
+> 
+> 3) gives a little more time if needed, to let stable commits stir in
+> mainline. If its a security fix, the maintainer should be on the ball to
+> get in to stable, and not just let Greg worry about it.
+> 
+> 4) Probably the most important. It should unload most of the work off of
+> Greg, and push it more on the maintainers. Greg would just need to make
+> sure the patch goes to the right person (probably not an issue, as it is
+> most likely on the Signed off by line). Then the maintainers could
+> review the commits that should go to stable, and if needed, not send
+> them. They could also send commits that were not marked for stable, as
+> long as they are already in mainline.
+> 
+> Also, we could mandate that the maintainers do the backports too.
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 0d48f4e..3ded872 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -31,6 +31,7 @@
- #include <linux/of_gpio.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/ulpi.h>
-+#include <linux/usb/of.h>
- #include <asm/mach-types.h>
- #include <linux/usb/ehci_def.h>
- #include <linux/usb/tegra_usb_phy.h>
-@@ -859,6 +860,7 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	struct tegra_usb_phy *tegra_phy = NULL;
- 	struct device_node *np = pdev->dev.of_node;
-+	enum usb_phy_interface phy_type;
- 	int err;
- 
- 	tegra_phy = devm_kzalloc(&pdev->dev, sizeof(*tegra_phy), GFP_KERNEL);
-@@ -883,12 +885,12 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
- 	tegra_phy->is_legacy_phy =
- 		of_property_read_bool(np, "nvidia,has-legacy-mode");
- 
--	err = of_property_match_string(np, "phy_type", "ulpi");
--	if (err < 0) {
-+	phy_type = of_usb_get_phy_mode(np);
-+	if (phy_type == USBPHY_INTERFACE_MODE_UTMI) {
- 		err = utmi_phy_probe(tegra_phy, pdev);
- 		if (err < 0)
- 			return err;
--	} else {
-+	} else if (phy_type == USBPHY_INTERFACE_MODE_ULPI) {
- 		tegra_phy->is_ulpi_phy = true;
- 
- 		tegra_phy->reset_gpio =
-@@ -898,8 +900,10 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
- 				tegra_phy->reset_gpio);
- 			return tegra_phy->reset_gpio;
- 		}
--
- 		tegra_phy->config = NULL;
-+	} else {
-+		dev_err(&pdev->dev, "phy_type is invalid or unsupported\n");
-+		return -EINVAL;
- 	}
- 
- 	err = of_property_match_string(np, "dr_mode", "otg");
--- 
-1.8.1.5
+I disagree with your proposal. All these points are already covered by
+the stable review and the early notification that the greg-bot does when
+the patch is included in the queue. If submitters/maintainers do not read
+these e-mails sent to them about changes going to happen in the subsystems
+they're responsible for, having them resend the patches will only punish
+the honnest ones. The other ones will simply reply without doing anything
+else. In the end, we get more work to get fixes merged so less efficiency.
+
+I tend to think the merge should be slightly less automatic or at least
+add some delay (post release for late submissions), but what I'm worried
+about is that adding exceptions to the workflow will mean more work for
+Greg, so we should be careful about this, as we have a single one and we
+don't want to burn him out.
+
+Regards,
+Willy
 
