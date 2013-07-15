@@ -1,83 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3GOD50 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Jul 2013 23:57:26 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47722 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922Ab3GOD5Z (ORCPT
+	id S1750978Ab3GOEAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 00:00:48 -0400
+Received: from callisto.mysnip.de ([178.23.121.164]:38743 "EHLO
+	callisto.mysnip.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3GOEAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Jul 2013 23:57:25 -0400
-MIME-Version: 1.0
-Date: Mon, 15 Jul 2013 11:57:24 +0800
-Message-ID: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
-Subject: [PATCH] usb: udc: add gadget state kobject uevent
-From: Rong Wang <wr011235813@gmail.com>
-To: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>
-Cc: arnd@arndb.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rong.Wang@csr.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Jul 2013 00:00:46 -0400
+To: linux-kernel@vger.kernel.org
+Subject: =?UTF-8?Q?Replica=20Soccer=20paidat=20jalkapallon=20yst=C3=A4ville?=
+X-PHP-Originating-Script: 1000:email_functions.php
+Content-Type: text/plain; charset=UTF-8
+X-Mailer: Phorum5
+Message-ID: <2b2ead51c2467ad5b8c1a47dd33e9c6a.LinuxKernel@www.serverphorums.com>
+X-Phorum: 1a38330efb91e5f9021ae2fc13b39ae0412706f1
+From: lkml@serverphorums.com
+Date: Mon, 15 Jul 2013 06:00:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6F40wAF006128
 
-    usb: udc: add gadget state kobject uevent
+Nauti jalkapallo kausi ja näyttää rakkautta suosikki joukkue replica jalkapallo pelipaidat. Ne voivat olla apt että jalkapallofanit, jotka rakastavat kaiken peliin ja kävellä ulos oikea tapa edustaa villitys suhteen jalkapallo pelipaidat halvalla suosikki joukkue. Ostot jäljennöksiä osoittaa, että sinun ei tarvitse viettää paljon ympäri pelipaidat, jotka mahdollistavat sen silti ilmaista ex tyttöystävä että peli.
 
-    Add USB_UDC_STATE environment variable in udc uevent
-    callback and trigger kobject_uevent in usb_gadget_set_state
-    to inform the user-space the state of the gadget.
+Erilaisia ​​Replica Soccer paidat ovat myynnissä ostajia, jotka löytävät ne helposti nyt. Salaisuus menestykseen on kuitenkin oltava pelipaita, että ei ole pelkästään hyvä kopio, mutta on hyödyllisin laatua samanaikaisesti. Useat valmistaa jotka tarjoavat käyttäen jäljennöksiä usein vaarantaa ympäri huippuosaamista tuotteen vähentämiseksi kirjataan ostohinnan ja ansaita enemmän voittoa. Tämäntyyppinen pelipaita voi etsiä halpoja, joka mahdollistaa sen jopa tulla epämiellyttävä.
 
-    Signed-off-by: Rong Wang <Rong.Wang@csr.com>
+Kiva valmistajat taata, että ne käyttävät parasta laatua ainetta valmistaakseen pelipaidat. He käyttävät puuvillaa,jalkapallo pelipaidat painatus jotta ne, jotka eivät yksinkertaisesti näyttää hyvältä, mutta on varsin mukava käyttää. Tällaiset Replica jalkapallo pelipaidat ovat omiaan henkilöille, jotka ei ole varaa saada kalliita alkuperäisiin. Ne laittaa ne näyttävät muodikas myös tukea heidän paras joukkue.
 
-diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
-index ffd8fa5..05715d1 100644
---- a/drivers/usb/gadget/udc-core.c
-+++ b/drivers/usb/gadget/udc-core.c
-@@ -101,11 +101,32 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
+Nykyään jalkapallofaneja voisi myös odottaa saada Custom pelipaidat, jotka kantavat yhteistä pelaajat nimen ja numeron. On monia valmistajia, jotka pystyvät esitellä teille tämän palvelun ja voit helposti saada oikea pelipaita. Tässä tapauksessa sinun kannattaa tehdä tilauksen etukäteen ja kertoa heille, mitä nimen tai numeron mitä tarvitset Custom pelipaidat.
 
- /* ------------------------------------------------------------------------- */
+Custom pelipaidat eivät yleensä ole helposti saatavilla kaikki nykyiset myymälät ja näin voit etsiä online-valmistaja, joka voi tarjota samaa. Tällainen valmistaja auttaa sinua saamaan Replica Soccer paitoja eri joukkueet ja voit helposti valita yksi, joka edustaa paras joukkue. Web-pohjainen myymälöissä ylläpitää kokoelma kodin jersey ja menossa pois pelipaidat, jotka ovat saatavilla eri kokoja.
 
-+/**
-+ * usb_gadget_set_state - set usb gadget state
-+ * @gadget: gadget device
-+ * @state: state defined in USB specification ch9
-+ * Context: !in_interrupt()
-+ */
- void usb_gadget_set_state(struct usb_gadget *gadget,
-                enum usb_device_state state)
- {
-+       struct usb_udc          *udc = NULL;
-+
-        gadget->state = state;
-        sysfs_notify(&gadget->dev.kobj, NULL, "status");
-+
-+       mutex_lock(&udc_lock);
-+       list_for_each_entry(udc, &udc_list, list)
-+               if (udc->gadget == gadget)
-+                       goto found;
-+
-+       dev_err(gadget->dev.parent, "gadget not registered.\n");
-+       mutex_unlock(&udc_lock);
-+       return;
-+
-+found:
-+       mutex_unlock(&udc_lock);
-+       kobject_uevent(&udc->dev.kobj, KOBJ_CHANGE);
- }
- EXPORT_SYMBOL_GPL(usb_gadget_set_state);
-
-@@ -538,6 +559,15 @@ static int usb_udc_uevent(struct device *dev,
-struct kobj_uevent_env *env)
-                }
-        }
-
-+       if (udc->gadget) {
-+               ret = add_uevent_var(env, "USB_UDC_STATE=%s",
-+                               usb_state_string(udc->gadget->state));
-+               if (ret) {
-+                       dev_err(dev, "failed to add uevent USB_UDC_STATE\n");
-+                       return ret;
-+               }
-+       }
-+
-        return 0;
- }
+---
+posted at http://www.serverphorums.com
+http://www.serverphorums.com/read.php?12,742844,742844#msg-742844
