@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab3GOObA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:31:00 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:62801 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757583Ab3GOO2F (ORCPT
+	id S932387Ab3GOObg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:31:36 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53898 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab3GOObe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:28:05 -0400
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-v3 08/17] staging/lustre: fix build on s390
-Date: Mon, 15 Jul 2013 22:27:11 +0800
-Message-Id: <1373898440-14208-9-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
-References: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
+	Mon, 15 Jul 2013 10:31:34 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 5/9] mm, hugetlb: remove redundant list_empty check in gather_surplus_pages()
+In-Reply-To: <1373881967-16153-6-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com> <1373881967-16153-6-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 15 Jul 2013 20:01:24 +0530
+Message-ID: <87vc4bj3nn.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071514-1396-0000-0000-00000342B9C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As reported by Fengguang:
-In file included from drivers/staging/lustre/lustre/obdclass/../include/lustre/lustre_idl.h:99:0,
-	    from drivers/staging/lustre/lustre/obdclass/../include/lprocfs_status.h:46,
-	    from drivers/staging/lustre/lustre/obdclass/../include/obd_support.h:42,
-	    from drivers/staging/lustre/lustre/obdclass/../include/obd_class.h:40,
-	    from drivers/staging/lustre/lustre/obdclass/lu_object.c:53:
-drivers/staging/lustre/lustre/obdclass/../include/lustre/lustre_user.h:356:10: error: field 'lmd_st' has incomplete type
-drivers/staging/lustre/lustre/obdclass/../include/lustre/lustre_user.h:361:10: error: field 'lmd_st' has incomplete type
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
----
- .../lustre/lustre/include/linux/lustre_user.h      |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+> If list is empty, list_for_each_entry_safe() doesn't do anything.
+> So, this check is redundant. Remove it.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_user.h b/drivers/staging/lustre/lustre/include/linux/lustre_user.h
-index ebaf929..ea9393c 100644
---- a/drivers/staging/lustre/lustre/include/linux/lustre_user.h
-+++ b/drivers/staging/lustre/lustre/include/linux/lustre_user.h
-@@ -53,15 +53,19 @@
- 
- #include <linux/string.h>
- 
--#if defined(__x86_64__) || defined(__ia64__) || defined(__ppc64__) || \
--    defined(__craynv) || defined (__mips64__) || defined(__powerpc64__)
--typedef struct stat     lstat_t;
--#define lstat_f	 lstat
--#define HAVE_LOV_USER_MDS_DATA
--#else
-+/*
-+ * We need to always use 64bit version because the structure
-+ * is shared across entire cluster where 32bit and 64bit machines
-+ * are co-existing.
-+ */
-+#if __BITS_PER_LONG != 64 || defined(__ARCH_WANT_STAT64)
- typedef struct stat64   lstat_t;
- #define lstat_f	 lstat64
--#define HAVE_LOV_USER_MDS_DATA
-+#else
-+typedef struct stat     lstat_t;
-+#define lstat_f	 lstat
- #endif
- 
-+#define HAVE_LOV_USER_MDS_DATA
-+
- #endif /* _LUSTRE_USER_H */
--- 
-1.7.9.5
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index a838e6b..d4a1695 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1019,10 +1019,8 @@ free:
+>  	spin_unlock(&hugetlb_lock);
+>
+>  	/* Free unnecessary surplus pages to the buddy allocator */
+> -	if (!list_empty(&surplus_list)) {
+> -		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
+> -			put_page(page);
+> -		}
+> +	list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
+> +		put_page(page);
+>  	}
+
+You can now remove '{' 
+
+
+>  	spin_lock(&hugetlb_lock);
+>
+> -- 
+> 1.7.9.5
 
