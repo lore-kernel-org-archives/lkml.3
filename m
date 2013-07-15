@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab3GOKpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 06:45:05 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50578 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab3GOKpC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 06:45:02 -0400
-Message-ID: <1373885096.3146.11.camel@hornet>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Pawel Moll <pawel.moll@arm.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Date: Mon, 15 Jul 2013 11:44:56 +0100
-In-Reply-To: <51CB1BA5.9010307@gmail.com>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	 <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet>
-	 <51CB1BA5.9010307@gmail.com>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 15 Jul 2013 10:44:57.0138 (UTC) FILETIME=[5903E920:01CE8148]
-X-MC-Unique: 113071511445901701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755458Ab3GOKrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 06:47:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49141 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755243Ab3GOKpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 06:45:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,668,1367996400"; 
+   d="scan'208";a="345744611"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 1/8] mm: drop actor argument of do_generic_file_read()
+Date: Mon, 15 Jul 2013 13:47:47 +0300
+Message-Id: <1373885274-25249-2-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-26 at 17:49 +0100, David Ahern wrote:
-> With all the perf ioctl extensions tossed out the past day or so I 
-> wanted to revive this request. Still need a solution to the problem of 
-> correlating perf_clock to other clocks ...
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-And I second. We've been trying to squeeze the solution into the posix
-clock framework (and vdso) but it didn't get anywhere, really. I've
-spoken to John last week and although there is one more potential
-"solution" (and the quotes are meaningful ;-), it seems that the
-perf-specific ioctl would work for all interested individuals for now.
+There's only one caller of do_generic_file_read() and the only actor is
+file_read_actor(). No reason to have a callback parameter.
 
-Paweł
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+ mm/filemap.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 4b51ac1..f6fe61f 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1088,7 +1088,6 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * @filp:	the file to read
+  * @ppos:	current file position
+  * @desc:	read_descriptor
+- * @actor:	read method
+  *
+  * This is a generic file read routine, and uses the
+  * mapping->a_ops->readpage() function for the actual low-level stuff.
+@@ -1097,7 +1096,7 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * of the logic when it comes to error handling etc.
+  */
+ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+-		read_descriptor_t *desc, read_actor_t actor)
++		read_descriptor_t *desc)
+ {
+ 	struct address_space *mapping = filp->f_mapping;
+ 	struct inode *inode = mapping->host;
+@@ -1198,13 +1197,14 @@ page_ok:
+ 		 * Ok, we have the page, and it's up-to-date, so
+ 		 * now we can copy it to user space...
+ 		 *
+-		 * The actor routine returns how many bytes were actually used..
++		 * The file_read_actor routine returns how many bytes were
++		 * actually used..
+ 		 * NOTE! This may not be the same as how much of a user buffer
+ 		 * we filled up (we may be padding etc), so we can only update
+ 		 * "pos" here (the actor routine has to update the user buffer
+ 		 * pointers and the remaining count).
+ 		 */
+-		ret = actor(desc, page, offset, nr);
++		ret = file_read_actor(desc, page, offset, nr);
+ 		offset += ret;
+ 		index += offset >> PAGE_CACHE_SHIFT;
+ 		offset &= ~PAGE_CACHE_MASK;
+@@ -1477,7 +1477,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 		if (desc.count == 0)
+ 			continue;
+ 		desc.error = 0;
+-		do_generic_file_read(filp, ppos, &desc, file_read_actor);
++		do_generic_file_read(filp, ppos, &desc);
+ 		retval += desc.written;
+ 		if (desc.error) {
+ 			retval = retval ?: desc.error;
+-- 
+1.8.3.2
 
