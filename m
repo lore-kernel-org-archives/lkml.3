@@ -1,284 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab3GONOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 09:14:18 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:38895 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab3GONLJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 09:11:09 -0400
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-v2 07/17] staging/lustre: fix build error when !CONFIG_SMP
-Date: Mon, 15 Jul 2013 21:08:05 +0800
-Message-Id: <1373893695-4094-8-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
-References: <1373893695-4094-1-git-send-email-bergwolf@gmail.com>
+	id S932094Ab3GONOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 09:14:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24865 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756892Ab3GONO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 09:14:28 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: [PATCH 2/2] input/uinput: add UI_GET_SYSPATH ioctl to retrieve the sysfs path
+Date: Mon, 15 Jul 2013 15:14:17 +0200
+Message-Id: <1373894057-6915-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Three functions cfs_cpu_ht_nsiblings, cfs_cpt_cpumask and
-cfs_cpt_table_print are missing if !CONFIG_SMP.
+Evemu [1] uses uinput to replay devices traces it has recorded. However,
+the way evemu uses uinput is slightly different from how uinput is
+supposed to be used.
+Evemu creates the device node through uinput, bu inject events through
+the input device node directly (and skipping the uinput node).
 
-cpumask_t/nodemask_t/__read_mostly/____cacheline_aligned
-are redefined.
+Currently, evemu relies on an heuristic to guess which input node was
+created. The problem is that is heuristic is subjected to races between
+different uinput devices or even with physical devices. Having a way
+to retrieve the sysfs path allows us to find the event node without
+having to rely on this heuristic.
 
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+[1] http://www.freedesktop.org/wiki/Evemu/
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- .../lustre/include/linux/libcfs/libcfs_cpu.h       |   46 ++++++++++----------
- .../lustre/include/linux/libcfs/linux/linux-cpu.h  |    6 ---
- .../staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c    |    2 +
- .../staging/lustre/lustre/libcfs/linux/linux-cpu.c |   46 ++------------------
- drivers/staging/lustre/lustre/ptlrpc/service.c     |   11 ++++-
- 5 files changed, 37 insertions(+), 74 deletions(-)
+ drivers/input/misc/uinput.c | 37 ++++++++++++++++++++++++++++++++++++-
+ include/linux/uinput.h      |  1 +
+ include/uapi/linux/uinput.h |  3 +++
+ 3 files changed, 40 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_cpu.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_cpu.h
-index 6ae7415..c87efb4 100644
---- a/drivers/staging/lustre/include/linux/libcfs/libcfs_cpu.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_cpu.h
-@@ -75,11 +75,19 @@
- #ifndef __LIBCFS_CPU_H__
- #define __LIBCFS_CPU_H__
+diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+index 7d518b4..49a9f7d 100644
+--- a/drivers/input/misc/uinput.c
++++ b/drivers/input/misc/uinput.c
+@@ -22,6 +22,7 @@
+  * Changes/Revisions:
+  *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+  *		- update uinput_user_dev struct to allow abs resolution
++ *		- add UI_GET_SYSPATH ioctl
+  *	0.3	09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
+  *		- updated ff support for the changes in kernel interface
+  *		- added MODULE_VERSION
+@@ -667,6 +668,21 @@ static int uinput_ff_upload_from_user(const char __user *buffer,
+ 	__ret;						\
+ })
  
--#ifndef HAVE_LIBCFS_CPT
--
--typedef unsigned long		cpumask_t;
--typedef unsigned long		nodemask_t;
-+/* any CPU partition */
-+#define CFS_CPT_ANY		(-1)
- 
-+#ifdef CONFIG_SMP
-+/**
-+ * return cpumask of CPU partition \a cpt
-+ */
-+cpumask_t *cfs_cpt_cpumask(struct cfs_cpt_table *cptab, int cpt);
-+/**
-+ * print string information of cpt-table
-+ */
-+int cfs_cpt_table_print(struct cfs_cpt_table *cptab, char *buf, int len);
-+#else /* !CONFIG_SMP */
- struct cfs_cpt_table {
- 	/* # of CPU partitions */
- 	int			ctb_nparts;
-@@ -91,10 +99,18 @@ struct cfs_cpt_table {
- 	__u64			ctb_version;
- };
- 
--#endif /* !HAVE_LIBCFS_CPT */
-+static inline cpumask_t *
-+cfs_cpt_cpumask(struct cfs_cpt_table *cptab, int cpt)
++static int uinput_str_to_user(const char *str, unsigned int maxlen,
++			      void __user *p)
 +{
-+       return NULL;
-+}
- 
--/* any CPU partition */
--#define CFS_CPT_ANY		(-1)
-+static inline int
-+cfs_cpt_table_print(struct cfs_cpt_table *cptab, char *buf, int len)
-+{
-+       return 0;
-+}
-+#endif /* CONFIG_SMP */
- 
- extern struct cfs_cpt_table	*cfs_cpt_table;
- 
-@@ -107,10 +123,6 @@ void cfs_cpt_table_free(struct cfs_cpt_table *cptab);
-  */
- struct cfs_cpt_table *cfs_cpt_table_alloc(unsigned int ncpt);
- /**
-- * print string information of cpt-table
-- */
--int cfs_cpt_table_print(struct cfs_cpt_table *cptab, char *buf, int len);
--/**
-  * return total number of CPU partitions in \a cptab
-  */
- int
-@@ -124,10 +136,6 @@ int cfs_cpt_weight(struct cfs_cpt_table *cptab, int cpt);
-  */
- int cfs_cpt_online(struct cfs_cpt_table *cptab, int cpt);
- /**
-- * return cpumask of CPU partition \a cpt
-- */
--cpumask_t *cfs_cpt_cpumask(struct cfs_cpt_table *cptab, int cpt);
--/**
-  * return nodemask of CPU partition \a cpt
-  */
- nodemask_t *cfs_cpt_nodemask(struct cfs_cpt_table *cptab, int cpt);
-@@ -200,14 +208,6 @@ int cfs_cpt_spread_node(struct cfs_cpt_table *cptab, int cpt);
- #define cfs_cpt_for_each(i, cptab)	\
- 	for (i = 0; i < cfs_cpt_number(cptab); i++)
- 
--#ifndef __read_mostly
--# define __read_mostly
--#endif
--
--#ifndef ____cacheline_aligned
--#define ____cacheline_aligned
--#endif
--
- int  cfs_cpu_init(void);
- void cfs_cpu_fini(void);
- 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/linux-cpu.h b/drivers/staging/lustre/include/linux/libcfs/linux/linux-cpu.h
-index 224371c..5f793f2 100644
---- a/drivers/staging/lustre/include/linux/libcfs/linux/linux-cpu.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/linux/linux-cpu.h
-@@ -81,12 +81,6 @@ struct cfs_cpt_table {
- 	nodemask_t			*ctb_nodemask;
- };
- 
--void cfs_cpu_core_siblings(int cpu, cpumask_t *mask);
--void cfs_cpu_ht_siblings(int cpu, cpumask_t *mask);
--void cfs_node_to_cpumask(int node, cpumask_t *mask);
--int cfs_cpu_core_nsiblings(int cpu);
--int cfs_cpu_ht_nsiblings(int cpu);
--
- /**
-  * comment out definitions for compatible layer
-  * #define CFS_CPU_NR			  NR_CPUS
-diff --git a/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c b/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c
-index 3ce4fb0..511fb16 100644
---- a/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c
-+++ b/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd.c
-@@ -702,6 +702,8 @@ kiblnd_get_completion_vector(kib_conn_t *conn, int cpt)
- 		return 0;
- 
- 	mask = cfs_cpt_cpumask(lnet_cpt_table(), cpt);
-+	if (mask == NULL)
-+		return 0;
- 
- 	/* hash NID to CPU id in this partition... */
- 	off = do_div(nid, cpus_weight(*mask));
-diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c
-index 95142d1..00ab8fd 100644
---- a/drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c
-+++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-cpu.c
-@@ -76,62 +76,22 @@ struct cfs_cpt_data {
- 
- static struct cfs_cpt_data	cpt_data;
- 
--void
--cfs_cpu_core_siblings(int cpu, cpumask_t *mask)
-+static void cfs_cpu_core_siblings(int cpu, cpumask_t *mask)
- {
- 	/* return cpumask of cores in the same socket */
- 	cpumask_copy(mask, topology_core_cpumask(cpu));
- }
--EXPORT_SYMBOL(cfs_cpu_core_siblings);
--
--/* return number of cores in the same socket of \a cpu */
--int
--cfs_cpu_core_nsiblings(int cpu)
--{
--	int	num;
--
--	down(&cpt_data.cpt_mutex);
--
--	cfs_cpu_core_siblings(cpu, cpt_data.cpt_cpumask);
--	num = cpus_weight(*cpt_data.cpt_cpumask);
--
--	up(&cpt_data.cpt_mutex);
--
--	return num;
--}
--EXPORT_SYMBOL(cfs_cpu_core_nsiblings);
- 
- /* return cpumask of HTs in the same core */
--void
--cfs_cpu_ht_siblings(int cpu, cpumask_t *mask)
-+static void cfs_cpu_ht_siblings(int cpu, cpumask_t *mask)
- {
- 	cpumask_copy(mask, topology_thread_cpumask(cpu));
- }
--EXPORT_SYMBOL(cfs_cpu_ht_siblings);
- 
--/* return number of HTs in the same core of \a cpu */
--int
--cfs_cpu_ht_nsiblings(int cpu)
--{
--	int	num;
--
--	down(&cpt_data.cpt_mutex);
--
--	cfs_cpu_ht_siblings(cpu, cpt_data.cpt_cpumask);
--	num = cpus_weight(*cpt_data.cpt_cpumask);
--
--	up(&cpt_data.cpt_mutex);
--
--	return num;
--}
--EXPORT_SYMBOL(cfs_cpu_ht_nsiblings);
--
--void
--cfs_node_to_cpumask(int node, cpumask_t *mask)
-+static void cfs_node_to_cpumask(int node, cpumask_t *mask)
- {
- 	cpumask_copy(mask, cpumask_of_node(node));
- }
--EXPORT_SYMBOL(cfs_node_to_cpumask);
- 
- void
- cfs_cpt_table_free(struct cfs_cpt_table *cptab)
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/service.c b/drivers/staging/lustre/lustre/ptlrpc/service.c
-index 1667b8e..cd1bab5 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/service.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/service.c
-@@ -551,6 +551,7 @@ ptlrpc_server_nthreads_check(struct ptlrpc_service *svc,
- 	if (tc->tc_thr_factor != 0) {
- 		int	  factor = tc->tc_thr_factor;
- 		const int fade = 4;
-+		cpumask_t mask;
- 
- 		/*
- 		 * User wants to increase number of threads with for
-@@ -564,7 +565,8 @@ ptlrpc_server_nthreads_check(struct ptlrpc_service *svc,
- 		 * have too many threads no matter how many cores/HTs
- 		 * there are.
- 		 */
--		if (cfs_cpu_ht_nsiblings(0) > 1) { /* weight is # of HTs */
-+		cpumask_copy(&mask, topology_thread_cpumask(0));
-+		if (cpus_weight(mask) > 1) { /* weight is # of HTs */
- 			/* depress thread factor for hyper-thread */
- 			factor = factor - (factor >> 1) + (factor >> 3);
- 		}
-@@ -2776,11 +2778,13 @@ int ptlrpc_start_thread(struct ptlrpc_service_part *svcpt, int wait)
- 
- int ptlrpc_hr_init(void)
- {
-+	cpumask_t			mask;
- 	struct ptlrpc_hr_partition	*hrp;
- 	struct ptlrpc_hr_thread		*hrt;
- 	int				rc;
- 	int				i;
- 	int				j;
-+	int				weight;
- 	ENTRY;
- 
- 	memset(&ptlrpc_hr, 0, sizeof(ptlrpc_hr));
-@@ -2793,6 +2797,9 @@ int ptlrpc_hr_init(void)
- 
- 	init_waitqueue_head(&ptlrpc_hr.hr_waitq);
- 
-+	cpumask_copy(&mask, topology_thread_cpumask(0));
-+	weight = cpus_weight(mask);
++	int len;
 +
- 	cfs_percpt_for_each(hrp, i, ptlrpc_hr.hr_partitions) {
- 		hrp->hrp_cpt = i;
++	if (!str)
++		return -ENOENT;
++
++	len = strlen(str) + 1;
++	if (len > maxlen)
++		len = maxlen;
++
++	return copy_to_user(p, str, len) ? -EFAULT : len;
++}
++
+ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+ 				 unsigned long arg, void __user *p)
+ {
+@@ -676,6 +692,8 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+ 	struct uinput_ff_erase  ff_erase;
+ 	struct uinput_request   *req;
+ 	char			*phys;
++	const char		*path;
++	unsigned int		size;
  
-@@ -2800,7 +2807,7 @@ int ptlrpc_hr_init(void)
- 		atomic_set(&hrp->hrp_nstopped, 0);
+ 	retval = mutex_lock_interruptible(&udev->mutex);
+ 	if (retval)
+@@ -828,7 +846,24 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+ 			break;
  
- 		hrp->hrp_nthrs = cfs_cpt_weight(ptlrpc_hr.hr_cpt_table, i);
--		hrp->hrp_nthrs /= cfs_cpu_ht_nsiblings(0);
-+		hrp->hrp_nthrs /= weight;
+ 		default:
+-			retval = -EINVAL;
++			retval = -EAGAIN;
++	}
++
++	if (retval == -EAGAIN) {
++		size = _IOC_SIZE(cmd);
++
++		/* Now check variable-length commands */
++		switch (cmd & ~IOCSIZE_MASK) {
++			case UI_GET_SYSPATH(0):
++				path = kobject_get_path(&udev->dev->dev.kobj,
++							GFP_KERNEL);
++				retval = uinput_str_to_user(path, size, p);
++				kfree(path);
++				break;
++
++			default:
++				retval = -EINVAL;
++		}
+ 	}
  
- 		LASSERT(hrp->hrp_nthrs > 0);
- 		OBD_CPT_ALLOC(hrp->hrp_thrs, ptlrpc_hr.hr_cpt_table, i,
+  out:
+diff --git a/include/linux/uinput.h b/include/linux/uinput.h
+index 6291a22..64fab81 100644
+--- a/include/linux/uinput.h
++++ b/include/linux/uinput.h
+@@ -22,6 +22,7 @@
+  * Changes/Revisions:
+  *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+  *		- update uinput_user_dev struct to allow abs resolution
++ *		- add UI_GET_SYSPATH ioctl
+  *	0.3	24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+  *		- update ff support for the changes in kernel interface
+  *		- add UINPUT_VERSION
+diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
+index f6a393b..d826409 100644
+--- a/include/uapi/linux/uinput.h
++++ b/include/uapi/linux/uinput.h
+@@ -22,6 +22,7 @@
+  * Changes/Revisions:
+  *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+  *		- update uinput_user_dev struct to allow abs resolution
++ *		- add UI_GET_SYSPATH ioctl
+  *	0.3	24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+  *		- update ff support for the changes in kernel interface
+  *		- add UINPUT_VERSION
+@@ -75,6 +76,8 @@ struct uinput_ff_erase {
+ #define UI_BEGIN_FF_ERASE	_IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
+ #define UI_END_FF_ERASE		_IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
+ 
++#define UI_GET_SYSPATH(len)	_IOC(_IOC_READ, UINPUT_IOCTL_BASE, 300, len)
++
+ /*
+  * To write a force-feedback-capable driver, the upload_effect
+  * and erase_effect callbacks in input_dev must be implemented.
 -- 
-1.7.9.5
+1.8.3.1
 
