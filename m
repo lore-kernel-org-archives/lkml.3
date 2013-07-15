@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab3GOIhC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 04:37:02 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:43422 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754472Ab3GOIhA convert rfc822-to-8bit (ORCPT
+	id S1754566Ab3GOIli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 04:41:38 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:2254 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab3GOIlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 04:37:00 -0400
-Date: Mon, 15 Jul 2013 10:36:44 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH] ASoC: kirkwood-i2s: fix a compilation warning
-Message-ID: <20130715103644.04e57749@armhf>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Jul 2013 04:41:37 -0400
+Message-ID: <51E3B3A2.8080609@huawei.com>
+Date: Mon, 15 Jul 2013 16:32:34 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] tracing: use correct config guard CONFIG_STACK_TRACER
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the function kirkwood_set_rate, when the rate cannot be satisfied
-by the internal nor by an external clock, the clock source in undefined:
+We should use CONFIG_STACK_TRACER to guard readme text
+of stack tracer related file, not CONFIG_STACKTRACE.
 
- warning: ‘clks_ctrl’ may be used uninitialized in this function
-
-As the ALSA subsystem should never gives such a rate, this patch removes
-the check of the external clock pointer.
-
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 ---
- sound/soc/kirkwood/kirkwood-i2s.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
-index 4c9dad3..8da5cdb 100644
---- a/sound/soc/kirkwood/kirkwood-i2s.c
-+++ b/sound/soc/kirkwood/kirkwood-i2s.c
-@@ -111,7 +111,7 @@ static void kirkwood_set_rate(struct snd_soc_dai *dai,
- 		kirkwood_set_dco(priv->io, rate);
- 
- 		clks_ctrl = KIRKWOOD_MCLK_SOURCE_DCO;
--	} else if (!IS_ERR(priv->extclk)) {
-+	} else {
- 		/* use optional external clk for other rates */
- 		dev_dbg(dai->dev, "%s: extclk set rate = %lu -> %lu\n",
- 			__func__, rate, 256 * rate);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e71a8be..3d5a931 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3379,14 +3379,14 @@ static const char readme_msg[] =
+ 	"\n  snapshot\t\t- Like 'trace' but shows the content of the static snapshot buffer\n"
+ 	"\t\t\t  Read the contents for more information\n"
+ #endif
+-#ifdef CONFIG_STACKTRACE
++#ifdef CONFIG_STACK_TRACER
+ 	"  stack_trace\t\t- Shows the max stack trace when active\n"
+ 	"  stack_max_size\t- Shows current max stack size that was traced\n"
+ 	"\t\t\t  Write into this file to reset the max size (trigger a new trace)\n"
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 	"  stack_trace_filter\t- Like set_ftrace_filter but limits what stack_trace traces\n"
+ #endif
+-#endif /* CONFIG_STACKTRACE */
++#endif /* CONFIG_STACK_TRACER */
+ ;
+
+ static ssize_t
+-- 
+1.7.9.7
+
 
