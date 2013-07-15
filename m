@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3GOUOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:14:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48548 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab3GOUOY (ORCPT
+	id S1754893Ab3GOUQJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:16:09 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39008 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab3GOUQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:14:24 -0400
-Date: Mon, 15 Jul 2013 22:14:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
- balancing V5
-Message-ID: <20130715201412.GP17211@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+	Mon, 15 Jul 2013 16:16:06 -0400
+Date: Mon, 15 Jul 2013 21:15:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Message-ID: <20130715201538.GE11538@sirena.org.uk>
+References: <1373917517.17876.193.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zljh9u/ceMLi+8mf"
 Content-Disposition: inline
-In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1373917517.17876.193.camel@gandalf.local.home>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 04:20:02PM +0100, Mel Gorman wrote:
-> 
-> specjbb
->                         3.9.0               3.9.0                 3.9.0                 3.9.0
->                       vanilla          accountload-v5       retrymigrate-v5          swaptasks-v5  
-> TPut 1      24474.00 (  0.00%)      24303.00 ( -0.70%)     23529.00 ( -3.86%)     26110.00 (  6.68%)
-> TPut 7     186914.00 (  0.00%)     179962.00 ( -3.72%)    183667.00 ( -1.74%)    185912.00 ( -0.54%)
-> TPut 13    334429.00 (  0.00%)     327558.00 ( -2.05%)    336418.00 (  0.59%)    334563.00 (  0.04%)
-> TPut 19    422820.00 (  0.00%)     451359.00 (  6.75%)    450069.00 (  6.44%)    426753.00 (  0.93%)
-> TPut 25    456121.00 (  0.00%)     533432.00 ( 16.95%)    504138.00 ( 10.53%)    503152.00 ( 10.31%)
-> TPut 31    438595.00 (  0.00%)     510638.00 ( 16.43%)    442937.00 (  0.99%)    486450.00 ( 10.91%)
-> TPut 37    409654.00 (  0.00%)     475468.00 ( 16.07%)    427673.00 (  4.40%)    460531.00 ( 12.42%)
-> TPut 43    370941.00 (  0.00%)     442169.00 ( 19.20%)    387382.00 (  4.43%)    425120.00 ( 14.61%)
-> 
-> It's interesting that retrying the migrate introduced such a large dent. I
-> do not know why at this point.  Swapping the tasks helped and overall the
-> performance is all right with room for improvement.
 
-I think it means that our direct migration scheme is creating too much
-imbalance and doing it more often results in more task movement to fix
-it up again, hindering page migration efforts to settle on a node.
+--Zljh9u/ceMLi+8mf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Jul 15, 2013 at 03:45:17PM -0400, Steven Rostedt wrote:
+
+> Have Greg, or whoever, change his script to not take commits marked for
+> stable, but instead, forward the commit to the maintainer. Or as it
+> already does today, to everyone on the Cc, and -by: tags. Change the
+> script from being "stable review" to say "Look to see what you want, and
+> resend what is needed for stable".
+
+This sounds fairly close what James was suggesting, though with central
+automation of the mail it out stage.
+
+> Then the maintainer needs to look at all the patches that were marked
+> for stable, and resend them to Greg saying which ones should go into
+> stable.
+
+One thing I don't particularly like about this is having to resend the
+patches in response to mail; it seems cumbersome to do that rather than
+reply to mail or something.  Requiring a positive acknowledgement or
+action seems useful but the particular one seems a bit annoying; I'd
+rather either just send the patch as part of the mark for stable
+workflow or ack something in mail.
+
+> Also, we could mandate that the maintainers do the backports too.
+
+That's what happens already isn't it?
+
+--Zljh9u/ceMLi+8mf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR5FhmAAoJELSic+t+oim9b8MP/0/FN3ADnlU11gziqgq7dM15
+sNElUix9h2yiPeBl9Uh3nJYOBMM2Ul4GMDaHRL9dmgnq/mqBH5muHi5dsyiuh8zs
+Te88zYi8Y4kTOJBnlt8wm7gf5W6McR1yF0CFAOv4/tttWrWgOjPWGnAG3KH6bvcN
+gpWXyeb+YlRAwcv8QMfH5x90R5UPgF3dcEx3XzirO5rnpr1rcgSM4s5VhjJEMoeb
+ibqv/iU4yKaG56RGpX3j42/1z1QSkJAnITWHi1MhFe/Qzjnwbm+4scfHF7dWd47r
+oczupTRpJggLCo0i4yco7Puw4lIwwBATBDpgIO14SKndOgl8xXe+kMUDq0p7HjGp
+MDccOzkTZqVSOsef6wJWCPEorSXdl1624epXJT1WmSF5ts0C9aW+sgO2hTpiS6j+
+PvLD3oPuDWuaPKnTwkHTEZFrrXOlQTLgdoczFyN3+B2yS/0KLjO/zGqSxEW4lFHu
+TP1b+L8KaPgWsElmnIhxdvyLGUH+iDRS/ihXPrgWIrkTcnEbWABj4cMwhfXj8cDJ
+h/343AUllG9Vk9+bJGvbPxf/uLPzJgRgdhVPVkwRhXe92QlgfkY0WPgkm+tyOzFG
+msqp9lMRAz1xcgla4Ed8fhLYK2bWYsNN09iVAvZojQfYizJ9eqPg6VxSjV15XaqJ
+abMPYu5OmrPOstNGB1I4
+=zcw4
+-----END PGP SIGNATURE-----
+
+--Zljh9u/ceMLi+8mf--
