@@ -1,128 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab3GOU7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:59:07 -0400
-Received: from mail-gh0-f182.google.com ([209.85.160.182]:50031 "EHLO
-	mail-gh0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab3GOU7D (ORCPT
+	id S1756990Ab3GOVAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 17:00:38 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:17079 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab3GOVAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:59:03 -0400
-Date: Mon, 15 Jul 2013 17:04:50 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Jiri Olsa <jolsa@redhat.com>, linux-perf-users@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        acme@redhat.com, Stephane Eranian <eranian@gmail.com>
-Subject: perf documentation: update format and events ABI files
-Message-ID: <alpine.DEB.2.10.1307151656050.6555@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 15 Jul 2013 17:00:35 -0400
+Message-ID: <51E462E5.4020806@hp.com>
+Date: Mon, 15 Jul 2013 17:00:21 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v6 01/14] spinlock: A new lockref structure for lockless
+ update of refcount
+References: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com> <1373332204-10379-2-git-send-email-Waiman.Long@hp.com> <51E18730.2020105@hitachi.com>
+In-Reply-To: <51E18730.2020105@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/13/2013 12:58 PM, Masami Hiramatsu wrote:
+> Hi,
+>
+> (2013/07/09 10:09), Waiman Long wrote:> +/**
+>> + * lockref_put_or_lock - decrements count unless count <= 1 before decrement
+>> + * @lockcnt: pointer to lockref structure
+>> + * Return: 1 if count updated successfully or 0 if count <= 1 and lock taken
+>> + *
+>> + * The only difference between lockref_put_or_lock and lockref_put is that
+>> + * the former function will hold the lock on return while the latter one
+>> + * will free it on return.
+>> + */
+>> +static __always_inline int lockref_put_or_locked(struct lockref *lockcnt)
+> Here is a function name typo. _locked should be _lock.
+> And also, I think we should take a note here to tell this function does *not*
+> guarantee lockcnt->refcnt == 0 or 1 until unlocked if this returns 0.
 
-This updates the sysfs-bus-event_source-devices-events and
-sysfs-bus-event_source-devices-format Documentation to more
-closely match the values current kernels are exporting.
+Thank for pointing this out. I will fix the typo and add additional note
+to the comments.
 
-The big change is the allowing of decimal values in the events file;
-this was an ABI change in the 3.10 kernel.
+>> +{
+>> +	spin_lock(&lockcnt->lock);
+>> +	if (likely(lockcnt->refcnt > 1)) {
+>> +		lockcnt->refcnt--;
+>> +		spin_unlock(&lockcnt->lock);
+>> +		return 1;
+>> +	}
+>> +	return 0;
+>> +}
+> Using this implementation guarantees lockcnt->refcnt == 0 or 1 until unlocked
+> if this returns 0.
+>
+> However, the below one looks not guarantee it. Since lockref_add_unless
+> and spinlock are not done atomically, there is a chance for someone
+> to increment it right before locking.
+>
+> Or, I missed something?
 
-It also documents more completely how non-contiguous values work in the 
-format file.  I have to say it would have been much easier for parser 
-writers if the format value had been a simple mask rather than having to 
-take a value, parse it, and then do an arbitracy number of shift/masks
-to split up the value to pass in.
+For both functions, reference count won't be decremented to 0 and the
+caller has to handle this case by taking the lock and do whatever it
+needs to handle it. When refcnt > 1, decrement is done atomically either
+by cmpxchg or with the spinlock hold. The reason for these 2 functions
+is to save an extra lock/unlock sequence when this feature is disabled.
+I will add comments to clarify that.
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+>> +/**
+>> + * lockref_put_or_lock - Decrements count unless the count is <= 1
+>> + *			 otherwise, the lock will be taken
+>> + * @lockcnt: pointer to struct lockref structure
+>> + * Return: 1 if count updated successfully or 0 if count <= 1 and lock taken
+>> + */
+>> +int
+>> +lockref_put_or_lock(struct lockref *lockcnt)
+>> +{
+>> +	if (lockref_add_unless(lockcnt, -1, 1))
+>> +		return 1;
+>> +	spin_lock(&lockcnt->lock);
+>> +	return 0;
+>> +}
+> BTW, it looks that your dcache patch knows this and keeps double check for
+> the case of lockcnt->refcnt > 1 in dput().
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-index 3c1cc24..43aae08 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -1,30 +1,51 @@
--What:		/sys/devices/cpu/events/
-+What:		/sys/bus/event_source/devices/<dev>/events
-+
-+Date:		2013/01/08
-+
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+
-+Description:	Generic performance monitoring events
-+
-+		A collection of performance monitoring events that are
-+		supported by the PMU (performance monitoring unit)
-+		specified by "<dev>". These events can be monitored
-+		using the 'perf(1)' tool.
-+
-+		The contents of each file is a list of attribute names
-+		(as found in the corresponding
-+			/sys/bus/event_source/devices/<dev>/format
-+		file) separated by commas.  Each entry has
-+		an optional value (either hex or decimal).  If no
-+		value is specified than it is assumed to be a single-bit
-+		field with a value of 1.
-+
-+		An example of what you might find:
-+			event=0x2,inv,ldlat=3
-+
-+
-+What:		/sys/devices/cpu/events/branch-instructions
- 		/sys/devices/cpu/events/branch-misses
--		/sys/devices/cpu/events/cache-references
-+		/sys/devices/cpu/events/bus-cycles
- 		/sys/devices/cpu/events/cache-misses
--		/sys/devices/cpu/events/stalled-cycles-frontend
--		/sys/devices/cpu/events/branch-instructions
--		/sys/devices/cpu/events/stalled-cycles-backend
--		/sys/devices/cpu/events/instructions
-+		/sys/devices/cpu/events/cache-references
- 		/sys/devices/cpu/events/cpu-cycles
-+		/sys/devices/cpu/events/instructions
-+		/sys/devices/cpu/events/stalled-cycles-backend
-+		/sys/devices/cpu/events/stalled-cycles-frontend
- 
- Date:		2013/01/08
- 
- Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
- 
--Description:	Generic performance monitoring events
-+Description:	Generic CPU performance monitoring events
- 
- 		A collection of performance monitoring events that may be
- 		supported by many/most CPUs. These events can be monitored
- 		using the 'perf(1)' tool.
- 
--		The contents of each file would look like:
--
--			event=0xNNNN
--
--		where 'N' is a hex digit and the number '0xNNNN' shows the
--		"raw code" for the perf event identified by the file's
--		"basename".
-+		The format of these files matches that of
-+		/sys/bus/event_source/devices/<dev>/events as described
-+		previously in this file.
- 
- 
- What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-index 77f47ff..4f7ee5e 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-@@ -15,6 +15,12 @@ Description:
- 			attr2 = 'config:0-7'
- 			attr3 = 'config:12-35'
- 
--		Example: 'config1:1,6-10,44'
-+		Example: event = 'config1:1,6-10,44'
- 		Defines contents of attribute that occupies bits 1,6-10,44 of
- 		perf_event_attr::config1.
-+
-+		In this example, the events file would have the value 
-+			event=0x7f
-+		to set all of the specified bits (they will be split up).
-+		You would not use 0x10000007c2 (which is what the bits
-+		actually passed into config1 would look like).
+There is a slight chance that the refcnt may be changed in between
+locked section of code. So it is prudent to double check before
+decrementing it to zero.
+
+Regards,
+Longman
