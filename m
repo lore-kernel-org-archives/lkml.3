@@ -1,118 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab3GOUk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 16:40:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49056 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab3GOUk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 16:40:27 -0400
-Date: Mon, 15 Jul 2013 22:39:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-Message-ID: <20130715203922.GD23818@dyad.programming.kicks-ass.net>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <20130713064909.GW25631@dyad.programming.kicks-ass.net>
- <20130713102350.GA8067@MacBook-Pro.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130713102350.GA8067@MacBook-Pro.local>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755938Ab3GOUlO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 16:41:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8496 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754342Ab3GOUlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 16:41:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,671,1367996400"; 
+   d="scan'208";a="370717013"
+Message-ID: <1373920870.3475.200.camel@envy.home>
+Subject: Re: [PATCH 3/3] pch_gbe: Add MinnowBoard support
+From: Darren Hart <dvhart@linux.intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        netdev@vger.kernel.org, stable@vger.kernel.org
+Date: Mon, 15 Jul 2013 13:41:10 -0700
+In-Reply-To: <1373877289.24799.242.camel@smile>
+References: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
+	 <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
+	 <1373877289.24799.242.camel@smile>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 11:23:51AM +0100, Catalin Marinas wrote:
-> > This looks like a userspace hotplug deamon approach lifted to kernel space :/
+On Mon, 2013-07-15 at 11:34 +0300, Andy Shevchenko wrote:
+> On Fri, 2013-07-12 at 17:58 -0700, Darren Hart wrote: 
+
+... 
+> > +/* The AR803X PHY on the MinnowBoard requires a physical pin to be toggled to
+> > + * ensure it is awake for probe and init. Request the line and reset the PHY.
+> > + */
+> > +static int pch_gbe_minnow_platform_init(struct pci_dev *pdev)
+> > +{
+> > +	int ret = 0;
+> > +	int flags = GPIOF_DIR_OUT | GPIOF_INIT_HIGH | GPIOF_EXPORT;
+> > +	int gpio = MINNOW_PHY_RESET_GPIO;
+> > +
+> > +	ret = gpio_request_one(gpio, flags, "minnow_phy_reset");
+> > +	if (ret){
+> > +		dev_err(&pdev->dev,
+> > +			"ERR: Can't request PHY reset GPIO line '%d'\n", gpio);
+> > +		return ret;
+> > +	}
+> > +
+> > +	gpio_set_value(gpio, 0);
+> > +	usleep_range(1250, 1500);
+> > +	gpio_set_value(gpio, 1);
+> > +	usleep_range(1250, 1500);
 > 
-> The difference is that this is faster. We even had hotplug in mind some
-> years ago for big.LITTLE but it wouldn't give the performance we need
-> (hotplug is incredibly slow even if driven from the kernel).
+> First of all, who is going to release gpio? Perhaps
+> devm_gpio_request_one?
 
-faster, slower, still horrid :-)
+Thanks for the pointer, this works and appears to be the best way to
+handle this.
 
-> That's what we've been pushing for. From a big.LITTLE perspective, I
-> would probably vote for Vincent's patches but I guess we could probably
-> adapt any of the other options.
+...
+> > + */
+> > +int pch_gbe_phy_tx_clk_delay(struct pch_gbe_hw *hw)
+> > +{
+> > +	/* The RGMII interface requires a ~2ns TX clock delay. This is typically
+> > +	 * done in layout with a longer trace or via PHY strapping, but can also
+> > +	 * be done via PHY configuration registers.
+> > +	 */
+> > +	struct pch_gbe_adapter *adapter = pch_gbe_hw_to_adapter(hw);
+> > +	u16 mii_reg;
+> > +	int ret = 0;
 > 
-> But then we got Ingo NAK'ing all these approaches. Taking the best bits
-> from the current load balancing patches would create yet another set of
-> patches which don't fall under Ingo's requirements (at least as I
-> understand them).
+> No need to assign. Are you trying to shut (sparse?) warning?
 
-Right, so Ingo is currently away as well -- should be back 'today' or tomorrow.
-But I suspect he mostly fell over the presentation. 
+On this point, I did find one instance where I initialized init only to
+have my first line of executable code assign to ret, that's obviously
+silly, so I fixed that one.
 
-I've never known Ingo to object to doing incremental development; in fact he
-often suggests doing so.
+Here, where the first assignment is nested inside case statements or
+skipped altogether with explicit returns of error codes, I prefer to
+assign it explicitly. A quick survey lists 4k initialized "int ret;"
+lines and 16k uninitialized.  The latter appears to be the more common,
+but there is certainly precedent for the former.
 
-So don't present the packing thing as a power aware scheduler; that
-presentation suggests its the complete deal. Give instead a complete
-description of the problem; and tell how the current patch set fits into that
-and which aspect it solves; and that further patches will follow to sort the
-other issues.
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
 
-That keeps the entire thing much clearer.
-
-> > Then worry about power thingies.
-> 
-> To quote Ingo: "To create a new low level idle driver mechanism the
-> scheduler could use and integrate proper power saving / idle policy into
-> the scheduler."
-> 
-> That's unless we all agree (including Ingo) that the above requirement
-> is orthogonal to task packing and, as a *separate* project, we look at
-> better integrating the cpufreq/cpuidle with the scheduler, possibly with
-> a new driver model and governors as libraries used by such drivers. In
-> which case the current packing patches shouldn't be NAK'ed but reviewed
-> so that they can be improved further or rewritten.
-
-Right, so first thing would be to list all the thing that need doing:
-
- - integrate idle guestimator
- - intergrate cpufreq stats
- - fix per entity runtime vs cpufreq
- - intrgrate/redo cpufreq
- - add packing features
- - {all the stuff I forgot}
-
-Then see what is orthogonal and what is most important and get people to agree
-to an order. Then go..
-
-> I agree in general but there is the intel_pstate.c driver which has it's
-> own separate statistics that the scheduler does not track. 
-
-Right, question is how much of that will survive Arjan next-gen effort.
-
-> We could move
-> to invariant task load tracking which uses aperf/mperf (and could do
-> similar things with perf counters on ARM). As I understand from Arjan,
-> the new pstate driver will be different, so we don't know exactly what
-> it requires.
-
-Right, so part of the effort should be understanding what the various parties
-want/need. As far as I understand the Intel stuff, P states are basically
-useless and the only useful state to ever program is the max one -- although
-I'm sure Arjan will eventually explain how that is wrong :-)
-
-We could do optional things; I'm not much for 'requiring' stuff that other
-arch simply cannot support, or only support at great effort/cost.
-
-Stealing PMU counters for sched work would be crossing the line for me, that
-must be optional.
