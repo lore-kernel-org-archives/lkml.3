@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab3GOSv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 14:51:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43731 "EHLO mail.zytor.com"
+	id S1755012Ab3GOSwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 14:52:12 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:49594 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab3GOSv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 14:51:28 -0400
-Message-ID: <51E4429A.8090500@zytor.com>
-Date: Mon, 15 Jul 2013 11:42:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753409Ab3GOSwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 14:52:10 -0400
+Date: Mon, 15 Jul 2013 11:50:45 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, PaX Team <pageexec@gmail.com>
+Subject: [PATCH stable] x86: make sure IDT is page aligned
+Message-ID: <20130715185045.GA24133@www.outflux.net>
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.jf.intel.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Eli Friedman <eli.friedman@gmail.com>,
-        Jim Grosbach <grosbach@apple.com>, Stephen Checkoway <s@pahtak.org>,
-        LLVMdev <llvmdev@cs.uiuc.edu>
-Subject: Re: [PATCH] x86/asm: avoid mnemonics without type suffix
-References: <1373806562-30422-1-git-send-email-artagnon@gmail.com> <51E2FAB9.9050900@goop.org> <20130714211446.GP5643@tassilo.jf.intel.com>
-In-Reply-To: <20130714211446.GP5643@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2013 02:14 PM, Andi Kleen wrote:
-> 
-> I think best would be to just find some way to implement LOCK prefix
-> patching using atomic compiler intrinsics and then switch to those
-> 
+Since the IDT is referenced from a fixmap, make sure it is page aligned.
+This avoids the risk of the IDT ever being moved in the bss and having
+the mapping be offset, resulting in calling incorrect handlers. In the
+current upstream kernel this is not a manifested bug, but heavily patched
+kernels (such as those using the PaX patch series) did encounter this bug.
 
-That will take a long time to make happen now, and then when we change
-things we have to wait for gcc to catch up.  At some point this always
-degenerates into the "do we need a kernel-specific compiler" morass.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: PaX Team <pageexec@gmail.com>
+---
+Note: this is the minimal change for 3.10/stable and 3.11/stable only
+---
+ arch/x86/kernel/head_64.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	-hpa
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 5e4d8a8..77e6d3e 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -513,7 +513,7 @@ ENTRY(phys_base)
+ #include "../../x86/xen/xen-head.S"
+ 	
+ 	.section .bss, "aw", @nobits
+-	.align L1_CACHE_BYTES
++	.align PAGE_SIZE
+ ENTRY(idt_table)
+ 	.skip IDT_ENTRIES * 16
+ 
+-- 
+1.7.9.5
 
 
+-- 
+Kees Cook
+Chrome OS Security
