@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab3GOOyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 10:54:09 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:62025 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab3GOOyH (ORCPT
+	id S932373Ab3GOOyi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 10:54:38 -0400
+Received: from exprod5og103.obsmtp.com ([64.18.0.145]:41699 "EHLO
+	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133Ab3GOOyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 10:54:07 -0400
+	Mon, 15 Jul 2013 10:54:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130712114551.GD24508@sirena.org.uk>
-References: <1373559359-31607-1-git-send-email-richard.genoud@gmail.com>
- <1373559359-31607-2-git-send-email-richard.genoud@gmail.com> <20130712114551.GD24508@sirena.org.uk>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Mon, 15 Jul 2013 16:53:46 +0200
-Message-ID: <CACQ1gAhmp-i7vzPKuTMxqs9Ytjynz9NTvrQk9R08U9Fo-cVzMg@mail.gmail.com>
-Subject: Re: [PATCH v5 1/7] sound: codec: wm8731: add rates constraints
-To: Mark Brown <broonie@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51E3EC8B.3090601@metafoo.de>
+References: <1373461729-11261-1-git-send-email-x0199363@ti.com>
+	<51E03720.1010806@metafoo.de>
+	<CAGH3drqEPxW=QwadCLj=ZOQe0gp_c7mdSiNQnq1_-BMKL9CgJw@mail.gmail.com>
+	<51E3EC8B.3090601@metafoo.de>
+Date: Mon, 15 Jul 2013 17:54:35 +0300
+Message-ID: <CAGH3dro7MxDJRB=5gsBysiKVvXLskZFuagiBMznUnAjCMoZsTQ@mail.gmail.com>
+Subject: Re: [PATCH] iio: add APDS9300 ambilent light sensor driver
+From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Oleksandr Kravchenko <x0199363@ti.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        jic23@cam.ac.uk, Peter Meerwald <pmeerw@pmeerw.net>,
+        holler@ahsoftware.de, srinivas.pandruvada@intel.com,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/12 Mark Brown <broonie@kernel.org>:
-> On Thu, Jul 11, 2013 at 06:15:53PM +0200, Richard Genoud wrote:
->
-> Please always try to use commit logs that look like normal commit logs
-> for the subsystem.
-Ok, I'll pay attention to that.
+I can't to find devm_iio_device_alloc() in my kernel v3.11-rc1
 
->>       switch (freq) {
->> -     case 11289600:
->>       case 12000000:
->> +             wm8731->constraints = &wm8731_constraints_12000000;
->> +             break;
->>       case 12288000:
->> -     case 16934400:
->>       case 18432000:
->> -             wm8731->sysclk = freq;
->> +             wm8731->constraints = &wm8731_constraints_12288000_18432000;
->> +             break;
->> +     case 16934400:
->> +     case 11289600:
->> +             wm8731->constraints = &wm8731_constraints_11289600_16934400;
->>               break;
->>       default:
->>               return -EINVAL;
->>       }
+On Mon, Jul 15, 2013 at 3:35 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> On 07/15/2013 02:27 PM, Oleksandr Kravchenko wrote:
+>> Thank you for review! But I don't completely understand one of your comment:
+>>
+>>>> +static int als_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>> [...]
+>>>> +     if (client->irq) {
+>>>> +             ret = devm_request_threaded_irq(&client->dev, client->irq,
+>>>> +                             NULL, als_interrupt_handler,
+>>>> +                             IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>>>> +                             ALS_IRQ_NAME, indio_dev);
+>>>
+>>> This is a bit racy, you access memory in the irq handler that is freed
+>>> before the irq is freed.
+>>
+>> Do you mean than that indio_dev may be used in interrupt handler after
+>> iio_device_free(indio_dev) called in als_remove() function?
+>>
+>> If so, can I use disable_irq() in als_remove() before iio_device_free()
+>> to avoid this problem?
+>>
 >
-> This isn't going to work with systems which have a variable clock as the
-> input to the CODEC.  If it's imposing constraints the driver needs to
-> allow setting the clock to zero as a way of removing constraints (and
-> any existing drivers should be updated to do this if needed).
-Maybe I'm wrong, but I didn't find any system using variable clock
-with this codec.
-The sam9g20ek (soc/atmel/sam9g20_wm8731.c) is not using a crystal, but
-it's using a fixed clock anyway.
-But there's soc/pxa/corgi.c and soc/pxa/poodle.c that puzzle me.
-They seems to use a crystal, but they are setting a different sysclk
-depending on the rate.
-That seems wrong, but as I'm a newbie in ASoC...
+> Just add a devm_iio_device_alloc() and use that, instead of trying to bodch
+> around the issue.
+>
+
+
+
+-- 
+Oleksandr Kravchenko
+GlobalLogic
+P +380633213187
+P +380994930248
+www.globallogic.com
+
+http://www.globallogic.com/email_disclaimer.txt
