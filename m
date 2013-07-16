@@ -1,128 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab3GPSPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:15:46 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:54858 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370Ab3GPSPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:15:44 -0400
-Message-ID: <51E58E97.7090306@linux.vnet.ibm.com>
-Date: Tue, 16 Jul 2013 23:49:03 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 16/18] kvm hypervisor : Simplify kvm_for_each_vcpu
- with kvm_irq_delivery_to_apic
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124353.27508.94224.sendpatchset@codeblue.in.ibm.com> <20130714132402.GB11772@redhat.com> <51E416ED.3090604@linux.vnet.ibm.com> <20130715154647.GA19212@redhat.com>
-In-Reply-To: <20130715154647.GA19212@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071618-2674-0000-0000-000009D604BB
+	id S933699Ab3GPSSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:18:53 -0400
+Received: from 1wt.eu ([62.212.114.60]:34720 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933334Ab3GPSSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 14:18:52 -0400
+Date: Tue, 16 Jul 2013 20:18:18 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: NeilBrown <neilb@suse.de>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130716181818.GG15902@1wt.eu>
+References: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com> <20130715174659.GC15531@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <20130715191727.GC10157@1wt.eu> <20130716084036.41a9c498@notabene.brown> <20130716061341.GD12242@1wt.eu> <1373989215.12825.25.camel@envy.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373989215.12825.25.camel@envy.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 09:16 PM, Gleb Natapov wrote:
-> On Mon, Jul 15, 2013 at 09:06:13PM +0530, Raghavendra K T wrote:
->> On 07/14/2013 06:54 PM, Gleb Natapov wrote:
->>> On Mon, Jun 24, 2013 at 06:13:53PM +0530, Raghavendra K T wrote:
->>>> Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
->>>>
->>>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>>>
->>>> Note that we are using APIC_DM_REMRD which has reserved usage.
->>>> In future if APIC_DM_REMRD usage is standardized, then we should
->>>> find some other way or go back to old method.
->>>>
->>>> Suggested-by: Gleb Natapov <gleb@redhat.com>
->>>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>>> ---
->>>>   arch/x86/kvm/lapic.c |    5 ++++-
->>>>   arch/x86/kvm/x86.c   |   25 ++++++-------------------
->>>>   2 files changed, 10 insertions(+), 20 deletions(-)
->>>>
->>>> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
->>>> index e1adbb4..3f5f82e 100644
->>>> --- a/arch/x86/kvm/lapic.c
->>>> +++ b/arch/x86/kvm/lapic.c
->>>> @@ -706,7 +706,10 @@ out:
->>>>   		break;
->>>>
->>>>   	case APIC_DM_REMRD:
->>>> -		apic_debug("Ignoring delivery mode 3\n");
->>>> +		result = 1;
->>>> +		vcpu->arch.pv.pv_unhalted = 1;
->>>> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
->>>> +		kvm_vcpu_kick(vcpu);
->>>>   		break;
->>>>
->>>>   	case APIC_DM_SMI:
->>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>>> index 92a9932..b963c86 100644
->>>> --- a/arch/x86/kvm/x86.c
->>>> +++ b/arch/x86/kvm/x86.c
->>>> @@ -5456,27 +5456,14 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
->>>>    */
->>>>   static void kvm_pv_kick_cpu_op(struct kvm *kvm, int apicid)
->>>>   {
->>>> -	struct kvm_vcpu *vcpu = NULL;
->>>> -	int i;
->>>> +	struct kvm_lapic_irq lapic_irq;
->>>>
->>>> -	kvm_for_each_vcpu(i, vcpu, kvm) {
->>>> -		if (!kvm_apic_present(vcpu))
->>>> -			continue;
->>>> +	lapic_irq.shorthand = 0;
->>>> +	lapic_irq.dest_mode = 0;
->>>> +	lapic_irq.dest_id = apicid;
->>>>
->>>> -		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
->>>> -			break;
->>>> -	}
->>>> -	if (vcpu) {
->>>> -		/*
->>>> -		 * Setting unhalt flag here can result in spurious runnable
->>>> -		 * state when unhalt reset does not happen in vcpu_block.
->>>> -		 * But that is harmless since that should soon result in halt.
->>>> -		 */
->>>> -		vcpu->arch.pv.pv_unhalted = true;
->>>> -		/* We need everybody see unhalt before vcpu unblocks */
->>>> -		smp_wmb();
->>>> -		kvm_vcpu_kick(vcpu);
->>>> -	}
->>>> +	lapic_irq.delivery_mode = APIC_DM_REMRD;
->>> Need to make sure that delivery_mode cannot be set to APIC_DM_REMRD
->> >from MSI/IOAPIC/IPI path.
->>
->> I Gleb,
->> I need your help here since I do not know much about apic.
->>
->> so are you saying explicitly checking that, kvm_set_msi_irq,
->> apic_send_ipi, native_setup_ioapic_entry, does not have
->> APIC_DM_REMRD as delivery_mode set?
->>
-> Yes, but on a second thought what bad can happen if we will not check it?
-> If guest configures irq to inject APIC_DM_REMRD interrupt this may
-> needlessly wakeup sleeping vcpu and it will try to accrue spinlock
-> again, so no correctness problem only performance. If this is the case
-> lets leave it as it for now.
+Hi Darren,
 
-Okay.
+On Tue, Jul 16, 2013 at 08:40:15AM -0700, Darren Hart wrote:
+> On Tue, 2013-07-16 at 08:13 +0200, Willy Tarreau wrote:
+> 
+> > It can seem counter-producting first (as Sarah thinks) but I think that
+> > the competent people find their way in this simply because they're backed
+> > up by other ones. That's how I think we get that number of skilled people
+> > at the top of each subsystem.
+> > 
+> 
+> Hi Will,
+> 
+> I think you've made some excellent points and have done a good job
+> relating the mostly digital interactions to more direct and tangible
+> ones.
+> 
+> You have postulated (I believe) that because we have top-quality
+> maintainers (and I agree, we do), the process must be working. Perhaps
+> that was my interpretation and not your intent, but others have voiced
+> such opinions as well, so the following is still relevant.
+> 
+> What that argument fails to take into account are the top-quality
+> maintainers and contributors who are not present because of the
+> sometimes caustic environment of Linux kernel development: "survivor's
+> bias".
+
+No, I'm not forgetting this, and I'm sure this is a fact. We don't have
+that many shy people here I think. But the question would probably better
+be "are the efforts and implications of adopting a softer communication
+worth the gain of getting a few more talented people ?". I don't have the
+response to this question, but for sure many things would change, some
+current developers would not follow, release cycles would extend, but
+maybe we'd get a slightly higher quality each time, who knows. Also, too
+shy people rarely propose improvements, even if they tend to have the
+greatest ideas since they spend more time thinking than talking. What I'm
+sure about however is that the two models are incompatible, and breaking
+one which works to try another one seems suicidal. And Linus would probably
+suggest "try it, fork the kernel, build a team and manage it your way".
+
+All in all, I think the best thing to do would be to improve the processes
+so that it becomes much clearer for everyone so that newcomers are less
+afraid of it and do less mistakes. With a smoother process we can expect
+a higher quality from everyone and in turn reduce the risk that Linus
+shouts too often. Everyone will benefit from this in the end. I'm not
+the best placed to propose improvements, I'm not suffering from the
+process, so let's hope that people who are unhappy with it will explain
+their concerns in great details.
+
+> There is a great article on the subject I read recently here:
+> 
+> http://youarenotsosmart.com/2013/05/23/survivorship-bias/
+
+Seems interesting but very long, I'll have to read it later ! Thanks for
+the link anyway.
+
+Willy
 
