@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3GPGYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 02:24:17 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52868 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752022Ab3GPGYO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 02:24:14 -0400
-X-Sasl-enc: xocGOVnvmfLd9UUz5/N+ZUWxwBbBLtVg4yGPn7cjpgnr 1373955853
-Date: Mon, 15 Jul 2013 23:23:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, Steven Rostedt <rostedt@goodmis.org>,
+	id S1752128Ab3GPGY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 02:24:59 -0400
+Received: from mail.lang.hm ([64.81.33.126]:35288 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853Ab3GPGY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 02:24:58 -0400
+Date: Mon, 15 Jul 2013 23:24:52 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Greg KH <greg@kroah.com>
+cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
         ksummit-2013-discuss@lists.linuxfoundation.org,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-Message-ID: <20130716062302.GC19052@kroah.com>
-References: <1373916476.2748.69.camel@dabdike>
- <20130715214422.GA2478@kroah.com>
- <1373925699.17876.218.camel@gandalf.local.home>
- <20130716000623.GB26261@kroah.com>
- <1373940594.17876.241.camel@gandalf.local.home>
- <1373942486.31067.122.camel@deadeye.wl.decadent.org.uk>
- <CAPM=9twPxz60WObwG5SuCxFrGTr7KzQyS3iqGnF8MQJPUZuHOg@mail.gmail.com>
+Subject: Re: KS Topic request: Handling the Stable kernel, let's dump the
+ cc: stable tag
+In-Reply-To: <20130715214422.GA2478@kroah.com>
+Message-ID: <alpine.DEB.2.02.1307152319490.16723@nftneq.ynat.uz>
+References: <1373916476.2748.69.camel@dabdike> <20130715214422.GA2478@kroah.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM=9twPxz60WObwG5SuCxFrGTr7KzQyS3iqGnF8MQJPUZuHOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 01:27:42PM +1000, Dave Airlie wrote:
-> On Tue, Jul 16, 2013 at 12:41 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> > On Mon, 2013-07-15 at 22:09 -0400, Steven Rostedt wrote:
-> > [...]
-> >> > > How important is the stable releases? Are maintainers willing to do a
-> >> > > little more work now to make sure their subsystems work fine in older
-> >> > > kernels? This isn't the same stable as it was 8 years ago.
-> >> >
-> >> > And that annoys the hell out of some Linux companies who feel that the
-> >> > stable kernels compete with them.  So people working for those companies
-> >> > might not get as much help with doing any additional work for stable
-> >> > kernel releases (this is not just idle gossip, I've heard it directly
-> >> > from management's mouths.)
-> >>
-> >> Hmm, this is new to me. Really, I thought the whole point of the stable
-> >> releases was to help Linux companies.
-> > [...]
-> >
-> > I also heard some managers decided their kernel source packages should
-> > have all the patches squashed together to make them harder to cherry-
-> > pick... could it have been the same company?
-> 
-> Greg loves to tell stories about RH management, but really if he can
-> find any engineer who works for RH that says he can't work on stable
-> due to being told by management, I'd be surprised. Maybe when stable
-> first surfaced there was a hope of it being close to RHEL, but at this
-> point stable has little to no usefulness from a RHEL point of view,
-> and since nearly all the RH employed maintainers all do stable work, I
-> can't see why Greg would think this matters.
-> 
-> In fact Greg how much of stable queue does come from Red Hatters?
+On Mon, 15 Jul 2013, Greg KH wrote:
 
-I always separate RH managers from engineers in their doings because I
-know that one does not feel the same as the other.
+> I don't like this at all, just for the simple reason that it will push
+> the majority of the work of stable kernel development on to the
+> subsystem maintainers, who have enough work to do as it is.
+>
+> Stable tree stuff should cause almost _no_ extra burden on the kernel
+> developers, because it is something that I, and a few other people, have
+> agreed to do with our time.  It has taken me 8 _years_ to finally get
+> maintainers to agree to mark stuff for the stable tree, and fine-tune a
+> development process that makes it easy for us to do this backport work.
 
-My point is, if I start asking developers to do more work for the stable
-trees, that has the potential to make people not like the stable trees
-more for resource issues, and I don't want to do that at all.
+It's important to remember that the subsystem maintainers have essentially no 
+input on how many stable trees there are or how long they are maintained.
 
-greg k-h
+That is entirely up to the people maintaining the stable trees.
+
+Just because some crazy person ;-) decides to maintain 2.4 for many years 
+doesn't mean that every subsystem maintainer needs to worry about backporting 
+patches from 3.11 all the way back to 2.4. The fact that they are as willing as 
+they are to review the results of the backports for problems in amazing.
+
+David Lang
