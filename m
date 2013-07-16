@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248Ab3GPQ2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:28:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16810 "EHLO mga09.intel.com"
+	id S933376Ab3GPQcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:32:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55487 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932546Ab3GPQ2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:28:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,678,1367996400"; 
-   d="scan'208";a="371248126"
-Message-ID: <51E57631.2030805@linux.intel.com>
-Date: Tue, 16 Jul 2013 09:34:57 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S932935Ab3GPQcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 12:32:15 -0400
+Date: Tue, 16 Jul 2013 19:31:04 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, mingo@redhat.com,
+        jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
+        pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
+        andi@firstfloor.org, attilio.rao@citrix.com, ouyang@cs.pitt.edu,
+        gregkh@suse.de, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephan.diestelhorst@amd.com, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+Message-ID: <20130716163104.GD8981@redhat.com>
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com>
+ <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com>
+ <20130714131241.GA11772@redhat.com>
+ <51E3C5CE.7000009@linux.vnet.ibm.com>
+ <20130715103648.GN11772@redhat.com>
+ <51E4C011.4060803@linux.vnet.ibm.com>
+ <20130716060215.GE11772@redhat.com>
+ <20130716154852.GN23818@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org
-CC: "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: driver model, duplicate names question
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716154852.GN23818@dyad.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Tue, Jul 16, 2013 at 05:48:52PM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 16, 2013 at 09:02:15AM +0300, Gleb Natapov wrote:
+> > BTW can NMI handler take spinlocks? 
+> 
+> No -- that is, yes you can using trylock, but you still shouldn't.
+> 
+Great news for this code. Thanks.
 
-I would like to create tree like structure using device model (struct 
-device, device_register/device_unregister) using parent/child 
-relationship while creation. I want to be able to create duplicate 
-names, when their parents are different, similar to a directory structure.
-I see that I can't create devices with duplicate names (device names), 
-even when their parents are different.
-
-How can I allow duplicate names when their parents are different devices?
-I want to avoid flat model as I have parent child relationship and there 
-will be too many devices using flat model.
-
-Why, I need?
-I am going to publish RFC for a new power cap class driver. We have a 
-multiple controllers under power cap class (they are devices). Under 
-which there are multiple power zones, with parent/child relationships. 
-Currently I have to use  kobject_init_and_add, which I want to avoid and 
-just use device_register. Other places, wherever such relationships are 
-required, kobjects are used like cpufreq.
-
-Thanks,
-Srinivas Pandruvada
-Open Source Technology Center,
-Intel Corp.
-
-
-
-
-
-
+--
+			Gleb.
