@@ -1,208 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944Ab3GPPKS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:10:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40004 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546Ab3GPPKO (ORCPT
+	id S933016Ab3GPPKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:10:36 -0400
+Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:48657 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932546Ab3GPPKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:10:14 -0400
-Date: Tue, 16 Jul 2013 17:09:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
-Message-ID: <20130716150907.GL23818@dyad.programming.kicks-ass.net>
-References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
- <1373548341-24119-10-git-send-email-adrian.hunter@intel.com>
- <20130712095600.GT25631@dyad.programming.kicks-ass.net>
- <51DFFCE1.1070203@intel.com>
- <20130712145515.GI17211@twins.programming.kicks-ass.net>
- <51E3932C.5000905@intel.com>
- <51E4ECFB.6000104@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E4ECFB.6000104@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 16 Jul 2013 11:10:33 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH v3 4/7] USB: gadget: atmel_usba: prepare clk before calling enable
+Date: Tue, 16 Jul 2013 17:10:26 +0200
+Message-Id: <1373987426-24338-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
+References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 7082473365406185580
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 09:49:31AM +0300, Adrian Hunter wrote:
+Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+avoid common clk framework warnings.
 
-> If you want the ID at the first position in the ID sample, it is do-able.
-> It means perf tools will have to be changed to calculate the variable start
-> position of the ID sample, and then parse the ID sample forwards from there.
-> Please advise.
-
-Oh urgh I see.. how about I merge something like the below first?
-
-Re-reading your patch; you add something to struct sample_id; which means that
-events which 'forget' to set perf_event_attr::sample_id_all while setting
-PERF_SAMPLE_IDENTIFIER are 'funny'. Should we refuse them?
-
-
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
-Subject: perf: Update perf_event_type documentation
+ drivers/usb/gadget/atmel_usba_udc.c |   28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
-Due to a discussion with Adrian I had a good look at the perf_event_type record
-layout and found the documentation to be somewhat unclear.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- include/uapi/linux/perf_event.h | 21 +++++++++++++++++++--
- kernel/events/core.c            | 31 ++++++++++++++++---------------
- 2 files changed, 35 insertions(+), 17 deletions(-)
-
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 0b1df41..335016c 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -478,6 +478,16 @@ enum perf_event_type {
- 	 * file will be supported by older perf tools, with these new optional
- 	 * fields being ignored.
- 	 *
-+	 * struct sample_id {
-+	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
-+	 * 	{ u64			time;     } && PERF_SAMPLE_TIME
-+	 * 	{ u64			id;       } && PERF_SAMPLE_ID
-+	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
-+	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-+	 * } && perf_event_attr::sample_id_all
-+	 */
-+
-+	/*
- 	 * The MMAP events record the PROT_EXEC mappings so that we can
- 	 * correlate userspace IPs to code. They have the following structure:
- 	 *
-@@ -488,7 +498,8 @@ enum perf_event_type {
- 	 *	u64				addr;
- 	 *	u64				len;
- 	 *	u64				pgoff;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_MMAP			= 1,
-@@ -498,6 +509,7 @@ enum perf_event_type {
- 	 *	struct perf_event_header	header;
- 	 *	u64				id;
- 	 *	u64				lost;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_LOST			= 2,
-@@ -508,6 +520,7 @@ enum perf_event_type {
- 	 *
- 	 *	u32				pid, tid;
- 	 *	char				comm[];
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_COMM			= 3,
-@@ -518,6 +531,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_EXIT			= 4,
-@@ -528,6 +542,7 @@ enum perf_event_type {
- 	 *	u64				time;
- 	 *	u64				id;
- 	 *	u64				stream_id;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_THROTTLE			= 5,
-@@ -539,6 +554,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_FORK			= 7,
-@@ -549,6 +565,7 @@ enum perf_event_type {
- 	 *	u32				pid, tid;
- 	 *
- 	 *	struct read_format		values;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_READ			= 8,
-@@ -596,7 +613,7 @@ enum perf_event_type {
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 *
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
--	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
-+	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 708ab70..c9ef899 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4462,20 +4462,6 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index 1d97222..f018017 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -1772,6 +1772,7 @@ out:
+ static int atmel_usba_start(struct usb_gadget *gadget,
+ 		struct usb_gadget_driver *driver)
+ {
++	int ret = 0;
+ 	struct usba_udc *udc = container_of(gadget, struct usba_udc, gadget);
+ 	unsigned long flags;
  
--	if (!event->attr.watermark) {
--		int wakeup_events = event->attr.wakeup_events;
--
--		if (wakeup_events) {
--			struct ring_buffer *rb = handle->rb;
--			int events = local_inc_return(&rb->events);
--
--			if (events >= wakeup_events) {
--				local_sub(wakeup_events, &rb->events);
--				local_inc(&rb->wakeup);
--			}
--		}
--	}
--
- 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
- 		if (data->br_stack) {
- 			size_t size;
-@@ -4511,16 +4497,31 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
+@@ -1781,8 +1782,14 @@ static int atmel_usba_start(struct usb_gadget *gadget,
+ 	udc->driver = driver;
+ 	spin_unlock_irqrestore(&udc->lock, flags);
  
--	if (sample_type & PERF_SAMPLE_STACK_USER)
-+	if (sample_type & PERF_SAMPLE_STACK_USER) {
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
+-	clk_enable(udc->pclk);
+-	clk_enable(udc->hclk);
++	ret = clk_prepare_enable(udc->pclk);
++	if (ret)
++		goto out;
++	ret = clk_prepare_enable(udc->hclk);
++	if (ret) {
++		clk_disable_unprepare(udc->pclk);
++		goto out;
 +	}
  
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
+ 	DBG(DBG_GADGET, "registered driver `%s'\n", driver->driver.name);
  
- 	if (sample_type & PERF_SAMPLE_DATA_SRC)
- 		perf_output_put(handle, data->data_src.val);
+@@ -1797,9 +1804,11 @@ static int atmel_usba_start(struct usb_gadget *gadget,
+ 		usba_writel(udc, CTRL, USBA_ENABLE_MASK);
+ 		usba_writel(udc, INT_ENB, USBA_END_OF_RESET);
+ 	}
 +
-+	if (!event->attr.watermark) {
-+		int wakeup_events = event->attr.wakeup_events;
-+
-+		if (wakeup_events) {
-+			struct ring_buffer *rb = handle->rb;
-+			int events = local_inc_return(&rb->events);
-+
-+			if (events >= wakeup_events) {
-+				local_sub(wakeup_events, &rb->events);
-+				local_inc(&rb->wakeup);
-+			}
-+		}
-+	}
++out:
+ 	spin_unlock_irqrestore(&udc->lock, flags);
+ 
+-	return 0;
++	return ret;
  }
  
- void perf_prepare_sample(struct perf_event_header *header,
+ static int atmel_usba_stop(struct usb_gadget *gadget,
+@@ -1822,8 +1831,8 @@ static int atmel_usba_stop(struct usb_gadget *gadget,
+ 
+ 	udc->driver = NULL;
+ 
+-	clk_disable(udc->hclk);
+-	clk_disable(udc->pclk);
++	clk_disable_unprepare(udc->hclk);
++	clk_disable_unprepare(udc->pclk);
+ 
+ 	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
+ 
+@@ -2022,10 +2031,14 @@ static int __init usba_udc_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, udc);
+ 
+ 	/* Make sure we start from a clean slate */
+-	clk_enable(pclk);
++	ret = clk_prepare_enable(pclk);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to enable pclk, aborting.\n");
++		goto err_clk_enable;
++	}
+ 	toggle_bias(0);
+ 	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
+-	clk_disable(pclk);
++	clk_disable_unprepare(pclk);
+ 
+ 	if (pdev->dev.of_node)
+ 		udc->usba_ep = atmel_udc_of_init(pdev, udc);
+@@ -2081,6 +2094,7 @@ err_add_udc:
+ 	free_irq(irq, udc);
+ err_request_irq:
+ err_alloc_ep:
++err_clk_enable:
+ 	iounmap(udc->fifo);
+ err_map_fifo:
+ 	iounmap(udc->regs);
+-- 
+1.7.9.5
 
