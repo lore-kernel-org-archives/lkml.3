@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab3GPDZR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 23:25:17 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:54588 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab3GPDZP (ORCPT
+	id S1758633Ab3GPD1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 23:27:46 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:49416 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab3GPD1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 23:25:15 -0400
+	Mon, 15 Jul 2013 23:27:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130716023847.GA31481@redhat.com>
-References: <20130716015305.GB30569@redhat.com>
-	<CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com>
-	<20130716023847.GA31481@redhat.com>
-Date: Mon, 15 Jul 2013 20:25:14 -0700
-X-Google-Sender-Auth: 7RxA8Lk9FmjIJ0b3h3zaeMX3whw
-Message-ID: <CA+55aFxiGXht8+Dox=C2ezYYf1yMaLAzMYr40j=+peP8j5Ha6w@mail.gmail.com>
-Subject: Re: splice vs execve lockdep trace.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Ben Myers <bpm@sgi.com>
-Cc: xfs@oss.sgi.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1373942486.31067.122.camel@deadeye.wl.decadent.org.uk>
+References: <1373916476.2748.69.camel@dabdike>
+	<20130715214422.GA2478@kroah.com>
+	<1373925699.17876.218.camel@gandalf.local.home>
+	<20130716000623.GB26261@kroah.com>
+	<1373940594.17876.241.camel@gandalf.local.home>
+	<1373942486.31067.122.camel@deadeye.wl.decadent.org.uk>
+Date: Tue, 16 Jul 2013 13:27:42 +1000
+Message-ID: <CAPM=9twPxz60WObwG5SuCxFrGTr7KzQyS3iqGnF8MQJPUZuHOg@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+From: Dave Airlie <airlied@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <greg@kroah.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 7:38 PM, Dave Jones <davej@redhat.com> wrote:
+On Tue, Jul 16, 2013 at 12:41 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Mon, 2013-07-15 at 22:09 -0400, Steven Rostedt wrote:
+> [...]
+>> > > How important is the stable releases? Are maintainers willing to do a
+>> > > little more work now to make sure their subsystems work fine in older
+>> > > kernels? This isn't the same stable as it was 8 years ago.
+>> >
+>> > And that annoys the hell out of some Linux companies who feel that the
+>> > stable kernels compete with them.  So people working for those companies
+>> > might not get as much help with doing any additional work for stable
+>> > kernel releases (this is not just idle gossip, I've heard it directly
+>> > from management's mouths.)
+>>
+>> Hmm, this is new to me. Really, I thought the whole point of the stable
+>> releases was to help Linux companies.
+> [...]
 >
->   The recent trinity changes shouldn't have really made
-> any notable difference here.
+> I also heard some managers decided their kernel source packages should
+> have all the patches squashed together to make them harder to cherry-
+> pick... could it have been the same company?
 
-Hmm. I'm not aware pf anything that has changed in this area since
-3.10 - neither in execve, xfs or in splice. Not even since 3.9.
+Greg loves to tell stories about RH management, but really if he can
+find any engineer who works for RH that says he can't work on stable
+due to being told by management, I'd be surprised. Maybe when stable
+first surfaced there was a hope of it being close to RHEL, but at this
+point stable has little to no usefulness from a RHEL point of view,
+and since nearly all the RH employed maintainers all do stable work, I
+can't see why Greg would think this matters.
 
-But I may certainly have missed something.
+In fact Greg how much of stable queue does come from Red Hatters?
 
-> Interestingly, the 'soft lockups' I was
-> seeing all the time on that box seem to have gone into hiding.
-
-Honestly, I'm somewhat inclined to blame the whole perf situation, and
-saying that we hopefully got that fixed. In between the silly do_div()
-buglets and all the indications that the time was spent in nmi
-handlers, I'd be willing to just ignore them as false positives
-brought on by the whole switch to the perf irq..
-
->  > Or is the XFS i_iolock required for this thing to happen at all?
->  > Adding Ben Myers to the cc just for luck/completeness.
->
-> It is only happening (so far) on the XFS test box, but I don't have
-> enough data to say that's definite yet.
-
-.. so there's been a number of xfs changes, and I don't know the code,
-but none of them seem at all relevant to this.
-
-The "pipe -> cred_guard_mutex" lock chain is pretty direct, and can be
-clearly attributed to splicing into /proc. Now, whether that is a
-*good* idea or not is clearly debatable, and I do think that maybe we
-should just not splice to/from proc files, but that doesn't seem to be
-new, and I don't think it's necessarily *broken* per se, it's just
-that splicing into /proc seems somewhat unnecessary, and various proc
-files do end up taking locks that can be "interesting".
-
-At the other end of the spectrum, the "cred_guard_mutex -> FS locks"
-thing from execve() is also pretty clear, and probably not fixable or
-necessarily something we'd even want to fix.
-
-But the "FS locks -> pipe" part is a bit questionable. Honestly, I'd
-be much happier if XFS used generic_file_splice_read/write().
-
-And looking more at that, I'm actually starting to think this is an
-XFS locking problem. XFS really should not call back to splice while
-holding the inode lock.
-
-But that XFS code doesn't seem new either. Is XFS a new thing for you
-to test with?
-
-Ben? Comments? I added the xfs list too now that I'm starting to
-possibly blame XFS more actively..
-
-                  Linus
+Dave.
