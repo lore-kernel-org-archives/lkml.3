@@ -1,78 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933617Ab3GPRkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:40:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44192 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933059Ab3GPRkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:40:19 -0400
-Date: Tue, 16 Jul 2013 19:38:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
-        corbet@lwn.net, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-Message-ID: <20130716173848.GA22795@dyad.programming.kicks-ass.net>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <20130713064909.GW25631@dyad.programming.kicks-ass.net>
- <51E166C8.3000902@linux.intel.com>
- <20130715195914.GC23818@dyad.programming.kicks-ass.net>
- <51E45E8B.705@linux.intel.com>
- <20130715210650.GF23818@dyad.programming.kicks-ass.net>
- <20130715211230.GG23818@dyad.programming.kicks-ass.net>
- <51E47D30.5030203@linux.intel.com>
+	id S933601Ab3GPRqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:46:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933158Ab3GPRqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 13:46:33 -0400
+Message-ID: <51E58631.7060003@redhat.com>
+Date: Tue, 16 Jul 2013 13:43:13 -0400
+From: Brian Foster <bfoster@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E47D30.5030203@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Niels de Vos <ndevos@redhat.com>, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [fuse-devel] [PATCH] fuse: fix occasional dentry leak when readdirplus
+ is used
+References: <1373893160-30601-1-git-send-email-ndevos@redhat.com> <51E456B6.8050601@redhat.com> <20130716103939.GL18803@ndevos-laptop.usersys.redhat.com> <51E54764.4070106@redhat.com> <20130716161458.GA19664@tucsk.piliscsaba.szeredi.hu>
+In-Reply-To: <20130716161458.GA19664@tucsk.piliscsaba.szeredi.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 03:52:32PM -0700, Arjan van de Ven wrote:
+On 07/16/2013 12:14 PM, Miklos Szeredi wrote:
+> On Tue, Jul 16, 2013 at 09:15:16AM -0400, Brian Foster wrote:
+>  
+>> I'm not sure why it would need to have a valid inode. A dentry with a
+>> NULL inode is valid, no?
+> 
+> It is valid, yes.  It's called a "negative" dentry, which caches the information
+> that the file does not exist.
+> 
+>> I think the question is whether the above state (multiple, hashed dentries)
+>> can be valid for whatever reason. It certainly looks suspicious.
+> 
+> That state is not valid.  So we certainly need to unhash the negative dentry
+> first, before hashing a new one.  We could also reuse the old dentry, but that
+> is just an optimization.
+> 
 
-> yeah ondemand does this, but ondemand is actually a pretty bad governor.
-> not because of the sampling, but because of its algorithm.
+Thanks Miklos.
 
-Is it good for any class of hardware still out there? Or should the thing be
-shot in the head?
+> Below patch fixes several issues with that function.  Could you please give it a
+> go?
+> 
 
-You saying AMD patched the thing makes me confused; why would they patch a
-piece of crap?
+This patch looks good and fixes the issue for me. It might be good to
+give Neils a chance to beat on it as well, but otherwise:
 
-> HOWEVER, on modern CPUs, even many of the ARM ones, the frequency
-> when you're idle is zero anyway regardless of what you as OS ask for.
+Tested-by: Brian Foster <bfoster@redhat.com>
 
-Right, entire cores are power gated.
+Brian
 
-So power wise the voltage you run at is important; so for hardware where lower
-frequencies allow lower voltage, does it still make sense to run the lowest
-possible voltage such that there is still some idle time?
+> Thanks,
+> Miklos
+> 
+> 
+> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+> index 0eda527..a8208c5 100644
+> --- a/fs/fuse/dir.c
+> +++ b/fs/fuse/dir.c
+> @@ -1223,28 +1223,45 @@ static int fuse_direntplus_link(struct file *file,
+>  		if (name.name[1] == '.' && name.len == 2)
+>  			return 0;
+>  	}
+> +
+> +	if (invalid_nodeid(o->nodeid))
+> +		return -EIO;
+> +	if (!fuse_valid_type(o->attr.mode))
+> +		return -EIO;
+> +
+>  	fc = get_fuse_conn(dir);
+>  
+>  	name.hash = full_name_hash(name.name, name.len);
+>  	dentry = d_lookup(parent, &name);
+> -	if (dentry && dentry->d_inode) {
+> +	if (dentry) {
+>  		inode = dentry->d_inode;
+> -		if (get_node_id(inode) == o->nodeid) {
+> +		if (!inode) {
+> +			d_drop(dentry);
+> +		} else if (get_node_id(inode) != o->nodeid ||
+> +			   ((o->attr.mode ^ inode->i_mode) & S_IFMT)) {
+> +			err = d_invalidate(dentry);
+> +			if (err)
+> +				goto out;
+> +		} else if (is_bad_inode(inode)) {
+> +			err = -EIO;
+> +			goto out;
+> +		} else {
+>  			struct fuse_inode *fi;
+>  			fi = get_fuse_inode(inode);
+>  			spin_lock(&fc->lock);
+>  			fi->nlookup++;
+>  			spin_unlock(&fc->lock);
+>  
+> +			fuse_change_attributes(inode, &o->attr,
+> +					       entry_attr_timeout(o),
+> +					       attr_version);
+> +
+>  			/*
+>  			 * The other branch to 'found' comes via fuse_iget()
+>  			 * which bumps nlookup inside
+>  			 */
+>  			goto found;
+>  		}
+> -		err = d_invalidate(dentry);
+> -		if (err)
+> -			goto out;
+>  		dput(dentry);
+>  		dentry = NULL;
+>  	}
+> @@ -1259,25 +1276,30 @@ static int fuse_direntplus_link(struct file *file,
+>  	if (!inode)
+>  		goto out;
+>  
+> -	alias = d_materialise_unique(dentry, inode);
+> -	err = PTR_ERR(alias);
+> -	if (IS_ERR(alias))
+> -		goto out;
+> +	if (S_ISDIR(inode->i_mode)) {
+> +		mutex_lock(&fc->inst_mutex);
+> +		alias = fuse_d_add_directory(dentry, inode);
+> +		mutex_unlock(&fc->inst_mutex);
+> +		err = PTR_ERR(alias);
+> +		if (IS_ERR(alias)) {
+> +			iput(inode);
+> +			goto out;
+> +		}
+> +	} else {
+> +		alias = d_splice_alias(inode, dentry);
+> +	}
+> +
+>  	if (alias) {
+>  		dput(dentry);
+>  		dentry = alias;
+>  	}
+>  
+>  found:
+> -	fuse_change_attributes(inode, &o->attr, entry_attr_timeout(o),
+> -			       attr_version);
+> -
+>  	fuse_change_entry_timeout(dentry, o);
+>  
+>  	err = 0;
+>  out:
+> -	if (dentry)
+> -		dput(dentry);
+> +	dput(dentry);
+>  	return err;
+>  }
+>  
+> 
 
-Or is the fact that you're running so much longer negating the power save from
-the lower voltage?
-
-> Every 10 (or 100) milliseconds, ondemand makes a new P state decision.
-> It does this by asking the scheduler the time used, does a delta and
-> ends up at a utilization %age which then goes into a formula.
-> It's not that ondemand samples inbetween decision moments to see if the system
-> is busy or not; the microaccounting that the scheduler does is used instead,
-> and only at decision moments.
-
-OK.. So up to now you've mostly said what you want of the scheduler to make a
-better governor for the new Intel chips.
-
-However a power aware scheduler/balancer needs to interact with the policy as a
-whole; and I got confused by the fact that you never talked about
-raising/lowering speeds. As said there's already a very 'fine' problem where
-the cpufreq interacts with the utilization/runnable accounting we now do.
-
-So we very much need to consider the entire stack; not just new hooks you want
-to make it go fastest.
