@@ -1,105 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3GPOsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:48:03 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:64580 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271Ab3GPOsA (ORCPT
+	id S932940Ab3GPOuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:50:05 -0400
+Received: from smtp-out-236.synserver.de ([212.40.185.236]:1114 "EHLO
+	smtp-out-232.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932536Ab3GPOuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:48:00 -0400
-Message-ID: <51E55D1D.6080809@linaro.org>
-Date: Tue, 16 Jul 2013 16:47:57 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCHv5 00/10] clocksource: sunxi: Timer fixes and cleanup
-References: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 16 Jul 2013 10:50:00 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 26375
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>, Jassi Brar <jaswinder.singh@linaro.org>,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        stable@vger.kernel.org
+Subject: [PATCH resend] dma: pl330: Fix cyclic transfers
+Date: Tue, 16 Jul 2013 16:13:23 +0200
+Message-Id: <1373984003-21778-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2013 06:31 PM, Maxime Ripard wrote:
+Allocate a descriptor for each period of a cyclic transfer, not just the first.
+Also since the callback needs to be called for each finished period make sure to
+initialize the callback and callback_param fields of each descriptor in a cyclic
+transfer.
 
-Applied to my tree for 3.12.
+Cc: stable@vger.kernel.org
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/dma/pl330.c | 87 ++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 66 insertions(+), 21 deletions(-)
 
-Thanks
-  -- Daniel
-
-
-> Hi everyone,
-> 
-> The first timer code we merged when adding support for the A13 some
-> time back was mostly a clean up from the source drop we had, without
-> any documentation.  This happened to work, but the code merged in
-> turned out to be far from perfect, and had several flaws.
-> 
-> This patchset hopefully fixes these flaws, and cleanup most of the
-> driver as well, to end up in an almost complete rewrite of it (even
-> though it's not that long).
-> 
-> It also finally adds a clocksource driver using the second timer as
-> our monotonic clock source.
-> 
-> These flaws have all been spotted when trying to add the A31 support,
-> work that is still ongoing, but will hopefully benefit from this
-> patchset as well.
-> 
-> Thanks,
-> Maxime
-> 
-> Changes from v4:
->   - Removed the last clk_get_rate() user
->   - Got a few beers
-> 
-> Changes from v3:
->   - Reintroduce the rate variable to cache the parent clock rate
->   - Remove the interval programming at probe time that was
->     reintroduced in the v3 due to a poor rebase.
-> 
-> Changes from v2:
->   - Use the clocksource timer to get the amount of time we have to
->     wait for when disabling and enabling back a timer
->   - Added patch to add parenthesis around the macros arguments
->   - Renamed the AUTORELOAD register define to the more meaningful
->     RELOAD name
-> 
-> Changes from v1:
->   - Rebased on top of linux-next to benefit from the move to all
->     architectures of the sched_clock functions
->   - Moved the clock source to the second timer instead of the 64 bits
->     free-running counter like suggested by Thomas.
-> 
-> Maxime Ripard (10):
->   clocksource: sun4i: Use the BIT macros where possible
->   clocksource: sun4i: Wrap macros arguments in parenthesis
->   clocksource: sun4i: rename AUTORELOAD define to RELOAD
->   clocksource: sun4i: Add clocksource and sched clock drivers
->   clocksource: sun4i: Don't forget to enable the clock we use
->   clocksource: sun4i: Fix the next event code
->   clocksource: sun4i: Factor out some timer code
->   clocksource: sun4i: Remove TIMER_SCAL variable
->   clocksource: sun4i: Cleanup parent clock setup
->   clocksource: sun4i: Fix bug when switching from periodic to oneshot
->     modes
-> 
->  drivers/clocksource/sun4i_timer.c | 110 +++++++++++++++++++++++++++-----------
->  1 file changed, 78 insertions(+), 32 deletions(-)
-> 
-
-
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 7c02e83..29d4476 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2505,6 +2505,10 @@ static dma_cookie_t pl330_tx_submit(struct dma_async_tx_descriptor *tx)
+ 	/* Assign cookies to all nodes */
+ 	while (!list_empty(&last->node)) {
+ 		desc = list_entry(last->node.next, struct dma_pl330_desc, node);
++		if (pch->cyclic) {
++			desc->txd.callback = last->txd.callback;
++			desc->txd.callback_param = last->txd.callback_param;
++		}
+ 
+ 		dma_cookie_assign(&desc->txd);
+ 
+@@ -2688,32 +2692,19 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
+ 		size_t period_len, enum dma_transfer_direction direction,
+ 		unsigned long flags, void *context)
+ {
+-	struct dma_pl330_desc *desc;
++	struct dma_pl330_desc *desc = NULL, *first = NULL;
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
++	struct dma_pl330_dmac *pdmac = pch->dmac;
++	unsigned int i;
+ 	dma_addr_t dst;
+ 	dma_addr_t src;
+ 
+-	desc = pl330_get_desc(pch);
+-	if (!desc) {
+-		dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
+-			__func__, __LINE__);
++	if (len % period_len != 0)
+ 		return NULL;
+-	}
+ 
+ 	switch (direction) {
+ 	case DMA_MEM_TO_DEV:
+-		desc->rqcfg.src_inc = 1;
+-		desc->rqcfg.dst_inc = 0;
+-		desc->req.rqtype = MEMTODEV;
+-		src = dma_addr;
+-		dst = pch->fifo_addr;
+-		break;
+ 	case DMA_DEV_TO_MEM:
+-		desc->rqcfg.src_inc = 0;
+-		desc->rqcfg.dst_inc = 1;
+-		desc->req.rqtype = DEVTOMEM;
+-		src = pch->fifo_addr;
+-		dst = dma_addr;
+ 		break;
+ 	default:
+ 		dev_err(pch->dmac->pif.dev, "%s:%d Invalid dma direction\n",
+@@ -2721,12 +2712,66 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
+ 		return NULL;
+ 	}
+ 
+-	desc->rqcfg.brst_size = pch->burst_sz;
+-	desc->rqcfg.brst_len = 1;
++	for (i = 0; i < len / period_len; i++) {
++		desc = pl330_get_desc(pch);
++		if (!desc) {
++			dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
++				__func__, __LINE__);
+ 
+-	pch->cyclic = true;
++			if (!first)
++				return NULL;
+ 
+-	fill_px(&desc->px, dst, src, period_len);
++			spin_lock_irqsave(&pdmac->pool_lock, flags);
++
++			while (!list_empty(&first->node)) {
++				desc = list_entry(first->node.next,
++						struct dma_pl330_desc, node);
++				list_move_tail(&desc->node, &pdmac->desc_pool);
++			}
++
++			list_move_tail(&first->node, &pdmac->desc_pool);
++
++			spin_unlock_irqrestore(&pdmac->pool_lock, flags);
++
++			return NULL;
++		}
++
++		switch (direction) {
++		case DMA_MEM_TO_DEV:
++			desc->rqcfg.src_inc = 1;
++			desc->rqcfg.dst_inc = 0;
++			desc->req.rqtype = MEMTODEV;
++			src = dma_addr;
++			dst = pch->fifo_addr;
++			break;
++		case DMA_DEV_TO_MEM:
++			desc->rqcfg.src_inc = 0;
++			desc->rqcfg.dst_inc = 1;
++			desc->req.rqtype = DEVTOMEM;
++			src = pch->fifo_addr;
++			dst = dma_addr;
++			break;
++		default:
++			break;
++		}
++
++		desc->rqcfg.brst_size = pch->burst_sz;
++		desc->rqcfg.brst_len = 1;
++		fill_px(&desc->px, dst, src, period_len);
++
++		if (!first)
++			first = desc;
++		else
++			list_add_tail(&desc->node, &first->node);
++
++		dma_addr += period_len;
++	}
++
++	if (!desc)
++		return NULL;
++
++	pch->cyclic = true;
++	desc->txd.flags = flags;
+ 
+ 	return &desc->txd;
+ }
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.8.0
 
