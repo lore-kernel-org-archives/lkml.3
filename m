@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933822Ab3GPVPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 17:15:45 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:53743 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab3GPVPo convert rfc822-to-8bit (ORCPT
+	id S934078Ab3GPVPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 17:15:51 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:32945 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933926Ab3GPVPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 17:15:44 -0400
+	Tue, 16 Jul 2013 17:15:48 -0400
+Message-ID: <51E5B7FF.9080004@mentor.com>
+Date: Tue, 16 Jul 2013 22:15:43 +0100
+From: Jim Baxter <jim_baxter@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUMrztJ1aTfvfMZyOSRFhDM52Fa3pSS8EuW3ByYGMNMpg@mail.gmail.com>
-References: <CAOULuOY5VMiiuYmesaGxVWWKtby4Cj9Pc9ctQZeOKfoUzV46dA@mail.gmail.com>
- <CALCETrVk=ovYjHwALtzB3E3nP4TMivhppM42yw7rMRpzA68cbw@mail.gmail.com>
- <20130715230418.GA2649@leaf> <CALCETrX_Qjmdo5JtRPzhW6kBaNgwAstG1g8p8pKNy4e+kPYdMQ@mail.gmail.com>
- <20130715232053.GB2649@leaf> <CALCETrUMrztJ1aTfvfMZyOSRFhDM52Fa3pSS8EuW3ByYGMNMpg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 16 Jul 2013 14:15:22 -0700
-Message-ID: <CALCETrWkja4k7AO1CFx=ev21Fg_6HO_unXbh=zGGdfPNRvLfcA@mail.gmail.com>
-Subject: Re: BGRT Pointer in System RAM
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Parag Warudkar <parag.lkml@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: Michal Marek <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] kbuild: Build samples directory with make modules
+References: <jim_baxter@mentor.com> <1373999390-14548-1-git-send-email-jim_baxter@mentor.com> <20130716193714.GA19924@merkur.ravnborg.org>
+In-Reply-To: <20130716193714.GA19924@merkur.ravnborg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
+X-OriginalArrivalTime: 16 Jul 2013 21:15:46.0080 (UTC) FILETIME=[A327E200:01CE8269]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 4:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Jul 15, 2013 at 4:20 PM, Josh Triplett <josh@joshtriplett.org> wrote:
->> On Mon, Jul 15, 2013 at 04:08:13PM -0700, Andy Lutomirski wrote:
->>> On Mon, Jul 15, 2013 at 4:04 PM, Josh Triplett <josh@joshtriplett.org> wrote:
->>> > On Mon, Jul 15, 2013 at 01:28:36PM -0700, Andy Lutomirski wrote:
->>> >>
->>> >> Interesting.  My BGRT says:
->>> >>
->>> >> [028h 0040   8]                Image Address : 0D06801800000001
->>> >>
->>> >> If I reverse the high and low 32-bit dwords, then I get an address in
->>> >> system RAM.
->>> >
->>> > Does that address in RAM start with a BMP header?
->>>
->>> No idea.  I'd presumably have to modify the driver to find out --
->>> otherwise something else will overwrite it.
->>
->> You could boot with a mem= command-line argument that reserves that
->> memory.
->
-> I'll see what I can do.
->
+On 16/07/13 20:37, Sam Ravnborg wrote:
+> On Tue, Jul 16, 2013 at 07:29:50PM +0100, Jim Baxter wrote:
+>> If CONFIG_SAMPLES is enabled with any of the sample
+>> modules enabled, they are only built if the make command
+>> includes uImage and modules (i.e. make uImage modules).
+> 
+> With the current location samples are built when you build vmlinux.
+> And vmlinux is implicit when you just type "make".
+> 
+> With the suggestion you have samples are built when you do "make modules".
+> IMO this is less logical than to built them with vmlinux as we do today.
+> 
+> 	Sam
+> 
 
-I booted with mem=3G, and:
+Hi,
 
-$ sudo dd bs=1 skip=4513853464 if=/dev/mem count=1
-dd: reading ‘/dev/mem’: Bad address
+I am building it with:
+make uImage
+make modules
 
-The kernel log says nothing, which suggests that ioremap_cache is
-failing.  I don't know why.
+At least bitbake in Yocto and Openembedded is.
 
-The address 4513853464 is 0x10D0BF018, which should be okay:
+Running make on it's own is the equivalent of:
+make vmlinux modules
 
-[    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000045fffffff] usable
-[    0.000000] e820: remove [mem 0xc0000000-0xfffffffffffffffe] usable
+which builds the samples directory, however if you run:
+make vmlinux
+make modules
 
-EFI agrees:
-[    0.000000] efi: mem213: type=7, attr=0xf,
-range=[0x0000000100000000-0x0000000460000000) (13824MB)
+Then the Samples are not built, that is what I am trying to fix.
 
-This could be related to the fact that mtrr cleanup is failing,
-possibly due to bugs related to mem=.
-
-That's about my tolerance for debugging something that doesn't really
-deserve to work.
-
---Andy
+Thank you,
+Jim
