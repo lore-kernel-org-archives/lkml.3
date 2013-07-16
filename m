@@ -1,74 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933720Ab3GPSNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:13:39 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:41396 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334Ab3GPSNg (ORCPT
+	id S933726Ab3GPSPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:15:46 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:54858 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933370Ab3GPSPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:13:36 -0400
+	Tue, 16 Jul 2013 14:15:44 -0400
+Message-ID: <51E58E97.7090306@linux.vnet.ibm.com>
+Date: Tue, 16 Jul 2013 23:49:03 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130716174708.GN4165@ZenIV.linux.org.uk>
-References: <1373993525-25629-1-git-send-email-artagnon@gmail.com>
- <51E57BC1.4090904@nod.at> <CALkWK0nrDsZiHe2==DQZuHV7id=6gc4UHUj1xXu9jN5cr3SUcQ@mail.gmail.com>
- <20130716174708.GN4165@ZenIV.linux.org.uk>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Tue, 16 Jul 2013 23:42:55 +0530
-Message-ID: <CALkWK0mY8OgqUiOAmyLzZpaS1U7Vw_xPSHytqggikGWBoghd_g@mail.gmail.com>
-Subject: Re: [PATCH] um/configs: don't use devtmpfs in defconfig
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
-        Jeff Dike <jdike@addtoit.com>
-Content-Type: text/plain; charset=UTF-8
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 16/18] kvm hypervisor : Simplify kvm_for_each_vcpu
+ with kvm_irq_delivery_to_apic
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124353.27508.94224.sendpatchset@codeblue.in.ibm.com> <20130714132402.GB11772@redhat.com> <51E416ED.3090604@linux.vnet.ibm.com> <20130715154647.GA19212@redhat.com>
+In-Reply-To: <20130715154647.GA19212@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071618-2674-0000-0000-000009D604BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro wrote:
-> As for the devices, they are *not* bogus.  RTFM, already.
-> Documentation/virtual/uml/UserModeLinux-HOWTO.txt, if you can't be bothered
-> to say git grep UML Documentation/ and find where it on your own.  The
-> relevant section is called "Setting up serial lines and consoles".
-> Seriously, it's not as if the documentation didn't exist or had been
-> hard to find...
+On 07/15/2013 09:16 PM, Gleb Natapov wrote:
+> On Mon, Jul 15, 2013 at 09:06:13PM +0530, Raghavendra K T wrote:
+>> On 07/14/2013 06:54 PM, Gleb Natapov wrote:
+>>> On Mon, Jun 24, 2013 at 06:13:53PM +0530, Raghavendra K T wrote:
+>>>> Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
+>>>>
+>>>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>>>
+>>>> Note that we are using APIC_DM_REMRD which has reserved usage.
+>>>> In future if APIC_DM_REMRD usage is standardized, then we should
+>>>> find some other way or go back to old method.
+>>>>
+>>>> Suggested-by: Gleb Natapov <gleb@redhat.com>
+>>>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>>> ---
+>>>>   arch/x86/kvm/lapic.c |    5 ++++-
+>>>>   arch/x86/kvm/x86.c   |   25 ++++++-------------------
+>>>>   2 files changed, 10 insertions(+), 20 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+>>>> index e1adbb4..3f5f82e 100644
+>>>> --- a/arch/x86/kvm/lapic.c
+>>>> +++ b/arch/x86/kvm/lapic.c
+>>>> @@ -706,7 +706,10 @@ out:
+>>>>   		break;
+>>>>
+>>>>   	case APIC_DM_REMRD:
+>>>> -		apic_debug("Ignoring delivery mode 3\n");
+>>>> +		result = 1;
+>>>> +		vcpu->arch.pv.pv_unhalted = 1;
+>>>> +		kvm_make_request(KVM_REQ_EVENT, vcpu);
+>>>> +		kvm_vcpu_kick(vcpu);
+>>>>   		break;
+>>>>
+>>>>   	case APIC_DM_SMI:
+>>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>>> index 92a9932..b963c86 100644
+>>>> --- a/arch/x86/kvm/x86.c
+>>>> +++ b/arch/x86/kvm/x86.c
+>>>> @@ -5456,27 +5456,14 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+>>>>    */
+>>>>   static void kvm_pv_kick_cpu_op(struct kvm *kvm, int apicid)
+>>>>   {
+>>>> -	struct kvm_vcpu *vcpu = NULL;
+>>>> -	int i;
+>>>> +	struct kvm_lapic_irq lapic_irq;
+>>>>
+>>>> -	kvm_for_each_vcpu(i, vcpu, kvm) {
+>>>> -		if (!kvm_apic_present(vcpu))
+>>>> -			continue;
+>>>> +	lapic_irq.shorthand = 0;
+>>>> +	lapic_irq.dest_mode = 0;
+>>>> +	lapic_irq.dest_id = apicid;
+>>>>
+>>>> -		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
+>>>> -			break;
+>>>> -	}
+>>>> -	if (vcpu) {
+>>>> -		/*
+>>>> -		 * Setting unhalt flag here can result in spurious runnable
+>>>> -		 * state when unhalt reset does not happen in vcpu_block.
+>>>> -		 * But that is harmless since that should soon result in halt.
+>>>> -		 */
+>>>> -		vcpu->arch.pv.pv_unhalted = true;
+>>>> -		/* We need everybody see unhalt before vcpu unblocks */
+>>>> -		smp_wmb();
+>>>> -		kvm_vcpu_kick(vcpu);
+>>>> -	}
+>>>> +	lapic_irq.delivery_mode = APIC_DM_REMRD;
+>>> Need to make sure that delivery_mode cannot be set to APIC_DM_REMRD
+>> >from MSI/IOAPIC/IPI path.
+>>
+>> I Gleb,
+>> I need your help here since I do not know much about apic.
+>>
+>> so are you saying explicitly checking that, kvm_set_msi_irq,
+>> apic_send_ipi, native_setup_ioapic_entry, does not have
+>> APIC_DM_REMRD as delivery_mode set?
+>>
+> Yes, but on a second thought what bad can happen if we will not check it?
+> If guest configures irq to inject APIC_DM_REMRD interrupt this may
+> needlessly wakeup sleeping vcpu and it will try to accrue spinlock
+> again, so no correctness problem only performance. If this is the case
+> lets leave it as it for now.
 
-Yes; I've been trying to decipher the con thing for some time now.
+Okay.
 
-> FWIW, default config is rather annoying - 6 xterms spawned and associated
-> with /dev/tty[1-6].  con0=fd:0,fd:1 con=pts mentioned in the HOWTO would,
-> IMO, make for much saner default.
-
-Leave aside the fact that I could not find the uml-utils upstream [1],
-and didn't have a /uml/port-helper to connect the xterms for a second;
-I didn't even understand what was supposed to happen.  Why do we spawn
-xterms, and attach to the host's /dev/tty*?  So far, I just used
-/dev/console inside my existing tmux session in urxvt, and it seems to
-work fine.
-
-> No comments on systemd behaviour - take that with LP and his crowd.  They
-> may or may not be confused by /dev/tty1 not being a virtual console.
-
->From my brief discussion with Lennart, he's just following what
-Documentation/devices.txt says: /dev/tty* are virtual consoles.  If um
-is making some sort of exception for good reason, I'm sure systemd can
-accommodate it.
-
-> One
-> practical issue is the lack of VT102 emulation;
-
-This detail is not at all clear from the Documentation.  I spent a lot
-of time trying to figure out why systemd wasn't able to getty on
-/dev/tty1.
-
-> TERM=linux when logged
-> in on those is not right - you want either TERM=xterm (for xterms) or
-> TERM=screen (when accessing pts-associated ones with screen /dev/pts/n),
-> etc.  In any case, it's a dumb serial line as far as the guest kernel
-> is concerned - all terminal emulation is going to happen elsewhere (xterms
-> running on host and interpreting escape sequences from guest userland,
-> etc.)
-
-Hm, what does $TERM have to do with all this?
-
-[1]: A fabulously empty git repository here:
-sourceforge.net/p/user-mode-linux/git/ref/master/
