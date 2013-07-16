@@ -1,98 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab3GPMn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 08:43:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36500 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932086Ab3GPMnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 08:43:24 -0400
-Date: Tue, 16 Jul 2013 15:42:27 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <tony@atomide.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2 0/4] usb: musb: fix USB enumeration issue in OMAP3
- platform
-Message-ID: <20130716124227.GC15036@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1373282057-20181-1-git-send-email-kishon@ti.com>
- <51E4DFA6.2010501@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="96YOpH+ONegL0A3E"
-Content-Disposition: inline
-In-Reply-To: <51E4DFA6.2010501@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932627Ab3GPMnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 08:43:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41178 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932086Ab3GPMnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 08:43:49 -0400
+Message-ID: <1373978601.2537.8.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Greg KH <greg@kroah.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Tue, 16 Jul 2013 13:43:21 +0100
+In-Reply-To: <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
+References: <1373916476.2748.69.camel@dabdike>
+	 <20130715214422.GA2478@kroah.com> <1373951852.2148.9.camel@dabdike>
+	 <20130716062058.GB19052@kroah.com> <1373960616.2148.34.camel@dabdike>
+	 <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-LDBffvhz9SXMqkjTgAWW"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---96YOpH+ONegL0A3E
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+
+--=-LDBffvhz9SXMqkjTgAWW
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Tue, Jul 16, 2013 at 11:22:38AM +0530, Kishon Vijay Abraham I wrote:
-> Tony,
+On Tue, 2013-07-16 at 11:46 +0200, Jiri Kosina wrote:
+> On Tue, 16 Jul 2013, James Bottomley wrote:
 >=20
-> On Monday 08 July 2013 04:44 PM, Kishon Vijay Abraham I wrote:
-> > This series fixes the USB enumeration issue caused because of the contr=
-oller
-> > not able to get a reference to the PHY because of incorrect binding in =
-the
-> > board file.
+> > > But I need, from the distros, specific examples of what they object t=
+o.
+> > > So far all I've gotten is one security patch (that was needed), and o=
+ne
+> > > patch for sysfs that I backported too far in the version numbers (my
+> > > fault.)
+> > >=20
+> > > Given the huge number of stable patches over the past few years, only
+> > > having 2 patches be an issue sounds like things are working well for
+> > > people here.
+> > >=20
+> > > If I don't get pushback, with specifics, from the distros, I will not
+> > > know what to change, so if people can provide me that, it will help o=
+ut
+> > > a lot.
 > >=20
-> > In the case of non-dt boot, the platform specific initialization file
-> > (board file) will do usb_bind_phy that binds the usb controller with the
-> > PHY using device names. After the device names are created using=20
-> > PLATFORM_DEVID_AUTO, our original method of binding by device names doe=
-sn't
-> > work reliably (since the device name changes). Hence the usb controller
-> > is made to use labels for getting the PHY.
-> >=20
-> > Here the PHY name is added in the plat data of USB controller device wh=
-ich
-> > should be used by the controller driver to get the PHY.
-> > Two new APIs usb_get_phy_by_name and devm_usb_get_phy_by_name are added=
- to
-> > be used by the controller to get the PHY by name.
+> > I agree ... I think Ji=C5=99=C3=AD and his Red Hat equivalent need to p=
+ipe up and
+> > give us more examples of the problems they've been having.
 >=20
-> You haven't picked this patch series?
+> I am still continuing with my pushback against the /dev/random revamp tha=
+t=20
+> happened in -stable; at least in the form it happened. I still strongly=
+=20
+> believe it's something that's not a stable material. But that's happening=
+=20
+> in parallel in a different thread already.
+>=20
+> Okay, if you want another example:
+>=20
+> 	commit a6aa749906b92eaec6ca0469f90f35de26044d90
+> 	Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> 	Date:   Thu Dec 20 15:05:14 2012 -0800
+>=20
+> 	    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exi=
+sts
+>=20
+> While this is a correct fix for major kernel release, as it achieves=20
+> correctness by checking SMBIOS version properly and behaving according to=
+=20
+> the spec, it actually causes an userspace ABI regression in some sense, a=
+s=20
+> it just changes byte order of /sys/class/dmi/id/product_uuid on certain=
+=20
+> systems.
+[...]
 
-yeah and now it's too much to send during the -rc series. Here's what we
-can do, we can to minimum fix for -rc series (patching the names again)
-and I'll queue everything else for mailine if tony gives me his Ack for
-all arch/arm/*omap* parts.
+It wasn't even a correct fix, as it caused the DMI header to be detected
+in the wrong place on some machines.
 
-Sounds good ?
+Ben.
 
 --=20
-balbi
+Ben Hutchings
+Humans are not rational beings; they are rationalising beings.
 
---96YOpH+ONegL0A3E
+--=-LDBffvhz9SXMqkjTgAWW
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR5T+zAAoJEIaOsuA1yqRENlwQAKZVjHuUEJckzVW+WpFwGk8O
-2WkF6ctrAFUT6wBFcHV/5IJXhGujzV8C8MslouATf4Ro110dXPOArbk/rMs0eaVv
-PwRZ+UrvGZNThoCFIHqa3QtvlcQoDgQMRDVafK+yVC6LAZxvzOcr836uqsVenq7Q
-TGyPS8hK85YThd3qOLj+vQLRiBmF170+H5XMQ8x0KEo95azq7UN5z4ZQmmHlnD5n
-V3ITfnSU8MK8jSJI9DoWvcVY1R0tyVGaJr1TujxqEM1OruW3W4GGg47+i+T5nQwj
-7I34eJcWWcVHvwmMTCDPjKHCgyquWxAccKMdj9+f0aDvzRfPKks9KIKaFEszLwGU
-5gNammm7VFIMifhSNJDa3Sf9SQ6n/A39NGvaX1zGQg8RiRiiiijeP3xoWZ05ruuR
-l8TsmqtIdSA8EN1MyRePcpMbh0/5DOCrYqk924I73lxzqCB5SD6oljvtdqNbIPGo
-VWtHmNVT9hq8Gk/8LavEaC8BaotL0MEugiaTWLhse5mvdIsU44JbIe3LTRFj81OU
-Zce06LKjnupEvblpFQ0taSutG7PLxTfM9ZW+pmEuY5o7dsaw4dDw/qUJTTZ53IeX
-e30JIcrghBiQiTX6El0HNK0P6HWFSr+yNcJ6m+EYTMQQsj1FO/K3D7S2018SMFio
-Fno27qI3H7h52QAxQp4+
-=yyhA
+iQIVAwUAUeU/6ee/yOyVhhEJAQpPAA//SQWKIrv29X3x3vjvRZd8H9cKoG/MSBWq
+ihD3dZT0RJ1gtEl64DGdLi0zsWJnE1GdWIDDfKZ1ng1gD3KAqL9vqRgrKSS+XZIp
+tfZGD6DYS2UW7oXejDlxca80fiTd0e4ex7QcKHvVe5wiJ6t36LPRoKojKxEke5MT
+Ni/WOUOjvbgW/6euTEqCRo0r2WppsIdE8oivAKVQwVUa7E6sAmJ2MCf/Bdgiu5Ud
+utpaXZIKNmodAc66vl/kxDSK+ULlpDAYebKafcDhopgKbzvvIZy7mHsSxzwBvtQF
+A+9h8gHzsmQWEYIRzqz4kIrH0/8DzqsUXS5vOkdMeGxZuKVqezCyrmHtLW9vJ1qy
+o9aju2SABO/Y1hmMzAzr4woAtfaA8badurRUE26Y3KiquQ94D2fSVCBkoOJl62It
+oJAtBAAqbxH9qokAVNhrIRY5L3vz21f3KrEXzLX6r6EO5IWeuCTkH/Ja0VNMbq90
+DrzqxseAe9L00D1NvZhpeAqWCMkamNeL2VmZDc8I2yN8YUGT0L+TEdI5qMZxUddJ
+OAwbK2MLpKR/EXmm/HEyZY3iv6tsHzJfjFZbU3UGMcatOtTfSDPVuT0+aTB5FEFh
+JqCbzw5RqDC/VDi7uQm2aRMr6H9aJ30lfRsvrQSv2bL8I0RW3dbHLMI4r56NniZA
+3P3Fv38S+WA=
+=HzuL
 -----END PGP SIGNATURE-----
 
---96YOpH+ONegL0A3E--
+--=-LDBffvhz9SXMqkjTgAWW--
