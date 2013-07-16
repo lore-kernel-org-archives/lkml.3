@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964778Ab3GPTvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:51:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23651 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab3GPTvi (ORCPT
+	id S964825Ab3GPTyF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:54:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48317 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964782Ab3GPTyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:51:38 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=dJJCC7ldWV8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NgCmMRp8MlwA:10 a=oOO8twQCEjA1KnAh5lkA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374004295.6458.59.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH 3/4] tracing: Kill tracing_open/release_generic_file
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 16 Jul 2013 15:51:35 -0400
-In-Reply-To: <20130716185726.GA21200@redhat.com>
-References: <20130716185726.GA21200@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Tue, 16 Jul 2013 15:54:03 -0400
+Message-ID: <51E5A4CA.20902@canonical.com>
+Date: Tue, 16 Jul 2013 15:53:46 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Pravin Shelar <pshelar@nicira.com>
+CC: davem@davemloft.net, ben.howard@canonical.com, edumazet@google.com,
+        xiyou.wangcong@gmail.com, alexander.h.duyck@intel.com,
+        jiri@resnulli.us, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kys@microsoft.com,
+        haiyangz@microsoft.com
+Subject: Re: [Regression][v3.10][v3.11] net: Kill link between CSUM and SG
+ features.
+References: <51E58C45.1080708@canonical.com> <CALnjE+oCeo=T+F3BvTBtcV7oDMPLJAEz1p1sjRGxmE8Wq8gWAg@mail.gmail.com>
+In-Reply-To: <CALnjE+oCeo=T+F3BvTBtcV7oDMPLJAEz1p1sjRGxmE8Wq8gWAg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 20:57 +0200, Oleg Nesterov wrote:
-> Kill tracing_open_generic_file() and tracing_release_generic_file(),
-> they are racy anyway.
-> 
-> Instead, change event_enable_read() and event_enable_write() to rely
-> on event_mutex and file_inode(filp)->i_private != NULL check.
-> 
-> trace_array_get() goes away. NOTE! this is actually wrong until we
-> change instance_delete() path to nullify ->i_private.
+On 07/16/2013 02:29 PM, Pravin Shelar wrote:
+> On Tue, Jul 16, 2013 at 11:09 AM, Joseph Salisbury
+> <joseph.salisbury@canonical.com> wrote:
+>> Hi Pravin,
+>>
+>> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
+>> it was found that reverting the following commit resolved this bug:
+>>
+>> commit ec5f061564238892005257c83565a0b58ec79295
+>> Author: Pravin B Shelar <pshelar@nicira.com>
+>> Date:   Thu Mar 7 09:28:01 2013 +0000
+>>
+>>     net: Kill link between CSUM and SG features.
+>>
+>>
+>> The regression was introduced as of v3.10-rc1.
+>>
+>> I see that you are the author of this patch, so I wanted to run this by
+>> you.  I was thinking of requesting a revert for v3.11, but I wanted to
+>> get your feedback first.
+>>
+>>
+> This issue was reported before and turning off sg solves problem for
+> HyperV driver. Drivers (intel and bnx2x) that I tested works fine with
+> this patch. Have you seen the issue on any other NIC?
 
-I think this needs to be done first. Want me to take a crack at it, and
-we can interleave our patches if needed.
+Thanks for the feedback.  We have only seen it on Intel hardware.  Can
+you send a pointer to the patch? If so, we can provide some additional
+testing.  Do you plan on submitting the patch for inclusion in 3.11?
 
--- Steve
 
+>
+>
+>> Thanks,
+>>
+>> Joe
+>>
+>> [0] http://pad.lv/1200243
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
