@@ -1,119 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab3GPMG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 08:06:57 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48768 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146Ab3GPMG4 (ORCPT
+	id S932615Ab3GPMHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 08:07:19 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:25488 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146Ab3GPMHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 08:06:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/2mujhxHDuJV0R1Sb4qzaX
-Date: Tue, 16 Jul 2013 05:06:50 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
-Message-ID: <20130716120650.GW7656@atomide.com>
-References: <20130716090310.5541.36777.stgit@localhost>
- <20130716090536.5541.36289.stgit@localhost>
- <20130716093541.GK8880@arwen.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716093541.GK8880@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 16 Jul 2013 08:07:16 -0400
+X-AuditID: cbfee61a-b7f196d000007dfa-81-51e537512d5d
+Date: Tue, 16 Jul 2013 14:06:32 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v5 2/7] cpufreq: Add boost frequency support in core
+Message-id: <20130716140632.70fb2838@amdc308.digital.local>
+In-reply-to: <CAKohpomfWKiRjznXeYsg32xAAWPTBQ4Gd0D_pftbA5=zMDiH4Q@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-3-git-send-email-l.majewski@samsung.com>
+ <CAKohpomfWKiRjznXeYsg32xAAWPTBQ4Gd0D_pftbA5=zMDiH4Q@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+xoG6g+dNAg4+9lhZ/3i5ntXja9IPd
+	Yt5nWYs1+38yWXSefcJs0bvgKpvFm0fcFpd3zWGz+Nx7hNHiduMKNov+hb1MFk8e9rFZbPzq
+	4cDrsXjPSyaPO9f2sHmsm/aW2aNvyypGj0eLWxg9jt/YzuTxeZNcAHsUl01Kak5mWWqRvl0C
+	V0b7vxlMBZPEK1raG5gbGBcIdDFyckgImEjM2HyAGcIWk7hwbz1bFyMXh5DAdEaJFb8aGSGc
+	diaJnWfuAmU4OFgEVCW2NUWANLAJ6El8vvuUCcQWEfCVWLRoMxNIPbPAOWaJxS+XsYIkhAU8
+	JBbtvgNWxCtgLbGxez47iM0pECxxeOUJVogFLUwSnbO+sYAk+AUkJdr//YA6yU7i3KcN7BDN
+	ghI/Jt8Dq2EW0JLYvK2JFcKWl9i85i3zBEbBWUjKZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73i
+	xNzi0rx0veT83E2M4Fh6JrWDcWWDxSFGAQ5GJR5eCZ4ngUKsiWXFlbmHGCU4mJVEeENMnwYK
+	8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYOQ23rhM/NH/
+	bZH3fs5eYfxu/V/XxE1TKtc/02hor9XcE+QuWpi0Ju+Vly0ns0fm9nev5t00kt5u0vPesTc8
+	5ITcsR8CqlKJ/A8ud18WNda0SxCVWPgiUuqxXfOuGyxnXxv9Fv22+VmicpLIZbH2vRMUojyX
+	aPx/ftHe7C9PbKPYpVc3bINrK5VYijMSDbWYi4oTARd7CUShAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [130716 02:42]:
-> Hi,
+On Tue, 16 Jul 2013 15:11:54 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
 > 
-> On Tue, Jul 16, 2013 at 02:05:36AM -0700, Tony Lindgren wrote:
-> > +int pinctrl_check_dynamic(struct device *dev, struct pinctrl_state *st1,
-> > +			  struct pinctrl_state *st2)
+> > +int cpufreq_boost_trigger_state(int state)
 > > +{
-> > +	struct pinctrl_setting *s1, *s2;
+> > +       unsigned long flags;
+> > +       int ret = 0;
 > > +
-> > +	list_for_each_entry(s1, &st1->settings, node) {
-> > +		struct pinctrl_dev *pctldev1;
-> > +		const struct pinctrl_ops *pctlops1;
-> > +		const unsigned *pins1;
-> > +		unsigned num_pins1;
-> > +		int res;
+> > +       if (boost_enabled != state) {
+> > +               write_lock_irqsave(&cpufreq_driver_lock, flags);
+> > +               boost_enabled = state;
 > > +
-> > +		if (s1->type != PIN_MAP_TYPE_MUX_GROUP)
-> > +			continue;
+> > +               ret = cpufreq_driver->enable_boost(state);
+> > +               if (ret)
+> > +                       boost_enabled = 0;
 > > +
-> > +		pctldev1 = s1->pctldev;
-> > +		pctlops1 = pctldev1->desc->pctlops;
-> > +		res = pctlops1->get_group_pins(pctldev1, s1->data.mux.group,
-> > +					       &pins1, &num_pins1);
-> > +		if (res) {
-> > +			dev_dbg(dev, "could not get state1 group pins\n");
-> > +			return -EINVAL;
-> > +		}
-> > +
-> > +		list_for_each_entry(s2, &st2->settings, node) {
-> > +			struct pinctrl_dev *pctldev2;
-> > +			const struct pinctrl_ops *pctlops2;
-> > +			const unsigned *pins2;
-> > +			unsigned num_pins2;
-> > +			int i, j, found = 0;
-> > +
-> > +			if (s2->type != PIN_MAP_TYPE_MUX_GROUP)
-> > +				continue;
-> > +
-> > +			pctldev2 = s2->pctldev;
-> > +			if (pctldev1 != pctldev2) {
-> > +				dev_dbg(dev, "pctldev must be the same for states\n");
-> > +				return -EINVAL;
-> > +			}
-> > +			pctlops2 = pctldev2->desc->pctlops;
-> > +			res = pctlops2->get_group_pins(pctldev2,
-> > +						       s2->data.mux.group,
-> > +						       &pins2, &num_pins2);
-> > +			if (res) {
-> > +				dev_dbg(dev, "could not get state2 group pins\n");
-> > +				return -EINVAL;
-> > +			}
-> > +
-> > +			for (i = 0; i < num_pins1; i++) {
-> > +				int pin1 = pins1[i];
-> > +
-> > +				for (j = 0; j < num_pins2; j++) {
-> > +					int pin2 = pins2[j];
-> > +
-> > +					if (pin1 == pin2) {
-> > +						found++;
-> > +						break;
-> > +					}
-> > +				}
-> > +			}
+> > +               write_unlock_irqrestore(&cpufreq_driver_lock,
+> > flags); +
+> > +               if (ret)
+> > +                       pr_err("%s: BOOST cannot enable (%d)\n",
 > 
-> 4 levels of nested loops ? Isn't this way too much ? OTOH, it points to
-> the fact that, perhaps, a list isn't the best data structure for
-> pinctrl ??
+> Who said we are enabling it?
 
-This check is only done during init to avoid constantly diffing the
-pins during runtime like we currently do. And it's only done for the
-pins that need to change during runtime for wake-up events etc. So
-that's typically few to ten pins per device that need to be checked.
+You are right here - also disablement could fail. I will fix it.
 
-I agree there are things to improve for the data structures,
-but that's a different patch set.
- 
-> Or perhaps you could just assume that if num_pins1 == num_pins2 it's
-> enough ? But that will, likely, leave some uncovered corners...
+> 
+> > +                              __func__, ret);
+> > +       }
+> > +
+> > +       return ret;
+> > +}
+> > +
+> > +int cpufreq_boost_supported(void)
+> > +{
+> > +       if (cpufreq_driver)
+> > +               return cpufreq_driver->boost_supported;
+> > +
+> > +       return 0;
+> > +}
+> > +EXPORT_SYMBOL_GPL(cpufreq_boost_supported);
+> > +
+> > +int cpufreq_boost_enabled(void)
+> > +{
+> > +       return boost_enabled;
+> > +}
+> > +EXPORT_SYMBOL_GPL(cpufreq_boost_enabled);
+> > +
+> > +void cpufreq_set_boost_enabled(int state)
+	  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
 
-Yes I considered that, but checking for the number of pins is not
-enough. It's best to check them properly during init.
+> 
+> Maybe cpufreq_block_boost? As suggested by Rafael.
 
-Regards,
+What do you mean by cpufreq_block_boost()? This name would reverse the
+logic.
 
-Tony
+Function [*] is used to change boost_enabled static flag (defined at
+cpufreq.c file) state according to acpi-cpufreq.c boost support status.
+
+
+> 
+> > +{
+> > +       boost_enabled = state;
+> > +}
+> > +EXPORT_SYMBOL_GPL(cpufreq_set_boost_enabled);
+> > +
+> > +/*********************************************************************
+> >   *               REGISTER / UNREGISTER CPUFREQ
+> > DRIVER                *
+> > *********************************************************************/
+> >
+> > @@ -2001,6 +2094,22 @@ int cpufreq_register_driver(struct
+> > cpufreq_driver *driver_data) cpufreq_driver = driver_data;
+> >         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> >
+> > +       if (cpufreq_driver->boost_supported) {
+> > +               /*
+> > +                * Check if boost driver provides function to
+> > enable boost -
+> > +                * if not, use cpufreq_boost_enable_sw as default
+> > +                */
+> > +               if (!cpufreq_driver->enable_boost)
+> > +                       cpufreq_driver->enable_boost =
+> > &cpufreq_boost_enable_sw;
+> 
+> & is redundant.
+
+Yes, correct. I will change that.
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
