@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab3GPGsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 02:48:01 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:55089 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab3GPGsA convert rfc822-to-8bit (ORCPT
+	id S1752198Ab3GPGun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 02:50:43 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:52449 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751695Ab3GPGum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 02:48:00 -0400
-Date: Tue, 16 Jul 2013 08:47:47 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH v2] ASoC: kirkwood-i2s: fix a compilation warning
-Message-ID: <20130716084747.04625f29@armhf>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Jul 2013 02:50:42 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuokADbs5FF5LK4r/2dsb2JhbABagwY0riQCjlKFMAQBgQ8XdIIjAQEFOhwjEAgDGAklDwUlAyETh34DDg2tNReIVBaMfYE0gR0Hg3gDl1uRToMkKg
+Date: Tue, 16 Jul 2013 16:50:11 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ben Myers <bpm@sgi.com>, xfs@oss.sgi.com
+Subject: Re: splice vs execve lockdep trace.
+Message-ID: <20130716065010.GG11674@dastard>
+References: <20130716015305.GB30569@redhat.com>
+ <CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com>
+ <20130716023847.GA31481@redhat.com>
+ <CA+55aFxiGXht8+Dox=C2ezYYf1yMaLAzMYr40j=+peP8j5Ha6w@mail.gmail.com>
+ <20130716060351.GE11674@dastard>
+ <20130716061601.GM4165@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716061601.GM4165@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the function kirkwood_set_rate, when the rate cannot be satisfied
-by the internal nor by an external clock, the clock source in undefined:
+On Tue, Jul 16, 2013 at 07:16:02AM +0100, Al Viro wrote:
+> On Tue, Jul 16, 2013 at 04:03:51PM +1000, Dave Chinner wrote:
+> 
+> > I posted patches to fix this i_mutex/i_iolock inversion a couple of
+> > years ago (july 2011):
+> > 
+> > https://lkml.org/lkml/2011/7/18/4
+> > 
+> > And V2 was posted here and reviewed (aug 2011):
+> > 
+> > http://xfs.9218.n7.nabble.com/PATCH-0-2-splice-i-mutex-vs-splice-write-deadlock-V2-tt4072.html#none
+> 
+> Unless I'm misreading the patch, you end up doing file_remove_suid()
+> without holding i_mutex at all...
 
- warning: ‘clks_ctrl’ may be used uninitialized in this function
++       xfs_rw_ilock(ip, XFS_IOLOCK_EXCL);
++       ret = file_remove_suid(out);
 
-The ALSA subsystem should never gives such a rate because:
-- the rates with the internal clock are limited to 44.1, 48 and 96 kHz
-  as specified by the kirkwood_i2s_dai structure,
-- the other rates are proposed in the structure kirkwood_i2s_dai_extclk
-  only when the external clock is present.
+Actaully, xfs_rw_ilock() takes the i_mutex due to teh exclusive locking ebing
+done, so that's all fine.
 
-In case of programming error (bad rate for internal clock and no
-external clock), the function will simply cause a backtrace.
+Cheers,
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
-v2
-	- add more explanations
----
- sound/soc/kirkwood/kirkwood-i2s.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
-index 4c9dad3..c9daf3b 100644
---- a/sound/soc/kirkwood/kirkwood-i2s.c
-+++ b/sound/soc/kirkwood/kirkwood-i2s.c
-@@ -105,14 +105,16 @@ static void kirkwood_set_rate(struct snd_soc_dai *dai,
- 	uint32_t clks_ctrl;
- 
- 	if (rate == 44100 || rate == 48000 || rate == 96000) {
--		/* use internal dco for supported rates */
-+		/* use internal dco for the supported rates
-+		 * defined in kirkwood_i2s_dai */
- 		dev_dbg(dai->dev, "%s: dco set rate = %lu\n",
- 			__func__, rate);
- 		kirkwood_set_dco(priv->io, rate);
- 
- 		clks_ctrl = KIRKWOOD_MCLK_SOURCE_DCO;
--	} else if (!IS_ERR(priv->extclk)) {
--		/* use optional external clk for other rates */
-+	} else {
-+		/* use the external clock for the other rates
-+		 * defined in kirkwood_i2s_dai_extclk */
- 		dev_dbg(dai->dev, "%s: extclk set rate = %lu -> %lu\n",
- 			__func__, rate, 256 * rate);
- 		clk_set_rate(priv->extclk, 256 * rate);
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
