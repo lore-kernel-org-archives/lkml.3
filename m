@@ -1,182 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758687Ab3GPDec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 23:34:32 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51767 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316Ab3GPDea (ORCPT
+	id S1758703Ab3GPDeq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 23:34:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2124 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758416Ab3GPDeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 23:34:30 -0400
-Message-ID: <51E4C011.4060803@linux.vnet.ibm.com>
-Date: Tue, 16 Jul 2013 09:07:53 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com> <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com>
-In-Reply-To: <20130715103648.GN11772@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 15 Jul 2013 23:34:44 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=yDfxGvREtdsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5Bi_wUEe0twA:10 a=Fle5PrRz4v9UuKZFbVoA:9 a=QEXdDO2ut3YA:10 a=cYxM7-Sxo31LLYcZ:21 a=piaoTXjHg1i39VXY:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373945681.17876.262.camel@gandalf.local.home>
+Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Date: Mon, 15 Jul 2013 23:34:41 -0400
+In-Reply-To: <20130716131446.373ec08b@notabene.brown>
+References: <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	 <20130715180403.GD15531@xanatos>
+	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	 <20130715184642.GE15531@xanatos>
+	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
+	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	 <1373926109.17876.221.camel@gandalf.local.home>
+	 <20130715223615.GI15531@xanatos> <20130715231555.GA24650@roeck-us.net>
+	 <1373933850.17876.224.camel@gandalf.local.home>
+	 <20130716131446.373ec08b@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071603-2000-0000-0000-00000CE6F262
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 04:06 PM, Gleb Natapov wrote:
-> On Mon, Jul 15, 2013 at 03:20:06PM +0530, Raghavendra K T wrote:
->> On 07/14/2013 06:42 PM, Gleb Natapov wrote:
->>> On Mon, Jun 24, 2013 at 06:13:42PM +0530, Raghavendra K T wrote:
->>>> kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
->>>>
->>>> From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
->>>>
->> trimming
->> [...]
->>>> +
->>>> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
->>>> +{
->>>> +	struct kvm_lock_waiting *w;
->>>> +	int cpu;
->>>> +	u64 start;
->>>> +	unsigned long flags;
->>>> +
->>>> +	w = &__get_cpu_var(lock_waiting);
->>>> +	cpu = smp_processor_id();
->>>> +	start = spin_time_start();
->>>> +
->>>> +	/*
->>>> +	 * Make sure an interrupt handler can't upset things in a
->>>> +	 * partially setup state.
->>>> +	 */
->>>> +	local_irq_save(flags);
->>>> +
->>>> +	/*
->>>> +	 * The ordering protocol on this is that the "lock" pointer
->>>> +	 * may only be set non-NULL if the "want" ticket is correct.
->>>> +	 * If we're updating "want", we must first clear "lock".
->>>> +	 */
->>>> +	w->lock = NULL;
->>>> +	smp_wmb();
->>>> +	w->want = want;
->>>> +	smp_wmb();
->>>> +	w->lock = lock;
->>>> +
->>>> +	add_stats(TAKEN_SLOW, 1);
->>>> +
->>>> +	/*
->>>> +	 * This uses set_bit, which is atomic but we should not rely on its
->>>> +	 * reordering gurantees. So barrier is needed after this call.
->>>> +	 */
->>>> +	cpumask_set_cpu(cpu, &waiting_cpus);
->>>> +
->>>> +	barrier();
->>>> +
->>>> +	/*
->>>> +	 * Mark entry to slowpath before doing the pickup test to make
->>>> +	 * sure we don't deadlock with an unlocker.
->>>> +	 */
->>>> +	__ticket_enter_slowpath(lock);
->>>> +
->>>> +	/*
->>>> +	 * check again make sure it didn't become free while
->>>> +	 * we weren't looking.
->>>> +	 */
->>>> +	if (ACCESS_ONCE(lock->tickets.head) == want) {
->>>> +		add_stats(TAKEN_SLOW_PICKUP, 1);
->>>> +		goto out;
->>>> +	}
->>>> +
->>>> +	/* Allow interrupts while blocked */
->>>> +	local_irq_restore(flags);
->>>> +
->>> So what happens if an interrupt comes here and an interrupt handler
->>> takes another spinlock that goes into the slow path? As far as I see
->>> lock_waiting will become overwritten and cpu will be cleared from
->>> waiting_cpus bitmap by nested kvm_lock_spinning(), so when halt is
->>> called here after returning from the interrupt handler nobody is going
->>> to wake this lock holder. Next random interrupt will "fix" it, but it
->>> may be several milliseconds away, or never. We should probably check
->>> if interrupt were enabled and call native_safe_halt() here.
->>>
->>
->> Okay you mean something like below should be done.
->> if irq_enabled()
->>    native_safe_halt()
->> else
->>    halt()
->>
->> It is been a complex stuff for analysis for me.
->>
->> So in our discussion stack would looking like this.
->>
->> spinlock()
->>    kvm_lock_spinning()
->>                    <------ interrupt here
->>            halt()
->>
->>
->>  From the halt if we trace
->>
-> It is to early to trace the halt since it was not executed yet. Guest
-> stack trace will look something like this:
->
-> spinlock(a)
->    kvm_lock_spinning(a)
->     lock_waiting = a
->     set bit in waiting_cpus
->                  <------ interrupt here
->                  spinlock(b)
->                    kvm_lock_spinning(b)
->                      lock_waiting = b
->                      set bit in waiting_cpus
->                      halt()
->                      unset bit in waiting_cpus
->                      lock_waiting = NULL
->       ----------> ret from interrupt
->     halt()
->
-> Now at the time of the last halt above lock_waiting == NULL and
-> waiting_cpus is empty and not interrupt it pending, so who will unhalt
-> the waiter?
->
+On Tue, 2013-07-16 at 13:14 +1000, NeilBrown wrote:
 
-Yes. if an interrupt occurs between
-local_irq_restore() and halt(), this is possible. and since this is 
-rarest of rare (possiility of irq entering slowpath and then no random 
-irq to do spurious wakeup), we had never hit this problem in the past.
+> Surely there is an enormous difference between being required to defend your
+> position against rational and forceful argument, and being required to defend
+> it against irrelevant name calling.
 
-So I am,
-1. trying to artificially reproduce this.
+Sure, but I don't think there's really much name calling in the kernel
+community.
 
-2. I replaced the halt with below code,
-        if (arch_irqs_disabled())
-                 halt();
+I just scanned a large number of LKML emails, and they all seemed rather
+technical, and no personal attacks at all. And that included several
+emails from Linus as well. Probably the strongest email came from Thomas
+Gleixner, but even that didn't contain any personal name calling. Mostly
+he called stuff "crap" but that was about the code and claims that the
+code did, but not about the person.
 
-and ran benchmarks.
-But this results in degradation because, it means we again go back and 
-spin in irq enabled case.
+There are a few times that Linus gets a bit colorful with his
+criticisms, but that's really the minority of the email and not the
+overall tone. I think Linus picks his battles. Sometimes he goes
+overboard, but he's human. But I still think he's running this ship
+well.
 
-3. Now I am analyzing the performance overhead of safe_halt in irq 
-enabled case.
-       if (arch_irqs_disabled())
-                halt();
-       else
-                safe_halt();
+-- Steve
+	
 
