@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158Ab3GPPtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:49:20 -0400
-Received: from 9.mo1.mail-out.ovh.net ([178.32.108.172]:47994 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932590Ab3GPPtS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:49:18 -0400
-X-Greylist: delayed 2751 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Jul 2013 11:49:18 EDT
-Message-ID: <51E56B77.2050105@overkiz.com>
-Date: Tue, 16 Jul 2013 17:49:11 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S933206Ab3GPPtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:49:41 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:27213 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932590Ab3GPPtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 11:49:39 -0400
+X-IronPort-AV: E=Sophos;i="4.89,677,1367971200"; 
+   d="scan'208";a="37277714"
+Date: Tue, 16 Jul 2013 16:49:27 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Chris Ball <cjb@laptop.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        <ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [ATTEND] How to act on LKML
+In-Reply-To: <51E4BFA9.1030600@zytor.com>
+Message-ID: <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+References: <20130715174659.GC15531@xanatos>  <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>  <20130715180403.GD15531@xanatos>  <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>  <20130715184642.GE15531@xanatos> 
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>  <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>  <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>  <1373926109.17876.221.camel@gandalf.local.home> 
+ <20130715223615.GI15531@xanatos> <1373932170.28142.24.camel@envy.home>  <864nbv9qcm.fsf@void.printf.net> <1373944014.17876.255.camel@gandalf.local.home> <51E4BFA9.1030600@zytor.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH v3 2/7] mmc: atmel-mci: prepare clk before calling enable
-References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com> <1373987208-24120-1-git-send-email-b.brezillon@overkiz.com> <20130716171324.7d483ada@skate>
-In-Reply-To: <20130716171324.7d483ada@skate>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 7736621211411904618
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
+On Mon, 15 Jul 2013, H. Peter Anvin wrote:
+> On 07/15/2013 08:06 PM, Steven Rostedt wrote:
+> > 
+> > Linus's point is that he wants to be honest, and cursing is his way of
+> > giving you the most direct way to understand how he honestly feels.
+> > 
+> 
+> What I don't get about anything of this is that I have always found
+> Linus' being hyper-obviously over the top sarcastic when he goes on a
+> rant.  There is usually plenty of context to derive that from, too, even
+> if you haven't seen him in person enough to virtually hear the smirk in
+> his voice.  This is a form of humor more than anything else, and at
+> least I find it utterly impossible to be offended by it.  As the main
+> target of the rant this weekend, I (a) chuckled, and (b) said "I think I
+> need to do some damage control".
 
-On 16/07/2013 17:13, Thomas Petazzoni wrote:
-> Dear Boris BREZILLON,
->
-> On Tue, 16 Jul 2013 17:06:48 +0200, Boris BREZILLON wrote:
->
->>   	buf = kmalloc(ATMCI_REGS_SIZE, GFP_KERNEL);
->>   	if (!buf)
->> @@ -389,9 +391,13 @@ static int atmci_regs_show(struct seq_file *s, void *v)
->>   	 * consistent.
->>   	 */
->>   	spin_lock_bh(&host->lock);
->> -	clk_enable(host->mck);
->> +	ret = clk_prepare_enable(host->mck);
-> I am not very familiar with the spin_lock_bh() variant, but are you
-> sure we are allowed to sleep within a spin_lock_bh()-protected critical
-> section?
->
-> Remember that clk_prepare_enable() calls both ->prepare() and
-> ->enable() for the clock, and ->prepare() is allowed to sleep, while
-> ->enable() is guaranteed not to sleep.
->
-> Therefore, clk_prepare() is usually called at probe time, while
-> clk_enable() is called whenever enabling/disabling the clock is really
-> needed. So not all clk_enable() can transparently be converted into a
-> clk_prepare_enable().
-You're absolutely right. We should not call clk_prepare/unprepare inside 
-a critical section,
-as the prepare/unprepare callback may sleep.
+I agree with Sarah.
 
-In this particular case it won't hurt as the mci clk is a peripheral clk 
-which does not
-implement the prepare callback (and as a result won't sleep).
+I have been hacking in several different Open Source communities during
+the last few years, including qemu-devel, xen-devel, linux-arm and the
+lkml of course.
 
-Anyway, I will fix it.
+The etiquette on the lkml is by far the roughest of them all. It's the
+"bad neighborhood with guns" of the Open Source world. You never know
+when you are going to get a bullet, but sooner or later you'll get one.
 
-What is the best approach to do so ?
-1) call clk_prepare/unprepare in the probe/remove functions and call 
-clk_enable/disable
-     in resume/suspend functions
-2) get clk_prepare_enable/disable_unprepare outside of the critical 
-sections (I don't think
-     there is any need for the mci host lock to be held when enabling 
-the clk,
-     clk framework already handle concurrent accesses to clks)
-
-I will check other patches of this series to see if they introduce 
-similar issues.
-
-> Best regards,
->
-> Thomas
-
+I think that it's hurting Linux and in particular it's hurting
+attracting new talents.  Not just devs for hire but people passionate
+about what they do and eager to become more involved in the project.
+I met more than one good ex-Linux hacker that decided to move to do
+other things because of this.
