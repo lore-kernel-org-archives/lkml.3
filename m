@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3GPJDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:03:44 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33567 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351Ab3GPJDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:03:42 -0400
-Date: Tue, 16 Jul 2013 12:03:14 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Hein Tibosch <hein_tibosch@yahoo.es>
-CC: Tony Lindgren <tony@atomide.com>, linux-i2c <linux-i2c@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-omap: always send stop after nack
-Message-ID: <20130716090300.GG8880@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <51E50217.1000507@yahoo.es>
+	id S1753987Ab3GPJFb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:05:31 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:41312 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753677Ab3GPJF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 05:05:29 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Z7YAu7j8DaSOiUU3P5mT7
+Subject: [PATCH 0/4] improved support for runtime muxing for pinctrl
+To: linus.walleij@linaro.org
+From: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Tue, 16 Jul 2013 02:05:24 -0700
+Message-ID: <20130716090310.5541.36777.stgit@localhost>
+User-Agent: StGit/0.16-1-ga54b
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6lXr1rPCNTf1w0X8"
-Content-Disposition: inline
-In-Reply-To: <51E50217.1000507@yahoo.es>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6lXr1rPCNTf1w0X8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-Hi,
+As discussed earlier, the pinctrl support for changing some of the
+consumer device pins during runtime needs some improvment.
 
-On Tue, Jul 16, 2013 at 04:19:35PM +0800, Hein Tibosch wrote:
-> Hi Vikram,
->=20
-> On a OMAP4460, i2c-bus-3:
->=20
-> A driver (lm75) is causing many 'timeout waiting for bus ready' errors.
-> SDA remains high (as it should), but SCL remains low after a NACK.
-> The bus becomes _unusable for other clients_.
->=20
-> While probing, "lm75" writes a command, followed by a read + stop,
-> but the write command is NACK'd. The chip does accept other writes/reads,
-> it just refuses to ack invalid commands.
->=20
-> Can you tell me if the patch below would make any sense? Or is it the
-> responsibility of the client to reset the i2c_smbus?
+Here are the patches to do that, I'll also post a minimal sample
+patch as a reply to this thread on how to do the muxing for
+runtime PM.
 
-patch below breaks repeated start.
+Regards,
 
---=20
-balbi
+Tony
 
---6lXr1rPCNTf1w0X8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Tony Lindgren (4):
+      pinctrl: Remove duplicate code in pinctrl_pm_select_state functions
+      pinctrl: Allow pinctrl to have multiple active states
+      pinctrl: Add support for additional dynamic states
+      drivers: Add pinctrl handling for dynamic pin states
 
-iQIcBAEBAgAGBQJR5QxSAAoJEIaOsuA1yqRE7ZcQAItkOCWEcaGdt0vJC2yc8Cme
-MlA9nxsWr7CWxNXNtStZ5YKXrrnn6VSgatEV0dfWFEp6c6R6zdHwxsQk+SdjRRcR
-K3H52N9X+zHpRUyjgKoO0NxLvaMClFqnxO/QqrNFrhwabAsHcBNAOqdU8Nf6wVOi
-YJKr4A6dhDA4UBncgfw4nw9+o983/zmnmet7MwqOyQkgQ0yITYsJHrOUGjduug5y
-3tXt4L+eBaYtK5M6Dx0hZTbfXYKth71Qng47oVGIp0Y9OuEMr4UEyjoCh1qPkCQk
-mvzD2p84sdx+JWyiNyXKoSC4hqT62WyAU4Mo/uDFvFdc7jquhcabFUX5GyUHyrb1
-vsqLY/LXmWiFoewiwooqMqsareqSvkfcnNIjFHlt5kl3tr35yYj/V27bZixNfZmh
-j3m0o5Eo9BpMkDQ65nl6Lt7XUrWOI+mcGDIJG9KrMJyh32BhHkQkIc+hQxXMCh9M
-CpzDfUCqK0s5CxpaS3GBcGV9gmEv7QLrfwMALFNPd7mVBbIp6gMeU+OYLK9CQJuJ
-zQuV/vQPTVdohzfGSaRjVqTrSu/Vqi7da3V1mK721gXZ+rVClHQknZHYrAB3Tn9u
-hZUnxz6e/3AriL0V6zSrbU1aGtXdEpS/xuKCUWwtVtEaA9GhcbzPnC8aGAbXULAS
-frfa2qBSk51FfLKzU4hC
-=lPyd
------END PGP SIGNATURE-----
 
---6lXr1rPCNTf1w0X8--
+ drivers/base/pinctrl.c                |   39 +++++
+ drivers/pinctrl/core.c                |  250 ++++++++++++++++++++++++++++-----
+ drivers/pinctrl/core.h                |   10 +
+ include/linux/pinctrl/consumer.h      |   46 ++++++
+ include/linux/pinctrl/devinfo.h       |    4 +
+ include/linux/pinctrl/pinctrl-state.h |   15 ++
+ 6 files changed, 321 insertions(+), 43 deletions(-)
+
+-- 
+Signature
