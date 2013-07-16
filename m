@@ -1,49 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933820Ab3GPTKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:10:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58985 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933253Ab3GPTKn (ORCPT
+	id S933802Ab3GPTNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:13:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39187 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933253Ab3GPTNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:10:43 -0400
-Date: Tue, 16 Jul 2013 21:10:30 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: configurable partial slab support on UP
-Message-ID: <20130716191030.GA31335@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 16 Jul 2013 15:13:54 -0400
+Date: Tue, 16 Jul 2013 12:13:53 -0700 (PDT)
+Message-Id: <20130716.121353.1693344221464809139.davem@davemloft.net>
+To: dbaluta@ixiacom.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ndisc: bool initializations should use true and false
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1373704011-2146-1-git-send-email-dbaluta@ixiacom.com>
+References: <1373704011-2146-1-git-send-email-dbaluta@ixiacom.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 16 Jul 2013 12:13:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Daniel Baluta <dbaluta@ixiacom.com>
+Date: Sat, 13 Jul 2013 11:26:51 +0300
 
-(sorry for breaking the mail threading, but I failed to find the right
-mail to reply to.)
+> Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
 
-while doing make oldconfig on an !SMP config using 3.11-rc1 I was asked
-if I want CONFIG_SLUB_CPU_PARTIAL. AFAICT this setting only affects SMP
-machines? If so I suggest to make the choice depend on SMP and treat the
-!SMP case as CONFIG_SLUB_CPU_PARTIAL=n.
-
-This was introduced in commit
-	345c905 (slub: Make cpu partial slab support configurable)
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Applied, thanks.
