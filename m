@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab3GPBKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 21:10:34 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:48804 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755419Ab3GPBKd (ORCPT
+	id S1758586Ab3GPBK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 21:10:57 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48037 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755449Ab3GPBKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 21:10:33 -0400
-Date: Tue, 16 Jul 2013 03:10:29 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: nohz: Warn if the machine can not perform nohz_full
-Message-ID: <20130716011028.GE13562@somewhere>
-References: <20130715170859.GA25570@redhat.com>
- <20130715171800.GD6442@somewhere>
- <20130715172423.GA27745@redhat.com>
- <20130715173848.GA1066@redhat.com>
- <1373914182.17876.165.camel@gandalf.local.home>
- <20130715185624.GB1706@redhat.com>
- <1373916620.17876.182.camel@gandalf.local.home>
+	Mon, 15 Jul 2013 21:10:55 -0400
+X-AuditID: 9c930197-b7bfbae000000e88-3e-51e49d9c410a
+Date: Tue, 16 Jul 2013 10:10:55 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] mm, hugetlb: clean-up and possible bug fix
+Message-ID: <20130716011054.GC2430@lge.com>
+References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <871u6zkj7b.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373916620.17876.182.camel@gandalf.local.home>
+In-Reply-To: <871u6zkj7b.fsf@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 03:30:20PM -0400, Steven Rostedt wrote:
-> On Mon, 2013-07-15 at 14:56 -0400, Dave Jones wrote:
-> > On Mon, Jul 15, 2013 at 02:49:42PM -0400, Steven Rostedt wrote:
-> >  
-> > Is a printk not enough for that purpose ? Tainting the kernel is kinda anti-social.
-> > 
+On Mon, Jul 15, 2013 at 07:40:16PM +0530, Aneesh Kumar K.V wrote:
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 > 
-> printk's don't usually get peoples attention. Taints and warnings do. If
-> the hardware doesn't allow for nohz-full, and the only way to enable it
-> is via kernel command line, how do you scream to the user that it isn't
-> going to work.
+> > First 5 patches are almost trivial clean-up patches.
+> >
+> > The others are for fixing three bugs.
+> > Perhaps, these problems are minor, because this codes are used
+> > for a long time, and there is no bug reporting for these problems.
+> >
+> > These patches are based on v3.10.0 and
+> > passed sanity check of libhugetlbfs.
 > 
-> We could do a large banner saying:
-> 
-> ***************************************************************
-> ***************************************************************
-> ***************************************************************
-> ***************************************************************
-> ***                    UNSTABLE TSC                         ***
-> ***                NO_HZ_FULL disabled                      ***
-> ***************************************************************
-> ***************************************************************
-> ***************************************************************
-> ***************************************************************
+> does that mean you had run with libhugetlbfs test suite ?
 
-May be we can try that. In fact I have a pending patch that converts the
-stacktrace warning to a one line printk message, as Ingo reported that issue
-to me. But the risk is that it can be indeed lost in the flow.
+Yes! I can't find any reggression on libhugetlbfs test suite.
 
+>  
+> -aneesh
 > 
-> 
-> And not do the warning. Maybe that will get peoples attentions?
-> 
-> But then again, this could be lost in the boot up if the box prints a
-> lot of data.
-
-Well the above example is unlikely to be missed. If it is, then I believe a
-traditional warning would be lost as well.
-
-> 
-> -- Steve
-> 
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
