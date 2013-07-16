@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933746Ab3GPUHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:07:36 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:64595 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933133Ab3GPUHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:07:34 -0400
-Date: Tue, 16 Jul 2013 13:07:29 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Christian Hesse <list@eworm.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] iproute2 3.10
-Message-ID: <20130716130729.6c55c063@nehalam.linuxnetplumber.net>
-In-Reply-To: <20130716215655.5397c60b@leda>
-References: <20130716101748.166a8ad7@nehalam.linuxnetplumber.net>
-	<20130716215655.5397c60b@leda>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S933717Ab3GPULE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:11:04 -0400
+Received: from 1wt.eu ([62.212.114.60]:34756 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933133Ab3GPULB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 16:11:01 -0400
+Date: Tue, 16 Jul 2013 22:10:41 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linux-foundation.org" 
+	<ksummit-2013-discuss@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+Message-ID: <20130716201041.GC20721@1wt.eu>
+References: <20130712005023.GB31005@thunk.org> <20130712051451.GC25815@1wt.eu> <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz> <s5hwqoqv4oo.wl%tiwai@suse.de> <20130716165933.GU22506@sirena.org.uk> <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com> <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com> <1374000084.6458.36.camel@gandalf.local.home> <20130716191147.GA1680@kroah.com> <1374003789.6458.55.camel@gandalf.local.home>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/X7+BBEFhkPH2_QCTmbpFuO3"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374003789.6458.55.camel@gandalf.local.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/X7+BBEFhkPH2_QCTmbpFuO3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jul 16, 2013 at 03:43:09PM -0400, Steven Rostedt wrote:
+> On Tue, 2013-07-16 at 12:11 -0700, Greg Kroah-Hartman wrote:
+> 
+> > People mark stable patches that way already today with a:
+> > 	Cc: stable <stable@vger.kernel.org> # delay for 3.12-rc4
+> > or some such wording.  I take those and don't apply them until the noted
+> > release happens, so you can do this if needed.
+> 
+> I guess the thing is, are stable patches prone to regressions. Do we
+> just do that for patches that we think are too complex and may cause
+> some harm. Of course, there's the question about having a clue about
+> what patches might cause harm or not.
 
-On Tue, 16 Jul 2013 21:56:55 +0200
-Christian Hesse <list@eworm.de> wrote:
+We'd probably better switch the tag to be "# now" to imply that we don't
+want to delay them, and that by default those merged prior to rc4 are all
+postponed. I suspect that the switching could be mostly automated this way,
+avoiding to add burden to Greg :
 
-> Stephen Hemminger <stephen@networkplumber.org> on Tue, 2013/07/16 10:17:
-> > This is update for iproute2 tools for 3.10 kernel.
-> > [...]
-> >
-> > Iproute2 package is available at:
-> >   http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.10.0.tar.gz
-> >=20
-> > You can download the source from:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
->=20
-> Is there any reason the last two releases have not been tagged in git?
+  - if commit ID >= -rc4
+    move to immediate queue, it's a "critical" fix as per Linus' rules
 
-Sorry, tag wasn't pushed.
+  - if Cc: stable line has "now" at the end, move to immediate queue as
+    the maintainer takes this reponsibility ;
 
---Sig_/X7+BBEFhkPH2_QCTmbpFuO3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+  - otherwise move to the next .2 queue.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Willy
 
-iQIcBAEBCAAGBQJR5agBAAoJEICnf2CVzeR+YP8P/jtaVU2vCaMgfYdK7jeulQPo
-NHEaxRdRwmMXdEd1hJTP5sQxiSpRvaSQvwgSAGNpUyIteS0+T5zaqaG7yaVlJhpM
-1dAmqyN4Kj4XoNhXcYoeNej9WEbZtE0VGmSpMt0GjO9FbHaaYx8TfL5+YkTRto0x
-SnjJvAzy582Q9Jd5jSKFWq8i09r2KCbkDa+vhN7qMD/3dDJdFOYUOL0rAUlgGcAW
-1pGuFiskifnMTtKh0o7tdSxCLVCBywkdqpwZc1vtpBTjVQj+h6OCzqAgHEBWNz5g
-lYy4+4w/FQGyp+mttff97Oy87ApvW7PV8/1yd0zjxRhUQCjewkmhfRZ8ujJeJRj/
-9Av/MfyXGq9OP80wUGAbAKLxBIxEC8G3c+XZXEPWDdO1r/Jc5aZJa4QsIiLJ6N4N
-OB9eq1XEPxeCHeyL1Rbb3e3KhuFF2dDcDgkQObzGQah0iEbovlXgteSwl1fR6G2Q
-FmCBviYMHIZpsUa8+ZL4JxZlQ9Z3bsBJfjbixo+y8ucHkwaxFM2qDGJhjGaAfTXv
-evwNEHCffIKBCJcsYZhA9GEQCbd8vz7LAJbQu20SnKEHdUPf0ssjqz2q4NIaH/4P
-YND4ZMH+8QRQ+2v7sLxGRSajuIM4lMvMFddQy5WhME5SGPYtvMPWj84on+Q6dASo
-xMg3aBphS2XsftN8EXRt
-=OdSY
------END PGP SIGNATURE-----
-
---Sig_/X7+BBEFhkPH2_QCTmbpFuO3--
