@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703Ab3GPDeq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 23:34:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2124 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758416Ab3GPDeo (ORCPT
+	id S1758693Ab3GPDgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 23:36:14 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59830 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756893Ab3GPDgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 23:34:44 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=yDfxGvREtdsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5Bi_wUEe0twA:10 a=Fle5PrRz4v9UuKZFbVoA:9 a=QEXdDO2ut3YA:10 a=cYxM7-Sxo31LLYcZ:21 a=piaoTXjHg1i39VXY:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373945681.17876.262.camel@gandalf.local.home>
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Date: Mon, 15 Jul 2013 23:34:41 -0400
-In-Reply-To: <20130716131446.373ec08b@notabene.brown>
-References: <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	 <20130715180403.GD15531@xanatos>
-	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	 <20130715184642.GE15531@xanatos>
-	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
-	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	 <1373926109.17876.221.camel@gandalf.local.home>
-	 <20130715223615.GI15531@xanatos> <20130715231555.GA24650@roeck-us.net>
-	 <1373933850.17876.224.camel@gandalf.local.home>
-	 <20130716131446.373ec08b@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Jul 2013 23:36:13 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] mm, hugetlb: move up the code which check availability of free huge page
+In-Reply-To: <20130716011607.GD2430@lge.com>
+References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com> <1373881967-16153-2-git-send-email-iamjoonsoo.kim@lge.com> <87a9lnkjlu.fsf@linux.vnet.ibm.com> <20130716011607.GD2430@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 16 Jul 2013 09:06:04 +0530
+Message-ID: <87a9lni3bv.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071603-5816-0000-0000-000008ED3083
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 13:14 +1000, NeilBrown wrote:
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-> Surely there is an enormous difference between being required to defend your
-> position against rational and forceful argument, and being required to defend
-> it against irrelevant name calling.
+> On Mon, Jul 15, 2013 at 07:31:33PM +0530, Aneesh Kumar K.V wrote:
+>> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+>> 
+>> > We don't need to proceede the processing if we don't have any usable
+>> > free huge page. So move this code up.
+>> 
+>> I guess you can also mention that since we are holding hugetlb_lock
+>> hstate values can't change.
+>
+> Okay. I will mention this for v2.
+>
+>> 
+>> 
+>> Also.
+>> 
+>> >
+>> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> >
+>> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>> > index e2bfbf7..d87f70b 100644
+>> > --- a/mm/hugetlb.c
+>> > +++ b/mm/hugetlb.c
+>> > @@ -539,10 +539,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+>> >  	struct zoneref *z;
+>> >  	unsigned int cpuset_mems_cookie;
+>> >
+>> > -retry_cpuset:
+>> > -	cpuset_mems_cookie = get_mems_allowed();
+>> > -	zonelist = huge_zonelist(vma, address,
+>> > -					htlb_alloc_mask, &mpol, &nodemask);
+>> >  	/*
+>> >  	 * A child process with MAP_PRIVATE mappings created by their parent
+>> >  	 * have no page reserves. This check ensures that reservations are
+>> > @@ -550,11 +546,16 @@ retry_cpuset:
+>> >  	 */
+>> >  	if (!vma_has_reserves(vma) &&
+>> >  			h->free_huge_pages - h->resv_huge_pages == 0)
+>> > -		goto err;
+>> > +		return NULL;
+>> >
+>> 
+>> If you don't do the above change, the patch will be much simpler. 
+>
+> The patch will be, but output code will not.
+> With this change, we can remove one goto label('err:') and
+> this makes code more readable.
+>
 
-Sure, but I don't think there's really much name calling in the kernel
-community.
+If you feel stronly about the cleanup, you can do another path for the
+cleanups. Don't mix things in a single patch. That makes review difficult.
 
-I just scanned a large number of LKML emails, and they all seemed rather
-technical, and no personal attacks at all. And that included several
-emails from Linus as well. Probably the strongest email came from Thomas
-Gleixner, but even that didn't contain any personal name calling. Mostly
-he called stuff "crap" but that was about the code and claims that the
-code did, but not about the person.
-
-There are a few times that Linus gets a bit colorful with his
-criticisms, but that's really the minority of the email and not the
-overall tone. I think Linus picks his battles. Sometimes he goes
-overboard, but he's human. But I still think he's running this ship
-well.
-
--- Steve
-	
+-aneesh
 
