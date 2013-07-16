@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab3GPK6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 06:58:16 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:53241 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab3GPK6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 06:58:15 -0400
-Date: Tue, 16 Jul 2013 12:58:01 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, Sasha Levin <sasha.levin@oracle.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] FMC: fix locking in sample chardev driver
-Message-ID: <20130716105801.GA25488@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+	id S1755170Ab3GPK67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 06:58:59 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58242 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab3GPK65 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 06:58:57 -0400
+X-AuditID: cbfee61b-b7f1f6d000000f14-df-51e5276f0f45
+Date: Tue, 16 Jul 2013 12:58:48 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v5 4/7] cpufreq:exynos:Extend Exynos cpufreq driver to
+ support boost framework
+Message-id: <20130716125848.770ba264@amdc308.digital.local>
+In-reply-to: <CAKohpokiF8ZamE_=XdPrjZQ8VHQ9wvzQy6w+6byO-T7J9c=6mA@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-5-git-send-email-l.majewski@samsung.com>
+ <CAKohpokiF8ZamE_=XdPrjZQ8VHQ9wvzQy6w+6byO-T7J9c=6mA@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xoG6++tNAg73flSz+vF3OavG06Qe7
+	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4LS7vmsNm8bn3CKPF7cYVbBb9C3uZLJ487GOz2PjV
+	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
+	roy1296zFTznqejbu569gbGTq4uRg0NCwERi6VzNLkZOIFNM4sK99WxdjFwcQgLTGSXOzL3B
+	BOG0M0m82HaOFaSKRUBVovlZCxuIzSagJ/H57lMmkEEiAloSL2+mgtQzC3xklrh78DYLSI2w
+	QIrE7c5FTCA2r4C1xP8b7ewgNqdAsMS/7eugFrQALfhwlBEkwS8gKdH+7wczxEl2Euc+bWCH
+	aBaU+DH5HthQZqBlm7c1sULY8hKb17xlnsAoOAtJ2SwkZbOQlC1gZF7FKJpakFxQnJSea6RX
+	nJhbXJqXrpecn7uJERxJz6R3MK5qsDjEKMDBqMTDe5DzSaAQa2JZcWXuIUYJDmYlEd5b/E8D
+	hXhTEiurUovy44tKc1KLDzFKc7AoifMebLUOFBJITyxJzU5NLUgtgskycXBKNTAyO+6/o5p2
+	69yvSs159w7982HxFtx37p9ekscL0wcLZv95ImbcHm+kcXyHmE90dal9PXPJJ47FusonElLy
+	a022BfYu4L+QM1n70q1J18v0q5+dTjiSpZP+W6TeZ8ZsxznuPLev9DzoDrgtXGU1j8dutphC
+	8sE37DfvaDr4pRdphU1rs/R6l6/EUpyRaKjFXFScCAAqidi0oAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fmc-chardev module was over-locking, by calling misc
-register/unregister while holding its spinlock.  This reported a
-"scheduling while atomic" error.
+On Tue, 16 Jul 2013 15:18:57 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > The struct cpufreq_driver has been extended to embrace the
+> > information related to boost support.
+> >
+> > When "boost_mode" device tree attribute is defined for a platform,
+> > the boost_supported flag is set. Moreover boost related attributes
+> > were exported.
+> >
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> 
+> Don't we need to mark any frequencies in the freq table with BOOST?
+> How?
 
-Since the misc driver already serializes operations internally, this
-commit downgrades the fmc-chardev lock to just cover its own list.
+The (trivial) patch is already prepared to enable BOOST at cpufreq for
+Exynos4412. I will post it for v6. Sorry for not posting it earlier.
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
----
- drivers/fmc/fmc-chardev.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+The whole patch is as follow:
 
-diff --git a/drivers/fmc/fmc-chardev.c b/drivers/fmc/fmc-chardev.c
-index cc031db..ace6ef2 100644
---- a/drivers/fmc/fmc-chardev.c
-+++ b/drivers/fmc/fmc-chardev.c
-@@ -143,18 +143,17 @@ static int fc_probe(struct fmc_device *fmc)
- 	fc->misc.fops = &fc_fops;
- 	fc->misc.name = kstrdup(dev_name(&fmc->dev), GFP_KERNEL);
+static struct clk *cpu_clk;
+static struct clk *mout_core;
+static struct clk *sclk_mpll;
+static struct clk *mout_apll;
  
--	spin_lock(&fc_lock);
- 	ret = misc_register(&fc->misc);
- 	if (ret < 0)
--		goto err_unlock;
-+		goto out;
-+	spin_lock(&fc_lock);
- 	list_add(&fc->list, &fc_devices);
- 	spin_unlock(&fc_lock);
- 	dev_info(&fc->fmc->dev, "Created misc device \"%s\"\n",
- 		 fc->misc.name);
- 	return 0;
+static unsigned int exynos4x12_volt_table[] = {
+	1350000, 1287500, 1250000, 1187500, 1137500, 1087500, 1037500,
+ 	1000000,  987500,  975000,  950000,  925000,  900000,  900000
+};
  
--err_unlock:
--	spin_unlock(&fc_lock);
-+out:
- 	kfree(fc->misc.name);
- 	kfree(fc);
- 	return ret;
-@@ -174,10 +173,10 @@ static int fc_remove(struct fmc_device *fmc)
- 
- 	spin_lock(&fc_lock);
- 	list_del(&fc->list);
-+	spin_unlock(&fc_lock);
- 	misc_deregister(&fc->misc);
- 	kfree(fc->misc.name);
- 	kfree(fc);
--	spin_unlock(&fc_lock);
- 
- 	return 0;
- }
+ static struct cpufreq_frequency_table exynos4x12_freq_table[] = {
+-	{L0, CPUFREQ_ENTRY_INVALID},
++	{CPUFREQ_BOOST_FREQ, 1500 * 1000},
+ 	{L1, 1400 * 1000},
+ 	{L2, 1300 * 1000},
+ 	{L3, 1200 * 1000},
+ 	{L4, 1100 * 1000},
+ 	{L5, 1000 * 1000},
+ 	{L6,  900 * 1000},
+ 	{L7,  800 * 1000},
+ 	{L8,  700 * 1000},
+ 	{L9,  600 * 1000},
+ 	{L10, 500 * 1000},
+ 	{L11, 400 * 1000},
+ 	{L12, 300 * 1000},
+
+
+
 -- 
-1.7.7.2
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
