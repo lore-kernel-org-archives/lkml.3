@@ -1,133 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3GPLd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 07:33:26 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59250 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab3GPLdY (ORCPT
+	id S932185Ab3GPLdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 07:33:32 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:16101 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab3GPLd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 07:33:24 -0400
-Date: Tue, 16 Jul 2013 07:33:13 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Don Dutile <ddutile@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jan Beulich <jbeulich@suse.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        Malcolm Crossley <malcolm.crossley@citrix.com>,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] iommu/vt-d: Expand interrupt remapping quirk to cover
- x58 chipset
-Message-ID: <20130716113313.GB8940@hmsreliant.think-freely.org>
-References: <1373397069-8968-1-git-send-email-nhorman@tuxdriver.com>
- <51DD9A78.5040308@redhat.com>
- <20130711105952.GA14223@hmsreliant.think-freely.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130711105952.GA14223@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Tue, 16 Jul 2013 07:33:29 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-c2-51e52f881d8d
+Date: Tue, 16 Jul 2013 13:33:19 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v5 7/7] Documentation:cpufreq:boost: Update BOOST
+ documentation
+Message-id: <20130716133319.49ed0838@amdc308.digital.local>
+In-reply-to: <CAKohpo=oB_4gGtNn6jvxSCp665pOq6oqeTCCyGzmN_eWqt0Lhg@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-8-git-send-email-l.majewski@samsung.com>
+ <CAKohpo=oB_4gGtNn6jvxSCp665pOq6oqeTCCyGzmN_eWqt0Lhg@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+xoG6H/tNAg/tvJC3+vF3OavG06Qe7
+	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4LS7vmsNm8bn3CKPF7cYVbBb9C3uZLJ487GOz2PjV
+	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
+	rozn746zFrzlqHj04RxrA+Nk9i5GTg4JAROJ720NzBC2mMSFe+vZuhi5OIQEpjNKPPxygQnC
+	aWeSuLTmHRtIFYuAqsSCo0fAOtgE9CQ+333KBGKLCPhKLFq0GayBWeAcs8Til8tYQRLCAqES
+	bR03wJp5Bawlth18zghicwoESxy/eQzMFhJoYZLY/jMSxOYXkJRo//cD6iQ7iXOfNrBD9ApK
+	/Jh8jwXEZhbQkti8rYkVwpaX2LzmLfMERsFZSMpmISmbhaRsASPzKkbR1ILkguKk9FwjveLE
+	3OLSvHS95PzcTYzgWHomvYNxVYPFIUYBDkYlHt6DnE8ChVgTy4orcw8xSnAwK4nw3uJ/GijE
+	m5JYWZValB9fVJqTWnyIUZqDRUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qBkYcld+Yllh7x
+	mwHHX5qmfzj4kPeafuFHlUpG1a6SyZe5fPdrnatuurcgpGrBS/GTz7xtWm4eLrs0x28fw93z
+	kd7nNqW9r/kaIyBQmOrkau6r4GEjaKr4yfSJ4odp+Y/CbJYo9666k8N+RinrlKum6+/X051V
+	T++8lMLEnBFzQeCIf4GsyRRTJZbijERDLeai4kQACaSgW6ECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 06:59:52AM -0400, Neil Horman wrote:
-> On Wed, Jul 10, 2013 at 01:31:36PM -0400, Don Dutile wrote:
-> > On 07/09/2013 03:11 PM, Neil Horman wrote:
-> > >Recently we added an early quirk to detect 5500/5520 chipsets with early
-> > >revisions that had problems with irq draining with interrupt remapping enabled:
-> > >
-> > >commit 03bbcb2e7e292838bb0244f5a7816d194c911d62
-> > >Author: Neil Horman<nhorman@tuxdriver.com>
-> > >Date:   Tue Apr 16 16:38:32 2013 -0400
-> > >
-> > >     iommu/vt-d: add quirk for broken interrupt remapping on 55XX chipsets
-> > >
-> > >It turns out this same problem is present in the intel X58 chipset as well.  See
-> > >errata 69 here:
-> > >http://www.intel.com/content/www/us/en/chipsets/x58-express-specification-update.html
-> > >
-> > >This patch extends the pci early quirk so that the chip devices/revisions
-> > >specified in the above update are also covered in the same way:
-> > >
-> > >Signed-off-by: Neil Horman<nhorman@tuxdriver.com>
-> > >Reviewed-by: Jan Beulich<jbeulich@suse.com>
-> > >CC: Jan Beulich<jbeulich@suse.com>
-> > >CC: Joerg Roedel<joro@8bytes.org>
-> > >CC: Andrew Cooper<andrew.cooper3@citrix.com>
-> > >CC: Malcolm Crossley<malcolm.crossley@citrix.com>
-> > >CC: Prarit Bhargava<prarit@redhat.com>
-> > >CC: Don Zickus<dzickus@redhat.com>
-> > >CC: Don Dutile<ddutile@redhat.com>
-> > >CC: Thomas Gleixner<tglx@linutronix.de>
-> > >CC: Ingo Molnar<mingo@redhat.com>
-> > >CC: "H. Peter Anvin"<hpa@zytor.com>
-> > >CC: x86@kernel.org (maintainer:X86 ARCHITECTURE...)
-> > >CC: stable@vger.kernel.org
-> > >---
-> > >  arch/x86/kernel/early-quirks.c | 15 +++++++++++++--
-> > >  1 file changed, 13 insertions(+), 2 deletions(-)
-> > >
-> > >diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-> > >index 94ab6b9..743d583 100644
-> > >--- a/arch/x86/kernel/early-quirks.c
-> > >+++ b/arch/x86/kernel/early-quirks.c
-> > >@@ -196,15 +196,23 @@ static void __init ati_bugs_contd(int num, int slot, int func)
-> > >  static void __init intel_remapping_check(int num, int slot, int func)
-> > >  {
-> > >  	u8 revision;
-> > >+	u16 device;
-> > >
-> > >+	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
-> > >  	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
-> > >
-> > >  	/*
-> > >-	 * Revision 0x13 of this chipset supports irq remapping
-> > >-	 * but has an erratum that breaks its behavior, flag it as such
-> > >+ 	 * Revision 13 of all triggering devices id in this quirk have
-> > >+	 * a problem draining interrupts when irq remapping is enabled,
-> > >+	 * and should be flagged as broken.  Additionally revisions 0x12
-> > >+	 * and 0x22 of device id 0x3405 has this problem.
-> > >  	 */
-> > >  	if (revision == 0x13)
-> > >  		set_irq_remapping_broken();
-> > >+	else if ((device == 0x3405)&&
-> > >+	    ((revision == 0x12) ||
-> > >+	     (revision == 0x22)))
-> > >+		set_irq_remapping_broken();
-> > >
-> > >  }
-> > >
-> > When discussing the original-seen errata w/Intel on 55xx chips, the
-> > statements made were any chip with rev C1(revision = 0x21) or
-> > greater had the correct
-> > hw implementation for the intr-pending flush.
-> > We knew the bug existed in the A3 (rev=0x13) rev of the chip, but the
-> > true check should be:
-> > 	revision < 0x21
-> > 
-> > I suspect there were multiple revs of the x58, of which B2(0x12) & C2(0x22)
-> > were shipped to oem's, system vendors, etc.
-> > But, in case there were any chip revisions in between these well-known values
-> > out there, I suggest the 0x3405 check be changed to:
-> > 	revision < 0x22
-> > 
-> > Since it's unlikely that hw degressed in design over revisions, it seems
-> > more correct to check for revs less than a rev-value having an errata,
-> > or conversely, a chip value >= rev-value do not have the errata.
-> > IOW, an equal check may not provide sufficient.
-> > 
-> Don and I discussed this offline.  Given that his comments make good sense
-> to me, I'm hesitant to apply the quirk to anything other than what the spec
-> update says, given that its clear.  Don is attempting to contact people at Intel
-> who will be able (we hope) to give us a definitive answer on this, please hold
-> on this patch until we have resolution on the issue.
-> Neil
+On Tue, 16 Jul 2013 15:31:43 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > -Reading the file is always supported, even if the processor does
+> > not -support boosting. In this case the file will be read-only and
+> > always -reads as "0". Explicitly changing the permissions and
+> > writing to that -file anyway will return EINVAL.
+> > +The file is exported only when cpufreq driver supports boosting.
+> > +Explicitly changing the permissions and writing to that file
+> > anyway will +return EINVAL.
 > 
-Don, do you have any updates here from Intel?  I'd like to get this put to bed.
-Neil
+> For acpi-cpufreq reading the file should be always supported. And this
+> must be mentioned in doc.
 
+As fair as I've understood our previous discussion (at [*]) we have
+agreed about this. We only export boost attribute when it is supported
+by cpufreq_driver. Rafael was very clear about exporting boost
+attribute:
+
+"Simple: Export it only when supported."
+
+[*]: Re: [PATCH v4 2/7] cpufreq: Add boost frequency support in core
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
