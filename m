@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336Ab3GPEMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 00:12:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27696 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892Ab3GPEMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 00:12:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,673,1367996400"; 
-   d="scan'208";a="346242035"
-Message-ID: <1373947920.12825.2.camel@envy.home>
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
-From: Darren Hart <dvhart@linux.intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: NeilBrown <neilb@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
+	id S1751557Ab3GPEPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 00:15:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39781 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750916Ab3GPEPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 00:15:00 -0400
+Message-ID: <1373948095.31067.160.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] Documentation: update references to v2.6.x in
+ development-process
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Date: Mon, 15 Jul 2013 21:12:00 -0700
-In-Reply-To: <1373945863.17876.264.camel@gandalf.local.home>
-References: <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	 <20130715180403.GD15531@xanatos>
-	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	 <20130715184642.GE15531@xanatos>
-	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
-	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	 <1373926109.17876.221.camel@gandalf.local.home>
-	 <20130715223615.GI15531@xanatos> <20130715231555.GA24650@roeck-us.net>
-	 <1373933850.17876.224.camel@gandalf.local.home>
-	 <20130716131446.373ec08b@notabene.brown>
-	 <1373945681.17876.262.camel@gandalf.local.home>
-	 <1373945863.17876.264.camel@gandalf.local.home>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+        Andrew Morton <akpm@linux-foundati>
+Date: Tue, 16 Jul 2013 05:14:55 +0100
+In-Reply-To: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-CbD1uC+V7ZTecxSLyBp8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-15 at 23:37 -0400, Steven Rostedt wrote:
-> On Mon, 2013-07-15 at 23:34 -0400, Steven Rostedt wrote:
-> > On Tue, 2013-07-16 at 13:14 +1000, NeilBrown wrote:
-> > 
-> > > Surely there is an enormous difference between being required to defend your
-> > > position against rational and forceful argument, and being required to defend
-> > > it against irrelevant name calling.
-> > 
-> > Sure, but I don't think there's really much name calling in the kernel
-> > community.
-> > 
-> > I just scanned a large number of LKML emails, and they all seemed rather
-> > technical, and no personal attacks at all. And that included several
-> > emails from Linus as well. Probably the strongest email came from Thomas
-> > Gleixner, but even that didn't contain any personal name calling. Mostly
-> > he called stuff "crap" but that was about the code and claims that the
-> > code did, but not about the person.
-> > 
-> > There are a few times that Linus gets a bit colorful with his
-> > criticisms, but that's really the minority of the email and not the
-> > overall tone. I think Linus picks his battles. Sometimes he goes
-> > overboard, but he's human. But I still think he's running this ship
-> > well.
-> > 
-> 
-> I just found this gem: https://lkml.org/lkml/2013/7/10/600
-> 
-> But it's just Linus ranting about having "make install" modify the
-> source tree (which I totally agree with him, as I've stumbled over crap
-> like this in other projects). But he's bitching about the code, not the
-> person who asked him to pull it.
 
-Excellent example Steve. This is the core of what I was trying to get
-at. Linus vehemently and colorfully expressed his distate for *problem*
-and told the developer what they needed to do differently. No personal
-attack there.
+--=-CbD1uC+V7ZTecxSLyBp8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Would I like to be on the receiving end of that email... No, I would
-not. However, I can also understand being fed up with lots of little
-things like this and not having the patience or the desire to treat each
-one as a mentoring opportunity. The difference tends to be I rant to my
-close friends and Linus does so in public.... he's the more honest of
-the two of us I think :-)
+On Mon, 2013-07-15 at 19:34 -0400, Paul Gortmaker wrote:
+[...]=20
+>  Some kernels are designated "long term" kernels; they will receive suppo=
+rt
+>  for a longer period.  As of this writing, the current long term kernels
+>  and their maintainers are:
+> =20
+> -	2.6.27	Willy Tarreau		(Deep-frozen stable kernel)
+> -	2.6.32	Greg Kroah-Hartman
+> -	2.6.35	Andi Kleen		(Embedded flag kernel)
+> +	2.6.32	Willy Tarreau
+> +	3.0	Greg Kroah-Hartman
+> +	3.2	Ben Hutchings
+> +	3.4	Greg Kroah-Hartman
+[...]
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+You could also link to <https://www.kernel.org/releases.html> here.
 
+Ben.
+
+--=20
+Ben Hutchings
+Humans are not rational beings; they are rationalising beings.
+
+--=-CbD1uC+V7ZTecxSLyBp8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUeTIv+e/yOyVhhEJAQpOThAAl+7YhZ1XpuukDI8etLLEXF2dS1YkkFtA
+sMr5kdrLTtz/ZE+N3HYwKYxwSEE8e6jYuRDqbGdv8DBL+wrPd1C1YKm1skw766NQ
+JqEw2ozt4d7SINn0Y9Mmj47P6hUAwJY5lUXwitdAuHfAZbHcAZwM2N77RRuZNrfD
+o/MwK5rSf2Slb/Iu313EFR35qVp1AReSuRBEjRopGfedZSmWtp/aOxElU+OAJBEc
+Xw3ZX/jh0QmPuXlfKj3xq5Qn5H84rV0OCDfHpuoIHhW4lhJK/lZJAresYYQZ78ux
+3mo9G702i9uJaKnCzK7+JSVRle7Gm/T/g0Vz4FijmsK3/Fd5oK6PwsGnHS8068gf
+tQGDtLnb9jTmlQ08LfKFy71MeVYfYGnmNds7l3UrXbfLRSOcAGh0e6kJf4hjibjK
+3Uh08dCSvyclx3wqgQwaWTRj1HcrgQcwgm7hpEH6bU95k2iw2PiqtLbUFu5mJ8UN
+kV2hSc1sTgP35tRjca8Ttt6BnvrFQlpdu5NmAQlC1rKfRGutilQbkhIS/e57W/BS
+XpvoCzPH7NaOqgfh2w4bBAkXLNPcjzhRlZnqOZg6xM4pDs5/khrlweggRCG2WEu7
+ScXEUZai4sOaHF3dtcUkR4/Wz3HYYhkiNSQFxsd/BZMKutY+2H2/1+/ddd507UVG
+lKbyA5cyeYw=
+=KZ3I
+-----END PGP SIGNATURE-----
+
+--=-CbD1uC+V7ZTecxSLyBp8--
