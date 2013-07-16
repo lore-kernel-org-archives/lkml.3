@@ -1,64 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab3GPFoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 01:44:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:41958 "EHLO ozlabs.org"
+	id S1751685Ab3GPFow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 01:44:52 -0400
+Received: from ozlabs.org ([203.10.76.45]:33825 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab3GPFoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751292Ab3GPFoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Jul 2013 01:44:23 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>, Willy Tarreau <w@1wt.eu>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-In-Reply-To: <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com>
-References: <20130715155202.GC29526@xanatos> <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com> <20130715174659.GC15531@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <20130715191727.GC10157@1wt.eu> <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com>
+To: Philipp Matthias Hahn <pmhahn@pmhahn.de>, alsa-devel@alsa-project.org,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Lucas De Marchi" <lucas.demarchi@profusion.mobi>
+Subject: Re: [BUG] 3.10.[01] modprobe snd-... hangs
+In-Reply-To: <20130715182010.GA4853@pmhahn.de>
+References: <20130715182010.GA4853@pmhahn.de>
 User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 16 Jul 2013 14:22:14 +0930
-Message-ID: <8738rf14zl.fsf@rustcorp.com.au>
+Date: Tue, 16 Jul 2013 15:11:51 +0930
+Message-ID: <87ppujysbk.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-> On Mon, Jul 15, 2013 at 12:17 PM, Willy Tarreau <w@1wt.eu> wrote:
->>
->> BTW, I was amazed that you managed to get him have a much softer tone inr
->> his last e-mail, you probably found a weakness here in his management
->> process :-)
+Philipp Matthias Hahn <pmhahn@pmhahn.de> writes:
+> Hello,
 >
-> Hey, I _like_ arguing, and "cursing" and "arguing" are actually not at
-> all the same thing.
->
-> And I really don't tend to curse unless people are doing something
-> stupid and annoying. If people have concerns and questions that I feel
-> are valid, I'm more than happy to talk about it.
->
-> I curse when there isn't any argument. The cursing happens for the
-> "you're so f*cking wrong that it's not even worth trying to make
-> logical arguments about it, because you have no possible excuse" case.
->
-> .. and sometimes people surprise me and come back with a valid excuse
-> after all. "My whole family died in a tragic freak accident and my
-> pony got cancer, and I was distracted".
->
-> And then I might even tell them I'm sorry.
->
-> No. Not really.
+> My x86_64 systems has some trouble loading some ALSA snd-* modules since
+> the upgrade to 3.10.[01]: Several automatic modprobe calls hang, but
+> loading snd-intel-hda and snd-audio-usb by hand still works.
 
-You have to be harsh with code: People mistake politeness for
-uncertainty.  Whenever I said 'I prefer if you XYZ' some proportion
-didn't realize I meant 'Don't argue unless you have new facts: do XYZ or
-go away.'  This wastes my time, so I started being explicit.
+Not a known problem to me, at least.  Perhaps it's a dep loop somehow.
 
-But be gentle with people.  You've already called their baby ugly.
+> ...
+>  1071 ?        S      0:00 sh -c /sbin/modprobe --ignore-install snd && { /sbin/modprobe --quiet snd
+>  1080 ?        D      0:00  \_ /sbin/modprobe --quiet snd-seq
+
+This was first, and it's waiting.  Which means it must be doing
+something weird, because snd_seq_oss is loading now:
+
+> snd_seq_oss 33717 1 - Loading 0xffffffffa041b000
+
+Perhaps in the tangle of modprobe install commands somewhere this gets
+invoked?
+
+> # ps axf
+>   460 ?        S      0:00  \_ [kworker/u8:3]
+>  1087 ?        S      0:00  |   \_ [kworker/u8:3]
+>  1092 ?        S      0:00  |       \_ /sbin/modprobe -q -- snd-seq-client-14
+
+On my systems, that's snd-seq-dummy, which depends on snd_seq.  Which,
+in fact, is already loaded.
+
+Lucas, any clues?
+
+Full quote below.
 
 Cheers,
 Rusty.
+
+Philipp Matthias Hahn <pmhahn@pmhahn.de> writes:
+> Hello,
+>
+> My x86_64 systems has some trouble loading some ALSA snd-* modules since
+> the upgrade to 3.10.[01]: Several automatic modprobe calls hang, but
+> loading snd-intel-hda and snd-audio-usb by hand still works.
+>
+> # ps axf
+>   460 ?        S      0:00  \_ [kworker/u8:3]
+>  1087 ?        S      0:00  |   \_ [kworker/u8:3]
+>  1092 ?        S      0:00  |       \_ /sbin/modprobe -q -- snd-seq-client-14
+> ...
+>  1071 ?        S      0:00 sh -c /sbin/modprobe --ignore-install snd && { /sbin/modprobe --quiet snd
+>  1080 ?        D      0:00  \_ /sbin/modprobe --quiet snd-seq
+>  1115 ?        S      0:00 sh -c /sbin/modprobe --ignore-install snd-rawmidi && { /sbin/modprobe --q
+>  1154 ?        S      0:00  \_ /sbin/modprobe --quiet snd-seq-midi
+>  1119 ?        S      0:00 sh -c /sbin/modprobe --ignore-install snd-rawmidi && { /sbin/modprobe --q
+>  1148 ?        S      0:00  \_ /sbin/modprobe --quiet snd-seq-midi
+>
+> In /var/log/daemon.log I find the following messages:
+> Jul 15 19:58:44 scout udevd[912]: timeout: killing '/sbin/modprobe -b usb:vFC08p0101d0250dc00dsc00dp00ic01isc01ip00in00' [1044]
+> Jul 15 19:58:56 scout udevd[912]: '/sbin/modprobe -b usb:vFC08p0101d0250dc00dsc00dp00ic01isc01ip00in00' [1044] terminated by signal 9 (Killed)
+> Jul 15 19:58:56 scout udevd[919]: timeout: killing '/sbin/modprobe -b pci:v000010DEd0000026Csv00001462sd00007350bc04sc03i00' [1051]
+> Jul 15 19:58:56 scout udevd[914]: timeout: killing '/sbin/modprobe -b usb:vFC08p0101d0250dc00dsc00dp00ic01isc03ip00in01' [1045]
+> Jul 15 19:58:56 scout udevd[919]: '/sbin/modprobe -b pci:v000010DEd0000026Csv00001462sd00007350bc04sc03i00' [1051] terminated by signal 9 (Killed)
+> Jul 15 19:58:56 scout udevd[914]: '/sbin/modprobe -b usb:vFC08p0101d0250dc00dsc00dp00ic01isc03ip00in01' [1045] terminated by signal 9 (Killed)
+>
+>
+> This is a Debian sid system
+> # modprobe -V
+> kmod version 9
+>
+> # echo t >/proc/sysrq-trigger
+> produces too much output to include the modprobe processes. I already
+> stopped most processes, but that is not enough.
+>
+>
+> # cat /proc/1092/syscall
+> 175 0x7effcad92000 0xafe8 0x7effca9c2f88 0x7effca6ea3aa 0x0 0x0 0x7fff3e3de648 0x7effca6eef8a
+>
+> # cat /proc/1080/syscall
+> 175 0x7fe01b25e000 0xafe8 0x7fe01ae8ef88 0x7fe01abb63aa 0x3 0x0 0x7fffba8cc748 0x7fe01abbaf8a
+>
+> # cat /proc/1154/syscall
+> 175 0x7fc157a7b000 0xafe8 0x7fc1576abf88 0x7fc1573d33aa 0x3 0x0 0x7fff05809e58 0x7fc1573d7f8a
+>
+> # cat /proc/1148/syscall
+> 175 0x7fc7159d5000 0xafe8 0x7fc715605f88 0x7fc71532d3aa 0x3 0x0 0x7fff47a1f3c8 0x7fc715331f8a
+>
+> Is this a know bug or has someone seen similar problems?
+>
+> # cat /proc/modules
+> ip6table_filter 1575 0 - Live 0xffffffffa0893000
+> ip6_tables 13784 1 ip6table_filter, Live 0xffffffffa088b000
+> ebtable_nat 1887 0 - Live 0xffffffffa0887000
+> ebtables 19917 1 ebtable_nat, Live 0xffffffffa087e000
+> snd_usb_audio 124196 0 - Live 0xffffffffa0851000
+> snd_usbmidi_lib 16982 1 snd_usb_audio, Live 0xffffffffa0848000
+> rfcomm 28731 10 - Live 0xffffffffa083a000
+> bnep 9786 2 - Live 0xffffffffa0833000
+> snd_hda_codec_realtek 37669 1 - Live 0xffffffffa0823000
+> snd_hda_intel 31432 0 - Live 0xffffffffa0814000
+> snd_hda_codec 140669 2 snd_hda_codec_realtek,snd_hda_intel, Live 0xffffffffa07e2000
+> snd_hwdep 5627 2 snd_usb_audio,snd_hda_codec, Live 0xffffffffa07dd000
+> iptable_filter 1618 1 - Live 0xffffffffa07d9000
+> xt_owner 1326 1 - Live 0xffffffffa07d5000
+> ip_tables 13390 1 iptable_filter, Live 0xffffffffa07cd000
+> x_tables 18433 6 ip6table_filter,ip6_tables,ebtables,iptable_filter,xt_owner,ip_tables, Live 0xffffffffa07c3000
+> cpufreq_conservative 7015 0 - Live 0xffffffffa07bd000
+> cpufreq_ondemand 8945 0 - Live 0xffffffffa07b6000
+> cpufreq_powersave 1010 0 - Live 0xffffffffa07b2000
+> cpufreq_userspace 2136 0 - Live 0xffffffffa07ae000
+> binfmt_misc 6479 1 - Live 0xffffffffa07a9000
+> bridge 74378 0 - Live 0xffffffffa078d000
+> stp 1908 1 bridge, Live 0xffffffffa0789000
+> llc 4485 2 bridge,stp, Live 0xffffffffa0784000
+> deflate 1873 0 - Live 0xffffffffa0780000
+> ctr 3633 0 - Live 0xffffffffa077c000
+> twofish_generic 5715 0 - Live 0xffffffffa0777000
+> twofish_x86_64_3way 19885 0 - Live 0xffffffffa076f000
+> twofish_x86_64 5503 1 twofish_x86_64_3way, Live 0xffffffffa076a000
+> twofish_common 13133 3 twofish_generic,twofish_x86_64_3way,twofish_x86_64, Live 0xffffffffa0763000
+> camellia_generic 18308 0 - Live 0xffffffffa075b000
+> camellia_x86_64 45885 0 - Live 0xffffffffa074b000
+> serpent_sse2_x86_64 44963 0 - Live 0xffffffffa073d000
+> serpent_generic 21243 1 serpent_sse2_x86_64, Live 0xffffffffa0734000
+> ablk_helper 2284 1 serpent_sse2_x86_64, Live 0xffffffffa0730000
+> cryptd 7992 1 ablk_helper, Live 0xffffffffa072a000
+> xts 2958 3 twofish_x86_64_3way,camellia_x86_64,serpent_sse2_x86_64, Live 0xffffffffa0726000
+> lrw 3584 3 twofish_x86_64_3way,camellia_x86_64,serpent_sse2_x86_64, Live 0xffffffffa0722000
+> gf128mul 6580 2 xts,lrw, Live 0xffffffffa071d000
+> glue_helper 4810 3 twofish_x86_64_3way,camellia_x86_64,serpent_sse2_x86_64, Live 0xffffffffa0718000
+> blowfish_generic 3194 0 - Live 0xffffffffa0714000
+> blowfish_x86_64 14084 0 - Live 0xffffffffa070d000
+> blowfish_common 6425 2 blowfish_generic,blowfish_x86_64, Live 0xffffffffa0708000
+> cast5_generic 10378 0 - Live 0xffffffffa0702000
+> cast_common 5351 1 cast5_generic, Live 0xffffffffa06fd000
+> des_generic 16147 0 - Live 0xffffffffa06f6000
+> cmac 2460 0 - Live 0xffffffffa06f2000
+> xcbc 2423 0 - Live 0xffffffffa06ee000
+> rmd160 7552 0 - Live 0xffffffffa06e9000
+> nfsd 208660 2 - Live 0xffffffffa06a8000
+> auth_rpcgss 39179 1 nfsd, Live 0xffffffffa0698000
+> oid_registry 2490 1 auth_rpcgss, Live 0xffffffffa0694000
+> nfs_acl 2285 1 nfsd, Live 0xffffffffa0690000
+> sha512_generic 5023 0 - Live 0xffffffffa068b000
+> nfs 127233 0 - Live 0xffffffffa065b000
+> lockd 57962 2 nfsd,nfs, Live 0xffffffffa0645000
+> fscache 34198 1 nfs, Live 0xffffffffa0636000
+> sha1_ssse3 9266 0 - Live 0xffffffffa0630000
+> sha1_generic 2064 1 sha1_ssse3, Live 0xffffffffa062c000
+> sunrpc 185043 6 nfsd,auth_rpcgss,nfs_acl,nfs,lockd, Live 0xffffffffa05ea000
+> md5 1803 0 - Live 0xffffffffa05e6000
+> crypto_null 2624 0 - Live 0xffffffffa05e2000
+> af_key 25880 0 - Live 0xffffffffa05d6000
+> xfrm_algo 6101 1 af_key, Live 0xffffffffa05d1000
+> ves1820 5159 1 - Live 0xffffffffa05cc000
+> btusb 14810 0 - Live 0xffffffffa05bc000
+> bluetooth 183572 24 rfcomm,bnep,btusb, Live 0xffffffffa054a000
+> stv0297 6493 1 - Live 0xffffffffa052f000
+> snd_rawmidi 17913 1 snd_usbmidi_lib, Live 0xffffffffa0525000
+> snd_pcm_oss 32083 0 - Live 0xffffffffa0518000
+> snd_mixer_oss 12485 1 snd_pcm_oss, Live 0xffffffffa0510000
+> snd_pcm 73594 4 snd_usb_audio,snd_hda_intel,snd_hda_codec,snd_pcm_oss, Live 0xffffffffa04f5000
+> snd_page_alloc 7172 2 snd_hda_intel,snd_pcm, Live 0xffffffffa04f0000
+> dvb_ttpci 93699 0 - Live 0xffffffffa04d1000
+> saa7146_vv 26567 1 dvb_ttpci, Live 0xffffffffa04c5000
+> videobuf_dma_sg 8015 1 saa7146_vv, Live 0xffffffffa04bf000
+> videobuf_core 15578 2 saa7146_vv,videobuf_dma_sg, Live 0xffffffffa04b7000
+> v4l2_common 7907 1 saa7146_vv, Live 0xffffffffa04b1000
+> budget_ci 21012 0 - Live 0xffffffffa04a7000
+> videodev 97317 2 saa7146_vv,v4l2_common, Live 0xffffffffa0486000
+> budget_core 7679 1 budget_ci, Live 0xffffffffa0481000
+> ttpci_eeprom 1985 2 dvb_ttpci,budget_core, Live 0xffffffffa0479000
+> saa7146 11356 4 dvb_ttpci,saa7146_vv,budget_ci,budget_core, Live 0xffffffffa046b000
+> rc_core 13478 2 budget_ci, Live 0xffffffffa044a000
+> dvb_core 68839 3 dvb_ttpci,budget_ci,budget_core, Live 0xffffffffa0431000
+> snd_seq_oss 33717 1 - Loading 0xffffffffa041b000
+> snd_seq_midi_event 5740 1 snd_seq_oss, Live 0xffffffffa0416000
+> snd_seq 44232 2 snd_seq_oss,snd_seq_midi_event, Live 0xffffffffa0404000
+> snd_seq_device 5560 3 snd_rawmidi,snd_seq_oss,snd_seq, Live 0xffffffffa03ff000
+> snd_timer 17417 2 snd_pcm,snd_seq, Live 0xffffffffa03f6000
+> snd 58793 14 snd_usb_audio,snd_usbmidi_lib,snd_hda_codec_realtek,snd_hda_intel,snd_hda_codec,snd_hwdep,snd_rawmidi,snd_pcm_oss,snd_mixer_oss,snd_pcm,snd_seq_oss,snd_seq,snd_seq_device,snd_timer, Live 0xffffffffa03df000
+> pcspkr 1926 0 - Live 0xffffffffa03db000
+> psmouse 52563 0 - Live 0xffffffffa03c6000
+> serio_raw 4517 0 - Live 0xffffffffa03c1000
+> soundcore 5811 1 snd, Live 0xffffffffa03b7000
+> evdev 8465 0 - Live 0xffffffffa039d000
+> kvm_intel 122108 0 - Live 0xffffffffa0351000
+> kvm 342589 1 kvm_intel, Live 0xffffffffa0271000
+> usb_storage 46166 0 - Live 0xffffffffa025c000
+> fuse 65800 1 - Live 0xffffffffa0243000
+> ecryptfs 80646 0 - Live 0xffffffffa0227000
+> cbc 2574 0 - Live 0xffffffffa0223000
+> sha256_ssse3 16172 2 - Live 0xffffffffa021c000
+> sha256_generic 9882 1 sha256_ssse3, Live 0xffffffffa0216000
+> hmac 2673 1 - Live 0xffffffffa0212000
+> encrypted_keys 9378 1 ecryptfs, Live 0xffffffffa020b000
+> autofs4 20984 2 - Live 0xffffffffa0200000
+> ext4 434295 5 - Live 0xffffffffa0173000
+> crc16 1541 2 bluetooth,ext4, Live 0xffffffffa016f000
+> jbd2 83146 1 ext4, Live 0xffffffffa0150000
+> btrfs 682625 1 - Live 0xffffffffa008b000
+> crc32c 1610 1 - Live 0xffffffffa0087000
+> libcrc32c 1147 1 btrfs, Live 0xffffffffa0083000
+> xor 11190 1 btrfs, Live 0xffffffffa007d000
+> zlib_deflate 18739 2 deflate,btrfs, Live 0xffffffffa0075000
+> raid6_pq 92000 1 btrfs, Live 0xffffffffa005a000
+> nbd 8786 0 - Live 0xffffffffa0053000
+> firewire_ohci 27516 0 - Live 0xffffffffa0048000
+> firewire_core 49041 1 firewire_ohci, Live 0xffffffffa0035000
+> crc_itu_t 1565 1 firewire_core, Live 0xffffffffa0031000
+> forcedeth 50647 0 - Live 0xffffffffa001e000
+> floppy 53437 0 - Live 0xffffffffa0009000
+> ohci_hcd 18001 0 - Live 0xffffffffa0000000
+>
+> BYtE
+> Philipp
+> -- 
+>   / /  (_)__  __ ____  __ Philipp Hahn
+>  / /__/ / _ \/ // /\ \/ /
+> /____/_/_//_/\_,_/ /_/\_\ pmhahn@pmhahn.de
