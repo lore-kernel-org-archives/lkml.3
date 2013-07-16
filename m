@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab3GPPzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:55:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933360Ab3GPPzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:55:31 -0400
-Date: Tue, 16 Jul 2013 11:55:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-Message-ID: <20130716155459.GB3398@redhat.com>
-References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
- <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com>
- <20130702154214.GC22603@redhat.com>
- <20130715154451.02a3a767@holzheu>
- <20130715142708.GB23772@redhat.com>
- <20130716112527.35decf17@holzheu>
- <20130716140418.GB4005@redhat.com>
- <20130716173709.3fed4c42@holzheu>
+	id S933423Ab3GPPz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:55:58 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:61314 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932441Ab3GPPzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 11:55:45 -0400
+Message-ID: <51E56CFD.9050508@linaro.org>
+Date: Tue, 16 Jul 2013 17:55:41 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716173709.3fed4c42@holzheu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+CC: Andrew Lunn <andrew@lunn.ch>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [GIT PULL] clockevents/clocksource: Add Marvell Orion SoC timer
+References: <51B8D310.4050404@linaro.org> <51D9548B.9040907@gmail.com> <alpine.DEB.2.02.1307071508030.32106@ionos.tec.linutronix.de> <20130707144645.GA11908@titan.lakedaemon.net> <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de> <20130707235819.GB11908@titan.lakedaemon.net> <alpine.DEB.2.02.1307081041290.32106@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307081041290.32106@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 05:37:09PM +0200, Michael Holzheu wrote:
+On 07/08/2013 10:45 AM, Thomas Gleixner wrote:
+> On Sun, 7 Jul 2013, Jason Cooper wrote:
+>> On Sun, Jul 07, 2013 at 05:30:31PM +0200, Thomas Gleixner wrote:
+>> I don't mind delaying half of a series so the drivers/ portion can land
+>> in mainline, and the rest can land in the next cycle.  But when things
+>> don't go according to that plan, I'd like a little consideration /
+>> flexibility about solving the problem.  Especially considering I'm
+>> *trying* to do the right thing by pushing to appropriate maintainers
+>> first.
+>>
+>> Of course, this is a moot point since, as you clarified above, this
+>> dependency doesn't have the hazards typically associated with
+>> out-of-tree dependencies.
+> 
+> There is a very simple procedure for stuff like this.
+> 
+> Series has parts which go through tree A and B and another larger part
+> for tree C which depends on the A and B parts.
+> 
+> So ask the maintainers of A and B to apply this to separate branches,
+> which are based on some commit in Linus tree. These branches can be
+> pulled into C and C can apply the depending stuff on top.
+> 
+> Now the maintainers of A and B merge these branches into their main
+> devel branch, can do further fixups and stuff on top. And the whole
+> thing just works without glitches during the merge window.
+> 
+> We do this all the time.
 
-[..]
-> The problem is that with the mmap patches we now use copy_oldmem_page()
-> to copy the notes from oldmem into the notes_buf which has been allocated
-> with vmalloc. The s390 version of copy_oldmem_page() bypasses the page
-> tables and uses real copy. And this does not work on vmalloc memory.
+Ok, I was about to send to both of you a PR with a common ancestor [1]
+for this patch but finally this patch has been taken for timers/urgent.
 
-I got that. I am trying to remember that in 3.10 why are we dropping
-to real mode in s390 while copying pages.
+I don't have to send the PR, right ?
 
-I thought dropping to real mode was needed only to access HSA region.
-HSA region comes into the picture only for zfcudump and /proc/vmcore support
-for zfcpdump is not there yet
-
-IOW, what if we start copying with page tables enabled in s390. Will
-it not work for regular kdump case and take care of zfcpdump in 3.12.
+timers/urgent will be merged into timers/core, correct ?
 
 Thanks
-Vivek
+  -- Daniel
+
+[1]
+https://git.linaro.org/gitweb?p=people/dlezcano/clockevents.git;a=shortlog;h=refs/heads/timers/mvebu-deps-3.12
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
