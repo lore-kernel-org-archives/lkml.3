@@ -1,67 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab3GPNTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 09:19:07 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2916 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562Ab3GPNTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 09:19:05 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <51E5483F.4020209@broadcom.com>
-Date: Tue, 16 Jul 2013 15:18:55 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Roger Quadros" <rogerq@ti.com>
-cc: tony@atomide.com, benoit.cousson@linaro.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: [PATCH v2 4/4] ARM: OMAP2+: Provide alias to USB PHY clock
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com>
- <1371571487-14389-5-git-send-email-rogerq@ti.com>
- <51E40199.9070906@ti.com> <51E546D2.6000100@broadcom.com>
-In-Reply-To: <51E546D2.6000100@broadcom.com>
-X-WSS-ID: 7DFB99892L848971782-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932619Ab3GPNYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 09:24:36 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:62418 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab3GPNYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 09:24:35 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-watchdog@vger.kernel.org
+Cc: wim@iguana.be, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org, linux@roeck-us.net,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v2] watchdog: Add MOXA ART watchdog driver
+Date: Tue, 16 Jul 2013 15:24:15 +0200
+Message-Id: <1373981055-18515-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1373545786-7151-1-git-send-email-jonas.jensen@gmail.com>
+References: <1373545786-7151-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 03:12 PM, Arend van Spriel wrote:
-> On 07/15/2013 04:05 PM, Roger Quadros wrote:
->> Hi Tony,
->>
->> On 06/18/2013 07:04 PM, Roger Quadros wrote:
->>> Till the OMAP clocks are correctly defined in device tree, use
->>> this temporary hack to provide clock alias to the USB PHY clocks.
->>>
->>> Without this, USB Host & Ethernet will not be functional with
->>> device tree boots on Panda and uEVM.
->>
->> Looks like this one got missed out.
->
-> Could it be because you promised to resend it (see [1]). I was upgrading
-> our test stuff to 3.11-rc1 and made a DT appended image. Boot went fine,
-> but no USB/ethernet. Should I pickup all four patches?
+Add watchdog driver for MOXA ART SoCs.
 
-Nevermind. The first three seem to be in already.
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-> Regards,
-> Arend
->
-> [1] http://mid.gmane.org/51C2EC5F.8050703@ti.com
->
->> USB host no longer works on Panda with DT boot.
->> Could you please queue this for next 3.11-rc? Thanks.
->>
->> cheers,
->> -roger
->>
->
+Notes:
+    Thanks for the review Guenter.
+    
+    Changes since v1:
+    
+    1. remove moxart_wdt_ping
+    2. remove unnecessary max timeout check in moxart_wdt_set_timeout
+    3. remove arm_pm_restart and moxart_wdt_restart function
+       (moved to moxart platform startup code)
+    4. remove unnecessary watchdog_set_drvdata from moxart_wdt_remove
+    5. stop the watchdog on driver remove
+    
+    Applies to next-20130716
 
+ drivers/watchdog/Kconfig      |  10 +++
+ drivers/watchdog/Makefile     |   1 +
+ drivers/watchdog/moxart_wdt.c | 171 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 182 insertions(+)
+ create mode 100644 drivers/watchdog/moxart_wdt.c
+
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 362085d..6883aab 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -382,6 +382,16 @@ config RETU_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called retu_wdt.
+ 
++config MOXART_WDT
++	tristate "MOXART watchdog"
++	depends on ARCH_MOXART
++	help
++	  Say Y here to include Watchdog timer support for the watchdog
++	  existing on the MOXA ART SoC series platforms.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called moxart_wdt.
++
+ # AVR32 Architecture
+ 
+ config AT32AP700X_WDT
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 2f26a0b..7cab53a 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -54,6 +54,7 @@ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
+ obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
+ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+ obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
++obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+ 
+ # AVR32 Architecture
+ obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
+new file mode 100644
+index 0000000..966855d
+--- /dev/null
++++ b/drivers/watchdog/moxart_wdt.c
+@@ -0,0 +1,171 @@
++/*
++ * MOXA ART SoCs watchdog driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/types.h>
++#include <linux/watchdog.h>
++
++#include <asm/system_misc.h>
++
++#define REG_COUNT			0x4
++#define REG_MODE			0x8
++#define REG_ENABLE			0xC
++
++struct moxart_wdt_dev {
++	struct watchdog_device wdt_dev;
++	void __iomem *wdt_base;
++};
++
++static struct moxart_wdt_dev *moxart_wdt;
++static bool nowayout = WATCHDOG_NOWAYOUT;
++static int heartbeat;
++static unsigned int clock_frequency;
++static unsigned int max_timeout;
++
++static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
++{
++	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
++	void __iomem *wdt_base = moxart_wdt->wdt_base;
++
++	writel(0, wdt_base + REG_ENABLE);
++
++	return 0;
++}
++
++static int moxart_wdt_start(struct watchdog_device *wdt_dev)
++{
++	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
++	void __iomem *wdt_base = moxart_wdt->wdt_base;
++
++	writel(clock_frequency * moxart_wdt->wdt_dev.timeout,
++	       wdt_base + REG_COUNT);
++	writel(0x5ab9, wdt_base + REG_MODE);
++	writel(0x03, wdt_base + REG_ENABLE);
++
++	return 0;
++}
++
++static int moxart_wdt_set_timeout(struct watchdog_device *wdt_dev,
++				  unsigned int timeout)
++{
++	dev_dbg(wdt_dev->dev, "%s: timeout=%u\n", __func__, timeout);
++
++	moxart_wdt->wdt_dev.timeout = timeout;
++
++	return 0;
++}
++
++static const struct watchdog_info moxart_wdt_info = {
++	.identity       = "moxart-wdt",
++	.options        = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING |
++			  WDIOF_MAGICCLOSE,
++};
++
++static const struct watchdog_ops moxart_wdt_ops = {
++	.owner          = THIS_MODULE,
++	.start          = moxart_wdt_start,
++	.stop           = moxart_wdt_stop,
++	.set_timeout    = moxart_wdt_set_timeout,
++};
++
++static int moxart_wdt_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *node = dev->of_node;
++	struct resource *res;
++	struct clk *clk;
++	int err;
++
++	moxart_wdt = devm_kzalloc(&pdev->dev, sizeof(*moxart_wdt), GFP_KERNEL);
++	if (!moxart_wdt)
++		return -EINVAL;
++
++	platform_set_drvdata(pdev, moxart_wdt);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	moxart_wdt->wdt_base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(moxart_wdt->wdt_base))
++		return PTR_ERR(moxart_wdt->wdt_base);
++
++	clk = of_clk_get(node, 0);
++	if (IS_ERR(clk)) {
++		pr_err("%s: of_clk_get failed\n", __func__);
++		return PTR_ERR(clk);
++	}
++
++	clock_frequency = clk_get_rate(clk);
++
++	max_timeout = UINT_MAX / clock_frequency;
++
++	moxart_wdt->wdt_dev.info = &moxart_wdt_info;
++	moxart_wdt->wdt_dev.ops = &moxart_wdt_ops;
++	moxart_wdt->wdt_dev.timeout = max_timeout;
++	moxart_wdt->wdt_dev.min_timeout = 1;
++	moxart_wdt->wdt_dev.max_timeout = max_timeout;
++	moxart_wdt->wdt_dev.parent = &pdev->dev;
++
++	watchdog_init_timeout(&moxart_wdt->wdt_dev, heartbeat, &pdev->dev);
++	watchdog_set_nowayout(&moxart_wdt->wdt_dev, nowayout);
++
++	watchdog_set_drvdata(&moxart_wdt->wdt_dev, moxart_wdt);
++
++	err = watchdog_register_device(&moxart_wdt->wdt_dev);
++	if (unlikely(err))
++		return err;
++
++	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
++		moxart_wdt->wdt_dev.timeout, nowayout);
++
++	return 0;
++}
++
++static int moxart_wdt_remove(struct platform_device *pdev)
++{
++	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
++
++	moxart_wdt_stop(&moxart_wdt->wdt_dev);
++	watchdog_unregister_device(&moxart_wdt->wdt_dev);
++
++	return 0;
++}
++
++static const struct of_device_id moxart_watchdog_match[] = {
++	{ .compatible = "moxa,moxart-watchdog" },
++	{ },
++};
++
++static struct platform_driver moxart_wdt_driver = {
++	.probe      = moxart_wdt_probe,
++	.remove     = moxart_wdt_remove,
++	.driver     = {
++		.name		= "moxart-watchdog",
++		.owner		= THIS_MODULE,
++		.of_match_table	= moxart_watchdog_match,
++	},
++};
++module_platform_driver(moxart_wdt_driver);
++
++module_param(heartbeat, int, 0);
++MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds");
++
++MODULE_DESCRIPTION("MOXART watchdog driver");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
+-- 
+1.8.2.1
 
