@@ -1,160 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933847Ab3GPWen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:34:43 -0400
-Received: from mout.web.de ([212.227.15.4]:64781 "EHLO mout.web.de"
+	id S933701Ab3GPWkA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:40:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57618 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933233Ab3GPWel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:34:41 -0400
-From: Martin Walch <walch.martin@web.de>
-To: linux-kernel@vger.kernel.org
-Subject: [kconfig] results of some syntactical checks
-Date: Wed, 17 Jul 2013 00:34:38 +0200
-Message-ID: <7121962.G9xfZAqBSy@tacticalops>
-User-Agent: KMail/4.10.5 (Linux/3.9.9-gentoo-gnu; KDE/4.10.5; x86_64; ; )
+	id S1752741Ab3GPWj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 18:39:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,679,1367996400"; 
+   d="scan'208";a="346676977"
+Date: Tue, 16 Jul 2013 15:39:57 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Olivier Galibert <galibert@pobox.com>, David Lang <david@lang.hm>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
+Message-ID: <20130716223957.GJ4994@xanatos>
+References: <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+ <20130715195316.GF15531@xanatos>
+ <20130715204135.GH15531@xanatos>
+ <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+ <1373926109.17876.221.camel@gandalf.local.home>
+ <20130715223615.GI15531@xanatos>
+ <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+ <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+ <20130716211235.GG4994@xanatos>
+ <20130716221821.GB21611@1wt.eu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1403344.zgUQRAtCLa"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:PNsMoFrydMtuud6VpS5L1Hdlm6Q89xAMhxC4IU2LGM1jYLnpi0N
- pZgczWj+RbD/6VL4Z1qpCPBMlfhHIgCI9HVK9ud8MyKYDs+cwOaZn9UHCmuayuXp8uZRa/D
- w+rAnTRcQ8zjmRLNrKI/Ad4S3eTToQk1bYZuEIvRb/nkQzMNCulj6bz3NB6O99RzQEj8hOk
- iYYes2kCeYENz5Mw+0bvQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716221821.GB21611@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 17, 2013 at 12:18:21AM +0200, Willy Tarreau wrote:
+> On Tue, Jul 16, 2013 at 02:12:35PM -0700, Sarah Sharp wrote:
+> > I *hate* both direct personal insults and indirect personal insults.
+> > Neither should be acceptable in our community.
+> > 
+> > As I stated in an email to Rusty, what I'm objecting to here is not
+> > kernel developers criticizing code.  I'm objecting to personal attacks,
+> > and developers directing personal verbal abuse towards each other.  This
+> > include all developers, not just Linus.
+> 
+> Well, there are people like me who don't mind getting personally
+> insulted but who are really pained when their work is criticized.
+> 
+> You'd rather tell me I'm a fucking moron than all what I carefully
+> designed, wrote and tested is pure crap. Probably that part of the
+> reason is that I'm as I am and I'm not really responsible for this,
+> so I don't care. Call me ugly if you want, why should I bother ? But
+> if you tell me I did some crap, it's entirely my fault and that hurts
+> a lot more.
 
---nextPart1403344.zgUQRAtCLa
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+I think we come from different perspectives here.  I can change my code.
+Therefore, I don't mind my code being insulted.  I cannot change myself.
+Therefore, I don't want to read verbal abuse directed at me personally.
 
-As I am working on yet another project for analyzing LKC's input files, I have 
-some intermediate results from simple syntactical checks.
+Things get blurred when we're talking about something a person did.
+I can change how I act as a maintainer.  Therefore, tell me politely
+what I did wrong, and I will change it.
 
-The results below are an excerpt from a run against tche current master. If 
-anyone is interested in the code (it's written in Java), please contact me. I 
-plan on releasing my program under a FLOSS license later this year. If you find 
-the results interesting or even useful, I can post updates on a regular basis.
+> So you want criticism to change focus for good, but it will not
+> necessarily achieve the result you're expecting. Maybe we can lose
+> more talented people by telling them their work is pure crap because
+> we did not understand it than telling them they're stupid and let
+> them argument their choices. At least I don't claim to know which
+> one is better, all I can say is that what we have right now works
+> well enough in my opinion.
 
-Actually defined symbols with dangerous names: 2
-  8260 at
-    arch/powerpc/platforms/82xx/Kconfig:55:0
-  8272 at
-    arch/powerpc/platforms/82xx/Kconfig:64:0
+We can tell them their code is bad without calling it crap.  Cussing
+them out is just a lazy shortcut.
 
-Symbols used, but not defined: 31
-  Symbol: ARCH_EFM32 at
-    drivers/tty/serial/Kconfig:1427:0
-  Symbol: ARCH_MULTI_V4 at
-    arch/arm/Kconfig:914:0
-  Symbol: ARM_S3C24XX at
-    arch/arm/mach-s3c24xx/Kconfig:210:0
-  Symbol: ATHEROS_AR231X at
-    drivers/net/wireless/ath/ath5k/Kconfig:2:0
-    drivers/net/wireless/ath/ath5k/Kconfig:8:0
-    drivers/net/wireless/ath/ath5k/Kconfig:9:0
-    drivers/net/wireless/ath/ath5k/Kconfig:56:0
-    drivers/net/wireless/ath/ath5k/Kconfig:63:0
-  Symbol: CPU_MMP3 at
-    drivers/video/mmp/Kconfig:2:0
-    drivers/video/mmp/hw/Kconfig:4:0
-    drivers/usb/phy/Kconfig:53:0
-  Symbol: CPU_PXA988 at
-    drivers/video/mmp/Kconfig:2:0
-    drivers/video/mmp/hw/Kconfig:4:0
-  Symbol: CPU_SUBTYPE_SH7764 at
-    arch/sh/drivers/dma/Kconfig:14:0
-  Symbol: DEPRECATED at
-    arch/mn10300/Kconfig.debug:34:0
-  Symbol: EXYNOS_DEV_SYSMMU at
-    drivers/iommu/Kconfig:170:0
-  Symbol: GENERIC_HAS_IOMAP at
-    arch/score/Kconfig:27:0
-    arch/score/Kconfig:33:0
-    arch/score/Kconfig:39:0
-  Symbol: GENERIC_TIME at
-    arch/arm/mach-bcm/Kconfig:11:0
-  Symbol: GPIO_BCM at
-    arch/arm/mach-bcm/Kconfig:12:0
-  Symbol: HAVE_SCHED_CLOCK at
-    arch/arm/mach-keystone/Kconfig:10:0
-  Symbol: HOTPLUG at
-    arch/powerpc/platforms/pseries/Kconfig:22:0
-  Symbol: M at
-    drivers/usb/host/Kconfig:568:0
-    drivers/usb/misc/Kconfig:130:0
-  Symbol: MACH_NOKIA_RM696 at
-    arch/arm/mach-omap2/Kconfig:314:0
-  Symbol: MACH_OMAP_H4_OTG at
-    drivers/usb/gadget/Kconfig:208:0
-  Symbol: MACH_SMDKC210 at
-    sound/soc/samsung/Kconfig:138:0
-  Symbol: MACH_SMDKV310 at
-    sound/soc/samsung/Kconfig:138:0
-  Symbol: MN10300_PROC_MN2WS0038 at
-    arch/mn10300/Kconfig:185:0
-  Symbol: MPILIB_EXTRA at
-    crypto/asymmetric_keys/Kconfig:24:0
-  Symbol: MTD_JEDEC at
-    drivers/mtd/maps/Kconfig:161:0
-    drivers/mtd/maps/Kconfig:170:0
-  Symbol: MV64360 at
-    arch/powerpc/Kconfig:400:0
-  Symbol: N at
-    drivers/usb/core/Kconfig:12:0
-    drivers/usb/host/Kconfig:336:0
-    drivers/usb/host/Kconfig:348:0
-    drivers/staging/usbip/Kconfig:3:0
-    drivers/staging/usbip/Kconfig:20:0
-    drivers/staging/usbip/Kconfig:31:0
-    drivers/staging/usbip/Kconfig:42:0
-    drivers/staging/asus_oled/Kconfig:3:0
-    drivers/staging/rtl8187se/Kconfig:8:0
-    drivers/staging/rtl8192u/Kconfig:7:0
-    drivers/staging/rtl8192e/rtl8192e/Kconfig:7:0
-    drivers/staging/rtl8712/Kconfig:6:0
-    drivers/staging/rtl8712/Kconfig:14:0
-    drivers/staging/frontier/Kconfig:3:0
-    drivers/staging/bcm/Kconfig:3:0
-    drivers/staging/media/go7007/Kconfig:15:0
-    drivers/staging/media/go7007/Kconfig:26:0
-    drivers/staging/media/go7007/Kconfig:48:0
-    drivers/staging/android/Kconfig:4:0
-    drivers/staging/android/Kconfig:61:0
-    arch/cris/arch-v32/drivers/Kconfig:13:0
-    arch/cris/arch-v32/drivers/Kconfig:413:0
-    arch/arc/Kconfig:357:0
-  Symbol: OF_VIDEOMODE at
-    drivers/staging/imx-drm/Kconfig:36:0
-  Symbol: OMAP_PM_SRF at
-    drivers/staging/tidspbridge/Kconfig:19:0
-  Symbol: PICOXCELL_PC3X3 at
-    drivers/char/hw_random/Kconfig:242:0
-  Symbol: PLATFORM_MICROBLAZE_AUTO at
-    arch/microblaze/platform/Kconfig.platform:10:0
-  Symbol: PLAT_SPEAR_SINGLE at
-    arch/arm/mach-spear/Kconfig:6:0
-    arch/arm/mach-spear/Kconfig:19:0
-    arch/arm/mach-spear/Kconfig:51:0
-    arch/arm/mach-spear/Kconfig:84:0
-    arch/arm/mach-spear/Kconfig:99:0
-  Symbol: SOC_DRA7XX at
-    drivers/thermal/ti-soc-thermal/Kconfig:52:0
-  Symbol: false at
-    drivers/staging/lustre/lustre/Kconfig:45:0
--- 
-
---nextPart1403344.zgUQRAtCLa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iEYEABECAAYFAlHlyn4ACgkQM6S4K8IXn9c2sQCgoXIBAXJ1hm6GruHKGhTUqq73
-SqUAnAj4sFU/VxXRMR9ngsdM6fDrWhFu
-=cbvp
------END PGP SIGNATURE-----
-
---nextPart1403344.zgUQRAtCLa--
-
+Sarah Sharp
