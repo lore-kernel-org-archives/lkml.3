@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab3GPPPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:15:39 -0400
-Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:50993 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932708Ab3GPPPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:15:38 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v3 3/7] at91/avr32/atmel_lcdfb: prepare clk before calling enable
-Date: Tue, 16 Jul 2013 17:08:14 +0200
-Message-Id: <1373987294-24227-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 7045318668009633900
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S933070Ab3GPPPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:15:47 -0400
+Received: from mout.gmx.net ([212.227.17.22]:52592 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932651Ab3GPPPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 11:15:43 -0400
+Message-ID: <51E56382.3020609@gmx.de>
+Date: Tue, 16 Jul 2013 17:15:14 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, viresh.kumar@linaro.org,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
+        stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <6515593.XAmN11qlGF@vostro.rjw.lan> <51DF307B.7060307@linux.vnet.ibm.com>
+In-Reply-To: <51DF307B.7060307@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:Qspl41qUiN6PqUlVa1xwsFByQ/0j4iYwI94OT6JT8+hTzAj9vVa
+ h4pfMgbzViFeXk4JEhcKq57EHhJDU8OEnL3ALCNGnsC/Ze87uQySw+EkS+zjXrn16dvNMZx
+ dhY6eMn7I7K2a0Fsq5h3xOxzIqeEggunEU5FQofVXoLMqaHLyi3ev4bkkk4qO1EimOraKiW
+ mFH8blf89YsK8OVzfG58A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On 07/12/2013 12:23 AM, Srivatsa S. Bhat wrote:
+> On 07/12/2013 04:03 AM, Rafael J. Wysocki wrote:
+>> On Friday, July 12, 2013 03:45:17 AM Srivatsa S. Bhat wrote:
+>>>
+>>> Hi,
+>>
+>> Hi,
+>>
+>>> Commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume) caused
+>>> some subtle regressions in the cpufreq subsystem during suspend/resume.
+>>> This patchset is aimed at rectifying those problems, by fixing the regression
+>>> as well as achieving the original goal of that commit in a proper way.
+>>>
+>>> Patch 1 reverts the above commit, and is CC'ed to stable.
+>>>
+>>> Patches 2 - 5 reorganize the code and have no functional impact, and can go
+>>> in as general cleanups as well. This reorganization builds a base that the
+>>> rest of the patches will make use of.
+>>>
+>>> Patch 6 and 7 add a mechanism to perform light-weight init/tear-down of CPUs
+>>> in the cpufreq subsystem and finally patch 8 uses it to preserve sysfs files
+>>> across suspend/resume.
+>>>
+>>> All the patches apply on current mainline.
+>>>
+>>>
+>>> Robert, Durgadoss, it would be great if you could try it out and see if it works
+>>> well for your usecase. I tested it locally and cpufreq related files did retain
+>>> their permissions across suspend/resume. Let me know if it works fine in your
+>>> setup too.
+>>>
+>>> And I'd of course appreciate to hear from Dirk, Tianyu and Toralf to know
+>>> whether their systems work fine after:
+>>> a. applying only the first commit (this is what gets backported to stable)
+>>> b. applying all the commits
+>>>
+>>> (Note: I had to use Michael's fix[1] to avoid CPU hotplug deadlock while
+>>> testing this patchset. Though that patch also touches cpufreq subsystem, it
+>>> doesn't affect this patchset in any way and there is absolutely no dependency
+>>> between the two in terms of code. That fix just makes basic CPU hotplug work
+>>> without locking up on current mainline).
+>>>
+>>> [1]. https://lkml.org/lkml/2013/7/10/611
+>>>
+>>>
+>>> Thank you very much!
+>>
+>> Thanks Srivatsa!
+>>
+>> I'm going to take [1/8] for 3.11 and queue up the rest for 3.12 if people don't
+>> hate them.  This way we'll have some more testing coverage before they reach
+>> the mainline hopefully.
+>>
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/video/atmel_lcdfb.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On 07/16/2013 01:25 AM, Rafael J. Wysocki wrote:> On Monday, July 15, 2013 07:38:02 PM Toralf Förster wrote:
+> Sorry, I have no idea what 1#8 means.
 
-diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
-index ece49d5..bf9c5d0 100644
---- a/drivers/video/atmel_lcdfb.c
-+++ b/drivers/video/atmel_lcdfb.c
-@@ -954,14 +954,14 @@ static int __init atmel_lcdfb_init_fbinfo(struct atmel_lcdfb_info *sinfo)
- 
- static void atmel_lcdfb_start_clock(struct atmel_lcdfb_info *sinfo)
- {
--	clk_enable(sinfo->bus_clk);
--	clk_enable(sinfo->lcdc_clk);
-+	clk_prepare_enable(sinfo->bus_clk);
-+	clk_prepare_enable(sinfo->lcdc_clk);
- }
- 
- static void atmel_lcdfb_stop_clock(struct atmel_lcdfb_info *sinfo)
- {
--	clk_disable(sinfo->bus_clk);
--	clk_disable(sinfo->lcdc_clk);
-+	clk_disable_unprepare(sinfo->bus_clk);
-+	clk_disable_unprepare(sinfo->lcdc_clk);
- }
- 
- #ifdef CONFIG_OF
+sry - here again with full quote of the email :
+
+I applied patch [1/8] on top of v3.11-rc1-8-g47188d3 passes two s2ram/wakeup
+cycles fine and crashed the system at the 3rd attempt / one times just at
+the 4th (blinking power led, no sysrq, ...).
+
+Applying patch 1-8 on top of that tree differs in that way that it
+crashes now the system even at the 1st attempt or at least at the 2nd
+
+My hardware is a ThinkPad T420 with latest BIOS and a 32 bit stable
+Gentoo Linux - FWIW .config attached.
+
+> 
+> Sounds great! Thanks a lot Rafael!
+>  
+> Regards,
+> Srivatsa S. Bhat
+> 
+> 
+
+
 -- 
-1.7.9.5
-
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
