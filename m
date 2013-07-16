@@ -1,104 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934006Ab3GPUny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:43:54 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:53142 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933910Ab3GPUnt (ORCPT
+	id S934020Ab3GPUoT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:44:19 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:61735 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933910Ab3GPUoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:43:49 -0400
-Date: Tue, 16 Jul 2013 22:43:49 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Alexander Kaltsas <alexkaltsas@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        rocko <rockorequin@hotmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: fix long-standing SNB regression
- in power consumption after resume
-Message-ID: <20130716204349.GY5784@phenom.ffwll.local>
-Mail-Followup-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	Alexander Kaltsas <alexkaltsas@gmail.com>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	rocko <rockorequin@hotmail.com>
-References: <20130714163009.22374.22100.stgit@zurg>
- <CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
- <51E2E65D.5050803@openvz.org>
- <20130716063101.GK5784@phenom.ffwll.local>
- <CALYGNiOtt7FUCTqcyBELoHYEVw_zqmA=bpmHy_nDkhXCduB9qg@mail.gmail.com>
- <20130716100654.1185c031@jbarnes-desktop>
- <20130716131925.7997a7ed@jbarnes-desktop>
+	Tue, 16 Jul 2013 16:44:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716131925.7997a7ed@jbarnes-desktop>
-X-Operating-System: Linux phenom 3.10.0-rc7+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130716171527.7c6cb722@notabene.brown>
+References: <001701ce7fb4$889bdd40$99d397c0$@lucidpixels.com>
+	<20130716171527.7c6cb722@notabene.brown>
+Date: Wed, 17 Jul 2013 00:44:15 +0400
+Message-ID: <CAGqmV7qf14zrsimCMRsVWobq8SpLaavxPQvEyU6N=f1nBgvFHQ@mail.gmail.com>
+Subject: Re: 3.10: discard/trim support on md-raid1?
+From: CoolCold <coolthecold@gmail.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        Linux RAID <linux-raid@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 01:19:25PM -0700, Jesse Barnes wrote:
-> On Tue, 16 Jul 2013 10:06:54 -0700
-> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> 
-> > On Tue, 16 Jul 2013 11:34:25 +0400
-> > Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
-> > > I've tested that patch and it really works for me. If you want change
-> > > something for other hardware or
-> > > extend range where forcewake is held prease do it in a separate patch.
-> > > This will be good for bisecting new bugs in the future.
-> > 
-> > Thanks a ton for finding this Konstantin, it puts us on the right
-> > track.
-> > 
-> > Can I ask you to test this patch?  The theory is that having RC6
-> > enabled messes with the initial programming sequence, so it's probably
-> > best to just shut it off at init until we're done, rather than trying
-> > to forcewake around everywhere we need it.
-> 
-> Oops, last one triggers a warn about IRQs.  This one doesn't and still
-> works for me.
-> 
-> Testing welcome.
-> 
-> Thanks,
-> -- 
-> Jesse Barnes, Intel Open Source Technology Center
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-> index c9d9d20..d962ec0 100644
-> --- a/drivers/gpu/drm/i915/i915_gem.c
-> +++ b/drivers/gpu/drm/i915/i915_gem.c
-> @@ -4112,6 +4112,9 @@ i915_gem_init_hw(struct drm_device *dev)
->         drm_i915_private_t *dev_priv = dev->dev_private;
->         int ret;
->  
-> +       /* BIOS often leaves RC6 enabled, but disable it for hw init */
-> +       intel_disable_gt_powersave(dev);
+Neil, I've tryed to look around commit logs but failed to find commit
+where discard/trim were added.
+I was looking via
+http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/drivers/md?id=9f2a940965286754f3a34d5737c3097c05db8725&qt=grep&q=discard+support
+, tryed just "discard" without support - found commits about dm, not
+md, though.
 
-I think it'd be better to have an explicit gen >= 6 check here and a
-disable_rps call. disable_gt_powersave also calls the ironlake version,
-which restores probably bogus values (since we haven't read them out yet
-in the enable code) into the hw.
--Daniel
+Can you shed some light here? Thanks in advance.
 
-> +
->         if (INTEL_INFO(dev)->gen < 6 && !intel_enable_gtt())
->                 return -EIO;
->  
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+(resent in plaintext mode, please reply to this one)
+
+
+On Tue, Jul 16, 2013 at 11:15 AM, NeilBrown <neilb@suse.de> wrote:
+> On Sat, 13 Jul 2013 06:34:19 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.com>
+> wrote:
+>
+>> Hello,
+>>
+>> Running 3.10 and I see the following for an md-raid1 of two SSDs:
+>>
+>> Checking /sys/block/md1/queue:
+>> add_random: 0
+>> discard_granularity: 512
+>> discard_max_bytes: 2147450880
+>> discard_zeroes_data: 0
+>> hw_sector_size: 512
+>> iostats: 0
+>> logical_block_size: 512
+>> max_hw_sectors_kb: 32767
+>> max_integrity_segments: 0
+>> max_sectors_kb: 512
+>> max_segment_size: 65536
+>> max_segments: 168
+>> minimum_io_size: 512
+>> nomerges: 0
+>> nr_requests: 128
+>> optimal_io_size: 0
+>> physical_block_size: 512
+>> read_ahead_kb: 8192
+>> rotational: 1
+>> rq_affinity: 0
+>> scheduler: none
+>> write_same_max_bytes: 0
+>>
+>> What should be seen:
+>> rotational: 0
+>
+> What has "rotational" got to do with "supports discard"?
+> There may be some correlation, but it isn't causal.
+>
+>> And possibly:
+>> discard_zeroes_data: 1
+>
+> This should be set as the 'or' of the same value from component devices.  And
+> does not enable or disable the use of discard.
+>
+> I don't think that "does this device support discard" appears in sysfs.
+>
+> I believe trim does work on md/raid1 if the underlying devices all support it.
+>
+> NeilBrown
+>
+>
+>
+>>
+>> Can anyone confirm if there is a workaround to allow TRIM when using
+>> md-raid1?
+>>
+>> Some related discussion here:
+>> http://us.generation-nt.com/answer/md-rotational-attribute-help-206571222.ht
+>> ml
+>> http://www.progtown.com/topic343938-ssd-strange-itself-conducts.html
+>>
+>>
+>> Justin.
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-raid" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Best regards,
+[COOLCOLD-RIPN]
