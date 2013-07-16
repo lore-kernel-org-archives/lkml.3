@@ -1,161 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab3GPMi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 08:38:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48814 "EHLO comal.ext.ti.com"
+	id S932484Ab3GPMkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 08:40:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48879 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932346Ab3GPMix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 08:38:53 -0400
-Message-ID: <51E53EC2.5080401@ti.com>
-Date: Tue, 16 Jul 2013 18:08:26 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S932228Ab3GPMkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 08:40:43 -0400
+Date: Tue, 16 Jul 2013 15:40:12 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Federico Vaga <federico.vaga@gmail.com>
+CC: <balbi@ti.com>, Paul Zimmerman <paul.zimmerman@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <giancarlo.asnaghi@st.com>
+Subject: Re: DWC2 and/or S3C-HSOTG for STA2X11 board
+Message-ID: <20130716124012.GB15036@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <38175373.Cq6zxae9tO@harkonnen>
+ <20130716120425.GA32038@arwen.pp.htv.fi>
+ <2703444.NGzofRFyoM@harkonnen>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [GIT PULL] PHY Framework for 3.12 merge window
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
+Content-Disposition: inline
+In-Reply-To: <2703444.NGzofRFyoM@harkonnen>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--Fba/0zbH8Xs+Fj9o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here's the pull request for the PHY Framework which I've been working on for a
-while.
+On Tue, Jul 16, 2013 at 02:27:43PM +0200, Federico Vaga wrote:
+> Thank you Felipe
+>=20
+> [add CC Giancarlo from ST]
+>=20
+> On Tuesday 16 July 2013 15:04:25 Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Tue, Jul 16, 2013 at 02:01:33PM +0200, Federico Vaga wrote:
+> > > Hello,
+> > >=20
+> > > I have an x86 board made by STMicroelectronics (STA2X11) with the Syn=
+opsis
+> > > USB-OTG DesignWare 2 on it and connected through the PCI-e bus.
+> > >=20
+> > > I know that there are two drivers for the same controller:
+> > >    (host)   drivers/staging/dwc2/*
+> > >    (device) drivers/usb/gadget/s3c-hsotg.{c|h}
+> > >=20
+> > > So, at the moment I cannot have a board with both host/device working=
+ at
+> > > the same time. I have to choose to use the block as device or host,
+> > > right?
+> > >=20
+> > > I know that the plan is to merge the s3c-hsotg in the dwc2 driver
+> > > (https://lwn.net/Articles/540283/). Are still accepted patch to s3c-h=
+sotg?
+> > > Or it is work in progress right now (soon), so it is better to wait a=
+fter
+> > > the merge?
+> > >=20
+> > > In order to use the s3c-hsotg I must implement a PCI wrapper that uses
+> > > this
+> > > driver. It will be accepted in the kernel even if it will be removed
+> > > sooner or later because of the driver merge?
+> >=20
+> > currently s3c-hsotg has too much knowledge of the Samsung platform. My
+> > suggestion would be to help dwc2 get in better shape. It should be
+> > rather easy to support your board since that already has a PCI wrapper
+> > driver.
+> >=20
+> > So, stick to host only for now, help clean up dwc2 and move it out of
+> > staging, then later it should be fairly simple to merge the device side
+> > in it.
+>=20
+> Is there something like a TODO list of dwc2 known problems?
 
-I've applied these patches on the current linux mainline HEAD (which has one
-commit after 3.11-rc1 is tagged).
+Paul should be the best to answer that :-s
 
-Even before this framework is merged, quite a few people started using it. I've
-queued those patches along with the PHY framework as well.
+sorry
 
-I'm also planning to maintain this framework henceforth and will be sending
-pull requests for anything related to this framework or users of this framework.
+--=20
+balbi
 
-Let me know if you want any changes on this pull request
+--Fba/0zbH8Xs+Fj9o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks
-Kishon
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The following changes since commit 47188d39b5deeebf41f87a02af1b3935866364cf:
+iQIcBAEBAgAGBQJR5T8sAAoJEIaOsuA1yqREhboP/inagDUGMf8wyUHxyEUtLmGk
+N1UEaHIZngvaapsbNdUagiaQyHxJEsXWCzac2+GCcGu8RygHgGMiGogcODXIu7j7
+NPoY4qyD1jv3RJFa74xvDbVUVX2raTMmiNAV4H9kOGP+zR4xQnUYoJM/QRCDQAZF
+L6tRBNCJExFbTQihqJ3EN8D2sRcJdBlu2ZPA3cTBZpOiE/ZbYySFJ5YPyjal6wEJ
+bcKWBg9lLkj+bD7xo661CliYJXAKPVC89KXF4e66hcJAFHJh7kVJ1q7hMzNwBnkd
+yE1UvHXyeaNWBnM0N4P+yZIgZFjoN70LSN4Ct8NzdfF9y45SeOoYngxZZMyvr2c9
+2A8hSSZD1SUtKpKYuuk29oV70COIRN/Z56R5jLL3Egv/v4FK78Aoe/ymGm0sbiB0
+oG9XpYKSavHAv8R21JnyPU8xMWFW5z3r7cfiqWPZoPKnTrVyJPeZ+DpZY30FrQQK
+70uiiRJrLoR531HZ63BsqFgjitmRqQqlnlWDDDNb7b+x1cfANXT/tvdo509J5oH0
+QXrETz1Lp3auaeFh1sKk46IE/X3XtJ+8cLkbVX64yOdkWs+GdoJ9BwsyzEuYV3Et
+rFYOJffc7T8kX4DToto1hAyya0UTaKueAPXkO760CEHy49YDA+dGRuuFnetakJWJ
+Hp/fI7Zf5Cz1GQ6rPasy
+=/zrk
+-----END PGP SIGNATURE-----
 
-  Merge tag 'ext4_for_linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-07-14 21:47:51
--0700)
-
-are available in the git repository at:
-
-
-  git://gitorious.org/linuxphy/linuxphy.git tags/phy-for-v3.12
-
-for you to fetch changes up to 827c292242da5723345e5649e38279c721125ca8:
-
-  video: exynos_dp: Use the generic PHY driver (2013-07-16 14:37:04 +0530)
-
-----------------------------------------------------------------
-PHY: patches for 3.12 merge window
-
-We're introducing a new kernel wide generic PHY framework.
-
-This framework provides a set of APIs for the PHY drivers to
-create/destroy a PHY and APIs for the PHY users to obtain a
-reference to the PHY with or without using phandle.
-
-This framework will be of use only to devices that uses external PHY (PHY
-functionality is not embedded within the controller).
-
-The intention of creating this framework is to bring the phy drivers spread
-all over the Linux kernel to drivers/phy to increase code re-use and for
-better code maintainability.
-
-There are already quite a few users for this framework.
-Samsung Exynos SoC Display Port PHY and MIPI PHY are some of the early users
-of this framework in addition to OMAP-USB2 PHY and TWL4030-USB.
-
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-
-----------------------------------------------------------------
-Jingoo Han (3):
-      phy: Add driver for Exynos DP PHY
-      video: exynos_dp: remove non-DT support for Exynos Display Port
-      video: exynos_dp: Use the generic PHY driver
-
-Kishon Vijay Abraham I (8):
-      drivers: phy: add generic PHY framework
-      usb: phy: omap-usb2: use the new generic PHY framework
-      usb: phy: twl4030: use the new generic PHY framework
-      ARM: OMAP: USB: Add phy binding information
-      ARM: dts: omap: update usb_otg_hs data
-      usb: musb: omap2430: use the new generic PHY framework
-      usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
-      usb: phy: twl4030-usb: remove *set_suspend* and *phy_init* ops
-
-Sylwester Nawrocki (4):
-      phy: Add driver for Exynos MIPI CSIS/DSIM DPHYs
-      video: exynos_mipi_dsim: Use the generic PHY driver
-      exynos4-is: Use the generic MIPI CSIS PHY driver
-      ARM: Samsung: Remove the MIPI PHY setup code
-
- .../devicetree/bindings/phy/phy-bindings.txt       |   66 +++
- .../devicetree/bindings/phy/samsung-phy.txt        |   22 +
- Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +
- Documentation/devicetree/bindings/usb/usb-phy.txt  |    6 +
- .../devicetree/bindings/video/exynos_dp.txt        |   12 +-
- Documentation/phy.txt                              |  129 +++++
- MAINTAINERS                                        |    7 +
- arch/arm/boot/dts/omap3-beagle-xm.dts              |    2 +
- arch/arm/boot/dts/omap3-evm.dts                    |    2 +
- arch/arm/boot/dts/omap3-overo.dtsi                 |    2 +
- arch/arm/boot/dts/omap4.dtsi                       |    3 +
- arch/arm/boot/dts/twl4030.dtsi                     |    1 +
- arch/arm/mach-exynos/include/mach/regs-pmu.h       |    5 -
- arch/arm/mach-omap2/usb-musb.c                     |    3 +
- arch/arm/mach-s5pv210/include/mach/regs-clock.h    |    4 -
- arch/arm/plat-samsung/Kconfig                      |    5 -
- arch/arm/plat-samsung/Makefile                     |    1 -
- arch/arm/plat-samsung/setup-mipiphy.c              |   60 ---
- drivers/Kconfig                                    |    2 +
- drivers/Makefile                                   |    2 +
- drivers/media/platform/exynos4-is/mipi-csis.c      |   16 +-
- drivers/phy/Kconfig                                |   28 +
- drivers/phy/Makefile                               |    7 +
- drivers/phy/phy-core.c                             |  544 ++++++++++++++++++++
- drivers/phy/phy-exynos-dp-video.c                  |  111 ++++
- drivers/phy/phy-exynos-mipi-video.c                |  169 ++++++
- drivers/usb/musb/Kconfig                           |    1 +
- drivers/usb/musb/musb_core.c                       |    1 +
- drivers/usb/musb/musb_core.h                       |    3 +
- drivers/usb/musb/omap2430.c                        |   26 +-
- drivers/usb/phy/Kconfig                            |    1 +
- drivers/usb/phy/phy-omap-usb2.c                    |   60 ++-
- drivers/usb/phy/phy-twl4030-usb.c                  |   63 ++-
- drivers/video/exynos/Kconfig                       |    2 +-
- drivers/video/exynos/exynos_dp_core.c              |  132 ++---
- drivers/video/exynos/exynos_dp_core.h              |  110 ++++
- drivers/video/exynos/exynos_dp_reg.c               |    2 -
- drivers/video/exynos/exynos_mipi_dsi.c             |   19 +-
- include/linux/phy/phy.h                            |  344 +++++++++++++
- include/linux/platform_data/mipi-csis.h            |   11 +-
- include/linux/usb/musb.h                           |    3 +
- include/video/exynos_dp.h                          |  131 -----
- include/video/exynos_mipi_dsim.h                   |    6 +-
- 43 files changed, 1746 insertions(+), 383 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-bindings.txt
- create mode 100644 Documentation/devicetree/bindings/phy/samsung-phy.txt
- create mode 100644 Documentation/phy.txt
- delete mode 100644 arch/arm/plat-samsung/setup-mipiphy.c
- create mode 100644 drivers/phy/Kconfig
- create mode 100644 drivers/phy/Makefile
- create mode 100644 drivers/phy/phy-core.c
- create mode 100644 drivers/phy/phy-exynos-dp-video.c
- create mode 100644 drivers/phy/phy-exynos-mipi-video.c
- create mode 100644 include/linux/phy/phy.h
- delete mode 100644 include/video/exynos_dp.h
+--Fba/0zbH8Xs+Fj9o--
