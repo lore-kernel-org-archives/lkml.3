@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab3GPGcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 02:32:00 -0400
+	id S1752788Ab3GPGcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 02:32:10 -0400
 Received: from mga02.intel.com ([134.134.136.20]:21175 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab3GPGb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 02:31:57 -0400
+	id S1752616Ab3GPGcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 02:32:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,674,1367996400"; 
-   d="scan'208";a="365882634"
+   d="scan'208";a="365882710"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V6 03/12] perf tools: add pid to struct thread
-Date: Tue, 16 Jul 2013 09:38:09 +0300
-Message-Id: <1373956698-27540-4-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V6 06/12] perf tools: remove unnecessary callchain validation
+Date: Tue, 16 Jul 2013 09:38:12 +0300
+Message-Id: <1373956698-27540-7-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1373956698-27540-1-git-send-email-adrian.hunter@intel.com>
 References: <1373956698-27540-1-git-send-email-adrian.hunter@intel.com>
@@ -29,117 +29,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record pid on struct thread.  The member is named 'pid_'
-to avoid confusion with the 'tid' member which was previously
-named 'pid'.
+Now that the sample parsing correctly checks data sizes
+there is no reason for it to be done again for callchains.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/machine.c | 16 +++++++++++-----
- tools/perf/util/thread.c  |  3 ++-
- tools/perf/util/thread.h  |  3 ++-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+ tools/perf/util/callchain.c |  8 --------
+ tools/perf/util/callchain.h |  5 -----
+ tools/perf/util/session.c   | 20 --------------------
+ 3 files changed, 33 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f9f9d63..67ba572 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -233,7 +233,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
- 	return;
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 42b6a63..024162a 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -20,14 +20,6 @@
+ 
+ __thread struct callchain_cursor callchain_cursor;
+ 
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event)
+-{
+-	unsigned int chain_size = event->header.size;
+-	chain_size -= (unsigned long)&event->ip.__more_data - (unsigned long)event;
+-	return chain->nr * sizeof(u64) <= chain_size;
+-}
+-
+ #define chain_for_each_child(child, parent)	\
+ 	list_for_each_entry(child, &parent->children, siblings)
+ 
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 3ee9f67..988c1aa 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -103,11 +103,6 @@ int callchain_append(struct callchain_root *root,
+ int callchain_merge(struct callchain_cursor *cursor,
+ 		    struct callchain_root *dst, struct callchain_root *src);
+ 
+-struct ip_callchain;
+-union perf_event;
+-
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event);
+ /*
+  * Initialize a cursor before adding entries inside, but keep
+  * the previously allocated entries as a cache.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 708c72b..1b07d7a 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -889,22 +889,6 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 	}
  }
  
--static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
-+static struct thread *__machine__findnew_thread(struct machine *machine,
-+						pid_t pid, pid_t tid,
- 						bool create)
+-static int perf_session__preprocess_sample(struct perf_session *session,
+-					   union perf_event *event, struct perf_sample *sample)
+-{
+-	if (event->header.type != PERF_RECORD_SAMPLE ||
+-	    !sample->callchain)
+-		return 0;
+-
+-	if (!ip_callchain__valid(sample->callchain, event)) {
+-		pr_debug("call-chain problem with event, skipping it.\n");
+-		++session->stats.nr_invalid_chains;
+-		session->stats.total_invalid_chains += sample->period;
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+ static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+ 					    struct perf_tool *tool, u64 file_offset)
  {
- 	struct rb_node **p = &machine->threads.rb_node;
-@@ -245,8 +246,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	 * so most of the time we dont have to look up
- 	 * the full rbtree:
- 	 */
--	if (machine->last_match && machine->last_match->tid == tid)
-+	if (machine->last_match && machine->last_match->tid == tid) {
-+		if (pid && pid != machine->last_match->pid_)
-+			machine->last_match->pid_ = pid;
- 		return machine->last_match;
-+	}
+@@ -967,10 +951,6 @@ static int perf_session__process_event(struct perf_session *session,
+ 	if (ret)
+ 		return ret;
  
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -254,6 +258,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- 		if (th->tid == tid) {
- 			machine->last_match = th;
-+			if (pid && pid != th->pid_)
-+				th->pid_ = pid;
- 			return th;
- 		}
- 
-@@ -266,7 +272,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	if (!create)
- 		return NULL;
- 
--	th = thread__new(tid);
-+	th = thread__new(pid, tid);
- 	if (th != NULL) {
- 		rb_link_node(&th->rb_node, parent, p);
- 		rb_insert_color(&th->rb_node, &machine->threads);
-@@ -278,12 +284,12 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, true);
-+	return __machine__findnew_thread(machine, 0, tid, true);
- }
- 
- struct thread *machine__find_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, false);
-+	return __machine__findnew_thread(machine, 0, tid, false);
- }
- 
- int machine__process_comm_event(struct machine *machine, union perf_event *event)
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 6feeb88..e3d4a55 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,12 +7,13 @@
- #include "util.h"
- #include "debug.h"
- 
--struct thread *thread__new(pid_t tid)
-+struct thread *thread__new(pid_t pid, pid_t tid)
- {
- 	struct thread *self = zalloc(sizeof(*self));
- 
- 	if (self != NULL) {
- 		map_groups__init(&self->mg);
-+		self->pid_ = pid;
- 		self->tid = tid;
- 		self->ppid = -1;
- 		self->comm = malloc(32);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 0fe1f9c..fc464bc 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -12,6 +12,7 @@ struct thread {
- 		struct list_head node;
- 	};
- 	struct map_groups	mg;
-+	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
- 	char			shortname[3];
-@@ -24,7 +25,7 @@ struct thread {
- 
- struct machine;
- 
--struct thread *thread__new(pid_t tid);
-+struct thread *thread__new(pid_t pid, pid_t tid);
- void thread__delete(struct thread *self);
- 
- int thread__set_comm(struct thread *self, const char *comm);
+-	/* Preprocess sample records - precheck callchains */
+-	if (perf_session__preprocess_sample(session, event, &sample))
+-		return 0;
+-
+ 	if (tool->ordered_samples) {
+ 		ret = perf_session_queue_event(session, event, &sample,
+ 					       file_offset);
 -- 
 1.7.11.7
 
