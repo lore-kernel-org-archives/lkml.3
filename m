@@ -1,150 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933972Ab3GPXoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 19:44:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10890 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933573Ab3GPXox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 19:44:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,680,1367996400"; 
-   d="scan'208";a="346700299"
-Subject: [RESEND][PATCH] mm: vmstats: tlb flush counters
+	id S934028Ab3GPXp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 19:45:27 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:49195 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933873Ab3GPXpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 19:45:23 -0400
+Date: Tue, 16 Jul 2013 16:45:22 -0700 (PDT)
+From: Rob Landley <rob@landley.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-mm@kvack.org, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 16 Jul 2013 16:44:38 -0700
-Message-Id: <20130716234438.C792C316@viggo.jf.intel.com>
+In-Reply-To: <1374018312.366617@landley.net>
+Message-Id: <1374018312.366947@landley.net>
+Subject: [PATCH 2/5] initmpfs v2: Move bdi setup from init_rootfs to init_ramfs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rob Landley <rob@landley.net>
 
-I was investigating some TLB flush scaling issues and realized
-that we do not have any good methods for figuring out how many
-TLB flushes we are doing.
+Even though ramfs hasn't got a backing device, commit e0bf68ddec4f added one
+anyway, and put the initialization in init_rootfs() since that's the first
+user, leaving it out of init_ramfs() to avoid duplication.
 
-It would be nice to be able to do these in generic code, but the
-arch-independent calls don't explicitly specify whether we
-actually need to do remote flushes or not.  In the end, we really
-need to know if we actually _did_ global vs. local invalidations,
-so that leaves us with few options other than to muck with the
-counters from arch-specific code.
+But initmpfs uses init_tmpfs() instead, so move the init into the filesystem's
+init function, add a "once" guard to prevent duplicate initialization, and
+call the filesystem init from rootfs init.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+This goes part of the way to allowing ramfs to be built as a module.
+
+Signed-off-by: Rob Landley <rob@landley.net>
 ---
 
- linux.git-davehans/arch/x86/mm/tlb.c             |   18 ++++++++++++++----
- linux.git-davehans/include/linux/vm_event_item.h |    5 +++++
- linux.git-davehans/mm/vmstat.c                   |    5 +++++
- 3 files changed, 24 insertions(+), 4 deletions(-)
+ fs/ramfs/inode.c |   23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
 
-diff -puN arch/x86/mm/tlb.c~tlb-vmstats arch/x86/mm/tlb.c
---- linux.git/arch/x86/mm/tlb.c~tlb-vmstats	2013-07-16 16:41:56.476280350 -0700
-+++ linux.git-davehans/arch/x86/mm/tlb.c	2013-07-16 16:41:56.483280658 -0700
-@@ -103,6 +103,7 @@ static void flush_tlb_func(void *info)
- 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
- 		return;
+--- initold/fs/ramfs/inode.c	2013-06-28 15:12:03.205879730 -0500
++++ initold2/fs/ramfs/inode.c	2013-06-28 15:12:12.425880115 -0500
+@@ -275,21 +275,34 @@
  
-+	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
- 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
- 		if (f->flush_end == TLB_FLUSH_ALL)
- 			local_flush_tlb();
-@@ -130,6 +131,7 @@ void native_flush_tlb_others(const struc
- 	info.flush_start = start;
- 	info.flush_end = end;
- 
-+	count_vm_event(NR_TLB_REMOTE_FLUSH);
- 	if (is_uv_system()) {
- 		unsigned int cpu;
- 
-@@ -149,6 +151,7 @@ void flush_tlb_current_task(void)
- 
- 	preempt_disable();
- 
-+	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
- 	local_flush_tlb();
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
- 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
-@@ -211,16 +214,19 @@ void flush_tlb_mm_range(struct mm_struct
- 	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
- 
- 	/* tlb_flushall_shift is on balance point, details in commit log */
--	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
-+	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
-+		count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
- 		local_flush_tlb();
--	else {
-+	} else {
- 		if (has_large_page(mm, start, end)) {
- 			local_flush_tlb();
- 			goto flush_all;
- 		}
- 		/* flush range by one by one 'invlpg' */
--		for (addr = start; addr < end;	addr += PAGE_SIZE)
-+		for (addr = start; addr < end;	addr += PAGE_SIZE) {
-+			count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
- 			__flush_tlb_single(addr);
-+		}
- 
- 		if (cpumask_any_but(mm_cpumask(mm),
- 				smp_processor_id()) < nr_cpu_ids)
-@@ -256,6 +262,7 @@ void flush_tlb_page(struct vm_area_struc
- 
- static void do_flush_tlb_all(void *info)
+ static int __init init_ramfs_fs(void)
  {
-+	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
- 	__flush_tlb_all();
- 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
- 		leave_mm(smp_processor_id());
-@@ -263,6 +270,7 @@ static void do_flush_tlb_all(void *info)
+-	return register_filesystem(&ramfs_fs_type);
++	static unsigned long once;
++	int err;
++
++	if (test_and_set_bit(1, &once))
++		return 0;
++
++	err = bdi_init(&ramfs_backing_dev_info);
++	if (err)
++		return err;
++
++	err = register_filesystem(&ramfs_fs_type);
++	if (err)
++		bdi_destroy(&ramfs_backing_dev_info);
++
++	return err;
+ }
+ module_init(init_ramfs_fs)
  
- void flush_tlb_all(void)
+ int __init init_rootfs(void)
  {
-+	count_vm_event(NR_TLB_REMOTE_FLUSH);
- 	on_each_cpu(do_flush_tlb_all, NULL, 1);
+-	int err;
++	int err = register_filesystem(&rootfs_fs_type);
+ 
+-	err = bdi_init(&ramfs_backing_dev_info);
+ 	if (err)
+ 		return err;
+ 
+-	err = register_filesystem(&rootfs_fs_type);
++	err = init_ramfs_fs();
+ 	if (err)
+-		bdi_destroy(&ramfs_backing_dev_info);
++		unregister_filesystem(&rootfs_fs_type);
+ 
+ 	return err;
  }
- 
-@@ -272,8 +280,10 @@ static void do_kernel_range_flush(void *
- 	unsigned long addr;
- 
- 	/* flush range by one by one 'invlpg' */
--	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE)
-+	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE) {
-+		count_vm_event(NR_TLB_LOCAL_FLUSH_ONE_KERNEL);
- 		__flush_tlb_single(addr);
-+	}
- }
- 
- void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-diff -puN include/linux/vm_event_item.h~tlb-vmstats include/linux/vm_event_item.h
---- linux.git/include/linux/vm_event_item.h~tlb-vmstats	2013-07-16 16:41:56.478280438 -0700
-+++ linux.git-davehans/include/linux/vm_event_item.h	2013-07-16 16:41:56.483280658 -0700
-@@ -70,6 +70,11 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
- 		THP_ZERO_PAGE_ALLOC,
- 		THP_ZERO_PAGE_ALLOC_FAILED,
- #endif
-+		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
-+		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
-+		NR_TLB_LOCAL_FLUSH_ALL,
-+		NR_TLB_LOCAL_FLUSH_ONE,
-+		NR_TLB_LOCAL_FLUSH_ONE_KERNEL,
- 		NR_VM_EVENT_ITEMS
- };
- 
-diff -puN mm/vmstat.c~tlb-vmstats mm/vmstat.c
---- linux.git/mm/vmstat.c~tlb-vmstats	2013-07-16 16:41:56.480280525 -0700
-+++ linux.git-davehans/mm/vmstat.c	2013-07-16 16:41:56.484280703 -0700
-@@ -817,6 +817,11 @@ const char * const vmstat_text[] = {
- 	"thp_zero_page_alloc",
- 	"thp_zero_page_alloc_failed",
- #endif
-+	"nr_tlb_remote_flush",
-+	"nr_tlb_remote_flush_received",
-+	"nr_tlb_local_flush_all",
-+	"nr_tlb_local_flush_one",
-+	"nr_tlb_local_flush_one_kernel",
- 
- #endif /* CONFIG_VM_EVENTS_COUNTERS */
- };
-_
