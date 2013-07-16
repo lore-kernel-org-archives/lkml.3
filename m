@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758506Ab3GPAQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 20:16:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59245 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab3GPAP6 (ORCPT
+	id S1758446Ab3GPARi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 20:17:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28177 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab3GPARg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 20:15:58 -0400
-Date: Tue, 16 Jul 2013 10:15:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Ben Hutchings <ben@decadent.org.uk>,
+	Mon, 15 Jul 2013 20:17:36 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=yDfxGvREtdsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5Bi_wUEe0twA:10 a=Pn67Rk4ioemEYvVpBP4A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373933850.17876.224.camel@gandalf.local.home>
+Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Documentation: update references to v2.6.x in
- development-process
-Message-Id: <20130716101543.b458d507331c4ac32fe6686e@canb.auug.org.au>
-In-Reply-To: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Date: Mon, 15 Jul 2013 20:17:30 -0400
+In-Reply-To: <20130715231555.GA24650@roeck-us.net>
+References: <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	 <20130715180403.GD15531@xanatos>
+	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	 <20130715184642.GE15531@xanatos>
+	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
+	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	 <1373926109.17876.221.camel@gandalf.local.home>
+	 <20130715223615.GI15531@xanatos> <20130715231555.GA24650@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-07-15 at 16:15 -0700, Guenter Roeck wrote:
+>  
+> One thing you should keep in mind in your discussion is what can happen
+> if people get too polite with each other.
+> 
+> I have seen this happen at two large companies I worked for. Early on, flames
+> are acceptable and expected as response to someone publishing bad code which
+> breaks everything for everyone. Then, at some point, it is not acceptable
+> anymore to flame, and one is expected to be polite and friendly at all times.
+> "Your code breaks the build for every platform. Would you please kindly
+> consider fixing it ?"
+> Result is that code quality suffers, to the point where images don't even
+> build anymore.
+> 
+> I hope the Linux kernel never gets into that stage. To avoid that,
+> I am willing to be cursed at by Linus if I am the responsible party.
 
-Hi Paul,
+Didn't Jim Zemlin show some research where there were two groups:
 
-Good work!
+ One that did a bunch of brain storming where no idea was a bad idea
 
-On Mon, 15 Jul 2013 19:34:44 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
->
->  Linux-next trees are announced on the linux-kernel and linux-next mailing
->  lists when they are assembled; they can be downloaded from:
-> =20
-> -	http://www.kernel.org/pub/linux/kernel/people/sfr/linux-next/
-> +	https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
+ The other required you to defend your idea while the others bashed it.
 
-Maybe:
+The results always showed that the second group not only did a better
+job, but also faster and more efficient.
 
-"	git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+I'm afraid if we worry too much about politeness, we will fall into that
+first group.
 
-Or as patches relative to Linus' latest -rc or releases from:
+-- Steve
 
-	https://www.kernel.org/pub/linux/kernel/next/
 
-Or viewed online at:
-
-	https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
-"
-
-Or maybe that is a bit verbose.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR5JCzAAoJEECxmPOUX5FE1O8QAIoNuFg8WXRAV/QZLKgFHQfR
-s72LdsrzL2MqcqxppA+9Yw4maIhuGWWqB6PGp3UARuXHon0w2eT023Agy59ITbdQ
-tRB8VJESQY0hLFHTLHRUNy3GsTcNpzYgy9yzWX1V538Q2krUc3IQ7gLHv6fyKAz0
-ZePeSnkx/EovwYr/U7GVQkWFEGkC+FkSZTlcSNGjTCbNedqxEe9OT8XQT1Epzqk4
-U+eVhmXqDo0fC/o1oA1tB7+kcrQkV+vW6Ebe8SAH5SbtY/TQ7VEoRYPrgQ1G7M/e
-8GRbrJxSjxyYWGcO3Z7KF7anAB6/kNx9QAR7SbQ/Kqz4cGD5Q6dqtCSqMnJvbdjk
-LMCTnX3p3JgBLSASv4J57ygRpodRK30k+qpdHBsBdLp22g2GQHjNxd/HjJbQvXEP
-y52tYTDCtsfixOJ8WlhA9QZKzaQYZ2EFWtp16tpF+dDj5cu6eyZUhstwgbHyGhQb
-WW/TznGa/r3Dmk2FhEnleW8KbEFxr051jHsm9tIqd15B1ILJJdAo4BplGOfM8V2K
-19TcVkF6B1GihcjT9K1ztDWyKT6IcpcZxdvGF18+IfCS31kjqoNF+t+cfpO9jH2T
-Oot4/j8v/aWD0f6545CVB6QaXbR7TlPllm5Obs4kkzb06Ic6KBN2mS5XgcVwePC1
-HRZgHdwloVkiH0p58yY0
-=WucT
------END PGP SIGNATURE-----
-
---Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE--
