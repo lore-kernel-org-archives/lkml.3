@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001Ab3GPUk0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:40:26 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:50062 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933952Ab3GPUkX (ORCPT
+	id S933983Ab3GPUkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:40:22 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:38760 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933952Ab3GPUkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:40:23 -0400
+	Tue, 16 Jul 2013 16:40:20 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
         Jean Delvare <jdelvare@suse.de>,
         "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 4/6] kconfig: minor style fixes in symbol-search code
-Date: Tue, 16 Jul 2013 22:40:00 +0200
-Message-Id: <803b3519880f255563d8590c1f5870398b9a4ea0.1374006854.git.yann.morin.1998@free.fr>
+Subject: [PATCH 2/6] kconfig: avoid multiple calls to strlen
+Date: Tue, 16 Jul 2013 22:39:58 +0200
+Message-Id: <26e933e3c35624d80281330c4beb17db4cd4960f.1374006854.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1374006854.git.yann.morin.1998@free.fr>
 References: <cover.1374006854.git.yann.morin.1998@free.fr>
@@ -26,53 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-Two minor style fixes:
-  - no space before/after parenthesis in function definition
-  - no {} for single-line if()
-
-And one grammar fix in a comment.
+Calls to strlen are costly, so avoid calling strln as much as we can.
 
 Reported-by: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 Cc: Jean Delvare <jdelvare@suse.de>
 Reviewed-by: Jean Delvare <jdelvare@suse.de>
 ---
- scripts/kconfig/symbol.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ scripts/kconfig/symbol.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index 020a0ac..b664d6e 100644
+index d550300..020a0ac 100644
 --- a/scripts/kconfig/symbol.c
 +++ b/scripts/kconfig/symbol.c
-@@ -963,7 +963,7 @@ struct sym_match {
-  * - first, symbols that match exactly
-  * - then, alphabetical sort
-  */
--static int sym_rel_comp( const void *sym1, const void *sym2 )
-+static int sym_rel_comp(const void *sym1, const void *sym2)
+@@ -967,7 +967,7 @@ static int sym_rel_comp( const void *sym1, const void *sym2 )
  {
  	struct sym_match *s1 = *(struct sym_match **)sym1;
  	struct sym_match *s2 = *(struct sym_match **)sym2;
-@@ -1014,9 +1014,8 @@ struct symbol **sym_re_search(const char *pattern)
- 			void *tmp;
- 			size += 16;
- 			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
--			if (!tmp) {
-+			if (!tmp)
- 				goto sym_re_search_free;
--			}
- 			sym_match_arr = tmp;
- 		}
- 		sym_calc_value(sym);
-@@ -1024,7 +1023,7 @@ struct symbol **sym_re_search(const char *pattern)
- 		if (!tmp_sym_match)
- 			goto sym_re_search_free;
- 		tmp_sym_match->sym = sym;
--		/* As regexec return 0, we know we have a match, so
-+		/* As regexec returned 0, we know we have a match, so
- 		 * we can use match[0].rm_[se]o without further checks
- 		 */
- 		tmp_sym_match->so = match[0].rm_so;
+-	int l1, l2;
++	int exact1, exact2;
+ 
+ 	/* Exact match:
+ 	 * - if matched length on symbol s1 is the length of that symbol,
+@@ -978,11 +978,11 @@ static int sym_rel_comp( const void *sym1, const void *sym2 )
+ 	 * exactly; if this is the case, we can't decide which comes first,
+ 	 * and we fallback to sorting alphabetically.
+ 	 */
+-	l1 = s1->eo - s1->so;
+-	l2 = s2->eo - s2->so;
+-	if (l1 == strlen(s1->sym->name) && l2 != strlen(s2->sym->name))
++	exact1 = (s1->eo - s1->so) == strlen(s1->sym->name);
++	exact2 = (s2->eo - s2->so) == strlen(s2->sym->name);
++	if (exact1 && !exact2)
+ 		return -1;
+-	if (l1 != strlen(s1->sym->name) && l2 == strlen(s2->sym->name))
++	if (!exact1 && exact2)
+ 		return 1;
+ 
+ 	/* As a fallback, sort symbols alphabetically */
 -- 
 1.8.1.2
 
