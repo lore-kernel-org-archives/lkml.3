@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab3GPOTa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:19:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36783 "EHLO mx2.suse.de"
+	id S932477Ab3GPOUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:20:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38792 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932183Ab3GPOT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:19:29 -0400
-Message-ID: <51E5566E.7030607@suse.com>
-Date: Tue, 16 Jul 2013 10:19:26 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S932183Ab3GPOUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 10:20:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,677,1367996400"; 
+   d="scan'208";a="371171463"
+Date: Tue, 16 Jul 2013 07:20:10 -0700
+From: Andi Kleen <ak@linux.jf.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.jf.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.jf.intel.com>,
+        h.mitake@gmail.com, kirill.shutemov@linux.jf.intel.com
+Subject: Re: [PATCH] perf, tools, bench: Fix memcpy benchmark for large sizes
+Message-ID: <20130716142010.GR5643@tassilo.jf.intel.com>
+References: <1373675551-18684-1-git-send-email-andi@firstfloor.org>
+ <20130716101100.C2A70E0090@blue.fi.intel.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Documentation: Fix bad merge with tmpfile documentation
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716101100.C2A70E0090@blue.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 48bde8d3 (Document ->tmpfile()) had a bad merge in vfs.txt,
-where it put the new tmpfile prototype in the middle of the atomic_open
-prototype.
+> > @@ -117,6 +117,8 @@ static void alloc_mem(void **dst, void **src, size_t length)
+> >  	*src = zalloc(length);
+> >  	if (!src)
+> >  		die("memory allocation failed - maybe length is too large?\n");
+> > +	/* Make sure to always replace the zero pages even if MMAP_THRESH is crossed */
+> > +	memset(src, 0, length);
+> 
+> It should be memset(*src, 0, length) instead.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
- Documentation/filesystems/vfs.txt |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Thanks for catching. I wonder why it fixed the problem for me.
 
---- a/Documentation/filesystems/vfs.txt	2013-07-16 00:53:43.791018403 -0400
-+++ b/Documentation/filesystems/vfs.txt	2013-07-16 00:59:16.008721223 -0400
-@@ -360,11 +360,10 @@ struct inode_operations {
- 	int (*removexattr) (struct dentry *, const char *);
- 	void (*update_time)(struct inode *, struct timespec *, int);
- 	int (*atomic_open)(struct inode *, struct dentry *,
--	int (*tmpfile) (struct inode *, struct dentry *, umode_t);
--} ____cacheline_aligned;
- 				struct file *, unsigned open_flag,
- 				umode_t create_mode, int *opened);
--};
-+	int (*tmpfile) (struct inode *, struct dentry *, umode_t);
-+} ____cacheline_aligned;
+> There's fix for wrong memory allocation fail check in v3.11-rc1.
 
- Again, all methods are called without any locks being held, unless
- otherwise noted.
+Doubt it matters.
+
+-Andi
 
 -- 
-Jeff Mahoney
-SUSE Labs
+ak@linux.intel.com -- Speaking for myself only
