@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab3GPFxP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 01:53:15 -0400
-Received: from callisto.mysnip.de ([178.23.121.164]:38891 "EHLO
-	callisto.mysnip.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3GPFxN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 01:53:13 -0400
-To: linux-kernel@vger.kernel.org
-Subject: Selling Creative With Nike
-X-PHP-Originating-Script: 1000:email_functions.php
-Content-Type: text/plain; charset=UTF-8
-X-Mailer: Phorum5
-Message-ID: <495968b7960a163e778a83ad9683d0c8.LinuxKernel@www.serverphorums.com>
-X-Phorum: 1a38330efb91e5f9021ae2fc13b39ae0412706f1
-From: lkml@serverphorums.com
-Date: Tue, 16 Jul 2013 07:53:10 +0200 (CEST)
+	id S1751824Ab3GPFxW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 01:53:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33564 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751370Ab3GPFxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 01:53:18 -0400
+Message-ID: <51E4DFA6.2010501@ti.com>
+Date: Tue, 16 Jul 2013 11:22:38 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <tony@atomide.com>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 0/4] usb: musb: fix USB enumeration issue in OMAP3
+ platform
+References: <1373282057-20181-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1373282057-20181-1-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6G5rJXj014739
 
-Time that we have the ad and even slogan suitable dull detect, just "advertised", so whereby consumers can not be tempted, in all probability to crash. At length of time, advertising creative instead of a typical literary plus artistic growth, it might only screen advertising themes or templates or themes, advertising procedures by marketplace environment and also the constraints, the pursuit is a most economical nike schuhe bestellen in improvement to concise approach, promote the store's corporate vendor and item personality, to take full advantage of communication in addition to affect shoppers.
+Tony,
 
-This image isn't just beautiful, appeals into the imagination, in addition to meaningful, especially to view them association up additional. Image facts behind the exact group marked the fresh face of Nike: Nike brand has already been not only for youth but additionally for seniors, not just for men but additionally for young ladies, not simply for the the planet's leading champions with the unknown road movement. Nike passed another kind of image connected with any voice. nike schuhe deutschland did definitely not directly claim "revolution" although announced every "revolution", and these can be a popular but not limited to the service for a few brands.
+On Monday 08 July 2013 04:44 PM, Kishon Vijay Abraham I wrote:
+> This series fixes the USB enumeration issue caused because of the controller
+> not able to get a reference to the PHY because of incorrect binding in the
+> board file.
+> 
+> In the case of non-dt boot, the platform specific initialization file
+> (board file) will do usb_bind_phy that binds the usb controller with the
+> PHY using device names. After the device names are created using 
+> PLATFORM_DEVID_AUTO, our original method of binding by device names doesn't
+> work reliably (since the device name changes). Hence the usb controller
+> is made to use labels for getting the PHY.
+> 
+> Here the PHY name is added in the plat data of USB controller device which
+> should be used by the controller driver to get the PHY.
+> Two new APIs usb_get_phy_by_name and devm_usb_get_phy_by_name are added to
+> be used by the controller to get the PHY by name.
 
-In the new field hockey game, you will discover 40 debut with Nike weather max 2009 basketball shoes and boots and " booties ", which contains nike air max bestellen. The clean game initiated seeing participants obtain basketball shoes will be wide and also varied, the ball player doesn't need 80 points or maybe more, or catch greater than 22 rebounds to becoming a pair regarding footwear trapeze, the important is will depend on your participate in time. Select the sneakers following the golfer who could possibly get precise tips, such seeing that its meaning, history, and Jordan following the initial evaluation to discover the shoes etc.
+You haven't picked this patch series?
 
-Nike Jordan following introduced any generation for you to sign should the red along with black sneakers or boots, NBA objectives are yet wearing the majority the fairly old-fashioned ebony and Nike Air Max sale deutschland. Jordan to understand the shoes which could not wear, but still place on the early morning after long run. The NBA is not allowed, each carrying around a Jordan Jordan is certain to get a great result, Nike Jordan paid out all fines, Nike ambiance max 24-7, along with become well-known.
-
-Right now, the Nike Air Max Damen scientific suggestions embodied in the creative and also advertising activities of every session. Scientific in addition to artistic resourcefulness in advertising may be a contradiction from the unity, discussed penetration, together play a role. Make innovative scientific a lot more rational, additional artistic sense is therefore creative. That wonderful ingenuity, science in addition to art need to be perfect unity on the crystal.
-
----
-posted at http://www.serverphorums.com
-http://www.serverphorums.com/read.php?12,743667,743667#msg-743667
+-Kishon
