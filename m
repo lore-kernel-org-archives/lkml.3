@@ -1,85 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab3GPJpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:45:33 -0400
-Received: from p-mail1.rd.orange.com ([195.101.245.15]:24579 "EHLO
-	p-mail1.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab3GPJpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:45:32 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new streaming format
-Date: Tue, 16 Jul 2013 11:45:27 +0200
-User-Agent: KMail/1.13.5 (Linux/3.9.10-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, celinux-dev@lists.celinuxforum.org,
-        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
-        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com> <201307161132.39845.yann.morin.1998@free.fr> <20130716093820.GE4402@pd.tnic>
-In-Reply-To: <20130716093820.GE4402@pd.tnic>
+	id S932122Ab3GPJqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:46:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52131 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754496Ab3GPJqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 05:46:07 -0400
+Date: Tue, 16 Jul 2013 11:46:05 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Greg KH <greg@kroah.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+In-Reply-To: <1373960616.2148.34.camel@dabdike>
+Message-ID: <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
+References: <1373916476.2748.69.camel@dabdike> <20130715214422.GA2478@kroah.com> <1373951852.2148.9.camel@dabdike> <20130716062058.GB19052@kroah.com> <1373960616.2148.34.camel@dabdike>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307161145.27810.yann.morin.1998@free.fr>
-X-OriginalArrivalTime: 16 Jul 2013 09:45:28.0159 (UTC) FILETIME=[3426AEF0:01CE8209]
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav, All,
+On Tue, 16 Jul 2013, James Bottomley wrote:
 
-On Tuesday 16 July 2013 11:38:20 Borislav Petkov wrote:
-> On Tue, Jul 16, 2013 at 11:32:39AM +0200, Yann E. MORIN wrote:
-> > That does not work in two cases:
-> >   - older distros that do not have the tool packaged
+> > But I need, from the distros, specific examples of what they object to.
+> > So far all I've gotten is one security patch (that was needed), and one
+> > patch for sysfs that I backported too far in the version numbers (my
+> > fault.)
+> > 
+> > Given the huge number of stable patches over the past few years, only
+> > having 2 patches be an issue sounds like things are working well for
+> > people here.
+> > 
+> > If I don't get pushback, with specifics, from the distros, I will not
+> > know what to change, so if people can provide me that, it will help out
+> > a lot.
 > 
-> This point is moot - distro kernels are built by the distro people.
+> I agree ... I think Jiøí and his Red Hat equivalent need to pipe up and
+> give us more examples of the problems they've been having.
 
-It's not about building distro kernels. It's about building the current
-kernel on a distro, for example for cross-compilation.
+I am still continuing with my pushback against the /dev/random revamp that 
+happened in -stable; at least in the form it happened. I still strongly 
+believe it's something that's not a stable material. But that's happening 
+in parallel in a different thread already.
 
-> >   - automatic test-harness that run thousands of randconfig a day
-> randconfigs are not guaranteed to build successfully.
+Okay, if you want another example:
 
-Well, mostly agreed. However, there was a request (in this thread) that
-using such new tools that are not yet widely available in distros, does
-not break randconfig.
+	commit a6aa749906b92eaec6ca0469f90f35de26044d90
+	Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+	Date:   Thu Dec 20 15:05:14 2012 -0800
 
-This is a *new* requirement.
+	    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
 
-> > The idea is to be always have a .config that is buildable with the
-> > current toolset of the system, especially for esoteric and/or recent
-> > tools that are not packaged and/or installed by default by the
-> > distros.
-> How are you going to tell the user running make <something>config to
-> install the missing tools?
+While this is a correct fix for major kernel release, as it achieves 
+correctness by checking SMBIOS version properly and behaving according to 
+the spec, it actually causes an userspace ABI regression in some sense, as 
+it just changes byte order of /sys/class/dmi/id/product_uuid on certain 
+systems.
 
-As discussed with Florian in this thread, either one of:
-  - a warning at check time
-  - a comment in Kconfig
+Which is something I absolutely *do not* expect from a minor release of 
+branch which is called "stable".
 
-which both are easy enough to achieve. As I said earlier in this thread,
-I've been using a similar scheme in crosstool-NG (which uses Kconfig as
-its configuration infrastructure), and it has been proven effective
-over the past feew years.
+As has been pointed out in other thread already, this all might be a 
+matter of taste; I am just trying to point out where the stable process is 
+failing for us.
 
-Regards,
-Yann E. MORIN.
+> > > > I don't like this at all, just for the simple reason that it will push
+> > > > the majority of the work of stable kernel development on to the
+> > > > subsystem maintainers, who have enough work to do as it is.
+> > > 
+> > > Well, I think of this as a feature not a bug because it enables scaling,
+> > > but we can certainly debate the topic; it's probably one of the more
+> > > important things that should be discussed.
+> > 
+> > How does this scale?  It makes the maintainers do more work, which does
+> > not scale at all.
+> 
+> We obviously have different ideas of what "scaling" means.  Being a
+> mathematician I think of a process were you review everything as o(1)
+> and where the maintainers review everything as o(n).  Since the number
+> of patches (np) tends to grow as the number of maintainers, np/o(n) is
+> an approximate constant meaning the amount of work per maintainer
+> scales.  np/o(1) grows.
+
+Having a degree from mathematical insitute as well, I agree with James :)
+
+
+On Mon, 15 Jul 2013, Greg KH wrote:
+
+> I give maintainers 2 different chances to NAK a patch, and if they miss
+> those, I can also easily revert a patch that got applied and do a new
+> release, which I have done in the past.
+
+This is exactly what I wanted to change with my proposal yesterday -- 
+asking for NAKing of something that is already upstream is just "boring" 
+and going to be ignored by many people. That's reality, unfortunately. 
+It's basically a passive approval scenario.
+
+If you completely push the burden out to maintainers, to have them prepare 
+the branch and send it to you for pulling, that requires an *active* 
+action from them, which means much more thinking about what code is going 
+into the branch.
+
+It could mean that less code will be going to stable, yes. But it will be 
+documented *why* it's going there (in the pull request), there will be 
+clearly someone responsible for it (the person who conducted the pull 
+request) and the changes will have much higher chances to be reviewed in 
+terms of applicability to -stable.
+
+Oh, and I need to add: I am not pushing against you personally or the 
+stable branch in general, at all. We are heavy users of -stable releases 
+of course, and it saves us a lot of work. I am just trying to figure out 
+ways how to avoid another lot of extra work on our side when change that 
+shouldn't be pulled into stable lands in our tree through it. Once that 
+happens, it causes us quite some headache, as we are implicitly relying on 
+stable to actually be "stable", in our understanting of the word :)
+
+Thanks,
 
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
-| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
-| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
-'------------------------------'-------'------------------'--------------------'
+Jiri Kosina
+SUSE Labs
