@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539Ab3GPBDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 21:03:38 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50967 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab3GPBDg (ORCPT
+	id S1758580Ab3GPBDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 21:03:50 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:60443 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758543Ab3GPBDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 21:03:36 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-29-51e49be68d75
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH] Revert "tools lib lk: Fix for cross build"
-Date: Tue, 16 Jul 2013 10:03:34 +0900
-Message-Id: <1373936614-22224-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 15 Jul 2013 21:03:49 -0400
+Date: Tue, 16 Jul 2013 03:03:46 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        rostedt@goodmis.org
+Subject: Re: nohz: Warn if the machine can not perform nohz_full
+Message-ID: <20130716010344.GC13562@somewhere>
+References: <20130715170859.GA25570@redhat.com>
+ <20130715171800.GD6442@somewhere>
+ <20130715172423.GA27745@redhat.com>
+ <20130715173848.GA1066@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130715173848.GA1066@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 079787f209416416383c74ea5d5044be2d586f5e.
+On Mon, Jul 15, 2013 at 01:38:48PM -0400, Dave Jones wrote:
+> On Mon, Jul 15, 2013 at 01:24:23PM -0400, Dave Jones wrote:
+>  > On Mon, Jul 15, 2013 at 07:18:02PM +0200, Frederic Weisbecker wrote:
+>  >  
+>  >  > > So I guess you guys never want this to be enabled on distro kernels ?
+>  >  > > If that's the case, can you add something to that effect in Kconfig ?
+>  >  > 
+>  >  > I believe we want it to be enabled on distros in the long term. But right now it would
+>  >  > be a bad idea until the off case (nohz_full= parameter empty) is carefully optimized.
+>  >  > I'm currently working on that.
+>  >  > 
+>  >  > Now for the unstable tsc, which is what it's about on the above code block, we need
+>  >  > the tick to be there to leverage the sched clock madness. May be there could be some
+>  >  > other solution that could work along full dynticks but for now we chose the easy path.
+>  >  > 
+>  >  > Are broken TSCs that common?
+>  >  
+>  > I just hit one apparently.  http://paste.fedoraproject.org/25421/73907845/raw/
+>  > That's a fairly recent Atom board, so I suspect it's not uncommon on that platform.
+> 
+> And here's a Core Duo from circa 2008.
+> http://paste.fedoraproject.org/25429/13739098/raw
+> 
+> Two for two so far. I get the feeling you guys are going to get a ton of these reports.
 
-Below commit already resolve a cross build problem.
-I have been noticed this too lately.
+Definetly, so it comforts me on the fact we need to remove the warning, which may be
+interpreted as the symptom of a bug to report while it's not.
 
-    commit 3c4797d46c14fa0c7cf733a77bd4b28875078b53
-    Author: Rabin Vincent <rabin@rab.in>
-    Date:   Fri May 17 22:27:44 2013 +0200
-
-    tools lib lk: Respect CROSS_COMPILE
-
-    Make lk use CROSS_COMPILE, in order to be able to cross compile perf
-    again.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 280dd82..3dba0a4 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -3,21 +3,6 @@ include ../../scripts/Makefile.include
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
- 
--# Makefiles suck: This macro sets a default value of $(2) for the
--# variable named by $(1), unless the variable has been set by
--# environment or command line. This is necessary for CC and AR
--# because make sets default values, so the simpler ?= approach
--# won't work as expected.
--define allow-override
--  $(if $(or $(findstring environment,$(origin $(1))),\
--            $(findstring command line,$(origin $(1)))),,\
--    $(eval $(1) = $(2)))
--endef
--
--# Allow setting CC and AR, or setting CROSS_COMPILE as a prefix.
--$(call allow-override,CC,$(CROSS_COMPILE)gcc)
--$(call allow-override,AR,$(CROSS_COMPILE)ar)
--
- # guard against environment variables
- LIB_H=
- LIB_OBJS=
--- 
-1.7.9.5
-
+We need to warn the user but through another way.
