@@ -1,147 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab3GPKj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 06:39:58 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45991 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267Ab3GPKjz (ORCPT
+	id S1755236Ab3GPKoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 06:44:37 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:64154 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169Ab3GPKof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 06:39:55 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>
-Subject: [PATCH] microblaze: Fix clone syscall
-Date: Tue, 16 Jul 2013 12:39:46 +0200
-Message-Id: <2dd2f768912e04aa378d358c9a4e20eccbf848d2.1373971170.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-14755-1373971186-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 16 Jul 2013 06:44:35 -0400
+Date: Tue, 16 Jul 2013 13:44:00 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, Jiri Kosina <jkosina@suse.cz>,
+        Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
+Message-ID: <20130716104400.GA2359@swordfish.minsk.epam.com>
+References: <20130710231305.GA4046@swordfish>
+ <51DE1BE1.3090707@linux.vnet.ibm.com>
+ <20130714114721.GB2178@swordfish>
+ <20130714120629.GA4067@swordfish>
+ <51E37194.1080103@linux.vnet.ibm.com>
+ <51E3AA3B.9090003@linux.vnet.ibm.com>
+ <20130715082918.GA2435@swordfish>
+ <51E3F6EB.2050807@linux.vnet.ibm.com>
+ <20130715232057.GA2486@swordfish>
+ <51E50570.8080704@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E50570.8080704@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On (07/16/13 14:03), Srivatsa S. Bhat wrote:
+> >> So here is the solution:
+> >>
+> >> On 3.11-rc1, apply these patches in the order mentioned below, and check
+> >> whether it fixes _all_ problems (both the warnings about IPI as well as the
+> >> lockdep splat).
+> >>
+> >> 1. Patch given in:  https://lkml.org/lkml/2013/7/11/661
+> >>    (Just apply patch 1, not the entire patchset).
+> >>
+> >> 2. Apply the patch shown below, on top of the above patch:
+> >>
+> >> ---------------------------------------------------------------------------
+> >>
+> > 
+> > Hello Srivatsa,
+> > Thanks, I'll test a bit later -- in the morning. (laptop stopped resuming from
+> > suspend, probably radeon dmp).
+> > 
+> > 
+> 
+> Sure, thanks!
+> 
+> > 
+> > Shouldn't we also kick the console lock?
+> > 
+> > 
+> >  kernel/printk.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/kernel/printk.c b/kernel/printk.c
+> > index d37d45c..3e20233 100644
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -1926,8 +1926,11 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
+> >  {
+> >  	switch (action) {
+> >  	case CPU_ONLINE:
+> > +	case CPU_ONLINE_FROZEN:
+> >  	case CPU_DEAD:
+> > +	case CPU_DEAD_FROZEN:
+> >  	case CPU_DOWN_FAILED:
+> > +	case CPU_DOWN_FAILED_FROZEN:
+> >  	case CPU_UP_CANCELED:
+> >  		console_lock();
+> >  		console_unlock();
+> > 
+> > 
+> 
+> No need. suspend_console() and resume_console() already handle it
+> properly in the suspend/resume case, from what I can see.
+>
 
---=_mimegpg-monstr-desktop-14755-1373971186-0001
-
-Microblaze was assign to CLONE_BACKWARDS type where
-parent tid was passed via 3rd argument.
-Microblaze glibc is using 4th argument for it.
-
-Create new CLONE_BACKWARDS3 type where stack_size is passed
-via 3rd argument, parent thread id pointer via 4th,
-child thread id pointer via 5th and tls value as 6th
-argument
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Hi Al,
-
-We have found this problem based on debugging timer_create()
-reported by customer which wasn't cover by LTP testing.
-What tool do you use for syscall testing?
-
-IRC there was any discussion about adding syscall tests
-directly to the kernel.
-
-I am not sure if there is more elegant way how to fix this
-in syscalls.h.
-
-Thanks,
-Michal
-
----
- arch/Kconfig             | 6 ++++++
- arch/microblaze/Kconfig  | 2 +-
- include/linux/syscalls.h | 5 +++++
- kernel/fork.c            | 6 ++++++
- 4 files changed, 18 insertions(+), 1 deletion(-)
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 8d2ae24..1feb169 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -407,6 +407,12 @@ config CLONE_BACKWARDS2
- 	help
- 	  Architecture has the first two arguments of clone(2) swapped.
-
-+config CLONE_BACKWARDS3
-+	bool
-+	help
-+	  Architecture has tls passed as the 3rd argument of clone(2),
-+	  not the 5th one.
-+
- config ODD_RT_SIGACTION
- 	bool
- 	help
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index d22a4ec..4fab522 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -28,7 +28,7 @@ config MICROBLAZE
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_IDLE_POLL_SETUP
- 	select MODULES_USE_ELF_RELA
--	select CLONE_BACKWARDS
-+	select CLONE_BACKWARDS3
-
- config SWAP
- 	def_bool n
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 4147d70..71d8931 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -802,9 +802,14 @@ asmlinkage long sys_vfork(void);
- asmlinkage long sys_clone(unsigned long, unsigned long, int __user *, int,
- 	       int __user *);
- #else
-+#if CONFIG_CLONE_BACKWARDS3
-+asmlinkage long sys_clone(unsigned long, unsigned long, int, int __user *,
-+			  int __user *, int);
-+#else
- asmlinkage long sys_clone(unsigned long, unsigned long, int __user *,
- 	       int __user *, int);
- #endif
-+#endif
-
- asmlinkage long sys_execve(const char __user *filename,
- 		const char __user *const __user *argv,
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 66635c8..da6b699 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1679,6 +1679,12 @@ SYSCALL_DEFINE5(clone, unsigned long, newsp, unsigned long, clone_flags,
- 		 int __user *, parent_tidptr,
- 		 int __user *, child_tidptr,
- 		 int, tls_val)
-+#elif defined(CONFIG_CLONE_BACKWARDS3)
-+SYSCALL_DEFINE6(clone, unsigned long, clone_flags, unsigned long, newsp,
-+		int, stack_size,
-+		int __user *, parent_tidptr,
-+		int __user *, child_tidptr,
-+		int, tls_val)
- #else
- SYSCALL_DEFINE5(clone, unsigned long, clone_flags, unsigned long, newsp,
- 		 int __user *, parent_tidptr,
---
-1.8.2.3
+I've managed to wake up my laptop from suspend, and something's not right.
 
 
---=_mimegpg-monstr-desktop-14755-1373971186-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
+	# for i in {1..5}; do \
+	echo 0 > /sys/devices/system/cpu/cpu3/online; \
+	echo 0 > /sys/devices/system/cpu/cpu2/online; \
+	echo 1 > /sys/devices/system/cpu/cpu3/online; \
+	echo 0 > /sys/devices/system/cpu/cpu1/online; \
+	echo 1 > /sys/devices/system/cpu/cpu1/online; \
+	echo 1 > /sys/devices/system/cpu/cpu2/online; \
+	done
+	# systemctl suspend
+	->	resume
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlHlIvIACgkQykllyylKDCFJ9wCdFXb7bJaCwiwTE8wg0dxf/2Bd
-05QAnjhFVi/VMwuqA2LUU1phOLoYn9AI
-=IPZI
------END PGP SIGNATURE-----
+[  227.329656] ACPI: Preparing to enter system sleep state S3
+[  227.353334] PM: Saving platform NVS memory
 
---=_mimegpg-monstr-desktop-14755-1373971186-0001--
+[  227.355403] ======================================================
+[  227.355404] [ INFO: possible circular locking dependency detected ]
+[  227.355407] 3.11.0-rc1-dbg-01398-gf537e41-dirty #1838 Not tainted
+[  227.355408] -------------------------------------------------------
+[  227.355411] systemd-sleep/2280 is trying to acquire lock:
+[  227.355426]  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8104dab4>]
+disable_nonboot_cpus+0x24/0x120
+[  227.355427] 
+but task is already holding lock:
+[  227.355434]  (console_lock){+.+.+.}, at: [<ffffffff8104c956>]
+suspend_console+0x26/0x40
+[  227.355435] 
+which lock already depends on the new lock.
+
+[  227.355436] 
+the existing dependency chain (in reverse order) is:
+[  227.355441] 
+-> #2 (console_lock){+.+.+.}:
+[  227.355448]        [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
+[  227.355452]        [<ffffffff8104b197>] console_lock+0x77/0x80
+[  227.355456]        [<ffffffff8104cf91>] console_cpu_notify+0x31/0x40
+[  227.355462]        [<ffffffff8107cd6d>] notifier_call_chain+0x5d/0x110
+[  227.355466]        [<ffffffff8107ce2e>] __raw_notifier_call_chain+0xe/0x10
+[  227.355469]        [<ffffffff8104d5a3>] cpu_notify+0x23/0x50
+[  227.355473]        [<ffffffff8104d5de>] cpu_notify_nofail+0xe/0x20
+[  227.355482]        [<ffffffff815fafad>] _cpu_down+0x1ad/0x330
+[  227.355486]        [<ffffffff815fb166>] cpu_down+0x36/0x50
+[  227.355493]        [<ffffffff814ad8cd>] cpu_subsys_offline+0x1d/0x30
+[  227.355498]        [<ffffffff814a8de5>] device_offline+0x95/0xc0
+[  227.355502]        [<ffffffff814a8ee2>] store_online+0x42/0x90
+[  227.355506]        [<ffffffff814a64f8>] dev_attr_store+0x18/0x30
+[  227.355513]        [<ffffffff811ec71b>] sysfs_write_file+0xdb/0x150
+[  227.355517]        [<ffffffff8117a68d>] vfs_write+0xbd/0x1e0
+[  227.355522]        [<ffffffff8117ad7c>] SyS_write+0x4c/0xa0
+[  227.355527]        [<ffffffff8160cbfe>] tracesys+0xd0/0xd5
+[  227.355531] 
+-> #1 (cpu_hotplug.lock){+.+.+.}:
+[  227.355535]        [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
+[  227.355541]        [<ffffffff81605b47>] mutex_lock_nested+0x67/0x410
+[  227.355545]        [<ffffffff8104d54b>] cpu_hotplug_begin+0x2b/0x60
+[  227.355549]        [<ffffffff8104d61a>] _cpu_up+0x2a/0x170
+[  227.355552]        [<ffffffff8104d7b9>] cpu_up+0x59/0x80
+[  227.355558]        [<ffffffff81cf51b6>] smp_init+0x64/0x95
+[  227.355566]        [<ffffffff81cdaf21>] kernel_init_freeable+0x84/0x191
+[  227.355570]        [<ffffffff815fa34e>] kernel_init+0xe/0x180
+[  227.355574]        [<ffffffff8160c9ac>] ret_from_fork+0x7c/0xb0
+[  227.355578] 
+-> #0 (cpu_add_remove_lock){+.+.+.}:
+[  227.355582]        [<ffffffff810b8106>] __lock_acquire+0x1766/0x1d30
+[  227.355586]        [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
+[  227.355590]        [<ffffffff81605b47>] mutex_lock_nested+0x67/0x410
+[  227.355594]        [<ffffffff8104dab4>] disable_nonboot_cpus+0x24/0x120
+[  227.355601]        [<ffffffff810a0973>] suspend_devices_and_enter+0x1f3/0x680
+[  227.355605]        [<ffffffff810a0fd2>] pm_suspend+0x1d2/0x240
+[  227.355609]        [<ffffffff8109fa19>] state_store+0x79/0xf0
+[  227.355614]        [<ffffffff81312dbf>] kobj_attr_store+0xf/0x20
+[  227.355618]        [<ffffffff811ec71b>] sysfs_write_file+0xdb/0x150
+[  227.355621]        [<ffffffff8117a68d>] vfs_write+0xbd/0x1e0
+[  227.355624]        [<ffffffff8117ad7c>] SyS_write+0x4c/0xa0
+[  227.355628]        [<ffffffff8160cbfe>] tracesys+0xd0/0xd5
+[  227.355629] 
+other info that might help us debug this:
+
+[  227.355635] Chain exists of:
+  cpu_add_remove_lock --> cpu_hotplug.lock --> console_lock
+
+  [  227.355637]  Possible unsafe locking scenario:
+
+  [  227.355638]        CPU0                    CPU1
+  [  227.355639]        ----                    ----
+  [  227.355642]   lock(console_lock);
+  [  227.355644]                                lock(cpu_hotplug.lock);
+  [  227.355647]                                lock(console_lock);
+  [  227.355650]   lock(cpu_add_remove_lock);
+  [  227.355651] 
+   *** DEADLOCK ***
+
+   [  227.355653] 5 locks held by systemd-sleep/2280:
+   [  227.355661]  #0:  (sb_writers#6){.+.+.+}, at: [<ffffffff8117a78b>]   vfs_write+0x1bb/0x1e0
+   [  227.355668]  #1:  (&buffer->mutex){+.+.+.}, at:   [<ffffffff811ec67c>] sysfs_write_file+0x3c/0x150
+   [  227.355676]  #2:  (s_active#110){.+.+.+}, at: [<ffffffff811ec703>]   sysfs_write_file+0xc3/0x150
+   [  227.355683]  #3:  (pm_mutex){+.+.+.}, at: [<ffffffff810a0e32>]   pm_suspend+0x32/0x240
+   [  227.355690]  #4:  (console_lock){+.+.+.}, at: [<ffffffff8104c956>]   suspend_console+0x26/0x40
+   [  227.355691] 
+   stack backtrace:
+   [  227.355695] CPU: 0 PID: 2280 Comm: systemd-sleep Not tainted   3.11.0-rc1-dbg-01398-gf537e41-dirty #1838
+   [  227.355697] Hardware name: Acer             Aspire 5741G   /Aspire 5741G    , BIOS V1.20 02/08/2011
+   [  227.355703]  ffffffff82208680 ffff88015151bbc8 ffffffff81603038   ffffffff822073f0
+   [  227.355707]  ffff88015151bc08 ffffffff815ffdaa ffff880153389fa0   ffff88015338a788
+   [  227.355712]  1d81e4832c04c441 ffff88015338a760 ffff88015338a788   ffff880153389fa0
+   [  227.355713] Call Trace:
+   [  227.355719]  [<ffffffff81603038>] dump_stack+0x4e/0x82
+   [  227.355723]  [<ffffffff815ffdaa>] print_circular_bug+0x2b6/0x2c5
+   [  227.355727]  [<ffffffff810b8106>] __lock_acquire+0x1766/0x1d30
+   [  227.355733]  [<ffffffff81054aec>] ?   walk_system_ram_range+0x5c/0x140
+   [  227.355737]  [<ffffffff810b63f4>] ? mark_held_locks+0x94/0x140
+   [  227.355741]  [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
+   [  227.355745]  [<ffffffff8104dab4>] ?   disable_nonboot_cpus+0x24/0x120
+   [  227.355749]  [<ffffffff8104dab4>] ?   disable_nonboot_cpus+0x24/0x120
+   [  227.355753]  [<ffffffff81605b47>] mutex_lock_nested+0x67/0x410
+   [  227.355757]  [<ffffffff8104dab4>] ?   disable_nonboot_cpus+0x24/0x120
+   [  227.355761]  [<ffffffff81607e9e>] ? mutex_unlock+0xe/0x10
+   [  227.355768]  [<ffffffff8135bd2f>] ? acpi_os_get_iomem+0x4c/0x54
+   [  227.355772]  [<ffffffff8104dab4>] disable_nonboot_cpus+0x24/0x120
+   [  227.355777]  [<ffffffff810a0973>]   suspend_devices_and_enter+0x1f3/0x680
+   [  227.355780]  [<ffffffff815fefc6>] ? printk+0x67/0x69
+   [  227.355785]  [<ffffffff810a0fd2>] pm_suspend+0x1d2/0x240
+   [  227.355789]  [<ffffffff8109fa19>] state_store+0x79/0xf0
+   [  227.355792]  [<ffffffff81312dbf>] kobj_attr_store+0xf/0x20
+   [  227.355796]  [<ffffffff811ec71b>] sysfs_write_file+0xdb/0x150
+   [  227.355799]  [<ffffffff8117a68d>] vfs_write+0xbd/0x1e0
+   [  227.355804]  [<ffffffff81198490>] ? fget_light+0x320/0x4b0
+   [  227.355808]  [<ffffffff8117ad7c>] SyS_write+0x4c/0xa0
+   [  227.355811]  [<ffffffff8160cbfe>] tracesys+0xd0/0xd5
+   [  227.355814] Disabling non-boot CPUs ...
+   [  227.357731] smpboot: CPU 1 is now offline
+   [  227.461072] smpboot: CPU 2 is now offline
+   [  227.565119] smpboot: CPU 3 is now offline
+
+
+
+Just to make sure I didn't miss anything:
+
+git diff -u -p drivers/cpufreq/
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 0937b8d..7dcfa68 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1942,13 +1942,15 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+        if (dev) {
+                switch (action) {
+                case CPU_ONLINE:
++               case CPU_ONLINE_FROZEN:
+                        cpufreq_add_dev(dev, NULL);
+                        break;
+                case CPU_DOWN_PREPARE:
+-               case CPU_UP_CANCELED_FROZEN:
++               case CPU_DOWN_PREPARE_FROZEN:
+                        __cpufreq_remove_dev(dev, NULL);
+                        break;
+                case CPU_DOWN_FAILED:
++               case CPU_DOWN_FAILED_FROZEN:
+                        cpufreq_add_dev(dev, NULL);
+                        break;
+                }
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 4645876..7b839a8 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -25,7 +25,6 @@
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/workqueue.h>
+-#include <linux/cpu.h>
+ 
+ #include "cpufreq_governor.h"
+ 
+@@ -137,10 +136,8 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+        if (!all_cpus) {
+                __gov_queue_work(smp_processor_id(), dbs_data, delay);
+        } else {
+-               get_online_cpus();
+                for_each_cpu(i, policy->cpus)
+                        __gov_queue_work(i, dbs_data, delay);
+-               put_online_cpus();
+        }
+ }
+ EXPORT_SYMBOL_GPL(gov_queue_work);
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index cd9e817..12225d1 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -353,13 +353,11 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+                cpufreq_update_policy(cpu);
+                break;
+        case CPU_DOWN_PREPARE:
++       case CPU_DOWN_PREPARE_FROZEN:
+                cpufreq_stats_free_sysfs(cpu);
+                break;
+        case CPU_DEAD:
+-               cpufreq_stats_free_table(cpu);
+-               break;
+-       case CPU_UP_CANCELED_FROZEN:
+-               cpufreq_stats_free_sysfs(cpu);
++       case CPU_DEAD_FROZEN:
+                cpufreq_stats_free_table(cpu);
+                break;
+        }
+
+
+	-ss
