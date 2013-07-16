@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab3GPPUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:20:38 -0400
-Received: from 13.mo1.mail-out.ovh.net ([178.33.253.128]:35008 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754902Ab3GPPUg (ORCPT
+	id S933121Ab3GPPVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:21:41 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:56786 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932755Ab3GPPVj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:20:36 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v3 1/7] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare.
-Date: Tue, 16 Jul 2013 17:05:14 +0200
-Message-Id: <1373987114-24009-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 6994653171538098284
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 16 Jul 2013 11:21:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1373914081.2591.40.camel@x61.thuisdomein>
+References: <1373879920.2591.13.camel@x61.thuisdomein>
+	<1373914081.2591.40.camel@x61.thuisdomein>
+Date: Wed, 17 Jul 2013 00:21:38 +0900
+Message-ID: <CAC5umyj2bOyU_z0HVawXL7k4FmF9oHh1yZfHExbKn9ck85RsUQ@mail.gmail.com>
+Subject: Re: [PATCH v2] [SCSI] scsi_debug: silence GCC warning
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+2013/7/16 Paul Bolle <pebolle@tiscali.nl>:
+> Building scsi_debug.o triggers a GCC warning:
+>     drivers/scsi/scsi_debug.c: In function ‘dif_verify’:
+>     drivers/scsi/scsi_debug.c:1755:3: warning: ‘csum’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>
+> This is a false positive. But if we transform the switch statement in
+> dif_compute_csum() to a straightforward if/else statement we supply GCC
+> with enough information to determine that csum will not be used
+> uninitialized.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) v2 because I started to worry whether v1 would change an interface
+> (ie, the way the "guard" module parameter behaves). This patch is much
+> simpler, and doesn't change any behavior.
+>
+> 1) Still only compile tested.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clocksource/tcb_clksrc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+This one looks good to me.  It would be much better if this commit
+log had a reference to the commit that introduced this warning as
+you described after '---' in v1 patch.
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 8a61872..229c019 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
- 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
- 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
--		clk_disable(tcd->clk);
-+		clk_disable_unprepare(tcd->clk);
- 	}
- 
- 	switch (m) {
-@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	 * of oneshot, we get lower overhead and improved accuracy.
- 	 */
- 	case CLOCK_EVT_MODE_PERIODIC:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
-@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
-@@ -275,7 +275,7 @@ static int __init tcb_clksrc_init(void)
- 	pdev = tc->pdev;
- 
- 	t0_clk = tc->clk[0];
--	clk_enable(t0_clk);
-+	clk_prepare_enable(t0_clk);
- 
- 	/* How fast will we be counting?  Pick something over 5 MHz.  */
- 	rate = (u32) clk_get_rate(t0_clk);
-@@ -313,7 +313,7 @@ static int __init tcb_clksrc_init(void)
- 		/* tclib will give us three clocks no matter what the
- 		 * underlying platform supports.
- 		 */
--		clk_enable(tc->clk[1]);
-+		clk_prepare_enable(tc->clk[1]);
- 		/* setup both channel 0 & 1 */
- 		tcb_setup_dual_chan(tc, best_divisor_idx);
- 	}
--- 
-1.7.9.5
-
+>  drivers/scsi/scsi_debug.c | 9 +++------
+>  1 file changed, 3 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+> index cb4fefa..7565ec5 100644
+> --- a/drivers/scsi/scsi_debug.c
+> +++ b/drivers/scsi/scsi_debug.c
+> @@ -1735,14 +1735,11 @@ static u16 dif_compute_csum(const void *buf, int len)
+>  {
+>         u16 csum;
+>
+> -       switch (scsi_debug_guard) {
+> -       case 1:
+> +       if (scsi_debug_guard == 1)
+>                 csum = ip_compute_csum(buf, len);
+> -               break;
+> -       case 0:
+> +       else
+>                 csum = cpu_to_be16(crc_t10dif(buf, len));
+> -               break;
+> -       }
+> +
+>         return csum;
+>  }
+>
+> --
+> 1.8.1.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
