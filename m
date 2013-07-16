@@ -1,95 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479Ab3GPQTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:19:21 -0400
-Received: from bosmailout13.eigbox.net ([66.96.186.13]:45659 "EHLO
-	bosmailout13.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933023Ab3GPQTR (ORCPT
+	id S933353Ab3GPQSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:18:38 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:36623 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932666Ab3GPQSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:19:17 -0400
-X-Authority-Analysis: v=2.0 cv=dt1Z+ic4 c=1 sm=1
- a=vgGgzxEtDY8f9Bnbu8UTBg==:17 a=bc2JKO6qiGsA:10 a=FB6NmUnAAagA:10
- a=OYGCgI3rE0kA:10 a=8nJEP1OIZ-IA:10 a=8Ne1j35meV0A:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=Tmt0DFWaxRNA367QoYsA:9 a=wPNLvfGTeEIA:10
- a=9UqFsMnAB6EOkiq4MrOclQ==:117
-X-EN-OrigOutIP: 10.20.18.19
-X-EN-IMPSID: 14KF1m0080QhFXN014KF07
-Message-ID: <51E57211.2040001@yahoo.es>
-Date: Wed, 17 Jul 2013 00:17:21 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: balbi@ti.com, Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, linux-i2c <linux-i2c@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-omap: always send stop after nack
-References: <51E50217.1000507@yahoo.es> <20130716090300.GG8880@arwen.pp.htv.fi> <51E5137B.7000302@yahoo.es> <20130716094212.GL8880@arwen.pp.htv.fi> <51E527F7.4080007@ti.com> <20130716112746.GN8880@arwen.pp.htv.fi> <51E537A4.40300@ti.com> <20130716130058.GD15036@arwen.pp.htv.fi>
-In-Reply-To: <20130716130058.GD15036@arwen.pp.htv.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.62.249
-X-EN-OrigHost: unknown
+	Tue, 16 Jul 2013 12:18:22 -0400
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: [PATCH v7 2/5] s390/vmcore: Use ELF header in new memory feature
+Date: Tue, 16 Jul 2013 18:18:12 +0200
+Message-Id: <1373991495-47411-3-git-send-email-holzheu@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1373991495-47411-1-git-send-email-holzheu@linux.vnet.ibm.com>
+References: <1373991495-47411-1-git-send-email-holzheu@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071616-8372-0000-0000-000006986643
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grygorii, Filipe,
+This patch now exchanges the old relocate mechanism with the new
+arch function call override mechanism that allows to create the ELF
+core header in the 2nd kernel.
 
-On 7/16/2013 9:00 PM, Felipe Balbi wrote:
-> On Tue, Jul 16, 2013 at 03:08:04PM +0300, Grygorii Strashko wrote:
->> Hi Felipe,
->> On 07/16/2013 02:27 PM, Felipe Balbi wrote:
->>> Hi,
->>>
->>> On Tue, Jul 16, 2013 at 02:01:11PM +0300, Grygorii Strashko wrote:
->>>>>>>> On a OMAP4460, i2c-bus-3:
->>>>>>>>
->>>>>>>> A driver (lm75) is causing many 'timeout waiting for bus ready' errors.
->>>>>>>> SDA remains high (as it should), but SCL remains low after a NACK.
->>>>>>>> The bus becomes _unusable for other clients_.
->>>>>>>>
->>>>>>>> While probing, "lm75" writes a command, followed by a read + stop,
->>>>>>>> but the write command is NACK'd. The chip does accept other writes/reads,
->>>>>>>> it just refuses to ack invalid commands.
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ arch/s390/kernel/crash_dump.c | 81 ++++++++++++++++++++++++++++---------------
+ 1 file changed, 54 insertions(+), 27 deletions(-)
 
-In case the NACK may not be ignored, I believe it is correct
-to break out of the loop and send a stop for 2 reasons:
+diff --git a/arch/s390/kernel/crash_dump.c b/arch/s390/kernel/crash_dump.c
+index f703d91..bfb9cda 100644
+--- a/arch/s390/kernel/crash_dump.c
++++ b/arch/s390/kernel/crash_dump.c
+@@ -22,6 +22,11 @@
+ #define PTR_DIFF(x, y) ((unsigned long)(((char *) (x)) - ((unsigned long) (y))))
+ 
+ /*
++ * Pointer to ELF header in new kernel
++ */
++static void *elfcorehdr_newmem;
++
++/*
+  * Copy one page from "oldmem"
+  *
+  * For the kdump reserved memory this functions performs a swap operation:
+@@ -325,14 +330,6 @@ static int get_mem_chunk_cnt(void)
+ }
+ 
+ /*
+- * Relocate pointer in order to allow vmcore code access the data
+- */
+-static inline unsigned long relocate(unsigned long addr)
+-{
+-	return OLDMEM_BASE + addr;
+-}
+-
+-/*
+  * Initialize ELF loads (new kernel)
+  */
+ static int loads_init(Elf64_Phdr *phdr, u64 loads_offset)
+@@ -383,7 +380,7 @@ static void *notes_init(Elf64_Phdr *phdr, void *ptr, u64 notes_offset)
+ 	ptr = nt_vmcoreinfo(ptr);
+ 	memset(phdr, 0, sizeof(*phdr));
+ 	phdr->p_type = PT_NOTE;
+-	phdr->p_offset = relocate(notes_offset);
++	phdr->p_offset = notes_offset;
+ 	phdr->p_filesz = (unsigned long) PTR_SUB(ptr, ptr_start);
+ 	phdr->p_memsz = phdr->p_filesz;
+ 	return ptr;
+@@ -392,7 +389,7 @@ static void *notes_init(Elf64_Phdr *phdr, void *ptr, u64 notes_offset)
+ /*
+  * Create ELF core header (new kernel)
+  */
+-static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
++int elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
+ {
+ 	Elf64_Phdr *phdr_notes, *phdr_loads;
+ 	int mem_chunk_cnt;
+@@ -400,6 +397,11 @@ static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
+ 	u32 alloc_size;
+ 	u64 hdr_off;
+ 
++	if (!OLDMEM_BASE)
++		return 0;
++	/* If elfcorehdr= has been passed via cmdline, we use that one */
++	if (elfcorehdr_addr != ELFCORE_ADDR_MAX)
++		return 0;
+ 	mem_chunk_cnt = get_mem_chunk_cnt();
+ 
+ 	alloc_size = 0x1000 + get_cpu_cnt() * 0x300 +
+@@ -417,27 +419,52 @@ static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
+ 	ptr = notes_init(phdr_notes, ptr, ((unsigned long) hdr) + hdr_off);
+ 	/* Init loads */
+ 	hdr_off = PTR_DIFF(ptr, hdr);
+-	loads_init(phdr_loads, ((unsigned long) hdr) + hdr_off);
+-	*elfcorebuf_sz = hdr_off;
+-	*elfcorebuf = (void *) relocate((unsigned long) hdr);
+-	BUG_ON(*elfcorebuf_sz > alloc_size);
++	loads_init(phdr_loads, hdr_off);
++	*addr = (unsigned long long) hdr;
++	elfcorehdr_newmem = hdr;
++	*size = (unsigned long long) hdr_off;
++	BUG_ON(elfcorehdr_size > alloc_size);
++	return 0;
+ }
+ 
+ /*
+- * Create kdump ELF core header in new kernel, if it has not been passed via
+- * the "elfcorehdr" kernel parameter
++ * Free ELF core header (new kernel)
+  */
+-static int setup_kdump_elfcorehdr(void)
++void elfcorehdr_free(unsigned long long addr)
+ {
+-	size_t elfcorebuf_sz;
+-	char *elfcorebuf;
+-
+-	if (!OLDMEM_BASE || is_kdump_kernel())
+-		return -EINVAL;
+-	s390_elf_corehdr_create(&elfcorebuf, &elfcorebuf_sz);
+-	elfcorehdr_addr = (unsigned long long) elfcorebuf;
+-	elfcorehdr_size = elfcorebuf_sz;
+-	return 0;
++	if (!elfcorehdr_newmem)
++		return;
++	kfree((void *)(unsigned long)addr);
+ }
+ 
+-subsys_initcall(setup_kdump_elfcorehdr);
++/*
++ * Read from ELF header
++ */
++ssize_t elfcorehdr_read(char *buf, size_t count, u64 *ppos)
++{
++	void *src = (void *)(unsigned long)*ppos;
++
++	src = elfcorehdr_newmem ? src : src - OLDMEM_BASE;
++	memcpy(buf, src, count);
++	*ppos += count;
++	return count;
++}
++
++/*
++ * Read from ELF notes data
++ */
++ssize_t elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
++{
++	void *src = (void *)(unsigned long)*ppos;
++	int rc;
++
++	if (elfcorehdr_newmem) {
++		memcpy(buf, src, count);
++	} else {
++		rc = copy_from_oldmem(buf, src, count);
++		if (rc)
++			return rc;
++	}
++	*ppos += count;
++	return count;
++}
+-- 
+1.8.2.3
 
-1. all chips, including the target chip, will know that the
-   current transaction is finished
-
-2. to set CLK high again, which prevents numerous timeouts
-   on subsequent transactions
-
-As a test I've set 'I2C_M_IGNORE_NAK' for all .detect messages
-sent by the lm75 driver.
-Now the chip (tmp105) will provide read data as expected
-after the _repeated start_, even though it NACK'd the preceding
-WR command.
-And also the detection trick does work now, addresses 4,5,6,7 return
-the same read data as was returned from the last valid address 2.
-
-Felipe:
-> Which means your original patch starts to make a lot more sense. I
-> wonder is this is really what we should be doing though - breaking out
-> of the loop, I mean.
-
-So yes, we have to break the loop as the caller is not interested
-in processing any further commands.
-
-In i2c/algos/i2c-algo-bit.c, bit_xfer() works exactly the same way:
-break the loop (unless IGNORE_NAK) and call unconditionally i2c_stop().
-
-It looks like TI's i2c-davinci will have the same problem as i2c-omap,
-and will need the same change.
-
-Grygorii, if you submit the patch, please add my
-
-Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
-
-cause you were earlier to notice and fix this problem.
-
-Hein
