@@ -1,149 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758617Ab3GPCcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 22:32:54 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:35128 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab3GPCcw (ORCPT
+	id S1758602Ab3GPCg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 22:36:27 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:43337 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973Ab3GPCgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 22:32:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130716015305.GB30569@redhat.com>
-References: <20130716015305.GB30569@redhat.com>
-Date: Mon, 15 Jul 2013 19:32:51 -0700
-X-Google-Sender-Auth: -0NDQI_Gv6l_1Gxn9F83IQ3U-0Q
-Message-ID: <CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com>
-Subject: Re: splice vs execve lockdep trace.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Ben Myers <bpm@sgi.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Jul 2013 22:36:25 -0400
+Subject: Re: [PATCH] asymmetric keys: explicitly add the leading zero byte
+ to encoded message
+From: joeyli <jlee@suse.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Randy Dunlap <rdunlap@xenotime.net>, Josh Boyer <jwboyer@redhat.com>
+In-Reply-To: <1373598691-1504-1-git-send-email-jlee@suse.com>
+References: <1373598691-1504-1-git-send-email-jlee@suse.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Jul 2013 10:36:18 +0800
+Message-ID: <1373942178.6260.36.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. I don't have a lot of ideas, I'm just adding lockdep, splice and
-FS people (and Oleg, just because) to the cc to see if anybody else
-does.
+Hi all experts, 
 
-Al, Peter?
+Does there have any suggestions or comments for this patch to asymmetric
+keys?
 
-So the problematic op *seems* to be the splice into /proc/<pid>/attr/
-files, which causes that "pipe -> cred_guard_mutex" locking.
 
-While the *normal* ordering would be the other way around, coming from
-execve(), which has the cred_guard_mutex -> VFS locks ordering for
-reading the executable headers.
+Thanks a lot!
+Joey Lee
 
-Al, can we break either of those? Do we need to hold on to the cred
-mutex that long? We get it fairly early (prepare_bprm_creds) and we
-drop it very late (install_exec_creds), which means that it covers a
-lot. But that seems pretty basic. The splice into /proc/<pid>/attr/*
-seems to be the more annoying one, and maybe we just shouldn't allow
-splicing into or from /proc?
+於 五，2013-07-12 於 11:11 +0800，Lee, Chun-Yi 提到：
+> From: Chun-Yi Lee <jlee@suse.com>
+> 
+> Per PKCS1 spec, the EMSA-PKCS1-v1_5 encoded message is leading by 0x00 0x01 in
+> its first 2 bytes. The leading zero byte is suppressed by MPI so we pass a
+> pointer to the _preceding_ byte to RSA_verify() in original code, but it has
+> risk for the byte is not zero because it's not in EM buffer's scope, neither
+> RSA_verify() nor mpi_get_buffer() didn't take care the leading byte.
+> 
+> To avoid the risk, that's better we explicitly add the leading zero byte to EM
+> for pass to RSA_verify(). This patch allocate a _EM buffer to capture the
+> result from RSA_I2OSP(), then set the first byte to zero in EM and copy the
+> remaining bytes from _EM.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Josh Boyer <jwboyer@redhat.com>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: David Howells <dhowells@redhat.com>
+> Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+> ---
+>  crypto/asymmetric_keys/rsa.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
+> index ca1a4f3..7bc99d2 100644
+> --- a/crypto/asymmetric_keys/rsa.c
+> +++ b/crypto/asymmetric_keys/rsa.c
+> @@ -303,6 +303,7 @@ static int RSA_verify_signature(const struct public_key *key,
+>  	/* Variables as per RFC3447 sec 8.2.2 */
+>  	const u8 *H = sig->digest;
+>  	u8 *EM = NULL;
+> +	u8 *_EM = NULL;
+>  	MPI m = NULL;
+>  	size_t k;
+>  
+> @@ -337,14 +338,19 @@ static int RSA_verify_signature(const struct public_key *key,
+>  	/* (2c) Convert the message representative (m) to an encoded message
+>  	 *      (EM) of length k octets.
+>  	 *
+> -	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
+> -	 *      pointer to the _preceding_ byte to RSA_verify()!
+> +	 *      NOTE!  The leading zero byte is suppressed by MPI, so we add it
+> +	 *      back to EM before input to RSA_verify()!
+>  	 */
+> -	ret = RSA_I2OSP(m, k, &EM);
+> +	ret = RSA_I2OSP(m, k, &_EM);
+>  	if (ret < 0)
+>  		goto error;
+>  
+> -	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
+> +	EM = kmalloc(k, GFP_KERNEL);
+> +	memset(EM, 0, 1);
+> +	memcpy(EM + 1, _EM, k-1);
+> +	kfree(_EM);
+> +
+> +	ret = RSA_verify(H, EM, k, sig->digest_size,
+>  			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
+>  			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
+>  
 
-Dave, is this new (it doesn't *smell* new to me), or is it just that
-trinity is doing new splice things?
 
-Or is the XFS i_iolock required for this thing to happen at all?
-Adding Ben Myers to the cc just for luck/completeness.
-
-                Linus
-
-On Mon, Jul 15, 2013 at 6:53 PM, Dave Jones <davej@redhat.com> wrote:
->
-> [  696.047396] ======================================================
-> [  696.049036] [ INFO: possible circular locking dependency detected ]
-> [  696.050689] 3.11.0-rc1+ #53 Tainted: G        W
-> [  696.052182] -------------------------------------------------------
-> [  696.053846] trinity-child2/14017 is trying to acquire lock:
-> [  696.055429]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff8122fa55>] proc_pid_attr_write+0xf5/0x140
-> [  696.057652] but task is already holding lock:
-> [  696.060171]  (&pipe->mutex/1){+.+.+.}, at: [<ffffffff811c7096>] pipe_lock+0x26/0x30
-> [  696.062097] which lock already depends on the new lock.
-> [  696.065723] the existing dependency chain (in reverse order) is:
-> [  696.068295] -> #2 (&pipe->mutex/1){+.+.+.}:
-> [  696.070650]        [<ffffffff810c4bd1>] lock_acquire+0x91/0x1f0
-> [  696.072258]        [<ffffffff8170677a>] mutex_lock_nested+0x7a/0x410
-> [  696.073916]        [<ffffffff811c7096>] pipe_lock+0x26/0x30
-> [  696.075464]        [<ffffffff811f0024>] generic_file_splice_write+0x64/0x170
-> [  696.077192]        [<ffffffffa001afc0>] xfs_file_splice_write+0xb0/0x230 [xfs]
-> [  696.078914]        [<ffffffff811f1f5a>] SyS_splice+0x24a/0x7e0
-> [  696.080455]        [<ffffffff81714694>] tracesys+0xdd/0xe2
-> [  696.082000] -> #1 (&(&ip->i_iolock)->mr_lock){++++++}:
-> [  696.084428]        [<ffffffff810c4bd1>] lock_acquire+0x91/0x1f0
-> [  696.086017]        [<ffffffff8108bc92>] down_read_nested+0x52/0xa0
-> [  696.087643]        [<ffffffffa007b310>] xfs_ilock+0x1d0/0x280 [xfs]
-> [  696.089305]        [<ffffffffa001aa12>] xfs_file_aio_read+0x112/0x3e0 [xfs]
-> [  696.091037]        [<ffffffff811be2c0>] do_sync_read+0x80/0xb0
-> [  696.092571]        [<ffffffff811be931>] vfs_read+0xa1/0x170
-> [  696.094124]        [<ffffffff811c4ae1>] kernel_read+0x41/0x60
-> [  696.095693]        [<ffffffff811c4d03>] prepare_binprm+0xb3/0x130
-> [  696.097307]        [<ffffffff811c6b29>] do_execve_common.isra.29+0x599/0x6c0
-> [  696.099036]        [<ffffffff811c6f36>] SyS_execve+0x36/0x50
-> [  696.100577]        [<ffffffff81714a79>] stub_execve+0x69/0xa0
-> [  696.102157] -> #0 (&sig->cred_guard_mutex){+.+.+.}:
-> [  696.104536]        [<ffffffff810c40b6>] __lock_acquire+0x1786/0x1af0
-> [  696.106189]        [<ffffffff810c4bd1>] lock_acquire+0x91/0x1f0
-> [  696.107813]        [<ffffffff817062b5>] mutex_lock_interruptible_nested+0x75/0x4c0
-> [  696.109616]        [<ffffffff8122fa55>] proc_pid_attr_write+0xf5/0x140
-> [  696.111243]        [<ffffffff811bf372>] __kernel_write+0x72/0x150
-> [  696.112870]        [<ffffffff811f03f9>] write_pipe_buf+0x49/0x70
-> [  696.114503]        [<ffffffff811efa24>] splice_from_pipe_feed+0x84/0x140
-> [  696.116202]        [<ffffffff811efdce>] __splice_from_pipe+0x6e/0x90
-> [  696.117836]        [<ffffffff811f18c1>] splice_from_pipe+0x51/0x70
-> [  696.119419]        [<ffffffff811f1919>] default_file_splice_write+0x19/0x30
-> [  696.121147]        [<ffffffff811f1f5a>] SyS_splice+0x24a/0x7e0
-> [  696.122719]        [<ffffffff81714694>] tracesys+0xdd/0xe2
-> [  696.124272] other info that might help us debug this:
->
-> [  696.127604] Chain exists of:  &sig->cred_guard_mutex --> &(&ip->i_iolock)->mr_lock --> &pipe->mutex/1
->
-> [  696.131445]  Possible unsafe locking scenario:
->
-> [  696.133763]        CPU0                    CPU1
-> [  696.135108]        ----                    ----
-> [  696.136420]   lock(&pipe->mutex/1);
-> [  696.137745]                                lock(&(&ip->i_iolock)->mr_lock);
-> [  696.139469]                                lock(&pipe->mutex/1);
-> [  696.141030]   lock(&sig->cred_guard_mutex);
-> [  696.142409]
->  *** DEADLOCK ***
->
-> [  696.145237] 2 locks held by trinity-child2/14017:
-> [  696.146532]  #0:  (sb_writers#4){.+.+.+}, at: [<ffffffff811f2441>] SyS_splice+0x731/0x7e0
-> [  696.148435]  #1:  (&pipe->mutex/1){+.+.+.}, at: [<ffffffff811c7096>] pipe_lock+0x26/0x30
-> [  696.150357] stack backtrace:
-> [  696.152287] CPU: 2 PID: 14017 Comm: trinity-child2 Tainted: G        W    3.11.0-rc1+ #53
-> [  696.156695]  ffffffff825270a0 ffff8801fee2db90 ffffffff8170164e ffffffff824f84c0
-> [  696.158392]  ffff8801fee2dbd0 ffffffff816fda92 ffff8801fee2dc20 ffff8802331446d8
-> [  696.160300]  ffff880233143fc0 0000000000000002 0000000000000002 ffff8802331446d8
-> [  696.162217] Call Trace:
-> [  696.163292]  [<ffffffff8170164e>] dump_stack+0x4e/0x82
-> [  696.164695]  [<ffffffff816fda92>] print_circular_bug+0x200/0x20f
-> [  696.166194]  [<ffffffff810c40b6>] __lock_acquire+0x1786/0x1af0
-> [  696.167677]  [<ffffffff810c4bd1>] lock_acquire+0x91/0x1f0
-> [  696.169111]  [<ffffffff8122fa55>] ? proc_pid_attr_write+0xf5/0x140
-> [  696.170633]  [<ffffffff8122fa55>] ? proc_pid_attr_write+0xf5/0x140
-> [  696.172151]  [<ffffffff817062b5>] mutex_lock_interruptible_nested+0x75/0x4c0
-> [  696.173765]  [<ffffffff8122fa55>] ? proc_pid_attr_write+0xf5/0x140
-> [  696.175280]  [<ffffffff8122fa55>] ? proc_pid_attr_write+0xf5/0x140
-> [  696.176793]  [<ffffffff8119e869>] ? alloc_pages_current+0xa9/0x170
-> [  696.178301]  [<ffffffff8122fa55>] proc_pid_attr_write+0xf5/0x140
-> [  696.179799]  [<ffffffff811f03b0>] ? splice_direct_to_actor+0x1f0/0x1f0
-> [  696.181346]  [<ffffffff811bf372>] __kernel_write+0x72/0x150
-> [  696.182796]  [<ffffffff811f03b0>] ? splice_direct_to_actor+0x1f0/0x1f0
-> [  696.184354]  [<ffffffff811f03f9>] write_pipe_buf+0x49/0x70
-> [  696.185779]  [<ffffffff811efa24>] splice_from_pipe_feed+0x84/0x140
-> [  696.187293]  [<ffffffff811f03b0>] ? splice_direct_to_actor+0x1f0/0x1f0
-> [  696.188850]  [<ffffffff811efdce>] __splice_from_pipe+0x6e/0x90
-> [  696.190325]  [<ffffffff811f03b0>] ? splice_direct_to_actor+0x1f0/0x1f0
-> [  696.191878]  [<ffffffff811f18c1>] splice_from_pipe+0x51/0x70
-> [  696.193335]  [<ffffffff811f1919>] default_file_splice_write+0x19/0x30
-> [  696.194896]  [<ffffffff811f1f5a>] SyS_splice+0x24a/0x7e0
-> [  696.196312]  [<ffffffff81714694>] tracesys+0xdd/0xe2
->
->
