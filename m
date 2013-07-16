@@ -1,60 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab3GPKAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 06:00:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35174 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811Ab3GPKAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 06:00:03 -0400
-Date: Tue, 16 Jul 2013 11:59:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, celinux-dev@lists.celinuxforum.org,
-        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
-        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-Message-ID: <20130716095938.GA4962@pd.tnic>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <201307161132.39845.yann.morin.1998@free.fr>
- <20130716093820.GE4402@pd.tnic>
- <201307161145.27810.yann.morin.1998@free.fr>
+	id S932153Ab3GPKAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 06:00:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56558 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968Ab3GPJ7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 05:59:47 -0400
+X-IronPort-AV: E=Sophos;i="4.89,676,1367942400"; 
+   d="scan'208";a="7910561"
+Message-ID: <51E518BC.8040900@cn.fujitsu.com>
+Date: Tue, 16 Jul 2013 17:56:12 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201307161145.27810.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Benjamin <bcrl@kvack.org>
+CC: tangchen <tangchen@cn.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH RESEND 1/2] fs/anon_inode: Introduce a new lib function anon_inode_getfile_private()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/16 17:57:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/16 17:57:55,
+	Serialize complete at 2013/07/16 17:57:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:45:27AM +0200, Yann E. MORIN wrote:
-> As discussed with Florian in this thread, either one of:
->   - a warning at check time
->   - a comment in Kconfig
 
-Whatever you do, make sure to make it quite clear to users what she
-needs to do.
+Introduce a new lib function anon_inode_getfile_private(), it creates a new file
+instance by hooking it up to an anonymous inode, and a dentry that describe the
+"class" of the file, similar to anon_inode_getfile(), but each file holds a
+single inode. Furthermore, anyone who wants to create a private anon file will
+benefit from this change.
 
-What I really have a problem with is options being hidden just because I
-haven't selected something they depend on and having to run around the
-Kconfig maze to find what I also need to select in order for the option
-to appear.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+---
+ fs/anon_inodes.c            |   66 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/anon_inodes.h |    3 ++
+ 2 files changed, 69 insertions(+), 0 deletions(-)
 
-Thanks.
-
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index 47a65df..85c9618 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -109,6 +109,72 @@ static struct file_system_type anon_inode_fs_type = {
+ };
+ 
+ /**
++ * anon_inode_getfile_private - creates a new file instance by hooking it up to an
++ *                      anonymous inode, and a dentry that describe the "class"
++ *                      of the file
++ *
++ * @name:    [in]    name of the "class" of the new file
++ * @fops:    [in]    file operations for the new file
++ * @priv:    [in]    private data for the new file (will be file's private_data)
++ * @flags:   [in]    flags
++ *
++ *
++ * Similar to anon_inode_getfile, but each file holds a single inode.
++ *
++ */
++struct file *anon_inode_getfile_private(const char *name,
++					const struct file_operations *fops,
++					void *priv, int flags)
++{
++	struct qstr this;
++	struct path path;
++	struct file *file;
++	struct inode *inode;
++
++	if (fops->owner && !try_module_get(fops->owner))
++		return ERR_PTR(-ENOENT);
++
++	inode = anon_inode_mkinode(anon_inode_mnt->mnt_sb);
++	if (IS_ERR(inode)) {
++		file = ERR_PTR(-ENOMEM);
++		goto err_module;
++	}
++
++	/*
++	 * Link the inode to a directory entry by creating a unique name
++	 * using the inode sequence number.
++	 */
++	file = ERR_PTR(-ENOMEM);
++	this.name = name;
++	this.len = strlen(name);
++	this.hash = 0;
++	path.dentry = d_alloc_pseudo(anon_inode_mnt->mnt_sb, &this);
++	if (!path.dentry)
++		goto err_module;
++
++	path.mnt = mntget(anon_inode_mnt);
++
++	d_instantiate(path.dentry, inode);
++
++	file = alloc_file(&path, OPEN_FMODE(flags), fops);
++	if (IS_ERR(file))
++		goto err_dput;
++
++	file->f_mapping = inode->i_mapping;
++	file->f_flags = flags & (O_ACCMODE | O_NONBLOCK);
++	file->private_data = priv;
++
++	return file;
++
++err_dput:
++	path_put(&path);
++err_module:
++	module_put(fops->owner);
++	return file;
++}
++EXPORT_SYMBOL_GPL(anon_inode_getfile_private);
++
++/**
+  * anon_inode_getfile - creates a new file instance by hooking it up to an
+  *                      anonymous inode, and a dentry that describe the "class"
+  *                      of the file
+diff --git a/include/linux/anon_inodes.h b/include/linux/anon_inodes.h
+index 8013a45..cf573c2 100644
+--- a/include/linux/anon_inodes.h
++++ b/include/linux/anon_inodes.h
+@@ -13,6 +13,9 @@ struct file_operations;
+ struct file *anon_inode_getfile(const char *name,
+ 				const struct file_operations *fops,
+ 				void *priv, int flags);
++struct file *anon_inode_getfile_private(const char *name,
++				const struct file_operations *fops,
++				void *priv, int flags);
+ int anon_inode_getfd(const char *name, const struct file_operations *fops,
+ 		     void *priv, int flags);
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
