@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab3GPOat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:30:49 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54445 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab3GPOas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:30:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130715204135.GH15531@xanatos>
-References: <20130715155202.GC29526@xanatos>
-	<CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
-	<20130715174659.GC15531@xanatos>
-	<CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	<20130715180403.GD15531@xanatos>
-	<CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	<20130715184642.GE15531@xanatos>
-	<CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	<20130715195316.GF15531@xanatos>
-	<20130715204135.GH15531@xanatos>
-Date: Tue, 16 Jul 2013 16:30:45 +0200
-X-Google-Sender-Auth: Qra_UBtQyaMs297FXBZ5ltULqHE
-Message-ID: <CAMuHMdUVBJh1KoV==jq2y1TTe3-QtPzAqfTcydm0xtHJosuA_A@mail.gmail.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S932753Ab3GPObj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:31:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37795 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932351Ab3GPObi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 10:31:38 -0400
+Subject: Re: [PATCH 13/15] kconfig/[mn]conf: make it explicit in the search
+ box that a regexp is possible
+From: Jean Delvare <jdelvare@suse.de>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+In-Reply-To: <20130708173742.GC3206@free.fr>
+References: <cover.1372097219.git.yann.morin.1998@free.fr>
+	 <a1ce636f560336ba007bfabb15b167ff31b592cf.1372097219.git.yann.morin.1998@free.fr>
+	 <1373282724.4298.203.camel@chaos.site>  <20130708173742.GC3206@free.fr>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Tue, 16 Jul 2013 16:31:20 +0200
+Message-ID: <1373985080.4513.9.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 10:41 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> I should not have to ask for professional behavior on the mailing lists.
-> Professional behavior should be the default.
+Hi Yann,
 
-So, what does "professional" mean? A professional is paid for his work, an
-amateur isn't. But this doesn't say anything about code quality, maintainer
-responsiveness, etc.
-Does it imply behavior that (hopefully) keeps getting you paid?
+Le Monday 08 July 2013 à 19:37 +0200, Yann E. MORIN a écrit :
+> Jean, All,
+> 
+> On 2013-07-08 13:25 +0200, Jean Delvare spake thusly:
+> > Le Monday 24 June 2013 à 20:11 +0200, Yann E. MORIN a écrit :
+> > > From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> > > 
+> > > Reported-by: Jean Delvare <jdelvare@suse.de>
+> > > Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> > > Cc: Jean Delvare <jdelvare@suse.de>
+> > > Cc: Michal Marek <mmarek@suse.cz>
+> > > ---
+> > >  scripts/kconfig/mconf.c | 2 +-
+> > >  scripts/kconfig/nconf.c | 2 +-
+> > >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+> > > index 6ee4aae..18d3dc9 100644
+> > > --- a/scripts/kconfig/mconf.c
+> > > +++ b/scripts/kconfig/mconf.c
+> > > @@ -401,7 +401,7 @@ static void search_conf(void)
+> > >  	struct subtitle_part stpart;
+> > >  
+> > >  	title = str_new();
+> > > -	str_printf( &title, _("Enter %s (sub)string to search for "
+> > > +	str_printf( &title, _("Enter %s (sub)string or regexp to search for "
+> > >  			      "(with or without \"%s\")"), CONFIG_, CONFIG_);
+> > 
+> > While clearer, this also makes the title span over two lines when it
+> > used to fit on a single one. I would like to suggest the following:
+> > 
+> > 	str_printf(&title, _("Enter (sub)string or regexp to search for "
+> > 			     "(with or without \"%s\")"), CONFIG_);
+> > 
+> > Rationale: the "(with or without CONFIG_)" makes things clear enough
+> > IMHO, making the first occurrence redundant.
+> 
+> OK, I'll send another patch with the text updated with your suggestion.
 
-Gr{oetje,eeting}s,
+Did you? I can't remember seeing it.
 
-                        Geert
+-- 
+Jean Delvare
+Suse L3
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
