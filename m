@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab3GPLsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 07:48:19 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:63719 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191Ab3GPLsR (ORCPT
+	id S932388Ab3GPLse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 07:48:34 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:64761 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab3GPLs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 07:48:17 -0400
-Message-ID: <51E53300.6010000@cogentembedded.com>
-Date: Tue, 16 Jul 2013 15:48:16 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 16 Jul 2013 07:48:29 -0400
+Date: Tue, 16 Jul 2013 05:48:26 -0600
+From: Tejun Heo <tj@kernel.org>
+To: Youquan Song <youquan.song@intel.com>
+Cc: jgarzik@redhat.com, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, seth.heasley@intel.com,
+        james.d.ralston@intel.com, ed.ciechanowski@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] ata: Fix DVD not dectected at some platform with
+ Wellsburg PCH
+Message-ID: <20130716114826.GB23827@mtj.dyndns.org>
+References: <1373591757-416-1-git-send-email-youquan.song@intel.com>
 MIME-Version: 1.0
-To: Xiaotian Feng <xtfeng@gmail.com>
-CC: unlisted-recipients:"; Alexander Gordeev" <agordeev@redhat.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	unlisted-recipients:;Alexander Gordeev <agordeev@redhat.com>
-					     ^-missing end of address
-Subject: Re: [PATCH] AHCI: fix Null pointer dereference in achi_host_active()
-References: <1373951920-31699-1-git-send-email-xtfeng@gmail.com>
-In-Reply-To: <1373951920-31699-1-git-send-email-xtfeng@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373591757-416-1-git-send-email-youquan.song@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Jul 11, 2013 at 09:15:57PM -0400, Youquan Song wrote:
+> There is a patch b55f84e2d527182e7c611d466cd0bb6ddce201de "ata_piix: Fix DVD
+>  not dectected at some Haswell platforms" to fix an issue of DVD not 
+> recognized on Haswell Desktop platform with Lynx Point. 
+> Recently, it is also found the same issue at some platformas with Wellsburg PCH.
+> 
+> So deliver a similar patch to fix it by disables 32bit PIO in IDE mode.
+> 
+> Signed-off-by: Youquan Song <youquan.song@intel.com>
+> Cc: stable@vger.kernel.org
 
-On 16-07-2013 9:18, Xiaotian Feng wrote:
+Applied to libata/for-3.12.  Thanks!
 
-> commit b29900e6 introuded a regression, which resulted Null pointer
-
-    Please also specify that commit's summary in parens.
-
-> dereference for achi host with dummy ports. For ahci ports, when the
-> port is dummy port, its private_data will be NULL, as ata_dummy_port_ops
-> doesn't support ->port_start.
-
-> Reported-and-tested-by: Alex Williamson <alex.williamson@redhat.com>
-> Signed-off-by: Xiaotian Feng <xtfeng@gmail.com>
-> Cc: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: linux-ide@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-
-MBR, Sergei
-
-
+-- 
+tejun
