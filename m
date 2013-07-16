@@ -1,102 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab3GPJcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:32:45 -0400
-Received: from p-mail2.rd.orange.com ([195.101.245.16]:57907 "EHLO
-	p-mail2.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3GPJcn (ORCPT
+	id S1754649Ab3GPJdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:33:12 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:54335 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab3GPJdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:32:43 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new streaming format
-Date: Tue, 16 Jul 2013 11:32:39 +0200
-User-Agent: KMail/1.13.5 (Linux/3.9.10-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, celinux-dev@lists.celinuxforum.org,
-        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
-        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com> <201307161112.17901.yann.morin.1998@free.fr> <20130716092242.GD4402@pd.tnic>
-In-Reply-To: <20130716092242.GD4402@pd.tnic>
+	Tue, 16 Jul 2013 05:33:10 -0400
+Message-ID: <51E51276.9020805@linux.vnet.ibm.com>
+Date: Tue, 16 Jul 2013 14:59:26 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com> <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com> <51E3C950.90503@linux.vnet.ibm.com> <CAKohpo=tfd_CXDBkbE23=UdEF99ZK-17NM_cvpGJ_e9wXGzsZQ@mail.gmail.com> <51E50AD4.6040208@linux.vnet.ibm.com> <CAKohponOeqptU2mz4XCFZKoEs5EBTTx0A3Dvev5k-BJiW_2McA@mail.gmail.com>
+In-Reply-To: <CAKohponOeqptU2mz4XCFZKoEs5EBTTx0A3Dvev5k-BJiW_2McA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307161132.39845.yann.morin.1998@free.fr>
-X-OriginalArrivalTime: 16 Jul 2013 09:32:40.0210 (UTC) FILETIME=[6A6AF720:01CE8207]
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071609-9264-0000-0000-0000042221D0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav, All,
-
-On Tuesday 16 July 2013 11:22:42 Borislav Petkov wrote:
-> On Tue, Jul 16, 2013 at 11:12:17AM +0200, Yann E. MORIN wrote:
-> > The goal is to avoid generating a non-buildable kernel in the first place.
+On 07/16/2013 02:40 PM, Viresh Kumar wrote:
+> On 16 July 2013 14:26, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 07/16/2013 11:45 AM, Viresh Kumar wrote:
 > 
-> I know, that's why I'm proposing to fail the build with the script run
-> as one of the first things by make.
-
-No, this is already too late: the given .config *is* already broken and
-unbuildable.
-
-> > > I.e., those steps:
-> > > 1. make <whatever>config
-> > > 2. make => A prereq. target runs the shell script.
-> > 
-> > This is too late, since this will bail out, and will give a false-positive
-> > failure.
+>>> To understand it I actually applied your patches to get better view of the code.
+>>> (Haven't tested it though).. And found that your code is doing the right thing
+>>> and we shouldn't get a mismatch.. This is the sequence of events I can draw:
+>>>
+>>> - __cpu_add_dev() for first cpu. sets the refcount to 'x', where x are
+>>> the no. of
+>>> cpus in its clock domain.
+>>> - _cpu_add_dev() for other cpus: doesn't change anything in refcount
+>>>
+>>> - Suspend:
+>>>  - cpu_remove_dev() for all cpus, due to frozen flag we don't touch the value
+>>> of count
+>>> - Resume:
+>>>  - cpu_add_dev() for all cpus, due to frozen flag we don't touch the
+>>> value of count.
+>>>
+>>
+>> Actually this one is tricky (I took a look again). So we have this code in the
+>> beginning of _cpufreq_add_dev():
+>>
+>>
+>> 1008 #ifdef CONFIG_SMP
+>> 1009         /* check whether a different CPU already registered this
+>> 1010          * CPU because it is in the same boat. */
+>> 1011         policy = cpufreq_cpu_get(cpu);
+>> 1012         if (unlikely(policy)) {
+>> 1013                 cpufreq_cpu_put(policy);
+>> 1014                 return 0;
+>> 1015         }
+>>
+>> The _get() is not controlled by the frozen flag, but it still doesn't take a
+>> refcount because of a subtle reason: per_cpu(cpufreq_cpu_data, cpu) was set to
+>> NULL in __cpufreq_remove_dev() and the memory was saved away in fallback storage.
+>> So, when __cpufreq_cpu_get() executes, it sees:
+>>
+>>  204         /* get the CPU */
+>>  205         data = per_cpu(cpufreq_cpu_data, cpu);
+>>  206
+>>  207         if (!data)
+>>  208                 goto err_out_put_module;
+>>
+>> Thus, since data is NULL, cpufreq_cpu_get() won't take a refcount and will return
+>> silently.
 > 
-> Huh? This will tell you: "you've selected X, but I don't have toolX
-> needed for the build".
+> Even if this wouldn't have happened, refcount wouldn't have been
+> touched due to this code:
 > 
-> You install the tool and run make again. Checks pass, the build
-> continues.
-
-That does not work in two cases:
-  - older distros that do not have the tool packaged
-  - automatic test-harness that run thousands of randconfig a day
-
-In the first case, this /could/ be overcome by the user compiling and
-installing the package manually, but is mostly undoable in enterprise
-environment with shared build machines, where each user would have to
-install the same tool(s) again and again.
-
-In the second case, this would yield a lot of false-positive in daily
-reports.
-
-Your solution mostly works with minimum overhead for a human user
-interactively building a kernel, not with automated test harnesses.
-
-> > While if we were to check for _known_ needed tools before calling into
-> > Kconfig,
+>> 1012         if (unlikely(policy)) {
+>> 1013                 cpufreq_cpu_put(policy);
+>> 1014                 return 0;
+>> 1015         }
 > 
-> How would you do that? How do you know what the user is going to select
-> *before* she even selects it?
+> i.e. If we get a valid policy structure, we siimply put the policy again
+> and so decrement the incremented refcount.
 
-The idea is to *avoid* the user being able to select unavailable options.
+Ah, yes!
 
-> You need to have a prepared .config to act upon.
+> 
+> So, even if you don't keep the fallback storage, things should work
+> without any issue (probably worth trying as this will get rid of a per
+> cpu variable :))
+>
 
-The idea is to be always have a .config that is buildable with the current
-toolset of the system, especially for esoteric and/or recent tools that are
-not packaged and/or installed by default by the distros.
+No, I already tried that and it didn't work ;-( The thing is, we need the
+__cpufreq_add_dev() code to call the ->init() routines of drivers etc. But if
+it finds the policy structure, it will skip all of that initialization and happily
+proceed. Which is precisely the cause of all the erratic behaviour we are seeing
+(ie., lack of proper initialization post-resume).
 
+So this approach keeps the memory preserved in a fallback storage and lets the
+init code run to full completion without any issues.
+
+Perhaps we could do some _more_ code reorganization in the future to take this
+issue into account etc., but IMHO that might be non-trivial. I'm trying to keep
+this as simple and straight-forward as possible as a first step, to atleast get
+it properly working. (Changing the order in which init is done is kinda scary
+since its hard to comprehend what assumptions we might be breaking!).
+
+We can perhaps revisit your idea later and optimize out the extra per-cpu data.
+ 
+>> Further down in __cpufreq_add_dev(), we restore the original memory, using
+>> the frozen flag:
+>>
+>> 1037         if (frozen)
+>> 1038                 /* Restore the saved policy when doing light-weight init */
+>> 1039                 policy = cpufreq_policy_restore(cpu);
+>> 1040         else
+>> 1041                 policy = cpufreq_policy_alloc();
+>>
+>>
+>> So that is how we manage to fool cpufreq_cpu_get() into not taking a fresh
+>> refcount while resuming :)
+ 
 Regards,
-Yann E. MORIN.
+Srivatsa S. Bhat
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
-| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
-| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
-'------------------------------'-------'------------------'--------------------'
