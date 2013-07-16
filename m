@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab3GPJs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:48:59 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:36384 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab3GPJs5 (ORCPT
+	id S1754879Ab3GPJtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:49:22 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3860 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754545Ab3GPJtU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:48:57 -0400
+	Tue, 16 Jul 2013 05:49:20 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <51E51712.4020609@broadcom.com>
+Date: Tue, 16 Jul 2013 11:49:06 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1372927830-2949-5-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-5-git-send-email-l.majewski@samsung.com>
-Date: Tue, 16 Jul 2013 15:18:57 +0530
-Message-ID: <CAKohpokiF8ZamE_=XdPrjZQ8VHQ9wvzQy6w+6byO-T7J9c=6mA@mail.gmail.com>
-Subject: Re: [PATCH v5 4/7] cpufreq:exynos:Extend Exynos cpufreq driver to
- support boost framework
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+cc: "Stanislaw Gruszka" <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: [BUG] 3.10 regression: hang on suspend
+References: <51E4501D.3010001@odi.ch> <20130716065626.GA1587@redhat.com>
+ <51E4F790.6090308@odi.ch>
+In-Reply-To: <51E4F790.6090308@odi.ch>
+X-WSS-ID: 7DFBCB5F2L848902545-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> The struct cpufreq_driver has been extended to embrace the information
-> related to boost support.
+On 07/16/2013 09:34 AM, Ortwin Glück wrote:
 >
-> When "boost_mode" device tree attribute is defined for a platform, the
-> boost_supported flag is set. Moreover boost related attributes were
-> exported.
 >
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> On 16.07.2013 08:56, Stanislaw Gruszka wrote:
+>> Apparently this commit changed suspend procedure on mac80211, but it's
+>> not obvious for me why it hangs :-(
+>
+> Hangs are hard :-) It just sits there with a black screen and a white
+> cursor in the top left corner...
+>
+>> What is your user space configuration (are you using NM or other
+>> software or maybe just wpa_supplicant)? Are you using wowlan?
+>> If you do add no_console_suspend boot parameter does it print some
+>> diagnostic messages during suspend before the hang ?
+>
+> Yes, I am using NM under KDE, with KDE triggered suspend. No wowlan
+> AFAIK. The last thing I see in the log is something from NetworkManager
+> that sees the device switching off. I can try again tonight and give you
+> the exact message.
+>
+> I will also try without NM and bare wpa_supplicant and a plain suspend
+> through sysfs.
+>
+> Any debug options you want me to enable? Netconsole won't work however...
 
-Don't we need to mark any frequencies in the freq table with BOOST?
-How?
+Can you get more debug info if you try (as root/sudo -i):
+
+echo devices > /sys/power/pm_test
+echo mem > /sys/power state
+
+Regards,
+Arend
+
+> Ortwin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
