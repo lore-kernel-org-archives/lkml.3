@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab3GPOpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:45:18 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:47701 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932827Ab3GPOpL (ORCPT
+	id S932902Ab3GPOsD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:48:03 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:64580 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab3GPOsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:45:11 -0400
-Message-ID: <51E55C76.20005@linaro.org>
-Date: Tue, 16 Jul 2013 09:45:10 -0500
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 16 Jul 2013 10:48:00 -0400
+Message-ID: <51E55D1D.6080809@linaro.org>
+Date: Tue, 16 Jul 2013 16:47:57 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-References: <20130715155202.GC29526@xanatos> <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com> <20130715174659.GC15531@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-In-Reply-To: <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCHv5 00/10] clocksource: sunxi: Timer fixes and cleanup
+References: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 02:07 PM, Linus Torvalds wrote:
-> But when people who know better send me crap, I'll curse at them.
+On 07/11/2013 06:31 PM, Maxime Ripard wrote:
+
+Applied to my tree for 3.12.
+
+Thanks
+  -- Daniel
+
+
+> Hi everyone,
 > 
-> I suspect you'll notice me cursing *way* more at top developers than
-> random people on the list. I expect more from them, and conversely
-> I'll be a lot more upset when they do something that I really think
-> was not great.
+> The first timer code we merged when adding support for the A13 some
+> time back was mostly a clean up from the source drop we had, without
+> any documentation.  This happened to work, but the code merged in
+> turned out to be far from perfect, and had several flaws.
+> 
+> This patchset hopefully fixes these flaws, and cleanup most of the
+> driver as well, to end up in an almost complete rewrite of it (even
+> though it's not that long).
+> 
+> It also finally adds a clocksource driver using the second timer as
+> our monotonic clock source.
+> 
+> These flaws have all been spotted when trying to add the A31 support,
+> work that is still ongoing, but will hopefully benefit from this
+> patchset as well.
+> 
+> Thanks,
+> Maxime
+> 
+> Changes from v4:
+>   - Removed the last clk_get_rate() user
+>   - Got a few beers
+> 
+> Changes from v3:
+>   - Reintroduce the rate variable to cache the parent clock rate
+>   - Remove the interval programming at probe time that was
+>     reintroduced in the v3 due to a poor rebase.
+> 
+> Changes from v2:
+>   - Use the clocksource timer to get the amount of time we have to
+>     wait for when disabling and enabling back a timer
+>   - Added patch to add parenthesis around the macros arguments
+>   - Renamed the AUTORELOAD register define to the more meaningful
+>     RELOAD name
+> 
+> Changes from v1:
+>   - Rebased on top of linux-next to benefit from the move to all
+>     architectures of the sched_clock functions
+>   - Moved the clock source to the second timer instead of the 64 bits
+>     free-running counter like suggested by Thomas.
+> 
+> Maxime Ripard (10):
+>   clocksource: sun4i: Use the BIT macros where possible
+>   clocksource: sun4i: Wrap macros arguments in parenthesis
+>   clocksource: sun4i: rename AUTORELOAD define to RELOAD
+>   clocksource: sun4i: Add clocksource and sched clock drivers
+>   clocksource: sun4i: Don't forget to enable the clock we use
+>   clocksource: sun4i: Fix the next event code
+>   clocksource: sun4i: Factor out some timer code
+>   clocksource: sun4i: Remove TIMER_SCAL variable
+>   clocksource: sun4i: Cleanup parent clock setup
+>   clocksource: sun4i: Fix bug when switching from periodic to oneshot
+>     modes
+> 
+>  drivers/clocksource/sun4i_timer.c | 110 +++++++++++++++++++++++++++-----------
+>  1 file changed, 78 insertions(+), 32 deletions(-)
+> 
 
-I have always found this to be the case.
 
-Linus has high expectations, and I think the quality of
-Linux code speaks volumes about the long-term effect of
-that.  Blistering messages from Linus are directed at
-people who have an established reputation, but who
-present something less than high-caliber work.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Our communication is very open and public though.  Those
-with some experience in the community should know that
-these strongly-worded messages are not sent indiscriminately.
-This isn't obvious to a newcomer though.  A stranger may
-not realize that the shouting is among friends who care a lot
-about what they're doing.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-If the conversation weren't so public it may not seem
-as inappropriate.  The shaming and flaming style is
-effective for keeping top people in line.  But it does
-needlessly intimidate new people in the process.
-
-					-Alex
