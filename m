@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab3GPAIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 20:08:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38214 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758342Ab3GPAIH (ORCPT
+	id S1758574Ab3GPAMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 20:12:40 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:16499 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab3GPAMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 20:08:07 -0400
-X-Sasl-enc: cdUgTXiT3ktFWCj2fz+o8V25h1kGp920aySARrFjEHZl 1373933286
-Date: Mon, 15 Jul 2013 17:06:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-Message-ID: <20130716000623.GB26261@kroah.com>
-References: <1373916476.2748.69.camel@dabdike>
- <20130715214422.GA2478@kroah.com>
- <1373925699.17876.218.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373925699.17876.218.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 15 Jul 2013 20:12:39 -0400
+Message-ID: <1373933551.4622.12.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] mm/hugetlb: per-vma instantiation mutexes
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>
+Date: Mon, 15 Jul 2013 17:12:31 -0700
+In-Reply-To: <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+	 <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+	 <20130715072432.GA28053@voom.fritz.box>
+	 <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 06:01:39PM -0400, Steven Rostedt wrote:
-> On Mon, 2013-07-15 at 14:44 -0700, Greg KH wrote:
+On Mon, 2013-07-15 at 16:08 -0700, Andrew Morton wrote:
+> On Mon, 15 Jul 2013 17:24:32 +1000 David Gibson <david@gibson.dropbear.id.au> wrote:
 > 
-> > I don't like this at all, just for the simple reason that it will push
-> > the majority of the work of stable kernel development on to the
-> > subsystem maintainers, who have enough work to do as it is.
-> > 
-> > Stable tree stuff should cause almost _no_ extra burden on the kernel
-> > developers, because it is something that I, and a few other people, have
-> > agreed to do with our time.  It has taken me 8 _years_ to finally get
-> > maintainers to agree to mark stuff for the stable tree, and fine-tune a
-> > development process that makes it easy for us to do this backport work.
+> > I have previously proposed a correct method of improving scalability,
+> > although it doesn't eliminate the lock.  That's to use a set of hashed
+> > mutexes.
 > 
-> Although, since those 8 years, the stable tree has proven its
-> importance.
+> Yep - hashing the mutexes is an obvious and nicely localized way of
+> improving this.  It's a tweak, not a design change.
 > 
-> Is a extra "ack" also too much to ask?
-
-Maintainers are our most limited resource, I'm getting their "ack" when
-they themselves tag the patch to be backported with the Cc: line.
-
-I then cc: them when the patch goes into the patch queue.
-
-I then cc: them again when the patch is in the -rc1 phase.
-
-How many times do I need to do this to give people a chance to say
-"nak"?
-
-> The big problem with the above is that the process depends highly on
-> this guy named "Greg".
+> The changelog should describe the choice of the hash key with great
+> precision, please.  It's important and is the first thing which
+> reviewers and readers will zoom in on.
 > 
-> If "Greg" gets tired of doing this, or gets sick, or "see other KS topic
-> about mortality of maintainers", then the entire process fails.
+> Should the individual mutexes be cacheline aligned?  Depends on the
+> acquisition frequency, I guess.  Please let's work through that.
 
-"Greg" has documented how he does all of this work, and the scripts I
-use are all published as well.
+In my test cases, involving different RDBMS, I'm getting around 114k
+acquisitions.
 
-"Greg" has also asked for help with all of this, a number of times, with
-a specific list of things that he needs help with.  And almost no one
-has ever offered to help.  That's fine, I can live with that, we all
-have jobs to do in other areas, and the LF now lets me do this as part
-of my job, so I can focus on it.
+> 
+> Let's not damage uniprocesor kernels too much.  AFACIT the main offender
+> here is fault_mutex_hash(), which is the world's most obfuscated "return
+> 0;".
 
-> OK, you are not the only one that does the stable release. There's Ben
-> and Luis doing it as well, and various others. But there seems to be a
-> bit of an issue here. How much should go into stable? Who really
-> decides?
+I guess we could add an ifndef CONFIG_SMP check to the function and
+return 0 right away. That would eliminate any overhead in
+fault_mutex_hash().
 
-The subsystem maintainers do by tagging the patches.  Every once in a
-while I dig stuff up on my own, but again, I give the subsystem
-maintainer at least two separate chances to NAK the patch, so it's not
-like I'm doing anything in private here.
+> 
+> >  It wasn't merged before, but I don't recall the reasons
+> > why. 
 
-> How important is the stable releases? Are maintainers willing to do a
-> little more work now to make sure their subsystems work fine in older
-> kernels? This isn't the same stable as it was 8 years ago.
+So I've forward ported the patch (will send once everyone agrees that
+the matter is settled), including the changes Anton Blanchard added a
+exactly two years ago:
 
-And that annoys the hell out of some Linux companies who feel that the
-stable kernels compete with them.  So people working for those companies
-might not get as much help with doing any additional work for stable
-kernel releases (this is not just idle gossip, I've heard it directly
-from management's mouths.)
+https://lkml.org/lkml/2011/7/15/31
 
-So I need to, for both a resource management issue, and a business
-issue, make this as painless for maintainers as possible, which I have
-tried to do.
+My tests show that the number of lock contentions drops from ~11k to
+around 500. So this approach alleviates a lot of the bottleneck. I've
+also ran it against libhugetlbfs without any regressions.
 
-And given the uptick in the past few years of maintainers tagging
-patches, I think it's worked out so well that people are now doing it
-too much, which gets back to my original complaints last week that I am
-now working to address in a different manner.
+Thanks,
+Davidlohr
 
-thanks,
-
-greg k-h
