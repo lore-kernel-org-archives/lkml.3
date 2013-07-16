@@ -1,107 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3GPHpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 03:45:00 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:59856 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab3GPHo6 (ORCPT
+	id S1753053Ab3GPHpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 03:45:55 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:36384 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab3GPHpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 03:44:58 -0400
-Date: Tue, 16 Jul 2013 09:44:59 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH] drm/i915: fix long-standing SNB regression in power
- consumption after resume
-Message-ID: <20130716074458.GM5784@phenom.ffwll.local>
-Mail-Followup-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	David Airlie <airlied@linux.ie>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>
-References: <20130714163009.22374.22100.stgit@zurg>
- <CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
- <51E2E65D.5050803@openvz.org>
- <20130716063101.GK5784@phenom.ffwll.local>
- <CALYGNiOtt7FUCTqcyBELoHYEVw_zqmA=bpmHy_nDkhXCduB9qg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiOtt7FUCTqcyBELoHYEVw_zqmA=bpmHy_nDkhXCduB9qg@mail.gmail.com>
-X-Operating-System: Linux phenom 3.10.0-rc7+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Jul 2013 03:45:51 -0400
+Message-ID: <1373960745.1956.0.camel@ThinkPad-X230.localdomain>
+Subject: Re: [Update][PATCH] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-acpi@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>, daniel.vetter@ffwll.ch,
+        seth.forshee@canonical.com, joeyli.kernel@gmail.com,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org
+Date: Tue, 16 Jul 2013 11:45:45 +0400
+In-Reply-To: <1519137.ZQha2P5GjU@vostro.rjw.lan>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+	 <1683364.CdnoW81WLH@vostro.rjw.lan>
+	 <1373893569.2002.3.camel@ThinkPad-X230.localdomain>
+	 <1519137.ZQha2P5GjU@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:34:25AM +0400, Konstantin Khlebnikov wrote:
-> On Tue, Jul 16, 2013 at 10:31 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> 
-> > On Sun, Jul 14, 2013 at 09:56:45PM +0400, Konstantin Khlebnikov wrote:
-> > > Daniel Vetter wrote:
-> > > >On Sun, Jul 14, 2013 at 6:30 PM, Konstantin Khlebnikov
-> > > ><khlebnikov@openvz.org>  wrote:
-> > > >>This patch fixes regression in power consumtion of sandy bridge gpu,
-> > which
-> > > >>exists since v3.6 Sometimes after resuming from s2ram gpu starts
-> > thinking that
-> > > >>it's extremely busy. After that it never reaches rc6 state.
-> > > >>
-> > > >>Bug was introduce by commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
-> > > >>("drm/i915: load boot context at driver init time"). Without
-> > documentation
-> > > >>it's not clear what is happening here, probably this breaks internal
-> > state of
-> > > >>hardware ring buffers and confuses RPS engine. Fortunately keeping
-> > forcewake
-> > > >>during whole initialization sequence in gen6_init_clock_gating() fixes
-> > this bug.
-> > > >>
-> > > >>References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
-> > > >>Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> > > >
-> > > >We already hold an forcewake reference while setting up the rps stuff,
-> > > >should we maybe hold the forcewake for the entire duration, i.e. grab
-> > > >it here in clock_gating and release it only in gen6/vlv_enable_rps?
-> > > >Can you please test that version, too?
-> > >
-> > > This will be racy because rps stuff is done in separate work which might
-> > be canceled
-> > > if intel_disable_gt_powersave() happens before its completion.
-> >
-> > Can be fixed with a flush_delayed_work. And since that has the same
-> > requirements wrt locking to prevent deadlocks as cancel_work_sync it would
-> > be a drop-in replacement. Can I volunteer you to look into testing that
-> > out a bit? Otherwise I could volunteer someone from our team.
-> >
-> > In any case I think we should apply this trick to all platforms where
-> > we've added the MBCTL write (i.e. snb, ivb, hsw & vlv) since rps/rc6 works
-> > _very_ similar on all of those.
-> >
-> 
-> I've tested that patch and it really works for me. If you want change
-> something for other hardware or
-> extend range where forcewake is held prease do it in a separate patch.
-> This will be good for bisecting new bugs in the future.
 
-The issue I have with the current patch is that it looks a bit like
-duct-tape since the point where we drop the forcewake references seems to
-lack justification. The write to MBCTL itself will temporarily wake up the
-chip, so just wrapping that up in with forcewake is very likely not good
-enough. So I fear that we'll only hold forcewake long enough on most
-systems and still have a bunch of oddball broken systems out there.
-
-Holding forcewake otoh until we've fully set up rps/rc6 makes imo tons of
-sense, hence why I've brought up the idea. Same reasoning applies to
-extending the w/a to all systems supporting rc6.
--Daniel
+On Tue, 2013-07-16 at 01:53 +0200, Rafael J. Wysocki wrote:
+> On Monday, July 15, 2013 05:06:09 PM Igor Gnatenko wrote:
+> > On Sat, 2013-07-13 at 02:46 +0200, Rafael J. Wysocki wrote:
+> 
+> [...]
+> 
+> > 
+> > I can't build it. Where did I go wrong?
+> 
+> Probably nowhere, you tried to build the ACPI video driver as a module, that's
+> all.  And you need to apply https://patchwork.kernel.org/patch/2812951/
+> before.
+> 
+> Please try the appended version (on top of
+> https://patchwork.kernel.org/patch/2812951/).
+> 
+> Thanks,
+> Rafael
+> 
+Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+> 
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / video / i915: No ACPI backlight if firmware expects Windows 8
+> 
+> According to Matthew Garrett, "Windows 8 leaves backlight control up
+> to individual graphics drivers rather than making ACPI calls itself.
+> There's plenty of evidence to suggest that the Intel driver for
+> Windows [8] doesn't use the ACPI interface, including the fact that
+> it's broken on a bunch of machines when the OS claims to support
+> Windows 8.  The simplest thing to do appears to be to disable the
+> ACPI backlight interface on these systems".
+> 
+> There's a problem with that approach, however, because simply
+> avoiding to register the ACPI backlight interface if the firmware
+> calls _OSI for Windows 8 may not work in the following situations:
+>  (1) The ACPI backlight interface actually works on the given system
+>      and the i915 driver is not loaded (e.g. another graphics driver
+>      is used).
+>  (2) The ACPI backlight interface doesn't work on the given system,
+>      but there is a vendor platform driver that will register its
+>      own, equally broken, backlight interface if not prevented from
+>      doing so by the ACPI subsystem.
+> Therefore we need to allow the ACPI backlight interface to be
+> registered until the i915 driver is loaded which then will unregister
+> it if the firmware has called _OSI for Windows 8 (or will register
+> the ACPI video driver without backlight support if not already
+> present).
+> 
+> For this reason, introduce an alternative function for registering
+> ACPI video, acpi_video_register_with_quirks(), that will check
+> whether or not the ACPI video driver has already been registered
+> and whether or not the backlight Windows 8 quirk has to be applied.
+> If the quirk has to be applied, it will block the ACPI backlight
+> support and either unregister the backlight interface if the ACPI
+> video driver has already been registered, or register the ACPI
+> video driver without the backlight interface otherwise.  Make
+> the i915 driver use acpi_video_register_with_quirks() instead of
+> acpi_video_register() in i915_driver_load().
+> 
+> This change is based on earlier patches from Matthew Garrett,
+> Chun-Yi Lee and Seth Forshee and Aaron Lu's comments.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/internal.h         |   11 ++++++
+>  drivers/acpi/video.c            |   65 ++++++++++++++++++++++++++++++++++++----
+>  drivers/acpi/video_detect.c     |   21 ++++++++++++
+>  drivers/gpu/drm/i915/i915_dma.c |    2 -
+>  include/acpi/video.h            |   11 ++++++
+>  include/linux/acpi.h            |    1 
+>  6 files changed, 103 insertions(+), 8 deletions(-)
+> 
+> Index: linux-pm/drivers/acpi/video.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/video.c
+> +++ linux-pm/drivers/acpi/video.c
+> @@ -44,6 +44,8 @@
+>  #include <linux/suspend.h>
+>  #include <acpi/video.h>
+>  
+> +#include "internal.h"
+> +
+>  #define PREFIX "ACPI: "
+>  
+>  #define ACPI_VIDEO_BUS_NAME		"Video Bus"
+> @@ -898,7 +900,7 @@ static void acpi_video_device_find_cap(s
+>  		device->cap._DDC = 1;
+>  	}
+>  
+> -	if (acpi_video_backlight_support()) {
+> +	if (acpi_video_verify_backlight_support()) {
+>  		struct backlight_properties props;
+>  		struct pci_dev *pdev;
+>  		acpi_handle acpi_parent;
+> @@ -1854,6 +1856,46 @@ static int acpi_video_bus_remove(struct
+>  	return 0;
+>  }
+>  
+> +static acpi_status video_unregister_backlight(acpi_handle handle, u32 lvl,
+> +					      void *context, void **rv)
+> +{
+> +	struct acpi_device *acpi_dev;
+> +	struct acpi_video_bus *video;
+> +	struct acpi_video_device *dev, *next;
+> +
+> +	if (acpi_bus_get_device(handle, &acpi_dev))
+> +		return AE_OK;
+> +
+> +	if (acpi_match_device_ids(acpi_dev, video_device_ids))
+> +		return AE_OK;
+> +
+> +	video = acpi_driver_data(acpi_dev);
+> +	if (!video)
+> +		return AE_OK;
+> +
+> +	acpi_video_bus_stop_devices(video);
+> +	mutex_lock(&video->device_list_lock);
+> +	list_for_each_entry_safe(dev, next, &video->video_device_list, entry) {
+> +		if (dev->backlight) {
+> +			backlight_device_unregister(dev->backlight);
+> +			dev->backlight = NULL;
+> +			kfree(dev->brightness->levels);
+> +			kfree(dev->brightness);
+> +		}
+> +		if (dev->cooling_dev) {
+> +			sysfs_remove_link(&dev->dev->dev.kobj,
+> +					  "thermal_cooling");
+> +			sysfs_remove_link(&dev->cooling_dev->device.kobj,
+> +					  "device");
+> +			thermal_cooling_device_unregister(dev->cooling_dev);
+> +			dev->cooling_dev = NULL;
+> +		}
+> +	}
+> +	mutex_unlock(&video->device_list_lock);
+> +	acpi_video_bus_start_devices(video);
+> +	return AE_OK;
+> +}
+> +
+>  static int __init is_i740(struct pci_dev *dev)
+>  {
+>  	if (dev->device == 0x00D1)
+> @@ -1885,14 +1927,25 @@ static int __init intel_opregion_present
+>  	return opregion;
+>  }
+>  
+> -int acpi_video_register(void)
+> +int __acpi_video_register(bool backlight_quirks)
+>  {
+> -	int result = 0;
+> +	bool no_backlight;
+> +	int result;
+> +
+> +	no_backlight = backlight_quirks ? acpi_video_backlight_quirks() : false;
+> +
+>  	if (register_count) {
+>  		/*
+> -		 * if the function of acpi_video_register is already called,
+> -		 * don't register the acpi_vide_bus again and return no error.
+> +		 * If acpi_video_register() has been called already, don't try
+> +		 * to register acpi_video_bus, but unregister backlight devices
+> +		 * if no backlight support is requested.
+>  		 */
+> +		if (no_backlight)
+> +			acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +					    ACPI_UINT32_MAX,
+> +					    video_unregister_backlight,
+> +					    NULL, NULL, NULL);
+> +
+>  		return 0;
+>  	}
+>  
+> @@ -1908,7 +1961,7 @@ int acpi_video_register(void)
+>  
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL(acpi_video_register);
+> +EXPORT_SYMBOL(__acpi_video_register);
+>  
+>  void acpi_video_unregister(void)
+>  {
+> Index: linux-pm/drivers/gpu/drm/i915/i915_dma.c
+> ===================================================================
+> --- linux-pm.orig/drivers/gpu/drm/i915/i915_dma.c
+> +++ linux-pm/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1648,7 +1648,7 @@ int i915_driver_load(struct drm_device *
+>  	if (INTEL_INFO(dev)->num_pipes) {
+>  		/* Must be done after probing outputs */
+>  		intel_opregion_init(dev);
+> -		acpi_video_register();
+> +		acpi_video_register_with_quirks();
+>  	}
+>  
+>  	if (IS_GEN5(dev))
+> Index: linux-pm/include/acpi/video.h
+> ===================================================================
+> --- linux-pm.orig/include/acpi/video.h
+> +++ linux-pm/include/acpi/video.h
+> @@ -17,12 +17,21 @@ struct acpi_device;
+>  #define ACPI_VIDEO_DISPLAY_LEGACY_TV      0x0200
+>  
+>  #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+> -extern int acpi_video_register(void);
+> +extern int __acpi_video_register(bool backlight_quirks);
+> +static inline int acpi_video_register(void)
+> +{
+> +	return __acpi_video_register(false);
+> +}
+> +static inline int acpi_video_register_with_quirks(void)
+> +{
+> +	return __acpi_video_register(true);
+> +}
+>  extern void acpi_video_unregister(void);
+>  extern int acpi_video_get_edid(struct acpi_device *device, int type,
+>  			       int device_id, void **edid);
+>  #else
+>  static inline int acpi_video_register(void) { return 0; }
+> +static inline int acpi_video_register_with_quirks(void) { return 0; }
+>  static inline void acpi_video_unregister(void) { return; }
+>  static inline int acpi_video_get_edid(struct acpi_device *device, int type,
+>  				      int device_id, void **edid)
+> Index: linux-pm/drivers/acpi/video_detect.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/video_detect.c
+> +++ linux-pm/drivers/acpi/video_detect.c
+> @@ -38,6 +38,8 @@
+>  #include <linux/dmi.h>
+>  #include <linux/pci.h>
+>  
+> +#include "internal.h"
+> +
+>  #define PREFIX "ACPI: "
+>  
+>  ACPI_MODULE_NAME("video");
+> @@ -234,6 +236,17 @@ static void acpi_video_caps_check(void)
+>  		acpi_video_get_capabilities(NULL);
+>  }
+>  
+> +bool acpi_video_backlight_quirks(void)
+> +{
+> +	if (acpi_gbl_osi_data >= ACPI_OSI_WIN_8) {
+> +		acpi_video_caps_check();
+> +		acpi_video_support |= ACPI_VIDEO_SKIP_BACKLIGHT;
+> +		return true;
+> +	}
+> +	return false;
+> +}
+> +EXPORT_SYMBOL(acpi_video_backlight_quirks);
+> +
+>  /* Promote the vendor interface instead of the generic video module.
+>   * This function allow DMI blacklists to be implemented by externals
+>   * platform drivers instead of putting a big blacklist in video_detect.c
+> @@ -278,6 +291,14 @@ int acpi_video_backlight_support(void)
+>  }
+>  EXPORT_SYMBOL(acpi_video_backlight_support);
+>  
+> +/* For the ACPI video driver use only. */
+> +bool acpi_video_verify_backlight_support(void)
+> +{
+> +	return (acpi_video_support & ACPI_VIDEO_SKIP_BACKLIGHT) ?
+> +		false : acpi_video_backlight_support();
+> +}
+> +EXPORT_SYMBOL(acpi_video_verify_backlight_support);
+> +
+>  /*
+>   * Use acpi_backlight=vendor/video to force that backlight switching
+>   * is processed by vendor specific acpi drivers or video.ko driver.
+> Index: linux-pm/include/linux/acpi.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/acpi.h
+> +++ linux-pm/include/linux/acpi.h
+> @@ -191,6 +191,7 @@ extern bool wmi_has_guid(const char *gui
+>  #define ACPI_VIDEO_BACKLIGHT_DMI_VIDEO			0x0200
+>  #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VENDOR		0x0400
+>  #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VIDEO		0x0800
+> +#define ACPI_VIDEO_SKIP_BACKLIGHT			0x1000
+>  
+>  #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
+>  
+> Index: linux-pm/drivers/acpi/internal.h
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/internal.h
+> +++ linux-pm/drivers/acpi/internal.h
+> @@ -164,4 +164,15 @@ struct platform_device;
+>  int acpi_create_platform_device(struct acpi_device *adev,
+>  				const struct acpi_device_id *id);
+>  
+> +/*--------------------------------------------------------------------------
+> +					Video
+> +  -------------------------------------------------------------------------- */
+> +#if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
+> +bool acpi_video_backlight_quirks(void);
+> +bool acpi_video_verify_backlight_support(void);
+> +#else
+> +static inline bool acpi_video_backlight_quirks(void) { return false; }
+> +static inline bool acpi_video_verify_backlight_support(void) { return false; }
+> +#endif
+> +
+>  #endif /* _ACPI_INTERNAL_H_ */
+> 
+> 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Igor Gnatenko
+Fedora release 19 (Schrödinger’s Cat)
+Linux 3.11.0-0.rc0.git7.1.fc20.x86_64
+
