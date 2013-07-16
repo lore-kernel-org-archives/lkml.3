@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab3GPMZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 08:25:18 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:59071 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3GPMZQ (ORCPT
+	id S932326Ab3GPM07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 08:26:59 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:46267 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab3GPM05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 08:25:16 -0400
+	Tue, 16 Jul 2013 08:26:57 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: balbi@ti.com
+Cc: Paul Zimmerman <paul.zimmerman@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        giancarlo.asnaghi@st.com
+Subject: Re: DWC2 and/or S3C-HSOTG for STA2X11 board
+Date: Tue, 16 Jul 2013 14:27:43 +0200
+Message-ID: <2703444.NGzofRFyoM@harkonnen>
+User-Agent: KMail/4.10.4 (Linux/3.9.9-201.fc18.x86_64; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <20130716120425.GA32038@arwen.pp.htv.fi>
+References: <38175373.Cq6zxae9tO@harkonnen> <20130716120425.GA32038@arwen.pp.htv.fi>
 MIME-Version: 1.0
-In-Reply-To: <20130716013002.GC28375@S2101-09.ap.freescale.net>
-References: <1373898160-8460-1-git-send-email-otavio@ossystems.com.br>
-	<CAOMZO5C_7nJ9RVYvuKJHP2u0mYY6P2UyGVA6OpPzqTnd7YXN2Q@mail.gmail.com>
-	<CAP9ODKpr82mMoxhiv=K70RKdn01b=ZM2J9E4vV-AM5nwXxUR+g@mail.gmail.com>
-	<20130716013002.GC28375@S2101-09.ap.freescale.net>
-Date: Tue, 16 Jul 2013 09:25:16 -0300
-X-Google-Sender-Auth: xUDnzQcTogRokqWYc1j7UgXIjLc
-Message-ID: <CAP9ODKqrXBybj=Xk5NsXQRvyOWppCEgR+CgzB1C=d0v2NXj4AQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] ARM: dts: imx23-evk: enable USB PHY and controller
-From: Otavio Salvador <otavio@ossystems.com.br>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Fabio Estevam <festevam@gmail.com>, Jonathan Cameron <jic23@kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 10:30 PM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Mon, Jul 15, 2013 at 01:39:13PM -0300, Otavio Salvador wrote:
->> On Mon, Jul 15, 2013 at 12:39 PM, Fabio Estevam <festevam@gmail.com> wrote:
->> > Hi Otavio,
->> >
->> > On Mon, Jul 15, 2013 at 11:22 AM, Otavio Salvador
->> > <otavio@ossystems.com.br> wrote:
->> >> The i.MX23EVK board provides a USB port so the USB PHY and controller
->> >> need to be enabled for it to be usable.
->> >>
->> >> Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
->> >> ---
->> >
->> > You should have Cc'd Shawn Guo on this series.
->>
->> Oh; thanks for fix my mistake. I am new to kernel development :-)
->
-> I'm on copy of patches 1, 3 and 4.  2 and 5 are missing?
+Thank you Felipe
 
-I will prepare a v2, as per Jonathan feedback and will add you in all them.
+[add CC Giancarlo from ST]
 
---
-Otavio Salvador                             O.S. Systems
-http://www.ossystems.com.br        http://projetos.ossystems.com.br
-Mobile: +55 (53) 9981-7854            Mobile: +1 (347) 903-9750
+On Tuesday 16 July 2013 15:04:25 Felipe Balbi wrote:
+> Hi,
+> 
+> On Tue, Jul 16, 2013 at 02:01:33PM +0200, Federico Vaga wrote:
+> > Hello,
+> > 
+> > I have an x86 board made by STMicroelectronics (STA2X11) with the Synopsis
+> > USB-OTG DesignWare 2 on it and connected through the PCI-e bus.
+> > 
+> > I know that there are two drivers for the same controller:
+> >    (host)   drivers/staging/dwc2/*
+> >    (device) drivers/usb/gadget/s3c-hsotg.{c|h}
+> > 
+> > So, at the moment I cannot have a board with both host/device working at
+> > the same time. I have to choose to use the block as device or host,
+> > right?
+> > 
+> > I know that the plan is to merge the s3c-hsotg in the dwc2 driver
+> > (https://lwn.net/Articles/540283/). Are still accepted patch to s3c-hsotg?
+> > Or it is work in progress right now (soon), so it is better to wait after
+> > the merge?
+> > 
+> > In order to use the s3c-hsotg I must implement a PCI wrapper that uses
+> > this
+> > driver. It will be accepted in the kernel even if it will be removed
+> > sooner or later because of the driver merge?
+> 
+> currently s3c-hsotg has too much knowledge of the Samsung platform. My
+> suggestion would be to help dwc2 get in better shape. It should be
+> rather easy to support your board since that already has a PCI wrapper
+> driver.
+> 
+> So, stick to host only for now, help clean up dwc2 and move it out of
+> staging, then later it should be fairly simple to merge the device side
+> in it.
+
+Is there something like a TODO list of dwc2 known problems?
+
+-- 
+Federico Vaga
