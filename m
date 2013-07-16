@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758679Ab3GPDtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 23:49:11 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:35944 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab3GPDtJ (ORCPT
+	id S1758697Ab3GPDu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 23:50:29 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48485 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758521Ab3GPDu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 23:49:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130715165209.GA6000@kroah.com>
-References: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
-	<20130715165209.GA6000@kroah.com>
-Date: Tue, 16 Jul 2013 11:49:07 +0800
-Message-ID: <CA+k=oDzZ5sf_wFMUvE_vkkqRQaOV0P3vWP99tDpoZkrwMN7Q+A@mail.gmail.com>
-Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
-From: Rong Wang <wr011235813@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: balbi@ti.com, Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rong.Wang@csr.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Jul 2013 23:50:28 -0400
+Date: Tue, 16 Jul 2013 13:50:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Documentation: update references to v2.6.x in
+ development-process
+Message-Id: <20130716135015.62f64a255f3de76946651222@canb.auug.org.au>
+In-Reply-To: <20130716021349.GA26761@windriver.com>
+References: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
+	<20130716101543.b458d507331c4ac32fe6686e@canb.auug.org.au>
+	<20130716021349.GA26761@windriver.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__16_Jul_2013_13_50_15_+1000_89g9TtDsz33823Mq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--Signature=_Tue__16_Jul_2013_13_50_15_+1000_89g9TtDsz33823Mq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The USB on our platform can change roles between HOST and GADGET, but
-it is not capable of OTG.
-When the USB changes between roles the udev will run some scripts
-automatically according to the udev rules.
-The default role is GADGET, and we bind the g_mass_storage to the USB
-GADGET role.
+Hi Paul,
 
-We should secure the back end file storage between the device and the
-host PC connecting to our device.
-We need to know when the GADGET is really connect to a host PC, then
-we can umount the file on the device
-and export it to the g_mass_storage.
+On Mon, 15 Jul 2013 22:13:50 -0400 Paul Gortmaker <paul.gortmaker@windriver=
+.com> wrote:
+>
+> On a similar note, I was thinking about the recent thread on linux-next
+> where we were indicating that people shouldn't rebase linux-next content
+> on a whim, and that new devel (vs. bugfix) content shouldn't appear in
+> the linux-next content during the merge window.  There is no question
+> that the linux-next process is integral to the main flow of patches to
+> mainline, so I think Documentation/development-process/2.Process (the
+> same file) should also capture those points in the linux-next section.
+> Do you have some pre-canned text we can insert there, or should I draft
+> something up for you to review?
 
-The question is since we default GADGET, so the g_mass_storage.ko is
-installed early but connecting to a host PC
-is randomly, But the udev has no idea when a host PC connects our device.
+The latter would be certainly easier for me :-)  If that is not easy, let
+me know and I will write something (even without swearing ;-)).
 
-So we consider it's reasonable to let the udev know the GADGET device state.
-Is there any alternative to our question?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks!
+--Signature=_Tue__16_Jul_2013_13_50_15_+1000_89g9TtDsz33823Mq
+Content-Type: application/pgp-signature
 
-On Tue, Jul 16, 2013 at 12:52 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Jul 15, 2013 at 11:57:24AM +0800, Rong Wang wrote:
->>     usb: udc: add gadget state kobject uevent
->>
->>     Add USB_UDC_STATE environment variable in udc uevent
->>     callback and trigger kobject_uevent in usb_gadget_set_state
->>     to inform the user-space the state of the gadget.
->
-> Why?
->
-> And what's with the indentation?
->
->>     Signed-off-by: Rong Wang <Rong.Wang@csr.com>
->>
->> diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
->> index ffd8fa5..05715d1 100644
->> --- a/drivers/usb/gadget/udc-core.c
->> +++ b/drivers/usb/gadget/udc-core.c
->> @@ -101,11 +101,32 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
->>
->>  /* ------------------------------------------------------------------------- */
->>
->> +/**
->> + * usb_gadget_set_state - set usb gadget state
->> + * @gadget: gadget device
->> + * @state: state defined in USB specification ch9
->> + * Context: !in_interrupt()
->> + */
->>  void usb_gadget_set_state(struct usb_gadget *gadget,
->>                 enum usb_device_state state)
->>  {
->> +       struct usb_udc          *udc = NULL;
->> +
->>         gadget->state = state;
->>         sysfs_notify(&gadget->dev.kobj, NULL, "status");
->> +
->> +       mutex_lock(&udc_lock);
->> +       list_for_each_entry(udc, &udc_list, list)
->> +               if (udc->gadget == gadget)
->> +                       goto found;
->> +
->> +       dev_err(gadget->dev.parent, "gadget not registered.\n");
->> +       mutex_unlock(&udc_lock);
->> +       return;
->> +
->> +found:
->> +       mutex_unlock(&udc_lock);
->> +       kobject_uevent(&udc->dev.kobj, KOBJ_CHANGE);
->
-> I really don't like adding kobject change events, as they usually never
-> get listened to, and there are other ways to get this information from
-> userspace, right?
->
-> Why do you need/want this?  What is it going to be used for?  What tools
-> will use it?  How will they use it?
->
-> And why can't the existing notification events for gadget devices work
-> for you?
->
-> thanks,
->
-> greg k-h
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR5ML8AAoJEECxmPOUX5FEWaoP/RXLdyRUyrDJkjGniBs65vY6
+PPIKxzWnxaMGtzzU2lv1jM8HipsjEwGHdMcx0X9aVx+OkL9ITob4CxV6mDNMxt/e
+fWybLdl6J+PPfBP8NR/vZzKv+PDGK02Fxl+fLShS0w1BzuUegBbyvORFhSlLFeCQ
+1W4yD+8xd6Pu4qyKtkzTrNVYxR3Zh+4FpdaUdKJREKqWzJdDTJhZw2NESrkB3QzM
+GY1YUSXy3E67o6zoCVTxYFqyTxucIF0RFssB7YRRR0ycEhDHh9rB3dRauQQAloCi
+n7En9FvMsAW0asM4anpc6HYp2h936rRGgktILAXmwjAHTYJaJZvYKJ7Jaap7vlFr
+lpM/QmHCN2drukkAi7LR8YNoIDQ2oifRFW9bUsntdnGzLVMD2UjKqi3akHKHFVH/
+49MGjZUbdMNw2od5MRCDONRCD764wwJPcD5Y0wguugWE8inqZ/h/AbbovgrlwiR4
+1+RHSNkCFSsHvBNoZKKkQHbDXsApH12pUoocj6Lj+Mny/7s6d6tbPZEDunmJ/KYg
+dO533ERPyBGtM8xmrq1mbQCRHl3xmySRdKW/AlbPc12HNJoinGSNsOLTjC4tyD8c
+nEKlB23CYlmLSZJ0NgUoVl0TRbEkuZd/9J2Lw/D3qwzh09F674W7ONqigirvdEqi
+eCWVGw3Art+ITc+eN7kP
+=BvlC
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Jul_2013_13_50_15_+1000_89g9TtDsz33823Mq--
