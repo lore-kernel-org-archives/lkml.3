@@ -1,172 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab3GPQSi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:18:38 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:36623 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932666Ab3GPQSW (ORCPT
+	id S933504Ab3GPQT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:19:58 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57656 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933023Ab3GPQTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:18:22 -0400
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH v7 2/5] s390/vmcore: Use ELF header in new memory feature
-Date: Tue, 16 Jul 2013 18:18:12 +0200
-Message-Id: <1373991495-47411-3-git-send-email-holzheu@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1373991495-47411-1-git-send-email-holzheu@linux.vnet.ibm.com>
-References: <1373991495-47411-1-git-send-email-holzheu@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071616-8372-0000-0000-000006986643
+	Tue, 16 Jul 2013 12:19:55 -0400
+Date: Tue, 16 Jul 2013 17:19:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Graeme Gregory <gg@slimlogic.co.uk>, J Keerthy <j-keerthy@ti.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130716161939.GR22506@sirena.org.uk>
+References: <1373984635-14958-1-git-send-email-nm@ti.com>
+ <20130716142710.GA15015@kahuna>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VmyrZ50r30oK77nV"
+Content-Disposition: inline
+In-Reply-To: <20130716142710.GA15015@kahuna>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 0/2] regulator: palmas-pmic: doc: update device tree
+ bindings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch now exchanges the old relocate mechanism with the new
-arch function call override mechanism that allows to create the ELF
-core header in the 2nd kernel.
 
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- arch/s390/kernel/crash_dump.c | 81 ++++++++++++++++++++++++++++---------------
- 1 file changed, 54 insertions(+), 27 deletions(-)
+--VmyrZ50r30oK77nV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/s390/kernel/crash_dump.c b/arch/s390/kernel/crash_dump.c
-index f703d91..bfb9cda 100644
---- a/arch/s390/kernel/crash_dump.c
-+++ b/arch/s390/kernel/crash_dump.c
-@@ -22,6 +22,11 @@
- #define PTR_DIFF(x, y) ((unsigned long)(((char *) (x)) - ((unsigned long) (y))))
- 
- /*
-+ * Pointer to ELF header in new kernel
-+ */
-+static void *elfcorehdr_newmem;
-+
-+/*
-  * Copy one page from "oldmem"
-  *
-  * For the kdump reserved memory this functions performs a swap operation:
-@@ -325,14 +330,6 @@ static int get_mem_chunk_cnt(void)
- }
- 
- /*
-- * Relocate pointer in order to allow vmcore code access the data
-- */
--static inline unsigned long relocate(unsigned long addr)
--{
--	return OLDMEM_BASE + addr;
--}
--
--/*
-  * Initialize ELF loads (new kernel)
-  */
- static int loads_init(Elf64_Phdr *phdr, u64 loads_offset)
-@@ -383,7 +380,7 @@ static void *notes_init(Elf64_Phdr *phdr, void *ptr, u64 notes_offset)
- 	ptr = nt_vmcoreinfo(ptr);
- 	memset(phdr, 0, sizeof(*phdr));
- 	phdr->p_type = PT_NOTE;
--	phdr->p_offset = relocate(notes_offset);
-+	phdr->p_offset = notes_offset;
- 	phdr->p_filesz = (unsigned long) PTR_SUB(ptr, ptr_start);
- 	phdr->p_memsz = phdr->p_filesz;
- 	return ptr;
-@@ -392,7 +389,7 @@ static void *notes_init(Elf64_Phdr *phdr, void *ptr, u64 notes_offset)
- /*
-  * Create ELF core header (new kernel)
-  */
--static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
-+int elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
- {
- 	Elf64_Phdr *phdr_notes, *phdr_loads;
- 	int mem_chunk_cnt;
-@@ -400,6 +397,11 @@ static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
- 	u32 alloc_size;
- 	u64 hdr_off;
- 
-+	if (!OLDMEM_BASE)
-+		return 0;
-+	/* If elfcorehdr= has been passed via cmdline, we use that one */
-+	if (elfcorehdr_addr != ELFCORE_ADDR_MAX)
-+		return 0;
- 	mem_chunk_cnt = get_mem_chunk_cnt();
- 
- 	alloc_size = 0x1000 + get_cpu_cnt() * 0x300 +
-@@ -417,27 +419,52 @@ static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
- 	ptr = notes_init(phdr_notes, ptr, ((unsigned long) hdr) + hdr_off);
- 	/* Init loads */
- 	hdr_off = PTR_DIFF(ptr, hdr);
--	loads_init(phdr_loads, ((unsigned long) hdr) + hdr_off);
--	*elfcorebuf_sz = hdr_off;
--	*elfcorebuf = (void *) relocate((unsigned long) hdr);
--	BUG_ON(*elfcorebuf_sz > alloc_size);
-+	loads_init(phdr_loads, hdr_off);
-+	*addr = (unsigned long long) hdr;
-+	elfcorehdr_newmem = hdr;
-+	*size = (unsigned long long) hdr_off;
-+	BUG_ON(elfcorehdr_size > alloc_size);
-+	return 0;
- }
- 
- /*
-- * Create kdump ELF core header in new kernel, if it has not been passed via
-- * the "elfcorehdr" kernel parameter
-+ * Free ELF core header (new kernel)
-  */
--static int setup_kdump_elfcorehdr(void)
-+void elfcorehdr_free(unsigned long long addr)
- {
--	size_t elfcorebuf_sz;
--	char *elfcorebuf;
--
--	if (!OLDMEM_BASE || is_kdump_kernel())
--		return -EINVAL;
--	s390_elf_corehdr_create(&elfcorebuf, &elfcorebuf_sz);
--	elfcorehdr_addr = (unsigned long long) elfcorebuf;
--	elfcorehdr_size = elfcorebuf_sz;
--	return 0;
-+	if (!elfcorehdr_newmem)
-+		return;
-+	kfree((void *)(unsigned long)addr);
- }
- 
--subsys_initcall(setup_kdump_elfcorehdr);
-+/*
-+ * Read from ELF header
-+ */
-+ssize_t elfcorehdr_read(char *buf, size_t count, u64 *ppos)
-+{
-+	void *src = (void *)(unsigned long)*ppos;
-+
-+	src = elfcorehdr_newmem ? src : src - OLDMEM_BASE;
-+	memcpy(buf, src, count);
-+	*ppos += count;
-+	return count;
-+}
-+
-+/*
-+ * Read from ELF notes data
-+ */
-+ssize_t elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
-+{
-+	void *src = (void *)(unsigned long)*ppos;
-+	int rc;
-+
-+	if (elfcorehdr_newmem) {
-+		memcpy(buf, src, count);
-+	} else {
-+		rc = copy_from_oldmem(buf, src, count);
-+		if (rc)
-+			return rc;
-+	}
-+	*ppos += count;
-+	return count;
-+}
--- 
-1.8.2.3
+On Tue, Jul 16, 2013 at 09:27:10AM -0500, Nishanth Menon wrote:
+> On 09:23-20130716, Nishanth Menon wrote:
 
+> > We seem to have a few missing updates to device tree bindings with the
+> > latest set of changes getting merged in.
+
+> Oops.. seems like I have an old mailID for Mark :(
+
+I'll need the actual patches as well...
+
+--VmyrZ50r30oK77nV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR5XKYAAoJELSic+t+oim9RNQP/0KEOqHm1nCMGThjOkttWVvq
+Cp3bT68Yh0ip8boiqfD44+Ws8+/AhdQWbqj6xsm3NmFViYf2SCPVtTWUc5qjbNKu
+NNCEyJwZn4jCLktq0EtTAIY/liPBhcv19CkNdMMoXndcg0jeih+dxPqXHGtwhmTt
+CG1eY5+JBoUET8Xg4vfImpLtTxnQrByJSlKnaRAsl9Rmqq9NszOMqx2arACc2rEA
+2CmDbV/2n46vKpkGfu2Y79jGotFEJfvoM2o8HL8DoQEws8XwV1kTUoyUUykINh3L
+Aqf2FnzToFKHjAh5PXfx00jyIKDEOmWgVK84jY/43JR4q7+Tx4UcDctbLFawwYgM
+Lj8dlJIZgyO5Z6Ank70UqyaqR1ClCOGEqv2e88la2yJZvHuMRrm6NEZnP6ZwAOPB
+S3hTahj1aB4kDQs+j2J0cCp/Vj/8e5iIMfTgOQvxRK5qYbqx3Du407XzB5vLdDGG
+OGkdus8kk7qscJyf0nKmR7C4/LAnSKncKf56CgmXSZoXt+bs+tQPIDxDXtftkBSK
+HQwn40WtAorQDTxh/jzbzVoGNQAFnGVGjko6jqO0xNXmxUudSrgWG8qlRvBnooM2
+r6SZkYdEeu/qvmO+e7IEtQZM1sCPBq9W3sO8Qyn87GVDZg3hOwxi7268f/7YHRaQ
+YA/JRU9ucSXgudefNEXF
+=Rq54
+-----END PGP SIGNATURE-----
+
+--VmyrZ50r30oK77nV--
