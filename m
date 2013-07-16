@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab3GPGdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 02:33:54 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:34501 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab3GPGcj (ORCPT
+	id S1752347Ab3GPGlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 02:41:40 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:10869 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751597Ab3GPGlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 02:32:39 -0400
-Date: Tue, 16 Jul 2013 08:32:40 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] drm/i915: fix long-standing SNB regression in power
- consumption after resume
-Message-ID: <20130716063240.GL5784@phenom.ffwll.local>
-Mail-Followup-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	Chris Wilson <chris@chris-wilson.co.uk>
-References: <20130714163009.22374.22100.stgit@zurg>
+	Tue, 16 Jul 2013 02:41:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuokAOjp5FF5LK4r/2dsb2JhbABagwY0riQCjlKFMAQBgQ8XdIIjAQEFOhwjEAgDGAklDwUlAyETh34DDg2tPReIVBaMfYE0gR0HgwttA5dbkU6DJCo
+Date: Tue, 16 Jul 2013 16:41:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ben Myers <bpm@sgi.com>, xfs@oss.sgi.com
+Subject: Re: splice vs execve lockdep trace.
+Message-ID: <20130716064104.GF11674@dastard>
+References: <20130716015305.GB30569@redhat.com>
+ <CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com>
+ <20130716023847.GA31481@redhat.com>
+ <CA+55aFxiGXht8+Dox=C2ezYYf1yMaLAzMYr40j=+peP8j5Ha6w@mail.gmail.com>
+ <20130716060351.GE11674@dastard>
+ <20130716061601.GM4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130714163009.22374.22100.stgit@zurg>
-X-Operating-System: Linux phenom 3.10.0-rc7+
+In-Reply-To: <20130716061601.GM4165@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 14, 2013 at 08:30:09PM +0400, Konstantin Khlebnikov wrote:
-> This patch fixes regression in power consumtion of sandy bridge gpu, which
-> exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
-> it's extremely busy. After that it never reaches rc6 state.
+On Tue, Jul 16, 2013 at 07:16:02AM +0100, Al Viro wrote:
+> On Tue, Jul 16, 2013 at 04:03:51PM +1000, Dave Chinner wrote:
 > 
-> Bug was introduce by commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
-> ("drm/i915: load boot context at driver init time"). Without documentation
-> it's not clear what is happening here, probably this breaks internal state of
-> hardware ring buffers and confuses RPS engine. Fortunately keeping forcewake
-> during whole initialization sequence in gen6_init_clock_gating() fixes this bug.
+> > I posted patches to fix this i_mutex/i_iolock inversion a couple of
+> > years ago (july 2011):
+> > 
+> > https://lkml.org/lkml/2011/7/18/4
+> > 
+> > And V2 was posted here and reviewed (aug 2011):
+> > 
+> > http://xfs.9218.n7.nabble.com/PATCH-0-2-splice-i-mutex-vs-splice-write-deadlock-V2-tt4072.html#none
 > 
-> References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Unless I'm misreading the patch, you end up doing file_remove_suid()
+> without holding i_mutex at all...
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=58971
-Tested-by: Alexander Kaltsas <alexkaltsas@gmail.com>
-Tested-by: rocko <rockorequin@hotmail.com>
+We've been calling file_remove_suid() since at least 2010 without
+i_mutex held through the direct IO write path....
 
-> ---
->  drivers/gpu/drm/i915/intel_pm.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-> index aa01128..839a43f 100644
-> --- a/drivers/gpu/drm/i915/intel_pm.c
-> +++ b/drivers/gpu/drm/i915/intel_pm.c
-> @@ -3640,6 +3640,8 @@ static void gen6_init_clock_gating(struct drm_device *dev)
->  	int pipe;
->  	uint32_t dspclk_gate = ILK_VRHUNIT_CLOCK_GATE_DISABLE;
->  
-> +	gen6_gt_force_wake_get(dev_priv);
-> +
->  	I915_WRITE(ILK_DSPCLK_GATE_D, dspclk_gate);
->  
->  	I915_WRITE(ILK_DISPLAY_CHICKEN2,
-> @@ -3728,6 +3730,8 @@ static void gen6_init_clock_gating(struct drm_device *dev)
->  	cpt_init_clock_gating(dev);
->  
->  	gen6_check_mch_setup(dev);
-> +
-> +	gen6_gt_force_wake_put(dev_priv);
->  }
->  
->  static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
-> 
+Cheers,
 
+Dave.
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Dave Chinner
+david@fromorbit.com
