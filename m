@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab3GPRe7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:34:59 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:60723 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933612Ab3GPRe4 (ORCPT
+	id S933694Ab3GPRfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:35:22 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:58744 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933668Ab3GPRfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:34:56 -0400
+	Tue, 16 Jul 2013 13:35:13 -0400
 From: Richard Henderson <rth@twiddle.net>
 To: linux-kernel@vger.kernel.org
-Cc: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org
-Subject: [RFC PATCH 02/10] alpha: Notice if we're being run under QEMU
-Date: Tue, 16 Jul 2013 10:34:10 -0700
-Message-Id: <1373996058-13399-3-git-send-email-rth@twiddle.net>
+Cc: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC PATCH 10/10] alpha: Use qemu+cserve provided high-res clock and alarm.
+Date: Tue, 16 Jul 2013 10:34:18 -0700
+Message-Id: <1373996058-13399-11-git-send-email-rth@twiddle.net>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373996058-13399-1-git-send-email-rth@twiddle.net>
 References: <1373996058-13399-1-git-send-email-rth@twiddle.net>
@@ -20,111 +21,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building a generic kernel, do a run-time check on the serial
-number, like we do for MILO.  When building a custom kernel, make
-this a configure-time check.
+QEMU provides a high-resolution timer and alarm; use this for
+a clock source and clock event source when available.
 
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Richard Henderson <rth@twiddle.net>
 ---
- arch/alpha/Kconfig               | 14 ++++++++++++++
- arch/alpha/include/asm/machvec.h | 18 ++++++++++++------
- arch/alpha/kernel/setup.c        | 13 ++++++++++++-
- 3 files changed, 38 insertions(+), 7 deletions(-)
+ arch/alpha/include/asm/pal.h  |  14 ++++++
+ arch/alpha/kernel/irq_alpha.c |   2 +-
+ arch/alpha/kernel/proto.h     |   2 +-
+ arch/alpha/kernel/time.c      | 106 ++++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 117 insertions(+), 7 deletions(-)
 
-diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-index 082d9b4..2053f215 100644
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -488,6 +488,20 @@ config VGA_HOSE
- 	  which always have multiple hoses, and whose consoles support it.
+diff --git a/arch/alpha/include/asm/pal.h b/arch/alpha/include/asm/pal.h
+index ccaa49a..5422a47 100644
+--- a/arch/alpha/include/asm/pal.h
++++ b/arch/alpha/include/asm/pal.h
+@@ -168,5 +168,19 @@ qemu_set_alarm_abs(unsigned long expire)
+ 		     : "$0", "$18", "$19", "$20", "$21");
+ }
  
- 
-+config ALPHA_QEMU
-+	bool "Run under QEMU emulation"
-+	depends on !ALPHA_GENERIC
-+	---help---
-+	  Assume the presence of special features supported by QEMU PALcode
-+	  that reduce the overhead of system emulation.
++static inline unsigned long
++qemu_get_vmtime(void)
++{
++	register unsigned long v0 __asm__("$0");
++	register unsigned long a0 __asm__("$16") = 7;
 +
-+	  Generic kernels will auto-detect QEMU.  But when building a
-+	  system-specific kernel, the assumption is that we want to
-+	  elimiate as many runtime tests as possible.
++	asm("call_pal %2 # cserve get_time"
++	    : "=r"(v0), "+r"(a0)
++	    : "i"(PAL_cserve)
++	    : "$17", "$18", "$19", "$20", "$21");
 +
-+	  If unsure, say N.
++	return v0;
++}
++
+ #endif /* !__ASSEMBLY__ */
+ #endif /* __ALPHA_PAL_H */
+diff --git a/arch/alpha/kernel/irq_alpha.c b/arch/alpha/kernel/irq_alpha.c
+index 49d50e2..00add72 100644
+--- a/arch/alpha/kernel/irq_alpha.c
++++ b/arch/alpha/kernel/irq_alpha.c
+@@ -214,7 +214,7 @@ process_mcheck_info(unsigned long vector, unsigned long la_ptr,
+  */
+ 
+ struct irqaction timer_irqaction = {
+-	.handler	= timer_interrupt,
++	.handler	= rtc_timer_interrupt,
+ 	.name		= "timer",
+ };
+ 
+diff --git a/arch/alpha/kernel/proto.h b/arch/alpha/kernel/proto.h
+index 175f7a4..db31ffb 100644
+--- a/arch/alpha/kernel/proto.h
++++ b/arch/alpha/kernel/proto.h
+@@ -140,7 +140,7 @@ extern void handle_ipi(struct pt_regs *);
+ /* extern void reset_for_srm(void); */
+ 
+ /* time.c */
+-extern irqreturn_t timer_interrupt(int irq, void *dev);
++extern irqreturn_t rtc_timer_interrupt(int irq, void *dev);
+ extern void init_clockevent(void);
+ extern void common_init_rtc(void);
+ extern unsigned long est_cycle_freq;
+diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
+index ec45001..3b7601e 100644
+--- a/arch/alpha/kernel/time.c
++++ b/arch/alpha/kernel/time.c
+@@ -89,7 +89,7 @@ static inline __u32 rpcc(void)
+ static DEFINE_PER_CPU(struct clock_event_device, cpu_ce);
+ 
+ irqreturn_t
+-timer_interrupt(int irq, void *dev)
++rtc_timer_interrupt(int irq, void *dev)
+ {
+ 	int cpu = smp_processor_id();
+ 	struct clock_event_device *ce = &per_cpu(cpu_ce, cpu);
+@@ -119,8 +119,8 @@ rtc_ce_set_next_event(unsigned long evt, struct clock_event_device *ce)
+ 	return -EINVAL;
+ }
+ 
+-void __init
+-init_clockevent(void)
++static void __init
++init_rtc_clockevent(void)
+ {
+ 	int cpu = smp_processor_id();
+ 	struct clock_event_device *ce = &per_cpu(cpu_ce, cpu);
+@@ -137,6 +137,83 @@ init_clockevent(void)
+ 	clockevents_config_and_register(ce, CONFIG_HZ, 0, 0);
+ }
+ 
++
++/*
++ * The QEMU clock as a clocksource primitive.
++ */
++
++static cycle_t
++qemu_cs_read(struct clocksource *cs)
++{
++	return qemu_get_vmtime();
++}
++
++static struct clocksource qemu_cs = {
++	.name                   = "qemu",
++	.rating                 = 400,
++	.read                   = qemu_cs_read,
++	.mask                   = CLOCKSOURCE_MASK(64),
++	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS,
++	.mult			= 1,
++	.shift			= 0,
++	.max_idle_ns		= LONG_MAX
++};
++
++/*
++ * The QEMU clock and alarm as a clock_event_device primitive.
++ */
 +
 +
- config ALPHA_SRM
- 	bool "Use SRM as bootloader" if ALPHA_CABRIOLET || ALPHA_AVANTI_CH || ALPHA_EB64P || ALPHA_PC164 || ALPHA_TAKARA || ALPHA_EB164 || ALPHA_ALCOR || ALPHA_MIATA || ALPHA_LX164 || ALPHA_SX164 || ALPHA_NAUTILUS || ALPHA_NONAME
- 	depends on TTY
-diff --git a/arch/alpha/include/asm/machvec.h b/arch/alpha/include/asm/machvec.h
-index 72dbf23..4ac9016 100644
---- a/arch/alpha/include/asm/machvec.h
-+++ b/arch/alpha/include/asm/machvec.h
-@@ -126,13 +126,19 @@ extern struct alpha_machine_vector alpha_mv;
++static void
++qemu_ce_set_mode(enum clock_event_mode mode, struct clock_event_device *ce)
++{
++	/* The mode member of CE is updated for us in generic code.
++	   Just make sure that the event is disabled.  */
++	qemu_set_alarm_abs(0);
++}
++
++static int
++qemu_ce_set_next_event(unsigned long evt, struct clock_event_device *ce)
++{
++	qemu_set_alarm_rel(evt);
++	return 0;
++}
++
++static irqreturn_t
++qemu_timer_interrupt(int irq, void *dev)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *ce = &per_cpu(cpu_ce, cpu);
++
++	ce->event_handler(ce);
++	return IRQ_HANDLED;
++}
++
++static void __init
++init_qemu_clockevent(void)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *ce = &per_cpu(cpu_ce, cpu);
++
++	*ce = (struct clock_event_device){
++		.name = "qemu",
++		.features = CLOCK_EVT_FEAT_ONESHOT,
++		.min_delta_ns = 1000,
++		.min_delta_ticks = 1000,
++		.max_delta_ns = LONG_MAX,
++		.max_delta_ticks = LONG_MAX,
++		.mult = 1,
++		.shift = 0,
++		.rating = 400,
++		.cpumask = cpumask_of(cpu),
++		.set_mode = qemu_ce_set_mode,
++		.set_next_event = qemu_ce_set_next_event,
++	};
++
++	clockevents_register_device(ce);
++}
++
++
+ void __init
+ common_init_rtc(void)
+ {
+@@ -324,6 +401,15 @@ time_init(void)
+ 	unsigned long cycle_freq, tolerance;
+ 	long diff;
  
- #ifdef CONFIG_ALPHA_GENERIC
- extern int alpha_using_srm;
-+extern int alpha_using_qemu;
- #else
--#ifdef CONFIG_ALPHA_SRM
--#define alpha_using_srm 1
--#else
--#define alpha_using_srm 0
--#endif
-+# ifdef CONFIG_ALPHA_SRM
-+#  define alpha_using_srm 1
-+# else
-+#  define alpha_using_srm 0
-+# endif
-+# ifdef CONFIG_ALPHA_QEMU
-+#  define alpha_using_qemu 1
-+# else
-+#  define alpha_using_qemu 0
-+# endif
- #endif /* GENERIC */
++	if (alpha_using_qemu) {
++		clocksource_register(&qemu_cs);
++		init_qemu_clockevent();
++
++		timer_irqaction.handler = qemu_timer_interrupt;
++		init_rtc_irq();
++		return;
++	}
++
+ 	/* Calibrate CPU clock -- attempt #1.  */
+ 	if (!est_cycle_freq)
+ 		est_cycle_freq = validate_cc_value(calibrate_cc_with_pit());
+@@ -363,7 +449,17 @@ time_init(void)
  
--#endif
-+#endif /* __KERNEL__ */
- #endif /* __ALPHA_MACHVEC_H */
-diff --git a/arch/alpha/kernel/setup.c b/arch/alpha/kernel/setup.c
-index 9e3107cc5..c38d6a1 100644
---- a/arch/alpha/kernel/setup.c
-+++ b/arch/alpha/kernel/setup.c
-@@ -115,10 +115,17 @@ unsigned long alpha_agpgart_size = DEFAULT_AGP_APER_SIZE;
+ 	/* Startup the timer source. */
+ 	alpha_mv.init_rtc();
++	init_rtc_clockevent();
++}
  
- #ifdef CONFIG_ALPHA_GENERIC
- struct alpha_machine_vector alpha_mv;
+-	/* Start up the clock event device.  */
+-	init_clockevent();
++/* Initialize the clock_event_device for secondary cpus.  */
++#ifdef CONFIG_SMP
++void __init
++init_clockevent(void)
++{
++	if (alpha_using_qemu)
++		init_qemu_clockevent();
++	else
++		init_rtc_clockevent();
+ }
 +#endif
-+
-+#ifndef alpha_using_srm
- int alpha_using_srm;
- EXPORT_SYMBOL(alpha_using_srm);
- #endif
- 
-+#ifndef alpha_using_qemu
-+int alpha_using_qemu;
-+#endif
-+
- static struct alpha_machine_vector *get_sysvec(unsigned long, unsigned long,
- 					       unsigned long);
- static struct alpha_machine_vector *get_sysvec_byname(const char *);
-@@ -529,11 +536,15 @@ setup_arch(char **cmdline_p)
- 	atomic_notifier_chain_register(&panic_notifier_list,
- 			&alpha_panic_block);
- 
--#ifdef CONFIG_ALPHA_GENERIC
-+#ifndef alpha_using_srm
- 	/* Assume that we've booted from SRM if we haven't booted from MILO.
- 	   Detect the later by looking for "MILO" in the system serial nr.  */
- 	alpha_using_srm = strncmp((const char *)hwrpb->ssn, "MILO", 4) != 0;
- #endif
-+#ifndef alpha_using_qemu
-+	/* Similarly, look for QEMU.  */
-+	alpha_using_qemu = strstr((const char *)hwrpb->ssn, "QEMU") != 0;
-+#endif
- 
- 	/* If we are using SRM, we want to allow callbacks
- 	   as early as possible, so do this NOW, and then
 -- 
 1.8.1.4
 
