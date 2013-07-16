@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933859Ab3GPUWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:22:00 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:35103 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933572Ab3GPUV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:21:59 -0400
+	id S964770Ab3GPUZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:25:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29818 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933567Ab3GPUZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 16:25:43 -0400
+Date: Tue, 16 Jul 2013 16:25:33 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-ext4@vger.kernel.org
+Subject: ext4_da_release_space:1333: ext4_da_release_space: ino 12, to_free 1
+ with only 0 reserved data  blocks
+Message-ID: <20130716202533.GA16061@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20130716183441.GA14232@www.outflux.net>
-References: <20130716183441.GA14232@www.outflux.net>
-Date: Tue, 16 Jul 2013 13:21:58 -0700
-X-Google-Sender-Auth: th3vtbeGGx441-C1fe2TEzaDB0c
-Message-ID: <CAE9FiQWSe-M8XhFvWM3Q5P3kj6_EvUFMSvCkrDZUH7WdPPp35g@mail.gmail.com>
-Subject: Re: [PATCH v5] x86: make sure IDT is page aligned
-From: Yinghai Lu <yinghai@kernel.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        PaX Team <pageexec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:34 AM, Kees Cook <keescook@chromium.org> wrote:
-> Since the IDT is referenced from a fixmap, make sure it is page aligned.
-> Merge with 32-bit one, since it was already aligned to deal with F00F
-> bug. Since bss is cleared before IDT setup, it can live there. This also
-> moves the other *_idt_table variables into common locations.
->
-> This avoids the risk of the IDT ever being moved in the bss and having
-> the mapping be offset, resulting in calling incorrect handlers. In the
-> current upstream kernel this is not a manifested bug, but heavily patched
-> kernels (such as those using the PaX patch series) did encounter this bug.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Reported-by: PaX Team <pageexec@gmail.com>
-> ---
-> v5:
->  - add comments to all IDTs about alignment reasoning, suggested by Linus
+I've seen this happen a few times this week..
 
-Where is thread for that?
+EXT4-fs (sdb1): mounted filesystem with ordered data mode. Opts: (null)
+EXT4-fs warning (device sdb1): ext4_da_release_space:1333: ext4_da_release_space: ino 12, to_free 1 with only 0 reserved data  blocks
+------------[ cut here ]------------
+WARNING: CPU: 3 PID: 798 at fs/ext4/inode.c:1334 ext4_da_invalidatepage+0x39e/0x3c0()
+Modules linked in: btrfs snd_hda_codec_realtek xor snd_hda_intel snd_hda_codec snd_pcm raid6_pq libcrc32c zlib_deflate snd_pag e_alloc snd_timer edac_core snd pcspkr serio_raw soundcore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
+CPU: 3 PID: 798 Comm: fsx Not tainted 3.11.0-rc1+ #12
+Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+ ffffffff81a1bec7 ffff880126c81c18 ffffffff816b8a79 0000000000000000
+ ffff880126c81c50 ffffffff81043efc ffff88010b753020 0000000000000002
+ ffff88011bc237b0 ffff88011bc237b0 ffffea00045fbe00 ffff880126c81c60
+Call Trace:
+ [<ffffffff816b8a79>] dump_stack+0x4e/0x82
+ [<ffffffff81043efc>] warn_slowpath_common+0x8c/0xc0
+ [<ffffffff81043fea>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8124f1ae>] ext4_da_invalidatepage+0x39e/0x3c0
+ [<ffffffff81152b6e>] truncate_inode_page+0x8e/0x90
+ [<ffffffff81152f0a>] truncate_inode_pages_range+0x35a/0x650
+ [<ffffffff81153272>] truncate_pagecache+0x52/0x80
+ [<ffffffff81255f1d>] ext4_setattr+0x33d/0x840
+ [<ffffffff811d90a8>] notify_change+0x1d8/0x350
+ [<ffffffff811b91e9>] do_truncate+0x69/0x90
+ [<ffffffff811b953e>] do_sys_ftruncate.constprop.17+0x10e/0x160
+ [<ffffffff811b95ce>] SyS_ftruncate+0xe/0x10
+ [<ffffffff816ca8d4>] tracesys+0xdd/0xe2
+---[ end trace 267735bac62efc6a ]---
+EXT4-fs warning (device sdb1): ext4_da_release_space:1333: ext4_da_release_space: ino 12, to_free 1 with only 0 reserved data blocks
 
-> v4:
->  - rework using __page_aligned_bss, suggested by Yinghai LU
->  - move all the other IDT variables as well, suggested by HPA
-> v3:
->  - merge 32-bit and 64-bit idt_table definition
-> v2:
->  - 32-bit was already aligned
-> ---
->  arch/x86/kernel/head_64.S    |   15 ---------------
->  arch/x86/kernel/tracepoint.c |    6 ++----
->  arch/x86/kernel/traps.c      |   12 ++++++------
->  3 files changed, 8 insertions(+), 25 deletions(-)
->
-> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-> index 5e4d8a8..e1aabdb 100644
-> --- a/arch/x86/kernel/head_64.S
-> +++ b/arch/x86/kernel/head_64.S
-> @@ -512,21 +512,6 @@ ENTRY(phys_base)
->
->  #include "../../x86/xen/xen-head.S"
->
-> -       .section .bss, "aw", @nobits
-> -       .align L1_CACHE_BYTES
-> -ENTRY(idt_table)
-> -       .skip IDT_ENTRIES * 16
-> -
-> -       .align L1_CACHE_BYTES
-> -ENTRY(debug_idt_table)
-> -       .skip IDT_ENTRIES * 16
-> -
-> -#ifdef CONFIG_TRACING
-> -       .align L1_CACHE_BYTES
-> -ENTRY(trace_idt_table)
-> -       .skip IDT_ENTRIES * 16
-> -#endif
-> -
->         __PAGE_ALIGNED_BSS
->  NEXT_PAGE(empty_zero_page)
->         .skip PAGE_SIZE
-> diff --git a/arch/x86/kernel/tracepoint.c b/arch/x86/kernel/tracepoint.c
-> index 4e584a8..1c113db 100644
-> --- a/arch/x86/kernel/tracepoint.c
-> +++ b/arch/x86/kernel/tracepoint.c
-> @@ -12,10 +12,8 @@ atomic_t trace_idt_ctr = ATOMIC_INIT(0);
->  struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
->                                 (unsigned long) trace_idt_table };
->
-> -#ifndef CONFIG_X86_64
-> -gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
-> -                                       = { { { { 0, 0 } } }, };
-> -#endif
-> +/* No need to be aligned, but done to keep all IDTs defined the same way. */
-> +gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
-
-in that case why not add __cacheline_aligned_bss?
-
-Yinghai
