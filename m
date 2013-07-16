@@ -1,107 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab3GPK67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 06:58:59 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58242 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab3GPK65 (ORCPT
+	id S1754627Ab3GPLCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 07:02:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44339 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab3GPLCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 06:58:57 -0400
-X-AuditID: cbfee61b-b7f1f6d000000f14-df-51e5276f0f45
-Date: Tue, 16 Jul 2013 12:58:48 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v5 4/7] cpufreq:exynos:Extend Exynos cpufreq driver to
- support boost framework
-Message-id: <20130716125848.770ba264@amdc308.digital.local>
-In-reply-to: <CAKohpokiF8ZamE_=XdPrjZQ8VHQ9wvzQy6w+6byO-T7J9c=6mA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-5-git-send-email-l.majewski@samsung.com>
- <CAKohpokiF8ZamE_=XdPrjZQ8VHQ9wvzQy6w+6byO-T7J9c=6mA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xoG6++tNAg73flSz+vF3OavG06Qe7
-	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4LS7vmsNm8bn3CKPF7cYVbBb9C3uZLJ487GOz2PjV
-	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
-	roy1296zFTznqejbu569gbGTq4uRg0NCwERi6VzNLkZOIFNM4sK99WxdjFwcQgLTGSXOzL3B
-	BOG0M0m82HaOFaSKRUBVovlZCxuIzSagJ/H57lMmkEEiAloSL2+mgtQzC3xklrh78DYLSI2w
-	QIrE7c5FTCA2r4C1xP8b7ewgNqdAsMS/7eugFrQALfhwlBEkwS8gKdH+7wczxEl2Euc+bWCH
-	aBaU+DH5HthQZqBlm7c1sULY8hKb17xlnsAoOAtJ2SwkZbOQlC1gZF7FKJpakFxQnJSea6RX
-	nJhbXJqXrpecn7uJERxJz6R3MK5qsDjEKMDBqMTDe5DzSaAQa2JZcWXuIUYJDmYlEd5b/E8D
-	hXhTEiurUovy44tKc1KLDzFKc7AoifMebLUOFBJITyxJzU5NLUgtgskycXBKNTAyO+6/o5p2
-	69yvSs159w7982HxFtx37p9ekscL0wcLZv95ImbcHm+kcXyHmE90dal9PXPJJ47FusonElLy
-	a022BfYu4L+QM1n70q1J18v0q5+dTjiSpZP+W6TeZ8ZsxznuPLev9DzoDrgtXGU1j8dutphC
-	8sE37DfvaDr4pRdphU1rs/R6l6/EUpyRaKjFXFScCAAqidi0oAIAAA==
+	Tue, 16 Jul 2013 07:02:02 -0400
+Message-ID: <51E527F7.4080007@ti.com>
+Date: Tue, 16 Jul 2013 14:01:11 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: Hein Tibosch <hein_tibosch@yahoo.es>, Tony Lindgren <tony@atomide.com>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-omap: always send stop after nack
+References: <51E50217.1000507@yahoo.es> <20130716090300.GG8880@arwen.pp.htv.fi> <51E5137B.7000302@yahoo.es> <20130716094212.GL8880@arwen.pp.htv.fi>
+In-Reply-To: <20130716094212.GL8880@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013 15:18:57 +0530 Viresh Kumar viresh.kumar@linaro.org
-wrote,
-> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > The struct cpufreq_driver has been extended to embrace the
-> > information related to boost support.
-> >
-> > When "boost_mode" device tree attribute is defined for a platform,
-> > the boost_supported flag is set. Moreover boost related attributes
-> > were exported.
-> >
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-> 
-> Don't we need to mark any frequencies in the freq table with BOOST?
-> How?
+Hi Hein, Felipe
 
-The (trivial) patch is already prepared to enable BOOST at cpufreq for
-Exynos4412. I will post it for v6. Sorry for not posting it earlier.
+On 07/16/2013 12:42 PM, Felipe Balbi wrote:
+> Hi,
+>
+> On Tue, Jul 16, 2013 at 05:33:47PM +0800, Hein Tibosch wrote:
+>> On 7/16/2013 5:03 PM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Tue, Jul 16, 2013 at 04:19:35PM +0800, Hein Tibosch wrote:
+>>>> Hi Vikram,
+>>>>
+>>>> On a OMAP4460, i2c-bus-3:
+>>>>
+>>>> A driver (lm75) is causing many 'timeout waiting for bus ready' errors.
+>>>> SDA remains high (as it should), but SCL remains low after a NACK.
+>>>> The bus becomes _unusable for other clients_.
+>>>>
+>>>> While probing, "lm75" writes a command, followed by a read + stop,
+>>>> but the write command is NACK'd. The chip does accept other writes/reads,
+>>>> it just refuses to ack invalid commands.
+>>>>
+>>>> Can you tell me if the patch below would make any sense? Or is it the
+>>>> responsibility of the client to reset the i2c_smbus?
+>>> patch below breaks repeated start.
+Felipe, I'd very appreciate if you'd be able to provide the use case
+which will fail with such solution?
 
-The whole patch is as follow:
+>> Hi,
+>>
+>> No, after the NACK, no more commands are being processed,
+>> including a repeated start. omap_i2c_xfer() returns -EREMOTEIO
+>> without ever freeing the bus.
+>>
+>> The bus is left in an impossible state with SCL constantly low
+>> and all next commands (to different chips) will therefore get
+>> a -ETIMEDOUT
+>>
+>> With this patch, the bus will become idle again and new commands
+>> can be processed normally
+I think, this is valid fix, but it was done here already:)
+http://patchwork.ozlabs.org/patch/249790/
+"i2c: omap: query STP always when NACK is received"
 
-static struct clk *cpu_clk;
-static struct clk *mout_core;
-static struct clk *sclk_mpll;
-static struct clk *mout_apll;
- 
-static unsigned int exynos4x12_volt_table[] = {
-	1350000, 1287500, 1250000, 1187500, 1137500, 1087500, 1037500,
- 	1000000,  987500,  975000,  950000,  925000,  900000,  900000
-};
- 
- static struct cpufreq_frequency_table exynos4x12_freq_table[] = {
--	{L0, CPUFREQ_ENTRY_INVALID},
-+	{CPUFREQ_BOOST_FREQ, 1500 * 1000},
- 	{L1, 1400 * 1000},
- 	{L2, 1300 * 1000},
- 	{L3, 1200 * 1000},
- 	{L4, 1100 * 1000},
- 	{L5, 1000 * 1000},
- 	{L6,  900 * 1000},
- 	{L7,  800 * 1000},
- 	{L8,  700 * 1000},
- 	{L9,  600 * 1000},
- 	{L10, 500 * 1000},
- 	{L11, 400 * 1000},
- 	{L12, 300 * 1000},
+And nacked in the same way :(
+But! I've back-ported my patch on TI Android product kernel 3.4, did
+sanity test and I didn't see any issues with my patch :))
 
+>
+> but you mentioned that if you have IGNORE_NAK set, everything is fine,
+> since lm75 will get a return value of 0 and things will work just fine,
+> right ?
+>
+> Also, you also said that the chip 'refuses to ack invalid commands', why
+> are you sending invalid commands to start with ? This could be a bug in
+> i2c-omap.c, sure, but let's try to figure out why IGNORE_NAK helps and
+> why is lm75 driver sending invalid commands.
+>
 
+The problem is, that lm75 device is SmBus compatible and its driver has
+.detect() function implemented. During detection it tries to scan some
+registers which might be not present in current device - in my case
+it's tmp105.
 
--- 
-Best regards,
+For example to read regA in tmp105 following is done:
+1) do write in "Index" register (val RegA index) (I2C 1st message)
+2) do read (I2C 2d message)
+the message 1 is Nacked by device in case if register index is wrong, 
+but i2c-omap don't send NACK (or STP). As result, bus stack in Bus Busy 
+state.
 
-Lukasz Majewski
+For SMBus devices the specification states (http://smbus.org/specs/)
+"4.2.Acknowledge (ACK) and not acknowledge (NACK)":
+- "The slave device detects an invalid command or invalid data. In this
+case the slave device must not acknowledge the received byte. The
+master upon detection of this condition must generate a STOP condition
+and retry the transaction"
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Regards,
+-grygorii
+
