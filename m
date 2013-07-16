@@ -1,74 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab3GPNwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 09:52:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60896 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280Ab3GPNwQ (ORCPT
+	id S932816Ab3GPNwc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 09:52:32 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:33005 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932280Ab3GPNwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 09:52:16 -0400
-Date: Tue, 16 Jul 2013 14:51:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        grant.likely@linaro.org, rob.herring@calxeda.com, shawn.guo@linaro.org,
-        fabio.estevam@freescale.com, wfp5p@virginia.edu,
-        LW@KARO-electronics.de, yongjun_wei@trendmicro.com.cn,
-        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130716135149.GM22506@sirena.org.uk>
-References: <CAPgLHd-cXmWwMq8DMhXbOhykZvnMzxb4HHZ-5ayNnkPU1fqfQQ@mail.gmail.com>
+	Tue, 16 Jul 2013 09:52:30 -0400
+Message-ID: <51E5501A.6070403@linaro.org>
+Date: Tue, 16 Jul 2013 15:52:26 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9ToWwKEyhugL+MAz"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd-cXmWwMq8DMhXbOhykZvnMzxb4HHZ-5ayNnkPU1fqfQQ@mail.gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: imx-sgtl5000: fix error return code in
- imx_sgtl5000_probe()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Jonas Jensen <jonas.jensen@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, john.stultz@linaro.org, tglx@linutronix.de,
+        u.kleine-koenig@pengutronix.de, tomasz.figa@gmail.com,
+        linus.walleij@linaro.org, thomas.petazzoni@free-electrons.com,
+        arnd@arndb.de
+Subject: Re: [PATCH v7] ARM: clocksource: add support for MOXA ART SoCs
+References: <1373018653-18421-1-git-send-email-jonas.jensen@gmail.com> <1373024773-24574-1-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1373024773-24574-1-git-send-email-jonas.jensen@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/05/2013 01:46 PM, Jonas Jensen wrote:
+> This patch adds an clocksource driver for the main timer(s)
+> found on MOXA ART SoCs.
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
+> 
+> Notes:
+>     Applies to next-20130703
+>     
+>     Changes since v6:
+>     
+>     1. remove TIMER_CR read back
+>     2. set TIMER_CR from constants
+> 
 
---9ToWwKEyhugL+MAz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Except for the few comments below, it looks ok for me.
 
-On Tue, Jul 16, 2013 at 08:05:07PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->=20
-> Fix to return a negative error code from the error handling
-> case instead of 0, as done elsewhere in this function.
+[ ... ]
 
-Applied, thanks.
+> + */
+> +#define TIMEREG_CR_1_ENABLE	(1 << 0)
+> +#define TIMEREG_CR_1_CLOCK	(1 << 1)
+> +#define TIMEREG_CR_1_INT	(1 << 2)
+> +#define TIMEREG_CR_2_ENABLE	(1 << 3)
+> +#define TIMEREG_CR_2_CLOCK	(1 << 4)
+> +#define TIMEREG_CR_2_INT	(1 << 5)
+> +#define TIMEREG_CR_3_ENABLE	(1 << 6)
+> +#define TIMEREG_CR_3_CLOCK	(1 << 7)
+> +#define TIMEREG_CR_3_INT	(1 << 8)
+> +#define TIMEREG_CR_COUNT_UP	(1 << 9)
+> +#define TIMEREG_CR_COUNT_DOWN	(0 << 9)
 
---9ToWwKEyhugL+MAz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Could you replace this by the BIT macro ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+[ ... ]
 
-iQIcBAEBAgAGBQJR5U/yAAoJELSic+t+oim9YNYQAIh5smhf1bjLdc/sMFmic1jE
-YWbNcOC9ypSY+HDmQqm/nz0h2Mk/zjzGrZyDNCI0ce6Llv0SuTI8fCVg7IZauCWv
-y8+ect573u9Hs+lU5JtYi9RWEyl5KsS0cBEBeg6LiOR/eEBYB1ecvKnLS/ZTRWde
-6Qf8xC+B/Nu+/kyPU6vdxEG3IRsmq59pfBJQzDuJGrhoeYK04ibX+sKB0ORjWq2k
-rm7AX+uys9+/CUWmRWRTUoDtW7nyZUIbmil/GB3KmOEiJk0fe7aIOW7DHqETXOI+
-cbA/Vk61yW8dDYx1yURaiJ3W/jUZrvolaYfN3pae4j7qIa6W2R3uof2S8CEA40u+
-xykyMqIOq5THtdUSk6tnAtClYksECfWJws14xQ1iGGBjX+ZP6J1XGyNDTxJPoyzr
-cXFyB4Mcd/68W7C5dJlzKtvUScrFy+pTxRha3WtTPF6MDxNdgPUtAJcVjMm+4J+q
-jyKIzy6WXu8BY/gEXWcYfbaRtiPBCCZl7HCwp+dNQPhcMmYeA72nox+BArT2weXA
-c5NlNuSVRo0nREocLka50p0kbkCuMsR5EbA6czcSs0Ct3GQBuvTmyAV9YypKMLdf
-Dznesa7oVZ5hhb6iCICfZoir1Euvkdp/LGvX7tXrBJEH8bmiqIYPAqVpBkCg8pMO
-+DULGmMk8MS+Hcp+6H4X
-=JRGW
------END PGP SIGNATURE-----
+> +
+> +	irq = irq_of_parse_and_map(node, 0);
+> +	if (irq <= 0)
+> +		panic("%s: irq_of_parse_and_map failed\n", node->full_name);
+> +
+> +	ret = setup_irq(irq, &moxart_timer_irq);
+> +	if (ret)
+> +		panic("%s: setup_irq failed\n", node->full_name);
+> +
+> +	clk = of_clk_get(node, 0);
+> +	if (IS_ERR(clk))
+> +		panic("%s: of_clk_get failed\n", node->full_name);
+> +
+> +	pclk = clk_get_rate(clk);
+> +
+> +	if (clocksource_mmio_init(base + TIMER2_BASE + REG_COUNT,
+> +				  "moxart_timer", pclk, 200, 32,
+> +				  clocksource_mmio_readl_down))
+> +		panic("%s: clocksource_mmio_init failed\n", node->full_name);
+> +
+> +	clock_count_per_tick = DIV_ROUND_CLOSEST(pclk, HZ);
+> +
+> +	writel(~0, base + TIMER2_BASE + REG_LOAD);
+> +	writel(TIMEREG_CR_2_ENABLE, base + TIMER_CR);
+> +
+> +	moxart_clockevent.cpumask = cpumask_of(0);
 
---9ToWwKEyhugL+MAz--
+	moxart_clockevent.irq = irq;
+
+> +
+> +	/*
+> +	 * documentation is not publicly available:
+> +	 * min_delta / max_delta obtained by trial-and-error,
+> +	 * max_delta 0xfffffffe should be ok because count
+> +	 * register size is u32
+> +	 */
+> +	clockevents_config_and_register(&moxart_clockevent, pclk,
+> +					0x4, 0xfffffffe);
+> +}
+> +CLOCKSOURCE_OF_DECLARE(moxart, "moxa,moxart-timer", moxart_timer_init);
+
+
+Thanks
+  -- Daniel
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
