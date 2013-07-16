@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686Ab3GPSLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:11:54 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:58414 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334Ab3GPSLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:11:52 -0400
-Date: Tue, 16 Jul 2013 11:11:52 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Lang <david@lang.hm>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
-Message-ID: <20130716181152.GA8412@roeck-us.net>
-References: <20130715180403.GD15531@xanatos>
- <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
- <1373926109.17876.221.camel@gandalf.local.home>
- <20130715223615.GI15531@xanatos>
- <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+	id S933697Ab3GPSNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:13:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10806 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933334Ab3GPSNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 14:13:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,678,1367996400"; 
+   d="scan'208";a="346572966"
+Message-ID: <51E58ECE.2030405@linux.intel.com>
+Date: Tue, 16 Jul 2013 11:19:58 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] Thermal: Fix lockup of cpu_down()
+References: <1373997748.6458.26.camel@gandalf.local.home>
+In-Reply-To: <1373997748.6458.26.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 12:32:53AM -0700, David Lang wrote:
-> On Mon, 15 Jul 2013, Sarah Sharp wrote:
-> 
-> People do need to be called out on their mistakes. In companies, if
-> you don't fire managers who do the wrong thing soon enough, it can
-> ruin the company. In kernel development, you have a very large
-> number of observers and if they don't see people being corrected for
-> doing the wrong thing, they will emulate it.
-> 
-And I have seen that happen way too often :(.
+Thanks. How did you trigger this error condition? Is it a code review or 
+you have some way to reproduce?
 
-Guenter
+Regards,
+Srinivas
+
+On 07/16/2013 11:02 AM, Steven Rostedt wrote:
+> Commit f1a18a105 "Thermal: CPU Package temperature thermal" had code
+> that did a get_online_cpus(), run a loop and then do a
+> put_online_cpus(). The problem is that the loop had an error exit that
+> would skip the put_online_cpus() part.
+>
+> In the error exit part of the function, it also did a get_online_cpus(),
+> run a loop and then put_online_cpus(). The only way to get to the error
+> exit part is with get_online_cpus() already performed. If this error
+> condition is hit, the system will be prevented from taking CPUs offline.
+> The process taking the CPU offline will lock up hard.
+>
+> Removing the get_online_cpus() removes the lockup as the hotplug CPU
+> refcount is back to zero.
+>
+> This was bisected with ktest.
+>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>
+> diff --git a/drivers/thermal/x86_pkg_temp_thermal.c b/drivers/thermal/x86_pkg_temp_thermal.c
+> index 5de56f6..d47624c 100644
+> --- a/drivers/thermal/x86_pkg_temp_thermal.c
+> +++ b/drivers/thermal/x86_pkg_temp_thermal.c
+> @@ -592,7 +592,6 @@ static int __init pkg_temp_thermal_init(void)
+>   	return 0;
+>   
+>   err_ret:
+> -	get_online_cpus();
+>   	for_each_online_cpu(i)
+>   		put_core_offline(i);
+>   	put_online_cpus();
+>
+>
+>
+
