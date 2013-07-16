@@ -1,157 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab3GPRqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:46:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15288 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933158Ab3GPRqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:46:33 -0400
-Message-ID: <51E58631.7060003@redhat.com>
-Date: Tue, 16 Jul 2013 13:43:13 -0400
-From: Brian Foster <bfoster@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933596Ab3GPRrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:47:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47996 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932988Ab3GPRrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 13:47:11 -0400
+Date: Tue, 16 Jul 2013 18:47:09 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH] um/configs: don't use devtmpfs in defconfig
+Message-ID: <20130716174708.GN4165@ZenIV.linux.org.uk>
+References: <1373993525-25629-1-git-send-email-artagnon@gmail.com>
+ <51E57BC1.4090904@nod.at>
+ <CALkWK0nrDsZiHe2==DQZuHV7id=6gc4UHUj1xXu9jN5cr3SUcQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: Niels de Vos <ndevos@redhat.com>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [fuse-devel] [PATCH] fuse: fix occasional dentry leak when readdirplus
- is used
-References: <1373893160-30601-1-git-send-email-ndevos@redhat.com> <51E456B6.8050601@redhat.com> <20130716103939.GL18803@ndevos-laptop.usersys.redhat.com> <51E54764.4070106@redhat.com> <20130716161458.GA19664@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130716161458.GA19664@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALkWK0nrDsZiHe2==DQZuHV7id=6gc4UHUj1xXu9jN5cr3SUcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 12:14 PM, Miklos Szeredi wrote:
-> On Tue, Jul 16, 2013 at 09:15:16AM -0400, Brian Foster wrote:
->  
->> I'm not sure why it would need to have a valid inode. A dentry with a
->> NULL inode is valid, no?
+On Tue, Jul 16, 2013 at 10:36:25PM +0530, Ramkumar Ramachandra wrote:
+> Richard Weinberger wrote:
+> > If you don't want devtmpfs, just disable it in your config.
 > 
-> It is valid, yes.  It's called a "negative" dentry, which caches the information
-> that the file does not exist.
-> 
->> I think the question is whether the above state (multiple, hashed dentries)
->> can be valid for whatever reason. It certainly looks suspicious.
-> 
-> That state is not valid.  So we certainly need to unhash the negative dentry
-> first, before hashing a new one.  We could also reuse the old dentry, but that
-> is just an optimization.
-> 
+> I don't understand: is this not a good default?  Why is creating bogus
+> devices, confusing systemd, and making um Linux hard to boot
+> desirable?
 
-Thanks Miklos.
+As for the devices, they are *not* bogus.  RTFM, already.
+Documentation/virtual/uml/UserModeLinux-HOWTO.txt, if you can't be bothered
+to say git grep UML Documentation/ and find where it on your own.  The
+relevant section is called "Setting up serial lines and consoles".
+Seriously, it's not as if the documentation didn't exist or had been
+hard to find...
 
-> Below patch fixes several issues with that function.  Could you please give it a
-> go?
-> 
+FWIW, default config is rather annoying - 6 xterms spawned and associated
+with /dev/tty[1-6].  con0=fd:0,fd:1 con=pts mentioned in the HOWTO would,
+IMO, make for much saner default.
 
-This patch looks good and fixes the issue for me. It might be good to
-give Neils a chance to beat on it as well, but otherwise:
-
-Tested-by: Brian Foster <bfoster@redhat.com>
-
-Brian
-
-> Thanks,
-> Miklos
-> 
-> 
-> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> index 0eda527..a8208c5 100644
-> --- a/fs/fuse/dir.c
-> +++ b/fs/fuse/dir.c
-> @@ -1223,28 +1223,45 @@ static int fuse_direntplus_link(struct file *file,
->  		if (name.name[1] == '.' && name.len == 2)
->  			return 0;
->  	}
-> +
-> +	if (invalid_nodeid(o->nodeid))
-> +		return -EIO;
-> +	if (!fuse_valid_type(o->attr.mode))
-> +		return -EIO;
-> +
->  	fc = get_fuse_conn(dir);
->  
->  	name.hash = full_name_hash(name.name, name.len);
->  	dentry = d_lookup(parent, &name);
-> -	if (dentry && dentry->d_inode) {
-> +	if (dentry) {
->  		inode = dentry->d_inode;
-> -		if (get_node_id(inode) == o->nodeid) {
-> +		if (!inode) {
-> +			d_drop(dentry);
-> +		} else if (get_node_id(inode) != o->nodeid ||
-> +			   ((o->attr.mode ^ inode->i_mode) & S_IFMT)) {
-> +			err = d_invalidate(dentry);
-> +			if (err)
-> +				goto out;
-> +		} else if (is_bad_inode(inode)) {
-> +			err = -EIO;
-> +			goto out;
-> +		} else {
->  			struct fuse_inode *fi;
->  			fi = get_fuse_inode(inode);
->  			spin_lock(&fc->lock);
->  			fi->nlookup++;
->  			spin_unlock(&fc->lock);
->  
-> +			fuse_change_attributes(inode, &o->attr,
-> +					       entry_attr_timeout(o),
-> +					       attr_version);
-> +
->  			/*
->  			 * The other branch to 'found' comes via fuse_iget()
->  			 * which bumps nlookup inside
->  			 */
->  			goto found;
->  		}
-> -		err = d_invalidate(dentry);
-> -		if (err)
-> -			goto out;
->  		dput(dentry);
->  		dentry = NULL;
->  	}
-> @@ -1259,25 +1276,30 @@ static int fuse_direntplus_link(struct file *file,
->  	if (!inode)
->  		goto out;
->  
-> -	alias = d_materialise_unique(dentry, inode);
-> -	err = PTR_ERR(alias);
-> -	if (IS_ERR(alias))
-> -		goto out;
-> +	if (S_ISDIR(inode->i_mode)) {
-> +		mutex_lock(&fc->inst_mutex);
-> +		alias = fuse_d_add_directory(dentry, inode);
-> +		mutex_unlock(&fc->inst_mutex);
-> +		err = PTR_ERR(alias);
-> +		if (IS_ERR(alias)) {
-> +			iput(inode);
-> +			goto out;
-> +		}
-> +	} else {
-> +		alias = d_splice_alias(inode, dentry);
-> +	}
-> +
->  	if (alias) {
->  		dput(dentry);
->  		dentry = alias;
->  	}
->  
->  found:
-> -	fuse_change_attributes(inode, &o->attr, entry_attr_timeout(o),
-> -			       attr_version);
-> -
->  	fuse_change_entry_timeout(dentry, o);
->  
->  	err = 0;
->  out:
-> -	if (dentry)
-> -		dput(dentry);
-> +	dput(dentry);
->  	return err;
->  }
->  
-> 
-
+No comments on systemd behaviour - take that with LP and his crowd.  They
+may or may not be confused by /dev/tty1 not being a virtual console.  One
+practical issue is the lack of VT102 emulation; TERM=linux when logged
+in on those is not right - you want either TERM=xterm (for xterms) or
+TERM=screen (when accessing pts-associated ones with screen /dev/pts/n),
+etc.  In any case, it's a dumb serial line as far as the guest kernel
+is concerned - all terminal emulation is going to happen elsewhere (xterms
+running on host and interpreting escape sequences from guest userland,
+etc.)
