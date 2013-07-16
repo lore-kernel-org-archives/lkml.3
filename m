@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933356Ab3GPPzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:55:25 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:49406 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441Ab3GPPzY (ORCPT
+	id S933381Ab3GPPzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:55:32 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:58558 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932441Ab3GPPza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:55:24 -0400
+	Tue, 16 Jul 2013 11:55:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <1373901620-2021-17-git-send-email-mgorman@suse.de>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-	<1373901620-2021-17-git-send-email-mgorman@suse.de>
-Date: Tue, 16 Jul 2013 23:55:24 +0800
-Message-ID: <CAJd=RBAxApb2Hoz06_7Ry1Z-TSAWGp9QJCfLP5NPPm2kiUF+Bg@mail.gmail.com>
-Subject: Re: [PATCH 16/18] sched: Avoid overloading CPUs on a preferred NUMA node
-From: Hillf Danton <dhillf@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Tue, 16 Jul 2013 21:24:49 +0530
+Message-ID: <CALkWK0k2BsoxwMLHSWmmrFXkvMBiWDG1b0NXrfR6i95=tFPMXw@mail.gmail.com>
+Subject: [QUERY] User-Mode Linux and /dev/tty*
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Al Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 11:20 PM, Mel Gorman <mgorman@suse.de> wrote:
-> +
-> +static int task_numa_find_cpu(struct task_struct *p, int nid)
-> +{
-> +       int node_cpu = cpumask_first(cpumask_of_node(nid));
-[...]
->
-> +       /* No harm being optimistic */
-> +       if (idle_cpu(node_cpu))
-> +               return node_cpu;
->
-[...]
-> +       for_each_cpu(cpu, cpumask_of_node(nid)) {
-> +               dst_load = target_load(cpu, idx);
-> +
-> +               /* If the CPU is idle, use it */
-> +               if (!dst_load)
-> +                       return dst_cpu;
-> +
-Here you want cpu, instead of dst_cpu, I guess.
+Hi,
+
+So, I was trying to boot User-Mode Linux with a modern rootfs with
+systemd on it, and found that it wouldn't present me a prompt.  I dug
+further, and found out that getty is not able to open /dev/tty1; I
+then tried the console-getty.service (which uses /dev/console), and it
+worked.  The reason it doesn't work out of the box is that systemd is
+not able to figure out whether or not a virtual console subsystem is
+present: /dev/tty0 is present for some reason (although I'm not sure
+it's a virtual console), and this confuses systemd.
+
+So, my question is: does um Linux have a virtual console subsystem?
+If so, then why doesn't it seem to work?  If not, why does /dev/tty0
+exist?
+
+Thanks.
