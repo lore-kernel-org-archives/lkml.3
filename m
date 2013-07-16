@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab3GPRJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:09:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37130 "EHLO
+	id S933195Ab3GPRNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:13:46 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37138 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933296Ab3GPRJO (ORCPT
+	with ESMTP id S932381Ab3GPRNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:09:14 -0400
-Date: Tue, 16 Jul 2013 18:07:39 +0100
+	Tue, 16 Jul 2013 13:13:44 -0400
+Date: Tue, 16 Jul 2013 18:13:24 +0100
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Boris BREZILLON <b.brezillon@overkiz.com>
 Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 6/7] USB: ohci-at91: add usb_clk for transition to
-	common clk framework
-Message-ID: <20130716170739.GE24642@n2100.arm.linux.org.uk>
-References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com> <1373988136-24622-1-git-send-email-b.brezillon@overkiz.com>
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/7] mmc: atmel-mci: prepare clk before calling
+	enable
+Message-ID: <20130716171324.GF24642@n2100.arm.linux.org.uk>
+References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com> <1373987208-24120-1-git-send-email-b.brezillon@overkiz.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373988136-24622-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1373987208-24120-1-git-send-email-b.brezillon@overkiz.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 05:22:15PM +0200, Boris BREZILLON wrote:
-> @@ -41,6 +41,10 @@ extern int usb_disabled(void);
->  
->  static void at91_start_clock(void)
->  {
-> +	if (uclk) {
-
-	if (!IS_ERR(uclk)) {
-
-> +		clk_set_rate(uclk, 48000000);
-> +		clk_prepare_enable(uclk);
+On Tue, Jul 16, 2013 at 05:06:48PM +0200, Boris BREZILLON wrote:
+> @@ -389,9 +391,13 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+>  	 * consistent.
+>  	 */
+>  	spin_lock_bh(&host->lock);
+> -	clk_enable(host->mck);
+> +	ret = clk_prepare_enable(host->mck);
+> +	if (ret) {
+> +		spin_unlock_bh(&host->lock);
+> +		goto out;
 > +	}
->  	clk_prepare_enable(hclk);
->  	clk_prepare_enable(iclk);
->  	clk_prepare_enable(fclk);
-> @@ -52,6 +56,8 @@ static void at91_stop_clock(void)
->  	clk_disable_unprepare(fclk);
->  	clk_disable_unprepare(iclk);
->  	clk_disable_unprepare(hclk);
-> +	if (uclk)
 
-	if (!IS_ERR(uclk))
+NAK.  This is buggy.  clk_prepare() can sleep.  Calling clk_prepare()
+even via clk_prepare_enable() is a blatent bug.
 
-> +		clk_disable_unprepare(uclk);
->  	clocked = 0;
->  }
+>  	memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
+> -	clk_disable(host->mck);
+> +	clk_disable_unprepare(host->mck);
+>  	spin_unlock_bh(&host->lock);
+
+Now, given that the CLK API counts enables/disables, having the spin lock
+around the clk API calls is utterly pointless.  This should be:
+
+	ret = clk_prepare_enable(host->mck);
+	if (ret)
+		goto out;
+
+	spin_lock_bh(&host->lock);
+	memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
+	spin_unlock_bh(&host->lock);
+
+	clk_disable_unprepare(host->mclk);
+
+or, if you really need to have the clock enabled/disabled within the
+spinlock (very very very unlikely):
+
+	ret = clk_prepare(host->mck);
+	if (ret)
+		goto out;
+
+	spin_lock_bh(&host->lock);
+	ret = clk_enable(host->mck);
+	if (ret == 0) {
+		memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
+		clk_disable(host->mck);
+	}
+	spin_unlock_bh(&host->lock);
+
+	clk_unprepare(host->mclk);
+	if (ret)
+		goto out;
+
+> @@ -1279,7 +1286,7 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 >  
-> @@ -144,6 +150,11 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
->  		goto err2;
->  	}
->  
-> +	uclk = clk_get(&pdev->dev, "usb_clk");
-> +	if (IS_ERR(uclk)) {
-> +		uclk = NULL;
+>  		spin_lock_bh(&host->lock);
+>  		if (!host->mode_reg) {
+> -			clk_enable(host->mck);
+> +			clk_prepare_enable(host->mck);
 
-Remove this line.
-
-> +		dev_warn(&pdev->dev, "failed to get usb_clk\n");
-> +	}
->  	iclk = clk_get(&pdev->dev, "ohci_clk");
->  	if (IS_ERR(iclk)) {
->  		dev_err(&pdev->dev, "failed to get ohci_clk\n");
-> @@ -212,10 +223,11 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
->  	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
->  	usb_put_hcd(hcd);
->  
-
-What if uclk is NULL here?
-
-	if (!IS_ERR(uclk))
-
-> +	clk_put(uclk);
->  	clk_put(hclk);
->  	clk_put(fclk);
->  	clk_put(iclk);
-> -	fclk = iclk = hclk = NULL;
-> +	fclk = iclk = hclk = uclk = NULL;
-
-Don't.
-
-Range of invalid struct clk pointers: those which IS_ERR(clk) returns true.
-Therefore, the range of valid struct clk pointers is: _____________________
-(answer on a post card, stamped and addressed to...)
+Again, buggy - calling clk_prepare beneath a spinlock is illegal.
