@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3GPJis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:38:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38539 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab3GPJiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:38:46 -0400
-Date: Tue, 16 Jul 2013 11:38:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, celinux-dev@lists.celinuxforum.org,
-        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
-        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-Message-ID: <20130716093820.GE4402@pd.tnic>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <201307161112.17901.yann.morin.1998@free.fr>
- <20130716092242.GD4402@pd.tnic>
- <201307161132.39845.yann.morin.1998@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201307161132.39845.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754755Ab3GPJjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:39:37 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:58799 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322Ab3GPJjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 05:39:35 -0400
+X-AuditID: cbfee61b-b7f1f6d000000f14-f3-51e514d56a91
+Date: Tue, 16 Jul 2013 11:39:24 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "l.majewski@majess.pl" <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v5 1/7] cpufreq: Store cpufreq policies in a list
+Message-id: <20130716113924.46f40467@amdc308.digital.local>
+In-reply-to: <CAKohponOEcwq4eAjwxHMM6puuqGmtJ4GpqqRHyEqvhXM+Yt6wQ@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-2-git-send-email-l.majewski@samsung.com>
+ <CAKohponOEcwq4eAjwxHMM6puuqGmtJ4GpqqRHyEqvhXM+Yt6wQ@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xgO5VkaeBBg+uaFn8ebuc1eJp0w92
+	i3mfZS3W7P/JZNF59gmzRe+Cq2wWbx5xW1zeNYfN4nPvEUaL240r2Cz6F/YyWTx52MdmsfGr
+	hwOvx+I9L5k87lzbw+axbtpbZo++LasYPR4tbmH0OH5jO5PH501yAexRXDYpqTmZZalF+nYJ
+	XBlHe9tZC+ZyVMzvWsfawHiDrYuRg0NCwERi1szCLkZOIFNM4sK99UBhLg4hgUWMEj8nf2cH
+	SQgJtDNJTPpRDWKzCKhKHGvZxgJiswnoSXy++5QJZI6IgJbEy5upIL3MAj0sEoeubGcDqREW
+	cJU49ewZmM0rYC0xdXUDM0g9p0CwROd8H4jxLUwSf6Ywg9j8ApIS7f9+MEPcYydx7tMGdohW
+	QYkfk++BrWUGWrV5WxMrhC0vsXnNW+YJjIKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJ
+	ucWleel6yfm5mxjBMfRMegfjqgaLQ4wCHIxKPLwHOZ8ECrEmlhVX5h5ilOBgVhLhvcX/NFCI
+	NyWxsiq1KD++qDQntfgQozQHi5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QDo87f3HWff3oy
+	bthXIV5rHxgkf9Cg775HcaFeuPXviIa7B9NfF1qs+y2uu0Lvj8y8drGdxz2lq6qe/uFY0vPm
+	r9uuw6HXpsQEZK/N335x/r+bQh5n/v/e325w9IERp5GU+I9kxeTK/g2xPcnf9hyNDnn85Viv
+	1pTyhVWeHk9yGb/Wxa+NE1g/Q4mlOCPRUIu5qDgRADe/quedAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:32:39AM +0200, Yann E. MORIN wrote:
-> No, this is already too late: the given .config *is* already broken and
-> unbuildable.
+On Tue, 16 Jul 2013 10:51:27 +0200 Viresh Kumar wrote,
+> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> 
+> > @@ -2056,6 +2058,7 @@ int cpufreq_unregister_driver(struct
+> > cpufreq_driver *driver)
+> > subsys_interface_unregister(&cpufreq_interface);
+> > unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
+> >
+> > +       list_del(&cpufreq_policy_list);
+> 
+> You can't delete the list this way... You must have passed the list
+> entry you wanted to delete. More precisely link from the struct
+> cpufreq_policy.
 
-Yes, and we don't build it because we fail the build.
+Yes. I shouldn't delete statically defined head of the list. Thanks for
+spotting.
 
-> That does not work in two cases:
->   - older distros that do not have the tool packaged
+> 
+> Over that, it shouldn't be done at the time of unregistering cpufreq
+> driver but as and when cpus are removed and _cpu_remove_dev
+> is called.
 
-This point is moot - distro kernels are built by the distro people.
-
->   - automatic test-harness that run thousands of randconfig a day
-
-randconfigs are not guaranteed to build successfully.
-
-> The idea is to be always have a .config that is buildable with the
-> current toolset of the system, especially for esoteric and/or recent
-> tools that are not packaged and/or installed by default by the
-> distros.
-
-How are you going to tell the user running make <something>config to
-install the missing tools?
+OK, I will iterate the list at __cpufreq_remove_dev() and remove each
+of them there.
 
 -- 
-Regards/Gruss,
-    Boris.
+Best regards,
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
