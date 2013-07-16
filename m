@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641Ab3GPCj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 22:39:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46004 "EHLO mx1.redhat.com"
+	id S1758655Ab3GPCjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 22:39:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47961 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755001Ab3GPCjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 22:39:24 -0400
-Date: Mon, 15 Jul 2013 22:38:48 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Ben Myers <bpm@sgi.com>
-Subject: Re: splice vs execve lockdep trace.
-Message-ID: <20130716023847.GA31481@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Oleg Nesterov <oleg@redhat.com>, Ben Myers <bpm@sgi.com>
-References: <20130716015305.GB30569@redhat.com>
- <CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com>
+	id S1755001Ab3GPCja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 22:39:30 -0400
+Message-ID: <51E4B250.8000204@zytor.com>
+Date: Mon, 15 Jul 2013 19:39:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] logo: Remove trailing whitespace from logo_linux_clut224.ppm
+References: <1373876954-30437-1-git-send-email-geert@linux-m68k.org> <CA+55aFxGymOvvaYfOg22AdHpxEOuOctfC8vRW+_u=vtua8Dksg@mail.gmail.com>
+In-Reply-To: <CA+55aFxGymOvvaYfOg22AdHpxEOuOctfC8vRW+_u=vtua8Dksg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 07:32:51PM -0700, Linus Torvalds wrote:
+On 07/15/2013 06:02 PM, Linus Torvalds wrote:
+> 
+> That said, even if it wasn't temporary, I think we might be better off
+> with the raw format that the netpbm tools generate these days.
+>
 
- > So the problematic op *seems* to be the splice into /proc/<pid>/attr/
- > files, which causes that "pipe -> cred_guard_mutex" locking.
- > 
- > While the *normal* ordering would be the other way around, coming from
- > execve(), which has the cred_guard_mutex -> VFS locks ordering for
- > reading the executable headers.
- > 
- > Al, can we break either of those? Do we need to hold on to the cred
- > mutex that long? We get it fairly early (prepare_bprm_creds) and we
- > drop it very late (install_exec_creds), which means that it covers a
- > lot. But that seems pretty basic. The splice into /proc/<pid>/attr/*
- > seems to be the more annoying one, and maybe we just shouldn't allow
- > splicing into or from /proc?
- > 
- > Dave, is this new (it doesn't *smell* new to me), or is it just that
- > trinity is doing new splice things?
- 
-I think I've seen this a long time ago from another fuzzer (iknowthis).
-I thought that had gotten fixed though.  But I may be mixing up a
-similar callchain.  The recent trinity changes shouldn't have really made
-any notable difference here.  Interestingly, the 'soft lockups' I was
-seeing all the time on that box seem to have gone into hiding.
+For "these days" meaning "since the 1980s".  I would suggest bumping up
+to the 1990s and go with PNG.
 
- > Or is the XFS i_iolock required for this thing to happen at all?
- > Adding Ben Myers to the cc just for luck/completeness.
+	-hpa
 
-It is only happening (so far) on the XFS test box, but I don't have
-enough data to say that's definite yet.
- 
-	Dave
- 
+
