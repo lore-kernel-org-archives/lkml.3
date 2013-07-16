@@ -1,123 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321Ab3GPRRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:17:54 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:44003 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932980Ab3GPRRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:17:52 -0400
-Date: Tue, 16 Jul 2013 10:17:48 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 3.10
-Message-ID: <20130716101748.166a8ad7@nehalam.linuxnetplumber.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S933369Ab3GPRTW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:19:22 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55486 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932381Ab3GPRTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 13:19:21 -0400
+Message-ID: <1373995159.1949.8.camel@joe-AO722>
+Subject: Re: [PATCH 3/7] alpha: Modernize lib/mpi/longlong.h
+From: Joe Perches <joe@perches.com>
+To: Richard Henderson <rth@twiddle.net>
+Cc: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        linux-alpha@vger.kernel.org
+Date: Tue, 16 Jul 2013 10:19:19 -0700
+In-Reply-To: <1373994280-12047-4-git-send-email-rth@twiddle.net>
+References: <1373994280-12047-1-git-send-email-rth@twiddle.net>
+	 <1373994280-12047-4-git-send-email-rth@twiddle.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is update for iproute2 tools for 3.10 kernel.
-In addition to the usual array of bug fixes and documentation changes,
-this release also fixes some important bugs relating to rate control
-at higher speeds.
+On Tue, 2013-07-16 at 10:04 -0700, Richard Henderson wrote:
+> Remove the compile warning for __udiv_qrnnd not having a prototype.
+> Use the __builtin_alpha_umulh introduced in gcc 4.0.
 
-The 3.10 kernel added a number of new networking features as well
-for VXLAN and bridging.
+Isn't gcc 3.x still a supported compiler?
 
-Iproute2 package is available at:
-  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.10.0.tar.gz
+> diff --git a/lib/mpi/longlong.h b/lib/mpi/longlong.h
+[]
+> @@ -151,15 +151,12 @@ do { \
+>  #endif /* __a29k__ */
+>  
+>  #if defined(__alpha) && W_TYPE_SIZE == 64
+> -#define umul_ppmm(ph, pl, m0, m1) \
+> -do { \
+> -		UDItype __m0 = (m0), __m1 = (m1); \
+> -		__asm__ ("umulh %r1,%2,%0" \
+> -		: "=r" ((UDItype) ph) \
+> -		: "%rJ" (__m0), \
+> -			"rI" (__m1)); \
+> -		(pl) = __m0 * __m1; \
+> -	} while (0)
+> +#define umul_ppmm(ph, pl, m0, m1)			\
+> +do {							\
+> +	UDItype __m0 = (m0), __m1 = (m1);		\
+> +	(ph) = __builtin_alpha_umulh(__m0, __m1);	\
+> +	(pl) = __m0 * __m1;                             \
+> +} while (0)
+>  #define UMUL_TIME 46
+>  #ifndef LONGLONG_STANDALONE
+>  #define udiv_qrnnd(q, r, n1, n0, d) \
+> @@ -167,7 +164,7 @@ do { UDItype __r; \
+>  	(q) = __udiv_qrnnd(&__r, (n1), (n0), (d)); \
+>  	(r) = __r; \
+>  } while (0)
+> -extern UDItype __udiv_qrnnd();
+> +extern UDItype __udiv_qrnnd(UDItype *, UDItype, UDItype, UDItype);
+>  #define UDIV_TIME 220
+>  #endif /* LONGLONG_STANDALONE */
+>  #endif /* __alpha */
 
-You can download the source from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
----
-
-Adam Borowski (1):
-      ip: fix build failure if time_t is not long int
-
-Alexander Duyck (1):
-      iproute2: act_ipt fix xtables breakage on older versions.
-
-Amerigo Wang (1):
-      iptunnel: check SIT_ISATAP flag only for SIT tunnel
-
-Andreas Henriksson (1):
-      iproute2: fix build failure on sparc due to -Wformat and tv_usec
-
-Andrey Vagin (5):
-      ip: set the close-on-exec flag for descriptors
-      ss: handle socket diag request in a separate function
-      ss: create a function to print info about netlink sockets
-      ss: show destination address for netlink sockets
-      ss: Get netlink sockets info via sock-diag (v2)
-
-Daniel Borkmann (1):
-      ip: ipv6: add tokenized interface identifier support
-
-David L Stevens (1):
-      iproute2: support NTF_ROUTER flag in VXLAN fdb entries
-
-David Stevens (1):
-      iproute2: generalize VXLAN forwarding tables
-
-Eric Dumazet (4):
-      ss: add fastopen support
-      htb: report overhead attribute
-      get_rate: detect 32bit overflows
-      ss: add more TCP_INFO components
-
-John Fastabend (1):
-      iproute2: bridge: fix 'bridge link' setlink/getlink parsing
-
-JunweiZhang (1):
-      ipbatch: fix use of 'ip netns exec'
-
-Kamil Rytarowski (1):
-      iproute2 patch against GCC 4.8.0
-
-Nicolas Dichtel (5):
-      ip: add missing help about mode argument
-      ip/xfrm: all to set flag XFRM_SA_XFLAG_DONT_ENCAP_DSCP
-      ipnetconf: by default dump all entries
-      ss: allow to retrieve AF_PACKET info via netlink
-      man: describe --bpf option of ss
-
-Patric McHardy (1):
-      ip: iplink_vlan: add 802.1ad support
-
-Pavel Emelyanov (1):
-      ss: Show inet and unix sockets' shutdown state
-
-Rami Rosen (1):
-      ss: replace bfp with bpf in usage().
-
-Sriram Narasimhan (1):
-      iptuntap: allow creation of multi-queue tun/tap device
-
-Stephen Hemminger (11):
-      Update headers to 3.10
-      Add vxlan destination port option
-      vxlan: nag user to set port value
-      add BPF header files
-      vxlan: remove dstport option
-      man: get rid of useless reference to GNU style options
-      htb: fix indentation
-      netns: follow return value conventions of the rest of the code
-      ip: add batch mode to man page
-      Make tc and ip batch mode consistent
-      v3.10.0
-
-Thomas Richter (2):
-      iproute2 vxlan documentation update for bridge command
-      iproute2 vxlan documentation update for ip command
-
-Eric S. Raymond (4):
-      First set of manpage markup fixes
-      tc-stab.8: Fix synopsis errors, an invalid escape, and incorrect English usge.
-      In tc-ematch.8, remove no-op .ti requests to prevent translation warnings
-      ip-rule.8: Fix presentational use of .SS.
 
