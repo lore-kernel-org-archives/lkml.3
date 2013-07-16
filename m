@@ -1,95 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab3GPXPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 19:15:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54528 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755102Ab3GPXPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 19:15:40 -0400
-Date: Wed, 17 Jul 2013 01:15:35 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-In-Reply-To: <20130716163528.GA17231@kroah.com>
-Message-ID: <alpine.LNX.2.00.1307170109330.27351@pobox.suse.cz>
-References: <1373916476.2748.69.camel@dabdike> <20130715214422.GA2478@kroah.com> <1373951852.2148.9.camel@dabdike> <20130716062058.GB19052@kroah.com> <1373960616.2148.34.camel@dabdike> <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
- <20130716163528.GA17231@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755269Ab3GPXSE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 19:18:04 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:53020 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755172Ab3GPXSC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 19:18:02 -0400
+Message-ID: <1374016680.26384.22.camel@x61.thuisdomein>
+Subject: Re: [kconfig] results of some syntactical checks
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Martin Walch <walch.martin@web.de>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 17 Jul 2013 01:18:00 +0200
+In-Reply-To: <7121962.G9xfZAqBSy@tacticalops>
+References: <7121962.G9xfZAqBSy@tacticalops>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jul 2013 23:18:00.0592 (UTC) FILETIME=[B6DD9900:01CE827A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013, Greg KH wrote:
+On Wed, 2013-07-17 at 00:34 +0200, Martin Walch wrote:
+> As I am working on yet another project for analyzing LKC's input files, I have 
+> some intermediate results from simple syntactical checks.
 
-> > > > But I need, from the distros, specific examples of what they object to.
-> > > > So far all I've gotten is one security patch (that was needed), and one
-> > > > patch for sysfs that I backported too far in the version numbers (my
-> > > > fault.)
-> > > > 
-> > > > Given the huge number of stable patches over the past few years, only
-> > > > having 2 patches be an issue sounds like things are working well for
-> > > > people here.
-> > > > 
-> > > > If I don't get pushback, with specifics, from the distros, I will not
-> > > > know what to change, so if people can provide me that, it will help out
-> > > > a lot.
-> > > 
-> > > I agree ... I think Ji?? and his Red Hat equivalent need to pipe up and
-> > > give us more examples of the problems they've been having.
-> > 
-> > I am still continuing with my pushback against the /dev/random revamp that 
-> > happened in -stable; at least in the form it happened. I still strongly 
-> > believe it's something that's not a stable material. But that's happening 
-> > in parallel in a different thread already.
-> > 
-> > Okay, if you want another example:
-> > 
-> > 	commit a6aa749906b92eaec6ca0469f90f35de26044d90
-> > 	Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> > 	Date:   Thu Dec 20 15:05:14 2012 -0800
-> > 
-> > 	    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
-> > 
-> > While this is a correct fix for major kernel release, as it achieves 
-> > correctness by checking SMBIOS version properly and behaving according to 
-> > the spec, it actually causes an userspace ABI regression in some sense, as 
-> > it just changes byte order of /sys/class/dmi/id/product_uuid on certain 
-> > systems.
-> > 
-> > Which is something I absolutely *do not* expect from a minor release of 
-> > branch which is called "stable".
+Naive question: LKC?
+
+> The results below are an excerpt from a run against tche current master.
+
+One thing I noticed is that it is practical to be able to parse
+arbitrary tags (commits) in the git tree. So you can quickly parse a
+tree you don't actually have checked out in git. But perhaps your
+checker also does that.
+
+> If 
+> anyone is interested in the code (it's written in Java), please contact me. I 
+> plan on releasing my program under a FLOSS license later this year. If you find 
+> the results interesting or even useful, I can post updates on a regular basis.
 > 
-> As you pointed out, your definition of "stable" is one that the
-> enterprise distros have created, and might be totally different from my
-> view of what "stable" is :)
+> Actually defined symbols with dangerous names: 2
+>   8260 at
+>     arch/powerpc/platforms/82xx/Kconfig:55:0
+>   8272 at
+>     arch/powerpc/platforms/82xx/Kconfig:64:0
 
-Absolutely, this is why I think discussing this would be very healthy.
+I've wondered for some time what happens when one uses either of these
+numbers as the value for an "int" Kconfig symbol. I've never tried.
 
-- first to clarify what the consumers of your branch are expecting it to 
-  be
-- then making clear what your understanding of "stable" is
-- then clarifying whether the stable branch is there for you or for its 
-  consumers :)
-- finally finding some intersection (some time in the future :) ) that'll 
-  suit all parties
+> Symbols used, but not defined: 31
+>   Symbol: ARCH_EFM32 at
+>     drivers/tty/serial/Kconfig:1427:0
+>   Symbol: ARCH_MULTI_V4 at
+>     arch/arm/Kconfig:914:0
+>   Symbol: ARM_S3C24XX at
+>     arch/arm/mach-s3c24xx/Kconfig:210:0
+>   Symbol: ATHEROS_AR231X at
+>     drivers/net/wireless/ath/ath5k/Kconfig:2:0
+>     drivers/net/wireless/ath/ath5k/Kconfig:8:0
+>     drivers/net/wireless/ath/ath5k/Kconfig:9:0
+>     drivers/net/wireless/ath/ath5k/Kconfig:56:0
+>     drivers/net/wireless/ath/ath5k/Kconfig:63:0
+>   Symbol: CPU_MMP3 at
+>     drivers/video/mmp/Kconfig:2:0
+>     drivers/video/mmp/hw/Kconfig:4:0
+>     drivers/usb/phy/Kconfig:53:0
+>   Symbol: CPU_PXA988 at
+>     drivers/video/mmp/Kconfig:2:0
+>     drivers/video/mmp/hw/Kconfig:4:0
+>   Symbol: CPU_SUBTYPE_SH7764 at
+>     arch/sh/drivers/dma/Kconfig:14:0
+>   Symbol: DEPRECATED at
+>     arch/mn10300/Kconfig.debug:34:0
+>   Symbol: EXYNOS_DEV_SYSMMU at
+>     drivers/iommu/Kconfig:170:0
+>   Symbol: GENERIC_HAS_IOMAP at
+>     arch/score/Kconfig:27:0
+>     arch/score/Kconfig:33:0
+>     arch/score/Kconfig:39:0
+>   Symbol: GENERIC_TIME at
+>     arch/arm/mach-bcm/Kconfig:11:0
+>   Symbol: GPIO_BCM at
+>     arch/arm/mach-bcm/Kconfig:12:0
+>   Symbol: HAVE_SCHED_CLOCK at
+>     arch/arm/mach-keystone/Kconfig:10:0
+>   Symbol: HOTPLUG at
+>     arch/powerpc/platforms/pseries/Kconfig:22:0
+>   Symbol: M at
+>     drivers/usb/host/Kconfig:568:0
+>     drivers/usb/misc/Kconfig:130:0
 
-> And also, as Ben pointed out, this was probably wrong, and someone
-> should have told me about this, so I could have reverted it.  Please do
-> so the next time.
+This looks odd. I think your checker doesn't like an uppercase M after
+default. There are exactly two of those in the tree.
 
-I thought that one of your golas was to improve scalability.
+>   Symbol: MACH_NOKIA_RM696 at
+>     arch/arm/mach-omap2/Kconfig:314:0
+>   Symbol: MACH_OMAP_H4_OTG at
+>     drivers/usb/gadget/Kconfig:208:0
+>   Symbol: MACH_SMDKC210 at
+>     sound/soc/samsung/Kconfig:138:0
+>   Symbol: MACH_SMDKV310 at
+>     sound/soc/samsung/Kconfig:138:0
+>   Symbol: MN10300_PROC_MN2WS0038 at
+>     arch/mn10300/Kconfig:185:0
+>   Symbol: MPILIB_EXTRA at
+>     crypto/asymmetric_keys/Kconfig:24:0
+>   Symbol: MTD_JEDEC at
+>     drivers/mtd/maps/Kconfig:161:0
+>     drivers/mtd/maps/Kconfig:170:0
+>   Symbol: MV64360 at
+>     arch/powerpc/Kconfig:400:0
+>   Symbol: N at
+>     drivers/usb/core/Kconfig:12:0
+>     drivers/usb/host/Kconfig:336:0
+>     drivers/usb/host/Kconfig:348:0
+>     drivers/staging/usbip/Kconfig:3:0
+>     drivers/staging/usbip/Kconfig:20:0
+>     drivers/staging/usbip/Kconfig:31:0
+>     drivers/staging/usbip/Kconfig:42:0
+>     drivers/staging/asus_oled/Kconfig:3:0
+>     drivers/staging/rtl8187se/Kconfig:8:0
+>     drivers/staging/rtl8192u/Kconfig:7:0
+>     drivers/staging/rtl8192e/rtl8192e/Kconfig:7:0
+>     drivers/staging/rtl8712/Kconfig:6:0
+>     drivers/staging/rtl8712/Kconfig:14:0
+>     drivers/staging/frontier/Kconfig:3:0
+>     drivers/staging/bcm/Kconfig:3:0
+>     drivers/staging/media/go7007/Kconfig:15:0
+>     drivers/staging/media/go7007/Kconfig:26:0
+>     drivers/staging/media/go7007/Kconfig:48:0
+>     drivers/staging/android/Kconfig:4:0
+>     drivers/staging/android/Kconfig:61:0
+>     arch/cris/arch-v32/drivers/Kconfig:13:0
+>     arch/cris/arch-v32/drivers/Kconfig:413:0
+>     arch/arc/Kconfig:357:0
 
-"Everyone is reviewing everything" is not my understanding of scalability; 
-hence my proposals.
+Ditto (but I haven't actually counted the occurrences of "default N").
 
-Thanks, Greg.
+>   Symbol: OF_VIDEOMODE at
+>     drivers/staging/imx-drm/Kconfig:36:0
+>   Symbol: OMAP_PM_SRF at
+>     drivers/staging/tidspbridge/Kconfig:19:0
+>   Symbol: PICOXCELL_PC3X3 at
+>     drivers/char/hw_random/Kconfig:242:0
+>   Symbol: PLATFORM_MICROBLAZE_AUTO at
+>     arch/microblaze/platform/Kconfig.platform:10:0
 
--- 
-Jiri Kosina
-SUSE Labs
+This is a default of a "choice". There used to be quite a lot of invalid
+"choice" defaults, so I stopped checking those. (But I didn't bother to
+look how my local script now handles these.) In practice these are
+treated as "no default", aren't they? 
+
+>   Symbol: PLAT_SPEAR_SINGLE at
+>     arch/arm/mach-spear/Kconfig:6:0
+>     arch/arm/mach-spear/Kconfig:19:0
+>     arch/arm/mach-spear/Kconfig:51:0
+>     arch/arm/mach-spear/Kconfig:84:0
+>     arch/arm/mach-spear/Kconfig:99:0
+>   Symbol: SOC_DRA7XX at
+>     drivers/thermal/ti-soc-thermal/Kconfig:52:0
+>   Symbol: false at
+>     drivers/staging/lustre/lustre/Kconfig:45:0
+
+My script currently finds 28 undefined symbols. That equals this result
+(given you have 2 false positive and 1 undefined choice default.)
+
+
+Paul Bolle
+
