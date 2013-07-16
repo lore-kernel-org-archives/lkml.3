@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab3GPLse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 07:48:34 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:64761 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab3GPLs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 07:48:29 -0400
-Date: Tue, 16 Jul 2013 05:48:26 -0600
-From: Tejun Heo <tj@kernel.org>
-To: Youquan Song <youquan.song@intel.com>
-Cc: jgarzik@redhat.com, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, seth.heasley@intel.com,
-        james.d.ralston@intel.com, ed.ciechanowski@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] ata: Fix DVD not dectected at some platform with
- Wellsburg PCH
-Message-ID: <20130716114826.GB23827@mtj.dyndns.org>
-References: <1373591757-416-1-git-send-email-youquan.song@intel.com>
+	id S932416Ab3GPLsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 07:48:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39024 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932201Ab3GPLsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 07:48:36 -0400
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+To: <tony@atomide.com>, <benoit.cousson@linaro.org>, <rnayak@ti.com>,
+        <peter.ujfalusi@ti.com>, <kishon@ti.com>, <jic23@cam.ac.uk>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <lars@metafoo.de>, <sameo@linux.intel.com>, <ch.naveen@samsung.com>,
+        <poeschel@lemonage.de>, <milo.kim@ti.com>, <balajitk@ti.com>,
+        <gg@slimlogic.co.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH v4 1/2] ARM: dts: twl: Add GPADC data to device tree
+Date: Tue, 16 Jul 2013 14:47:33 +0300
+Message-ID: <1373975254-23764-2-git-send-email-oleksandr.kozaruk@ti.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1373975254-23764-1-git-send-email-oleksandr.kozaruk@ti.com>
+References: <1373975254-23764-1-git-send-email-oleksandr.kozaruk@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373591757-416-1-git-send-email-youquan.song@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 09:15:57PM -0400, Youquan Song wrote:
-> There is a patch b55f84e2d527182e7c611d466cd0bb6ddce201de "ata_piix: Fix DVD
->  not dectected at some Haswell platforms" to fix an issue of DVD not 
-> recognized on Haswell Desktop platform with Lynx Point. 
-> Recently, it is also found the same issue at some platformas with Wellsburg PCH.
-> 
-> So deliver a similar patch to fix it by disables 32bit PIO in IDE mode.
-> 
-> Signed-off-by: Youquan Song <youquan.song@intel.com>
-> Cc: stable@vger.kernel.org
+GPADC is the general purpose ADC present on twl6030.
+The dt data is interrupt used to trigger end of ADC
+conversion.
 
-Applied to libata/for-3.12.  Thanks!
+Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+---
+ arch/arm/boot/dts/twl6030.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
+diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
+index 2e3bd31..434842c 100644
+--- a/arch/arm/boot/dts/twl6030.dtsi
++++ b/arch/arm/boot/dts/twl6030.dtsi
+@@ -103,4 +103,10 @@
+ 		compatible = "ti,twl6030-pwmled";
+ 		#pwm-cells = <2>;
+ 	};
++
++	gpadc: twl6030_gpadc {
++		compatible = "ti,twl6030_gpadc";
++		interrupts = <3>;
++		#io-channel-cells = <1>;
++	};
+ };
 -- 
-tejun
+1.8.1.2
+
