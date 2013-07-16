@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933760Ab3GPS1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:27:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59381 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932958Ab3GPS1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:27:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,678,1367996400"; 
-   d="scan'208";a="346578162"
-Message-ID: <51E5921E.6060702@linux.intel.com>
-Date: Tue, 16 Jul 2013 11:34:06 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S933765Ab3GPS3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:29:18 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57873 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932958Ab3GPS3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 14:29:16 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] Thermal: Fix lockup of cpu_down()
-References: <1373997748.6458.26.camel@gandalf.local.home>
-In-Reply-To: <1373997748.6458.26.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+	<20130712005023.GB31005@thunk.org>
+	<20130712051451.GC25815@1wt.eu>
+	<alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz>
+	<s5hwqoqv4oo.wl%tiwai@suse.de>
+	<20130716165933.GU22506@sirena.org.uk>
+	<3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com>
+Date: Tue, 16 Jul 2013 11:29:15 -0700
+X-Google-Sender-Auth: Edr46Hti5trZr7VQR01wHwmD5jM
+Message-ID: <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linux-foundation.org" 
+	<ksummit-2013-discuss@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 11:02 AM, Steven Rostedt wrote:
-> Commit f1a18a105 "Thermal: CPU Package temperature thermal" had code
-> that did a get_online_cpus(), run a loop and then do a
-> put_online_cpus(). The problem is that the loop had an error exit that
-> would skip the put_online_cpus() part.
+On Tue, Jul 16, 2013 at 10:58 AM, Luck, Tony <tony.luck@intel.com> wrote:
 >
-> In the error exit part of the function, it also did a get_online_cpus(),
-> run a loop and then put_online_cpus(). The only way to get to the error
-> exit part is with get_online_cpus() already performed. If this error
-> condition is hit, the system will be prevented from taking CPUs offline.
-> The process taking the CPU offline will lock up hard.
->
-> Removing the get_online_cpus() removes the lockup as the hotplug CPU
-> refcount is back to zero.
->
-> This was bisected with ktest.
->
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->
-> diff --git a/drivers/thermal/x86_pkg_temp_thermal.c b/drivers/thermal/x86_pkg_temp_thermal.c
-> index 5de56f6..d47624c 100644
-> --- a/drivers/thermal/x86_pkg_temp_thermal.c
-> +++ b/drivers/thermal/x86_pkg_temp_thermal.c
-> @@ -592,7 +592,6 @@ static int __init pkg_temp_thermal_init(void)
->   	return 0;
->   
->   err_ret:
-> -	get_online_cpus();
->   	for_each_online_cpu(i)
->   		put_core_offline(i);
->   	put_online_cpus();
->
-Agreed.
->
+> Linux testing is (realistically) done by inflicting changes on gradually wider
+> sets of end users.
 
+However, one thing that people should keep in mind that the testing is
+often self-selecting.
+
+This is particularly true for "obvious fixes". The _only_ early
+testers tend to be the people who saw the problem in the first place,
+and the fact that a patch fixes it for *them* can be very very
+misleading during that early testing phase. Because obviously that
+self-selecting group of people were somehow fundamentally different
+from the rest of the world, and different in a way that was very
+particular to the problem.
+
+This is in particular what we've often seen with things like the PCI
+layer resource management, and what we used to see a lot back in the
+bad old days wrt suspend/resume. And it's why I'd really prefer for
+even "obvious" patches to not be backported all that aggressively
+unless there is very strong pressure. It's very much why that stable
+documentation talks about "critical" issues.
+
+There have been tons of obvious patches that turned out to simply be
+wrong - often for very non-obvious reasons. Even when they are small.
+And the problems seldom get caught in early testing, often exactly
+because of this self-selecting property of testers (and test*ing* -
+when you fix a particular behavior, you tend to test the behavior
+you're trying to fix, you don't test the other cases that the patch
+wasn't about).
+
+Anyway, the point I'm making is that Q&A is limited and often even
+actively misleading ("Hey, I have three tested-by's, so it must be
+fine"), and we might actually want to have a new class of
+"non-critical patch that might be worth backporting to stable, but
+only do so after it's been in a release for some time". Because while
+it might be an "obvious" fix, maybe it's not critical enough that it
+needs to be backported _now_ - maybe it could wait a month or two, and
+get wider testing.
+
+               Linus
