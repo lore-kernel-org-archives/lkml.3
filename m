@@ -1,213 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933797Ab3GPTDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:03:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933364Ab3GPTCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:02:48 -0400
-Date: Tue, 16 Jul 2013 20:57:30 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 4/4] tracing: Change ftrace_event_filter_fops to rely
-	on event_mutex/i_private
-Message-ID: <20130716185730.GA21203@redhat.com>
+	id S933806Ab3GPTDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:03:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48076 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933327Ab3GPTDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 15:03:42 -0400
+Date: Tue, 16 Jul 2013 20:03:40 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH] um/configs: don't use devtmpfs in defconfig
+Message-ID: <20130716190340.GO4165@ZenIV.linux.org.uk>
+References: <1373993525-25629-1-git-send-email-artagnon@gmail.com>
+ <51E57BC1.4090904@nod.at>
+ <CALkWK0nrDsZiHe2==DQZuHV7id=6gc4UHUj1xXu9jN5cr3SUcQ@mail.gmail.com>
+ <20130716174708.GN4165@ZenIV.linux.org.uk>
+ <CALkWK0mY8OgqUiOAmyLzZpaS1U7Vw_xPSHytqggikGWBoghd_g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130716185658.GA21167@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CALkWK0mY8OgqUiOAmyLzZpaS1U7Vw_xPSHytqggikGWBoghd_g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Shift mutex_lock(event_mutex) from print/apply_event_filter to
-   the callers. And rename them just in case.
+On Tue, Jul 16, 2013 at 11:42:55PM +0530, Ramkumar Ramachandra wrote:
+> Leave aside the fact that I could not find the uml-utils upstream [1],
+> and didn't have a /uml/port-helper to connect the xterms for a second;
+> I didn't even understand what was supposed to happen.  Why do we spawn
+> xterms, and attach to the host's /dev/tty*?  So far, I just used
+> /dev/console inside my existing tmux session in urxvt, and it seems to
+> work fine.
 
-2. Change the callers, event_filter_read() and event_filter_write()
-   to read call = i_private under this mutex and abort if it is NULL.
+There are several things that can be attached to them.  Again, see the
+HOWTO for details.  FWIW, I prefer to have console in whatever I'm
+launching the whole thing in (usually - ssh session to the box I'm
+using to run all kinds of testing stuff on) with tty[1-6] attached to
+pts and accessed via screen /dev/pts/<n> on the same box (again, from ssh
+sessions, obviously).
 
-3. Remove .open from ftrace_event_filter_fops.
+> > One
+> > practical issue is the lack of VT102 emulation;
+> 
+> This detail is not at all clear from the Documentation.  I spent a lot
+> of time trying to figure out why systemd wasn't able to getty on
+> /dev/tty1.
 
-Note: I think event_filter_read() should not use "struct trace_seq".
-It buys nothing compared to the simple kmalloc'ed buffer, just needs
-a bit more memory and efforts.
+No fscking idea - sysvinit has no problem with launching getty instances
+(on explicit lines in inittab, that is), so it's not a problem on getty
+side of things.  And as much as I dislike systemd, I think it's not to blame
+in this case.  It looks like it *does* lauch getty just fine, but your host
+is misconfigured in a way that makes attempts to open the corresponding device
+nodes fail.  With the messages you've quoted.  The same HOWTO has
+     2.3 Compiling and installing uml_utilities
+right after
+     2.1 Compiling the kernel
+     2.2 Compiling and installing kernel modules
+so it's not as if the needed setup had not been mentioned.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace.h               |    4 ++--
- kernel/trace/trace_events.c        |   29 ++++++++++++++++++-----------
- kernel/trace/trace_events_filter.c |   21 ++++++++-------------
- 3 files changed, 28 insertions(+), 26 deletions(-)
+FWIW, it would be a good idea to package the damn thing for Fedora -
+Debian has
+$ apt-cache search 'User-Mode Linux'
+rootstrap - A tool for building complete Linux filesystem images
+uml-utilities - User-mode Linux (utility programs)
+user-mode-linux-doc - User-mode Linux (Documentation)
+user-mode-linux - User-mode Linux (kernel)
+$
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 4a4f6e1..57199ac 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -985,9 +985,9 @@ struct filter_pred {
- 
- extern enum regex_type
- filter_parse_regex(char *buff, int len, char **search, int *not);
--extern void print_event_filter(struct ftrace_event_call *call,
-+extern void __print_event_filter(struct ftrace_event_call *call,
- 			       struct trace_seq *s);
--extern int apply_event_filter(struct ftrace_event_call *call,
-+extern int __apply_event_filter(struct ftrace_event_call *call,
- 			      char *filter_string);
- extern int apply_subsystem_event_filter(struct ftrace_subsystem_dir *dir,
- 					char *filter_string);
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 6401b51..f4a86f9 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -959,9 +959,9 @@ static ssize_t
- event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
- 		  loff_t *ppos)
- {
--	struct ftrace_event_call *call = filp->private_data;
-+	struct ftrace_event_call *call;
- 	struct trace_seq *s;
--	int r;
-+	int r = -ENODEV;
- 
- 	if (*ppos)
- 		return 0;
-@@ -969,14 +969,18 @@ event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
- 	s = kmalloc(sizeof(*s), GFP_KERNEL);
- 	if (!s)
- 		return -ENOMEM;
--
- 	trace_seq_init(s);
- 
--	print_event_filter(call, s);
--	r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
-+	mutex_lock(&event_mutex);
-+	call = file_inode(filp)->i_private;
-+	if (likely(call))
-+		__print_event_filter(call, s);
-+	mutex_unlock(&event_mutex);
- 
--	kfree(s);
-+	if (call)
-+		r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
- 
-+	kfree(s);
- 	return r;
- }
- 
-@@ -984,9 +988,9 @@ static ssize_t
- event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		   loff_t *ppos)
- {
--	struct ftrace_event_call *call = filp->private_data;
-+	struct ftrace_event_call *call;
- 	char *buf;
--	int err;
-+	int err = -ENODEV;
- 
- 	if (cnt >= PAGE_SIZE)
- 		return -EINVAL;
-@@ -1001,13 +1005,17 @@ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 	}
- 	buf[cnt] = '\0';
- 
--	err = apply_event_filter(call, buf);
-+	mutex_lock(&event_mutex);
-+	call = file_inode(filp)->i_private;
-+	if (likely(call))
-+		err = __apply_event_filter(call, buf);
-+	mutex_unlock(&event_mutex);
-+
- 	free_page((unsigned long) buf);
- 	if (err < 0)
- 		return err;
- 
- 	*ppos += cnt;
--
- 	return cnt;
- }
- 
-@@ -1240,7 +1248,6 @@ static const struct file_operations ftrace_event_id_fops = {
- };
- 
- static const struct file_operations ftrace_event_filter_fops = {
--	.open = tracing_open_generic,
- 	.read = event_filter_read,
- 	.write = event_filter_write,
- 	.llseek = default_llseek,
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 0d883dc..f4b5eed 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -637,17 +637,15 @@ static void append_filter_err(struct filter_parse_state *ps,
- 	free_page((unsigned long) buf);
- }
- 
--void print_event_filter(struct ftrace_event_call *call, struct trace_seq *s)
-+/* caller must hold event_mutex */
-+void __print_event_filter(struct ftrace_event_call *call, struct trace_seq *s)
- {
--	struct event_filter *filter;
-+	struct event_filter *filter = call->filter;
- 
--	mutex_lock(&event_mutex);
--	filter = call->filter;
- 	if (filter && filter->filter_string)
- 		trace_seq_printf(s, "%s\n", filter->filter_string);
- 	else
- 		trace_seq_printf(s, "none\n");
--	mutex_unlock(&event_mutex);
- }
- 
- void print_subsystem_event_filter(struct event_subsystem *system,
-@@ -1841,23 +1839,22 @@ static int create_system_filter(struct event_subsystem *system,
- 	return err;
- }
- 
--int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
-+/* caller must hold event_mutex */
-+int __apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- {
- 	struct event_filter *filter;
- 	int err = 0;
- 
--	mutex_lock(&event_mutex);
--
- 	if (!strcmp(strstrip(filter_string), "0")) {
- 		filter_disable(call);
- 		filter = call->filter;
- 		if (!filter)
--			goto out_unlock;
-+			goto out;
- 		RCU_INIT_POINTER(call->filter, NULL);
- 		/* Make sure the filter is not being used */
- 		synchronize_sched();
- 		__free_filter(filter);
--		goto out_unlock;
-+		goto out;
- 	}
- 
- 	err = create_filter(call, filter_string, true, &filter);
-@@ -1884,9 +1881,7 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- 			__free_filter(tmp);
- 		}
- 	}
--out_unlock:
--	mutex_unlock(&event_mutex);
--
-+out:
- 	return err;
- }
- 
--- 
-1.5.5.1
+> > TERM=linux when logged
+> > in on those is not right - you want either TERM=xterm (for xterms) or
+> > TERM=screen (when accessing pts-associated ones with screen /dev/pts/n),
+> > etc.  In any case, it's a dumb serial line as far as the guest kernel
+> > is concerned - all terminal emulation is going to happen elsewhere (xterms
+> > running on host and interpreting escape sequences from guest userland,
+> > etc.)
+> 
+> Hm, what does $TERM have to do with all this?
 
+Huh?  That's what tells all curses-based stuff which escape sequences to
+emit.  And that's the *only* thing in which "it's not a VT" matters at
+all.  Again, your description of symptoms doesn't look like "systemd gets
+confused by tty1 not being a VT and fails to launch getty"; it appears to
+be "systemd does see tty1 and does launch getty, albeit with slightly wrong
+terminal type argument.  Which doesn't matter, since getty fails to open the
+device nodes due to missing utilities on host".  Install said utilities
+or switch to explicit con=... in command line and getty will launch just
+fine.  That's where TERM= settings come into play - some curses-based stuff
+will assume it has all linux VT escape sequences to play with and the
+thing you are using to access it might not be happy.  Other than that
+(and this is the thing you pass to getty as terminal type - the last
+argument for agetty(8)), everything seems to boil down to lack of uml utils
+on host...
