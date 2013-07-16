@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab3GPOWB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:22:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36912 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754423Ab3GPOWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:22:00 -0400
-Subject: Re: [PATCH 2/3] kconfig: avoid multiple calls to strlen
-From: Jean Delvare <jdelvare@suse.de>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-In-Reply-To: <1373738905-23396-3-git-send-email-yann.morin.1998@free.fr>
-References: <1373738905-23396-1-git-send-email-yann.morin.1998@free.fr>
-	 <1373738905-23396-3-git-send-email-yann.morin.1998@free.fr>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Tue, 16 Jul 2013 16:21:41 +0200
-Message-ID: <1373984501.4513.8.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S932615Ab3GPOWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:22:14 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:48375 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734Ab3GPOWJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 10:22:09 -0400
+Message-ID: <51E55710.8060907@cogentembedded.com>
+Date: Tue, 16 Jul 2013 18:22:08 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+CC: tony@atomide.com, benoit.cousson@linaro.org, rnayak@ti.com,
+        peter.ujfalusi@ti.com, kishon@ti.com, jic23@cam.ac.uk,
+        grant.likely@linaro.org, rob.herring@calxeda.com, lars@metafoo.de,
+        sameo@linux.intel.com, ch.naveen@samsung.com, poeschel@lemonage.de,
+        milo.kim@ti.com, balajitk@ti.com, gg@slimlogic.co.uk,
+        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/2] ARM: dts: twl: Add GPADC data to device tree
+References: <1373974500-23609-1-git-send-email-oleksandr.kozaruk@ti.com>
+In-Reply-To: <1373974500-23609-1-git-send-email-oleksandr.kozaruk@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Saturday 13 July 2013 à 20:08 +0200, Yann E. MORIN a écrit :
-> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> 
-> Calls to strlen are costly, so avoid calling strln as much as we can.
+Hello.
 
-Typo: strln -> strlen.
+On 07/16/2013 03:34 PM, Oleksandr Kozaruk wrote:
 
-> Reported-by: Jean Delvare <jdelvare@suse.de>
-> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Cc: Jean Delvare <jdelvare@suse.de>
+> GPADC is the general purpose ADC present on twl6030.
+> The dt data is interrupt used to trigger end of ADC
+> conversion.
+
+> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
 > ---
->  scripts/kconfig/symbol.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-> index d550300..020a0ac 100644
-> --- a/scripts/kconfig/symbol.c
-> +++ b/scripts/kconfig/symbol.c
-> @@ -967,7 +967,7 @@ static int sym_rel_comp( const void *sym1, const void *sym2 )
->  {
->  	struct sym_match *s1 = *(struct sym_match **)sym1;
->  	struct sym_match *s2 = *(struct sym_match **)sym2;
-> -	int l1, l2;
-> +	int exact1, exact2;
->  
->  	/* Exact match:
->  	 * - if matched length on symbol s1 is the length of that symbol,
-> @@ -978,11 +978,11 @@ static int sym_rel_comp( const void *sym1, const void *sym2 )
->  	 * exactly; if this is the case, we can't decide which comes first,
->  	 * and we fallback to sorting alphabetically.
->  	 */
-> -	l1 = s1->eo - s1->so;
-> -	l2 = s2->eo - s2->so;
-> -	if (l1 == strlen(s1->sym->name) && l2 != strlen(s2->sym->name))
-> +	exact1 = (s1->eo - s1->so) == strlen(s1->sym->name);
-> +	exact2 = (s2->eo - s2->so) == strlen(s2->sym->name);
-> +	if (exact1 && !exact2)
->  		return -1;
-> -	if (l1 != strlen(s1->sym->name) && l2 == strlen(s2->sym->name))
-> +	if (!exact1 && exact2)
->  		return 1;
->  
->  	/* As a fallback, sort symbols alphabetically */
+>   arch/arm/boot/dts/twl6030.dtsi | 6 ++++++
+>   1 file changed, 6 insertions(+)
 
-Looks good and tested OK.
+> diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
+> index 2e3bd31..434842c 100644
+> --- a/arch/arm/boot/dts/twl6030.dtsi
+> +++ b/arch/arm/boot/dts/twl6030.dtsi
+> @@ -103,4 +103,10 @@
+>   		compatible = "ti,twl6030-pwmled";
+>   		#pwm-cells = <2>;
+>   	};
+> +
+> +	gpadc: twl6030_gpadc {
+> +		compatible = "ti,twl6030_gpadc";
+> +		interrupts = <3>;
+> +		#io-channel-cells = <1>;
+> +	};
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+    ePAPR [1] says: "The name of a node should be somewhat generic, 
+reflecting the function of the device and not its precise programming 
+model."
 
--- 
-Jean Delvare
-Suse L3
+[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+
+WBR, Sergei
 
