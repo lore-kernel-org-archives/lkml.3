@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934018Ab3GPUrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:47:52 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:59188 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933670Ab3GPUrv (ORCPT
+	id S934039Ab3GPUuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:50:54 -0400
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:55889 "HELO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933670Ab3GPUuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:47:51 -0400
+	Tue, 16 Jul 2013 16:50:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374006818.6458.62.camel@gandalf.local.home>
-References: <20130716183441.GA14232@www.outflux.net>
-	<CAE9FiQWSe-M8XhFvWM3Q5P3kj6_EvUFMSvCkrDZUH7WdPPp35g@mail.gmail.com>
-	<CAGXu5jJd11FeaTEQc6=8=PgL56VeC0W37U=RvS-iJ-sP+Raeaw@mail.gmail.com>
-	<1374006818.6458.62.camel@gandalf.local.home>
-Date: Tue, 16 Jul 2013 13:47:50 -0700
-X-Google-Sender-Auth: RUGoALxsYRM4dsEE9NitXoLXpvA
-Message-ID: <CAGXu5jJNjHFJS0GfJVQm2++YtTn2yUfCAkf3u10REh=8DdeZCg@mail.gmail.com>
-Subject: Re: [PATCH v5] x86: make sure IDT is page aligned
-From: Kees Cook <keescook@chromium.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        PaX Team <pageexec@gmail.com>
+In-Reply-To: <51E5A4CA.20902@canonical.com>
+References: <51E58C45.1080708@canonical.com>
+	<CALnjE+oCeo=T+F3BvTBtcV7oDMPLJAEz1p1sjRGxmE8Wq8gWAg@mail.gmail.com>
+	<51E5A4CA.20902@canonical.com>
+Date: Tue, 16 Jul 2013 13:50:47 -0700
+Message-ID: <CALnjE+rhvmYPEXv=1F1HEe3VsgCNN1SKg5UwTuFatQUm9e9S2w@mail.gmail.com>
+Subject: Re: [Regression][v3.10][v3.11] net: Kill link between CSUM and SG features.
+From: Pravin Shelar <pshelar@nicira.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: davem@davemloft.net, ben.howard@canonical.com, edumazet@google.com,
+        xiyou.wangcong@gmail.com, alexander.h.duyck@intel.com,
+        jiri@resnulli.us, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kys@microsoft.com,
+        haiyangz@microsoft.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 1:33 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2013-07-16 at 13:28 -0700, Kees Cook wrote:
->> On Tue, Jul 16, 2013 at 1:21 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> > On Tue, Jul 16, 2013 at 11:34 AM, Kees Cook <keescook@chromium.org> wrote:
->> >> Since the IDT is referenced from a fixmap, make sure it is page aligned.
->> >> Merge with 32-bit one, since it was already aligned to deal with F00F
->> >> bug. Since bss is cleared before IDT setup, it can live there. This also
->> >> moves the other *_idt_table variables into common locations.
->> >>
+On Tue, Jul 16, 2013 at 12:53 PM, Joseph Salisbury
+<joseph.salisbury@canonical.com> wrote:
+> On 07/16/2013 02:29 PM, Pravin Shelar wrote:
+>> On Tue, Jul 16, 2013 at 11:09 AM, Joseph Salisbury
+>> <joseph.salisbury@canonical.com> wrote:
+>>> Hi Pravin,
+>>>
+>>> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
+>>> it was found that reverting the following commit resolved this bug:
+>>>
+>>> commit ec5f061564238892005257c83565a0b58ec79295
+>>> Author: Pravin B Shelar <pshelar@nicira.com>
+>>> Date:   Thu Mar 7 09:28:01 2013 +0000
+>>>
+>>>     net: Kill link between CSUM and SG features.
+>>>
+>>>
+>>> The regression was introduced as of v3.10-rc1.
+>>>
+>>> I see that you are the author of this patch, so I wanted to run this by
+>>> you.  I was thinking of requesting a revert for v3.11, but I wanted to
+>>> get your feedback first.
+>>>
+>>>
+>> This issue was reported before and turning off sg solves problem for
+>> HyperV driver. Drivers (intel and bnx2x) that I tested works fine with
+>> this patch. Have you seen the issue on any other NIC?
 >
->> It seemed more correct to me to define all the IDTs the same, but
->> there was no technical reason for that, just one of regularity. I only
->> care about keeping the real IDT page aligned. :) I'm fine to do
->> whatever is deemed "correct". :)
+> Thanks for the feedback.  We have only seen it on Intel hardware.  Can
+> you send a pointer to the patch? If so, we can provide some additional
+> testing.  Do you plan on submitting the patch for inclusion in 3.11?
 >
-> I'm actually unfamiliar with the F00F bug (heard of it, but have no idea
-> what it is). What happens if the F00F bug exists and we switch to an IDT
-> that's not paged aligned? Is that an issue?
+>
+What I mean is I do not see any problem with the patch that you have
+pointed out on ixgbe and bnx2x platforms. HyperV problem went away
+with disabling sg by ethtool utility.
 
-Regardless of F00F, the IDT is now unconditionally being set up in a
-fixmap entry (so that the unprivileged "sidt" instruction won't leak a
-"real" kernel address, and so that this exposed address is read-only).
-If the real IDT is not page aligned, the fixmap IDT will appear offset
-and everything starts calling the wrong handlers.
+Can you also give me more information about regression you are seeing
+like driver name, features of the NIC set and features of device
+without this patch. Does any other NIC than HyperV having this issue?
 
-The other IDTs don't need to be page aligned, but I marked them that
-way in the clean up because it seemed sensible to define these tables
-similarly. I can change the others to be __cacheline_aligned_bss if
-that's desired.
+Thanks.
 
--Kees
-
---
-Kees Cook
-Chrome OS Security
+>>
+>>
+>>> Thanks,
+>>>
+>>> Joe
+>>>
+>>> [0] http://pad.lv/1200243
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
