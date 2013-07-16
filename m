@@ -1,60 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab3GPJG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:06:28 -0400
-Received: from smtp-out-221.synserver.de ([212.40.185.221]:1114 "EHLO
-	smtp-out-221.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab3GPJG0 (ORCPT
+	id S1754692Ab3GPJGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:06:54 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:24159 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab3GPJFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:06:26 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 15748
-Message-ID: <51E50D3B.2050207@metafoo.de>
-Date: Tue, 16 Jul 2013 11:07:07 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Tue, 16 Jul 2013 05:05:35 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Ric9Y204SANzD771qGk86
+Subject: [PATCH 2/4] pinctrl: Allow pinctrl to have multiple active states
+To: linus.walleij@linaro.org
+From: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Date: Tue, 16 Jul 2013 02:05:34 -0700
+Message-ID: <20130716090534.5541.60381.stgit@localhost>
+In-Reply-To: <20130716090310.5541.36777.stgit@localhost>
+References: <20130716090310.5541.36777.stgit@localhost>
+User-Agent: StGit/0.16-1-ga54b
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Vinod Koul <vinod.koul@intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] ASoC: dmaengine-pcm: Add support for querying DMA capabilities
-References: <1373906531-6938-1-git-send-email-lars@metafoo.de> <20130715172643.GZ11538@sirena.org.uk> <20130715165721.GV16653@intel.com> <20130715175726.GA11538@sirena.org.uk> <51E43D6C.1050000@metafoo.de> <20130715195145.GB11538@sirena.org.uk>
-In-Reply-To: <20130715195145.GB11538@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 09:51 PM, Mark Brown wrote:
-> On Mon, Jul 15, 2013 at 08:20:28PM +0200, Lars-Peter Clausen wrote:
->> On 07/15/2013 07:57 PM, Mark Brown wrote:
->>> On Mon, Jul 15, 2013 at 10:27:21PM +0530, Vinod Koul wrote:
-> 
->>> Right, we probably want to set an artificial floor here but it still
->>> seems like we should be checking that the device actually supports this.
->>> If the hardware can only support 64 bytes then the above code won't work
->>> properly.
-> 
->> It shouldn't be to hard to extend the dma_caps API with a
->> min_sg_len. But is this something you've actually seen in existing
->> hardware for that the driver would make use of the dmaengine PCM
->> framework? If it is more of theoretical nature we can still easily
->> add it later if it becomes necessary.
-> 
-> I'm not aware of anything but equally well I made zero effort to look
-> and note that quite a few existing drivers appear to have minimum values
-> quite a bit above 16 though I doubt they are all actual restrictions.
+It's quite common that we need to dynamically change some pins for a
+device for runtime PM, or toggle a pin between rx and tx. Changing all
+the pins for a device is not efficient way of doing it.
 
-I would assume that most of them don't express hardware limitations but
-rather are sensible lower limits which allow operation without
-over-/underruns. But that's something that doesn't necessarily depend on the
-DMA controller, but rather on the system as a whole, e.g. on a slower
-machine you'd typically set the limit higher so the CPU has a better chance
-to keep up. So this isn't something you'd want to set in the DMA controller
-driver. But I'm not sure if there is a good way to calculate a sensible
-minimum buffer size based on the whole system's constraints.
+So let's allow setting up multiple active states for pinctrl. Currently
+we only need PINCTRL_STATIC and PINCTRL_DYNAMIC, where PINCTRL_STATIC
+covers the current default pins, and PINCTRL_DYNAMIC holds the dynamic
+pins that need to be toggled.
 
-- Lars
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+---
+ drivers/pinctrl/core.c |   18 ++++++++++--------
+ drivers/pinctrl/core.h |   10 ++++++++--
+ 2 files changed, 18 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index bda2c61..8da11d5 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -885,7 +885,8 @@ static void pinctrl_free(struct pinctrl *p, bool inlist)
+ 	mutex_lock(&pinctrl_list_mutex);
+ 	list_for_each_entry_safe(state, n1, &p->states, node) {
+ 		list_for_each_entry_safe(setting, n2, &state->settings, node) {
+-			pinctrl_free_setting(state == p->state, setting);
++			pinctrl_free_setting(state == p->state[PINCTRL_STATIC],
++					     setting);
+ 			list_del(&setting->node);
+ 			kfree(setting);
+ 		}
+@@ -955,13 +956,13 @@ EXPORT_SYMBOL_GPL(pinctrl_lookup_state);
+ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+ {
+ 	struct pinctrl_setting *setting, *setting2;
+-	struct pinctrl_state *old_state = p->state;
++	struct pinctrl_state *old_state = p->state[PINCTRL_STATIC];
+ 	int ret;
+ 
+-	if (p->state == state)
++	if (old_state == state)
+ 		return 0;
+ 
+-	if (p->state) {
++	if (old_state) {
+ 		/*
+ 		 * The set of groups with a mux configuration in the old state
+ 		 * may not be identical to the set of groups with a mux setting
+@@ -971,7 +972,7 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+ 		 * but not in the new state, this code puts that group into a
+ 		 * safe/disabled state.
+ 		 */
+-		list_for_each_entry(setting, &p->state->settings, node) {
++		list_for_each_entry(setting, &old_state->settings, node) {
+ 			bool found = false;
+ 			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
+ 				continue;
+@@ -989,7 +990,7 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+ 		}
+ 	}
+ 
+-	p->state = NULL;
++	p->state[PINCTRL_STATIC] = NULL;
+ 
+ 	/* Apply all the settings for the new state */
+ 	list_for_each_entry(setting, &state->settings, node) {
+@@ -1011,7 +1012,7 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+ 		}
+ 	}
+ 
+-	p->state = state;
++	p->state[PINCTRL_STATIC] = state;
+ 
+ 	return 0;
+ 
+@@ -1484,7 +1485,8 @@ static int pinctrl_show(struct seq_file *s, void *what)
+ 	list_for_each_entry(p, &pinctrl_list, node) {
+ 		seq_printf(s, "device: %s current state: %s\n",
+ 			   dev_name(p->dev),
+-			   p->state ? p->state->name : "none");
++			   p->state[PINCTRL_STATIC] ?
++			   p->state[PINCTRL_STATIC]->name : "none");
+ 
+ 		list_for_each_entry(state, &p->states, node) {
+ 			seq_printf(s, "  state: %s\n", state->name);
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 75476b3..b99e4b3 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -53,12 +53,18 @@ struct pinctrl_dev {
+ #endif
+ };
+ 
++enum pinctr_states {
++	PINCTRL_STATIC,
++	PINCTRL_DYNAMIC,
++	PINCTRL_NR_STATES,
++};
++
+ /**
+  * struct pinctrl - per-device pin control state holder
+  * @node: global list node
+  * @dev: the device using this pin control handle
+  * @states: a list of states for this device
+- * @state: the current state
++ * @state: the current state(s)
+  * @dt_maps: the mapping table chunks dynamically parsed from device tree for
+  *	this device, if any
+  * @users: reference count
+@@ -67,7 +73,7 @@ struct pinctrl {
+ 	struct list_head node;
+ 	struct device *dev;
+ 	struct list_head states;
+-	struct pinctrl_state *state;
++	struct pinctrl_state *state[PINCTRL_NR_STATES];
+ 	struct list_head dt_maps;
+ 	struct kref users;
+ };
 
