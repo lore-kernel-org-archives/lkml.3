@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3GPIg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 04:36:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1114 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab3GPIgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 04:36:22 -0400
-Date: Tue, 16 Jul 2013 10:35:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        acme@redhat.com, Stephane Eranian <eranian@gmail.com>
-Subject: Re: perf documentation: update Documentation/ABI/testing with
- missing perf-related files
-Message-ID: <20130716083549.GC1098@krava.brq.redhat.com>
-References: <alpine.DEB.2.10.1307151736250.6555@vincent-weaver-1.um.maine.edu>
+	id S1754033Ab3GPIhc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 04:37:32 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:55663 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615Ab3GPIh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 04:37:27 -0400
+Message-ID: <51E50570.8080704@linux.vnet.ibm.com>
+Date: Tue, 16 Jul 2013 14:03:52 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1307151736250.6555@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Michael Wang <wangyun@linux.vnet.ibm.com>, Jiri Kosina <jkosina@suse.cz>,
+        Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
+References: <20130625211544.GA2270@swordfish> <51D10899.1080501@linux.vnet.ibm.com> <20130710231305.GA4046@swordfish> <51DE1BE1.3090707@linux.vnet.ibm.com> <20130714114721.GB2178@swordfish> <20130714120629.GA4067@swordfish> <51E37194.1080103@linux.vnet.ibm.com> <51E3AA3B.9090003@linux.vnet.ibm.com> <20130715082918.GA2435@swordfish> <51E3F6EB.2050807@linux.vnet.ibm.com> <20130715232057.GA2486@swordfish>
+In-Reply-To: <20130715232057.GA2486@swordfish>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071608-0260-0000-0000-00000350FBD4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 05:38:15PM -0400, Vince Weaver wrote:
+On 07/16/2013 04:50 AM, Sergey Senozhatsky wrote:
+> On (07/15/13 18:49), Srivatsa S. Bhat wrote:
+> [..]
+>> So here is the solution:
+>>
+>> On 3.11-rc1, apply these patches in the order mentioned below, and check
+>> whether it fixes _all_ problems (both the warnings about IPI as well as the
+>> lockdep splat).
+>>
+>> 1. Patch given in:  https://lkml.org/lkml/2013/7/11/661
+>>    (Just apply patch 1, not the entire patchset).
+>>
+>> 2. Apply the patch shown below, on top of the above patch:
+>>
+>> ---------------------------------------------------------------------------
+>>
 > 
-> Add documentation for various files perf_event creates under
-> /sys/bus/event_source/devices/<dev>/
+> Hello Srivatsa,
+> Thanks, I'll test a bit later -- in the morning. (laptop stopped resuming from
+> suspend, probably radeon dmp).
 > 
-> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 > 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices b/Documentation/ABI/testing/sysfs-bus-event_source-devices
-> new file mode 100644
-> index 0000000..ffa2e4b
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices
-> @@ -0,0 +1,50 @@
-> +What:		/sys/bus/event_source/devices/<dev>/cpumask
-> +
-> +Date:		2012/09/10
-> +		
 
-nit, white space above
+Sure, thanks!
 
-> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> +
-> +Description:	This value holds a representative core for each
-> +		socket in a system.  It is meant to help when
-> +		creating a perf_event event for socket-wide events
-> +		like uncore and northbridge events.
-> +
-> +		The format is a comma separated list of cpu numbers,
-> +		one for each socket in the system that the PMU in
-> +		question can run on.
-> +
-> +		For example, on a two-socket Sandybridge-EP machine and
-> +		the cbox0 uncore the value of the file will be:
-> +			0,8
-> +		    
+> 
+> Shouldn't we also kick the console lock?
+> 
+> 
+>  kernel/printk.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index d37d45c..3e20233 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -1926,8 +1926,11 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
+>  {
+>  	switch (action) {
+>  	case CPU_ONLINE:
+> +	case CPU_ONLINE_FROZEN:
+>  	case CPU_DEAD:
+> +	case CPU_DEAD_FROZEN:
+>  	case CPU_DOWN_FAILED:
+> +	case CPU_DOWN_FAILED_FROZEN:
+>  	case CPU_UP_CANCELED:
+>  		console_lock();
+>  		console_unlock();
+> 
+> 
 
-nit, white space above
+No need. suspend_console() and resume_console() already handle it
+properly in the suspend/resume case, from what I can see.
 
-> +
-> +
-> +What:		/sys/bus/event_source/devices/cpu/rdpmc
-> +
-> +Date:		2011/11/20
-> +
-> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> +
-> +Description:	Indicates whether a CPU allows userspace "rdpmc"
-> +		instructions (unprivileged reads of the performance
-> +		counter MSRs).
-> +
-> +		You can echo 0 to this value to disable user rdpmc
-> +		access.
-> +
-> +
-> +
-> +What:		/sys/bus/event_source/devices/<dev>/type
-> +
-> +Date:		2013/01/08
-> +
-> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> +
-> +Description:	This value holds the PMU (Performance Monitor Unit) type
-> +		value that is passed into the perf_event_open()
-> +		attr:type field when opening an event.
-> +
-> +		The value is a decimal integer.
-> +
-> +
-> +
+Regards,
+Srivatsa S. Bhat
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-
-thanks,
-jirka
