@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964839Ab3GPVMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 17:12:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42780 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964786Ab3GPVMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 17:12:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,679,1367996400"; 
-   d="scan'208";a="346643842"
-Date: Tue, 16 Jul 2013 14:12:35 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Olivier Galibert <galibert@pobox.com>
-Cc: David Lang <david@lang.hm>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
-Message-ID: <20130716211235.GG4994@xanatos>
-References: <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
- <1373926109.17876.221.camel@gandalf.local.home>
- <20130715223615.GI15531@xanatos>
- <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
- <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+	id S933822Ab3GPVPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 17:15:45 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:53743 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab3GPVPo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 17:15:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrUMrztJ1aTfvfMZyOSRFhDM52Fa3pSS8EuW3ByYGMNMpg@mail.gmail.com>
+References: <CAOULuOY5VMiiuYmesaGxVWWKtby4Cj9Pc9ctQZeOKfoUzV46dA@mail.gmail.com>
+ <CALCETrVk=ovYjHwALtzB3E3nP4TMivhppM42yw7rMRpzA68cbw@mail.gmail.com>
+ <20130715230418.GA2649@leaf> <CALCETrX_Qjmdo5JtRPzhW6kBaNgwAstG1g8p8pKNy4e+kPYdMQ@mail.gmail.com>
+ <20130715232053.GB2649@leaf> <CALCETrUMrztJ1aTfvfMZyOSRFhDM52Fa3pSS8EuW3ByYGMNMpg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 16 Jul 2013 14:15:22 -0700
+Message-ID: <CALCETrWkja4k7AO1CFx=ev21Fg_6HO_unXbh=zGGdfPNRvLfcA@mail.gmail.com>
+Subject: Re: BGRT Pointer in System RAM
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Parag Warudkar <parag.lkml@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:14:51AM +0200, Olivier Galibert wrote:
-> On Tue, Jul 16, 2013 at 9:32 AM, David Lang <david@lang.hm> wrote:
-> > On Mon, 15 Jul 2013, Sarah Sharp wrote:
-> >
-> >> The people who want to work together in a civil manner should get
-> >> together and create a "Kernel maintainer's code of conduct" that
-> >> outlines what they expect from fellow kernel developers.  The people who
-> >> want to continue acting "unprofessionally" should document what
-> >> behaviors set off their cursing streaks, so that others can avoid that
-> >> behavior.  Somewhere in the middle is the community behavior all
-> >> developers can thrive in.
-> >
-> >
-> > By defining your viewpoint as being "professional" and the other viewpoint
-> > as being "unprofessional" you have already started using very loaded terms
-> > and greatly reduces the probability of actually getting the other group to
-> > agree and participate.
-> 
-> Especially since you can very easily translate these terms into
-> "American" and "non-American".
-> 
-> The stereotypical american professionalism attitude is to be polite at
-> the word choice level the best to hide a profund disrespect under
-> them.  There's no meaning taken into account, it's just keyword
-> spotting.  "Your code is crap" is considered unprofessional, while
-> "Let's leverage my fifth grade nephew's capabilities to assist you in
-> fixing the code" is perfectly professional, somehow.  That's more
-> often than not an unacceptable attitude in europe.
+On Mon, Jul 15, 2013 at 4:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Jul 15, 2013 at 4:20 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+>> On Mon, Jul 15, 2013 at 04:08:13PM -0700, Andy Lutomirski wrote:
+>>> On Mon, Jul 15, 2013 at 4:04 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+>>> > On Mon, Jul 15, 2013 at 01:28:36PM -0700, Andy Lutomirski wrote:
+>>> >>
+>>> >> Interesting.  My BGRT says:
+>>> >>
+>>> >> [028h 0040   8]                Image Address : 0D06801800000001
+>>> >>
+>>> >> If I reverse the high and low 32-bit dwords, then I get an address in
+>>> >> system RAM.
+>>> >
+>>> > Does that address in RAM start with a BMP header?
+>>>
+>>> No idea.  I'd presumably have to modify the driver to find out --
+>>> otherwise something else will overwrite it.
+>>
+>> You could boot with a mem= command-line argument that reserves that
+>> memory.
+>
+> I'll see what I can do.
+>
 
-I *hate* both direct personal insults and indirect personal insults.
-Neither should be acceptable in our community.
+I booted with mem=3G, and:
 
-As I stated in an email to Rusty, what I'm objecting to here is not
-kernel developers criticizing code.  I'm objecting to personal attacks,
-and developers directing personal verbal abuse towards each other.  This
-include all developers, not just Linus.
+$ sudo dd bs=1 skip=4513853464 if=/dev/mem count=1
+dd: reading ‘/dev/mem’: Bad address
 
-Sarah Sharp
+The kernel log says nothing, which suggests that ioremap_cache is
+failing.  I don't know why.
+
+The address 4513853464 is 0x10D0BF018, which should be okay:
+
+[    0.000000] BIOS-e820: [mem 0x0000000100000000-0x000000045fffffff] usable
+[    0.000000] e820: remove [mem 0xc0000000-0xfffffffffffffffe] usable
+
+EFI agrees:
+[    0.000000] efi: mem213: type=7, attr=0xf,
+range=[0x0000000100000000-0x0000000460000000) (13824MB)
+
+This could be related to the fact that mtrr cleanup is failing,
+possibly due to bugs related to mem=.
+
+That's about my tolerance for debugging something that doesn't really
+deserve to work.
+
+--Andy
