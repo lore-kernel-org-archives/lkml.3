@@ -1,123 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3GPJOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:14:25 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38006 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab3GPJOQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:14:16 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ObN8DC7MeZEpGTnDkuiLM
-Date: Tue, 16 Jul 2013 02:14:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: linus.walleij@linaro.org
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] improved support for runtime muxing for pinctrl
-Message-ID: <20130716091413.GT7656@atomide.com>
-References: <20130716090310.5541.36777.stgit@localhost>
+	id S1753990Ab3GPJQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:16:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52143 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705Ab3GPJQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 05:16:52 -0400
+Date: Tue, 16 Jul 2013 11:05:46 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, celinux-dev@lists.celinuxforum.org,
+        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
+        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Florian Fainelli <florian@openwrt.org>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Chanho Min <chanho.min@lge.com>
+Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
+ streaming format
+Message-ID: <20130716090546.GB4402@pd.tnic>
+References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
+ <20130716004727.b60b2c96.akpm@linux-foundation.org>
+ <20130716005611.e4ccab02.akpm@linux-foundation.org>
+ <201307161008.07643.yann.morin.1998@free.fr>
+ <20130716012756.31936d8d.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130716090310.5541.36777.stgit@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130716012756.31936d8d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [130716 02:12]:
+On Tue, Jul 16, 2013 at 01:27:56AM -0700, Andrew Morton wrote:
+> What I'm angling at is, rather than a single global front-end script,
+> can we embed the scripts in some fashion within the various Kconfig
+> files?  Say,
 > 
-> As discussed earlier, the pinctrl support for changing some of the
-> consumer device pins during runtime needs some improvment.
+> 	script ./some-script.sh
 > 
-> Here are the patches to do that, I'll also post a minimal sample
-> patch as a reply to this thread on how to do the muxing for
-> runtime PM.
+> and the config system will only evaluate that command if it is working
+> on that Kconfig file.  Obviously that requires a multiple-pass thing.
 
-Here's a patch showing the suggested usage remuxing SDIO IRQ
-to GPIO mode for runtime PM. Note that this patch depends on
-three other patches for the hsmmc driver, I'll post that series
-separately.
+What's wrong with simply grepping the .config we've just created for
+*enabled* symbols which require userspace support, check for the
+presence of said support and bail out if none?
 
-Regards,
+I.e., those steps:
 
-Tony
+1. make <whatever>config
+2. make => A prereq. target runs the shell script.
 
+-- 
+Regards/Gruss,
+    Boris.
 
-From: Tony Lindgren <tony@atomide.com>
-Date: Mon, 15 Jul 2013 07:39:39 -0700
-Subject: [PATCH] mmc: omap_hsmmc: Remux pins to support SDIO interrupt and PM runtime
-
-On some omaps we need to remux MMC pins for PM, and for some omaps
-we need to remux the SDIO IRQ pin.
-
-Based on an earlier patch by Andreas Fenkart <afenkart@gmail.com>.
-
-Cc: Andreas Fenkart <afenkart@gmail.com>
-Cc: Balaji T K <balajitk@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1869,7 +1869,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	const struct of_device_id *match;
- 	dma_cap_mask_t mask;
- 	unsigned tx_req, rx_req;
--	struct pinctrl *pinctrl;
- 
- 	match = of_match_device(of_match_ptr(omap_mmc_of_match), &pdev->dev);
- 	if (match) {
-@@ -2114,21 +2113,19 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- 	omap_hsmmc_disable_irq(host);
- 
--	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
--	if (IS_ERR(pinctrl))
--		dev_warn(&pdev->dev,
--			"pins are not configured from the driver\n");
--
- 	/*
--	 * For now, only support SDIO interrupt if we are doing
--	 * muxing of dat1 when booted with DT. This is because the
-+	 * For now, only support SDIO interrupt if we are doing dynamic
-+	 * remuxing of dat1 when booted with DT. This is because the
- 	 * supposedly the wake-up events for CTPL don't work from deeper
- 	 * idle states. And we don't want to add new legacy mux platform
- 	 * init code callbacks any longer as we are moving to DT based
- 	 * booting anyways.
- 	 */
- 	if (match) {
--		if (!IS_ERR(pinctrl) && mmc_slot(host).sdio_irq)
-+		struct device *dev = &pdev->dev;
-+
-+		if (!pinctrl_pm_check_idle_state(dev) &&
-+		    mmc_slot(host).sdio_irq)
- 			mmc->caps |= MMC_CAP_SDIO_IRQ;
- 	}
- 
-@@ -2348,6 +2345,10 @@ static int omap_hsmmc_runtime_suspend(struct device *dev)
- 		OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
- 		spin_unlock_irqrestore(&host->irq_lock, flags);
- 
-+		ret = pinctrl_pm_select_idle_state(dev);
-+		if (ret < 0)
-+			dev_err(dev, "Unable to select idle pinmux\n");
-+
- 		if (mmc_slot(host).sdio_irq)
- 			enable_irq(mmc_slot(host).sdio_irq);
- 	}
-@@ -2371,6 +2372,10 @@ static int omap_hsmmc_runtime_resume(struct device *dev)
- 		if (mmc_slot(host).sdio_irq)
- 			disable_irq(mmc_slot(host).sdio_irq);
- 
-+		ret = pinctrl_pm_select_active_state(dev);
-+		if (ret < 0)
-+			dev_err(dev, "Unable to select active pinmux\n");
-+
- 		spin_lock_irqsave(&host->irq_lock, flags);
- 		host->active_pinmux = true;
- 
+Sent from a fat crate under my desk. Formatting is fine.
+--
