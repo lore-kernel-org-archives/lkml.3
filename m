@@ -1,88 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3GPJA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:00:27 -0400
-Received: from bosmailout15.eigbox.net ([66.96.189.15]:57921 "EHLO
-	bosmailout15.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab3GPJAY (ORCPT
+	id S1754055Ab3GPJAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:00:34 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50837 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab3GPJA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:00:24 -0400
-X-Greylist: delayed 2375 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Jul 2013 05:00:24 EDT
-X-Authority-Analysis: v=2.0 cv=bNyU0YCZ c=1 sm=1
- a=mze3Iowvsrioyt7kijtP+A==:17 a=bc2JKO6qiGsA:10 a=FB6NmUnAAagA:10
- a=B3vY_oGMVIEA:10 a=8nJEP1OIZ-IA:10 a=SX4JDKmJlWIA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=-FMTLKQb-XPAEF5nkOAA:9 a=wPNLvfGTeEIA:10
- a=fIc3/5IyPUehxkj7BpkQ7Q==:117
-X-EN-OrigOutIP: 10.20.18.6
-X-EN-IMPSID: 0w7g1m00107rX7u01w7g0K
-Message-ID: <51E50217.1000507@yahoo.es>
-Date: Tue, 16 Jul 2013 16:19:35 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Tue, 16 Jul 2013 05:00:26 -0400
+Message-ID: <51E50AD4.6040208@linux.vnet.ibm.com>
+Date: Tue, 16 Jul 2013 14:26:52 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Vikram Pandita <vikram.pandita@ti.com>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>, Tony Lindgren <tony@atomide.com>
-CC: linux-i2c <linux-i2c@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] i2c-omap: always send stop after nack
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com> <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com> <51E3C950.90503@linux.vnet.ibm.com> <CAKohpo=tfd_CXDBkbE23=UdEF99ZK-17NM_cvpGJ_e9wXGzsZQ@mail.gmail.com>
+In-Reply-To: <CAKohpo=tfd_CXDBkbE23=UdEF99ZK-17NM_cvpGJ_e9wXGzsZQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.57.227
-X-EN-OrigHost: unknown
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071608-4790-0000-0000-000009498CF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vikram,
+On 07/16/2013 11:45 AM, Viresh Kumar wrote:
+> On 15 July 2013 15:35, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Actually even I was wondering about this while writing the patch and
+>> I even tested shutdown after multiple suspend/resume cycles, to verify that
+>> the refcount is messed up. But surprisingly, things worked just fine.
+>>
+>> Logically there should've been a refcount mismatch and things should have
+>> failed, but everything worked fine during my tests. Apart from suspend/resume
+>> and shutdown tests, I even tried mixing a few regular CPU hotplug operations
+>> (echo 0/1 to sysfs online files), but nothing stood out.
+>>
+>> Sorry, I forgot to document this in the patch. Either the patch is wrong
+>> or something else is silently fixing this up. Not sure what is the exact
+>> situation.
+> 
+> To understand it I actually applied your patches to get better view of the code.
+> (Haven't tested it though).. And found that your code is doing the right thing
+> and we shouldn't get a mismatch.. This is the sequence of events I can draw:
+> 
+> - __cpu_add_dev() for first cpu. sets the refcount to 'x', where x are
+> the no. of
+> cpus in its clock domain.
+> - _cpu_add_dev() for other cpus: doesn't change anything in refcount
+> 
+> - Suspend:
+>  - cpu_remove_dev() for all cpus, due to frozen flag we don't touch the value
+> of count
+> - Resume:
+>  - cpu_add_dev() for all cpus, due to frozen flag we don't touch the
+> value of count.
+>
 
-On a OMAP4460, i2c-bus-3:
-
-A driver (lm75) is causing many 'timeout waiting for bus ready' errors.
-SDA remains high (as it should), but SCL remains low after a NACK.
-The bus becomes _unusable for other clients_.
-
-While probing, "lm75" writes a command, followed by a read + stop,
-but the write command is NACK'd. The chip does accept other writes/reads,
-it just refuses to ack invalid commands.
-
-Can you tell me if the patch below would make any sense? Or is it the
-responsibility of the client to reset the i2c_smbus?
-
-In case of M_IGNORE_NAK there is no problem, a STOP will follow after the
-last command.
+Actually this one is tricky (I took a look again). So we have this code in the
+beginning of _cpufreq_add_dev():
 
 
-Thanks, Hein
+1008 #ifdef CONFIG_SMP
+1009         /* check whether a different CPU already registered this
+1010          * CPU because it is in the same boat. */
+1011         policy = cpufreq_cpu_get(cpu);
+1012         if (unlikely(policy)) {
+1013                 cpufreq_cpu_put(policy);
+1014                 return 0;
+1015         }
 
-Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
+The _get() is not controlled by the frozen flag, but it still doesn't take a
+refcount because of a subtle reason: per_cpu(cpufreq_cpu_data, cpu) was set to
+NULL in __cpufreq_remove_dev() and the memory was saved away in fallback storage.
+So, when __cpufreq_cpu_get() executes, it sees:
 
----
- drivers/i2c/busses/i2c-omap.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ 204         /* get the CPU */
+ 205         data = per_cpu(cpufreq_cpu_data, cpu);
+ 206 
+ 207         if (!data)
+ 208                 goto err_out_put_module;
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index e02f9e3..2f7a712 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -615,11 +615,9 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *adap,
- 	if (dev->cmd_err & OMAP_I2C_STAT_NACK) {
- 		if (msg->flags & I2C_M_IGNORE_NAK)
- 			return 0;
--		if (stop) {
--			w = omap_i2c_read_reg(dev, OMAP_I2C_CON_REG);
--			w |= OMAP_I2C_CON_STP;
--			omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
--		}
-+		w = omap_i2c_read_reg(dev, OMAP_I2C_CON_REG);
-+		w |= OMAP_I2C_CON_STP;
-+		omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
- 		return -EREMOTEIO;
- 	}
- 	return -EIO;
--- 
-1.7.9.5
+Thus, since data is NULL, cpufreq_cpu_get() won't take a refcount and will return
+silently.
 
+Further down in __cpufreq_add_dev(), we restore the original memory, using
+the frozen flag:
+
+1037         if (frozen)
+1038                 /* Restore the saved policy when doing light-weight init */
+1039                 policy = cpufreq_policy_restore(cpu);
+1040         else
+1041                 policy = cpufreq_policy_alloc();
+
+
+So that is how we manage to fool cpufreq_cpu_get() into not taking a fresh
+refcount while resuming :)
+ 
+> And so things work as expected. That's why your code isn't breaking anything I
+> believe.
+> 
+
+Thanks a lot for the code inspection and your detailed analysis!
+
+> But can no. of cpus change inbetween suspend/resume? Then count would be
+> tricky as we are using the same policy structure.
+> 
+
+No, number of CPUs won't change in between suspend/resume. Even if somebody
+tried that, that would be an eccentric case and we won't handle that.
+Besides, *many more* things will break than just cpufreq, if somebody actually
+tries that out!
+
+Regards,
+Srivatsa S. Bhat
 
