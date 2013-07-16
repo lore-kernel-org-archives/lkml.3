@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933923Ab3GPTmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:42:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58385 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933202Ab3GPTm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:42:28 -0400
-Message-ID: <51E5A207.30204@zytor.com>
-Date: Tue, 16 Jul 2013 12:41:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
-References: <1373659660-31123-1-git-send-email-keescook@chromium.org> <20130712203802.GA14702@www.outflux.net> <CAE9FiQWJin8-hXsodo46vhYPMrWiiboEVQySPO-LgXtebYmUzw@mail.gmail.com> <CAGXu5jJs5ve-31AYKbv6EaV5PKCf5cOEeWTRsYsi_kBbLWj5uQ@mail.gmail.com> <51E5A0A9.90108@zytor.com> <CAGXu5jJJXgnJxuvc851UZ4Du10HSBJnDWc7rKgRb4_=ojMmtug@mail.gmail.com>
-In-Reply-To: <CAGXu5jJJXgnJxuvc851UZ4Du10HSBJnDWc7rKgRb4_=ojMmtug@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S964771Ab3GPTnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:43:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8885 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933827Ab3GPTnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 15:43:11 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=HICIQ9bjhMYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PINbNDQYIjoA:10 a=VwQbUJbxAAAA:8 a=giUcsLpzfsAtcDhQiWoA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374003789.6458.55.camel@gandalf.local.home>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linux-foundation.org" 
+	<ksummit-2013-discuss@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>
+Date: Tue, 16 Jul 2013 15:43:09 -0400
+In-Reply-To: <20130716191147.GA1680@kroah.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+	 <20130712005023.GB31005@thunk.org> <20130712051451.GC25815@1wt.eu>
+	 <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz>
+	 <s5hwqoqv4oo.wl%tiwai@suse.de> <20130716165933.GU22506@sirena.org.uk>
+	 <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com>
+	 <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
+	 <1374000084.6458.36.camel@gandalf.local.home>
+	 <20130716191147.GA1680@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 12:40 PM, Kees Cook wrote:
->>
->> I think setting up a dynamic #PF handler is the right thing for the
->> decompressor, we already did for the kernel proper.
-> 
-> I'm not sure how to accomplish this yet. I'm still trying to
-> understand how the page tables are arranged. :)
-> 
+On Tue, 2013-07-16 at 12:11 -0700, Greg Kroah-Hartman wrote:
 
-Look at the handler at the top of arch/x86/kernel/head64.c.
+> People mark stable patches that way already today with a:
+> 	Cc: stable <stable@vger.kernel.org> # delay for 3.12-rc4
+> or some such wording.  I take those and don't apply them until the noted
+> release happens, so you can do this if needed.
 
-	-hpa
+I guess the thing is, are stable patches prone to regressions. Do we
+just do that for patches that we think are too complex and may cause
+some harm. Of course, there's the question about having a clue about
+what patches might cause harm or not.
+
+For tracing patches, I test them probably more than most people, as
+tracing isn't usually done on non development machines. A regression in
+tracing isn't likely to harm others.
+
+Right now it doesn't seem to be an issue because we have "Greg" doing
+things at light speed. But when stable is maintained by a lesser deity,
+then we may need to look at changing the process.
+
+-- Steve
 
 
