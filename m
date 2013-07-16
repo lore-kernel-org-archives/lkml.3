@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043Ab3GPPNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:13:31 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:36488 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469Ab3GPPN3 (ORCPT
+	id S932935Ab3GPPPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:15:39 -0400
+Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:50993 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932708Ab3GPPPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:13:29 -0400
-Date: Tue, 16 Jul 2013 17:13:24 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+	Tue, 16 Jul 2013 11:15:38 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/7] mmc: atmel-mci: prepare clk before calling
- enable
-Message-ID: <20130716171324.7d483ada@skate>
-In-Reply-To: <1373987208-24120-1-git-send-email-b.brezillon@overkiz.com>
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH v3 3/7] at91/avr32/atmel_lcdfb: prepare clk before calling enable
+Date: Tue, 16 Jul 2013 17:08:14 +0200
+Message-Id: <1373987294-24227-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
 References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-	<1373987208-24120-1-git-send-email-b.brezillon@overkiz.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 7045318668009633900
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Boris BREZILLON,
+Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+avoid common clk framework warnings.
 
-On Tue, 16 Jul 2013 17:06:48 +0200, Boris BREZILLON wrote:
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/video/atmel_lcdfb.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
->  	buf = kmalloc(ATMCI_REGS_SIZE, GFP_KERNEL);
->  	if (!buf)
-> @@ -389,9 +391,13 @@ static int atmci_regs_show(struct seq_file *s, void *v)
->  	 * consistent.
->  	 */
->  	spin_lock_bh(&host->lock);
-> -	clk_enable(host->mck);
-> +	ret = clk_prepare_enable(host->mck);
-
-I am not very familiar with the spin_lock_bh() variant, but are you
-sure we are allowed to sleep within a spin_lock_bh()-protected critical
-section?
-
-Remember that clk_prepare_enable() calls both ->prepare() and
-->enable() for the clock, and ->prepare() is allowed to sleep, while
-->enable() is guaranteed not to sleep.
-
-Therefore, clk_prepare() is usually called at probe time, while
-clk_enable() is called whenever enabling/disabling the clock is really
-needed. So not all clk_enable() can transparently be converted into a
-clk_prepare_enable().
-
-Best regards,
-
-Thomas
+diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
+index ece49d5..bf9c5d0 100644
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@ -954,14 +954,14 @@ static int __init atmel_lcdfb_init_fbinfo(struct atmel_lcdfb_info *sinfo)
+ 
+ static void atmel_lcdfb_start_clock(struct atmel_lcdfb_info *sinfo)
+ {
+-	clk_enable(sinfo->bus_clk);
+-	clk_enable(sinfo->lcdc_clk);
++	clk_prepare_enable(sinfo->bus_clk);
++	clk_prepare_enable(sinfo->lcdc_clk);
+ }
+ 
+ static void atmel_lcdfb_stop_clock(struct atmel_lcdfb_info *sinfo)
+ {
+-	clk_disable(sinfo->bus_clk);
+-	clk_disable(sinfo->lcdc_clk);
++	clk_disable_unprepare(sinfo->bus_clk);
++	clk_disable_unprepare(sinfo->lcdc_clk);
+ }
+ 
+ #ifdef CONFIG_OF
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1.7.9.5
+
