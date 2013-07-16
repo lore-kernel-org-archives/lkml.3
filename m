@@ -1,61 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab3GPStI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:49:08 -0400
-Received: from 1wt.eu ([62.212.114.60]:34734 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933353Ab3GPStF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:49:05 -0400
-Date: Tue, 16 Jul 2013 20:48:48 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Mark Brown <broonie@kernel.org>,
-        Takashi Iwai <tiwai@suse.de>, David Lang <david@lang.hm>,
-        "ksummit-2013-discuss@lists.linux-foundation.org" 
-	<ksummit-2013-discuss@lists.linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-Message-ID: <20130716184848.GI15902@1wt.eu>
-References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org> <20130712051451.GC25815@1wt.eu> <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz> <s5hwqoqv4oo.wl%tiwai@suse.de> <20130716165933.GU22506@sirena.org.uk> <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com> <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
+	id S933638Ab3GPS6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:58:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33167 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987Ab3GPS6b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 14:58:31 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=rTyptnn7BogA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=RMKxM6tspQQA:10 a=cm27Pg_UAAAA:8 a=pGLkceISAAAA:8 a=MP1_qQ5raXxJip4QEOIA:9 a=QEXdDO2ut3YA:10 a=zv9_9hqRWm8A:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374001107.6458.37.camel@gandalf.local.home>
+Subject: Re: [PATCH v5] x86: make sure IDT is page aligned
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        PaX Team <pageexec@gmail.com>
+Date: Tue, 16 Jul 2013 14:58:27 -0400
+In-Reply-To: <20130716183441.GA14232@www.outflux.net>
+References: <20130716183441.GA14232@www.outflux.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:29:15AM -0700, Linus Torvalds wrote:
-> There have been tons of obvious patches that turned out to simply be
-> wrong - often for very non-obvious reasons. Even when they are small.
-> And the problems seldom get caught in early testing, often exactly
-> because of this self-selecting property of testers (and test*ing* -
-> when you fix a particular behavior, you tend to test the behavior
-> you're trying to fix, you don't test the other cases that the patch
-> wasn't about).
+On Tue, 2013-07-16 at 11:34 -0700, Kees Cook wrote:
+> Since the IDT is referenced from a fixmap, make sure it is page aligned.
+> Merge with 32-bit one, since it was already aligned to deal with F00F
+> bug. Since bss is cleared before IDT setup, it can live there. This also
+> moves the other *_idt_table variables into common locations.
+> 
+> This avoids the risk of the IDT ever being moved in the bss and having
+> the mapping be offset, resulting in calling incorrect handlers. In the
+> current upstream kernel this is not a manifested bug, but heavily patched
+> kernels (such as those using the PaX patch series) did encounter this bug.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Reported-by: PaX Team <pageexec@gmail.com>
 
-I can't agree more, I know it's one of my defaults. I don't count the
-number of bugs I have introduced in Haproxy while fixing a bug, and I
-know this and care a lot about this. Still shit happens. And I'm sure
-I'm not the only one out there !
 
-> Anyway, the point I'm making is that Q&A is limited and often even
-> actively misleading ("Hey, I have three tested-by's, so it must be
-> fine"), and we might actually want to have a new class of
-> "non-critical patch that might be worth backporting to stable, but
-> only do so after it's been in a release for some time". Because while
-> it might be an "obvious" fix, maybe it's not critical enough that it
-> needs to be backported _now_ - maybe it could wait a month or two, and
-> get wider testing.
+I like it just because it removes those nasty #ifdef blocks for x86_64
+or not.
 
-That's what was discussed earlier in this thread, something like not
-merging into stable before current kernel is released plus maybe one
-.1 stable version to ensure that we've got some bug reports. That
-would mean something like "don't backport this before 3.12.1 has
-been released" for example. The tag could simply be "Not-Before".
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Willy
+-- Steve
+
+> ---
+> v5:
+>  - add comments to all IDTs about alignment reasoning, suggested by Linus
+> v4:
+>  - rework using __page_aligned_bss, suggested by Yinghai LU
+>  - move all the other IDT variables as well, suggested by HPA
+> v3:
+>  - merge 32-bit and 64-bit idt_table definition
+> v2:
+>  - 32-bit was already aligned
+> ---
+>  arch/x86/kernel/head_64.S    |   15 ---------------
+>  arch/x86/kernel/tracepoint.c |    6 ++----
+>  arch/x86/kernel/traps.c      |   12 ++++++------
+>  3 files changed, 8 insertions(+), 25 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+> index 5e4d8a8..e1aabdb 100644
+> --- a/arch/x86/kernel/head_64.S
+> +++ b/arch/x86/kernel/head_64.S
+> @@ -512,21 +512,6 @@ ENTRY(phys_base)
+>  
+>  #include "../../x86/xen/xen-head.S"
+>  	
+> -	.section .bss, "aw", @nobits
+> -	.align L1_CACHE_BYTES
+> -ENTRY(idt_table)
+> -	.skip IDT_ENTRIES * 16
+> -
+> -	.align L1_CACHE_BYTES
+> -ENTRY(debug_idt_table)
+> -	.skip IDT_ENTRIES * 16
+> -
+> -#ifdef CONFIG_TRACING
+> -	.align L1_CACHE_BYTES
+> -ENTRY(trace_idt_table)
+> -	.skip IDT_ENTRIES * 16
+> -#endif
+> -
+>  	__PAGE_ALIGNED_BSS
+>  NEXT_PAGE(empty_zero_page)
+>  	.skip PAGE_SIZE
+> diff --git a/arch/x86/kernel/tracepoint.c b/arch/x86/kernel/tracepoint.c
+> index 4e584a8..1c113db 100644
+> --- a/arch/x86/kernel/tracepoint.c
+> +++ b/arch/x86/kernel/tracepoint.c
+> @@ -12,10 +12,8 @@ atomic_t trace_idt_ctr = ATOMIC_INIT(0);
+>  struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
+>  				(unsigned long) trace_idt_table };
+>  
+> -#ifndef CONFIG_X86_64
+> -gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
+> -					= { { { { 0, 0 } } }, };
+> -#endif
+> +/* No need to be aligned, but done to keep all IDTs defined the same way. */
+> +gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
+>  
+>  static int trace_irq_vector_refcount;
+>  static DEFINE_MUTEX(irq_vector_mutex);
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index b0865e8..1b23a1c 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -63,19 +63,19 @@
+>  #include <asm/x86_init.h>
+>  #include <asm/pgalloc.h>
+>  #include <asm/proto.h>
+> +
+> +/* No need to be aligned, but done to keep all IDTs defined the same way. */
+> +gate_desc debug_idt_table[NR_VECTORS] __page_aligned_bss;
+>  #else
+>  #include <asm/processor-flags.h>
+>  #include <asm/setup.h>
+>  
+>  asmlinkage int system_call(void);
+> -
+> -/*
+> - * The IDT has to be page-aligned to simplify the Pentium
+> - * F0 0F bug workaround.
+> - */
+> -gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
+>  #endif
+>  
+> +/* Must be page-aligned because the real IDT is used in a fixmap. */
+> +gate_desc idt_table[NR_VECTORS] __page_aligned_bss;
+> +
+>  DECLARE_BITMAP(used_vectors, NR_VECTORS);
+>  EXPORT_SYMBOL_GPL(used_vectors);
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
+
 
