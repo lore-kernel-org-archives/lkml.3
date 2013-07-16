@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab3GPGcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 02:32:10 -0400
+	id S1752817Ab3GPGcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 02:32:32 -0400
 Received: from mga02.intel.com ([134.134.136.20]:21175 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab3GPGcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 02:32:07 -0400
+	id S1752161Ab3GPGcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 02:32:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,674,1367996400"; 
-   d="scan'208";a="365882710"
+   d="scan'208";a="365882695"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V6 06/12] perf tools: remove unnecessary callchain validation
-Date: Tue, 16 Jul 2013 09:38:12 +0300
-Message-Id: <1373956698-27540-7-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V6 05/12] perf tools: tidy up sample parsing overflow checking
+Date: Tue, 16 Jul 2013 09:38:11 +0300
+Message-Id: <1373956698-27540-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1373956698-27540-1-git-send-email-adrian.hunter@intel.com>
 References: <1373956698-27540-1-git-send-email-adrian.hunter@intel.com>
@@ -29,89 +29,203 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the sample parsing correctly checks data sizes
-there is no reason for it to be done again for callchains.
+The size of data retrieved from a sample event must be
+validated to ensure it does not go past the end of the
+event.  That was being done sporadically and without
+considering integer overflows.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/callchain.c |  8 --------
- tools/perf/util/callchain.h |  5 -----
- tools/perf/util/session.c   | 20 --------------------
- 3 files changed, 33 deletions(-)
+ tools/perf/util/evsel.c | 102 ++++++++++++++++++++++++++++++------------------
+ 1 file changed, 64 insertions(+), 38 deletions(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 42b6a63..024162a 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -20,14 +20,6 @@
- 
- __thread struct callchain_cursor callchain_cursor;
- 
--bool ip_callchain__valid(struct ip_callchain *chain,
--			 const union perf_event *event)
--{
--	unsigned int chain_size = event->header.size;
--	chain_size -= (unsigned long)&event->ip.__more_data - (unsigned long)event;
--	return chain->nr * sizeof(u64) <= chain_size;
--}
--
- #define chain_for_each_child(child, parent)	\
- 	list_for_each_entry(child, &parent->children, siblings)
- 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3ee9f67..988c1aa 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -103,11 +103,6 @@ int callchain_append(struct callchain_root *root,
- int callchain_merge(struct callchain_cursor *cursor,
- 		    struct callchain_root *dst, struct callchain_root *src);
- 
--struct ip_callchain;
--union perf_event;
--
--bool ip_callchain__valid(struct ip_callchain *chain,
--			 const union perf_event *event);
- /*
-  * Initialize a cursor before adding entries inside, but keep
-  * the previously allocated entries as a cache.
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 708c72b..1b07d7a 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -889,22 +889,6 @@ static int perf_session_deliver_event(struct perf_session *session,
- 	}
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 724b75a..20e2ed9 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1114,24 +1114,38 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+ 	return 0;
  }
  
--static int perf_session__preprocess_sample(struct perf_session *session,
--					   union perf_event *event, struct perf_sample *sample)
--{
--	if (event->header.type != PERF_RECORD_SAMPLE ||
--	    !sample->callchain)
--		return 0;
--
--	if (!ip_callchain__valid(sample->callchain, event)) {
--		pr_debug("call-chain problem with event, skipping it.\n");
--		++session->stats.nr_invalid_chains;
--		session->stats.total_invalid_chains += sample->period;
--		return -EINVAL;
--	}
--	return 0;
--}
--
- static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
- 					    struct perf_tool *tool, u64 file_offset)
+-static bool sample_overlap(const union perf_event *event,
+-			   const void *offset, u64 size)
++static inline bool overflow_one(const void *endp, const void *offset)
  {
-@@ -967,10 +951,6 @@ static int perf_session__process_event(struct perf_session *session,
- 	if (ret)
- 		return ret;
- 
--	/* Preprocess sample records - precheck callchains */
--	if (perf_session__preprocess_sample(session, event, &sample))
--		return 0;
+-	const void *base = event;
 -
- 	if (tool->ordered_samples) {
- 		ret = perf_session_queue_event(session, event, &sample,
- 					       file_offset);
+-	if (offset + size > base + event->header.size)
+-		return true;
++	return offset + sizeof(u64) > endp;
++}
+ 
+-	return false;
++static inline bool overflow(const void *endp, u16 max_size, const void *offset,
++			    u64 size)
++{
++	return size > max_size || offset + size > endp;
+ }
+ 
++#define OVERFLOW_CHECK_ONE(offset)				\
++	do {							\
++		if (overflow_one(endp, (offset)))		\
++			return -EFAULT;				\
++	} while (0)
++
++#define OVERFLOW_CHECK(offset, size)				\
++	do {							\
++		if (overflow(endp, max_size, (offset), (size)))	\
++			return -EFAULT;				\
++	} while (0)
++
+ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *data)
+ {
+ 	u64 type = evsel->attr.sample_type;
+-	u64 regs_user = evsel->attr.sample_regs_user;
+ 	bool swapped = evsel->needs_swap;
+ 	const u64 *array;
++	u16 max_size = event->header.size;
++	const void *endp = (void *)event + max_size;
++	u64 sz;
+ 
+ 	/*
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+@@ -1153,6 +1167,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	array = event->sample.array;
+ 
++	/*
++	 * sample_size is based on PERF_SAMPLE_MASK which includes up to
++	 * PERF_SAMPLE_PERIOD.  After that overflow_one() or overflow() must be
++	 * used to check the format does not go past the end of the event.
++	 */
+ 	if (evsel->sample_size + sizeof(event->header) > event->header.size)
+ 		return -EFAULT;
+ 
+@@ -1221,20 +1240,19 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_CALLCHAIN) {
+-		if (sample_overlap(event, array, sizeof(data->callchain->nr)))
+-			return -EFAULT;
+-
+-		data->callchain = (struct ip_callchain *)array;
++		const u64 max_callchain_nr = UINT64_MAX / sizeof(u64);
+ 
+-		if (sample_overlap(event, array, data->callchain->nr))
++		OVERFLOW_CHECK_ONE(array);
++		data->callchain = (struct ip_callchain *)array++;
++		if (data->callchain->nr > max_callchain_nr)
+ 			return -EFAULT;
+-
+-		array += 1 + data->callchain->nr;
++		sz = data->callchain->nr * sizeof(u64);
++		OVERFLOW_CHECK(array, sz);
++		array = (void *)array + sz;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_RAW) {
+-		const u64 *pdata;
+-
++		OVERFLOW_CHECK_ONE(array);
+ 		u.val64 = *array;
+ 		if (WARN_ONCE(swapped,
+ 			      "Endianness of raw data not corrected!\n")) {
+@@ -1243,65 +1261,73 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			u.val32[0] = bswap_32(u.val32[0]);
+ 			u.val32[1] = bswap_32(u.val32[1]);
+ 		}
+-
+-		if (sample_overlap(event, array, sizeof(u32)))
+-			return -EFAULT;
+-
+ 		data->raw_size = u.val32[0];
+-		pdata = (void *) array + sizeof(u32);
++		array = (void *)array + sizeof(u32);
+ 
+-		if (sample_overlap(event, pdata, data->raw_size))
+-			return -EFAULT;
+-
+-		data->raw_data = (void *) pdata;
+-
+-		array = (void *)array + data->raw_size + sizeof(u32);
++		OVERFLOW_CHECK(array, data->raw_size);
++		data->raw_data = (void *)array;
++		array = (void *)array + data->raw_size;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_BRANCH_STACK) {
+-		u64 sz;
++		const u64 max_branch_nr = UINT64_MAX /
++					  sizeof(struct branch_entry);
+ 
+-		data->branch_stack = (struct branch_stack *)array;
+-		array++; /* nr */
++		OVERFLOW_CHECK_ONE(array);
++		data->branch_stack = (struct branch_stack *)array++;
+ 
++		if (data->branch_stack->nr > max_branch_nr)
++			return -EFAULT;
+ 		sz = data->branch_stack->nr * sizeof(struct branch_entry);
+-		sz /= sizeof(u64);
+-		array += sz;
++		OVERFLOW_CHECK(array, sz);
++		array = (void *)array + sz;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_REGS_USER) {
++		u64 avail;
++
+ 		/* First u64 tells us if we have any regs in sample. */
+-		u64 avail = *array++;
++		OVERFLOW_CHECK_ONE(array);
++		avail = *array++;
+ 
+ 		if (avail) {
++			u64 regs_user = evsel->attr.sample_regs_user;
++
++			sz = hweight_long(regs_user) * sizeof(u64);
++			OVERFLOW_CHECK(array, sz);
+ 			data->user_regs.regs = (u64 *)array;
+-			array += hweight_long(regs_user);
++			array = (void *)array + sz;
+ 		}
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_STACK_USER) {
+-		u64 size = *array++;
++		OVERFLOW_CHECK_ONE(array);
++		sz = *array++;
+ 
+ 		data->user_stack.offset = ((char *)(array - 1)
+ 					  - (char *) event);
+ 
+-		if (!size) {
++		if (!sz) {
+ 			data->user_stack.size = 0;
+ 		} else {
++			OVERFLOW_CHECK(array, sz);
+ 			data->user_stack.data = (char *)array;
+-			array += size / sizeof(*array);
++			array = (void *)array + sz;
++			OVERFLOW_CHECK_ONE(array);
+ 			data->user_stack.size = *array++;
+ 		}
+ 	}
+ 
+ 	data->weight = 0;
+ 	if (type & PERF_SAMPLE_WEIGHT) {
++		OVERFLOW_CHECK_ONE(array);
+ 		data->weight = *array;
+ 		array++;
+ 	}
+ 
+ 	data->data_src = PERF_MEM_DATA_SRC_NONE;
+ 	if (type & PERF_SAMPLE_DATA_SRC) {
++		OVERFLOW_CHECK_ONE(array);
+ 		data->data_src = *array;
+ 		array++;
+ 	}
 -- 
 1.7.11.7
 
