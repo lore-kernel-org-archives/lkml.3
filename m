@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091Ab3GPWSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:18:53 -0400
-Received: from 1wt.eu ([62.212.114.60]:34775 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933295Ab3GPWSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:18:51 -0400
-Date: Wed, 17 Jul 2013 00:18:21 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Olivier Galibert <galibert@pobox.com>, David Lang <david@lang.hm>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
-Message-ID: <20130716221821.GB21611@1wt.eu>
-References: <20130715184642.GE15531@xanatos> <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home> <20130715223615.GI15531@xanatos> <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz> <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com> <20130716211235.GG4994@xanatos>
+	id S964832Ab3GPWTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:19:19 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:12494 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933747Ab3GPWTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 18:19:17 -0400
+Date: Tue, 16 Jul 2013 17:19:12 -0500
+From: scameron@beardog.cce.hp.com
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: James Bottomley <jbottomley@parallels.com>, Hannes Reinecke <hare@suse.de>,
+        Jens Axboe <axboe@kernel.dk>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        James Smart <James.Smart@Emulex.Com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kmo@daterainc.com" <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Message-ID: <20130716221912.GZ24437@beardog.cce.hp.com>
+References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com> <20130712010223.GA15673@kroah.com> <1373592815.7397.477.camel@haakon3.risingtidesystems.com> <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike> <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130716211235.GG4994@xanatos>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 02:12:35PM -0700, Sarah Sharp wrote:
-> I *hate* both direct personal insults and indirect personal insults.
-> Neither should be acceptable in our community.
+On Tue, Jul 16, 2013 at 02:07:29PM -0700, Nicholas A. Bellinger wrote:
+> On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
+> > On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
+> > > On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
+> > > > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
+> > > >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
+> > > >>> Drilling down the work items ahead of a real mainline push is high on
+> > > >>> priority list for discussion.
+> > > >>>
+> > > >>> The parties to be included in such a discussion are:
+> > > >>>
+> > > >>>   - Jens Axboe (blk-mq author)
+> > > >>>   - James Bottomley (scsi maintainer)
+> > > >>>   - Christoph Hellwig (scsi)
+> > > >>>   - Martin Petersen (scsi)
+> > > >>>   - Tejun Heo (block + libata)
+> > > >>>   - Hannes Reinecke (scsi error recovery)
+> > > >>>   - Kent Overstreet (block, per-cpu ida)
+> > > >>>   - Stephen Cameron (scsi-over-pcie driver)
+> > > >>>   - Andrew Vasquez (qla2xxx LLD)
+> > > >>>   - James Smart (lpfc LLD)
+> > > >>
+> > > >> Isn't this something that should have been discussed at the storage
+> > > >> mini-summit a few months ago?
+> > > > 
+> > > > The scsi-mq prototype, along with blk-mq (in it's current form) did not
+> > > > exist a few short months ago.  ;)
+> > > > 
+> > > >>  It seems very specific to one subsystem to be a kernel summit topic,
+> > > >> don't you think?
+> > > > 
+> > > > It's no more subsystem specific than half of the other proposals so far,
+> > > > and given it's reach across multiple subsystems (block, scsi, target),
+> > > > and the amount of off-list interest on the topic, I think it would make
+> > > > a good candidate for discussion.
+> > > > 
+> > > And it'll open up new approaches which previously were dismissed,
+> > > like re-implementing multipathing on top of scsi-mq, giving us the
+> > > single scsi device like other UNIX systems.
+> > > 
+> > > Also I do think there's quite some synergy to be had, as with blk-mq
+> > > we could nail each queue to a processor, which would eliminate the
+> > > need for locking.
+> > > Which could be useful for other subsystems, too.
+> > 
+> > Lets start with discussing this on the list, please, and then see where
+> > we go from there ...
+> > 
 > 
-> As I stated in an email to Rusty, what I'm objecting to here is not
-> kernel developers criticizing code.  I'm objecting to personal attacks,
-> and developers directing personal verbal abuse towards each other.  This
-> include all developers, not just Linus.
+> Yes, the discussion is beginning to make it's way to the list.  I've
+> mostly been waiting for blk-mq to get a wider review before taking the
+> early scsi-mq prototype driver to a larger public audience.
+> 
+> Primarily, I'm now reaching out to the people most effected by existing
+> scsi_request_fn() based performance limitations.  Most of them have
+> abandoned existing scsi_request_fn() based logic in favor of raw block
+> make_request() based drivers, and are now estimating the amount of
+> effort to move to an scsi-mq based approach.
+> 
+> Regardless, as the prototype progresses over the next months, having a
+> face-to-face discussion with the key parties in the room would be very
+> helpful given the large amount of effort involved to actually make this
+> type of generational shift in SCSI actually happen.
 
-Well, there are people like me who don't mind getting personally
-insulted but who are really pained when their work is criticized.
+I'd be very interested in attending this, if invited.
 
-You'd rather tell me I'm a fucking moron than all what I carefully
-designed, wrote and tested is pure crap. Probably that part of the
-reason is that I'm as I am and I'm not really responsible for this,
-so I don't care. Call me ugly if you want, why should I bother ? But
-if you tell me I did some crap, it's entirely my fault and that hurts
-a lot more.
+-- steve
 
-So you want criticism to change focus for good, but it will not
-necessarily achieve the result you're expecting. Maybe we can lose
-more talented people by telling them their work is pure crap because
-we did not understand it than telling them they're stupid and let
-them argument their choices. At least I don't claim to know which
-one is better, all I can say is that what we have right now works
-well enough in my opinion.
-
-Best regards,
-Willy
 
