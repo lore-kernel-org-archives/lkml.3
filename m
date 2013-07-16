@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3GPIYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 04:24:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59961 "EHLO mga03.intel.com"
+	id S1753990Ab3GPIZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 04:25:07 -0400
+Received: from ozlabs.org ([203.10.76.45]:54393 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753766Ab3GPIYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 04:24:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,676,1367996400"; 
-   d="scan'208";a="268875846"
-From: shuox.liu@intel.com
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: bhelgaas@google.com, rjw@sisk.pl, lenb@kernel.org,
-        yanmin_zhang@linux.intel.com
-Subject: [PATCH] pnp: avoid inaccurate resource name
-Date: Tue, 16 Jul 2013 16:23:44 +0800
-Message-Id: <1373963024-5237-1-git-send-email-shuox.liu@intel.com>
-X-Mailer: git-send-email 1.8.3
+	id S1753704Ab3GPIY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 04:24:59 -0400
+Date: Tue, 16 Jul 2013 18:00:26 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH] mm/hugetlb: per-vma instantiation mutexes
+Message-ID: <20130716080026.GA8925@voom.fritz.box>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+ <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+ <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+ <20130715072432.GA28053@voom.fritz.box>
+ <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+ <1373933551.4622.12.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
+Content-Disposition: inline
+In-Reply-To: <1373933551.4622.12.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu ShuoX <shuox.liu@intel.com>
 
-Set temporary variable as 0 to avoid garbage string output from
-/proc/iomem after register resources, and reset to pnp dev name.
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
----
- drivers/pnp/pnpacpi/rsparser.c | 2 +-
- drivers/pnp/resource.c         | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+On Mon, Jul 15, 2013 at 05:12:31PM -0700, Davidlohr Bueso wrote:
+> On Mon, 2013-07-15 at 16:08 -0700, Andrew Morton wrote:
+> > On Mon, 15 Jul 2013 17:24:32 +1000 David Gibson <david@gibson.dropbear.=
+id.au> wrote:
+> >=20
+> > > I have previously proposed a correct method of improving scalability,
+> > > although it doesn't eliminate the lock.  That's to use a set of hashed
+> > > mutexes.
+> >=20
+> > Yep - hashing the mutexes is an obvious and nicely localized way of
+> > improving this.  It's a tweak, not a design change.
+> >=20
+> > The changelog should describe the choice of the hash key with great
+> > precision, please.  It's important and is the first thing which
+> > reviewers and readers will zoom in on.
 
-diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
-index 9847ab1..167f3d0 100644
---- a/drivers/pnp/pnpacpi/rsparser.c
-+++ b/drivers/pnp/pnpacpi/rsparser.c
-@@ -180,7 +180,7 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
- 	struct pnp_dev *dev = data;
- 	struct acpi_resource_dma *dma;
- 	struct acpi_resource_vendor_typed *vendor_typed;
--	struct resource r;
-+	struct resource r = {0};
- 	int i, flags;
- 
- 	if (acpi_dev_resource_memory(res, &r)
-diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-index 3e6db1c..d95e101 100644
---- a/drivers/pnp/resource.c
-+++ b/drivers/pnp/resource.c
-@@ -515,6 +515,7 @@ struct pnp_resource *pnp_add_resource(struct pnp_dev *dev,
- 	}
- 
- 	pnp_res->res = *res;
-+	pnp_res->res.name = dev->name;
- 	dev_dbg(&dev->dev, "%pR\n", res);
- 	return pnp_res;
- }
--- 
-1.8.3
+Yeah, that is important.
 
+I no longer have much interest in the result of this patch, so I'll
+leave it to others to do the forward port and cleanup.
+
+But I will point out the gotcha here is that the hash key needs to be
+based on (address_space & file offset) for MAP_SHARED, but (mm &
+address) for MAP_PRIVATE.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--gKMricLos+KVdGMg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iEYEARECAAYFAlHk/ZoACgkQaILKxv3ab8ZXcgCcDZjdB4LY0XfQKHhc02bgJ9kH
+JQ4AniHdXZ9WUY/R0Jb4gLiJmdFzAAX+
+=Unly
+-----END PGP SIGNATURE-----
+
+--gKMricLos+KVdGMg--
