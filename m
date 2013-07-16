@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab3GPJQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:16:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52143 "EHLO mail.skyhub.de"
+	id S1754107Ab3GPJXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:23:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54440 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705Ab3GPJQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:16:52 -0400
-Date: Tue, 16 Jul 2013 11:05:46 +0200
+	id S1753687Ab3GPJXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 05:23:09 -0400
+Date: Tue, 16 Jul 2013 11:22:42 +0200
 From: Borislav Petkov <bp@alien8.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
         Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
         linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
@@ -23,39 +23,46 @@ Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
         Chanho Min <chanho.min@lge.com>
 Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
  streaming format
-Message-ID: <20130716090546.GB4402@pd.tnic>
+Message-ID: <20130716092242.GD4402@pd.tnic>
 References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <20130716004727.b60b2c96.akpm@linux-foundation.org>
- <20130716005611.e4ccab02.akpm@linux-foundation.org>
- <201307161008.07643.yann.morin.1998@free.fr>
  <20130716012756.31936d8d.akpm@linux-foundation.org>
+ <20130716090546.GB4402@pd.tnic>
+ <201307161112.17901.yann.morin.1998@free.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130716012756.31936d8d.akpm@linux-foundation.org>
+In-Reply-To: <201307161112.17901.yann.morin.1998@free.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 01:27:56AM -0700, Andrew Morton wrote:
-> What I'm angling at is, rather than a single global front-end script,
-> can we embed the scripts in some fashion within the various Kconfig
-> files?  Say,
+On Tue, Jul 16, 2013 at 11:12:17AM +0200, Yann E. MORIN wrote:
+> The goal is to avoid generating a non-buildable kernel in the first place.
+
+I know, that's why I'm proposing to fail the build with the script run
+as one of the first things by make.
+
+> > I.e., those steps:
+> > 1. make <whatever>config
+> > 2. make => A prereq. target runs the shell script.
 > 
-> 	script ./some-script.sh
-> 
-> and the config system will only evaluate that command if it is working
-> on that Kconfig file.  Obviously that requires a multiple-pass thing.
+> This is too late, since this will bail out, and will give a false-positive
+> failure.
 
-What's wrong with simply grepping the .config we've just created for
-*enabled* symbols which require userspace support, check for the
-presence of said support and bail out if none?
+Huh? This will tell you: "you've selected X, but I don't have toolX
+needed for the build".
 
-I.e., those steps:
+You install the tool and run make again. Checks pass, the build
+continues.
 
-1. make <whatever>config
-2. make => A prereq. target runs the shell script.
+> While if we were to check for _known_ needed tools before calling into
+> Kconfig,
+
+How would you do that? How do you know what the user is going to select
+*before* she even selects it?
+
+You need to have a prepared .config to act upon.
 
 -- 
 Regards/Gruss,
