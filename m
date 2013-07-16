@@ -1,61 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab3GPPKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:10:09 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:52587 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932619Ab3GPPKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:10:06 -0400
-Date: Tue, 16 Jul 2013 08:09:40 -0700
-From: Kees Cook <kees@outflux.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130716150940.GP17379@outflux.net>
-References: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
- <20130715174659.GC15531@xanatos>
- <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
- <20130715180403.GD15531@xanatos>
- <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CAMuHMdUVBJh1KoV==jq2y1TTe3-QtPzAqfTcydm0xtHJosuA_A@mail.gmail.com>
+	id S932944Ab3GPPKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:10:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40004 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932546Ab3GPPKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 11:10:14 -0400
+Date: Tue, 16 Jul 2013 17:09:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
+Message-ID: <20130716150907.GL23818@dyad.programming.kicks-ass.net>
+References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
+ <1373548341-24119-10-git-send-email-adrian.hunter@intel.com>
+ <20130712095600.GT25631@dyad.programming.kicks-ass.net>
+ <51DFFCE1.1070203@intel.com>
+ <20130712145515.GI17211@twins.programming.kicks-ass.net>
+ <51E3932C.5000905@intel.com>
+ <51E4ECFB.6000104@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdUVBJh1KoV==jq2y1TTe3-QtPzAqfTcydm0xtHJosuA_A@mail.gmail.com>
-Organization: Outflux
-X-HELO: www.outflux.net
+In-Reply-To: <51E4ECFB.6000104@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 04:30:45PM +0200, Geert Uytterhoeven wrote:
-> On Mon, Jul 15, 2013 at 10:41 PM, Sarah Sharp
-> <sarah.a.sharp@linux.intel.com> wrote:
-> > I should not have to ask for professional behavior on the mailing lists.
-> > Professional behavior should be the default.
-> 
-> So, what does "professional" mean? A professional is paid for his work, an
-> amateur isn't. But this doesn't say anything about code quality, maintainer
-> responsiveness, etc.
-> Does it imply behavior that (hopefully) keeps getting you paid?
+On Tue, Jul 16, 2013 at 09:49:31AM +0300, Adrian Hunter wrote:
 
-I think we're getting hung up on this specific phrase. I've interpreted
-this issue with lkml communication as a need to avoid bullying.  I think
-"no bullying", while still up for heavy interpretation, is better to
-focus on than "being professional".
+> If you want the ID at the first position in the ID sample, it is do-able.
+> It means perf tools will have to be changed to calculate the variable start
+> position of the ID sample, and then parse the ID sample forwards from there.
+> Please advise.
 
--Kees
+Oh urgh I see.. how about I merge something like the below first?
 
--- 
-Kees Cook                                            @outflux.net
+Re-reading your patch; you add something to struct sample_id; which means that
+events which 'forget' to set perf_event_attr::sample_id_all while setting
+PERF_SAMPLE_IDENTIFIER are 'funny'. Should we refuse them?
+
+
+---
+Subject: perf: Update perf_event_type documentation
+
+Due to a discussion with Adrian I had a good look at the perf_event_type record
+layout and found the documentation to be somewhat unclear.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/uapi/linux/perf_event.h | 21 +++++++++++++++++++--
+ kernel/events/core.c            | 31 ++++++++++++++++---------------
+ 2 files changed, 35 insertions(+), 17 deletions(-)
+
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 0b1df41..335016c 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -478,6 +478,16 @@ enum perf_event_type {
+ 	 * file will be supported by older perf tools, with these new optional
+ 	 * fields being ignored.
+ 	 *
++	 * struct sample_id {
++	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
++	 * 	{ u64			time;     } && PERF_SAMPLE_TIME
++	 * 	{ u64			id;       } && PERF_SAMPLE_ID
++	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
++	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
++	 * } && perf_event_attr::sample_id_all
++	 */
++
++	/*
+ 	 * The MMAP events record the PROT_EXEC mappings so that we can
+ 	 * correlate userspace IPs to code. They have the following structure:
+ 	 *
+@@ -488,7 +498,8 @@ enum perf_event_type {
+ 	 *	u64				addr;
+ 	 *	u64				len;
+ 	 *	u64				pgoff;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_MMAP			= 1,
+@@ -498,6 +509,7 @@ enum perf_event_type {
+ 	 *	struct perf_event_header	header;
+ 	 *	u64				id;
+ 	 *	u64				lost;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_LOST			= 2,
+@@ -508,6 +520,7 @@ enum perf_event_type {
+ 	 *
+ 	 *	u32				pid, tid;
+ 	 *	char				comm[];
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_COMM			= 3,
+@@ -518,6 +531,7 @@ enum perf_event_type {
+ 	 *	u32				pid, ppid;
+ 	 *	u32				tid, ptid;
+ 	 *	u64				time;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_EXIT			= 4,
+@@ -528,6 +542,7 @@ enum perf_event_type {
+ 	 *	u64				time;
+ 	 *	u64				id;
+ 	 *	u64				stream_id;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_THROTTLE			= 5,
+@@ -539,6 +554,7 @@ enum perf_event_type {
+ 	 *	u32				pid, ppid;
+ 	 *	u32				tid, ptid;
+ 	 *	u64				time;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_FORK			= 7,
+@@ -549,6 +565,7 @@ enum perf_event_type {
+ 	 *	u32				pid, tid;
+ 	 *
+ 	 *	struct read_format		values;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_READ			= 8,
+@@ -596,7 +613,7 @@ enum perf_event_type {
+ 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
+ 	 *
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+-	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
++	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 708ab70..c9ef899 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4462,20 +4462,6 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		}
+ 	}
+ 
+-	if (!event->attr.watermark) {
+-		int wakeup_events = event->attr.wakeup_events;
+-
+-		if (wakeup_events) {
+-			struct ring_buffer *rb = handle->rb;
+-			int events = local_inc_return(&rb->events);
+-
+-			if (events >= wakeup_events) {
+-				local_sub(wakeup_events, &rb->events);
+-				local_inc(&rb->wakeup);
+-			}
+-		}
+-	}
+-
+ 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
+ 		if (data->br_stack) {
+ 			size_t size;
+@@ -4511,16 +4497,31 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		}
+ 	}
+ 
+-	if (sample_type & PERF_SAMPLE_STACK_USER)
++	if (sample_type & PERF_SAMPLE_STACK_USER) {
+ 		perf_output_sample_ustack(handle,
+ 					  data->stack_user_size,
+ 					  data->regs_user.regs);
++	}
+ 
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		perf_output_put(handle, data->weight);
+ 
+ 	if (sample_type & PERF_SAMPLE_DATA_SRC)
+ 		perf_output_put(handle, data->data_src.val);
++
++	if (!event->attr.watermark) {
++		int wakeup_events = event->attr.wakeup_events;
++
++		if (wakeup_events) {
++			struct ring_buffer *rb = handle->rb;
++			int events = local_inc_return(&rb->events);
++
++			if (events >= wakeup_events) {
++				local_sub(wakeup_events, &rb->events);
++				local_inc(&rb->wakeup);
++			}
++		}
++	}
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+
