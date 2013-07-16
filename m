@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab3GPPz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:55:58 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:61314 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441Ab3GPPzp (ORCPT
+	id S933334Ab3GPP6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:58:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43121 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932441Ab3GPP6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:55:45 -0400
-Message-ID: <51E56CFD.9050508@linaro.org>
-Date: Tue, 16 Jul 2013 17:55:41 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 16 Jul 2013 11:58:11 -0400
+Date: Tue, 16 Jul 2013 16:57:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, arnd@arndb.de
+Message-ID: <20130716155740.GO22506@sirena.org.uk>
+References: <1373550711-18828-1-git-send-email-jonas.jensen@gmail.com>
+ <1373978485-17496-1-git-send-email-jonas.jensen@gmail.com>
+ <20130716131332.GL22506@sirena.org.uk>
+ <CACmBeS3jU2csACZCqXfRvCYAEHaK7S3AcJ++Yd=L-mgfeqg68A@mail.gmail.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [GIT PULL] clockevents/clocksource: Add Marvell Orion SoC timer
-References: <51B8D310.4050404@linaro.org> <51D9548B.9040907@gmail.com> <alpine.DEB.2.02.1307071508030.32106@ionos.tec.linutronix.de> <20130707144645.GA11908@titan.lakedaemon.net> <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de> <20130707235819.GB11908@titan.lakedaemon.net> <alpine.DEB.2.02.1307081041290.32106@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307081041290.32106@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="djJN5oi3zFpblwUd"
+Content-Disposition: inline
+In-Reply-To: <CACmBeS3jU2csACZCqXfRvCYAEHaK7S3AcJ++Yd=L-mgfeqg68A@mail.gmail.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] rtc: Add MOXA ART RTC driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 10:45 AM, Thomas Gleixner wrote:
-> On Sun, 7 Jul 2013, Jason Cooper wrote:
->> On Sun, Jul 07, 2013 at 05:30:31PM +0200, Thomas Gleixner wrote:
->> I don't mind delaying half of a series so the drivers/ portion can land
->> in mainline, and the rest can land in the next cycle.  But when things
->> don't go according to that plan, I'd like a little consideration /
->> flexibility about solving the problem.  Especially considering I'm
->> *trying* to do the right thing by pushing to appropriate maintainers
->> first.
->>
->> Of course, this is a moot point since, as you clarified above, this
->> dependency doesn't have the hazards typically associated with
->> out-of-tree dependencies.
-> 
-> There is a very simple procedure for stuff like this.
-> 
-> Series has parts which go through tree A and B and another larger part
-> for tree C which depends on the A and B parts.
-> 
-> So ask the maintainers of A and B to apply this to separate branches,
-> which are based on some commit in Linus tree. These branches can be
-> pulled into C and C can apply the depending stuff on top.
-> 
-> Now the maintainers of A and B merge these branches into their main
-> devel branch, can do further fixups and stuff on top. And the whole
-> thing just works without glitches during the merge window.
-> 
-> We do this all the time.
 
-Ok, I was about to send to both of you a PR with a common ancestor [1]
-for this patch but finally this patch has been taken for timers/urgent.
+--djJN5oi3zFpblwUd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't have to send the PR, right ?
+On Tue, Jul 16, 2013 at 04:04:07PM +0200, Jonas Jensen wrote:
+> On 16 July 2013 15:13, Mark Brown <broonie@kernel.org> wrote:
+> > Since you're now using OF you should also be including a binding
+> > document.
 
-timers/urgent will be merged into timers/core, correct ?
+> The binding document already exist in set of patches adding MOXA ART
+> SoC support ( I intend to mail out v4 once I know how to proceed ):
 
-Thanks
-  -- Daniel
+If that's the case then you need to point people at the binding document
+when posting the driver but...
 
-[1]
-https://git.linaro.org/gitweb?p=people/dlezcano/clockevents.git;a=shortlog;h=refs/heads/timers/mvebu-deps-3.12
+> Or should it be moved here to a new v4 patch?
 
+...it's more normal to push the binding along with the driver.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+--djJN5oi3zFpblwUd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR5W1xAAoJELSic+t+oim9pvkQAJm621nhvm5iIrKowo4FPlg3
+FFznrvcrC0MIgwPJxk93aCWgofon90LnUopQ63Es/4idW8LYDUK1NiarxSVdFB1z
+gDM9p95uxibpAkcWqjQKjqKbPpNgFU20MAxovH6ro0LY3jdQnajPVyHTyIZZ5tUs
+HTfLiUrZzTqrx/qUeYL0T+9afJ6Ogz5pCqhYEQvDJIv9ODMyEDEVqtTh/IlVfZJJ
+SA3Ugyw2/LNxqRNnCv4fsLu503WFy6KceZXqd6HOUH8bnzbTrUGhcFBNA5nLLx6a
+KkNmaEvAtqDTKWXuUNAnmB4IPnIeGzpbsicP+xX3MpyiLCC1bs242L6eEAcGm6G/
+f+qZgCF6ENO+AQ5sOwnjhVrs83OZ3RCiuvFFSn92WGUWRg4YDiAHjQRKXOIzTdPB
+gNWgbVZ59UttGZtMAu4grnmMQes9FyTfag77FBj0arSQKgEC3XRvOyhCPvsUqFAT
+CASg0L04nTaXa4pYhFHjWf1+2ChydnvUI2Bx0xlgIghdrZGsLTE0jEG4vslMLHJR
+m/NBqteMVHTgu8gn4fDzcf+fSd0fWAiBGOVBE+6yVhSF16H5J5NQGG1R7pjU4D4W
++31Ao73XTm/gBUwLozOLWnOuGlFdeRrGgzNyR8FC8mXj+w+KTHWmEackzZwH2aiS
+8u7BghvQiLZmWIyhuS4O
+=4s5g
+-----END PGP SIGNATURE-----
+
+--djJN5oi3zFpblwUd--
