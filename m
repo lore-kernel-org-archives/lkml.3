@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab3GPOWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:22:14 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:48375 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab3GPOWJ (ORCPT
+	id S932739Ab3GPOWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:22:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4636 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754734Ab3GPOWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:22:09 -0400
-Message-ID: <51E55710.8060907@cogentembedded.com>
-Date: Tue, 16 Jul 2013 18:22:08 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-CC: tony@atomide.com, benoit.cousson@linaro.org, rnayak@ti.com,
-        peter.ujfalusi@ti.com, kishon@ti.com, jic23@cam.ac.uk,
-        grant.likely@linaro.org, rob.herring@calxeda.com, lars@metafoo.de,
-        sameo@linux.intel.com, ch.naveen@samsung.com, poeschel@lemonage.de,
-        milo.kim@ti.com, balajitk@ti.com, gg@slimlogic.co.uk,
-        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/2] ARM: dts: twl: Add GPADC data to device tree
-References: <1373974500-23609-1-git-send-email-oleksandr.kozaruk@ti.com>
-In-Reply-To: <1373974500-23609-1-git-send-email-oleksandr.kozaruk@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 16 Jul 2013 10:22:17 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=eRJnZ1Cvc-AA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JXBETSoqokoA:10 a=8Ikjl5a-bAzbjcH_nWMA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373984532.17876.276.camel@gandalf.local.home>
+Subject: [PATCH] nohz: Do not warn about unstable tsc unless user uses
+ nohz_full
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 16 Jul 2013 10:22:12 -0400
+In-Reply-To: <20130716010538.GD13562@somewhere>
+References: <20130715170859.GA25570@redhat.com>
+	 <20130715171800.GD6442@somewhere> <20130715172423.GA27745@redhat.com>
+	 <20130715173848.GA1066@redhat.com>
+	 <1373914182.17876.165.camel@gandalf.local.home>
+	 <20130716010538.GD13562@somewhere>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+If the user enables CONFIG_NO_HZ_FULL and runs the kernel on a machine
+with an unstable TSC, it will produce a WARN_ON dump as well as taint
+the kernel. This is a bit extreme for a kernel that just enables a
+feature but doesn't use it.
 
-On 07/16/2013 03:34 PM, Oleksandr Kozaruk wrote:
+The warning should only happen if the user tries to use the feature by
+either adding nohz_full to the kernel command line, or by enabling
+CONFIG_NO_HZ_FULL_ALL that makes nohz used on all CPUs at boot up. Note,
+this second feature should not (yet) be used by distros or anyone that
+doesn't care if NO_HZ is used or not.
 
-> GPADC is the general purpose ADC present on twl6030.
-> The dt data is interrupt used to trigger end of ADC
-> conversion.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-> ---
->   arch/arm/boot/dts/twl6030.dtsi | 6 ++++++
->   1 file changed, 6 insertions(+)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 6960172..6f47049 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -182,7 +182,8 @@ static bool can_stop_full_tick(void)
+ 		 * Don't allow the user to think they can get
+ 		 * full NO_HZ with this machine.
+ 		 */
+-		WARN_ONCE(1, "NO_HZ FULL will not work with unstable sched clock");
++		WARN_ONCE(have_nohz_full_mask,
++			  "NO_HZ FULL will not work with unstable sched clock");
+ 		return false;
+ 	}
+ #endif
 
-> diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
-> index 2e3bd31..434842c 100644
-> --- a/arch/arm/boot/dts/twl6030.dtsi
-> +++ b/arch/arm/boot/dts/twl6030.dtsi
-> @@ -103,4 +103,10 @@
->   		compatible = "ti,twl6030-pwmled";
->   		#pwm-cells = <2>;
->   	};
-> +
-> +	gpadc: twl6030_gpadc {
-> +		compatible = "ti,twl6030_gpadc";
-> +		interrupts = <3>;
-> +		#io-channel-cells = <1>;
-> +	};
-
-    ePAPR [1] says: "The name of a node should be somewhat generic, 
-reflecting the function of the device and not its precise programming 
-model."
-
-[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
-
-WBR, Sergei
 
