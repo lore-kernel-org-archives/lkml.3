@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3GPTCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:02:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60609 "EHLO mx1.redhat.com"
+	id S933755Ab3GPTCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:02:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55688 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754956Ab3GPTCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:02:30 -0400
-Date: Tue, 16 Jul 2013 20:57:23 +0200
+	id S933248Ab3GPTCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 15:02:33 -0400
+Date: Tue, 16 Jul 2013 20:57:26 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -18,8 +18,8 @@ Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>, Jiri Olsa <jolsa@redhat.com>,
         Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/4] tracing: Turn "id"->i_private into call->event.type
-Message-ID: <20130716185723.GA21193@redhat.com>
+Subject: [RFC PATCH 3/4] tracing: Kill tracing_open/release_generic_file
+Message-ID: <20130716185726.GA21200@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,80 +29,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ftrace_event_id_fops and event_id_read() is overcomplicated.
+Kill tracing_open_generic_file() and tracing_release_generic_file(),
+they are racy anyway.
 
-1. Change event_create_dir() to pass "data = call->event.type"
-   to debugfs_create_file().
+Instead, change event_enable_read() and event_enable_write() to rely
+on event_mutex and file_inode(filp)->i_private != NULL check.
 
-   This means that ftrace_event_id_fops doesn't need .open()
-   and event_id_read() can simply print (int)i_private
-
-2. event_id_read() has no reason to kmalloc "struct trace_seq"
-   (more than PAGE_SIZE!), it can use a small buffer.
-
-Note: "if (*ppos) return 0" looks strange and unneeded,
-simple_read_from_buffer(ppos) should handle this case corrrectly.
+trace_array_get() goes away. NOTE! this is actually wrong until we
+change instance_delete() path to nullify ->i_private.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace_events.c |   26 +++++++++-----------------
- 1 files changed, 9 insertions(+), 17 deletions(-)
+ kernel/trace/trace_events.c |   62 ++++++++++++++-----------------------------
+ 1 files changed, 20 insertions(+), 42 deletions(-)
 
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index cbd1a57..cefbe85 100644
+index cefbe85..6401b51 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -962,24 +962,17 @@ static int trace_format_open(struct inode *inode, struct file *file)
- static ssize_t
- event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
- {
--	struct ftrace_event_call *call = filp->private_data;
--	struct trace_seq *s;
--	int r;
-+	int id = (long)ACCESS_ONCE(file_inode(filp)->i_private);
-+	char buf[32];
-+	int len;
- 
-+	if (!id)
-+		return -ENODEV;
- 	if (*ppos)
- 		return 0;
- 
--	s = kmalloc(sizeof(*s), GFP_KERNEL);
--	if (!s)
--		return -ENOMEM;
--
--	trace_seq_init(s);
--	trace_seq_printf(s, "%d\n", call->event.type);
--
--	r = simple_read_from_buffer(ubuf, cnt, ppos,
--				    s->buffer, s->len);
--	kfree(s);
--	return r;
-+	len = sprintf(buf, "%d\n", id);
-+	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
+@@ -410,35 +410,6 @@ static void put_system(struct ftrace_subsystem_dir *dir)
  }
  
- static ssize_t
-@@ -1264,7 +1257,6 @@ static const struct file_operations ftrace_event_format_fops = {
+ /*
+- * Open and update trace_array ref count.
+- * Must have the current trace_array passed to it.
+- */
+-static int tracing_open_generic_file(struct inode *inode, struct file *filp)
+-{
+-	struct ftrace_event_file *file = inode->i_private;
+-	struct trace_array *tr = file->tr;
+-	int ret;
+-
+-	if (trace_array_get(tr) < 0)
+-		return -ENODEV;
+-
+-	ret = tracing_open_generic(inode, filp);
+-	if (ret < 0)
+-		trace_array_put(tr);
+-	return ret;
+-}
+-
+-static int tracing_release_generic_file(struct inode *inode, struct file *filp)
+-{
+-	struct ftrace_event_file *file = inode->i_private;
+-	struct trace_array *tr = file->tr;
+-
+-	trace_array_put(tr);
+-
+-	return 0;
+-}
+-
+-/*
+  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
+  */
+ static int
+@@ -679,15 +650,25 @@ static ssize_t
+ event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 		  loff_t *ppos)
+ {
+-	struct ftrace_event_file *file = filp->private_data;
++	struct ftrace_event_file *file;
++	unsigned long flags;
+ 	char buf[4] = "0";
+ 
+-	if (file->flags & FTRACE_EVENT_FL_ENABLED &&
+-	    !(file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
++	mutex_lock(&event_mutex);
++	file = file_inode(filp)->i_private;
++	if (likely(file))
++		flags = file->flags;
++	mutex_unlock(&event_mutex);
++
++	if (!file)
++		return -ENODEV;
++
++	if (flags & FTRACE_EVENT_FL_ENABLED &&
++	    !(flags & FTRACE_EVENT_FL_SOFT_DISABLED))
+ 		strcpy(buf, "1");
+ 
+-	if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
+-	    file->flags & FTRACE_EVENT_FL_SOFT_MODE)
++	if (flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
++	    flags & FTRACE_EVENT_FL_SOFT_MODE)
+ 		strcat(buf, "*");
+ 
+ 	strcat(buf, "\n");
+@@ -699,13 +680,10 @@ static ssize_t
+ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		   loff_t *ppos)
+ {
+-	struct ftrace_event_file *file = filp->private_data;
++	struct ftrace_event_file *file;
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (!file)
+-		return -EINVAL;
+-
+ 	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
+ 	if (ret)
+ 		return ret;
+@@ -717,8 +695,11 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 	switch (val) {
+ 	case 0:
+ 	case 1:
++		ret = -ENODEV;
+ 		mutex_lock(&event_mutex);
+-		ret = ftrace_event_enable_disable(file, val);
++		file = file_inode(filp)->i_private;
++		if (likely(file))
++			ret = ftrace_event_enable_disable(file, val);
+ 		mutex_unlock(&event_mutex);
+ 		break;
+ 
+@@ -727,7 +708,6 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 	}
+ 
+ 	*ppos += cnt;
+-
+ 	return ret ? ret : cnt;
+ }
+ 
+@@ -1242,10 +1222,8 @@ static const struct file_operations ftrace_set_event_fops = {
  };
  
- static const struct file_operations ftrace_event_id_fops = {
--	.open = tracing_open_generic,
- 	.read = event_id_read,
+ static const struct file_operations ftrace_enable_fops = {
+-	.open = tracing_open_generic_file,
+ 	.read = event_enable_read,
+ 	.write = event_enable_write,
+-	.release = tracing_release_generic_file,
  	.llseek = default_llseek,
  };
-@@ -1496,8 +1488,8 @@ event_create_dir(struct dentry *parent,
  
- #ifdef CONFIG_PERF_EVENTS
- 	if (call->event.type && call->class->reg)
--		trace_create_file("id", 0444, file->dir, call,
--		 		  id);
-+		trace_create_file("id", 0444, file->dir,
-+				  (void*)(long)call->event.type, id);
- #endif
- 
- 	/*
 -- 
 1.5.5.1
 
