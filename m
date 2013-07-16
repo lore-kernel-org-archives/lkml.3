@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816Ab3GPWzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:55:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3673 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933387Ab3GPWzE (ORCPT
+	id S933828Ab3GPWz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:55:59 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:57382 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933387Ab3GPWz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:55:04 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=p1-IFUXKkGwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kbqBV6VKySQA:10 a=5Slnt-whhjLsWEH0l10A:9 a=QEXdDO2ut3YA:10 a=N2XNceXfcXgA:10 a=yZ6U03pRXYsA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374015299.6458.76.camel@gandalf.local.home>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [
- 00/19] 3.10.1-stable review)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Date: Tue, 16 Jul 2013 18:54:59 -0400
-In-Reply-To: <20130716224357.GK4994@xanatos>
-References: <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
-	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	 <1373926109.17876.221.camel@gandalf.local.home>
-	 <20130715223615.GI15531@xanatos>
-	 <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-	 <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-	 <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org>
-	 <20130716224357.GK4994@xanatos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Jul 2013 18:55:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOULuOb3-gA36S=xhA_pwLT0vf9Bb973d3Qq40KfsnS15R_qWA@mail.gmail.com>
+References: <CAOULuOb3-gA36S=xhA_pwLT0vf9Bb973d3Qq40KfsnS15R_qWA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 16 Jul 2013 15:55:36 -0700
+Message-ID: <CALCETrUs9Udhv7KqL+Dy8UNnHd6Amyb1mYjkC8zniF=F-RNZgw@mail.gmail.com>
+Subject: Re: [PATCH] BGRT: Don't ioremap if image address is in System RAM
+ (was: Re: BGRT Pointer in System RAM)
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 15:43 -0700, Sarah Sharp wrote:
+On Tue, Jul 16, 2013 at 3:15 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+> On Mon, Jul 15, 2013 at 8:00 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+>> On Mon, Jul 15, 2013 at 7:56 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+>>> On Mon, Jul 15, 2013 at 7:04 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+>>>
+>>>> We do need to handle the case of a valid pointer into memory that e820
+>>>> calls system RAM, as well as the case of a valid pointer into memory
+>>>> reserved for the BIOS or similar, but not the case of an invalid
+>>>> pointer.
+>>>
+>>> Would that be as simple as
+>>>
+>>>                      page_is_ram(
+>>
+>> Damn shortcuts -
+>>                         virt_addr = phys_to_virt(image->base_address);
+>>                         if(page_is_ram(virt_to_page(virt_addr))) {
+>>                             //direct read from virt addr
+>>                         }
+>>
+>> Would that suffice for the System RAM case or some other MM trickery
+>> is involved?
+>
+> Ok, so I played around with it a bit and the following patch works
+> fine on my system. (I.E. image size is reasonable, cat
+> /sys/firmware/acpi/bgrt/image > img.bmp generates a valid,
+> non-distorted bitmap, which it did before too, btw as despite of the
+> ioremap WARN_ON the ioremap seems to succeed if !(is_ram &&
+> pfn_valid(pfn) && !PageReserved.)
+>
 
-> Yes, that's true.  Some kernel developers are better at moderating their
-> comments and tone towards individuals who are "sensitive".  Others
-> simply don't give a shit.  So we need to figure out how to meet
-> somewhere in the middle, in order to establish a baseline of civility.
+How reliable is this?  That is, is there any guarantee that nothing
+will have overwritten the image in memory before this code runs?
 
-I have to ask this because I'm thick, and don't really understand,
-but ...
-
-What problem exactly are we trying to solve here?
-
--- Steve
-
-
+--Andy
