@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933598Ab3GPRGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:06:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44249 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933446Ab3GPRGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:06:40 -0400
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Jens Axboe <jaxboe@fusionio.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
-Date: Tue, 16 Jul 2013 19:06:30 +0200
-Message-Id: <1373994390-5479-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
+	id S933609Ab3GPRG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:06:59 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:35491 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933446Ab3GPRG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 13:06:57 -0400
+Date: Tue, 16 Jul 2013 10:06:54 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alexander Kaltsas <alexkaltsas@gmail.com>,
+        rocko <rockorequin@hotmail.com>, JohnMB <johnmbryant@sky.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: fix long-standing SNB regression
+ in power consumption after resume
+Message-ID: <20130716100654.1185c031@jbarnes-desktop>
+In-Reply-To: <CALYGNiOtt7FUCTqcyBELoHYEVw_zqmA=bpmHy_nDkhXCduB9qg@mail.gmail.com>
+References: <20130714163009.22374.22100.stgit@zurg>
+	<CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
+	<51E2E65D.5050803@openvz.org>
+	<20130716063101.GK5784@phenom.ffwll.local>
+	<CALYGNiOtt7FUCTqcyBELoHYEVw_zqmA=bpmHy_nDkhXCduB9qg@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With users of radix_tree_preload() run from interrupt (CFQ is one such
-possible user), the following race can happen:
+On Tue, 16 Jul 2013 11:34:25 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+> I've tested that patch and it really works for me. If you want change
+> something for other hardware or
+> extend range where forcewake is held prease do it in a separate patch.
+> This will be good for bisecting new bugs in the future.
 
-radix_tree_preload()
-...
-radix_tree_insert()
-  radix_tree_node_alloc()
-    if (rtp->nr) {
-      ret = rtp->nodes[rtp->nr - 1];
-<interrupt>
-...
-radix_tree_preload()
-...
-radix_tree_insert()
-  radix_tree_node_alloc()
-    if (rtp->nr) {
-      ret = rtp->nodes[rtp->nr - 1];
+Thanks a ton for finding this Konstantin, it puts us on the right
+track.
 
-And we give out one radix tree node twice. That clearly results in radix
-tree corruption with different results (usually OOPS) depending on which
-two users of radix tree race.
+Can I ask you to test this patch?  The theory is that having RC6
+enabled messes with the initial programming sequence, so it's probably
+best to just shut it off at init until we're done, rather than trying
+to forcewake around everywhere we need it.
 
-Fix the problem by disabling interrupts when working with rtp variable.
-In-interrupt user can still deplete our preloaded nodes but at least we
-won't corrupt radix trees.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- lib/radix-tree.c | 19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
-
-  There are some questions regarding this patch:
-Do we really want to allow in-interrupt users of radix_tree_preload()?  CFQ
-could certainly do this in older kernels but that particular call site where I
-saw the bug hit isn't there anymore so I'm not sure this can really happen with
-recent kernels.
-
-Also it is actually harmful to do preloading if you are in interrupt context
-anyway. The disadvantage of disallowing radix_tree_preload() in interrupt is
-that we would need to tweak radix_tree_node_alloc() to somehow recognize
-whether the caller wants it to use preloaded nodes or not and that callers
-would have to get it right (although maybe some magic in radix_tree_preload()
-could handle that).
-
-Opinions?
-
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index e796429..6f1045d 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -209,18 +209,26 @@ radix_tree_node_alloc(struct radix_tree_root *root)
- 
- 	if (!(gfp_mask & __GFP_WAIT)) {
- 		struct radix_tree_preload *rtp;
-+		unsigned long flags;
- 
- 		/*
- 		 * Provided the caller has preloaded here, we will always
- 		 * succeed in getting a node here (and never reach
--		 * kmem_cache_alloc)
-+		 * kmem_cache_alloc)... unless we race with interrupt also
-+		 * consuming preloaded nodes.
- 		 */
- 		rtp = &__get_cpu_var(radix_tree_preloads);
-+		/*
-+		 * Disable interrupts to make sure radix_tree_node_alloc()
-+		 * called from interrupt cannot return the same node as we do.
-+		 */
-+		local_irq_save(flags);
- 		if (rtp->nr) {
- 			ret = rtp->nodes[rtp->nr - 1];
- 			rtp->nodes[rtp->nr - 1] = NULL;
- 			rtp->nr--;
- 		}
-+		local_irq_restore(flags);
- 	}
- 	if (ret == NULL)
- 		ret = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
-@@ -269,6 +277,7 @@ int radix_tree_preload(gfp_t gfp_mask)
- 	struct radix_tree_preload *rtp;
- 	struct radix_tree_node *node;
- 	int ret = -ENOMEM;
-+	unsigned long flags;
- 
- 	preempt_disable();
- 	rtp = &__get_cpu_var(radix_tree_preloads);
-@@ -278,11 +287,15 @@ int radix_tree_preload(gfp_t gfp_mask)
- 		if (node == NULL)
- 			goto out;
- 		preempt_disable();
-+		local_irq_save(flags);
- 		rtp = &__get_cpu_var(radix_tree_preloads);
--		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
-+		if (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
- 			rtp->nodes[rtp->nr++] = node;
--		else
-+			local_irq_restore(flags);
-+		} else {
-+			local_irq_restore(flags);
- 			kmem_cache_free(radix_tree_node_cachep, node);
-+		}
- 	}
- 	ret = 0;
- out:
+Thanks,
 -- 
-1.8.1.4
+Jesse Barnes, Intel Open Source Technology Center
 
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_d
+index 12ea1a9..9152cba 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9648,6 +9648,9 @@ static void i915_disable_vga(struct drm_device *dev)
+ 
+ void intel_modeset_init_hw(struct drm_device *dev)
+ {
++       /* BIOS often leaves RC6 enabled, but disable it for hw init */
++       intel_disable_gt_powersave(dev);
++
+        intel_init_power_well(dev);
+ 
+        intel_prepare_ddi(dev);
