@@ -1,122 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3GPJAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:00:34 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50837 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3GPJA0 (ORCPT
+	id S1754077Ab3GPJDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:03:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46232 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab3GPJDO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:00:26 -0400
-Message-ID: <51E50AD4.6040208@linux.vnet.ibm.com>
-Date: Tue, 16 Jul 2013 14:26:52 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 16 Jul 2013 05:03:14 -0400
+Message-ID: <51E50C59.50900@arm.com>
+Date: Tue, 16 Jul 2013 10:03:21 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
-        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
-        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com> <CAKohpom+WcTcefCZitgZQcSjTPsgXsa6VKQF5y6GJA31-rBm0w@mail.gmail.com> <51E3C950.90503@linux.vnet.ibm.com> <CAKohpo=tfd_CXDBkbE23=UdEF99ZK-17NM_cvpGJ_e9wXGzsZQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=tfd_CXDBkbE23=UdEF99ZK-17NM_cvpGJ_e9wXGzsZQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071608-4790-0000-0000-000009498CF4
+To: Rob Herring <robherring2@gmail.com>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
+Subject: Re: [RFC PATCH 02/11] ARM: DT/kernel: define ARM specific arch_of_get_cpu_node
+References: <1373883732-26303-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1373883732-26303-3-git-send-email-Sudeep.KarkadaNagesha@arm.com> <51E44943.7000600@gmail.com>
+In-Reply-To: <51E44943.7000600@gmail.com>
+X-OriginalArrivalTime: 16 Jul 2013 09:03:09.0388 (UTC) FILETIME=[4AECF8C0:01CE8203]
+X-MC-Unique: 113071610031102701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 11:45 AM, Viresh Kumar wrote:
-> On 15 July 2013 15:35, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Actually even I was wondering about this while writing the patch and
->> I even tested shutdown after multiple suspend/resume cycles, to verify that
->> the refcount is messed up. But surprisingly, things worked just fine.
+On 15/07/13 20:10, Rob Herring wrote:
+> On 07/15/2013 05:22 AM, Sudeep.KarkadaNagesha@arm.com wrote:
+>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 >>
->> Logically there should've been a refcount mismatch and things should have
->> failed, but everything worked fine during my tests. Apart from suspend/resume
->> and shutdown tests, I even tried mixing a few regular CPU hotplug operations
->> (echo 0/1 to sysfs online files), but nothing stood out.
+>> CPU subsystem now provides architecture specific hook to retrieve the
+>> of_node. Most of the cpu DT node parsing and initialisation is contained
+>> in devtree.c. It's better to contain all CPU device node parsing there.
 >>
->> Sorry, I forgot to document this in the patch. Either the patch is wrong
->> or something else is silently fixing this up. Not sure what is the exact
->> situation.
+>> arch_of_get_cpu_node is mainly used to assign cpu->of_node when CPUs get
+>> registered. This patch overrides the defination of the same. It can also
+>> act as the helper function in pre-SMP/early initialisation stages to
+>> retrieve CPU device node pointers in logical ordering.
+>>
+>> This mainly helps to avoid replication of the code doing CPU node parsing
+>> and physical(MPIDR) to logical mapping.
+>>
+>> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 > 
-> To understand it I actually applied your patches to get better view of the code.
-> (Haven't tested it though).. And found that your code is doing the right thing
-> and we shouldn't get a mismatch.. This is the sequence of events I can draw:
+> [snip]
 > 
-> - __cpu_add_dev() for first cpu. sets the refcount to 'x', where x are
-> the no. of
-> cpus in its clock domain.
-> - _cpu_add_dev() for other cpus: doesn't change anything in refcount
+>> +struct device_node * __init arch_of_get_cpu_node(int cpu)
+>> +{
+>> +	struct device_node *cpun, *cpus;
+>> +	const u32 *cell;
+>> +	u64 hwid;
+>> +	int ac;
+>> +
+>> +	cpus = of_find_node_by_path("/cpus");
+>> +	if (WARN(!cpus, "Missing cpus node, bailing out\n"))
+>> +		return NULL;
+>> +
+>> +	if (WARN_ON(of_property_read_u32(cpus, "#address-cells", &ac)))
+>> +		ac = of_n_addr_cells(cpus);
+>> +
+>> +	for_each_child_of_node(cpus, cpun) {
+>> +		if (of_node_cmp(cpun->type, "cpu"))
+>> +			continue;
+>> +		cell = of_get_property(cpun, "reg", NULL);
+>> +		if (WARN(!cell, "%s: missing reg property\n", cpun->full_name))
+>> +			continue;
+>> +
+>> +		hwid = of_read_number(cell, ac);
+>> +		if ((hwid & MPIDR_HWID_BITMASK) == cpu_logical_map(cpu))
 > 
-> - Suspend:
->  - cpu_remove_dev() for all cpus, due to frozen flag we don't touch the value
-> of count
-> - Resume:
->  - cpu_add_dev() for all cpus, due to frozen flag we don't touch the
-> value of count.
->
-
-Actually this one is tricky (I took a look again). So we have this code in the
-beginning of _cpufreq_add_dev():
-
-
-1008 #ifdef CONFIG_SMP
-1009         /* check whether a different CPU already registered this
-1010          * CPU because it is in the same boat. */
-1011         policy = cpufreq_cpu_get(cpu);
-1012         if (unlikely(policy)) {
-1013                 cpufreq_cpu_put(policy);
-1014                 return 0;
-1015         }
-
-The _get() is not controlled by the frozen flag, but it still doesn't take a
-refcount because of a subtle reason: per_cpu(cpufreq_cpu_data, cpu) was set to
-NULL in __cpufreq_remove_dev() and the memory was saved away in fallback storage.
-So, when __cpufreq_cpu_get() executes, it sees:
-
- 204         /* get the CPU */
- 205         data = per_cpu(cpufreq_cpu_data, cpu);
- 206 
- 207         if (!data)
- 208                 goto err_out_put_module;
-
-Thus, since data is NULL, cpufreq_cpu_get() won't take a refcount and will return
-silently.
-
-Further down in __cpufreq_add_dev(), we restore the original memory, using
-the frozen flag:
-
-1037         if (frozen)
-1038                 /* Restore the saved policy when doing light-weight init */
-1039                 policy = cpufreq_policy_restore(cpu);
-1040         else
-1041                 policy = cpufreq_policy_alloc();
-
-
-So that is how we manage to fool cpufreq_cpu_get() into not taking a fresh
-refcount while resuming :)
- 
-> And so things work as expected. That's why your code isn't breaking anything I
-> believe.
+> Most of this function is not ARM specific, so it would be nice if we
+> could shrink the arch specific part down to just this match. A default
+> match of reg == logical cpu number might be useful.
 > 
+I completely agree, in fact that was my initial idea too.
 
-Thanks a lot for the code inspection and your detailed analysis!
+But when I had a look at powerpc implementation of "of_get_cpu_node" in
+arch/powerpc/kernel/prom.c, it looked like PPC is using some
+compatibles(e.g. ibm,ppc-interrupt-server#s) which are not specified in
+ePAPR. I am not sure is that's allowed or not, if allowed then we can't
+have generic of_get_cpu_node with just arch specific hwid matching function.
 
-> But can no. of cpus change inbetween suspend/resume? Then count would be
-> tricky as we are using the same policy structure.
-> 
-
-No, number of CPUs won't change in between suspend/resume. Even if somebody
-tried that, that would be an eccentric case and we won't handle that.
-Besides, *many more* things will break than just cpufreq, if somebody actually
-tries that out!
+Let me know how would you prefer me to proceed on this.
 
 Regards,
-Srivatsa S. Bhat
+Sudeep
 
