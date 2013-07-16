@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab3GPAOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 20:14:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46775 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755079Ab3GPAOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 20:14:23 -0400
-Message-ID: <51E49036.5000901@zytor.com>
-Date: Mon, 15 Jul 2013 17:13:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-References: <1373916476.2748.69.camel@dabdike> <20130715201943.GA22131@roeck-us.net> <1373925868.24167.35.camel@shinybook.infradead.org> <20130715220730.GA23916@roeck-us.net> <51E479D0.4040304@zytor.com> <20130715232209.GB24650@roeck-us.net>
-In-Reply-To: <20130715232209.GB24650@roeck-us.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758506Ab3GPAQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 20:16:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59245 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755247Ab3GPAP6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 20:15:58 -0400
+Date: Tue, 16 Jul 2013 10:15:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Documentation: update references to v2.6.x in
+ development-process
+Message-Id: <20130716101543.b458d507331c4ac32fe6686e@canb.auug.org.au>
+In-Reply-To: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 04:22 PM, Guenter Roeck wrote:
-> 
-> I agree, _should_. But again, that is not the point I was trying to make.
-> The keyword is _active_ decision vs. passive acceptance of a stable tag.
-> 
-> If the stable tag is not added by the maintainer, it can always be added to
-> the stable queue after the code was pushed upstream. Nothing lost but a bit
-> of convenience.
-> 
+--Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-... and yet another opportunity for things to fall between the cracks,
-which is in my opinion MUCH more likely than something inappropriate
-being tagged Cc: stable.
+Hi Paul,
 
-However, it doesn't seem to happen too often, but it does underscore the
-need for a maintainer to be able to *retroactively* NAK a patch for
-stable, if it is uncovered that it isn't appropriate after all.
+Good work!
 
-	-hpa
+On Mon, 15 Jul 2013 19:34:44 -0400 Paul Gortmaker <paul.gortmaker@windriver=
+.com> wrote:
+>
+>  Linux-next trees are announced on the linux-kernel and linux-next mailing
+>  lists when they are assembled; they can be downloaded from:
+> =20
+> -	http://www.kernel.org/pub/linux/kernel/people/sfr/linux-next/
+> +	https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
 
+Maybe:
 
+"	git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+
+Or as patches relative to Linus' latest -rc or releases from:
+
+	https://www.kernel.org/pub/linux/kernel/next/
+
+Or viewed online at:
+
+	https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
+"
+
+Or maybe that is a bit verbose.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR5JCzAAoJEECxmPOUX5FE1O8QAIoNuFg8WXRAV/QZLKgFHQfR
+s72LdsrzL2MqcqxppA+9Yw4maIhuGWWqB6PGp3UARuXHon0w2eT023Agy59ITbdQ
+tRB8VJESQY0hLFHTLHRUNy3GsTcNpzYgy9yzWX1V538Q2krUc3IQ7gLHv6fyKAz0
+ZePeSnkx/EovwYr/U7GVQkWFEGkC+FkSZTlcSNGjTCbNedqxEe9OT8XQT1Epzqk4
+U+eVhmXqDo0fC/o1oA1tB7+kcrQkV+vW6Ebe8SAH5SbtY/TQ7VEoRYPrgQ1G7M/e
+8GRbrJxSjxyYWGcO3Z7KF7anAB6/kNx9QAR7SbQ/Kqz4cGD5Q6dqtCSqMnJvbdjk
+LMCTnX3p3JgBLSASv4J57ygRpodRK30k+qpdHBsBdLp22g2GQHjNxd/HjJbQvXEP
+y52tYTDCtsfixOJ8WlhA9QZKzaQYZ2EFWtp16tpF+dDj5cu6eyZUhstwgbHyGhQb
+WW/TznGa/r3Dmk2FhEnleW8KbEFxr051jHsm9tIqd15B1ILJJdAo4BplGOfM8V2K
+19TcVkF6B1GihcjT9K1ztDWyKT6IcpcZxdvGF18+IfCS31kjqoNF+t+cfpO9jH2T
+Oot4/j8v/aWD0f6545CVB6QaXbR7TlPllm5Obs4kkzb06Ic6KBN2mS5XgcVwePC1
+HRZgHdwloVkiH0p58yY0
+=WucT
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Jul_2013_10_15_43_+1000_IjOcvyS9RVYg=AfE--
