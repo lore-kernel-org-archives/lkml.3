@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933497Ab3GPQs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:48:57 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58092 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932889Ab3GPQsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:48:54 -0400
-Date: Tue, 16 Jul 2013 12:48:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+	id S933110Ab3GPQvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:51:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932816Ab3GPQvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 12:51:48 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com>
+References: <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com> <20130715155202.GC29526@xanatos> <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com> <20130715174659.GC15531@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Steven Rostedt <rostedt@goodmis.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v3 6/7] USB: ohci-at91: add usb_clk for transition to
- common clk framework
-In-Reply-To: <1373988136-24622-1-git-send-email-b.brezillon@overkiz.com>
-Message-ID: <Pine.LNX.4.44L0.1307161246130.1032-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
+Date: Tue, 16 Jul 2013 17:51:08 +0100
+Message-ID: <20049.1373993468@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013, Boris BREZILLON wrote:
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> The AT91 PMC (Power Management Controller) provides an USB clock used by
-> USB Full Speed host (ohci) and USB Full Speed device (udc).
-> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
-> This configuration was formely done in mach-at91/clock.c, but this
-> implementation will be removed when moving to common clk framework.
-> 
-> This patch add support for usb clock retrieval and configuration, and is
-> backward compatible with the current at91 clk implementation (if usb clk
-> is not found, it does not configure/enable the usb clk).
+> A small panel discussion with a few people (fiveish?) that have very
+> different viewpoints, along with baskets of rotten fruit set out on
+> the tables? That could be fun. And I'm serious, although we might want
+> to limit the size of the fruit to smaller berries ;)
 
-But it does print a warning in the system log, right?
+I think that smuggling one of these:
 
-> @@ -144,6 +150,11 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
->  		goto err2;
->  	}
->  
-> +	uclk = clk_get(&pdev->dev, "usb_clk");
-> +	if (IS_ERR(uclk)) {
-> +		uclk = NULL;
-> +		dev_warn(&pdev->dev, "failed to get usb_clk\n");
-> +	}
+	http://www.kropserkel.com/horse_head_pillow.htm
 
-Is this really what you want for backward compatibility?
+into Linus's bed might make the point;-).
 
-Alan Stern
-
+David
