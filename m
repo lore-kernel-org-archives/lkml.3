@@ -1,118 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab3GPDPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 23:15:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40101 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764Ab3GPDPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 23:15:05 -0400
-Date: Tue, 16 Jul 2013 13:14:46 +1000
-From: NeilBrown <neilb@suse.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable
- review)
-Message-ID: <20130716131446.373ec08b@notabene.brown>
-In-Reply-To: <1373933850.17876.224.camel@gandalf.local.home>
-References: <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	<20130715180403.GD15531@xanatos>
-	<CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	<20130715184642.GE15531@xanatos>
-	<CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	<20130715195316.GF15531@xanatos>
-	<20130715204135.GH15531@xanatos>
-	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	<1373926109.17876.221.camel@gandalf.local.home>
-	<20130715223615.GI15531@xanatos>
-	<20130715231555.GA24650@roeck-us.net>
-	<1373933850.17876.224.camel@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+	id S1758623Ab3GPDSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 23:18:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37745 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab3GPDSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 23:18:45 -0400
+Date: Tue, 16 Jul 2013 13:18:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20130716131828.7c0b539f4ce5a515cc2553ef@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/dcgH+FeLPmLkW7Zo9I2pApZ"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__16_Jul_2013_13_18_28_+1000_B8TiivWmCRNlluYr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/dcgH+FeLPmLkW7Zo9I2pApZ
+--Signature=_Tue__16_Jul_2013_13_18_28_+1000_B8TiivWmCRNlluYr
 Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 15 Jul 2013 20:17:30 -0400 Steven Rostedt <rostedt@goodmis.org> wro=
-te:
+Hi all,
 
-> On Mon, 2013-07-15 at 16:15 -0700, Guenter Roeck wrote:
-> > =20
-> > One thing you should keep in mind in your discussion is what can happen
-> > if people get too polite with each other.
-> >=20
-> > I have seen this happen at two large companies I worked for. Early on, =
-flames
-> > are acceptable and expected as response to someone publishing bad code =
-which
-> > breaks everything for everyone. Then, at some point, it is not acceptab=
-le
-> > anymore to flame, and one is expected to be polite and friendly at all =
-times.
-> > "Your code breaks the build for every platform. Would you please kindly
-> > consider fixing it ?"
-> > Result is that code quality suffers, to the point where images don't ev=
-en
-> > build anymore.
-> >=20
-> > I hope the Linux kernel never gets into that stage. To avoid that,
-> > I am willing to be cursed at by Linus if I am the responsible party.
->=20
-> Didn't Jim Zemlin show some research where there were two groups:
->=20
->  One that did a bunch of brain storming where no idea was a bad idea
->=20
->  The other required you to defend your idea while the others bashed it.
->=20
-> The results always showed that the second group not only did a better
-> job, but also faster and more efficient.
->=20
-> I'm afraid if we worry too much about politeness, we will fall into that
-> first group.
->=20
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Surely there is an enormous difference between being required to defend your
-position against rational and forceful argument, and being required to defe=
-nd
-it against irrelevant name calling.
+sound/soc/tegra/tegra_alc5632.c:16:28: fatal error: asm/mach-types.h: No su=
+ch file or directory
+ #include <asm/mach-types.h>
+                            ^
 
-NeilBrown
+Caused by commit df7e4082f47d ("ASoC: tegra: Enable COMPILE_TEST
+builds").  If you are going to do that, please test via (at least) an
+x86_64 allmodconf build.  Including asm/mach-types.h is an architecture
+dependency.
 
---Sig_/dcgH+FeLPmLkW7Zo9I2pApZ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+sound/soc/omap/omap-pcm.c: In function 'omap_pcm_preallocate_dma_buffer':
+sound/soc/omap/omap-pcm.c:171:2: error: implicit declaration of function 'd=
+ma_alloc_writecombine' [-Werror=3Dimplicit-function-declaration]
+  buf->area =3D dma_alloc_writecombine(pcm->card->dev, size,
+  ^
+sound/soc/omap/omap-pcm.c:171:12: warning: assignment makes pointer from in=
+teger without a cast [enabled by default]
+  buf->area =3D dma_alloc_writecombine(pcm->card->dev, size,
+            ^
+sound/soc/omap/omap-pcm.c: In function 'omap_pcm_free_dma_buffers':
+sound/soc/omap/omap-pcm.c:195:3: error: implicit declaration of function 'd=
+ma_free_writecombine' [-Werror=3Dimplicit-function-declaration]
+   dma_free_writecombine(pcm->card->dev, buf->bytes,
+   ^
+
+Caused by commit 6109b2fca632 ("ASoC: omap: Enable COMPILE_TEST build for
+DT platforms").  In this case, a missing include.
+
+I have used the version of the sound-asoc tree from next-20130715 for
+today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__16_Jul_2013_13_18_28_+1000_B8TiivWmCRNlluYr
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIVAwUBUeS6pjnsnt1WYoG5AQK/LxAAoVM01YCGBF/3nAx3OAdLpA8xBv2TGOjw
-DXOo7xco7S3XG1abirha8SxLKoXvSGIKVRGKM7kT3F2qGdtNskmim9fBYrblip7v
-aDJXqnJrk92UHl10Gma3qvQ34xspiFvMNEmLQQlJnqTiz4NzW5xMZSiqLsVhvU+8
-zPpPD8RkJlBfYleKZiAql2omQ/CP3KSJieJwXVT2zffShGrjxaHADCn3MPdN5aiU
-tgduthto6rV06YUGt6M/86W4vFtQtdxfBMPt5XaKS0xdlfGCfHa8xtNkHoykxVAN
-hSelVizjSUilUdypkwmXz+rgMRnBu+/89vmiBm1aeKo68KHS+G2CqbUZhkk+UkfI
-94Z4yLCc4Sc/LA53Eoca2c0K2PRPMFkaKEEEPsNNkaS5tKn5ITEqiycoAw8gm7lY
-Q5Da1DkGk8RVtm4j7622jLDYm6lqe5Yi07KAt/k98FDaVonkI6Y2gYzrhk+nv+EL
-beAbhuq018YC4ldhMLzoQUeTBpka5ZjtEX6vmIJsJIInNRZZ+UzeYIANqukMDRsf
-Np6KClKgmLTmvSMLlar281QhxLQYSglO3WhRsaSaJyPteSU0Ug16GASsKoiGjHRG
-CApaGZUnHUViq4jWC5cT5PtHEOsuYdmU06uCt6UIOKyR5DXpeFW50a9rME6jaUm3
-+5kC6LkMLv0=
-=Owdf
+iQIcBAEBCAAGBQJR5LuPAAoJEECxmPOUX5FE2KkP/2Sd27n6PD2IolaxLXV1gc4w
+Q4pGGHI8Rt3ft76F7qIZmt9kZh7pgEq+cEvKeU8Bzed0LkRgAL1V1nc89QtapfU5
+LKC+fkjrefN5Hn0ZCCnvVzSCNGVeZ/KRKbscFYidw7XgZDsiWLiDo92HHaEVW49n
+VuXTn62nYwhapjTWOGoAWm3AOMNrbCZrJ9x99OdKnszheWuV+6PKnd0T8LGqZGrR
+qYe74dwoZan/MjAtYlOiV6EI4iISyqOeEE5mBWp7w3Asq0JdVAFbqOeJ4TrGDKH6
+kjXF0gnQQt8dr7au9qcZRnJIKlcyJZtTqKdp/U7MJPuHj2ZzkokPjeKEtU+4CGKC
+G+1/uDN4VR67S5XvZC15Lx7s9qXmq88eH5AiPVz8TmbnD90uWkFKYeaFsPAnylzR
+hSeptErjx9ZMVTi9Jlvmti2u81//fCFZ3JT5Q7eby9c3+hsrUmDF0RlawNLBG6pa
+tgWUAaDqOo5/XfNguyMKOPxnrDdhetsDcE51XqsHxoonBl8/+hGmj+gWPbRhCLKo
+GyOUMd1k5iYAg863dKOR3IGw8VkTkEAbumQ1DN80XLlhRw/krQAwqo2HQQ8e7uFi
+4VqQBYDTHwEJWNsRy5JnaQrmWBOOwE5u0D1nAXEdDIAXAGDaKk5U5QwEmvjUhsQl
+fbjZ3giATMhtKSjvjLDC
+=G0H3
 -----END PGP SIGNATURE-----
 
---Sig_/dcgH+FeLPmLkW7Zo9I2pApZ--
+--Signature=_Tue__16_Jul_2013_13_18_28_+1000_B8TiivWmCRNlluYr--
