@@ -1,147 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850Ab3GPT0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:26:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16198 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933148Ab3GPT0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:26:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,678,1367996400"; 
-   d="scan'208";a="346602092"
-Message-ID: <51E59FEF.90404@linux.intel.com>
-Date: Tue, 16 Jul 2013 12:33:03 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S933847Ab3GPT1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:27:19 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64778 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933148Ab3GPT1R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 15:27:17 -0400
+Message-ID: <51E59E8F.1060501@dawncrow.de>
+Date: Tue, 16 Jul 2013 21:27:11 +0200
+From: =?UTF-8?B?QW5kcsOpIEhlbnRzY2hlbA==?= <nerv@dawncrow.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: driver model, duplicate names question
-References: <51E57631.2030805@linux.intel.com> <20130716164459.GB17827@kroah.com> <51E59116.2060801@linux.intel.com> <20130716183149.GA6164@kroah.com> <51E596E7.5040504@linux.intel.com> <20130716190422.GA1186@kroah.com>
-In-Reply-To: <20130716190422.GA1186@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jonathan Austin <jonathan.austin@arm.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: arm: Only load TLS values when needed
+References: <51E42E11.1010903@dawncrow.de> <51E5836B.1010904@arm.com>
+In-Reply-To: <51E5836B.1010904@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:OOCBdmgqLmnnvnR3ahSbW/D1TGUj073J/Ifr5vVTK1D
+ y3SkdzVnz7YrkQ6nvZk6+rgHIutSE/f90UJRjgTG6clIGNhi6O
+ 5DcjLlLUDzJw5ujxP7ILxph/eGPCS9thRMH5p3z4U7K3EvAETH
+ O7VVLncaZLiz7D8trXaPd+bHwY14hxC2ceLu9px8ESuiDraDh9
+ edh4DdBA1oacZ2qOXxKoFjZXc0IjHGrnU2fIFWGlANbEBL0oEQ
+ A88R6sbCNViSw/58aZ/klR6WbOjgzyvLZk1Pd4Ai64r+Tltux9
+ svMpA4eBkeVOJEcOmDEldIkqQX5OXn6KGQmwd8K2rbhHSBDYxf
+ QcvYE/9js6kHbA4ewjUw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 12:04 PM, Greg KH wrote:
-> A: No.
-> Q: Should I include quotations after my reply?
->
-> http://daringfireball.net/2007/07/on_top
-Glad to learn something new today.
->
-> On Tue, Jul 16, 2013 at 11:54:31AM -0700, Srinivas Pandruvada wrote:
->> Hi,
+Hi Jonathan,
+First, thank you for your review.
+
+Am 16.07.2013 19:31, schrieb Jonathan Austin:
+> Hi André,
+> 
+> On 15/07/13 18:14, André Hentschel wrote:
+>> From: André Hentschel <nerv@dawncrow.de>
 >>
->> I am assigned to do add a powercap class. There are several
->> technologies, which will allow to add a power budget to an individual
->> device. For example, you can set a power budget to a individual
->> physical cpu package, each core and uncore devices, GPUs, DRAM etc.
-> "classes" all reference a "device" in the system, I don't see that in
-> your tree below, where does that come in?  How do I, as someone who
-> created a device in the system know to create a your new powercap class
-> for it?
->
-> In other words, are you _sure_ you want a class here and not something
-> else (i.e. a bus?)
->
->> +The Power Capping framework organizes power capping devices under a tree structure.
->> +At the root level, each device is under some "controller", which is the enabler
->> +of technology. For example this can be "RAPL".
->> +Under each controllers, there are multiple power zones, which can be independently
->> +monitored and controlled.
->> +Each power zone can be organized as a tree with parent, children and siblings.
->> +Each power zone defines attributes to enable power monitoring and constraints.
-> Ah, this sounds like you want to be a bus, as you have a controller, and
-> then devices attached to it.
->
->> +Example Sys-FS Interface
->> +
->> +/sys/class/power_cap/intel-rapl
->> +├── package-0
->> +│   ├── constraint-0
->> +│   │   ├── name
->> +│   │   ├── power_limit_uw
->> +│   │   └── time_window_us
->> +│   ├── constraint-1
->> +│   │   ├── name
->> +│   │   ├── power_limit_uw
->> +│   │   └── time_window_us
->> +│   ├── core
->> +│   │   ├── constraint-0
->> +│   │   │   ├── name
->> +│   │   │   ├── power_limit_uw
->> +│   │   │   └── time_window_us
->> +│   │   ├── energy_uj
->> +│   │   └── max_energy_range_uj
->> +│   ├── dram
->> +│   │   ├── constraint-0
->> +│   │   │   ├── name
->> +│   │   │   ├── power_limit_uw
->> +│   │   │   └── time_window_us
->> +│   │   ├── energy_uj
->> +│   │   └── max_energy_range_uj
->> +│   ├── energy_uj
->> +│   ├── max_energy_range_uj
->> +│   └── max_power_range_uw
->> +├── package-1
->> +│   ├── constraint-0
->> +│   │   ├── name
->> +│   │   ├── power_limit_uw
->> +│   │   └── time_window_us
->> +│   ├── constraint-1
->> +│   │   ├── name
->> +│   │   ├── power_limit_uw
->> +│   │   └── time_window_us
->> +│   ├── core
->> +│   │   ├── constraint-0
->> +│   │   │   ├── name
->> +│   │   │   ├── power_limit_uw
->> +│   │   │   └── time_window_us
->> +│   │   ├── energy_uj
->> +│   │   └── max_energy_range_uj
->> +│   ├── dram
->> +│   │   ├── constraint-0
->> +│   │   │   ├── name
->> +│   │   │   ├── power_limit_uw
->> +│   │   │   └── time_window_us
->> +│   │   ├── energy_uj
->> +│   │   └── max_energy_range_uj
->> +│   ├── energy_uj
->> +│   ├── max_energy_range_uj
->> +│   └── max_power_range_uw
->> +├── power
->> +│   ├── async
->> +│   ├── autosuspend_delay_ms
->> +│   ├── control
->> +│   ├── runtime_active_kids
->> +│   ├── runtime_active_time
->> +│   ├── runtime_enabled
->> +│   ├── runtime_status
->> +│   ├── runtime_suspended_time
->> +│   └── runtime_usage
->> +├── subsystem -> ../../../../class/power_cap
->> +└── uevent
-> Ick.  Rewrite this to use a bus and you should be fine, right?  Don't
-> use a class, a class is only to be used if you have a device that is a
-> specific "type of thing".  Like a tty device, it is a class, as lots of
-> different "real" devices can have tty ports on them (usb, pci, pcmcia,
-> platform, etc.)
->
-> Rethink this using a bus and see if that solves your issues.  You get a
-> hierarchy with that.  And you can have different "types" of devices on
-> your bus, making it easy to tell the difference between a "package" and
-> a "constraint".
->
-> Does that help?
-I will experiment your suggestion. I see this class analogous to 
-"/sys/class/thermal",
-, where the thermal class provides a set of consistent interface for all 
-thermal devices.
-> greg k-h
->
-Thanks,
-Srinivas
+>> This patch intents to reduce loading instructions when the resulting value is not used.
+>> It's a follow up on a4780adeefd042482f624f5e0d577bf9cdcbb760
+>>
+> 
+> Have you done any benchmarking to see that this has any real impact? Or tested on a !Vv6k system? It looks possible that the only case where this will perform better is where we're using switch_tls_none or switch_tls_software (both rare cases, I think) and there's some change it will make things worse in other cases?
+
+I have to admit that i only tested it on v6k and did no benchmark.
+
+> One of the reasons for Russell's suggestion of placing the ldrd (which became the two ldr instructions you've removed from __switch_to, in order to maintain building for older cores) where it is was in order to reduce the chance of pipeline stalls.
+> 
+> As I've pointed out below, there is some risk that changing that has implications for the v6 only case below (and the v6k case is now more prone to stalls with !CONFIG_CPU_USE_DOMAINS, but newer cores should have more advanced scheduling to avoid such issues anyway...)
+
+I'm not sure how this could make things worse on v6k, could you elaborate please?
+Besides of the ldr and str being too close to each other i thought this patch is a good idea, because it removes two ldr which are always executed.
+(Continuing below...)
+
+>> Signed-off-by: André Hentschel <nerv@dawncrow.de>
+>>
+>> ---
+>> This patch is against Linux 3.11-rc1 (ad81f0545ef01ea651886dddac4bef6cec930092)
+>>
+>> Thanks to everyone who helped me with a4780adeefd042482f624f5e0d577bf9cdcbb760
+>>
+>> diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+>> index 83259b8..3742722 100644
+>> --- a/arch/arm/include/asm/tls.h
+>> +++ b/arch/arm/include/asm/tls.h
+>> @@ -3,29 +3,32 @@
+>>
+>>   #ifdef __ASSEMBLY__
+>>   #include <asm/asm-offsets.h>
+>> -    .macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+>> +    .macro switch_tls_none, prev, next, tp, tpuser, tmp1, tmp2
+>>       .endm
+>>
+>> -    .macro switch_tls_v6k, base, tp, tpuser, tmp1, tmp2
+>> +    .macro switch_tls_v6k, prev, next, tp, tpuser, tmp1, tmp2
+>> +    ldrd    \tp, \tpuser, [\next, #TI_TP_VALUE]    @ get the next TLS and user r/w register
+>>       mrc    p15, 0, \tmp2, c13, c0, 2    @ get the user r/w register
+>>       mcr    p15, 0, \tp, c13, c0, 3        @ set TLS register
+>>       mcr    p15, 0, \tpuser, c13, c0, 2    @ and the user r/w register
+>> -    str    \tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+>> +    str    \tmp2, [\prev, #TI_TP_VALUE + 4] @ save it
+>>       .endm
+>>
+>> -    .macro switch_tls_v6, base, tp, tpuser, tmp1, tmp2
+>> +    .macro switch_tls_v6, prev, next, tp, tpuser, tmp1, tmp2
+>>       ldr    \tmp1, =elf_hwcap
+>>       ldr    \tmp1, [\tmp1, #0]
+>>       mov    \tmp2, #0xffff0fff
+>> +    ldr    \tp, [\next, #TI_TP_VALUE]    @ get the next TLS register
+>>       tst    \tmp1, #HWCAP_TLS        @ hardware TLS available?
+>>       streq    \tp, [\tmp2, #-15]        @ set TLS value at 0xffff0ff0
+>> -    mrcne    p15, 0, \tmp2, c13, c0, 2    @ get the user r/w register
+>> +    mrcne    p15, 0, \tmp2, c13, c0, 2    @ get the previous user r/w register
+>> +    ldrne    \tpuser, [\next, #TI_TP_VALUE + 4]    @ get the next user r/w register
+>>       mcrne    p15, 0, \tp, c13, c0, 3        @ yes, set TLS register
+>>       mcrne    p15, 0, \tpuser, c13, c0, 2    @ set user r/w register
+> 
+> Now we've only got one instruction between the store and the load and risk stalling the pipeline...
+> 
+> Dave M cautiously says "The ancient advice was that one instruction was enough" but this is very core dependent... I wonder if anyone has a good idea about whether this is an issue here...?
+
+We could use a ldrd at the top, that'd be nearly what we have right now, don't we?
+
+
