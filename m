@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab3GPNON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 09:14:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48076 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308Ab3GPNOM (ORCPT
+	id S932631Ab3GPNOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 09:14:19 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:36778 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932308Ab3GPNOR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 09:14:12 -0400
-Date: Tue, 16 Jul 2013 14:13:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, arnd@arndb.de
-Message-ID: <20130716131332.GL22506@sirena.org.uk>
-References: <1373550711-18828-1-git-send-email-jonas.jensen@gmail.com>
- <1373978485-17496-1-git-send-email-jonas.jensen@gmail.com>
+	Tue, 16 Jul 2013 09:14:17 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OGLMwEELQbPC02lM"
-Content-Disposition: inline
-In-Reply-To: <1373978485-17496-1-git-send-email-jonas.jensen@gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] rtc: Add MOXA ART RTC driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1373960616.2148.34.camel@dabdike>
+References: <1373916476.2748.69.camel@dabdike>
+	<20130715214422.GA2478@kroah.com>
+	<1373951852.2148.9.camel@dabdike>
+	<20130716062058.GB19052@kroah.com>
+	<1373960616.2148.34.camel@dabdike>
+Date: Tue, 16 Jul 2013 09:14:16 -0400
+Message-ID: <CA+5PVA4_sG9j2f=-caqOV1r7UFu3ydYjUExAdCMKw+rR-+F67Q@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+From: Josh Boyer <jwboyer@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 16, 2013 at 3:43 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Mon, 2013-07-15 at 23:20 -0700, Greg KH wrote:
+>> On Tue, Jul 16, 2013 at 09:17:32AM +0400, James Bottomley wrote:
+>> > On Mon, 2013-07-15 at 14:44 -0700, Greg KH wrote:
+>> > > On Mon, Jul 15, 2013 at 11:27:56PM +0400, James Bottomley wrote:
+>> > > > Before the "3.10.1-stable review" thread degenerated into a disagreement
+>> > > > about habits of politeness, there were some solid points being made
+>> > > > which, I think, bear consideration and which may now be lost.
+>> > > >
+>> > > > The problem, as Ji???? Kosina put is succinctly is that the distributions
+>> > > > are finding stable less useful because it contains to much stuff they'd
+>> > > > classify as not stable material.
+>>
+>> And I'm going to be working on that.
+>
+> OK, I accept that.
+>
+>> But I need, from the distros, specific examples of what they object to.
+>> So far all I've gotten is one security patch (that was needed), and one
+>> patch for sysfs that I backported too far in the version numbers (my
+>> fault.)
+>>
+>> Given the huge number of stable patches over the past few years, only
+>> having 2 patches be an issue sounds like things are working well for
+>> people here.
+>>
+>> If I don't get pushback, with specifics, from the distros, I will not
+>> know what to change, so if people can provide me that, it will help out
+>> a lot.
+>
+> I agree ... I think Jiří and his Red Hat equivalent need to pipe up and
+> give us more examples of the problems they've been having.
 
---OGLMwEELQbPC02lM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm actually more concerned about the glut of patches showing up in
+the .1 releases because people didn't bother to send fixes to Linus
+for the .0 release.  I think it is a clear sign that the stable tree
+is working fairly well when we don't bother to push out a rebase to a
+new release until the .1 or .2 stable tree is out there.  It's a
+warning sign for the actual .0 release though.
 
-On Tue, Jul 16, 2013 at 02:41:25PM +0200, Jonas Jensen wrote:
+Now, that being said, there are cases where .1 can be broken too.
+There have been a couple of changes that showed up during a merge
+window that were sucked into -stable through the CC tag, and then
+later found to be broken.  Those resulted in reverts or significant
+fixes that then took a while to get reverted in -stable or required
+different temporary fixes because the upstream fix was too invasive.
+That's mainly a problem of them not getting enough testing before
+hitting Linus' tree I suppose, but the CC: stable tag being on them
+doesn't help.
 
->     1. don't use hardcoded GPIO numbers, use of_get_named_gpio
+Forgive me for not having immediate concrete examples here.  I'm
+sitting in the middle of nowhere on a lake using tethering for
+internet and hiding from my wife so she doesn't catch me doing "work".
+ Crap, I think she's coming...
 
-Since you're now using OF you should also be including a binding
-document.
-
---OGLMwEELQbPC02lM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5Ub5AAoJELSic+t+oim9+V8P/18ePGelt/l1Grih+4Wlh9Sz
-tJSl5D8j5a59fFShOY2gJOv+UPvCS6Tc3tHMXQYaJFS/piqsOysAYVd6d/y1ywGN
-yGe19q8e/NEu8tbeWqUfN1mj1QMVb/s86jE/CVjqTTx88gEZ9uwGjLszSt/jL9Pv
-3mgyTLmdnmy4Lpn7nlyhUcy8ASIwHA3ok1VB0WTmraTMBI9jPlAJVNki6BNt+FY+
-4ZJnYCHeCU0iNXXKxRmh/WVHoOM4ZURLIlRNP8SuIxNMqJakK6TxKHcySpfHwCrv
-bNPnbpwC+nYzRemdBzzxMO3/ZJNqqUc0OqRWfk8Wfm70rFlshbuzEODJ8QlEnX1f
-j7ee9tu3m+A2PMDpYCcaG7DS/NzXxhv+rm/8L023s2zNBVMDSbyfJG4ruvEb4PFu
-DRZbTTo31plh5WowKrUy32GWh8yBYNraGzjpoR6uXazt66vGqP48wA/2v0eqiMdl
-eUbQsJIW5SoH4Ty8m/hqvRSoLvR3fywwqutSdat/d+XlCiF5+s6HQd5L23IQmiX/
-+s+VYziJ3BI1391KwGI4nSTCTVlFvEZeAy9kNNkeIlgO0T23LawWT3I8ymlHHjrx
-Q0qpisBgkvPtAuZ0o3LJgH2oT+u70OO/YzrTWh15DUYCa3KUhI/foKVIMH5mZlDo
-oAozSzDf4xLASA4wangf
-=Ytta
------END PGP SIGNATURE-----
-
---OGLMwEELQbPC02lM--
+josh
