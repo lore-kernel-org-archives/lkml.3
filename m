@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934039Ab3GPUuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:50:54 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:55889 "HELO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933670Ab3GPUuv (ORCPT
+	id S934036Ab3GPUwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:52:25 -0400
+Received: from oproxy14-pub.unifiedlayer.com ([67.222.51.224]:56835 "HELO
+	oproxy14-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752741Ab3GPUwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:50:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <51E5A4CA.20902@canonical.com>
-References: <51E58C45.1080708@canonical.com>
-	<CALnjE+oCeo=T+F3BvTBtcV7oDMPLJAEz1p1sjRGxmE8Wq8gWAg@mail.gmail.com>
-	<51E5A4CA.20902@canonical.com>
-Date: Tue, 16 Jul 2013 13:50:47 -0700
-Message-ID: <CALnjE+rhvmYPEXv=1F1HEe3VsgCNN1SKg5UwTuFatQUm9e9S2w@mail.gmail.com>
-Subject: Re: [Regression][v3.10][v3.11] net: Kill link between CSUM and SG features.
-From: Pravin Shelar <pshelar@nicira.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: davem@davemloft.net, ben.howard@canonical.com, edumazet@google.com,
-        xiyou.wangcong@gmail.com, alexander.h.duyck@intel.com,
-        jiri@resnulli.us, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kys@microsoft.com,
-        haiyangz@microsoft.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Jul 2013 16:52:24 -0400
+Date: Tue, 16 Jul 2013 13:52:19 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Alexander Kaltsas <alexkaltsas@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        rocko <rockorequin@hotmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: fix long-standing SNB regression
+ in power consumption after resume
+Message-ID: <20130716135219.57ec32a0@jbarnes-desktop>
+In-Reply-To: <20130716204349.GY5784@phenom.ffwll.local>
+References: <20130714163009.22374.22100.stgit@zurg>
+	<CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
+	<51E2E65D.5050803@openvz.org>
+	<20130716063101.GK5784@phenom.ffwll.local>
+	<CALYGNiOtt7FUCTqcyBELoHYEVw_zqmA=bpmHy_nDkhXCduB9qg@mail.gmail.com>
+	<20130716100654.1185c031@jbarnes-desktop>
+	<20130716131925.7997a7ed@jbarnes-desktop>
+	<20130716204349.GY5784@phenom.ffwll.local>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 12:53 PM, Joseph Salisbury
-<joseph.salisbury@canonical.com> wrote:
-> On 07/16/2013 02:29 PM, Pravin Shelar wrote:
->> On Tue, Jul 16, 2013 at 11:09 AM, Joseph Salisbury
->> <joseph.salisbury@canonical.com> wrote:
->>> Hi Pravin,
->>>
->>> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
->>> it was found that reverting the following commit resolved this bug:
->>>
->>> commit ec5f061564238892005257c83565a0b58ec79295
->>> Author: Pravin B Shelar <pshelar@nicira.com>
->>> Date:   Thu Mar 7 09:28:01 2013 +0000
->>>
->>>     net: Kill link between CSUM and SG features.
->>>
->>>
->>> The regression was introduced as of v3.10-rc1.
->>>
->>> I see that you are the author of this patch, so I wanted to run this by
->>> you.  I was thinking of requesting a revert for v3.11, but I wanted to
->>> get your feedback first.
->>>
->>>
->> This issue was reported before and turning off sg solves problem for
->> HyperV driver. Drivers (intel and bnx2x) that I tested works fine with
->> this patch. Have you seen the issue on any other NIC?
->
-> Thanks for the feedback.  We have only seen it on Intel hardware.  Can
-> you send a pointer to the patch? If so, we can provide some additional
-> testing.  Do you plan on submitting the patch for inclusion in 3.11?
->
->
-What I mean is I do not see any problem with the patch that you have
-pointed out on ixgbe and bnx2x platforms. HyperV problem went away
-with disabling sg by ethtool utility.
+On Tue, 16 Jul 2013 22:43:49 +0200
+Daniel Vetter <daniel@ffwll.ch> wrote:
 
-Can you also give me more information about regression you are seeing
-like driver name, features of the NIC set and features of device
-without this patch. Does any other NIC than HyperV having this issue?
+> On Tue, Jul 16, 2013 at 01:19:25PM -0700, Jesse Barnes wrote:
+> > On Tue, 16 Jul 2013 10:06:54 -0700
+> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > 
+> > > On Tue, 16 Jul 2013 11:34:25 +0400
+> > > Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+> > > > I've tested that patch and it really works for me. If you want change
+> > > > something for other hardware or
+> > > > extend range where forcewake is held prease do it in a separate patch.
+> > > > This will be good for bisecting new bugs in the future.
+> > > 
+> > > Thanks a ton for finding this Konstantin, it puts us on the right
+> > > track.
+> > > 
+> > > Can I ask you to test this patch?  The theory is that having RC6
+> > > enabled messes with the initial programming sequence, so it's probably
+> > > best to just shut it off at init until we're done, rather than trying
+> > > to forcewake around everywhere we need it.
+> > 
+> > Oops, last one triggers a warn about IRQs.  This one doesn't and still
+> > works for me.
+> > 
+> > Testing welcome.
+> > 
+> > Thanks,
+> > -- 
+> > Jesse Barnes, Intel Open Source Technology Center
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> > index c9d9d20..d962ec0 100644
+> > --- a/drivers/gpu/drm/i915/i915_gem.c
+> > +++ b/drivers/gpu/drm/i915/i915_gem.c
+> > @@ -4112,6 +4112,9 @@ i915_gem_init_hw(struct drm_device *dev)
+> >         drm_i915_private_t *dev_priv = dev->dev_private;
+> >         int ret;
+> >  
+> > +       /* BIOS often leaves RC6 enabled, but disable it for hw init */
+> > +       intel_disable_gt_powersave(dev);
+> 
+> I think it'd be better to have an explicit gen >= 6 check here and a
+> disable_rps call. disable_gt_powersave also calls the ironlake version,
+> which restores probably bogus values (since we haven't read them out yet
+> in the enable code) into the hw.
 
-Thanks.
+Yeah the ilk "restore to initial freq" needs fixing, but I thought we
+wanted this on all gens?  It shouldn't hurt anything, and may help with
+other issues as well.
 
->>
->>
->>> Thanks,
->>>
->>> Joe
->>>
->>> [0] http://pad.lv/1200243
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+-- 
+Jesse Barnes, Intel Open Source Technology Center
