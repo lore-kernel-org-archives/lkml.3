@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933521Ab3GPQlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:41:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33179 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932938Ab3GPQlv (ORCPT
+	id S933557Ab3GPQmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:42:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40784 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933455Ab3GPQlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:41:51 -0400
-Date: Tue, 16 Jul 2013 09:41:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Peng Tao <bergwolf@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH-v3 00/17] staging/lustre: fix various build issues
-Message-ID: <20130716164144.GA17827@kroah.com>
-References: <1373898440-14208-1-git-send-email-bergwolf@gmail.com>
- <1373908589.2062.18.camel@joe-AO722>
- <20130715184030.GA17220@kroah.com>
- <20130715121357.42ef2826750909c1fc57788a@linux-foundation.org>
- <20130716000755.GC26261@kroah.com>
- <CA+a=Yy6cC9rYcmAka2652UhJFse9eVfOtfg96SiObBiwsw+zQQ@mail.gmail.com>
- <20130716063207.GB30320@kroah.com>
- <1373992455.1949.6.camel@joe-AO722>
+	Tue, 16 Jul 2013 12:41:53 -0400
+X-Sasl-enc: /QidXnTzSCI71Sg6QjtvLya8g4q/NrXVM/jn79VPwA4C 1373992909
+Date: Tue, 16 Jul 2013 09:35:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+Message-ID: <20130716163528.GA17231@kroah.com>
+References: <1373916476.2748.69.camel@dabdike>
+ <20130715214422.GA2478@kroah.com>
+ <1373951852.2148.9.camel@dabdike>
+ <20130716062058.GB19052@kroah.com>
+ <1373960616.2148.34.camel@dabdike>
+ <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373992455.1949.6.camel@joe-AO722>
+In-Reply-To: <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 09:34:15AM -0700, Joe Perches wrote:
-> On Mon, 2013-07-15 at 23:32 -0700, Greg Kroah-Hartman wrote:
-> > I'll not apply those patches, don't worry, the shrinker stuff needs to
-> > stay in Andrew's tree until it hits Linus's.
+On Tue, Jul 16, 2013 at 11:46:05AM +0200, Jiri Kosina wrote:
+> On Tue, 16 Jul 2013, James Bottomley wrote:
 > 
-> To clarify, are you going to apply these 17 patches but not
-> those 5 patches in Andrew's tree?
+> > > But I need, from the distros, specific examples of what they object to.
+> > > So far all I've gotten is one security patch (that was needed), and one
+> > > patch for sysfs that I backported too far in the version numbers (my
+> > > fault.)
+> > > 
+> > > Given the huge number of stable patches over the past few years, only
+> > > having 2 patches be an issue sounds like things are working well for
+> > > people here.
+> > > 
+> > > If I don't get pushback, with specifics, from the distros, I will not
+> > > know what to change, so if people can provide me that, it will help out
+> > > a lot.
+> > 
+> > I agree ... I think Ji?? and his Red Hat equivalent need to pipe up and
+> > give us more examples of the problems they've been having.
 > 
+> I am still continuing with my pushback against the /dev/random revamp that 
+> happened in -stable; at least in the form it happened. I still strongly 
+> believe it's something that's not a stable material. But that's happening 
+> in parallel in a different thread already.
+> 
+> Okay, if you want another example:
+> 
+> 	commit a6aa749906b92eaec6ca0469f90f35de26044d90
+> 	Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> 	Date:   Thu Dec 20 15:05:14 2012 -0800
+> 
+> 	    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
+> 
+> While this is a correct fix for major kernel release, as it achieves 
+> correctness by checking SMBIOS version properly and behaving according to 
+> the spec, it actually causes an userspace ABI regression in some sense, as 
+> it just changes byte order of /sys/class/dmi/id/product_uuid on certain 
+> systems.
+> 
+> Which is something I absolutely *do not* expect from a minor release of 
+> branch which is called "stable".
 
-Give me some time to catch up, I have 1555 patches in my "to-apply" mbox
-to dig through in the next 5 days, and I will deal with it then.
+As you pointed out, your definition of "stable" is one that the
+enterprise distros have created, and might be totally different from my
+view of what "stable" is :)
+
+And also, as Ben pointed out, this was probably wrong, and someone
+should have told me about this, so I could have reverted it.  Please do
+so the next time.
+
+thanks,
 
 greg k-h
