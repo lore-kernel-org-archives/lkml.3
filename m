@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab3GPKCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 06:02:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52684 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753970Ab3GPKCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 06:02:47 -0400
-Date: Tue, 16 Jul 2013 12:02:44 +0200
-From: Jan Kara <jack@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-Message-ID: <20130716100244.GA25632@quack.suse.cz>
-References: <1373916476.2748.69.camel@dabdike>
- <20130715214422.GA2478@kroah.com>
- <1373951852.2148.9.camel@dabdike>
- <20130716062058.GB19052@kroah.com>
+	id S1754621Ab3GPKEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 06:04:06 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:54344 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab3GPKED (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 06:04:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716062058.GB19052@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1372927830-2949-4-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+	<1372927830-2949-4-git-send-email-l.majewski@samsung.com>
+Date: Tue, 16 Jul 2013 15:34:02 +0530
+Message-ID: <CAKohpomdkF-XVWXaxNx+SfnHvHE_N6=gcU06YD6D7_oB0-M9aA@mail.gmail.com>
+Subject: Re: [PATCH v5 3/7] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code
+ to work with common boost solution
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 15-07-13 23:20:58, Greg KH wrote:
-> I think the real stable issue that _everyone_ keeps ignoring, is my
-> original complaint, in that people are using the -rc1 merge window to
-> get fixes in they should have sent to Linus for .0.
-> 
-> I don't see anything you have written so far that will help resolve that
-> issue, which is not good, as that needs to be taken care of.
-  Well, I remember Linus has said several times in case of more risky fixes
-that he'd rather see them in -rc1 with -stable tag than merging them (very)
-late in the -rc series. And frankly if the patch gets in in the merge
-window it doesn't get too much real testing before it is released in stable
-so how to treat such patches is a question. So I think we need to find a
-balance between what you and Linus ask for.
+On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>  static void __init acpi_cpufreq_boost_init(void)
+> @@ -953,33 +937,22 @@ static void __init acpi_cpufreq_boost_init(void)
+>                 if (!msrs)
+>                         return;
+>
+> -               boost_supported = true;
+> -               boost_enabled = boost_state(0);
+> +               cpufreq_set_boost_enabled(boost_state(0));
+> +               acpi_cpufreq_driver.boost_supported = true;
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+You are again doing the same mistake. Boost must be
+always supported for acpi-cpufreq with read permissions, as it was
+earlier.
