@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933948Ab3GPTj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:39:57 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:51360 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab3GPTjz (ORCPT
+	id S933956Ab3GPTkT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:40:19 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:41300 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933778Ab3GPTkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:39:55 -0400
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: mani <manishrma@gmail.com>
-Cc: nitingupta910@gmail.com, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
-Subject: Re: [PATCH] zram percpu implementation
-In-Reply-To: Your message of "Wed, 17 Jul 2013 00:27:34 +0530."
-             <CAB+TZU-jHQDV9VWnznQiL_i6WE8kjwYgiND2rXwm5BgPgu7Whg@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <CAB+TZU-BXYgrKVH94gw8Wxw8F-L4pgujAjUqKqdxgDZz+h5RWA@mail.gmail.com>
-            <CAB+TZU-jHQDV9VWnznQiL_i6WE8kjwYgiND2rXwm5BgPgu7Whg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1374003427_1500P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 16 Jul 2013 15:37:07 -0400
-Message-ID: <13570.1374003427@turing-police.cc.vt.edu>
+	Tue, 16 Jul 2013 15:40:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <51E5A0A9.90108@zytor.com>
+References: <1373659660-31123-1-git-send-email-keescook@chromium.org>
+	<20130712203802.GA14702@www.outflux.net>
+	<CAE9FiQWJin8-hXsodo46vhYPMrWiiboEVQySPO-LgXtebYmUzw@mail.gmail.com>
+	<CAGXu5jJs5ve-31AYKbv6EaV5PKCf5cOEeWTRsYsi_kBbLWj5uQ@mail.gmail.com>
+	<51E5A0A9.90108@zytor.com>
+Date: Tue, 16 Jul 2013 12:40:12 -0700
+X-Google-Sender-Auth: rADOMjBS0AJO0WplcXjhMY2TdY4
+Message-ID: <CAGXu5jJJXgnJxuvc851UZ4Du10HSBJnDWc7rKgRb4_=ojMmtug@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1374003427_1500P
-Content-Type: text/plain; charset=us-ascii
+On Tue, Jul 16, 2013 at 12:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/16/2013 12:31 PM, Kees Cook wrote:
+>>
+>> Could the first step be documenting the limitation? I've found this
+>> patch extremely useful for my case already, and I imagine there might
+>> be other people that need the early mmio stuff to. Generally the
+>> compressed boot serial console stuff is going to be used in the more
+>> common non-kexec situations at least for a while.
+>>
+>> Does this patch create any _problems_? Right now, neither low nor >4G
+>> kernel can use an mmio serial port. :) This this, we'd at least gain
+>> it for the low case.
+>>
+>
+> Even documenting the limitation is likely to end up with a bunch of
+> emails asking why their kernel crashed.
+>
+> I think setting up a dynamic #PF handler is the right thing for the
+> decompressor, we already did for the kernel proper.
 
-On Wed, 17 Jul 2013 00:27:34 +0530, mani said:
+I'm not sure how to accomplish this yet. I'm still trying to
+understand how the page tables are arranged. :)
 
-> This patch will create a percpu structures compression algo.
-> 1. Takes extra memory for workspace buffers.
-> I haven't seen any performance gain with this need to find the
-> root cause.
+-Kees
 
-My first guess is that the higher-level zram stuff is submitting
-its requests sequentially, so there's very few occasions where more
-than one page is waiting for (de)compression handling at the same time.
-
-You change the logic of zram_bvec_(read/write) - but what you'd need to
-change is the code that *calls* it so that there's multiple bvec_* calls
-in flight at the same time.
-
-+    for_each_possible_cpu(cpu) {
-+        printk(KERN_EMERG"[%s] Initializing for each core %d\n", cpu);
-
-KERN_EMERG?  No.  Absolutely not.
-
---==_Exmh_1374003427_1500P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUeWg4wdmEQWDXROgAQJ85g/8DQxn69jvvbyQ7OMS6xNib/vsxKSHvn6R
-bnWt1FwMhGf03vilJXvb8fSmlnQgU0FTUr7WabAHJ50X34qg3wpbfc+B6o6RQvZJ
-4IjoC7fk/MamYPD/jtt609Or548jG1mNUTclmy1yFSI/YlsMP0U0jCZjfdOvL7TA
-3/Vp+fj8k0Beyk6zr32ThFlZS/NTIQimNY0SnzSktTkcDLPwMlOx1aHvKntINmpv
-gFtXnR7jlpaS3iovXbJkoNrZg6rB46xI0IQKv9RFBDzP3DZFO1WAP7lK5igXpW37
-vJeOluy5tpc5fcAF52+9S8zLN+q97TEJaclzrXnlxLbA0UodxK7XQj8w1GKjHmkM
-ZFau73rUkb2kiF9Iivx/iU/DSC5uxcQVHA4YoHSHpW0MjZ5vAO9h56IDrZRl8tCL
-kupdT/201JJBHIJsoQ2OcHRJieayZ2A0ch9CttmFZpDyenAZk1/0Ot3JHmKSHZMu
-8mAovaTo9tL4GMU7vsTVLyLMYx65AdIoZPwr+sDSzOCsC8bOu3RyeWl8UXJmF3Bx
-LsLF4qhKrKB6NIPtfWfPzNDEPyT8prZ2vwHMjcKKsEWIl2E2CDfYubnqhMlaU9LC
-/nUDL83DliSxSZzaP5dgfyZWCwR57mEcXusoC/slkEyYGV46INkkN0oM3C1DnghC
-5HTzEWr/rHM=
-=T5hf
------END PGP SIGNATURE-----
-
---==_Exmh_1374003427_1500P--
+--
+Kees Cook
+Chrome OS Security
