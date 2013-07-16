@@ -1,115 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934089Ab3GPVQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 17:16:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48502 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933954Ab3GPVPt (ORCPT
+	id S933900Ab3GPVSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 17:18:41 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36798 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab3GPVSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 17:15:49 -0400
-Date: Tue, 16 Jul 2013 15:15:29 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: James Bottomley <jbottomley@parallels.com>, Hannes Reinecke <hare@suse.de>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        James Smart <James.Smart@Emulex.Com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kmo@daterainc.com" <kmo@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Message-ID: <20130716211529.GQ22392@kernel.dk>
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
- <20130712010223.GA15673@kroah.com>
- <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
- <51DFDFF5.80702@suse.de>
- <1373698410.2922.10.camel@dabdike>
- <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+	Tue, 16 Jul 2013 17:18:39 -0400
+Date: Tue, 16 Jul 2013 14:18:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [
+ 00/19] 3.10.1-stable review)
+Message-ID: <20130716211830.GX16780@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130715180403.GD15531@xanatos>
+ <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+ <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+ <20130715195316.GF15531@xanatos>
+ <20130715204135.GH15531@xanatos>
+ <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+ <1373926109.17876.221.camel@gandalf.local.home>
+ <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com>
+ <1373999229.2148.87.camel@dabdike>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1373999229.2148.87.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071621-7408-0000-0000-00001212F75D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16 2013, Nicholas A. Bellinger wrote:
-> On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
-> > On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
-> > > On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
-> > > > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
-> > > >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
-> > > >>> Drilling down the work items ahead of a real mainline push is high on
-> > > >>> priority list for discussion.
-> > > >>>
-> > > >>> The parties to be included in such a discussion are:
-> > > >>>
-> > > >>>   - Jens Axboe (blk-mq author)
-> > > >>>   - James Bottomley (scsi maintainer)
-> > > >>>   - Christoph Hellwig (scsi)
-> > > >>>   - Martin Petersen (scsi)
-> > > >>>   - Tejun Heo (block + libata)
-> > > >>>   - Hannes Reinecke (scsi error recovery)
-> > > >>>   - Kent Overstreet (block, per-cpu ida)
-> > > >>>   - Stephen Cameron (scsi-over-pcie driver)
-> > > >>>   - Andrew Vasquez (qla2xxx LLD)
-> > > >>>   - James Smart (lpfc LLD)
-> > > >>
-> > > >> Isn't this something that should have been discussed at the storage
-> > > >> mini-summit a few months ago?
-> > > > 
-> > > > The scsi-mq prototype, along with blk-mq (in it's current form) did not
-> > > > exist a few short months ago.  ;)
-> > > > 
-> > > >>  It seems very specific to one subsystem to be a kernel summit topic,
-> > > >> don't you think?
-> > > > 
-> > > > It's no more subsystem specific than half of the other proposals so far,
-> > > > and given it's reach across multiple subsystems (block, scsi, target),
-> > > > and the amount of off-list interest on the topic, I think it would make
-> > > > a good candidate for discussion.
-> > > > 
-> > > And it'll open up new approaches which previously were dismissed,
-> > > like re-implementing multipathing on top of scsi-mq, giving us the
-> > > single scsi device like other UNIX systems.
-> > > 
-> > > Also I do think there's quite some synergy to be had, as with blk-mq
-> > > we could nail each queue to a processor, which would eliminate the
-> > > need for locking.
-> > > Which could be useful for other subsystems, too.
+On Tue, Jul 16, 2013 at 10:27:09PM +0400, James Bottomley wrote:
+> On Mon, 2013-07-15 at 15:38 -0700, Linus Torvalds wrote:
+> > On Mon, Jul 15, 2013 at 3:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > >
+> > > Can we please make this into a Kernel Summit discussion. I highly doubt
+> > > we would solve anything, but it certainly would be a fun segment to
+> > > watch :-)
 > > 
-> > Lets start with discussing this on the list, please, and then see where
-> > we go from there ...
-> > 
+> > I think we should, because I think it's the kind of thing we really
+> > need at the KS - talking about "process".
 > 
-> Yes, the discussion is beginning to make it's way to the list.  I've
-> mostly been waiting for blk-mq to get a wider review before taking the
-> early scsi-mq prototype driver to a larger public audience.
+> Can you formulate the process issue to discuss?  I've heard "Linus needs
+> to yell less at people" and "the mailing lists need to be more
+> 'professional'" neither of which seems to identify an actual process.
+> Are we perhaps discussing guidelines for giving feedback on patches?
 > 
-> Primarily, I'm now reaching out to the people most effected by existing
-> scsi_request_fn() based performance limitations.  Most of them have
-> abandoned existing scsi_request_fn() based logic in favor of raw block
-> make_request() based drivers, and are now estimating the amount of
-> effort to move to an scsi-mq based approach.
+> > At the same time, I really don't know what the format would possibly
+> > be like for it to really work as a reasonable discussion. And I think
+> > that is important, because this kind of subject is *not* likely
+> > possible in the traditional "people sit around tables and maybe
+> > somebody has a few slides" format.
 > 
-> Regardless, as the prototype progresses over the next months, having a
-> face-to-face discussion with the key parties in the room would be very
-> helpful given the large amount of effort involved to actually make this
-> type of generational shift in SCSI actually happen.
+> > A small panel discussion with a few people (fiveish?) that have very
+> > different viewpoints, along with baskets of rotten fruit set out on
+> > the tables? That could be fun. And I'm serious, although we might want
+> > to limit the size of the fruit to smaller berries ;)
+> 
+> How about Lychees?  They're prickly on the outside, very wet on the
+> inside and have large stones ...
 
-There's a certain amount of overlap with the aio/O_DIRECT work as well.
-But if it's not a general session, could always be a BOF or something.
+They taste good, too.
 
-I'll second the argument that most technical topics probably DO belong
-in a topic related workshop. But that leaves us with basically only
-process related topics at KS, I don't think it hurts to have a bit of
-tech meat on the bone too. At least I personally miss that part of KS
-from years gone by.
+> But what are the viewpoints?  "maintainers need to yell more"?
+> "maintainers need to yell less"?  I don't think I agree with either.
+> I'm perfectly happy to run linux-scsi along reasonable standards of
+> civility and try to keep the debates technical, but that's far easier to
+> do on a low traffic list; obviously, I realise that style of argument
+> doesn't suit everyone, so it's not a standard of behaviour I'd like to
+> see universally imposed.  In fact, I've got to say that I wouldn't like
+> to see *any* behaviour standard imposed ... they're all basically cover
+> for power plays (or soon get abused as power plays); the only real way
+> to display leadership on behaviour standards is by example not by fiat.
 
--- 
-Jens Axboe
+OK, I am stupid enough to take a stab at this...
+
+1.	Does the Linux kernel community's health depend on the occasional
+	rant?  [My guess is that we simply have no way of knowing.
+	That said, I would be interested in hearing specific examples
+	of open-source communities that are as doing as well as is the
+	Linux community and that live within stricter social mores.
+	Cue arguments about exactly what "doing well" means...]
+
+2.	Could the Linux kernel community's health be improved by banning
+	the occasional rant?  [Again, I don't believe that we have any
+	way of knowing.]
+
+3.	Is there some reasonable way to accommodate a wide range of
+	styles of interaction within the Linux community?  [I hope that
+	the answer is "yes", but it probably becomes impossible if you
+	add the qualifier "that everyone is happy with".]
+
+4.	If there is some reasonable way to accommodate a wide range
+	of styles of interaction within the Linux community, can this
+	be done globally, or does this require that people who prefer a
+	specific style confine themselves to portions of the community
+	that practice that specific style?  [As I grow older, I become
+	increasingly pessimistic about the possibility of keeping everyone
+	happy, but who knows?]
+
+For whatever it is worth...
+
+							Thanx, Paul
+
+> James
+> 
+> 
+> _______________________________________________
+> Ksummit-2013-discuss mailing list
+> Ksummit-2013-discuss@lists.linuxfoundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
+> 
 
