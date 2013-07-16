@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab3GPFov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 01:44:51 -0400
-Received: from ozlabs.org ([203.10.76.45]:34674 "EHLO ozlabs.org"
+	id S1751543Ab3GPFrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 01:47:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47705 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751340Ab3GPFoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 01:44:23 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Wedson Almeida Filho <wedsonaf@gmail.com>,
-        Tim Abbott <tabbott@ksplice.com>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Subject: Re: Question:Bsearch replace the search_extable implementations
-In-Reply-To: <CAK7N6vokZpFJkYapajhqTYWvPVWr6ELz+5Nq9yvf0J5VAx=JBA@mail.gmail.com>
-References: <CAK7N6vokZpFJkYapajhqTYWvPVWr6ELz+5Nq9yvf0J5VAx=JBA@mail.gmail.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 16 Jul 2013 14:29:17 +0930
-Message-ID: <87zjtnyuai.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751126Ab3GPFrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 01:47:32 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>
+Subject: [PATCH net 1/2] macvtap: fix the missing ret value of TUNSETQUEUE
+Date: Tue, 16 Jul 2013 13:36:33 +0800
+Message-Id: <1373952994-7252-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-anish singh <anish198519851985@gmail.com> writes:
-> Hello Rusty,
->
-> Right now I see so many places in the kernel
-> where we open code binary search implementations
-> such as search_extable implementations.
->
-> http://lxr.free-electrons.com/ident?a=powerpc;i=search_extable
->
-> Would it be ok to replace this with bsearch lib code?
->
-> I am not trying to fix any problem nor I see
-> any problem in current implementations but
-> if we can replace the large amount of code
-> would it not be a good reason to send a patch
-> for this?
+Commit 441ac0fcaadc76ad09771812382345001dd2b813
+(macvtap: Convert to using rtnl lock) forget to return what
+macvtap_ioctl_set_queue() returns to its caller. This may break multiqueue API
+by always falling through to TUNGETFEATURES.
 
-It should be fine, yes.
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvtap.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks!
-Rusty.
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index f2c4a3b..8270b5e 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -1103,6 +1103,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 		rtnl_lock();
+ 		ret = macvtap_ioctl_set_queue(file, u);
+ 		rtnl_unlock();
++		return ret;
+ 
+ 	case TUNGETFEATURES:
+ 		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR |
+-- 
+1.7.1
+
