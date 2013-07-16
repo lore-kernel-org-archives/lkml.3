@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab3GPXUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 19:20:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44324 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933472Ab3GPXUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 19:20:48 -0400
-Message-ID: <1374016846.1949.54.camel@joe-AO722>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [
- 00/19] 3.10.1-stable review)
-From: Joe Perches <joe@perches.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Date: Tue, 16 Jul 2013 16:20:46 -0700
-In-Reply-To: <20130716231217.GL4994@xanatos>
-References: <20130715204135.GH15531@xanatos>
-	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	 <1373926109.17876.221.camel@gandalf.local.home>
-	 <20130715223615.GI15531@xanatos>
-	 <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-	 <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-	 <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org>
-	 <20130716224357.GK4994@xanatos>
-	 <1374015299.6458.76.camel@gandalf.local.home>
-	 <20130716231217.GL4994@xanatos>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933813Ab3GPXXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 19:23:14 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:61802 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933678Ab3GPXXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 19:23:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALDEARgU_qD88ExdufXkTFjaenVEwLC=q3t-RNwRrm4A-mMVZw@mail.gmail.com>
+References: <CAJVTVr=rbkYHD93N4H9ANy1Hsivdd_XFLONXxOBp+TR9LfAyaQ@mail.gmail.com>
+ <20130713064430.GA20979@core.coreip.homeip.net> <CALDEARgU_qD88ExdufXkTFjaenVEwLC=q3t-RNwRrm4A-mMVZw@mail.gmail.com>
+From: Michael Wright <michaelwr@android.com>
+Date: Tue, 16 Jul 2013 16:22:50 -0700
+X-Google-Sender-Auth: _sZG_3yVTceklSkN2sMT0_-lDo0
+Message-ID: <CALDEARj5x+BL0_BC3cn-DBOZUNAz0-egOCjvSjM8zRWQb_bEbA@mail.gmail.com>
+Subject: Re: [PATCH 001/001] [Input:] Propagate hardware generated event
+ timestamp to evdev.
+To: Michael Wright <michaelwr@android.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alexander Levitskiy <sanek@google.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Rob Landley <rob@landley.net>, Henrik Rydberg <rydberg@euromail.se>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 16:12 -0700, Sarah Sharp wrote:
-> In order to make our community better, we need to figure out where the
-> baseline of "good" behavior is.  We need to define what behavior we want
-> from both maintainers and patch submitters.  E.g. "No regressions" and
-> "don't break userspace" and "no personal attacks".  That needs to be
-> written down somewhere, and it isn't.  If it's documented somewhere,
-> point me to the file in Documentation.  Hint: it's not there.
+Apologies, forgot to make sure it was plain text.
 
-So write a document, submit a patch and see what happens.
-
-
+On Tue, Jul 16, 2013 at 4:16 PM, Michael Wright <michaelwr@android.com> wrote:
+> Hi Dmitry,
+>
+>
+> On Fri, Jul 12, 2013 at 11:44 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>> We already have MSC_TIMESTAMP (which is in usec), do you really need
+>> nsec resolution?
+>
+> We don't actually need nsec resolution, usec resolution would be sufficient.
+>
+>
+>> Why do you need this special handling? Can you simply have MSC_TIMESTAMP
+>> to be delivered as part of the event packet and use it instead of the
+>> event timestamp if userspace chooses to do so?
+>
+> We need stronger guarantees than MSC_TIMESTAMP gives us. Much of
+> our system relies on the fact that timestamps produced by evdev are based on
+> the systems monotonic clock, whereas MSC_TIMESTAMP provides no such
+> guarantee.
+> As for whether it's a MSC or SYN event, I don't think we really have
+> preference.
+>
+> Thanks,
+>
+> Michael
