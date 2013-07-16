@@ -1,89 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab3GPJOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:14:08 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44165 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab3GPJOF (ORCPT
+	id S1754862Ab3GPJOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:14:25 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38006 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab3GPJOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:14:05 -0400
+	Tue, 16 Jul 2013 05:14:16 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ObN8DC7MeZEpGTnDkuiLM
+Date: Tue, 16 Jul 2013 02:14:14 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: linus.walleij@linaro.org
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] improved support for runtime muxing for pinctrl
+Message-ID: <20130716091413.GT7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20130716005611.e4ccab02.akpm@linux-foundation.org>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com> <20130712075602.GA4002@gmail.com>
- <20130715150342.35f7620ffe0835e3e2bc37d0@linux-foundation.org>
- <51E472D4.5060307@zytor.com> <20130716004727.b60b2c96.akpm@linux-foundation.org>
- <20130716005611.e4ccab02.akpm@linux-foundation.org>
-From: Florian Fainelli <florian@openwrt.org>
-Date: Tue, 16 Jul 2013 10:13:24 +0100
-X-Google-Sender-Auth: ISTEgamjBoP9PsVVzSBDM1RHwOQ
-Message-ID: <CAGVrzcaTMckMKUObknT8abPyOzetuHzWtNPkF=Ae4zz7huShkQ@mail.gmail.com>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        hyojun.im@lge.com, chan.jeong@lge.com,
-        Andy Lee <raphael.andy.lee@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716090310.5541.36777.stgit@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/16 Andrew Morton <akpm@linux-foundation.org>:
-> On Tue, 16 Jul 2013 00:47:27 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
->
->> On Mon, 15 Jul 2013 15:08:20 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
->>
->> > On 07/15/2013 03:03 PM, Andrew Morton wrote:
->> > >
->> > > I don't know how to do this.  Any suggestions?
->> > >
->> > > It has to be done at `make config' time.  We'd need to probe for the
->> > > presence of lz4c and then....  what?
->> > >
->> > > Is there any precedent for this?
->> > >
->> > > I don't think we can just ignore the absence of lz4c - the user has
->> > > selected a config which his system cannot build.  The problem lies
->> > > within randconfig itself.
->> > >
->> >
->> > We keep running over the need to be able to have kconfig run tests on
->> > the build system (for toolchain support or for optional tools needed);
->> > running them in the Makefiles (i.e. at Kbuild time) is simply too late.
->> >
->>
->> Would it make sense to extend Kconfig's `depends'?
->>
->>       depends on $(shell-command)
->>
->> I don't know how practical that would be to implement...
->
-> Or, easier and faster, run some front-end script which generates
-> once-off Kconfig symbols.
->
->         if [ -x /bin/lz4c ]
->         then
->                 echo CONFIG_HAVE_LZ4C
->         fi
->
-> then munge the output of that script into the Kconfig run and do
->
->         depends on HAVE_LZ4C
+* Tony Lindgren <tony@atomide.com> [130716 02:12]:
+> 
+> As discussed earlier, the pinctrl support for changing some of the
+> consumer device pins during runtime needs some improvment.
+> 
+> Here are the patches to do that, I'll also post a minimal sample
+> patch as a reply to this thread on how to do the muxing for
+> runtime PM.
 
-That does sound nice to avoid the build error, but will eventually
-make it harder to diagnose why the kernel has not been compressed with
-the specific compression tool, some kind of warning should also be
-emitted maybe?
---
-Florian
+Here's a patch showing the suggested usage remuxing SDIO IRQ
+to GPIO mode for runtime PM. Note that this patch depends on
+three other patches for the hsmmc driver, I'll post that series
+separately.
+
+Regards,
+
+Tony
+
+
+From: Tony Lindgren <tony@atomide.com>
+Date: Mon, 15 Jul 2013 07:39:39 -0700
+Subject: [PATCH] mmc: omap_hsmmc: Remux pins to support SDIO interrupt and PM runtime
+
+On some omaps we need to remux MMC pins for PM, and for some omaps
+we need to remux the SDIO IRQ pin.
+
+Based on an earlier patch by Andreas Fenkart <afenkart@gmail.com>.
+
+Cc: Andreas Fenkart <afenkart@gmail.com>
+Cc: Balaji T K <balajitk@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -1869,7 +1869,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 	const struct of_device_id *match;
+ 	dma_cap_mask_t mask;
+ 	unsigned tx_req, rx_req;
+-	struct pinctrl *pinctrl;
+ 
+ 	match = of_match_device(of_match_ptr(omap_mmc_of_match), &pdev->dev);
+ 	if (match) {
+@@ -2114,21 +2113,19 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 
+ 	omap_hsmmc_disable_irq(host);
+ 
+-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+-	if (IS_ERR(pinctrl))
+-		dev_warn(&pdev->dev,
+-			"pins are not configured from the driver\n");
+-
+ 	/*
+-	 * For now, only support SDIO interrupt if we are doing
+-	 * muxing of dat1 when booted with DT. This is because the
++	 * For now, only support SDIO interrupt if we are doing dynamic
++	 * remuxing of dat1 when booted with DT. This is because the
+ 	 * supposedly the wake-up events for CTPL don't work from deeper
+ 	 * idle states. And we don't want to add new legacy mux platform
+ 	 * init code callbacks any longer as we are moving to DT based
+ 	 * booting anyways.
+ 	 */
+ 	if (match) {
+-		if (!IS_ERR(pinctrl) && mmc_slot(host).sdio_irq)
++		struct device *dev = &pdev->dev;
++
++		if (!pinctrl_pm_check_idle_state(dev) &&
++		    mmc_slot(host).sdio_irq)
+ 			mmc->caps |= MMC_CAP_SDIO_IRQ;
+ 	}
+ 
+@@ -2348,6 +2345,10 @@ static int omap_hsmmc_runtime_suspend(struct device *dev)
+ 		OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+ 		spin_unlock_irqrestore(&host->irq_lock, flags);
+ 
++		ret = pinctrl_pm_select_idle_state(dev);
++		if (ret < 0)
++			dev_err(dev, "Unable to select idle pinmux\n");
++
+ 		if (mmc_slot(host).sdio_irq)
+ 			enable_irq(mmc_slot(host).sdio_irq);
+ 	}
+@@ -2371,6 +2372,10 @@ static int omap_hsmmc_runtime_resume(struct device *dev)
+ 		if (mmc_slot(host).sdio_irq)
+ 			disable_irq(mmc_slot(host).sdio_irq);
+ 
++		ret = pinctrl_pm_select_active_state(dev);
++		if (ret < 0)
++			dev_err(dev, "Unable to select active pinmux\n");
++
+ 		spin_lock_irqsave(&host->irq_lock, flags);
+ 		host->active_pinmux = true;
+ 
