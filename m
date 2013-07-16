@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3GPG5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 02:57:55 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:56363 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab3GPG5y (ORCPT
+	id S1752779Ab3GPHAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 03:00:21 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34756 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab3GPHAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 02:57:54 -0400
-Message-ID: <51E4EEEA.4000208@cypress.com>
-Date: Tue, 16 Jul 2013 09:57:46 +0300
-From: Ferruh Yigit <fery@cypress.com>
-Organization: Cypress
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 16 Jul 2013 03:00:19 -0400
+Message-ID: <51E4EF70.3040502@ti.com>
+Date: Tue, 16 Jul 2013 12:30:00 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier@dowhile0.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, ttdrivers@cypress.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] MAINTAINERS: Change maintainer for cyttsp driver
-References: <1373838082-12372-1-git-send-email-javier@dowhile0.org> <1373838082-12372-2-git-send-email-javier@dowhile0.org>
-In-Reply-To: <1373838082-12372-2-git-send-email-javier@dowhile0.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Daniel Mack <zonque@gmail.com>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: v3.11-rc1 USB regressions
+References: <20130715225647.GE3296@blackmetal.musicnaut.iki.fi> <51E4E922.2040707@gmail.com>
+In-Reply-To: <51E4E922.2040707@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 12:41 AM, Javier Martinez Canillas wrote:
-> I haven't had time to work on this driver for a long time and
-> Ferruh has been doing a great job making it more generic,
-> adding support for new hardware and providing bug fixes.
-Thank you a lot for your work on cyttsp drivers,
-we would like to see your support back whenever you have time again.
-Your expertise/know-how on issue is valuable.
+Hi,
 
->
-> So, let's make MAINTAINERS reflect reality and add him as the
-> cyttsp maintainer instead of me.
->
-> Also, since Ferruh works for Cypress, we may change the driver
-> status from Maintained to Supported.
->
-> Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
-> ---
->
-> Ferruh, please send your ack if you are willing to take over
-> maintainance of this driver.
+On Tuesday 16 July 2013 12:03 PM, Daniel Mack wrote:
+> Hi Aaro,
+> 
+> On 16.07.2013 00:56, Aaro Koskinen wrote:
+>> Hi,
+>>
+>> I think USB tree introduced regressions in v3.11-rc1, at least for some
+>> OMAP devices using legacy boot.
+> 
+> Thanks for checking the tree so early.
+> 
+>> I have only bisected these; I have no
+>> idea what the real fixes are but the following reverts make Nokia OMAP2+
+>> boards again usable for kernel development work (they need working USB
+>> connection for interacting with the device):
+>>
+>> 1) USB peripheral mode (g_ether) is broken on Nokia N900, N950 and N9
+>>    (USB_MUSB_OMAP2PLUS). To make it it work, I need to revert three
+>>    commits:
+>>
+>> 	09fc7d22b024692b2fe8a943b246de1af307132b
+>> 	usb: musb: fix incorrect usage of resource pointer
+>> 	(Reverting this fixes the g_ether probe failure "couldn't find
+>> 	 an available UDC")
 
-Acked-by: Ferruh Yigit <fery@cypress.com>
+I've posted a patch fixing the issue
+http://comments.gmane.org/gmane.linux.usb.general/89541
+There were some comments on it. I'll be posting a new version for it.
 
->
-> Also, please confirm that you have been working on behalf of
-> Cypress instead of doing it on your free time. Otherwise we
-> should keep the driver status to maintained instead supported.
-Right, I am a Cypress employee and working on TrueTouch drivers.
->
-> Thanks a lot and best regards,
-> Javier
->
->   MAINTAINERS |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 9d771d9..4ba996c 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2458,9 +2458,9 @@ S:	Maintained
->   F:	drivers/media/common/cypress_firmware*
->   
->   CYTTSP TOUCHSCREEN DRIVER
-> -M:	Javier Martinez Canillas <javier@dowhile0.org>
-> +M:	Ferruh Yigit <fery@cypress.com>
->   L:	linux-input@vger.kernel.org
-> -S:	Maintained
-> +S:	Supported
->   F:	drivers/input/touchscreen/cyttsp*
->   F:	include/linux/input/cyttsp.h
->   
-
-
--- 
-
-Regards,
-ferruh
-
+Thanks
+Kishon
