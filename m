@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab3GPIXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 04:23:39 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:32422 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3GPIXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 04:23:35 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-11-51e50300e70d
-From: Yadwinder Singh Brar <yadi.brar@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: sbkim73@samsung.com, broonie@kernel.org, lgirdwood@gmail.com,
-        yadi.brar01@gmail.com, Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [PATCH] regulator: s2mps11: Add linux/of.h header
-Date: Sun, 07 Jul 2013 13:44:49 +0530
-Message-id: <1373184889-16929-1-git-send-email-yadi.brar@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsWyRsSkSpeB+WmgwfenlhZTHz5hs/h2pYPJ
-	4vKuOWwWF1d8YbKY+7uR1WLO9HdMDmweO2fdZffYtKqTzaNvyypGj8+b5AJYorhsUlJzMstS
-	i/TtErgyHm9sZCo4xlqxcP8v5gbG2yxdjJwcEgImEmuvPYCyxSQu3FvP1sXIxSEksJRRYs6V
-	Z8wwRSd+TYZKLGKUeL/sHzOE08YksX7OUqYuRg4ONgEjiVfH7EAaRAQUJDb3PmMFsZkF2hkl
-	Ws9xg9jCAlYSh29uYASxWQRUJe53PAVbwCvgKvF80zWoZQoSrcsOsYPMlxD4ziaxfeslZogG
-	AYlvkw+xgOySEJCV2HQAql5S4uCKGywTGAUXMDKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/d
-	xAgM0dP/nk3YwXjvgPUhxmSgcROZpUST84EhnlcSb2hsZmRhamJqbGRuaUaasJI4r3qLdaCQ
-	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGxhl1H0PFD1Tf3yf5TzSN82v+4naRuli1a6LFiWmN
-	fBMlDHnknO9zRipwev943Gj6pLW4c5VEWLxV2yOL2kNimw2r2n7cXRJvWpzm3pH5ddUFI/NP
-	9c1yMrqNNotW98zaF/vMz7FZJUSU9Xe5u2HO45UiPhtiHblV2V7UL96YVWfGZRg4X0+JpTgj
-	0VCLuag4EQAQfTIEZwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t9jAV0G5qeBBgvWGVhMffiEzeLblQ4m
-	i8u75rBZXFzxhcli7u9GVos5098xObB57Jx1l91j06pONo++LasYPT5vkgtgiWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzHi8sZGp4BhrxcL9v5gbGG+zdDFyckgImEic
-	+DWZDcIWk7hwbz2QzcUhJLCIUeL9sn/MEE4bk8T6OUuZuhg5ONgEjCReHbMDaRARUJDY3PuM
-	FcRmFmhnlGg9xw1iCwtYSRy+uYERxGYRUJW43/GUGcTmFXCVeL7pGjPEMgWJ1mWH2Ccwci9g
-	ZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERwBz6R2MK5ssDjEKMDBqMTDK8HzJFCINbGs
-	uDL3EKMEB7OSCG/iJqAQb0piZVVqUX58UWlOavEhxmSg7ROZpUST84HRmVcSb2hsYm5qbGpp
-	YmFiZkmasJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjAks++TnmLheyj5w99cd3d03OO5F
-	RxUumSmhGScQeffamvVCDx6sWtfE7KzKvXL6v2rOTrFTAXc/+oW+V+x99+mmjLrufym7Z9zr
-	5T1/P+k+8OeaO6+ZXN7ZTT/5K7NmLLxy5d/Pe7MF2yT/fphzzPmUor+u9KMnos7MWzf2vmM8
-	x7aBM04xYooSS3FGoqEWc1FxIgDz4oAKxAIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753811Ab3GPIXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 04:23:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48218 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753219Ab3GPIXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 04:23:49 -0400
+Date: Tue, 16 Jul 2013 09:23:42 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 16/18] sched: Avoid overloading CPUs on a preferred NUMA
+ node
+Message-ID: <20130716082342.GF5055@suse.de>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <1373901620-2021-17-git-send-email-mgorman@suse.de>
+ <20130715200321.GN17211@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130715200321.GN17211@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds linux/of.h required to fix an error and warning reported by
-kbuild test robot for some x86 config file.
+On Mon, Jul 15, 2013 at 10:03:21PM +0200, Peter Zijlstra wrote:
+> On Mon, Jul 15, 2013 at 04:20:18PM +0100, Mel Gorman wrote:
+> > ---
+> >  kernel/sched/fair.c | 105 +++++++++++++++++++++++++++++++++++++++++-----------
+> >  1 file changed, 83 insertions(+), 22 deletions(-)
+> > 
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 3f0519c..8ee1c8e 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -846,29 +846,92 @@ static inline int task_faults_idx(int nid, int priv)
+> >  	return 2 * nid + priv;
+> >  }
+> >  
+> > -static unsigned long weighted_cpuload(const int cpu);
+> > +static unsigned long source_load(int cpu, int type);
+> > +static unsigned long target_load(int cpu, int type);
+> > +static unsigned long power_of(int cpu);
+> > +static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
+> > +
+> > +static int task_numa_find_cpu(struct task_struct *p, int nid)
+> > +{
+> > +	int node_cpu = cpumask_first(cpumask_of_node(nid));
+> > +	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
+> > +	unsigned long src_load, dst_load;
+> > +	unsigned long min_load = ULONG_MAX;
+> > +	struct task_group *tg = task_group(p);
+> > +	s64 src_eff_load, dst_eff_load;
+> > +	struct sched_domain *sd;
+> > +	unsigned long weight;
+> > +	bool balanced;
+> > +	int imbalance_pct, idx = -1;
+> >  
+> > +	/* No harm being optimistic */
+> > +	if (idle_cpu(node_cpu))
+> > +		return node_cpu;
+> >  
+> > +	/*
+> > +	 * Find the lowest common scheduling domain covering the nodes of both
+> > +	 * the CPU the task is currently running on and the target NUMA node.
+> > +	 */
+> > +	rcu_read_lock();
+> > +	for_each_domain(src_cpu, sd) {
+> > +		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
+> > +			/*
+> > +			 * busy_idx is used for the load decision as it is the
+> > +			 * same index used by the regular load balancer for an
+> > +			 * active cpu.
+> > +			 */
+> > +			idx = sd->busy_idx;
+> > +			imbalance_pct = sd->imbalance_pct;
+> > +			break;
+> > +		}
+> > +	}
+> > +	rcu_read_unlock();
+> >  
+> > +	if (WARN_ON_ONCE(idx == -1))
+> > +		return src_cpu;
+> >  
+> > +	/*
+> > +	 * XXX the below is mostly nicked from wake_affine(); we should
+> > +	 * see about sharing a bit if at all possible; also it might want
+> > +	 * some per entity weight love.
+> > +	 */
+> > +	weight = p->se.load.weight;
+> >  
+> > +	src_load = source_load(src_cpu, idx);
+> > +
+> > +	src_eff_load = 100 + (imbalance_pct - 100) / 2;
+> > +	src_eff_load *= power_of(src_cpu);
+> > +	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
+> 
+> So did you try with this effective_load() term 'missing'?
+> 
 
-Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
----
- drivers/regulator/s2mps11.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Yes, it performed worse in tests. Looking at it, I figured that it would
+have to perform worse unless effective_load regularly returns negative
+values.
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index e1aadbd..350e04f 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -17,6 +17,7 @@
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/regmap.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
 -- 
-1.7.0.4
-
+Mel Gorman
+SUSE Labs
