@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933941Ab3GPUcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:32:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11773 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933879Ab3GPUcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:32:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,679,1367996400"; 
-   d="scan'208";a="269155843"
-Message-ID: <51E5ADC5.9010105@linux.intel.com>
-Date: Tue, 16 Jul 2013 13:32:05 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
-        corbet@lwn.net, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-References: <51E166C8.3000902@linux.intel.com> <20130715195914.GC23818@dyad.programming.kicks-ass.net> <51E45E8B.705@linux.intel.com> <20130715210650.GF23818@dyad.programming.kicks-ass.net> <20130715211230.GG23818@dyad.programming.kicks-ass.net> <51E47D30.5030203@linux.intel.com> <20130716173848.GA22795@dyad.programming.kicks-ass.net> <51E5947F.4090109@linux.intel.com> <20130716192145.GV17211@twins.programming.kicks-ass.net> <51E5A5AE.7010903@linux.intel.com> <20130716201702.GW17211@twins.programming.kicks-ass.net>
-In-Reply-To: <20130716201702.GW17211@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933950Ab3GPUdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:33:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5833 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933606Ab3GPUdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 16:33:46 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=rTyptnn7BogA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=RMKxM6tspQQA:10 a=VwQbUJbxAAAA:8 a=cm27Pg_UAAAA:8 a=_6Ub_wPkdrvKiN6t9agA:9 a=QEXdDO2ut3YA:10 a=LI9Vle30uBYA:10 a=zv9_9hqRWm8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374006818.6458.62.camel@gandalf.local.home>
+Subject: Re: [PATCH v5] x86: make sure IDT is page aligned
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        PaX Team <pageexec@gmail.com>
+Date: Tue, 16 Jul 2013 16:33:38 -0400
+In-Reply-To: <CAGXu5jJd11FeaTEQc6=8=PgL56VeC0W37U=RvS-iJ-sP+Raeaw@mail.gmail.com>
+References: <20130716183441.GA14232@www.outflux.net>
+	 <CAE9FiQWSe-M8XhFvWM3Q5P3kj6_EvUFMSvCkrDZUH7WdPPp35g@mail.gmail.com>
+	 <CAGXu5jJd11FeaTEQc6=8=PgL56VeC0W37U=RvS-iJ-sP+Raeaw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/16/2013 1:17 PM, Peter Zijlstra wrote:
-> On Tue, Jul 16, 2013 at 12:57:34PM -0700, Arjan van de Ven wrote:
->> then the question of how much remaining capacity; this is a hard one, and not just
->> for Intel. Almost all mobile devices today are thermally constrained, ARM and Intel
->> alike (at least the higher performance ones)... the curse of wanting very thin and light
->> phones that are made of thermally isolating plastic (so that radio waves can go through)
->> and have a nice and bright screen...
->
-> Right, so we might need to track a !idle avg over the thermal domain to
-> guestimate the head-room and inter-cpu relations.
+On Tue, 2013-07-16 at 13:28 -0700, Kees Cook wrote:
+> On Tue, Jul 16, 2013 at 1:21 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Tue, Jul 16, 2013 at 11:34 AM, Kees Cook <keescook@chromium.org> wrote:
+> >> Since the IDT is referenced from a fixmap, make sure it is page aligned.
+> >> Merge with 32-bit one, since it was already aligned to deal with F00F
+> >> bug. Since bss is cleared before IDT setup, it can live there. This also
+> >> moves the other *_idt_table variables into common locations.
+> >>
 
+> It seemed more correct to me to define all the IDTs the same, but
+> there was no technical reason for that, just one of regularity. I only
+> care about keeping the real IDT page aligned. :) I'm fine to do
+> whatever is deemed "correct". :)
 
-btw one thing to realize is that many of the thermal limits in mobile devices don't have the CPU cores
-as the primary reason.
-Other components on the board (screens, modems etc) as well as the GPU likely impact
-this at least as much as actual cpu usage does.
-It's usually just that the CPU is the easiest to control down,
-so that tends to be the first one impacted.
+I'm actually unfamiliar with the F00F bug (heard of it, but have no idea
+what it is). What happens if the F00F bug exists and we switch to an IDT
+that's not paged aligned? Is that an issue?
+
+-- Steve
+
 
