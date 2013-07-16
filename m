@@ -1,170 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab3GPAym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 20:54:42 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:42934 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758435Ab3GPAyi (ORCPT
+	id S932201Ab3GPA6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 20:58:03 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:45767 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214Ab3GPA6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 20:54:38 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: [PATCH 03/10] vfio: add external user support
-Date: Tue, 16 Jul 2013 10:53:58 +1000
-Message-Id: <1373936045-22653-4-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>
-References: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>
+	Mon, 15 Jul 2013 20:58:00 -0400
+Subject: Re: CONFIG_* used by user-space to figure out whether a feature is
+ on/off
+From: Raymond Jennings <shentino@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CA+55aFzAg-yU4sX2F8NA0+RZT0v_T3vKc_JrPpX9rXE8-Ofd1A@mail.gmail.com>
+References: <20130715154050.GA5941@phenom.dumpdata.com>
+	 <CA+55aFxShsoiTfXUJM2463ZHPNzBsV_VcKBkM4NyGMpk6Cm=iQ@mail.gmail.com>
+	 <1373935603.31535.3.camel@warfang>
+	 <CA+55aFzAg-yU4sX2F8NA0+RZT0v_T3vKc_JrPpX9rXE8-Ofd1A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Jul 2013 17:57:57 -0700
+Message-ID: <1373936277.31535.6.camel@warfang>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO is designed to be used via ioctls on file descriptors
-returned by VFIO.
+On Mon, 2013-07-15 at 17:53 -0700, Linus Torvalds wrote:
+> On Mon, Jul 15, 2013 at 5:46 PM, Raymond Jennings <shentino@gmail.com> wrote:
+> >
+> > I'd like to point out that Google Chrome also makes use of CONFIG_ tests
+> > to detect support for namespaces and pid containers and stuff.
+> 
+> Hmm. It must work fine despite that. Because I run self-compiled
+> kernels and there are no config files to be found by user apps.
+> Neither in /proc nor in /boot. And I'm using chrome to write this.
+> 
+>               Linus
 
-However in some situations support for an external user is required.
-The first user is KVM on PPC64 (SPAPR TCE protocol) which is going to
-use the existing VFIO groups for exclusive access in real/virtual mode
-on a host to avoid passing map/unmap requests to the user space which
-would made things pretty slow.
+It could be the quirks of my package manager though.
 
-The protocol includes:
+I run Gentoo, so it's entirely possible that the ebuild is doing all the
+bitching, but chrome itself just fails gracefully and falls back to not
+using those features if it can't find them.
 
-1. do normal VFIO init operation:
-	- opening a new container;
-	- attaching group(s) to it;
-	- setting an IOMMU driver for a container.
-When IOMMU is set for a container, all groups in it are
-considered ready to use by an external user.
+I imagine though that the same stuff applying to applications in general
+should also apply to installers.
 
-2. User space passes a group fd to an external user.
-The external user calls vfio_group_get_external_user()
-to verify that:
-	- the group is initialized;
-	- IOMMU is set for it.
-If both checks passed, vfio_group_get_external_user()
-increments the container user counter to prevent
-the VFIO group from disposal before KVM exits.
-
-3. The external user calls vfio_external_user_iommu_id()
-to know an IOMMU ID. PPC64 KVM uses it to link logical bus
-number (LIOBN) with IOMMU ID.
-
-4. When the external KVM finishes, it calls
-vfio_group_put_external_user() to release the VFIO group.
-This call decrements the container user counter.
-Everything gets released.
-
-The "vfio: Limit group opens" patch is also required for the consistency.
-
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
-Changes:
-2013/07/11:
-* added vfio_group_get()/vfio_group_put()
-* protocol description changed
-
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- drivers/vfio/vfio.c  | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/vfio.h |  7 ++++++
- 2 files changed, 69 insertions(+)
-
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index c488da5..58b034b 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -1370,6 +1370,68 @@ static const struct file_operations vfio_device_fops = {
- };
- 
- /**
-+ * External user API, exported by symbols to be linked dynamically.
-+ *
-+ * The protocol includes:
-+ *  1. do normal VFIO init operation:
-+ *	- opening a new container;
-+ *	- attaching group(s) to it;
-+ *	- setting an IOMMU driver for a container.
-+ * When IOMMU is set for a container, all groups in it are
-+ * considered ready to use by an external user.
-+ *
-+ * 2. User space passes a group fd to an external user.
-+ * The external user calls vfio_group_get_external_user()
-+ * to verify that:
-+ *	- the group is initialized;
-+ *	- IOMMU is set for it.
-+ * If both checks passed, vfio_group_get_external_user()
-+ * increments the container user counter to prevent
-+ * the VFIO group from disposal before KVM exits.
-+ *
-+ * 3. The external user calls vfio_external_user_iommu_id()
-+ * to know an IOMMU ID.
-+ *
-+ * 4. When the external KVM finishes, it calls
-+ * vfio_group_put_external_user() to release the VFIO group.
-+ * This call decrements the container user counter.
-+ */
-+struct vfio_group *vfio_group_get_external_user(struct file *filep)
-+{
-+	struct vfio_group *group = filep->private_data;
-+
-+	if (filep->f_op != &vfio_group_fops)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (!atomic_inc_not_zero(&group->container_users))
-+		return ERR_PTR(-EINVAL);
-+
-+	if (!group->container->iommu_driver ||
-+			!vfio_group_viable(group)) {
-+		atomic_dec(&group->container_users);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	vfio_group_get(group);
-+
-+	return group;
-+}
-+EXPORT_SYMBOL_GPL(vfio_group_get_external_user);
-+
-+void vfio_group_put_external_user(struct vfio_group *group)
-+{
-+	vfio_group_put(group);
-+	vfio_group_try_dissolve_container(group);
-+}
-+EXPORT_SYMBOL_GPL(vfio_group_put_external_user);
-+
-+int vfio_external_user_iommu_id(struct vfio_group *group)
-+{
-+	return iommu_group_id(group->iommu_group);
-+}
-+EXPORT_SYMBOL_GPL(vfio_external_user_iommu_id);
-+
-+/**
-  * Module/class support
-  */
- static char *vfio_devnode(struct device *dev, umode_t *mode)
-diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index ac8d488..24579a0 100644
---- a/include/linux/vfio.h
-+++ b/include/linux/vfio.h
-@@ -90,4 +90,11 @@ extern void vfio_unregister_iommu_driver(
- 	TYPE tmp;						\
- 	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
- 
-+/*
-+ * External user API
-+ */
-+extern struct vfio_group *vfio_group_get_external_user(struct file *filep);
-+extern void vfio_group_put_external_user(struct vfio_group *group);
-+extern int vfio_external_user_iommu_id(struct vfio_group *group);
-+
- #endif /* VFIO_H */
--- 
-1.8.3.2
+Anyway I just wanted to highlight that it's not just the xen stuff
+that's peeking at kernel config.
 
