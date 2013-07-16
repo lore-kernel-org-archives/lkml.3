@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab3GPOfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:35:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39424 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab3GPOfg (ORCPT
+	id S932737Ab3GPOjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:39:09 -0400
+Received: from p-mail1.rd.orange.com ([195.101.245.15]:19032 "EHLO
+	p-mail1.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932528Ab3GPOjH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:35:36 -0400
-Date: Tue, 16 Jul 2013 16:34:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/5] perf: add two new features
-Message-ID: <20130716143429.GK23818@dyad.programming.kicks-ass.net>
-References: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com>
- <20130628152745.GH6626@twins.programming.kicks-ass.net>
- <51CDE273.9080209@intel.com>
- <51E4E688.10405@intel.com>
+	Tue, 16 Jul 2013 10:39:07 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH 13/15] kconfig/[mn]conf: make it explicit in the search box that a regexp is possible
+Date: Tue, 16 Jul 2013 16:39:04 +0200
+User-Agent: KMail/1.13.5 (Linux/3.9.10-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+References: <cover.1372097219.git.yann.morin.1998@free.fr> <20130708173742.GC3206@free.fr> <1373985080.4513.9.camel@chaos.site>
+In-Reply-To: <1373985080.4513.9.camel@chaos.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E4E688.10405@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201307161639.04649.yann.morin.1998@free.fr>
+X-OriginalArrivalTime: 16 Jul 2013 14:39:05.0050 (UTC) FILETIME=[38A2EBA0:01CE8232]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 09:22:00AM +0300, Adrian Hunter wrote:
-> On 28/06/13 22:22, Adrian Hunter wrote:
-> > On 28/06/2013 6:27 p.m., Peter Zijlstra wrote:
-> >> On Fri, Jun 28, 2013 at 04:22:16PM +0300, Adrian Hunter wrote:
-> >>> Hi
-> >>>
-> >>> Please consider these two new perf features:
-> >>>        x86: add ability to calculate TSC from perf sample timestamps
-> >>>        perf: add 'keep tracking' flag to PERF_EVENT_IOC_DISABLE
-> >>
-> >> Please explain to us why you'd like to do this..
+Jean, All,
+
+On Tuesday 16 July 2013 16:31:20 Jean Delvare wrote:
+> Le Monday 08 July 2013 à 19:37 +0200, Yann E. MORIN a écrit :
+> > On 2013-07-08 13:25 +0200, Jean Delvare spake thusly:
+> > > Le Monday 24 June 2013 à 20:11 +0200, Yann E. MORIN a écrit :
+[--SNIP--]
+> > > > -	str_printf( &title, _("Enter %s (sub)string to search for "
+> > > > +	str_printf( &title, _("Enter %s (sub)string or regexp to search for "
+> > > >  			      "(with or without \"%s\")"), CONFIG_, CONFIG_);
+> > > 
+> > > While clearer, this also makes the title span over two lines when it
+> > > used to fit on a single one. I would like to suggest the following:
+> > > 
+> > > 	str_printf(&title, _("Enter (sub)string or regexp to search for "
+> > > 			     "(with or without \"%s\")"), CONFIG_);
+> > > 
+> > > Rationale: the "(with or without CONFIG_)" makes things clear enough
+> > > IMHO, making the first occurrence redundant.
 > > 
-> > I will see what information I can dig up.  The short answer is that I need
-> > to disable and re-enable a perf event but still be able to map IPs to their
-> > DSOs and symbols - which means not losing mmap events.
+> > OK, I'll send another patch with the text updated with your suggestion.
 > 
-> Any other comments?
+> Did you? I can't remember seeing it.
 
-Ah, thanks for the reminder.. well, I've applied patches 1-3 as those seem
-useful on their own. I'm not entirely convinced about the 'keep tracking' thing
-though.
+Doh! I forgot that one... Will do.
 
-It seems to me you could get the same by opening a second event into the same
-buffer and keeping that enabled.
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+'------------------------------'-------'------------------'--------------------'
