@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3GPFyF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 01:54:05 -0400
-Received: from callisto.mysnip.de ([178.23.121.164]:40209 "EHLO
-	callisto.mysnip.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab3GPFyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 01:54:03 -0400
+	id S1751563Ab3GPFzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 01:55:08 -0400
+Received: from plane.gmane.org ([80.91.229.3]:37900 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409Ab3GPFzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 01:55:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
 To: linux-kernel@vger.kernel.org
-Subject: Commence Industrial Crm Profiled By simply Manufacturing Correspondent Thomas R. Cutler
-X-PHP-Originating-Script: 1000:email_functions.php
-Content-Type: text/plain; charset=UTF-8
-X-Mailer: Phorum5
-Message-ID: <1e0d770ca12fd5a2c9e751145e751a14.LinuxKernel@www.serverphorums.com>
-X-Phorum: 1a38330efb91e5f9021ae2fc13b39ae0412706f1
-From: lkml@serverphorums.com
-Date: Tue, 16 Jul 2013 07:54:01 +0200 (CEST)
+From: ianp <snailbox88-dev@yahoo.com>
+Subject: Re: Linux 3.9.10
+Date: Tue, 16 Jul 2013 05:48:55 +0000 (UTC)
+Message-ID: <loom.20130716T073515-564@post.gmane.org>
+References: <20130713185417.GA618@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 112.205.48.49 (Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.71 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6G5sEYh014755
 
-Reported by Thomas UR. Cutler, Manufacturing Journalist in the recent issue of Alternative Focus, "The foundation of any quality revenue organization starts with all the implementation in addition to management of an sales process.Thomas sabo rea These is also the steps required by the sales representative to move the prospect from the initial introduction stage to the closing step.
+Greg KH <gregkh <at> linuxfoundation.org> writes:
 
-Few industrial CRM models provide manufacturers which has a structured established sales method or technique for considering and handling each stage of the sales bike. A pro-active way of managing the sales procedure allows this sales manager to monitor and supply guidance through cycle, in addition to help gross sales representatives consentrate on the most effective opportunities. " This article can be read in its entirety  thomas sabo sverige.
+> Please move to the 3.10-stable series at this point in time.  If that
+> isn't working for you, please let us know NOW!
+> 
 
-Caretsky, noted within the feature posting that "CEOs worth mentioning companies usually share exactly how their innovative enterprise resource planning (ERP) program provides them whatever they want, but are not able to recognize that ERP programs provide information following a sale, not ahead of or in the sales process. Thomas sabo smycken ERP programs provide absolutely no value with regard to improving this efficiency of how to sell in addition to service buyers. This will be one cause that outlook reports tend to be always incorrect. "
+Hi Greg,
 
-Commence presents industrial organizations complete "Freedom Connected with Choice" purchase the solutions and program that ideal meets this company requirements regarding manufacturers in addition to distributors. The comprehensive CRM Alternative application suite can be purchased for work with on game play or on- demand as being a hosted service. Thomas sabo berlocker Industrial leaders often construct departmental CRM solutions while using award successful Commence Commercial CRM Platform. These alternatives are why so many industrial organizations choose Commence as the solution pertaining to managing shopper relationships. Almost all Commence Alternative solutions support mobile and also wireless connectivity in addition to integration for you to back-office accounting in addition to ERP models.
+Unfortunate hardware owners of Intel Atom's Cedar Trail platforms (like Atom 
+N2600/N2800) like myself have been relying on the excellent work of thomas001 
+on the cedarview-drm kernel driver, https://github.com/thomas001/cedarview-
+drm, to enable the use of the cedarview_gfx module and its proprietary, 
+accelerated userspace xorg driver pvr, with later kernel releases.
 
-Datacraft Alternatives specializes in providing their particular clients considering the tools they need to rapidly replace outdated guide systems together with technology which speeds method flow and improves precision. Thomas Sabo Halsband Datacraft's highest regarded product, Signum continues to be developed throughout the Kanban notion of replenishment, and provides a pivotal tool pertaining to manufacturing organizations to watch process stream, lower administrative transaction expenditures, and improve decision-making power.
+Unfortunately, the 3.10 kernel release brought about some major changes in  
+include/linux/proc_fs.h that prevent the successful compilation of the 
+cedarview_gfx kernel module, as reported here 
+https://github.com/thomas001/cedarview-drm/issues/1 .
 
----
-posted at http://www.serverphorums.com
-http://www.serverphorums.com/read.php?12,743669,743669#msg-743669
+Can you suggest how one proceeds from here? Intel cannot be relied upon to 
+update the driver package, even at least the open-source cedarview-drm source 
+package, for this hardware.
+
+-ianp
+
