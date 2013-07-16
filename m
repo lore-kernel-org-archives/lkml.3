@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab3GPJL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:11:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50838 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab3GPJL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:11:26 -0400
-Date: Tue, 16 Jul 2013 11:11:24 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-In-Reply-To: <20130716061324.GA19052@kroah.com>
-Message-ID: <alpine.LNX.2.00.1307161109480.29788@pobox.suse.cz>
-References: <1373916476.2748.69.camel@dabdike> <20130715214422.GA2478@kroah.com> <1373941801.31067.113.camel@deadeye.wl.decadent.org.uk> <20130716061324.GA19052@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754355Ab3GPJMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:12:24 -0400
+Received: from p-mail1.rd.orange.com ([195.101.245.15]:35133 "EHLO
+	p-mail1.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479Ab3GPJMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 05:12:22 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new streaming format
+Date: Tue, 16 Jul 2013 11:12:17 +0200
+User-Agent: KMail/1.13.5 (Linux/3.9.10-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, celinux-dev@lists.celinuxforum.org,
+        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
+        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Florian Fainelli <florian@openwrt.org>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Chanho Min <chanho.min@lge.com>
+References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com> <20130716012756.31936d8d.akpm@linux-foundation.org> <20130716090546.GB4402@pd.tnic>
+In-Reply-To: <20130716090546.GB4402@pd.tnic>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307161112.17901.yann.morin.1998@free.fr>
+X-OriginalArrivalTime: 16 Jul 2013 09:12:18.0728 (UTC) FILETIME=[925B9A80:01CE8204]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Jul 2013, Greg KH wrote:
+Borislav, All,
 
-> > Anything that's being reviewed on the stable list is public.  I know
-> > this is an old argument, but if you point out a fix you *know* has a
-> > security impact then you'll help general distribution maintainers and
-> > users a lot more than you help the black-hats who are quite capable of
-> > recognising such a fix (if they haven't already spotted and exploited
-> > the bug).
+On Tuesday 16 July 2013 11:05:46 Borislav Petkov wrote:
+> On Tue, Jul 16, 2013 at 01:27:56AM -0700, Andrew Morton wrote:
+> > What I'm angling at is, rather than a single global front-end script,
+> > can we embed the scripts in some fashion within the various Kconfig
+> > files?  Say,
+> > 
+> > 	script ./some-script.sh
+> > 
+> > and the config system will only evaluate that command if it is working
+> > on that Kconfig file.  Obviously that requires a multiple-pass thing.
 > 
-> I'm sorry, but you know I will not do that, so asking about it isn't
-> going to change this behavior.
+> What's wrong with simply grepping the .config we've just created for
+> *enabled* symbols which require userspace support, check for the
+> presence of said support and bail out if none?
 
-I just followed up in the other thread, where Ted was explaining why the 
-huge /dev/random rework was a -stable material.
+The goal is to avoid generating a non-buildable kernel in the first place.
+This is very usefull for automatic check harness that run randconfig, for
+example (but may have more use-cases).
 
-Why specifically would it be wrong to be open about this being security 
-related, and providing the necessary data (i.e. at least reference to 
-http://factorable.net/) publically?
+> I.e., those steps:
+> 1. make <whatever>config
+> 2. make => A prereq. target runs the shell script.
 
-I fail to see what the point behind hiding this would be.
+This is too late, since this will bail out, and will give a false-positive
+failure.
 
-Thanks,
+While if we were to check for _known_ needed tools before calling into
+Kconfig, we can simply hide non-available config options, and even inform
+the user *why* the option is not available.
+
+Regards,
+Yann E. MORIN.
 
 -- 
-Jiri Kosina
-SUSE Labs
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+'------------------------------'-------'------------------'--------------------'
