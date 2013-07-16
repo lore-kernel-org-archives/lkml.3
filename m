@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab3GPJXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:23:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40938 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab3GPJXq (ORCPT
+	id S1754267Ab3GPJZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:25:20 -0400
+Received: from p-mail2.rd.orange.com ([195.101.245.16]:26310 "EHLO
+	p-mail2.rd.orange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3GPJZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:23:46 -0400
-Date: Tue, 16 Jul 2013 10:23:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Cc: linux-kernel@vger.kernel.org, sbkim73@samsung.com, lgirdwood@gmail.com,
-        yadi.brar01@gmail.com
-Message-ID: <20130716092326.GA22506@sirena.org.uk>
-References: <1373184889-16929-1-git-send-email-yadi.brar@samsung.com>
+	Tue, 16 Jul 2013 05:25:18 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Florian Fainelli <florian@openwrt.org>
+Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new streaming format
+Date: Tue, 16 Jul 2013 11:25:14 +0200
+User-Agent: KMail/1.13.5 (Linux/3.9.10-ilmarinen-nv; KDE/4.4.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        hyojun.im@lge.com, chan.jeong@lge.com,
+        Andy Lee <raphael.andy.lee@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Chanho Min <chanho.min@lge.com>
+References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com> <20130716005611.e4ccab02.akpm@linux-foundation.org> <CAGVrzcaTMckMKUObknT8abPyOzetuHzWtNPkF=Ae4zz7huShkQ@mail.gmail.com>
+In-Reply-To: <CAGVrzcaTMckMKUObknT8abPyOzetuHzWtNPkF=Ae4zz7huShkQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
-Content-Disposition: inline
-In-Reply-To: <1373184889-16929-1-git-send-email-yadi.brar@samsung.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: s2mps11: Add linux/of.h header
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307161125.14491.yann.morin.1998@free.fr>
+X-OriginalArrivalTime: 16 Jul 2013 09:25:14.0837 (UTC) FILETIME=[60F47050:01CE8206]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Florian, All,
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tuesday 16 July 2013 11:13:24 Florian Fainelli wrote:
+> 2013/7/16 Andrew Morton <akpm@linux-foundation.org>:
+> > On Tue, 16 Jul 2013 00:47:27 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+> >
+> >> On Mon, 15 Jul 2013 15:08:20 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+> >>
+> >> > On 07/15/2013 03:03 PM, Andrew Morton wrote:
+> >> > >
+> >> > > I don't know how to do this.  Any suggestions?
+> >> > >
+> >> > > It has to be done at `make config' time.  We'd need to probe for the
+> >> > > presence of lz4c and then....  what?
+> >> > >
+> >> > > Is there any precedent for this?
+> >> > >
+> >> > > I don't think we can just ignore the absence of lz4c - the user has
+> >> > > selected a config which his system cannot build.  The problem lies
+> >> > > within randconfig itself.
+> >> > >
+> >> >
+> >> > We keep running over the need to be able to have kconfig run tests on
+> >> > the build system (for toolchain support or for optional tools needed);
+> >> > running them in the Makefiles (i.e. at Kbuild time) is simply too late.
+> >> >
+> >>
+> >> Would it make sense to extend Kconfig's `depends'?
+> >>
+> >>       depends on $(shell-command)
+> >>
+> >> I don't know how practical that would be to implement...
+> >
+> > Or, easier and faster, run some front-end script which generates
+> > once-off Kconfig symbols.
+> >
+> >         if [ -x /bin/lz4c ]
+> >         then
+> >                 echo CONFIG_HAVE_LZ4C
+> >         fi
+> >
+> > then munge the output of that script into the Kconfig run and do
+> >
+> >         depends on HAVE_LZ4C
+> 
+> That does sound nice to avoid the build error, but will eventually
+> make it harder to diagnose why the kernel has not been compressed with
+> the specific compression tool, some kind of warning should also be
+> emitted maybe?
 
-On Sun, Jul 07, 2013 at 01:44:49PM +0530, Yadwinder Singh Brar wrote:
-> This patch adds linux/of.h required to fix an error and warning reported by
-> kbuild test robot for some x86 config file.
+Either a warning at check-time, or a comment in Kconfig, such as:
+    config COMPRESS_LZ4
+        depends on HAVE_LZ4
+    comment "'lz4' missing, LZ4 compression not available"
+        depends on !HAVE_LZ4
 
-I already fixed this up (I just amended the original commit) but thanks.
+Either way is fine with me. ;-)
 
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
+Yann E. MORIN.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5RELAAoJELSic+t+oim9dmsQAJuBOEbDaBU4B9MlU0ovJiw6
-T7Db5Uctns1v6W2m5F+41jqUumYvaVwmfO36WH5aPdQQJ5cjvWiRYafhDwDXPOjk
-L7yPLDpZugXRthKv8CTmi/UuFg/910oeQAfAguzwXPpdXYdzVlPLI8WodLRVV7kz
-yjm01gPc3kHZKOeiJWCNRuonxRdPFJ+mbIXDjGdWv4wEhKImTiAD1IAV5zsj0WC3
-p/0NnpKspE4wk2FJt7fcweAGGUJ37l0yWyKWFUfT2b39JG14RHeULB19dnU7xxNQ
-O06y7taeEoO4mxkeUZVuhY54vGHyfWhZEu9nA1xFLnYGORp/yaKBJisk0/56ubKK
-AcApg0DDT3049/mf5uXVi1r5CiK5wZIBTQ8jpfQggPqXB/XlYoIradBvMS4uyR1H
-OH/fOSE9B/4Nj1z9BHDOHt7Vtqwl4xG6ymEl1l/VP66efy0uFDg/CMAQOgValau6
-kFzS3iHuCv1VbwWmNFJgQynU/03zOckoeWZqEgyWwabEfwEUxQE62L7R2g1qzkwg
-VXSjeb0WnLbuUa3BGTzK5bdMEVof3iQaqi+TfJxYIgdFZHH1/+QVv/DBjTTO1J4O
-l5/E67wV6KFKNCIu9MpX+CDWM6WfdGb09O3d4BRMBhfYlH/uvRtvXvl5A3p33dN/
-PmGNXdBtGy6hzjBABc1+
-=p/rQ
------END PGP SIGNATURE-----
-
---LQksG6bCIzRHxTLp--
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +0/33 662376056 | Software  Designer | \ / CAMPAIGN     |   ^                |
+| --==< O_o >==-- '------------.-------:  X  AGAINST      |  /e\  There is no  |
+| http://ymorin.is-a-geek.org/ | (*_*) | / \ HTML MAIL    |  """  conspiracy.  |
+'------------------------------'-------'------------------'--------------------'
