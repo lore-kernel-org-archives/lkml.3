@@ -1,246 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933965Ab3GPUFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:05:10 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:49300 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933196Ab3GPUFH (ORCPT
+	id S933978Ab3GPUFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:05:35 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:64183 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933846Ab3GPUFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:05:07 -0400
-Date: Tue, 16 Jul 2013 23:04:27 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: cpufreq: possible circular locking detected on suspend
-Message-ID: <20130716200427.GA2997@swordfish>
+	Tue, 16 Jul 2013 16:05:30 -0400
+Message-ID: <51E5A785.1040805@gmail.com>
+Date: Tue, 16 Jul 2013 15:05:25 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Jon Medhurst <tixy@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
+        Achin Gupta <achin.gupta@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [RFC PATCH v5 1/1] drivers: mfd: vexpress: add Serial Power Controller
+ (SPC) support
+References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com> <1373990743-23106-2-git-send-email-lorenzo.pieralisi@arm.com>
+In-Reply-To: <1373990743-23106-2-git-send-email-lorenzo.pieralisi@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-extracted as a new thread from https://lkml.org/lkml/2013/7/16/344
+On 07/16/2013 11:05 AM, Lorenzo Pieralisi wrote:
+> The TC2 versatile express core tile integrates a logic block that provides the
+> interface between the dual cluster test-chip and the M3 microcontroller that
+> carries out power management. The logic block, called Serial Power Controller
+> (SPC), contains several memory mapped registers to control among other things
+> low-power states, wake-up irqs and per-CPU jump addresses registers.
+> 
+> This patch provides a driver that enables run-time control of features
+> implemented by the SPC power management control logic.
+> 
+> The SPC control logic is required to be programmed very early in the boot
+> process to reset secondary CPUs on the TC2 testchip, set-up jump addresses and
+> wake-up IRQs for power management. Hence, waiting for core changes to be
+> made in the device core code to enable early registration of platform
+> devices, the driver puts in place an early init scheme that allows kernel
+> drivers to initialize the SPC driver directly from the components requiring
+> it, if their initialization routine is called before the driver init
+> function by the boot process.
+> 
+> Device tree bindings documentation for the SPC component is provided with
+> the patchset.
 
-cpufreq midifications are:
-> Srivatsa S. Bhat wrote:
->
-> 1. Patch given in:  https://lkml.org/lkml/2013/7/11/661
->    (Just apply patch 1, not the entire patchset).
->
-> 2. Apply the patch shown below, on top of the above patch:
->
-[2: is a revert of commit 2f7021a815f20f3481c10884fe9735ce2a56db35]
+Just curious, wouldn't a TC2 PSCI implementation eliminate the need for
+most/all of this code?
 
+Rob
 
-	# for i in {1..5}; do \
-	echo 0 > /sys/devices/system/cpu/cpu3/online; \
-	echo 0 > /sys/devices/system/cpu/cpu2/online; \
-	echo 1 > /sys/devices/system/cpu/cpu3/online; \
-	echo 0 > /sys/devices/system/cpu/cpu1/online; \
-	echo 1 > /sys/devices/system/cpu/cpu1/online; \
-	echo 1 > /sys/devices/system/cpu/cpu2/online; \
-	done
-	# systemctl suspend
-	->	resume
+> 
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Amit Kucheria <amit.kucheria@linaro.org>
+> Cc: Jon Medhurst <tixy@linaro.org>
+> Signed-off-by: Achin Gupta <achin.gupta@arm.com>
+> Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Signed-off-by: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/vexpress-spc.txt |  36 ++
+>  drivers/mfd/Kconfig                                    |  10 +
+>  drivers/mfd/Makefile                                   |   1 +
+>  drivers/mfd/vexpress-spc.c                             | 253 ++++++++++
+>  include/linux/vexpress.h                               |  17 +
+>  5 files changed, 317 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/vexpress-spc.txt b/Documentation/devicetree/bindings/mfd/vexpress-spc.txt
+> new file mode 100644
+> index 0000000..1614725
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/vexpress-spc.txt
+> @@ -0,0 +1,36 @@
+> +* ARM Versatile Express Serial Power Controller device tree bindings
+> +
+> +Latest ARM development boards implement a power management interface (serial
+> +power controller - SPC) that is capable of managing power states transitions,
+> +wake-up IRQs and resume addresses for ARM multiprocessor testchips.
+> +The serial controller can be programmed through a memory mapped interface
+> +that enables communication between firmware running on the microcontroller
+> +managing power states and the application processors.
+> +
+> +The SPC DT bindings are defined as follows:
+> +
+> +- spc node
+> +
+> +	- compatible:
+> +		Usage: required
+> +		Value type: <stringlist>
+> +		Definition: must be
+> +			    "arm,vexpress-spc,v2p-ca15_a7", "arm,vexpress-spc"
+> +	- reg:
+> +		Usage: required
+> +		Value type: <prop-encode-array>
+> +		Definition: A standard property that specifies the base address
+> +			    and the size of the SPC address space
+> +	- interrupts:
+> +		Usage: required
+> +		Value type: <prop-encoded-array>
+> +		Definition:  SPC interrupt configuration. A standard property
+> +			     that follows ePAPR interrupts specifications
+> +
+> +Example:
+> +
+> +spc: spc@7fff0000 {
+> +	compatible = "arm,vexpress-spc,v2p-ca15_a7", "arm,vexpress-spc";
+> +	reg = <0x7fff0000 0x1000>;
+> +	interrupts = <0 95 4>;
+> +};
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 6959b8d..ebd23f4 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -1149,3 +1149,13 @@ config VEXPRESS_CONFIG
+>  	help
+>  	  Platform configuration infrastructure for the ARM Ltd.
+>  	  Versatile Express.
+> +
+> +config VEXPRESS_SPC
+> +	bool "Versatile Express SPC driver support"
+> +	depends on ARM
+> +	help
+> +	  The Serial Power Controller (SPC) for ARM Ltd. test chips, is
+> +	  an IP that provides a memory mapped interface to power controller
+> +	  HW. The driver provides an API abstraction allowing to program
+> +	  registers controlling low-level power management features like power
+> +	  down flags, global and per-cpu wake-up IRQs.
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 718e94a..3a01203 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -153,5 +153,6 @@ obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
+>  obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
+>  obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
+>  obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o vexpress-sysreg.o
+> +obj-$(CONFIG_VEXPRESS_SPC)	+= vexpress-spc.o
+>  obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
+>  obj-$(CONFIG_MFD_AS3711)	+= as3711.o
+> diff --git a/drivers/mfd/vexpress-spc.c b/drivers/mfd/vexpress-spc.c
+> new file mode 100644
+> index 0000000..aa8c2a4
+> --- /dev/null
+> +++ b/drivers/mfd/vexpress-spc.c
+> @@ -0,0 +1,253 @@
+> +/*
+> + * Versatile Express Serial Power Controller (SPC) support
+> + *
+> + * Copyright (C) 2013 ARM Ltd.
+> + *
+> + * Authors: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> + *          Achin Gupta           <achin.gupta@arm.com>
+> + *          Lorenzo Pieralisi     <lorenzo.pieralisi@arm.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/of_address.h>
+> +#include <linux/slab.h>
+> +#include <linux/vexpress.h>
+> +
+> +#include <asm/cacheflush.h>
+> +
+> +#define SPCLOG "vexpress-spc: "
+> +
+> +/* SCC conf registers */
+> +#define A15_CONF		0x400
+> +#define SYS_INFO		0x700
+> +
+> +/* SPC registers base */
+> +#define SPC_BASE		0xB00
+> +
+> +/* SPC wake-up IRQs status and mask */
+> +#define WAKE_INT_MASK		(SPC_BASE + 0x24)
+> +#define WAKE_INT_RAW		(SPC_BASE + 0x28)
+> +#define WAKE_INT_STAT		(SPC_BASE + 0x2c)
+> +/* SPC power down registers */
+> +#define A15_PWRDN_EN		(SPC_BASE + 0x30)
+> +#define A7_PWRDN_EN		(SPC_BASE + 0x34)
+> +/* SPC per-CPU mailboxes */
+> +#define A15_BX_ADDR0		(SPC_BASE + 0x68)
+> +#define A7_BX_ADDR0		(SPC_BASE + 0x78)
+> +
+> +/* wake-up interrupt masks */
+> +#define GBL_WAKEUP_INT_MSK	(0x3 << 10)
+> +
+> +/* TC2 static dual-cluster configuration */
+> +#define MAX_CLUSTERS		2
+> +
+> +struct ve_spc_drvdata {
+> +	void __iomem *baseaddr;
+> +	/*
+> +	 * A15s cluster identifier
+> +	 * It corresponds to A15 processors MPIDR[15:8] bitfield
+> +	 */
+> +	u32 a15_clusid;
+> +};
+> +
+> +static struct ve_spc_drvdata *info;
+> +
+> +static inline bool cluster_is_a15(u32 cluster)
+> +{
+> +	return cluster == info->a15_clusid;
+> +}
+> +
+> +/**
+> + * ve_spc_global_wakeup_irq()
+> + *
+> + * Function to set/clear global wakeup IRQs. Not protected by locking since
+> + * it might be used in code paths where normal cacheable locks are not
+> + * working. Locking must be provided by the caller to ensure atomicity.
+> + *
+> + * @set: if true, global wake-up IRQs are set, if false they are cleared
+> + */
+> +void ve_spc_global_wakeup_irq(bool set)
+> +{
+> +	u32 reg;
+> +
+> +	reg = readl_relaxed(info->baseaddr + WAKE_INT_MASK);
+> +
+> +	if (set)
+> +		reg |= GBL_WAKEUP_INT_MSK;
+> +	else
+> +		reg &= ~GBL_WAKEUP_INT_MSK;
+> +
+> +	writel_relaxed(reg, info->baseaddr + WAKE_INT_MASK);
+> +}
+> +
+> +/**
+> + * ve_spc_cpu_wakeup_irq()
+> + *
+> + * Function to set/clear per-CPU wake-up IRQs. Not protected by locking since
+> + * it might be used in code paths where normal cacheable locks are not
+> + * working. Locking must be provided by the caller to ensure atomicity.
+> + *
+> + * @cluster: mpidr[15:8] bitfield describing cluster affinity level
+> + * @cpu: mpidr[7:0] bitfield describing cpu affinity level
+> + * @set: if true, wake-up IRQs are set, if false they are cleared
+> + */
+> +void ve_spc_cpu_wakeup_irq(u32 cluster, u32 cpu, bool set)
+> +{
+> +	u32 mask, reg;
+> +
+> +	if (cluster >= MAX_CLUSTERS)
+> +		return;
+> +
+> +	mask = 1 << cpu;
+> +
+> +	if (!cluster_is_a15(cluster))
+> +		mask <<= 4;
+> +
+> +	reg = readl_relaxed(info->baseaddr + WAKE_INT_MASK);
+> +
+> +	if (set)
+> +		reg |= mask;
+> +	else
+> +		reg &= ~mask;
+> +
+> +	writel_relaxed(reg, info->baseaddr + WAKE_INT_MASK);
+> +}
+> +
+> +/**
+> + * ve_spc_set_resume_addr() - set the jump address used for warm boot
+> + *
+> + * @cluster: mpidr[15:8] bitfield describing cluster affinity level
+> + * @cpu: mpidr[7:0] bitfield describing cpu affinity level
+> + * @addr: physical resume address
+> + */
+> +void ve_spc_set_resume_addr(u32 cluster, u32 cpu, u32 addr)
+> +{
+> +	void __iomem *baseaddr;
+> +
+> +	if (cluster >= MAX_CLUSTERS)
+> +		return;
+> +
+> +	if (cluster_is_a15(cluster))
+> +		baseaddr = info->baseaddr + A15_BX_ADDR0 + (cpu << 2);
+> +	else
+> +		baseaddr = info->baseaddr + A7_BX_ADDR0 + (cpu << 2);
+> +
+> +	writel_relaxed(addr, baseaddr);
+> +}
+> +
+> +/**
+> + * ve_spc_get_nr_cpus() - get number of cpus in a cluster
+> + *
+> + * @cluster: mpidr[15:8] bitfield describing cluster affinity level
+> + *
+> + * Return: > 0 number of cpus in the cluster
+> + *         or 0 if cluster number invalid
+> + */
+> +u32 ve_spc_get_nr_cpus(u32 cluster)
+> +{
+> +	u32 val;
+> +
+> +	if (cluster >= MAX_CLUSTERS)
+> +		return 0;
+> +
+> +	val = readl_relaxed(info->baseaddr + SYS_INFO);
+> +	val = cluster_is_a15(cluster) ? (val >> 16) : (val >> 20);
+> +	return val & 0xf;
+> +}
+> +
+> +/**
+> + * ve_spc_powerdown()
+> + *
+> + * Function to enable/disable cluster powerdown. Not protected by locking
+> + * since it might be used in code paths where normal cacheable locks are not
+> + * working. Locking must be provided by the caller to ensure atomicity.
+> + *
+> + * @cluster: mpidr[15:8] bitfield describing cluster affinity level
+> + * @enable: if true enables powerdown, if false disables it
+> + */
+> +void ve_spc_powerdown(u32 cluster, bool enable)
+> +{
+> +	u32 pwdrn_reg;
+> +
+> +	if (cluster >= MAX_CLUSTERS)
+> +		return;
+> +
+> +	pwdrn_reg = cluster_is_a15(cluster) ? A15_PWRDN_EN : A7_PWRDN_EN;
+> +	writel_relaxed(enable, info->baseaddr + pwdrn_reg);
+> +}
+> +
+> +static const struct of_device_id ve_spc_ids[] __initconst = {
+> +	{ .compatible = "arm,vexpress-spc,v2p-ca15_a7" },
+> +	{ .compatible = "arm,vexpress-spc" },
+> +	{},
+> +};
+> +
+> +static int __init ve_spc_probe(void)
+> +{
+> +	int ret;
+> +	struct device_node *node = of_find_matching_node(NULL, ve_spc_ids);
+> +
+> +	if (!node)
+> +		return -ENODEV;
+> +
+> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
+> +	if (!info) {
+> +		pr_err(SPCLOG "unable to allocate mem\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	info->baseaddr = of_iomap(node, 0);
+> +	if (!info->baseaddr) {
+> +		pr_err(SPCLOG "unable to ioremap memory\n");
+> +		ret = -ENXIO;
+> +		goto mem_free;
+> +	}
+> +
+> +	info->a15_clusid = readl_relaxed(info->baseaddr + A15_CONF) & 0xf;
+> +
+> +	/*
+> +	 * Multi-cluster systems may need this data when non-coherent, during
+> +	 * cluster power-up/power-down. Make sure driver info reaches main
+> +	 * memory.
+> +	 */
+> +	sync_cache_w(info);
+> +	sync_cache_w(&info);
+> +	pr_info("vexpress-spc loaded at %p\n", info->baseaddr);
+> +	return 0;
+> +
+> +mem_free:
+> +	kfree(info);
+> +	return ret;
+> +}
+> +
+> +/**
+> + * ve_spc_init()
+> + *
+> + * Function exported to manage pre early_initcall initialization.
+> + * SPC code is needed very early in the boot process to bring CPUs out of
+> + * reset and initialize power management back-end so an init interface is
+> + * provided to platform code to allow early initialization. The init
+> + * interface can be removed as soon as the DT layer and platform bus allow
+> + * platform device creation and probing before SMP boot.
+> + */
+> +int __init ve_spc_init(void)
+> +{
+> +	static int ve_spc_init_status __initdata = -EAGAIN;
+> +
+> +	if (ve_spc_init_status == -EAGAIN)
+> +		ve_spc_init_status = ve_spc_probe();
+> +
+> +	return ve_spc_init_status;
+> +}
+> +early_initcall(ve_spc_init);
+> diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+> index 50368e0..d0106ef 100644
+> --- a/include/linux/vexpress.h
+> +++ b/include/linux/vexpress.h
+> @@ -132,4 +132,21 @@ void vexpress_clk_of_register_spc(void);
+>  void vexpress_clk_init(void __iomem *sp810_base);
+>  void vexpress_clk_of_init(void);
+>  
+> +/* SPC */
+> +
+> +#ifdef CONFIG_VEXPRESS_SPC
+> +int __init ve_spc_init(void);
+> +void ve_spc_global_wakeup_irq(bool set);
+> +void ve_spc_cpu_wakeup_irq(u32 cluster, u32 cpu, bool set);
+> +void ve_spc_set_resume_addr(u32 cluster, u32 cpu, u32 addr);
+> +u32 ve_spc_get_nr_cpus(u32 cluster);
+> +void ve_spc_powerdown(u32 cluster, bool enable);
+> +#else
+> +static inline int ve_spc_init(void) { return -ENODEV; }
+> +static inline void ve_spc_global_wakeup_irq(bool set) { }
+> +static inline void ve_spc_cpu_wakeup_irq(u32 cluster, u32 cpu, bool set) { }
+> +static inline void ve_spc_set_resume_addr(u32 cluster, u32 cpu, u32 addr) { }
+> +static inline u32 ve_spc_get_nr_cpus(u32 cluster) { return 0; }
+> +static inline void ve_spc_powerdown(u32 cluster, bool enable) { }
+> +#endif
+>  #endif
+> 
 
-
- [  227.329656] ACPI: Preparing to enter system sleep state S3
- [  227.353334] PM: Saving platform NVS memory
-
- [  227.355403] ======================================================
- [  227.355404] [ INFO: possible circular locking dependency detected ]
- [  227.355407] 3.11.0-rc1-dbg-01398-gf537e41-dirty #1838 Not tainted
- [  227.355408] -------------------------------------------------------
- [  227.355411] systemd-sleep/2280 is trying to acquire lock:
- [  227.355426]  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8104dab4>] disable_nonboot_cpus+0x24/0x120
- [  227.355427] 
- but task is already holding lock:
- [  227.355434]  (console_lock){+.+.+.}, at: [<ffffffff8104c956>] suspend_console+0x26/0x40
- [  227.355435] 
- which lock already depends on the new lock.
-
- [  227.355436] 
- the existing dependency chain (in reverse order) is:
- [  227.355441] 
- -> #2 (console_lock){+.+.+.}:
- [  227.355448]        [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
- [  227.355452]        [<ffffffff8104b197>] console_lock+0x77/0x80
- [  227.355456]        [<ffffffff8104cf91>] console_cpu_notify+0x31/0x40
- [  227.355462]        [<ffffffff8107cd6d>] notifier_call_chain+0x5d/0x110
- [  227.355466]        [<ffffffff8107ce2e>] __raw_notifier_call_chain+0xe/0x10
- [  227.355469]        [<ffffffff8104d5a3>] cpu_notify+0x23/0x50
- [  227.355473]        [<ffffffff8104d5de>] cpu_notify_nofail+0xe/0x20
- [  227.355482]        [<ffffffff815fafad>] _cpu_down+0x1ad/0x330
- [  227.355486]        [<ffffffff815fb166>] cpu_down+0x36/0x50
- [  227.355493]        [<ffffffff814ad8cd>] cpu_subsys_offline+0x1d/0x30
- [  227.355498]        [<ffffffff814a8de5>] device_offline+0x95/0xc0
- [  227.355502]        [<ffffffff814a8ee2>] store_online+0x42/0x90
- [  227.355506]        [<ffffffff814a64f8>] dev_attr_store+0x18/0x30
- [  227.355513]        [<ffffffff811ec71b>] sysfs_write_file+0xdb/0x150
- [  227.355517]        [<ffffffff8117a68d>] vfs_write+0xbd/0x1e0
- [  227.355522]        [<ffffffff8117ad7c>] SyS_write+0x4c/0xa0
- [  227.355527]        [<ffffffff8160cbfe>] tracesys+0xd0/0xd5
- [  227.355531] 
- -> #1 (cpu_hotplug.lock){+.+.+.}:
- [  227.355535]        [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
- [  227.355541]        [<ffffffff81605b47>] mutex_lock_nested+0x67/0x410
- [  227.355545]        [<ffffffff8104d54b>] cpu_hotplug_begin+0x2b/0x60
- [  227.355549]        [<ffffffff8104d61a>] _cpu_up+0x2a/0x170
- [  227.355552]        [<ffffffff8104d7b9>] cpu_up+0x59/0x80
- [  227.355558]        [<ffffffff81cf51b6>] smp_init+0x64/0x95
- [  227.355566]        [<ffffffff81cdaf21>] kernel_init_freeable+0x84/0x191
- [  227.355570]        [<ffffffff815fa34e>] kernel_init+0xe/0x180
- [  227.355574]        [<ffffffff8160c9ac>] ret_from_fork+0x7c/0xb0
- [  227.355578] 
- -> #0 (cpu_add_remove_lock){+.+.+.}:
- [  227.355582]        [<ffffffff810b8106>] __lock_acquire+0x1766/0x1d30
- [  227.355586]        [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
- [  227.355590]        [<ffffffff81605b47>] mutex_lock_nested+0x67/0x410
- [  227.355594]        [<ffffffff8104dab4>] disable_nonboot_cpus+0x24/0x120
- [  227.355601]        [<ffffffff810a0973>] suspend_devices_and_enter+0x1f3/0x680
- [  227.355605]        [<ffffffff810a0fd2>] pm_suspend+0x1d2/0x240
- [  227.355609]        [<ffffffff8109fa19>] state_store+0x79/0xf0
- [  227.355614]        [<ffffffff81312dbf>] kobj_attr_store+0xf/0x20
- [  227.355618]        [<ffffffff811ec71b>] sysfs_write_file+0xdb/0x150
- [  227.355621]        [<ffffffff8117a68d>] vfs_write+0xbd/0x1e0
- [  227.355624]        [<ffffffff8117ad7c>] SyS_write+0x4c/0xa0
- [  227.355628]        [<ffffffff8160cbfe>] tracesys+0xd0/0xd5
- [  227.355629] 
- other info that might help us debug this:
-
- [  227.355635] Chain exists of:
-   cpu_add_remove_lock --> cpu_hotplug.lock --> console_lock
-
- [  227.355637]  Possible unsafe locking scenario:
-
-  [  227.355638]        CPU0                    CPU1
-  [  227.355639]        ----                    ----
-  [  227.355642]   lock(console_lock);
-  [  227.355644]                                lock(cpu_hotplug.lock);
-  [  227.355647]                                lock(console_lock);
-  [  227.355650]   lock(cpu_add_remove_lock);
-  [  227.355651] 
-   *** DEADLOCK ***
-
-    [  227.355653] 5 locks held by systemd-sleep/2280:
-    [  227.355661]  #0:  (sb_writers#6){.+.+.+}, at: [<ffffffff8117a78b>]   vfs_write+0x1bb/0x1e0
-    [  227.355668]  #1:  (&buffer->mutex){+.+.+.}, at:   [<ffffffff811ec67c>] sysfs_write_file+0x3c/0x150
-    [  227.355676]  #2:  (s_active#110){.+.+.+}, at: [<ffffffff811ec703>]   sysfs_write_file+0xc3/0x150
-    [  227.355683]  #3:  (pm_mutex){+.+.+.}, at: [<ffffffff810a0e32>]   pm_suspend+0x32/0x240
-    [  227.355690]  #4:  (console_lock){+.+.+.}, at: [<ffffffff8104c956>]   suspend_console+0x26/0x40
-    [  227.355691] 
-    stack backtrace:
-    [  227.355695] CPU: 0 PID: 2280 Comm: systemd-sleep Not tainted   3.11.0-rc1-dbg-01398-gf537e41-dirty #1838
-    [  227.355697] Hardware name: Acer             Aspire 5741G   /Aspire 5741G    , BIOS V1.20 02/08/2011
-    [  227.355703]  ffffffff82208680 ffff88015151bbc8 ffffffff81603038   ffffffff822073f0
-    [  227.355707]  ffff88015151bc08 ffffffff815ffdaa ffff880153389fa0   ffff88015338a788
-    [  227.355712]  1d81e4832c04c441 ffff88015338a760 ffff88015338a788   ffff880153389fa0
-    [  227.355713] Call Trace:
-    [  227.355719]  [<ffffffff81603038>] dump_stack+0x4e/0x82
-    [  227.355723]  [<ffffffff815ffdaa>] print_circular_bug+0x2b6/0x2c5
-    [  227.355727]  [<ffffffff810b8106>] __lock_acquire+0x1766/0x1d30
-    [  227.355733]  [<ffffffff81054aec>] ?   walk_system_ram_range+0x5c/0x140
-    [  227.355737]  [<ffffffff810b63f4>] ? mark_held_locks+0x94/0x140
-    [  227.355741]  [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
-    [  227.355745]  [<ffffffff8104dab4>] ?   disable_nonboot_cpus+0x24/0x120
-    [  227.355749]  [<ffffffff8104dab4>] ?   disable_nonboot_cpus+0x24/0x120
-    [  227.355753]  [<ffffffff81605b47>] mutex_lock_nested+0x67/0x410
-    [  227.355757]  [<ffffffff8104dab4>] ?   disable_nonboot_cpus+0x24/0x120
-    [  227.355761]  [<ffffffff81607e9e>] ? mutex_unlock+0xe/0x10
-    [  227.355768]  [<ffffffff8135bd2f>] ? acpi_os_get_iomem+0x4c/0x54
-    [  227.355772]  [<ffffffff8104dab4>] disable_nonboot_cpus+0x24/0x120
-    [  227.355777]  [<ffffffff810a0973>]   suspend_devices_and_enter+0x1f3/0x680
-    [  227.355780]  [<ffffffff815fefc6>] ? printk+0x67/0x69
-    [  227.355785]  [<ffffffff810a0fd2>] pm_suspend+0x1d2/0x240
-    [  227.355789]  [<ffffffff8109fa19>] state_store+0x79/0xf0
-    [  227.355792]  [<ffffffff81312dbf>] kobj_attr_store+0xf/0x20
-    [  227.355796]  [<ffffffff811ec71b>] sysfs_write_file+0xdb/0x150
-    [  227.355799]  [<ffffffff8117a68d>] vfs_write+0xbd/0x1e0
-    [  227.355804]  [<ffffffff81198490>] ? fget_light+0x320/0x4b0
-    [  227.355808]  [<ffffffff8117ad7c>] SyS_write+0x4c/0xa0
-    [  227.355811]  [<ffffffff8160cbfe>] tracesys+0xd0/0xd5
-    [  227.355814] Disabling non-boot CPUs ...
-    [  227.357731] smpboot: CPU 1 is now offline
-    [  227.461072] smpboot: CPU 2 is now offline
-    [  227.565119] smpboot: CPU 3 is now offline
-
-
-
-
-Local midifications are:
-
-git diff -u -p drivers/cpufreq/
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 0937b8d..7dcfa68 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1942,13 +1942,15 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
- 	if (dev) {
- 		switch (action) {
- 		case CPU_ONLINE:
-+		case CPU_ONLINE_FROZEN:
- 			cpufreq_add_dev(dev, NULL);
- 			break;
- 		case CPU_DOWN_PREPARE:
--		case CPU_UP_CANCELED_FROZEN:
-+		case CPU_DOWN_PREPARE_FROZEN:
- 			__cpufreq_remove_dev(dev, NULL);
- 			break;
- 		case CPU_DOWN_FAILED:
-+		case CPU_DOWN_FAILED_FROZEN:
- 			cpufreq_add_dev(dev, NULL);
- 			break;
- 		}
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 4645876..7b839a8 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -25,7 +25,6 @@
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/workqueue.h>
--#include <linux/cpu.h>
- 
- #include "cpufreq_governor.h"
- 
-@@ -137,10 +136,8 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
- 	if (!all_cpus) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
--		get_online_cpus();
- 		for_each_cpu(i, policy->cpus)
- 			__gov_queue_work(i, dbs_data, delay);
--		put_online_cpus();
- 	}
- }
- EXPORT_SYMBOL_GPL(gov_queue_work);
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index cd9e817..12225d1 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -353,13 +353,11 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-+	case CPU_DOWN_PREPARE_FROZEN:
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
--		cpufreq_stats_free_table(cpu);
--		break;
--	case CPU_UP_CANCELED_FROZEN:
--		cpufreq_stats_free_sysfs(cpu);
-+	case CPU_DEAD_FROZEN:
- 		cpufreq_stats_free_table(cpu);
- 		break;
- 	}
-
-
-
-	-ss
