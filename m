@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933843Ab3GPTWB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:22:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46159 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933319Ab3GPTV7 (ORCPT
+	id S933841Ab3GPTZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:25:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35181 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933319Ab3GPTZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:21:59 -0400
-Date: Tue, 16 Jul 2013 21:21:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
-        corbet@lwn.net, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-Message-ID: <20130716192145.GV17211@twins.programming.kicks-ass.net>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <20130713064909.GW25631@dyad.programming.kicks-ass.net>
- <51E166C8.3000902@linux.intel.com>
- <20130715195914.GC23818@dyad.programming.kicks-ass.net>
- <51E45E8B.705@linux.intel.com>
- <20130715210650.GF23818@dyad.programming.kicks-ass.net>
- <20130715211230.GG23818@dyad.programming.kicks-ass.net>
- <51E47D30.5030203@linux.intel.com>
- <20130716173848.GA22795@dyad.programming.kicks-ass.net>
- <51E5947F.4090109@linux.intel.com>
+	Tue, 16 Jul 2013 15:25:36 -0400
+Date: Tue, 16 Jul 2013 12:11:47 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linux-foundation.org" 
+	<ksummit-2013-discuss@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+Message-ID: <20130716191147.GA1680@kroah.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130712005023.GB31005@thunk.org>
+ <20130712051451.GC25815@1wt.eu>
+ <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz>
+ <s5hwqoqv4oo.wl%tiwai@suse.de>
+ <20130716165933.GU22506@sirena.org.uk>
+ <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com>
+ <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
+ <1374000084.6458.36.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E5947F.4090109@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1374000084.6458.36.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:44:15AM -0700, Arjan van de Ven wrote:
-> the interaction is "using the scheduler data using the scheduler provided function".
-
-I'm so not following.
-
-> So I don't just want something that makes sense for todays Intel ;-)
-> We need something that has an interface that makes sense, where the things
-> that vary between chip generations/vendors are on the driver side
-> of the interface, and the things that are generic concepts or generically
-> enough useful are on the core side of the interface. Hardware has changed,
-> and hardware will be changing for all vendors for as far as we can even see
-> into the future, since power matters in the market a lot.
-> This means we need a level of interface that has some chance of being useful
-> for at least a while.
+On Tue, Jul 16, 2013 at 02:41:24PM -0400, Steven Rostedt wrote:
+> On Tue, 2013-07-16 at 11:29 -0700, Linus Torvalds wrote:
 > 
-> What frequency to run at is for me clearly a driver side thing since what
-> goes into choosing a P state that may translate into a frequency is a hardware
-> specific choice; the translation from "I need at least this much performance
-> and be power efficient at that" to a hardware register write is very hardware specific.
+> > Anyway, the point I'm making is that Q&A is limited and often even
+> > actively misleading ("Hey, I have three tested-by's, so it must be
+> > fine"), and we might actually want to have a new class of
+> > "non-critical patch that might be worth backporting to stable, but
+> > only do so after it's been in a release for some time". Because while
+> > it might be an "obvious" fix, maybe it's not critical enough that it
+> > needs to be backported _now_ - maybe it could wait a month or two, and
+> > get wider testing.
+> 
+> Should we add another stable tag?
+> 
+> Have the default Cc: stable have to wait a rc or two in mainline before
+> it makes its way to the stable tree. Have a stable-critical for those
+> that are bugs that are security fixes than need to be backported ASAP.
 
-Be that as it may, we still need to consider the ramifications of these
-'mystserious arch specific actions'.
+People mark stable patches that way already today with a:
+	Cc: stable <stable@vger.kernel.org> # delay for 3.12-rc4
+or some such wording.  I take those and don't apply them until the noted
+release happens, so you can do this if needed.
 
-> Things like "I need more compute capacity" or "This is very performance critical" or
-> "This is very latency critical" are a generic concepts.
-> As is "behavior is now changed a lot in <this direction>" as a callback kind of thing.
-> (just as "I no longer need it" is a generic concept to complement the first one)
-
-That is what cpufreq would like of the scheduler; but isn't at all
-sufficient to solve the problems the scheduler has with cpufreq. You
-still only seem to see things one way.
-
-Suppose a 2 cpu system, one cpu is running 3/4 throttle, the other is
-running at half speed. Both cpus are equally utilized. A new task
-comes on.
-
-Where do we run it?
-
-We need to know that there's head-room on the 1/2 speed cpu and should
-crank its pace and place the task there.
-
-Even without the new task; its not a 'balanced' situation, but it
-appears that way because the cpu's are nearly equally utilized. Maybe if
-we crank one cpu to the max it could run all tasks and have the other
-cpu power gated. Or maybe they could both drop to 60% and run equal
-loads.
-
-We need feedback for these problems; but you're telling us new Intel
-stuff can't really tell us much of anything :/
-
-What I'm saying is; sure the cpufreq driver might have chip specific
-magic but it very much needs to tell us things too we can't have it do
-its own thing and not care.
+greg k-h
