@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933574Ab3GPQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:43:09 -0400
-Received: from mail.lang.hm ([64.81.33.126]:55970 "EHLO bifrost.lang.hm"
+	id S933579Ab3GPQnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:43:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933369Ab3GPQnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:43:05 -0400
-Date: Tue, 16 Jul 2013 09:42:34 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Takashi Iwai <tiwai@suse.de>
-cc: Willy Tarreau <w@1wt.eu>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        ksummit-2013-discuss@lists.linux-foundation.org,
-        torvalds@linux-foundation.org
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-In-Reply-To: <s5hwqoqv4oo.wl%tiwai@suse.de>
-Message-ID: <alpine.DEB.2.02.1307160941290.16723@nftneq.ynat.uz>
-References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org> <20130712051451.GC25815@1wt.eu> <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz> <s5hwqoqv4oo.wl%tiwai@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S933148Ab3GPQnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 12:43:21 -0400
+Date: Tue, 16 Jul 2013 18:38:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 0/4] tracing/kprobes/uprobes: Fix race between
+	opening probe event files and deleting probe
+Message-ID: <20130716163804.GA30560@redhat.com>
+References: <20130704033347.807661713@goodmis.org> <20130715180149.GA15821@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130715180149.GA15821@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013, Takashi Iwai wrote:
-
-> At Tue, 16 Jul 2013 00:19:16 -0700 (PDT),
-> David Lang wrote:
->>
->> On Fri, 12 Jul 2013, Willy Tarreau wrote:
->>
->>> And maybe in the end, having 1/10 patch cause a regression is not *that*
->>> dramatic, and probably less than not fixing the 9 other bugs. In one case
->>> we rely on -stable to merge the 10 fixes, and on the other case we'd rely
->>> on -stable to just revert one of them.
->>
->> Apologies for the late post, I'm catching up on things, but this jumped out at
->> me.
->>
->> We went through a LOT of pain several years ago when people got into the mindset
->> that a patch was acceptable if it fixed more people than it broke. eliminating
->> that mindset did wonders for kernel stability.
->>
->> Regressions are a lot more of a negative than bugfixes are a positive, a 10:1
->> ratio of fixes to regressions is _not_ good enough.
+On 07/15, Oleg Nesterov wrote:
 >
-> IMO, one of the reasons is the nature of stable-release: the stable
-> tree is released soon after reviews of patches, so no actual
-> regression tests can be done before the release.
+> So. As Masami pointed out, this is not enough. Probably we can add more
+> hacks, but I'd like to discuss the alternative approach.
 >
-> For finding a regression, patch reviews won't be enough; all patches
-> have been already reviewed, thus essentially they must be all
-> positive/good fixes.  And the compile is OK.  So what's the problem?
+> Note also that this ref count has the unfortunate property, if someone
+> keeps the file opened we can't remove an event.
+
+And please correct me, but afaics there are similar problems with
+rmdir instances/xxx.
+
+> What this patch does:
 >
-> Maybe some QA period before the release might help, but who would
-> care?  (Especially under the situation where everybody has own x.y
-> stable tree?)
+> 	- add the new "topmost" rw_semaphore, file_sem.
 
-I am not saying that no regressions will happen (for exactly the reasons that 
-you are giving).
+probably unneeded...
 
-what I am complaining about is the attitude that a few regressions are Ok, as 
-long as there are more fixes than there are regressions.
+> 	- trace_remove_event_call() takes this sem for writing and
+> 	  cleares enable/id/format/filter->i_private
+>
+> 	- removes tracing_open_generic_file/tracing_release_generic_file,
+> 	  we do not use file->f_private any longer
+>
+> 	- changes event_enable_read/event_enable_write to read
+> 	  ftrace_event_file = i_private under read_lock(file_sem) and
+> 	  abort if it is null.
+>
+> Question: why event_enable_write() needs trace_array_get() ?
 
-David Lang
+probably it doesn't...
+
+> Steven, Masami, do you think this can make any sense?
+
+Oleg.
+
