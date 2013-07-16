@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933945Ab3GPTis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:38:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3019 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab3GPTir (ORCPT
+	id S933948Ab3GPTj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:39:57 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51360 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932991Ab3GPTjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:38:47 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=sAMN5JoDUTkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=MM5Jvx6deYgA:10 a=xd1Zz08zVNS97sm7fOwA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374003524.6458.51.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH 0/4] tracing/kprobes/uprobes: Fix race between
- opening probe event files and deleting probe
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 16 Jul 2013 15:38:44 -0400
-In-Reply-To: <20130716192200.GA21716@redhat.com>
-References: <20130704033347.807661713@goodmis.org>
-	 <20130715180149.GA15821@redhat.com> <20130716163804.GA30560@redhat.com>
-	 <1374001825.6458.44.camel@gandalf.local.home>
-	 <20130716192200.GA21716@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Tue, 16 Jul 2013 15:39:55 -0400
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: mani <manishrma@gmail.com>
+Cc: nitingupta910@gmail.com, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
+Subject: Re: [PATCH] zram percpu implementation
+In-Reply-To: Your message of "Wed, 17 Jul 2013 00:27:34 +0530."
+             <CAB+TZU-jHQDV9VWnznQiL_i6WE8kjwYgiND2rXwm5BgPgu7Whg@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <CAB+TZU-BXYgrKVH94gw8Wxw8F-L4pgujAjUqKqdxgDZz+h5RWA@mail.gmail.com>
+            <CAB+TZU-jHQDV9VWnznQiL_i6WE8kjwYgiND2rXwm5BgPgu7Whg@mail.gmail.com>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1374003427_1500P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 16 Jul 2013 15:37:07 -0400
+Message-ID: <13570.1374003427@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 21:22 +0200, Oleg Nesterov wrote:
+--==_Exmh_1374003427_1500P
+Content-Type: text/plain; charset=us-ascii
 
-> But tracing_open_generic_file()->trace_array_get() is racy, no?
-> Somehow we need to ensure it is safe to use file / file->tr.
+On Wed, 17 Jul 2013 00:27:34 +0530, mani said:
 
-Ah crap. Yeah, I see what you mean. It's the race that I described with
-deleting private data and using it on open. :-p
+> This patch will create a percpu structures compression algo.
+> 1. Takes extra memory for workspace buffers.
+> I haven't seen any performance gain with this need to find the
+> root cause.
 
+My first guess is that the higher-level zram stuff is submitting
+its requests sequentially, so there's very few occasions where more
+than one page is waiting for (de)compression handling at the same time.
 
-> Btw, Steven, what about other pending (and orthogonal changes) ?
-> >From Jovi, from me. I see nothing new in linux-trace.git#for-next...
+You change the logic of zram_bvec_(read/write) - but what you'd need to
+change is the code that *calls* it so that there's multiple bvec_* calls
+in flight at the same time.
 
-My INBOX is full with too much crap. I thought I grabbed the patches
-from you and Jovi, but they may have been something else.
++    for_each_possible_cpu(cpu) {
++        printk(KERN_EMERG"[%s] Initializing for each core %d\n", cpu);
 
-Can you just tell me what the subjects were. My INBOX currently has
->10,000 emails, and it's just getting worse.
+KERN_EMERG?  No.  Absolutely not.
 
--- Steve
+--==_Exmh_1374003427_1500P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
+iQIVAwUBUeWg4wdmEQWDXROgAQJ85g/8DQxn69jvvbyQ7OMS6xNib/vsxKSHvn6R
+bnWt1FwMhGf03vilJXvb8fSmlnQgU0FTUr7WabAHJ50X34qg3wpbfc+B6o6RQvZJ
+4IjoC7fk/MamYPD/jtt609Or548jG1mNUTclmy1yFSI/YlsMP0U0jCZjfdOvL7TA
+3/Vp+fj8k0Beyk6zr32ThFlZS/NTIQimNY0SnzSktTkcDLPwMlOx1aHvKntINmpv
+gFtXnR7jlpaS3iovXbJkoNrZg6rB46xI0IQKv9RFBDzP3DZFO1WAP7lK5igXpW37
+vJeOluy5tpc5fcAF52+9S8zLN+q97TEJaclzrXnlxLbA0UodxK7XQj8w1GKjHmkM
+ZFau73rUkb2kiF9Iivx/iU/DSC5uxcQVHA4YoHSHpW0MjZ5vAO9h56IDrZRl8tCL
+kupdT/201JJBHIJsoQ2OcHRJieayZ2A0ch9CttmFZpDyenAZk1/0Ot3JHmKSHZMu
+8mAovaTo9tL4GMU7vsTVLyLMYx65AdIoZPwr+sDSzOCsC8bOu3RyeWl8UXJmF3Bx
+LsLF4qhKrKB6NIPtfWfPzNDEPyT8prZ2vwHMjcKKsEWIl2E2CDfYubnqhMlaU9LC
+/nUDL83DliSxSZzaP5dgfyZWCwR57mEcXusoC/slkEyYGV46INkkN0oM3C1DnghC
+5HTzEWr/rHM=
+=T5hf
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1374003427_1500P--
