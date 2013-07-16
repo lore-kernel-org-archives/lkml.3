@@ -1,107 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933962Ab3GPUiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:38:21 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:43500 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933606Ab3GPUiT (ORCPT
+	id S934007Ab3GPUk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:40:29 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:50530 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934000Ab3GPUk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:38:19 -0400
-Message-ID: <51E5AF35.2080301@gmail.com>
-Date: Tue, 16 Jul 2013 22:38:13 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH RFC v4] media: OF: add "sync-on-green-active" property
-References: <1373995163-9412-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1373995163-9412-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Jul 2013 16:40:27 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Jean Delvare <jdelvare@suse.de>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 6/6] kconfig: simplify symbol-search code
+Date: Tue, 16 Jul 2013 22:40:02 +0200
+Message-Id: <508382a0428f2b2f49da0e0e89c921f07c9306aa.1374006854.git.yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <cover.1374006854.git.yann.morin.1998@free.fr>
+References: <cover.1374006854.git.yann.morin.1998@free.fr>
+In-Reply-To: <cover.1374006854.git.yann.morin.1998@free.fr>
+References: <cover.1374006854.git.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-On 07/16/2013 07:19 PM, Prabhakar Lad wrote:
-> From: "Lad, Prabhakar"<prabhakar.csengg@gmail.com>
->
-> This patch adds 'sync-on-green-active' property as part
-> of endpoint property.
->
-> Signed-off-by: Lad, Prabhakar<prabhakar.csengg@gmail.com>
-> ---
->    Changes for v4:
->    1: Fixed review comments pointed by Sylwester.
->
->    Changes for v3:
->    1: Fixed review comments pointed by Laurent and Sylwester.
->
->    RFC v2 https://patchwork.kernel.org/patch/2578091/
->
->    RFC V1 https://patchwork.kernel.org/patch/2572341/
->
->   .../devicetree/bindings/media/video-interfaces.txt |    3 +++
->   drivers/media/v4l2-core/v4l2-of.c                  |    4 ++++
->   include/media/v4l2-mediabus.h                      |    2 ++
->   3 files changed, 9 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> index e022d2d..5186c7e 100644
-> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
-> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> @@ -101,6 +101,9 @@ Optional endpoint properties
->     array contains only one entry.
->   - clock-noncontinuous: a boolean property to allow MIPI CSI-2 non-continuous
->     clock mode.
-> +- sync-on-green-active: polarity field when video synchronization is
-> +  Sync-On-Green. When set the driver determines whether it's a normal operation
-> +  or inverted operation.
+There is no need for a double indirection in the temporary array that
+stores the internediate search results.
 
-Would you mind adding this entry after pclk-sample property description ?
-And how about describing it a bit more precisely and similarly to 
-VSYNC/HSYNC,
-e.g.
+Reported-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+---
+ scripts/kconfig/symbol.c | 30 +++++++++++-------------------
+ 1 file changed, 11 insertions(+), 19 deletions(-)
 
-- sync-on-green-active: active state of Sync-on-green (SoG) signal,
-   0/1 for LOW/HIGH respectively.
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index 08d4401..a76b8fd 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -965,8 +965,8 @@ struct sym_match {
+  */
+ static int sym_rel_comp(const void *sym1, const void *sym2)
+ {
+-	struct sym_match *s1 = *(struct sym_match **)sym1;
+-	struct sym_match *s2 = *(struct sym_match **)sym2;
++	const struct sym_match *s1 = sym1;
++	const struct sym_match *s2 = sym2;
+ 	int exact1, exact2;
+ 
+ 	/* Exact match:
+@@ -992,7 +992,7 @@ static int sym_rel_comp(const void *sym1, const void *sym2)
+ struct symbol **sym_re_search(const char *pattern)
+ {
+ 	struct symbol *sym, **sym_arr = NULL;
+-	struct sym_match **sym_match_arr = NULL;
++	struct sym_match *sym_match_arr = NULL;
+ 	int i, cnt, size;
+ 	regex_t re;
+ 	regmatch_t match[1];
+@@ -1005,7 +1005,6 @@ struct symbol **sym_re_search(const char *pattern)
+ 		return NULL;
+ 
+ 	for_all_symbols(i, sym) {
+-		struct sym_match *tmp_sym_match;
+ 		if (sym->flags & SYMBOL_CONST || !sym->name)
+ 			continue;
+ 		if (regexec(&re, sym->name, 1, match, 0))
+@@ -1013,38 +1012,31 @@ struct symbol **sym_re_search(const char *pattern)
+ 		if (cnt >= size) {
+ 			void *tmp;
+ 			size += 16;
+-			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
++			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match));
+ 			if (!tmp)
+ 				goto sym_re_search_free;
+ 			sym_match_arr = tmp;
+ 		}
+ 		sym_calc_value(sym);
+-		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
+-		if (!tmp_sym_match)
+-			goto sym_re_search_free;
+-		tmp_sym_match->sym = sym;
+ 		/* As regexec returned 0, we know we have a match, so
+ 		 * we can use match[0].rm_[se]o without further checks
+ 		 */
+-		tmp_sym_match->so = match[0].rm_so;
+-		tmp_sym_match->eo = match[0].rm_eo;
+-		sym_match_arr[cnt++] = tmp_sym_match;
++		sym_match_arr[cnt].so = match[0].rm_so;
++		sym_match_arr[cnt].eo = match[0].rm_eo;
++		sym_match_arr[cnt++].sym = sym;
+ 	}
+ 	if (sym_match_arr) {
+-		qsort(sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp);
++		qsort(sym_match_arr, cnt, sizeof(struct sym_match), sym_rel_comp);
+ 		sym_arr = malloc((cnt+1) * sizeof(struct symbol));
+ 		if (!sym_arr)
+ 			goto sym_re_search_free;
+ 		for (i = 0; i < cnt; i++)
+-			sym_arr[i] = sym_match_arr[i]->sym;
++			sym_arr[i] = sym_match_arr[i].sym;
+ 		sym_arr[cnt] = NULL;
+ 	}
+ sym_re_search_free:
+-	if (sym_match_arr) {
+-		for (i = 0; i < cnt; i++)
+-			free(sym_match_arr[i]);
+-		free(sym_match_arr);
+-	}
++	/* sym_match_arr can be NULL if no match, but free(NULL) is OK */
++	free(sym_match_arr);
+ 	regfree(&re);
+ 
+ 	return sym_arr;
+-- 
+1.8.1.2
 
-Otherwise looks good.
-
->   Example
-> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-> index aa59639..5c4c9f0 100644
-> --- a/drivers/media/v4l2-core/v4l2-of.c
-> +++ b/drivers/media/v4l2-core/v4l2-of.c
-> @@ -100,6 +100,10 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
->   	if (!of_property_read_u32(node, "data-shift",&v))
->   		bus->data_shift = v;
->
-> +	if (!of_property_read_u32(node, "sync-on-green-active",&v))
-> +		flags |= v ? V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH :
-> +			V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW;
-> +
->   	bus->flags = flags;
->
->   }
-> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-> index 83ae07e..d47eb81 100644
-> --- a/include/media/v4l2-mediabus.h
-> +++ b/include/media/v4l2-mediabus.h
-> @@ -40,6 +40,8 @@
->   #define V4L2_MBUS_FIELD_EVEN_HIGH		(1<<  10)
->   /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
->   #define V4L2_MBUS_FIELD_EVEN_LOW		(1<<  11)
-> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH	(1<<  12)
-> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW		(1<<  13)
->
->   /* Serial flags */
->   /* How many lanes the client can use */
-
-Thanks,
-Sylwester
