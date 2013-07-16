@@ -1,119 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab3GPNwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 09:52:32 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:33005 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280Ab3GPNwa (ORCPT
+	id S932802Ab3GPN6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 09:58:51 -0400
+Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:40065 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932484Ab3GPN6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 09:52:30 -0400
-Message-ID: <51E5501A.6070403@linaro.org>
-Date: Tue, 16 Jul 2013 15:52:26 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 16 Jul 2013 09:58:49 -0400
+Date: Tue, 16 Jul 2013 09:59:35 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, Ben Myers <bpm@sgi.com>,
+        xfs@oss.sgi.com
+Subject: Re: splice vs execve lockdep trace.
+In-Reply-To: <CA+55aFxiGXht8+Dox=C2ezYYf1yMaLAzMYr40j=+peP8j5Ha6w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1307160956370.15153@pianoman.cluster.toy>
+References: <20130716015305.GB30569@redhat.com> <CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com> <20130716023847.GA31481@redhat.com> <CA+55aFxiGXht8+Dox=C2ezYYf1yMaLAzMYr40j=+peP8j5Ha6w@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jonas Jensen <jonas.jensen@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, john.stultz@linaro.org, tglx@linutronix.de,
-        u.kleine-koenig@pengutronix.de, tomasz.figa@gmail.com,
-        linus.walleij@linaro.org, thomas.petazzoni@free-electrons.com,
-        arnd@arndb.de
-Subject: Re: [PATCH v7] ARM: clocksource: add support for MOXA ART SoCs
-References: <1373018653-18421-1-git-send-email-jonas.jensen@gmail.com> <1373024773-24574-1-git-send-email-jonas.jensen@gmail.com>
-In-Reply-To: <1373024773-24574-1-git-send-email-jonas.jensen@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020207.51E55196.0190,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2013 01:46 PM, Jonas Jensen wrote:
-> This patch adds an clocksource driver for the main timer(s)
-> found on MOXA ART SoCs.
+On Mon, 15 Jul 2013, Linus Torvalds wrote:
+
+> On Mon, Jul 15, 2013 at 7:38 PM, Dave Jones <davej@redhat.com> wrote:
 > 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> ---
+> > Interestingly, the 'soft lockups' I was
+> > seeing all the time on that box seem to have gone into hiding.
 > 
-> Notes:
->     Applies to next-20130703
->     
->     Changes since v6:
->     
->     1. remove TIMER_CR read back
->     2. set TIMER_CR from constants
-> 
+> Honestly, I'm somewhat inclined to blame the whole perf situation, and
+> saying that we hopefully got that fixed. In between the silly do_div()
+> buglets and all the indications that the time was spent in nmi
+> handlers, I'd be willing to just ignore them as false positives
+> brought on by the whole switch to the perf irq..
 
-Except for the few comments below, it looks ok for me.
+Did the perf soft lockups go away with 3.11-rc1?
 
-[ ... ]
+734df5ab549ca44f40de0f07af1c8803856dfb18 finally got committed,
+and it fixes a major long-standing perf-related NMI soft lockup bug I 
+found when fuzzing.
 
-> + */
-> +#define TIMEREG_CR_1_ENABLE	(1 << 0)
-> +#define TIMEREG_CR_1_CLOCK	(1 << 1)
-> +#define TIMEREG_CR_1_INT	(1 << 2)
-> +#define TIMEREG_CR_2_ENABLE	(1 << 3)
-> +#define TIMEREG_CR_2_CLOCK	(1 << 4)
-> +#define TIMEREG_CR_2_INT	(1 << 5)
-> +#define TIMEREG_CR_3_ENABLE	(1 << 6)
-> +#define TIMEREG_CR_3_CLOCK	(1 << 7)
-> +#define TIMEREG_CR_3_INT	(1 << 8)
-> +#define TIMEREG_CR_COUNT_UP	(1 << 9)
-> +#define TIMEREG_CR_COUNT_DOWN	(0 << 9)
-
-Could you replace this by the BIT macro ?
-
-[ ... ]
-
-> +
-> +	irq = irq_of_parse_and_map(node, 0);
-> +	if (irq <= 0)
-> +		panic("%s: irq_of_parse_and_map failed\n", node->full_name);
-> +
-> +	ret = setup_irq(irq, &moxart_timer_irq);
-> +	if (ret)
-> +		panic("%s: setup_irq failed\n", node->full_name);
-> +
-> +	clk = of_clk_get(node, 0);
-> +	if (IS_ERR(clk))
-> +		panic("%s: of_clk_get failed\n", node->full_name);
-> +
-> +	pclk = clk_get_rate(clk);
-> +
-> +	if (clocksource_mmio_init(base + TIMER2_BASE + REG_COUNT,
-> +				  "moxart_timer", pclk, 200, 32,
-> +				  clocksource_mmio_readl_down))
-> +		panic("%s: clocksource_mmio_init failed\n", node->full_name);
-> +
-> +	clock_count_per_tick = DIV_ROUND_CLOSEST(pclk, HZ);
-> +
-> +	writel(~0, base + TIMER2_BASE + REG_LOAD);
-> +	writel(TIMEREG_CR_2_ENABLE, base + TIMER_CR);
-> +
-> +	moxart_clockevent.cpumask = cpumask_of(0);
-
-	moxart_clockevent.irq = irq;
-
-> +
-> +	/*
-> +	 * documentation is not publicly available:
-> +	 * min_delta / max_delta obtained by trial-and-error,
-> +	 * max_delta 0xfffffffe should be ok because count
-> +	 * register size is u32
-> +	 */
-> +	clockevents_config_and_register(&moxart_clockevent, pclk,
-> +					0x4, 0xfffffffe);
-> +}
-> +CLOCKSOURCE_OF_DECLARE(moxart, "moxa,moxart-timer", moxart_timer_init);
-
-
-Thanks
-  -- Daniel
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Vince
