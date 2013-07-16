@@ -1,309 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab3GPOXY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:23:24 -0400
-Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:48484 "EHLO
-	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932351Ab3GPOXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:23:22 -0400
-Message-ID: <51E55766.70008@gentoo.org>
-Date: Tue, 16 Jul 2013 09:23:34 -0500
-From: Matthew Thode <prometheanfire@gentoo.org>
-Reply-To: prometheanfire@gentoo.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
+	id S932872Ab3GPOYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:24:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41037 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932351Ab3GPOYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 10:24:37 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: J Keerthy <j-keerthy@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH 1/2] regulator: palmas-pmic: doc: fix typo for sleep-mode
+Date: Tue, 16 Jul 2013 09:23:53 -0500
+Message-ID: <1373984635-14958-2-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373984635-14958-1-git-send-email-nm@ti.com>
+References: <1373984635-14958-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Yves-Alexis Perez <corsac@debian.org>
-CC: Luca Barbato <lu_zero@gentoo.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        kernel@gentoo.org, hardened-kernel@gentoo.org, pageexec@gmail.com
-Subject: Re: 3.9.7, 3.10-rc7 - UEFI stalls at boot (nothing displayed), when
- booting with mem=300M
-References: <51CC6CAE.6070401@gentoo.org> <51CC81A2.8040305@gentoo.org>  <51D10603.1080403@gentoo.org> <20130701051320.GA6840@srcf.ucam.org>  <51D11218.5040601@gentoo.org> <20130701062530.GA7423@srcf.ucam.org>  <51D17F15.4080000@gentoo.org> <51D50DEE.4080903@gentoo.org>  <1372927060.26307.0.camel@oban> <1372928027.26307.5.camel@oban>
-In-Reply-To: <1372928027.26307.5.camel@oban>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2POMCFNILMSXLHBDLPDVG"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2POMCFNILMSXLHBDLPDVG
-Content-Type: multipart/mixed;
- boundary="------------060201070600050903030408"
+commit 3c870e3f9d9d98f1ab98614b3b1fd5c79287d361
+(regulator: palmas: Change the DT node property names to follow the convention)
 
-This is a multi-part message in MIME format.
---------------060201070600050903030408
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Missed updating mode-sleep from sleep-mode. Fix the same.
+Documentation seems proper for this property.
 
-On 07/04/2013 03:53 AM, Yves-Alexis Perez wrote:
-> On jeu., 2013-07-04 at 10:37 +0200, Yves-Alexis Perez wrote:
->> On jeu., 2013-07-04 at 07:53 +0200, Luca Barbato wrote:
->>> On 07/01/2013 03:07 PM, Luca Barbato wrote:
->>>> Hopefully I will carve some time next weekend to play the restricted=
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->>>> bisect game.
->>>
->>> Release 3.10 apparently doesn't show the problem, I guess problem sol=
-ved
->>> for me =3D)
->>>
->>> lu
->>>
->> I've just tried 3.10.0 with CONFIG_EFI=3Dy and I still can't boot with=
+diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+index d5a3086..04d67f0 100644
+--- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
++++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+@@ -31,7 +31,7 @@ Optional nodes:
+ 	       Optional sub-node properties:
+ 	       ti,warm-reset - maintain voltage during warm reset(boolean)
+ 	       ti,roof-floor - control voltage selection by pin(boolean)
+-	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 - auto,
++	       ti,mode-sleep - mode to adopt in pmic sleep 0 - off, 1 - auto,
+ 	       2 - eco, 3 - forced pwm
+ 	       ti,tstep - slope control 0 - Jump, 1 10mV/us, 2 5mV/us, 3 2.5mV/us
+ 	       ti,smps-range - OTP has the wrong range set for the hardware so override
+-- 
+1.7.9.5
 
->> mem=3D300M.
-> And to be a little more specific, and with a bit of fun, I've tryied
-> =E2=80=9Cbisecting=E2=80=9D the amount of ram needed to make a successf=
-ul boot. Platform
-> is a Lenovo Thinkpad x230 with 4G of ram.
->=20
-> mem=3D300M bad
-> mem=3D4000M good
-> mem=3D2000M bad
-> mem=3D3000M bad
-> mem=3D3500M good
-> mem=3D3250M bad
-> mem=3D3375M bad
-> mem=3D3437M good
-> mem=3D3406M bad
-> mem=3D3421M bad
-> mem=3D3429M bad
-> mem=3D3433M good
-> mem=3D3431M bad
-> mem=3D3432M bad
->=20
-> So I'm not sure what happens at the 3433M boundary, but there's
-> definitely something fishy. And 3.5G ram doesn't look like a very
-> specific machine (although I can't test without artificially setting th=
-e
-> memory limit (I only have one 4096M sodimm).
->=20
-> I'll try to git bisect between 3.8 and 3.10 and using mem=3D3432M when =
-I
-> have more time.
->=20
-> Regards,
->=20
-I tested with a single 2G dimm at pipacs's request. Here is what I found.=
-
-
-mem=3Dunset: booted
-mem=3D1930M: booted
-mem=3D1929M: failed
-
-Booted with memblock=3Ddebug and found the following :D
-
-It looks like the uefi regions are simply higher then what the kernel
-allows.  Here's a grep'd dmesg and /proc/iomem.  Maybe the kernel
-shouldn't allow you to set mem=3D to lower then the mem that uefi actuall=
-y
-uses?
-
-
---=20
--- Matthew Thode (prometheanfire)
-
---------------060201070600050903030408
-Content-Type: text/plain; charset=UTF-8;
- name="dmesg-2G.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="dmesg-2G.txt"
-
-WyAgICAwLjAwMDAwMF0gZWZpOiBFRkkgdjIuMDAgYnkgTGVub3ZvClsgICAgMC4wMDAwMDBd
-IGVmaTogIEFDUEk9MHg3OGZmZTAwMCAgQUNQSSAyLjA9MHg3OGZmZTAxNCAgU01CSU9TPTB4
-NzhlOWUwMDAgClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMDA6IHR5cGU9MywgYXR0cj0weGYs
-IHJhbmdlPVsweDAwMDAwMDAwMDAwMDAwMDAtMHgwMDAwMDAwMDAwMDAxMDAwKSAoME1CKQpb
-ICAgIDAuMDAwMDAwXSBlZmk6IG1lbTAxOiB0eXBlPTcsIGF0dHI9MHhmLCByYW5nZT1bMHgw
-MDAwMDAwMDAwMDAxMDAwLTB4MDAwMDAwMDAwMDA0ZTAwMCkgKDBNQikKWyAgICAwLjAwMDAw
-MF0gZWZpOiBtZW0wMjogdHlwZT0zLCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDAwMDA0
-ZTAwMC0weDAwMDAwMDAwMDAwNTgwMDApICgwTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVt
-MDM6IHR5cGU9MTAsIGF0dHI9MHhmLCByYW5nZT1bMHgwMDAwMDAwMDAwMDU4MDAwLTB4MDAw
-MDAwMDAwMDA1OTAwMCkgKDBNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0wNDogdHlwZT03
-LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDAwMDA1OTAwMC0weDAwMDAwMDAwMDAwNWUw
-MDApICgwTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMDU6IHR5cGU9NCwgYXR0cj0weGYs
-IHJhbmdlPVsweDAwMDAwMDAwMDAwNWUwMDAtMHgwMDAwMDAwMDAwMDVmMDAwKSAoME1CKQpb
-ICAgIDAuMDAwMDAwXSBlZmk6IG1lbTA2OiB0eXBlPTMsIGF0dHI9MHhmLCByYW5nZT1bMHgw
-MDAwMDAwMDAwMDVmMDAwLTB4MDAwMDAwMDAwMDBhMDAwMCkgKDBNQikKWyAgICAwLjAwMDAw
-MF0gZWZpOiBtZW0wNzogdHlwZT0yLCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDAwMDEw
-MDAwMC0weDAwMDAwMDAwMDFkMDAwMDApICgyOE1CKQpbICAgIDAuMDAwMDAwXSBlZmk6IG1l
-bTA4OiB0eXBlPTcsIGF0dHI9MHhmLCByYW5nZT1bMHgwMDAwMDAwMDAxZDAwMDAwLTB4MDAw
-MDAwMDAwMjAwMDAwMCkgKDNNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0wOTogdHlwZT0y
-LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDAwMjAwMDAwMC0weDAwMDAwMDAwMDNjMDAw
-MDApICgyOE1CKQpbICAgIDAuMDAwMDAwXSBlZmk6IG1lbTEwOiB0eXBlPTcsIGF0dHI9MHhm
-LCByYW5nZT1bMHgwMDAwMDAwMDAzYzAwMDAwLTB4MDAwMDAwMDAyMDAwMDAwMCkgKDQ1Mk1C
-KQpbICAgIDAuMDAwMDAwXSBlZmk6IG1lbTExOiB0eXBlPTAsIGF0dHI9MHhmLCByYW5nZT1b
-MHgwMDAwMDAwMDIwMDAwMDAwLTB4MDAwMDAwMDAyMDIwMDAwMCkgKDJNQikKWyAgICAwLjAw
-MDAwMF0gZWZpOiBtZW0xMjogdHlwZT03LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDAy
-MDIwMDAwMC0weDAwMDAwMDAwMmViMzgwMDApICgyMzNNQikKWyAgICAwLjAwMDAwMF0gZWZp
-OiBtZW0xMzogdHlwZT00LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDAyZWIzODAwMC0w
-eDAwMDAwMDAwMmViNTgwMDApICgwTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMTQ6IHR5
-cGU9NywgYXR0cj0weGYsIHJhbmdlPVsweDAwMDAwMDAwMmViNTgwMDAtMHgwMDAwMDAwMDMw
-ZDlhMDAwKSAoMzRNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0xNTogdHlwZT0wLCBhdHRy
-PTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDAzMGQ5YTAwMC0weDAwMDAwMDAwMzBmOWEwMDApICgy
-TUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMTY6IHR5cGU9NCwgYXR0cj0weGYsIHJhbmdl
-PVsweDAwMDAwMDAwMzBmOWEwMDAtMHgwMDAwMDAwMDMxYjI4MDAwKSAoMTFNQikKWyAgICAw
-LjAwMDAwMF0gZWZpOiBtZW0xNzogdHlwZT03LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAw
-MDAzMWIyODAwMC0weDAwMDAwMDAwNTdhMmYwMDApICg2MDdNQikKWyAgICAwLjAwMDAwMF0g
-ZWZpOiBtZW0xODogdHlwZT0yLCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDA1N2EyZjAw
-MC0weDAwMDAwMDAwNzRkOTkwMDApICg0NjdNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0x
-OTogdHlwZT03LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDA3NGQ5OTAwMC0weDAwMDAw
-MDAwNzRmODIwMDApICgxTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMjA6IHR5cGU9MSwg
-YXR0cj0weGYsIHJhbmdlPVsweDAwMDAwMDAwNzRmODIwMDAtMHgwMDAwMDAwMDc0ZjlmMDAw
-KSAoME1CKQpbICAgIDAuMDAwMDAwXSBlZmk6IG1lbTIxOiB0eXBlPTcsIGF0dHI9MHhmLCBy
-YW5nZT1bMHgwMDAwMDAwMDc0ZjlmMDAwLTB4MDAwMDAwMDA3NWI3OTAwMCkgKDExTUIpClsg
-ICAgMC4wMDAwMDBdIGVmaTogbWVtMjI6IHR5cGU9NCwgYXR0cj0weGYsIHJhbmdlPVsweDAw
-MDAwMDAwNzViNzkwMDAtMHgwMDAwMDAwMDc3ZjlmMDAwKSAoMzZNQikKWyAgICAwLjAwMDAw
-MF0gZWZpOiBtZW0yMzogdHlwZT03LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDA3N2Y5
-ZjAwMC0weDAwMDAwMDAwNzgyMmQwMDApICgyTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVt
-MjQ6IHR5cGU9MiwgYXR0cj0weGYsIHJhbmdlPVsweDAwMDAwMDAwNzgyMmQwMDAtMHgwMDAw
-MDAwMDc4MjM2MDAwKSAoME1CKQpbICAgIDAuMDAwMDAwXSBlZmk6IG1lbTI1OiB0eXBlPTMs
-IGF0dHI9MHhmLCByYW5nZT1bMHgwMDAwMDAwMDc4MjM2MDAwLTB4MDAwMDAwMDA3ODk5ZjAw
-MCkgKDdNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0yNjogdHlwZT01LCBhdHRyPTB4ODAw
-MDAwMDAwMDAwMDAwZiwgcmFuZ2U9WzB4MDAwMDAwMDA3ODk5ZjAwMC0weDAwMDAwMDAwNzhh
-YzAwMDApICgxTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMjc6IHR5cGU9NSwgYXR0cj0w
-eDgwMDAwMDAwMDAwMDAwMGYsIHJhbmdlPVsweDAwMDAwMDAwNzhhYzAwMDAtMHgwMDAwMDAw
-MDc4YjlmMDAwKSAoME1CKQpbICAgIDAuMDAwMDAwXSBlZmk6IG1lbTI4OiB0eXBlPTYsIGF0
-dHI9MHg4MDAwMDAwMDAwMDAwMDBmLCByYW5nZT1bMHgwMDAwMDAwMDc4YjlmMDAwLTB4MDAw
-MDAwMDA3OGNiMTAwMCkgKDFNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0yOTogdHlwZT02
-LCBhdHRyPTB4ODAwMDAwMDAwMDAwMDAwZiwgcmFuZ2U9WzB4MDAwMDAwMDA3OGNiMTAwMC0w
-eDAwMDAwMDAwNzhkOWYwMDApICgwTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMzA6IHR5
-cGU9MCwgYXR0cj0weGYsIHJhbmdlPVsweDAwMDAwMDAwNzhkOWYwMDAtMHgwMDAwMDAwMDc4
-ZTFmMDAwKSAoME1CKQpbICAgIDAuMDAwMDAwXSBlZmk6IG1lbTMxOiB0eXBlPTAsIGF0dHI9
-MHhmLCByYW5nZT1bMHgwMDAwMDAwMDc4ZTFmMDAwLTB4MDAwMDAwMDA3OGU5YjAwMCkgKDBN
-QikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0zMjogdHlwZT0wLCBhdHRyPTB4ZiwgcmFuZ2U9
-WzB4MDAwMDAwMDA3OGU5YjAwMC0weDAwMDAwMDAwNzhlOWMwMDApICgwTUIpClsgICAgMC4w
-MDAwMDBdIGVmaTogbWVtMzM6IHR5cGU9MCwgYXR0cj0weGYsIHJhbmdlPVsweDAwMDAwMDAw
-NzhlOWMwMDAtMHgwMDAwMDAwMDc4ZTlmMDAwKSAoME1CKQpbICAgIDAuMDAwMDAwXSBlZmk6
-IG1lbTM0OiB0eXBlPTEwLCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDA3OGU5ZjAwMC0w
-eDAwMDAwMDAwNzhlZGUwMDApICgwTUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMzU6IHR5
-cGU9MTAsIGF0dHI9MHhmLCByYW5nZT1bMHgwMDAwMDAwMDc4ZWRlMDAwLTB4MDAwMDAwMDA3
-OGY5ZjAwMCkgKDBNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW0zNjogdHlwZT05LCBhdHRy
-PTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDA3OGY5ZjAwMC0weDAwMDAwMDAwNzhmZGQwMDApICgw
-TUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtMzc6IHR5cGU9OSwgYXR0cj0weGYsIHJhbmdl
-PVsweDAwMDAwMDAwNzhmZGQwMDAtMHgwMDAwMDAwMDc4ZmZmMDAwKSAoME1CKQpbICAgIDAu
-MDAwMDAwXSBlZmk6IG1lbTM4OiB0eXBlPTQsIGF0dHI9MHhmLCByYW5nZT1bMHgwMDAwMDAw
-MDc4ZmZmMDAwLTB4MDAwMDAwMDA3OTAwMDAwMCkgKDBNQikKWyAgICAwLjAwMDAwMF0gZWZp
-OiBtZW0zOTogdHlwZT03LCBhdHRyPTB4ZiwgcmFuZ2U9WzB4MDAwMDAwMDEwMDAwMDAwMC0w
-eDAwMDAwMDAxMDA2MDAwMDApICg2TUIpClsgICAgMC4wMDAwMDBdIGVmaTogbWVtNDA6IHR5
-cGU9MTEsIGF0dHI9MHg4MDAwMDAwMDAwMDAwMDAxLCByYW5nZT1bMHgwMDAwMDAwMGY4MGY4
-MDAwLTB4MDAwMDAwMDBmODBmOTAwMCkgKDBNQikKWyAgICAwLjAwMDAwMF0gZWZpOiBtZW00
-MTogdHlwZT0xMSwgYXR0cj0weDgwMDAwMDAwMDAwMDAwMDEsIHJhbmdlPVsweDAwMDAwMDAw
-ZmVkMWMwMDAtMHgwMDAwMDAwMGZlZDIwMDAwKSAoME1CKQpbICAgIDAuMDAwMDAwXSBlZmk6
-IENvdWxkIG5vdCByZXNlcnZlIGJvb3QgcmFuZ2UgWzB4MDAwMDAwMDAwMC0weDAwMDAwMDBm
-ZmZdClsgICAgMC4wMDAwMDBdIG1lbWJsb2NrX3Jlc2VydmU6IFsweDAwMDAwMDAwMDRlMDAw
-LTB4MDAwMDAwMDAwNTgwMDBdIGVmaV9yZXNlcnZlX2Jvb3Rfc2VydmljZXMrMHgxMjgvMHgx
-ODAKWyAgICAwLjAwMDAwMF0gbWVtYmxvY2tfcmVzZXJ2ZTogWzB4MDAwMDAwMDAwNWUwMDAt
-MHgwMDAwMDAwMDA1ZjAwMF0gZWZpX3Jlc2VydmVfYm9vdF9zZXJ2aWNlcysweDEyOC8weDE4
-MApbICAgIDAuMDAwMDAwXSBlZmk6IENvdWxkIG5vdCByZXNlcnZlIGJvb3QgcmFuZ2UgWzB4
-MDAwMDA1ZjAwMC0weDAwMDAwOWZmZmZdClsgICAgMC4wMDAwMDBdIG1lbWJsb2NrX3Jlc2Vy
-dmU6IFsweDAwMDAwMDJlYjM4MDAwLTB4MDAwMDAwMmViNTgwMDBdIGVmaV9yZXNlcnZlX2Jv
-b3Rfc2VydmljZXMrMHgxMjgvMHgxODAKWyAgICAwLjAwMDAwMF0gbWVtYmxvY2tfcmVzZXJ2
-ZTogWzB4MDAwMDAwMzBmOWEwMDAtMHgwMDAwMDAzMWIyODAwMF0gZWZpX3Jlc2VydmVfYm9v
-dF9zZXJ2aWNlcysweDEyOC8weDE4MApbICAgIDAuMDAwMDAwXSBtZW1ibG9ja19yZXNlcnZl
-OiBbMHgwMDAwMDA3NWI3OTAwMC0weDAwMDAwMDc3ZjlmMDAwXSBlZmlfcmVzZXJ2ZV9ib290
-X3NlcnZpY2VzKzB4MTI4LzB4MTgwClsgICAgMC4wMDAwMDBdIG1lbWJsb2NrX3Jlc2VydmU6
-IFsweDAwMDAwMDc4MjM2MDAwLTB4MDAwMDAwNzg5OWYwMDBdIGVmaV9yZXNlcnZlX2Jvb3Rf
-c2VydmljZXMrMHgxMjgvMHgxODAKWyAgICAwLjAwMDAwMF0gbWVtYmxvY2tfcmVzZXJ2ZTog
-WzB4MDAwMDAwNzhmZmYwMDAtMHgwMDAwMDA3OTAwMDAwMF0gZWZpX3Jlc2VydmVfYm9vdF9z
-ZXJ2aWNlcysweDEyOC8weDE4MApbICAgIDAuMDAwMDAwXSBBQ1BJOiBVRUZJIDAwMDAwMDAw
-NzhmZGYwMDAgMDAwM0UgKHYwMSBMRU5PVk8gVFAtOEEgICAgMDAwMDE0MjAgUFRMICAwMDAw
-MDAwMikKWyAgICAwLjAwMDAwMF0gQUNQSTogVUVGSSAwMDAwMDAwMDc4ZmRlMDAwIDAwMDQy
-ICh2MDEgUFRMICAgICAgQ09NQlVGIDAwMDAwMDAxIFBUTCAgMDAwMDAwMDEpClsgICAgMC4w
-MDAwMDBdIEFDUEk6IFVFRkkgMDAwMDAwMDA3OGZkZDAwMCAwMDI5MiAodjAxIExFTk9WTyBU
-UC04QSAgICAwMDAwMTQyMCBQVEwgIDAwMDAwMDAyKQpbICAgIDEuNDM5MTg4XSBlZmlmYjog
-cHJvYmluZyBmb3IgZWZpZmIKWyAgICAxLjQzOTYzM10gZWZpZmI6IGZyYW1lYnVmZmVyIGF0
-IDB4ODAwMDAwMDAsIG1hcHBlZCB0byAweGZmZmZjOTAwMDk1ODAwMDAsIHVzaW5nIDEyMTZr
-LCB0b3RhbCAxMjE2awpbICAgIDEuNDM5NjU4XSBlZmlmYjogbW9kZSBpcyA2NDB4NDgweDMy
-LCBsaW5lbGVuZ3RoPTI1NjAsIHBhZ2VzPTEKWyAgICAxLjQzOTY3MF0gZWZpZmI6IHNjcm9s
-bGluZzogcmVkcmF3ClsgICAgMS40Mzk2ODVdIGVmaWZiOiBUcnVlY29sb3I6IHNpemU9ODo4
-Ojg6OCwgc2hpZnQ9MjQ6MTY6ODowClsgICAgMS40NDU1MjRdIGZiMDogRUZJIFZHQSBmcmFt
-ZSBidWZmZXIgZGV2aWNlClsgICAgMS41NjgyMTRdIGZiOiBjb25mbGljdGluZyBmYiBodyB1
-c2FnZSBpbnRlbGRybWZiIHZzIEVGSSBWR0EgLSByZW1vdmluZyBnZW5lcmljIGRyaXZlcgpb
-ICAgIDIuMzU5ODA1XSB0c2M6IFJlZmluZWQgVFNDIGNsb2Nrc291cmNlIGNhbGlicmF0aW9u
-OiAyNDkxLjkwNSBNSHoKWyAgICAzLjM4NDQ0N10gRUZJIFZhcmlhYmxlcyBGYWNpbGl0eSB2
-MC4wOCAyMDA0LU1heS0xNw==
---------------060201070600050903030408
-Content-Type: text/plain; charset=UTF-8;
- name="iomem-2G.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="iomem-2G.txt"
-
-MDAwMDAwMDAtMDAwMDBmZmYgOiByZXNlcnZlZAowMDAwMTAwMC0wMDA1N2ZmZiA6IFN5c3Rl
-bSBSQU0KMDAwNTgwMDAtMDAwNThmZmYgOiBBQ1BJIE5vbi12b2xhdGlsZSBTdG9yYWdlCjAw
-MDU5MDAwLTAwMDlmZmZmIDogU3lzdGVtIFJBTQowMDBhMDAwMC0wMDBiZmZmZiA6IFBDSSBC
-dXMgMDAwMDowMAowMDBjMDAwMC0wMDBjN2ZmZiA6IFZpZGVvIFJPTQowMDBjODAwMC0wMDBj
-YmZmZiA6IHBucCAwMDowMAowMDBjYzAwMC0wMDBjZmZmZiA6IHBucCAwMDowMAowMDBkMDAw
-MC0wMDBkM2ZmZiA6IHBucCAwMDowMAowMDBkNDAwMC0wMDBkN2ZmZiA6IHBucCAwMDowMAow
-MDBkODAwMC0wMDBkYmZmZiA6IHBucCAwMDowMAowMDBkYzAwMC0wMDBkZmZmZiA6IHBucCAw
-MDowMAowMDBlMDAwMC0wMDBlM2ZmZiA6IHBucCAwMDowMAowMDBlNDAwMC0wMDBlN2ZmZiA6
-IHBucCAwMDowMAowMDBlODAwMC0wMDBlYmZmZiA6IHBucCAwMDowMAowMDBlYzAwMC0wMDBl
-ZmZmZiA6IHBucCAwMDowMAowMDBmMDAwMC0wMDBmZmZmZiA6IFN5c3RlbSBST00KMDAxMDAw
-MDAtMWZmZmZmZmYgOiBTeXN0ZW0gUkFNCiAgMDIwMDAwMDAtMDJkZjhmMzMgOiBLZXJuZWwg
-Y29kZQogIDAzNDAwMDAwLTAzNWE0YWZmIDogS2VybmVsIGRhdGEKICAwMzlkMzAwMC0wM2Ix
-N2ZmZiA6IEtlcm5lbCBic3MKMjAwMDAwMDAtMjAxZmZmZmYgOiByZXNlcnZlZAoyMDIwMDAw
-MC0zMGQ5OWZmZiA6IFN5c3RlbSBSQU0KMzBkOWEwMDAtMzBmOTlmZmYgOiByZXNlcnZlZAoz
-MGY5YTAwMC03ODk5ZWZmZiA6IFN5c3RlbSBSQU0KNzg5OWYwMDAtNzhlOWVmZmYgOiByZXNl
-cnZlZAo3OGU5ZjAwMC03OGY5ZWZmZiA6IEFDUEkgTm9uLXZvbGF0aWxlIFN0b3JhZ2UKNzhm
-OWYwMDAtNzhmZmVmZmYgOiBBQ1BJIFRhYmxlcwo3OGZmZjAwMC03OGZmZmZmZiA6IFN5c3Rl
-bSBSQU0KNzkwMDAwMDAtN2JmZmZmZmYgOiBSQU0gYnVmZmVyCjdkYTAwMDAwLWZlYmZmZmZm
-IDogUENJIEJ1cyAwMDAwOjAwCiAgN2RhMDAwMDAtN2RiZmZmZmYgOiBQQ0kgQnVzIDAwMDA6
-MDIKICA3ZGMwMDAwMC03ZGRmZmZmZiA6IFBDSSBCdXMgMDAwMDowMgogIDgwMDAwMDAwLThm
-ZmZmZmZmIDogMDAwMDowMDowMi4wCiAgOTAwMDAwMDAtOTAzZmZmZmYgOiAwMDAwOjAwOjAy
-LjAKICA5MDQwMDAwMC05MGJmZmZmZiA6IFBDSSBCdXMgMDAwMDowNQogIDkwYzAwMDAwLTkx
-M2ZmZmZmIDogUENJIEJ1cyAwMDAwOjBkCiAgOTE0MDAwMDAtOTFiZmZmZmYgOiBQQ0kgQnVz
-IDAwMDA6MGQKICAgIDkxNDAwMDAwLTkxNDAwN2ZmIDogMDAwMDowZDowMC4zCiAgICA5MTQw
-MTAwMC05MTQwMTBmZiA6IDAwMDA6MGQ6MDAuMAogICAgICA5MTQwMTAwMC05MTQwMTBmZiA6
-IG1tYzAKICA5MWMwMDAwMC05MjNmZmZmZiA6IFBDSSBCdXMgMDAwMDowNQogIDkyNDAwMDAw
-LTkyNGZmZmZmIDogUENJIEJ1cyAwMDAwOjAzCiAgICA5MjQwMDAwMC05MjQwMWZmZiA6IDAw
-MDA6MDM6MDAuMAogICAgICA5MjQwMDAwMC05MjQwMWZmZiA6IGl3bHdpZmkKICA5MjUwMDAw
-MC05MjUxZmZmZiA6IDAwMDA6MDA6MTkuMAogICAgOTI1MDAwMDAtOTI1MWZmZmYgOiBlMTAw
-MGUKICA5MjUyMDAwMC05MjUyM2ZmZiA6IDAwMDA6MDA6MWIuMAogICAgOTI1MjAwMDAtOTI1
-MjNmZmYgOiBJQ0ggSEQgYXVkaW8KICA5MjUyNDAwMC05MjUyNDBmZiA6IDAwMDA6MDA6MWYu
-MwogIDkyNTI1MDAwLTkyNTI1MDBmIDogMDAwMDowMDoxNi4wCiAgICA5MjUyNTAwMC05MjUy
-NTAwZiA6IG1laQogIDkyNTI4MDAwLTkyNTI4N2ZmIDogMDAwMDowMDoxZi4yCiAgICA5MjUy
-ODAwMC05MjUyODdmZiA6IGFoY2kKICA5MjUyOTAwMC05MjUyOTNmZiA6IDAwMDA6MDA6MWQu
-MAogICAgOTI1MjkwMDAtOTI1MjkzZmYgOiBlaGNpX2hjZAogIDkyNTJhMDAwLTkyNTJhM2Zm
-IDogMDAwMDowMDoxYS4wCiAgICA5MjUyYTAwMC05MjUyYTNmZiA6IGVoY2lfaGNkCiAgOTI1
-MmIwMDAtOTI1MmJmZmYgOiAwMDAwOjAwOjE5LjAKICAgIDkyNTJiMDAwLTkyNTJiZmZmIDog
-ZTEwMDBlCiAgZjgwMDAwMDAtZmJmZmZmZmYgOiBQQ0kgTU1DT05GSUcgMDAwMCBbYnVzIDAw
-LTNmXQogICAgZjgwZjgwMDAtZjgwZjhmZmYgOiByZXNlcnZlZApmZWMwMDAwMC1mZWMwMDNm
-ZiA6IElPQVBJQyAwCmZlZDAwMDAwLWZlZDAwM2ZmIDogSFBFVCAwCmZlZDEwMDAwLWZlZDEz
-ZmZmIDogcG5wIDAwOjAxCmZlZDE4MDAwLWZlZDE4ZmZmIDogcG5wIDAwOjAxCmZlZDE5MDAw
-LWZlZDE5ZmZmIDogcG5wIDAwOjAxCmZlZDFjMDAwLWZlZDFmZmZmIDogcmVzZXJ2ZWQKICBm
-ZWQxYzAwMC1mZWQxZmZmZiA6IHBucCAwMDowMQogICAgZmVkMWY0MTAtZmVkMWY0MTQgOiBp
-VENPX3dkdAogICAgICBmZWQxZjQxMC1mZWQxZjQxNCA6IGlUQ09fd2R0CmZlZDQwMDAwLWZl
-ZDRiZmZmIDogUENJIEJ1cyAwMDAwOjAwCiAgZmVkNDUwMDAtZmVkNGJmZmYgOiBwbnAgMDA6
-MDEKZmVkOTAwMDAtZmVkOTBmZmYgOiBkbWFyMApmZWQ5MTAwMC1mZWQ5MWZmZiA6IGRtYXIx
-CmZlZTAwMDAwLWZlZTAwZmZmIDogTG9jYWwgQVBJQwoxMDAwMDAwMDAtMTAwNWZmZmZmIDog
-U3lzdGVtIFJBTQoxMDA2MDAwMDAtMTAzZmZmZmZmIDogUkFNIGJ1ZmZlcg==
---------------060201070600050903030408--
-
-------enig2POMCFNILMSXLHBDLPDVG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5VdxAAoJECRx6z5ArFrDMugP/1qlozA1ZyR1guBu+9s5d56M
-C4bKKQci95JApG9k15H7Y2QSSxOShX03UcAE7lswgkh1w71PrJtKSuB4OwiH80Js
-CxjxuRDMWE2+N1dHpClZ4PU4j5VAdXrLZan+PZ+WjF/BBIcS55Rz0wh5u8rBKo5L
-6nsz+uNg6MX4vg412Dxt6+QSMUwvmHOw3hQRIz3luX4V1pcvgUySnNUbduRKjoE4
-yWDhHwTapCxXwneQRXEfojkIMH/5Zjrr6bH6Q5FmIE9rVTqnd0c0Ft90DG6Nluup
-hObZPVT9emhVOaBXDN/Y2lV8MbehaEUR9HOJjztbl+ObvTKyrekhDt6aLT+r+TWS
-4SHiuG2jUFuLqGj2Ya700IdoMqYlbpDinWTHksWY6LqK7C7gC2IEdJ1ZQYUekbMX
-zbAWm5xig9DqbWPU8jA9G6lpF0IxMVVbpPUDDFZIK8FgnPapn0UfiXFDR3PDx2pj
-QYIEmoQ7VDj/n7NH4wsBI830Owm6oW1IVaixz52ImsAvT3KT0IMHvjQKc1IgdNxO
-oOZ8M6LrEqe1ImbRCTv7hpyPMZFWVInGTXViZSX6kNYu4LLbAhAfTmzL7oEOmteN
-0eWj/3rPwQkb+vj1GPhxxdwVAxHjJl2kT5EVxmfamGJy+x67HU10/CPoQy3fEDs8
-vSS54NCoLGFfhmciULdj
-=CPoU
------END PGP SIGNATURE-----
-
-------enig2POMCFNILMSXLHBDLPDVG--
