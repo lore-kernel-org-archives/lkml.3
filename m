@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389Ab3GPRQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:16:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9007 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381Ab3GPRQp (ORCPT
+	id S933321Ab3GPRRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:17:54 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44003 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932980Ab3GPRRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:16:45 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BvhdhFe28WsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=LhvmM_GddXoA:10 a=UoUQdT-vNGU4AozlV4MA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373995001.6458.18.camel@gandalf.local.home>
-Subject: Re: [ATTEND] How to act on LKML
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Chris Ball <cjb@laptop.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Date: Tue, 16 Jul 2013 13:16:41 -0400
-In-Reply-To: <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-References: <20130715174659.GC15531@xanatos>
-	   <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	   <20130715180403.GD15531@xanatos>
-	   <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	   <20130715184642.GE15531@xanatos>
-	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	   <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
-	   <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	   <1373926109.17876.221.camel@gandalf.local.home>
-	 <20130715223615.GI15531@xanatos> <1373932170.28142.24.camel@envy.home>
-	   <864nbv9qcm.fsf@void.printf.net>
-	  <1373944014.17876.255.camel@gandalf.local.home>
-	  <51E4BFA9.1030600@zytor.com>
-	  <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-	 <1373991399.6458.6.camel@gandalf.local.home>
-	 <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Tue, 16 Jul 2013 13:17:52 -0400
+Date: Tue, 16 Jul 2013 10:17:48 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] iproute2 3.10
+Message-ID: <20130716101748.166a8ad7@nehalam.linuxnetplumber.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 17:58 +0100, Stefano Stabellini wrote:
->  
-> I think there is a way to get the point across without cursing.
-> One can be clear and decisive without "bursting". It's easy to mistake
-> cursing on the quality of the code for a personal attack.
+This is update for iproute2 tools for 3.10 kernel.
+In addition to the usual array of bug fixes and documentation changes,
+this release also fixes some important bugs relating to rate control
+at higher speeds.
 
-What's wrong with cursing? It's just words. The more you curse, the less
-effect it has. I seldom curse, but when I do, people jump and listen.
-That's because I seldom curse.
+The 3.10 kernel added a number of new networking features as well
+for VXLAN and bridging.
 
-I have two teenage daughters. I've never heard them curse at all, and
-I'm not sure my oldest ever has. From a young age, I taught them that I
-don't care what they hear, it's what they say that counts. I never
-sheltered them from "curse" words. I taught them that curse words are
-for when you really need to make a point and want everyone to listen to
-you because you are really upset. The less you use them, the more impact
-they have when you do. They took this to heart, and are saving it up for
-when something big happens, because I can't get them to curse even when
-I try :-)
+Iproute2 package is available at:
+  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.10.0.tar.gz
 
--- Steve
+You can download the source from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
+---
+
+Adam Borowski (1):
+      ip: fix build failure if time_t is not long int
+
+Alexander Duyck (1):
+      iproute2: act_ipt fix xtables breakage on older versions.
+
+Amerigo Wang (1):
+      iptunnel: check SIT_ISATAP flag only for SIT tunnel
+
+Andreas Henriksson (1):
+      iproute2: fix build failure on sparc due to -Wformat and tv_usec
+
+Andrey Vagin (5):
+      ip: set the close-on-exec flag for descriptors
+      ss: handle socket diag request in a separate function
+      ss: create a function to print info about netlink sockets
+      ss: show destination address for netlink sockets
+      ss: Get netlink sockets info via sock-diag (v2)
+
+Daniel Borkmann (1):
+      ip: ipv6: add tokenized interface identifier support
+
+David L Stevens (1):
+      iproute2: support NTF_ROUTER flag in VXLAN fdb entries
+
+David Stevens (1):
+      iproute2: generalize VXLAN forwarding tables
+
+Eric Dumazet (4):
+      ss: add fastopen support
+      htb: report overhead attribute
+      get_rate: detect 32bit overflows
+      ss: add more TCP_INFO components
+
+John Fastabend (1):
+      iproute2: bridge: fix 'bridge link' setlink/getlink parsing
+
+JunweiZhang (1):
+      ipbatch: fix use of 'ip netns exec'
+
+Kamil Rytarowski (1):
+      iproute2 patch against GCC 4.8.0
+
+Nicolas Dichtel (5):
+      ip: add missing help about mode argument
+      ip/xfrm: all to set flag XFRM_SA_XFLAG_DONT_ENCAP_DSCP
+      ipnetconf: by default dump all entries
+      ss: allow to retrieve AF_PACKET info via netlink
+      man: describe --bpf option of ss
+
+Patric McHardy (1):
+      ip: iplink_vlan: add 802.1ad support
+
+Pavel Emelyanov (1):
+      ss: Show inet and unix sockets' shutdown state
+
+Rami Rosen (1):
+      ss: replace bfp with bpf in usage().
+
+Sriram Narasimhan (1):
+      iptuntap: allow creation of multi-queue tun/tap device
+
+Stephen Hemminger (11):
+      Update headers to 3.10
+      Add vxlan destination port option
+      vxlan: nag user to set port value
+      add BPF header files
+      vxlan: remove dstport option
+      man: get rid of useless reference to GNU style options
+      htb: fix indentation
+      netns: follow return value conventions of the rest of the code
+      ip: add batch mode to man page
+      Make tc and ip batch mode consistent
+      v3.10.0
+
+Thomas Richter (2):
+      iproute2 vxlan documentation update for bridge command
+      iproute2 vxlan documentation update for ip command
+
+Eric S. Raymond (4):
+      First set of manpage markup fixes
+      tc-stab.8: Fix synopsis errors, an invalid escape, and incorrect English usge.
+      In tc-ematch.8, remove no-op .ti requests to prevent translation warnings
+      ip-rule.8: Fix presentational use of .SS.
 
