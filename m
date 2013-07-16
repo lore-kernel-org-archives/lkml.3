@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab3GPQmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:42:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40784 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933455Ab3GPQlx (ORCPT
+	id S933563Ab3GPQm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:42:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60374 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933445Ab3GPQlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Jul 2013 12:41:53 -0400
-X-Sasl-enc: /QidXnTzSCI71Sg6QjtvLya8g4q/NrXVM/jn79VPwA4C 1373992909
-Date: Tue, 16 Jul 2013 09:35:28 -0700
-From: Greg KH <greg@kroah.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-Message-ID: <20130716163528.GA17231@kroah.com>
-References: <1373916476.2748.69.camel@dabdike>
- <20130715214422.GA2478@kroah.com>
- <1373951852.2148.9.camel@dabdike>
- <20130716062058.GB19052@kroah.com>
- <1373960616.2148.34.camel@dabdike>
- <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
+From: Nishanth Menon <nm@ti.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>, Mark Brown <broonie@kernel.org>
+CC: J Keerthy <j-keerthy@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH V2 0/2] regulator: palmas-pmic: doc: update device tree bindings
+Date: Tue, 16 Jul 2013 11:41:08 -0500
+Message-ID: <1373992870-20725-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130716161939.GR22506@sirena.org.uk>
+References: <20130716161939.GR22506@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1307161124430.29788@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:46:05AM +0200, Jiri Kosina wrote:
-> On Tue, 16 Jul 2013, James Bottomley wrote:
-> 
-> > > But I need, from the distros, specific examples of what they object to.
-> > > So far all I've gotten is one security patch (that was needed), and one
-> > > patch for sysfs that I backported too far in the version numbers (my
-> > > fault.)
-> > > 
-> > > Given the huge number of stable patches over the past few years, only
-> > > having 2 patches be an issue sounds like things are working well for
-> > > people here.
-> > > 
-> > > If I don't get pushback, with specifics, from the distros, I will not
-> > > know what to change, so if people can provide me that, it will help out
-> > > a lot.
-> > 
-> > I agree ... I think Ji?? and his Red Hat equivalent need to pipe up and
-> > give us more examples of the problems they've been having.
-> 
-> I am still continuing with my pushback against the /dev/random revamp that 
-> happened in -stable; at least in the form it happened. I still strongly 
-> believe it's something that's not a stable material. But that's happening 
-> in parallel in a different thread already.
-> 
-> Okay, if you want another example:
-> 
-> 	commit a6aa749906b92eaec6ca0469f90f35de26044d90
-> 	Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> 	Date:   Thu Dec 20 15:05:14 2012 -0800
-> 
-> 	    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
-> 
-> While this is a correct fix for major kernel release, as it achieves 
-> correctness by checking SMBIOS version properly and behaving according to 
-> the spec, it actually causes an userspace ABI regression in some sense, as 
-> it just changes byte order of /sys/class/dmi/id/product_uuid on certain 
-> systems.
-> 
-> Which is something I absolutely *do not* expect from a minor release of 
-> branch which is called "stable".
+We seem to have a few missing updates to device tree bindings with the
+latest set of changes getting merged in.
 
-As you pointed out, your definition of "stable" is one that the
-enterprise distros have created, and might be totally different from my
-view of what "stable" is :)
+Changes since V1:
+	Apologies on the spam, looks like I got the wrong mail ID first time around :(
+	minor commit message cleanups
 
-And also, as Ben pointed out, this was probably wrong, and someone
-should have told me about this, so I could have reverted it.  Please do
-so the next time.
+V1: http://marc.info/?l=linux-doc&m=137398467901450&w=2
 
-thanks,
+Based on v3.11-rc1 tag
 
-greg k-h
+Nishanth Menon (2):
+  regulator: palmas-pmic: doc: fix typo for sleep-mode
+  regulator: palmas-pmic: doc: remove ti,tstep
+
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+-- 
+1.7.9.5
+
+Regards,
+Nishanth Menon
