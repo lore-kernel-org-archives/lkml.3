@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3GPH26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 03:28:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:20232 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab3GPH24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 03:28:56 -0400
-X-AuditID: cbfee61a-b7f646d000000f6b-a3-51e4f636cb1f
-Date: Tue, 16 Jul 2013 09:28:47 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "R, Durgadoss" <durgadoss.r@intel.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v5 5/7] thermal:boost: Automatic enable/disable of BOOST
- feature
-Message-id: <20130716092847.668e0b71@amdc308.digital.local>
-In-reply-to: <20130711100832.48fe3b33@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-6-git-send-email-l.majewski@samsung.com>
- <20130711100832.48fe3b33@amdc308.digital.local>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xgK75tyeBBse/MVk8bfrBbtH38wqz
-	xZr9P5ksOs8+YbZ484jb4s3DzYwWl3fNYbP43HuE0eJ24wo2i/6FvUwWTx72sVls/OrhwOOx
-	eM9LJo871/aweayb9pbZo2/LKkaPR4tbGD2O39jO5PF5k1wAexSXTUpqTmZZapG+XQJXxvx9
-	j1kL1rJUnP+7k6mBcSNzFyMnh4SAicTaQ2vZIGwxiQv31gPZXBxCAosYJTZsPgnltDNJvHz+
-	kQWkikVAVWLLynnsIDabgJ7E57tPmboYOThEBPwl+luUQeqZBeYxSyzecQtsqrBAmMSqHd1g
-	NbwC1hK3bmiBhDkFbCRuH7/ADjH/PaNEZ899sPn8ApIS7f9+QF1nJ3Hu0wawXbwCghI/Jt8D
-	q2EW0JLYvK2JFcKWl9i85i3zBEbBWUjKZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0
-	veT83E2M4Ah6JrWDcWWDxSFGAQ5GJR5eCZ4ngUKsiWXFlbmHGCU4mJVEeBM3AYV4UxIrq1KL
-	8uOLSnNSiw8xSnOwKInzHmi1DhQSSE8sSc1OTS1ILYLJMnFwSjUwerZFu+oHBvj7TWBVLull
-	9bWoFr2geUUt9aPfHX/TVZPPO3zgzpBZKjLr893ygIY9P3cmRzoLJH1vV7QXk3b6up2b2S/z
-	zDq7n98WPXJ8r63mePDxu8hpV6b2fi0VPMF2XmajcIwQ1/Skr55/lnwV/ztdQub9koip+4Sm
-	aJWbOx99HqG9QWyBEktxRqKhFnNRcSIAGp3+ppwCAAA=
+	id S1752705Ab3GPHdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 03:33:36 -0400
+Received: from mail.lang.hm ([64.81.33.126]:34696 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752299Ab3GPHde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 03:33:34 -0400
+Date: Tue, 16 Jul 2013 00:32:53 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable
+ review)
+In-Reply-To: <20130715223615.GI15531@xanatos>
+Message-ID: <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+References: <20130715174659.GC15531@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home>
+ <20130715223615.GI15531@xanatos>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Zhang, Eduardo,
+On Mon, 15 Jul 2013, Sarah Sharp wrote:
 
-> Dear Zhang, Eduardo
-> 
-> Do you have any comments/feedback for me regarding this thermal
-> framework related patch?
-> 
-> I've already received some feedback from Durga for this patch, but I
-> think that maintainers are most welcome to express their opinion :-)
-> 
+> The people who want to work together in a civil manner should get
+> together and create a "Kernel maintainer's code of conduct" that
+> outlines what they expect from fellow kernel developers.  The people who
+> want to continue acting "unprofessionally" should document what
+> behaviors set off their cursing streaks, so that others can avoid that
+> behavior.  Somewhere in the middle is the community behavior all
+> developers can thrive in.
 
-Will you find time to give me the feedback about proposed changes to
-thermal_core.c regarding the cpufreq boost support?
+By defining your viewpoint as being "professional" and the other viewpoint as 
+being "unprofessional" you have already started using very loaded terms and 
+greatly reduces the probability of actually getting the other group to agree and 
+participate.
 
-> Thanks in advance.
-> 
+As has been said elsewhere, almost all the attacks are against code, not people. 
+There are occasional outbursts at the more experienced/trusted people along the 
+lines of "you should know better than to do that", and while there is heat 
+there, there is also a lot of truth. If those people can't be trusted not to do 
+the wrong things, then we are back to the time when Linus had to review every 
+patch himself and we hit that wall quite hard.
 
+People do need to be called out on their mistakes. In companies, if you don't 
+fire managers who do the wrong thing soon enough, it can ruin the company. In 
+kernel development, you have a very large number of observers and if they don't 
+see people being corrected for doing the wrong thing, they will emulate it.
 
--- 
-Best regards,
+I find that frequently the most educational discussions to read are the 'heated' 
+ones, they are the ones where the 'right' and 'wrong' processes are most clearly 
+explained, not just in terms of what the processes are, but also the WHY of the 
+process being 'right' or 'wrong'.
 
-Lukasz Majewski
+If Linus just snaps at someone and they say 'oops, missed that', it's no big 
+deal for anyone. But when a full argument/discussion takes place, a lot more 
+people learn and apply the lessons to their own work.
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+David Lang
