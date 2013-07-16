@@ -1,98 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab3GPPqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:46:21 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:36691 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932590Ab3GPPqT (ORCPT
+	id S933097Ab3GPPsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:48:43 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:37400 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932590Ab3GPPsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:46:19 -0400
-Date: Tue, 16 Jul 2013 17:46:16 +0200
-From: "'Maxime Ripard'" <maxime.ripard@free-electrons.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Alexandre Belloni'" <alexandre.belloni@free-electrons.com>,
-        hector.palacios@digi.com,
-        "'Thomas Petazzoni'" <thomas@free-electrons.com>,
-        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 3/3] fb: backlight: HX8357: Add HX8369 support
-Message-ID: <20130716154616.GK3125@lukather>
-References: <1373902022-20439-1-git-send-email-maxime.ripard@free-electrons.com>
- <1373902022-20439-4-git-send-email-maxime.ripard@free-electrons.com>
- <003601ce81c8$c2573320$47059960$@samsung.com>
+	Tue, 16 Jul 2013 11:48:42 -0400
+Message-ID: <51E56B54.1010800@linaro.org>
+Date: Tue, 16 Jul 2013 17:48:36 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MHXEHrrXKLGx71o"
-Content-Disposition: inline
-In-Reply-To: <003601ce81c8$c2573320$47059960$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/7] ARM: at91/tc/clocksource: replace clk_enable/disable
+ with clk_prepare_enable/disable_unprepare.
+References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com> <1373987114-24009-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1373987114-24009-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/16/2013 05:05 PM, Boris BREZILLON wrote:
+> Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+> avoid common clk framework warnings.
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
 
---3MHXEHrrXKLGx71o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch is part of a series and the recipients are also Thomas and
+John (clocksource maintainers).
 
-Hi Jingoo,
+Is this patch going through Nicolas's tree or Thomas's tree ?
 
-On Tue, Jul 16, 2013 at 11:04:09AM +0900, Jingoo Han wrote:
-> On Tuesday, July 16, 2013 12:27 AM, Maxime Ripard wrote:
-> >=20
-> > From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> >=20
-> > Add support for the Himax HX8369 controller as it is quite similar to t=
-he
-> > hx8357.
-> >=20
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->=20
-> Hi Maxime Ripard,
->=20
-> I reviewed this patch with Himax HX8369 datasheet.
-> I cannot find any problems. It looks good.
->=20
-> However, if possible, please add comment on huge delays such as
-> msleep(120), msleep(100), etc.
+Thanks
+  -- Daniel
 
-Right. I'll send a follow-up patch if this is merged right away, or
-merge the comments in the next iteration of the patches.
+>  drivers/clocksource/tcb_clksrc.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+> index 8a61872..229c019 100644
+> --- a/drivers/clocksource/tcb_clksrc.c
+> +++ b/drivers/clocksource/tcb_clksrc.c
+> @@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+>  			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
+>  		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
+>  		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
+> -		clk_disable(tcd->clk);
+> +		clk_disable_unprepare(tcd->clk);
+>  	}
+>  
+>  	switch (m) {
+> @@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+>  	 * of oneshot, we get lower overhead and improved accuracy.
+>  	 */
+>  	case CLOCK_EVT_MODE_PERIODIC:
+> -		clk_enable(tcd->clk);
+> +		clk_prepare_enable(tcd->clk);
+>  
+>  		/* slow clock, count up to RC, then irq and restart */
+>  		__raw_writel(timer_clock
+> @@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+>  		break;
+>  
+>  	case CLOCK_EVT_MODE_ONESHOT:
+> -		clk_enable(tcd->clk);
+> +		clk_prepare_enable(tcd->clk);
+>  
+>  		/* slow clock, count up to RC, then irq and stop */
+>  		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
+> @@ -275,7 +275,7 @@ static int __init tcb_clksrc_init(void)
+>  	pdev = tc->pdev;
+>  
+>  	t0_clk = tc->clk[0];
+> -	clk_enable(t0_clk);
+> +	clk_prepare_enable(t0_clk);
+>  
+>  	/* How fast will we be counting?  Pick something over 5 MHz.  */
+>  	rate = (u32) clk_get_rate(t0_clk);
+> @@ -313,7 +313,7 @@ static int __init tcb_clksrc_init(void)
+>  		/* tclib will give us three clocks no matter what the
+>  		 * underlying platform supports.
+>  		 */
+> -		clk_enable(tc->clk[1]);
+> +		clk_prepare_enable(tc->clk[1]);
+>  		/* setup both channel 0 & 1 */
+>  		tcb_setup_dual_chan(tc, best_divisor_idx);
+>  	}
+> 
 
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-Thanks for taking the time to review this!
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Maxime
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---3MHXEHrrXKLGx71o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5WrHAAoJEBx+YmzsjxAgmxsP/jqpdhyeGU8YY/k9BlSFHmDh
-iZeH16Ri2Awb6aJKDjYGLfR7IHMXwgSgX4mgCZMYOm46l3nqkHs2tTIkVQ54p6sT
-eWkTcqo95/vTtl/MKEiWSl4zjEyEgBgX2HKkosoVePls5m0suxbb3dMeNXoU5CN7
-ZEIWf8NiZesnpdd+3tMl/mY7n2lcX5X0wYookluDKQARRfSkKuTZYioTY5SvXl2i
-2QVYOZ3gi4A3fGJlsyumO8ow/hOBH1OQ4DxV7tRdC9AWMwsbsG/Li3fqqnDfRCTA
-k5NUfbWrJi7bRzy0n3oYJizKdD/jOxOgSNZHJX3oP9LPj2b3ads34D1fTa/WwQ1o
-eJ8vzFnCdnIgXpXRf0jrNiih9XSyS+h0CMHwYTAGwErdqDvL9dLeioQryO0rW6Du
-eQCgYrmGX3667UzDgOV0w4JRgmAtqYpJadCPAgrbnSYieCaV/AFadHH2SoOG/Pa5
-JwE5o2yKX310SN4r/NDReEbyEMCGTaq1Gp/96lppKX4pflqdzGICKFFlwU36w5Mv
-Ey1erO05YpO0p8MjLH1ogLNlQ6MiPKGQcaTyV94TbAYXAUUnVmnJvZau5Dcaq1vD
-C672KwFqmvO/LxKCu+5JmPehT4AjL4iHeSA13tEXrhwj3bF+HL9vch7prE5voINJ
-kqTWOw/ZYfbG2lMh+gdo
-=sha7
------END PGP SIGNATURE-----
-
---3MHXEHrrXKLGx71o--
