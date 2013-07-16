@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633Ab3GPCis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 22:38:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47734 "EHLO arroyo.ext.ti.com"
+	id S1758643Ab3GPCi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 22:38:59 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47740 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab3GPCiq convert rfc822-to-8bit (ORCPT
+	id S1753710Ab3GPCi5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 22:38:46 -0400
+	Mon, 15 Jul 2013 22:38:57 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
         "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>
-Subject: [PATCH 2/3] gpio: add LP3943 I2C GPIO expander driver
-Thread-Topic: [PATCH 2/3] gpio: add LP3943 I2C GPIO expander driver
-Thread-Index: Ac6BzFs3MaNz/ZBDRsOLUZtrVGmnRw==
-Date: Tue, 16 Jul 2013 02:38:39 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E815CE@DQHE06.ent.ti.com>
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Subject: [PATCH 3/3] pwm: add LP3943 PWM driver
+Thread-Topic: [PATCH 3/3] pwm: add LP3943 PWM driver
+Thread-Index: Ac6BzHmoo0334Or+S5yXty3LeSX47Q==
+Date: Tue, 16 Jul 2013 02:38:48 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E815DF@DQHE06.ent.ti.com>
 Accept-Language: en-US, ko-KR
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -32,69 +32,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a part of LP3943 MFD driver.
-LP3943 is configurable as a GPIO expander, up to 16 GPIOs.
+This is a part of the LP3943 MFD driver.
+LP3943 can be used as a PWM generator, up to 2 channels.
 
-* Application note: how to configure LP3943 as a GPIO expander
-  http://www.ti.com/lit/an/snva287a/snva287a.pdf
+* Two PWM generators
+  LP3943 has 16 output channels.
+  Two channels are configurable as PWM generators.
 
-* Supported GPIO controller operations
-  direction_input, direction_output, get, set
+* Supported PWM operations
+  config, set_polarity, enable and disable
 
-* GPIO direction register not supported
-  LP3943 doesn't have the GPIO direction register. It only provides input and
-  output status registers.
-  So, private data for the direction should be handled manually.
-  This variable is updated whenever the direction is changed and
-  used in 'get' operation.
+* Manual polarity configuration
+  No register exists for setting polarity. However, the value of duty can be
+  calculated as following.
+  PWM-inversed mode : duty = period - duty
+  PWM-normal mode   : input duty itself
+
+* Pin MUX configuration at each PWM operation - enable and disable
 
 * Register access through exported LP3943 MFD functions
 
 Signed-off-by: Milo Kim <milo.kim@ti.com>
 ---
- drivers/gpio/Kconfig       |    6 ++
- drivers/gpio/Makefile      |    1 +
- drivers/gpio/gpio-lp3943.c |  224 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 231 insertions(+)
- create mode 100644 drivers/gpio/gpio-lp3943.c
+ drivers/pwm/Kconfig      |   10 +++
+ drivers/pwm/Makefile     |    1 +
+ drivers/pwm/pwm-lp3943.c |  192 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 203 insertions(+)
+ create mode 100644 drivers/pwm/pwm-lp3943.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 573c449..d80801f 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -325,6 +325,12 @@ config GPIO_ARIZONA
- 	help
- 	  Support for GPIOs on Wolfson Arizona class devices.
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 75840b5..28a7668 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -81,6 +81,16 @@ config PWM_JZ4740
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-jz4740.
  
-+config GPIO_LP3943
-+	tristate "TI/National Semiconductor LP3943 GPIO expander"
++config PWM_LP3943
++	tristate "LP3943 PWM support"
 +	depends on MFD_LP3943
 +	help
-+	  GPIO driver for LP3943 MFD.
++	  Generic PWM framework driver for LP3943. It supports two PWM
++	  controllers.
 +
- config GPIO_MAX7300
- 	tristate "Maxim MAX7300 GPIO expander"
- 	depends on I2C
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 0cb2d65..ff580ac 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
- obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
- obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
- obj-$(CONFIG_GPIO_LANGWELL)	+= gpio-langwell.o
-+obj-$(CONFIG_GPIO_LP3943)	+= gpio-lp3943.o
- obj-$(CONFIG_ARCH_LPC32XX)	+= gpio-lpc32xx.o
- obj-$(CONFIG_GPIO_LYNXPOINT)	+= gpio-lynxpoint.o
- obj-$(CONFIG_GPIO_MAX730X)	+= gpio-max730x.o
-diff --git a/drivers/gpio/gpio-lp3943.c b/drivers/gpio/gpio-lp3943.c
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-lp3943.
++
+ config PWM_LPC32XX
+ 	tristate "LPC32XX PWM support"
+ 	depends on ARCH_LPC32XX
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 77a8c18..db8e349 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -5,6 +5,7 @@ obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+ obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
++obj-$(CONFIG_PWM_LP3943)	+= pwm-lp3943.o
+ obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
+ obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
+ obj-$(CONFIG_PWM_PCA9685)	+= pwm-pca9685.o
+diff --git a/drivers/pwm/pwm-lp3943.c b/drivers/pwm/pwm-lp3943.c
 new file mode 100644
-index 0000000..dc74ca4
+index 0000000..33e63fa7
 --- /dev/null
-+++ b/drivers/gpio/gpio-lp3943.c
-@@ -0,0 +1,224 @@
++++ b/drivers/pwm/pwm-lp3943.c
+@@ -0,0 +1,192 @@
 +/*
-+ * TI/National Semiconductor LP3943 GPIO driver
++ * TI/National Semiconductor LP3943 PWM driver
 + *
 + *			Copyright (C) 2013 Texas Instruments
 + *
@@ -104,219 +110,187 @@ index 0000000..dc74ca4
 + */
 +
 +#include <linux/err.h>
-+#include <linux/gpio.h>
 +#include <linux/i2c.h>
 +#include <linux/mfd/lp3943.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
++#include <linux/pwm.h>
 +#include <linux/slab.h>
 +
-+#define to_lp3943_gpio(_chip)	container_of(_chip, struct lp3943_gpio, chip)
++#define LP3943_MAX_DUTY			255
++#define LP3943_MIN_PERIOD		6250
++#define LP3943_MAX_PERIOD		1600000
++#define LP3943_NUM_PWMS			2
 +
-+enum lp3943_gpios {
-+	LP3943_GPIO1,
-+	LP3943_GPIO2,
-+	LP3943_GPIO3,
-+	LP3943_GPIO4,
-+	LP3943_GPIO5,
-+	LP3943_GPIO6,
-+	LP3943_GPIO7,
-+	LP3943_GPIO8,
-+	LP3943_GPIO9,
-+	LP3943_GPIO10,
-+	LP3943_GPIO11,
-+	LP3943_GPIO12,
-+	LP3943_GPIO13,
-+	LP3943_GPIO14,
-+	LP3943_GPIO15,
-+	LP3943_GPIO16,
-+	LP3943_MAX_GPIO,
-+};
++#define to_lp3943_pwm(_chip)	container_of(_chip, struct lp3943_pwm, chip)
 +
-+struct lp3943_gpio {
-+	struct gpio_chip chip;
++struct lp3943_pwm {
++	struct pwm_chip chip;
 +	struct lp3943 *l;
-+	bool is_input[LP3943_MAX_GPIO];
++	enum lp3943_pwm_output output[LP3943_NUM_PWMS];
++	bool inversed[LP3943_NUM_PWMS];
 +};
 +
-+static int lp3943_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++static int lp3943_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++		      int duty_ns, int period_ns)
 +{
-+	struct lp3943_gpio *lg = to_lp3943_gpio(chip);
-+	const struct lp3943_reg_cfg *mux = lg->l->mux_cfg;
-+	u8 addr;
-+	u8 mask;
-+	u8 shift;
-+
-+	lg->is_input[offset] = true;
-+
-+	addr  = mux[offset].reg;
-+	mask  = mux[offset].mask;
-+	shift = mux[offset].shift;
-+
-+	return lp3943_update_bits(lg->l, addr, mask, LP3943_GPIO_IN << shift);
-+}
-+
-+static int lp3943_get_gpio_in_status(struct lp3943_gpio *lg,
-+				struct gpio_chip *chip, unsigned offset)
-+{
-+	u8 addr;
-+	u8 read;
++	struct lp3943_pwm *lp = to_lp3943_pwm(chip);
++	u8 reg_prescale;
++	u8 reg_duty;
++	u8 val;
 +	int err;
 +
-+	switch (offset) {
-+	case LP3943_GPIO1 ... LP3943_GPIO8:
-+		addr = LP3943_REG_GPIO_A;
-+		break;
-+	case LP3943_GPIO9 ... LP3943_GPIO16:
-+		addr = LP3943_REG_GPIO_B;
-+		offset = offset - 8;
-+		break;
-+	default:
++	/*
++	 * How to configure the LP3943 PWMs
++	 *
++	 * 1) Period = 6250 ~ 1600000
++	 * 2) Prescale = period / 6250 -1
++	 * 3) Duty = 'input duty'(normal) or 'period - duty'(inversed)
++	 *
++	 * Prescale and duty are register values
++	 */
++
++	if (pwm->hwpwm == 0) {
++		reg_prescale = LP3943_REG_PRESCALE0;
++		reg_duty = LP3943_REG_PWM0;
++	} else if (pwm->hwpwm == 1) {
++		reg_prescale = LP3943_REG_PRESCALE1;
++		reg_duty = LP3943_REG_PWM1;
++	} else {
 +		return -EINVAL;
 +	}
 +
-+	err = lp3943_read_byte(lg->l, addr, &read);
++	period_ns = clamp(period_ns, LP3943_MIN_PERIOD, LP3943_MAX_PERIOD);
++	val = (u8)(period_ns / LP3943_MIN_PERIOD - 1);
++
++	err = lp3943_write_byte(lp->l, reg_prescale, val);
 +	if (err)
 +		return err;
 +
-+	if (read & (1 << offset))
-+		return 1;
++	if (lp->inversed[pwm->hwpwm])
++		val = (u8)((period_ns - duty_ns) * LP3943_MAX_DUTY / period_ns);
 +	else
-+		return 0;
++		val = (u8)(duty_ns * LP3943_MAX_DUTY / period_ns);
++
++	return lp3943_write_byte(lp->l, reg_duty, val);
 +}
 +
-+static int lp3943_get_gpio_out_status(struct lp3943_gpio *lg,
-+				struct gpio_chip *chip, unsigned offset)
++static int lp3943_pwm_set_polarity(struct pwm_chip *chip,
++			struct pwm_device *pwm, enum pwm_polarity polarity)
 +{
-+	const struct lp3943_reg_cfg *mux = lg->l->mux_cfg;
-+	u8 addr  = mux[offset].reg;
-+	u8 mask  = mux[offset].mask;
-+	u8 shift = mux[offset].shift;
-+	u8 read;
-+	int err;
++	struct lp3943_pwm *lp = to_lp3943_pwm(chip);
 +
-+	err = lp3943_read_byte(lg->l, addr, &read);
-+	if (err)
-+		return err;
-+
-+	read = (read & mask) >> shift;
-+
-+	if (read == LP3943_GPIO_OUT_HIGH)
-+		return 1;
-+	else if (read == LP3943_GPIO_OUT_LOW)
-+		return 0;
++	if (polarity == PWM_POLARITY_INVERSED)
++		lp->inversed[pwm->hwpwm] = true;
 +	else
-+		return -EINVAL;
-+}
-+
-+static int lp3943_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct lp3943_gpio *lg = to_lp3943_gpio(chip);
-+
-+	/*
-+	 * Limitation:
-+	 *   LP3943 doesn't have the GPIO direction register. It provides
-+	 *   only input and output status registers.
-+	 *   So, direction info is required to handle the 'get' operation.
-+	 *   This variable is updated whenever the direction is changed and
-+	 *   it is used here.
-+	 */
-+
-+	if (lg->is_input[offset])
-+		return lp3943_get_gpio_in_status(lg, chip, offset);
-+	else
-+		return lp3943_get_gpio_out_status(lg, chip, offset);
-+}
-+
-+static void lp3943_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct lp3943_gpio *lg = to_lp3943_gpio(chip);
-+	const struct lp3943_reg_cfg *mux = lg->l->mux_cfg;
-+	u8 addr;
-+	u8 mask;
-+	u8 shift;
-+	u8 data;
-+
-+	addr  = mux[offset].reg;
-+	mask  = mux[offset].mask;
-+	shift = mux[offset].shift;
-+
-+	if (value)
-+		data = LP3943_GPIO_OUT_HIGH;
-+	else
-+		data = LP3943_GPIO_OUT_LOW;
-+
-+	lp3943_update_bits(lg->l, addr, mask, data << shift);
-+}
-+
-+static int lp3943_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
-+					int value)
-+{
-+	struct lp3943_gpio *lg = to_lp3943_gpio(chip);
-+
-+	lp3943_gpio_set(chip, offset, value);
-+	lg->is_input[offset] = false;
++		lp->inversed[pwm->hwpwm] = false;
 +
 +	return 0;
 +}
 +
-+static const struct gpio_chip lp3943_gpio_chip = {
-+	.label			= "lp3943",
-+	.owner			= THIS_MODULE,
-+	.direction_input	= lp3943_gpio_direction_input,
-+	.get			= lp3943_gpio_get,
-+	.direction_output	= lp3943_gpio_direction_output,
-+	.set			= lp3943_gpio_set,
-+	.base			= -1,
-+	.ngpio			= LP3943_MAX_GPIO,
-+	.can_sleep		= 1,
++static int lp3943_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct lp3943_pwm *lp = to_lp3943_pwm(chip);
++	const struct lp3943_reg_cfg *mux = lp->l->mux_cfg;
++	int offset = lp->output[pwm->hwpwm] - 1;
++	u8 val;
++
++	if (pwm->hwpwm == 0)
++		val = LP3943_DIM_PWM0;
++	else if (pwm->hwpwm == 1)
++		val = LP3943_DIM_PWM1;
++	else
++		return -EINVAL;
++
++	return lp3943_update_bits(lp->l, mux[offset].reg, mux[offset].mask,
++				val << mux[offset].shift);
++}
++
++static void lp3943_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct lp3943_pwm *lp = to_lp3943_pwm(chip);
++	const struct lp3943_reg_cfg *mux = lp->l->mux_cfg;
++	int offset = lp->output[pwm->hwpwm] - 1;
++	u8 val;
++
++	/*
++	 * LP3943 outputs are open-drain, so the pin should be configured
++	 * when the PWM is disabled.
++	 *
++	 * - inversed: output low
++	 * - normal: output Hi-Z
++	 */
++
++	if (lp->inversed[pwm->hwpwm])
++		val = LP3943_GPIO_OUT_LOW << mux[offset].shift;
++	else
++		val = LP3943_GPIO_OUT_HIGH << mux[offset].shift;
++
++	lp3943_update_bits(lp->l, mux[offset].reg, mux[offset].mask, val);
++}
++
++static const struct pwm_ops lp3943_pwm_ops = {
++	.config  = lp3943_pwm_config,
++	.set_polarity = lp3943_pwm_set_polarity,
++	.enable  = lp3943_pwm_enable,
++	.disable = lp3943_pwm_disable,
++	.owner   = THIS_MODULE,
 +};
 +
-+static int lp3943_gpio_probe(struct platform_device *pdev)
++static int lp3943_pwm_probe(struct platform_device *pdev)
 +{
 +	struct lp3943 *l = dev_get_drvdata(pdev->dev.parent);
-+	struct lp3943_gpio *lg;
++	struct lp3943_platform_data *pdata = l->pdata;
++	struct lp3943_pwm *lp;
++	int num_pwms = 0;
 +	int ret;
 +
-+	lg = devm_kzalloc(&pdev->dev, sizeof(struct lp3943_gpio), GFP_KERNEL);
-+	if (!lg)
++	lp = devm_kzalloc(&pdev->dev, sizeof(struct lp3943_pwm), GFP_KERNEL);
++	if (!lp)
 +		return -ENOMEM;
 +
-+	lg->l = l;
-+	lg->chip = lp3943_gpio_chip;
-+	lg->chip.dev = &pdev->dev;
++	if (pdata->pwm0 != LP3943_PWM_INVALID)
++		lp->output[num_pwms++] = pdata->pwm0;
 +
-+	platform_set_drvdata(pdev, lg);
++	if (pdata->pwm1 != LP3943_PWM_INVALID)
++		lp->output[num_pwms++] = pdata->pwm1;
 +
-+	ret = gpiochip_add(&lg->chip);
++	lp->l = l;
++	lp->chip.dev = &pdev->dev;
++	lp->chip.ops = &lp3943_pwm_ops;
++	lp->chip.npwm = num_pwms;
++
++	platform_set_drvdata(pdev, lp);
++
++	ret = pwmchip_add(&lp->chip);
 +	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add GPIO chip, err:%d\n", ret);
++		dev_err(&pdev->dev, "failed to add PWM chip, err:%d\n", ret);
 +		return ret;
 +	}
 +
 +	return 0;
 +}
 +
-+static int lp3943_gpio_remove(struct platform_device *pdev)
++static int lp3943_pwm_remove(struct platform_device *pdev)
 +{
-+	struct lp3943_gpio *lg = platform_get_drvdata(pdev);
-+	return gpiochip_remove(&lg->chip);
++	struct lp3943_pwm *lp = platform_get_drvdata(pdev);
++	return pwmchip_remove(&lp->chip);
 +}
 +
-+static struct platform_driver lp3943_gpio_driver = {
-+	.probe = lp3943_gpio_probe,
-+	.remove = lp3943_gpio_remove,
++static struct platform_driver lp3943_pwm_driver = {
++	.probe = lp3943_pwm_probe,
++	.remove = lp3943_pwm_remove,
 +	.driver = {
-+		.name = "lp3943-gpio",
++		.name = "lp3943-pwm",
 +		.owner = THIS_MODULE,
 +	},
 +};
-+module_platform_driver(lp3943_gpio_driver);
++module_platform_driver(lp3943_pwm_driver);
 +
-+MODULE_DESCRIPTION("LP3943 GPIO driver");
++MODULE_DESCRIPTION("LP3943 PWM driver");
 +MODULE_AUTHOR("Milo Kim");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:lp3943-gpio");
++MODULE_ALIAS("platform:lp3943-pwm");
 -- 
 1.7.9.5
 
