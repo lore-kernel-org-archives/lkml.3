@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab3GPJ2m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:28:42 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:64052 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab3GPJ2k (ORCPT
+	id S1754091Ab3GPJ3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:29:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43969 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab3GPJ3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:28:40 -0400
-X-Greylist: delayed 817 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Jul 2013 05:28:40 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=mime-version
-	:in-reply-to:references:date:message-id:subject:from:to:cc
-	:content-type; q=dns; s=sasl; b=FVK59BlewQzGAY8lscT3qLlXUvxBlmTV
-	/yZL+Er1g8DKk5QhWgYfkL0CM7Y3uyUY5Dv2aLVL2v36cKXYlohLZq9vn540MKaZ
-	4Vz7MOKCsjgXSDImVgTsHRDclliAUWeqI0Ab9fL5O1aDjZTC98JVDZsUtlnKTW4T
-	LYW1M69dKWw=
+	Tue, 16 Jul 2013 05:29:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-References: <20130715174659.GC15531@xanatos>
-	<CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	<20130715180403.GD15531@xanatos>
-	<CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	<20130715184642.GE15531@xanatos>
-	<CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	<20130715195316.GF15531@xanatos>
-	<20130715204135.GH15531@xanatos>
-	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	<1373926109.17876.221.camel@gandalf.local.home>
-	<20130715223615.GI15531@xanatos>
-	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-Date: Tue, 16 Jul 2013 11:14:51 +0200
-Message-ID: <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
-From: Olivier Galibert <galibert@pobox.com>
-To: David Lang <david@lang.hm>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset=ISO-8859-1
-X-Pobox-Relay-ID: 2E875174-EDF8-11E2-A225-9E6C0E5B5709-92059326!a-pb-sasl-quonix.pobox.com
+In-Reply-To: <51E50D24.8030900@monstr.eu>
+References: <alpine.DEB.2.02.1307160950110.8862@ayla.of.borg>
+	<51E50D24.8030900@monstr.eu>
+Date: Tue, 16 Jul 2013 11:29:19 +0200
+X-Google-Sender-Auth: Dpk65wu8P3Wf-_rpeVm_wURacr8
+Message-ID: <CAMuHMdWyr_GzDzGBoYn3T85Dqe65FCKd0Y_xvEwwS6UY7naPXQ@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.11-rc1
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 9:32 AM, David Lang <david@lang.hm> wrote:
-> On Mon, 15 Jul 2013, Sarah Sharp wrote:
->
->> The people who want to work together in a civil manner should get
->> together and create a "Kernel maintainer's code of conduct" that
->> outlines what they expect from fellow kernel developers.  The people who
->> want to continue acting "unprofessionally" should document what
->> behaviors set off their cursing streaks, so that others can avoid that
->> behavior.  Somewhere in the middle is the community behavior all
->> developers can thrive in.
->
->
-> By defining your viewpoint as being "professional" and the other viewpoint
-> as being "unprofessional" you have already started using very loaded terms
-> and greatly reduces the probability of actually getting the other group to
-> agree and participate.
+On Tue, Jul 16, 2013 at 11:06 AM, Michal Simek <monstr@monstr.eu> wrote:
+> On 07/16/2013 09:50 AM, Geert Uytterhoeven wrote:
+>>   + drivers/spi/spi-xilinx.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]:  => 105:2
+>>   + drivers/spi/spi-xilinx.c: error: implicit declaration of function 'ioread32be' [-Werror=implicit-function-declaration]:  => 115:2
+>>   + drivers/spi/spi-xilinx.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]:  => 100:2
+>>   + drivers/spi/spi-xilinx.c: error: implicit declaration of function 'iowrite32be' [-Werror=implicit-function-declaration]:  => 110:2
 
-Especially since you can very easily translate these terms into
-"American" and "non-American".
+cris-allyesconfig/cris-allmodconfig, so this can be safely ignored (by you ;-)
 
-The stereotypical american professionalism attitude is to be polite at
-the word choice level the best to hide a profund disrespect under
-them.  There's no meaning taken into account, it's just keyword
-spotting.  "Your code is crap" is considered unprofessional, while
-"Let's leverage my fifth grade nephew's capabilities to assist you in
-fixing the code" is perfectly professional, somehow.  That's more
-often than not an unacceptable attitude in europe.
+>>   + drivers/video/xilinxfb.c: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'phys_addr_t' [-Wformat]:  => 344:3
 
-  OG.
+ppc44x_defconfig
+
+> How to find out which target is causing these warnings?
+
+It's indeed a bit difficult without the full logs. /me needs to study kup.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
