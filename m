@@ -1,153 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933059Ab3GPPKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:10:43 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40189 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546Ab3GPPKj (ORCPT
+	id S933043Ab3GPPNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:13:31 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:36488 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469Ab3GPPN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:10:39 -0400
-Date: Tue, 16 Jul 2013 20:40:06 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
- balancing V5
-Message-ID: <20130716151006.GA13058@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071615-3620-0000-0000-0000038A58BE
+	Tue, 16 Jul 2013 11:13:29 -0400
+Date: Tue, 16 Jul 2013 17:13:24 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/7] mmc: atmel-mci: prepare clk before calling
+ enable
+Message-ID: <20130716171324.7d483ada@skate>
+In-Reply-To: <1373987208-24120-1-git-send-email-b.brezillon@overkiz.com>
+References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
+	<1373987208-24120-1-git-send-email-b.brezillon@overkiz.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Boris BREZILLON,
 
+On Tue, 16 Jul 2013 17:06:48 +0200, Boris BREZILLON wrote:
 
-Summary:
-Seeing improvement on a 2 node when running autonumabenchmark .
-But seeing regression for specjbb for the same box.
+>  	buf = kmalloc(ATMCI_REGS_SIZE, GFP_KERNEL);
+>  	if (!buf)
+> @@ -389,9 +391,13 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+>  	 * consistent.
+>  	 */
+>  	spin_lock_bh(&host->lock);
+> -	clk_enable(host->mck);
+> +	ret = clk_prepare_enable(host->mck);
 
-Also seeing huge regression when running autonumabenchmark
-both on 4 node and 8 node box.
+I am not very familiar with the spin_lock_bh() variant, but are you
+sure we are allowed to sleep within a spin_lock_bh()-protected critical
+section?
 
+Remember that clk_prepare_enable() calls both ->prepare() and
+->enable() for the clock, and ->prepare() is allowed to sleep, while
+->enable() is guaranteed not to sleep.
 
-Below is the autonuma benchmark results on a 2 node machine.
-Autonuma benchmark results.
-mainline v3.9: (Ht enabled)
-	Testcase:      Min      Max      Avg   StdDev
-	  numa01:   220.12   246.96   239.18     9.69
-	  numa02:    41.85    43.02    42.43     0.47
-v3.9 + Mel's v5 patches:A (Ht enabled)
-	Testcase:      Min      Max      Avg   StdDev  %Change
-	  numa01:   239.52   242.99   241.61     1.26   -1.00%
-	  numa02:    37.94    38.12    38.05     0.06   11.49%
+Therefore, clk_prepare() is usually called at probe time, while
+clk_enable() is called whenever enabling/disabling the clock is really
+needed. So not all clk_enable() can transparently be converted into a
+clk_prepare_enable().
 
-mainline v3.9:
-	Testcase:      Min      Max      Avg   StdDev
-	  numa01:   118.72   121.04   120.23     0.83
-	  numa02:    36.64    37.56    36.99     0.34
-v3.9 + Mel's v5 patches:
-	Testcase:      Min      Max      Avg   StdDev  %Change
-	  numa01:   111.34   122.28   118.61     3.77    1.32%
-	  numa02:    36.23    37.27    36.55     0.37    1.18%
+Best regards,
 
-Here are results of specjbb run on a 2 node machine.
-Specjbb was run on 3 vms.
-In the fit case, one vm was big to fit one node size.
-In the no-fit case, one vm was bigger than the node size.
-
-
-Specjbb results.
----------------------------------------------------------------------------------------
-|               |   vm|                          nofit|                            fit|
-|               |   vm|          noksm|            ksm|          noksm|            ksm|
-|               |   vm|  nothp|    thp|  nothp|    thp|  nothp|    thp|  nothp|    thp|
----------------------------------------------------------------------------------------
-| mainline_v39+ | vm_1| 136056| 189423| 135359| 186722| 136983| 191669| 136728| 184253|
-| mainline_v39+ | vm_2|  66041|  84779|  64564|  86645|  67426|  84427|  63657|  85043|
-| mainline_v39+ | vm_3|  67322|  83301|  63731|  85394|  65015|  85156|  63838|  84199|
-| mel_numa_balan| vm_1| 133170| 177883| 136385| 176716| 140650| 174535| 132811| 190120|
-| mel_numa_balan| vm_2|  65021|  81707|  62876|  81826|  63635|  84943|  58313|  78997|
-| mel_numa_balan| vm_3|  61915|  82198|  60106|  81723|  64222|  81123|  59559|  78299|
-| change  %     | vm_1|  -2.12|  -6.09|   0.76|  -5.36|   2.68|  -8.94|  -2.86|   3.18|
-| change  %     | vm_2|  -1.54|  -3.62|  -2.61|  -5.56|  -5.62|   0.61|  -8.39|  -7.11|
-| change  %     | vm_3|  -8.03|  -1.32|  -5.69|  -4.30|  -1.22|  -4.74|  -6.70|  -7.01|
----------------------------------------------------------------------------------------
-
-numactl o/p
-
-available: 2 nodes (0-1)
-node 0 cpus: 0 1 2 3 4 5 12 13 14 15 16 17
-node 0 size: 12276 MB
-node 0 free: 10574 MB
-node 1 cpus: 6 7 8 9 10 11 18 19 20 21 22 23
-node 1 size: 12288 MB
-node 1 free: 9697 MB
-node distances:
-node   0   1 
-  0:  10  21 
-  1:  21  10 
-
-
-Autonuma results on a 4 node machine.
-
-KernelVersion: 3.9.0(HT)
-	Testcase:      Min      Max      Avg   StdDev
-	  numa01:   569.80   624.94   593.12    19.14
-	  numa02:    18.65    21.32    19.69     0.98
-
-KernelVersion: 3.9.0 + Mel's v5 patches(HT)
-	Testcase:      Min      Max      Avg   StdDev  %Change
-	  numa01:   718.83   750.46   740.10    11.42  -19.59%
-	  numa02:    20.07    22.36    20.97     0.81   -5.72%
-
-KernelVersion: 3.9.0()
-	Testcase:      Min      Max      Avg   StdDev
-	  numa01:   586.75   628.65   604.15    16.13
-	  numa02:    19.67    20.49    19.93     0.29
-
-KernelVersion: 3.9.0 + Mel's v5 patches
-	Testcase:      Min      Max      Avg   StdDev  %Change
-	  numa01:   741.48   759.37   747.23     6.36  -18.84%
-	  numa02:    20.55    22.06    21.21     0.52   -5.80%
-
-
-
-	System x3750 M4 -[8722C1A]-
-
-numactl o/p
-available: 4 nodes (0-3)
-node 0 cpus: 0 1 2 3 4 5 6 7 32 33 34 35 36 37 38 39
-node 0 size: 65468 MB
-node 0 free: 63069 MB
-node 1 cpus: 8 9 10 11 12 13 14 15 40 41 42 43 44 45 46 47
-node 1 size: 65536 MB
-node 1 free: 63497 MB
-node 2 cpus: 16 17 18 19 20 21 22 23 48 49 50 51 52 53 54 55
-node 2 size: 65536 MB
-node 2 free: 63515 MB
-node 3 cpus: 24 25 26 27 28 29 30 31 56 57 58 59 60 61 62 63
-node 3 size: 65536 MB
-node 3 free: 63659 MB
-node distances:
-node   0   1   2   3 
-  0:  10  11  11  12 
-  1:  11  10  12  11 
-  2:  11  12  10  11 
-  3:  12  11  11  10 
-
-The results on the 8 node also look similar to 4 node.
+Thomas
 -- 
-Thanks and Regards
-Srikar Dronamraju
-
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
