@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934000Ab3GPUrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:47:20 -0400
-Received: from mail.lang.hm ([64.81.33.126]:48361 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933670Ab3GPUrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:47:19 -0400
-Date: Tue, 16 Jul 2013 13:45:53 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Arjan van de Ven <arjan@linux.intel.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
-        corbet@lwn.net, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-In-Reply-To: <51E47BAF.7020209@linux.intel.com>
-Message-ID: <alpine.DEB.2.02.1307161343560.15520@nftneq.ynat.uz>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <20130713064909.GW25631@dyad.programming.kicks-ass.net> <51E166C8.3000902@linux.intel.com> <20130715195914.GC23818@dyad.programming.kicks-ass.net> <51E45D98.7040404@linux.intel.com>
- <20130715210316.GE23818@dyad.programming.kicks-ass.net> <51E47BAF.7020209@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S934018Ab3GPUrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:47:52 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:59188 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933670Ab3GPUrv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 16:47:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <1374006818.6458.62.camel@gandalf.local.home>
+References: <20130716183441.GA14232@www.outflux.net>
+	<CAE9FiQWSe-M8XhFvWM3Q5P3kj6_EvUFMSvCkrDZUH7WdPPp35g@mail.gmail.com>
+	<CAGXu5jJd11FeaTEQc6=8=PgL56VeC0W37U=RvS-iJ-sP+Raeaw@mail.gmail.com>
+	<1374006818.6458.62.camel@gandalf.local.home>
+Date: Tue, 16 Jul 2013 13:47:50 -0700
+X-Google-Sender-Auth: RUGoALxsYRM4dsEE9NitXoLXpvA
+Message-ID: <CAGXu5jJNjHFJS0GfJVQm2++YtTn2yUfCAkf3u10REh=8DdeZCg@mail.gmail.com>
+Subject: Re: [PATCH v5] x86: make sure IDT is page aligned
+From: Kees Cook <keescook@chromium.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        PaX Team <pageexec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Jul 2013, Arjan van de Ven wrote:
+On Tue, Jul 16, 2013 at 1:33 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2013-07-16 at 13:28 -0700, Kees Cook wrote:
+>> On Tue, Jul 16, 2013 at 1:21 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> > On Tue, Jul 16, 2013 at 11:34 AM, Kees Cook <keescook@chromium.org> wrote:
+>> >> Since the IDT is referenced from a fixmap, make sure it is page aligned.
+>> >> Merge with 32-bit one, since it was already aligned to deal with F00F
+>> >> bug. Since bss is cleared before IDT setup, it can live there. This also
+>> >> moves the other *_idt_table variables into common locations.
+>> >>
+>
+>> It seemed more correct to me to define all the IDTs the same, but
+>> there was no technical reason for that, just one of regularity. I only
+>> care about keeping the real IDT page aligned. :) I'm fine to do
+>> whatever is deemed "correct". :)
+>
+> I'm actually unfamiliar with the F00F bug (heard of it, but have no idea
+> what it is). What happens if the F00F bug exists and we switch to an IDT
+> that's not paged aligned? Is that an issue?
 
-> On 7/15/2013 2:03 PM, Peter Zijlstra wrote:
->> Well, if you ever want to go faster there must've been a moment to slow 
->> down.
->> Without means and reason to slow down the entire 'can I go fast noaw pls?'
->> thing simply doesn't make sense.
->
-> I kind of tried to hint at this
->
-> there's either
->
-> go_fastest_now()
->
-> with the contract that the policy drivers can override this after some time 
-> (few ms)
->
-> or you have to treat it as a lease:
->
-> go_fastest()
->
-> and then
->
-> no_need_to_go_fastest_anymore_so_forget_I_asked()
->
-> this is NOT the same as
->
-> go_slow_now()
->
-> the former has a specific request, and then an end to that specific request,
-> the later is just a new unbounded command
->
-> if you have requests (that either time out or get canceled), you can have
-> requests from multiple parts of the kernel (and potentially even from
-> hardware in the thermal case), and some arbiter
-> who resolves multiple requests existing.
->
-> if you only have unbounded commands, you cannot really have such an arbiter.
+Regardless of F00F, the IDT is now unconditionally being set up in a
+fixmap entry (so that the unprivileged "sidt" instruction won't leak a
+"real" kernel address, and so that this exposed address is read-only).
+If the real IDT is not page aligned, the fixmap IDT will appear offset
+and everything starts calling the wrong handlers.
 
-Sometimes the user has something running that they want to keep running, but 
-they don't need it to be going fast.
+The other IDTs don't need to be page aligned, but I marked them that
+way in the clean up because it seemed sensible to define these tables
+similarly. I can change the others to be __cacheline_aligned_bss if
+that's desired.
 
-An example is if you are monitoring something.
+-Kees
 
-Unless you can go to sleep between monitoring polls, it makes more sense to run 
-slowly than to run at full speed with lots of idle cycles.
-
-David Lang
+--
+Kees Cook
+Chrome OS Security
