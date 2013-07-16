@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab3GPQLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:11:16 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47242 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932183Ab3GPQLO (ORCPT
+	id S932958Ab3GPQMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:12:34 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:48984 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183Ab3GPQMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:11:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <51E53811.6040100@metafoo.de>
-References: <1373898160-8460-1-git-send-email-otavio@ossystems.com.br> <1373898160-8460-5-git-send-email-otavio@ossystems.com.br> <51E5195B.3020908@kernel.org> <51E51FBE.6000205@metafoo.de> <CAP9ODKrsQqa12ZVj0R+rpb=kjtb-63P7yraVmV0+yZxaaeMcsQ@mail.gmail.com> <51E53811.6040100@metafoo.de>
+	Tue, 16 Jul 2013 12:12:32 -0400
+Date: Tue, 16 Jul 2013 18:12:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nohz: Do not warn about unstable tsc unless user uses
+ nohz_full
+Message-ID: <20130716161227.GB17900@somewhere.redhat.com>
+References: <20130715170859.GA25570@redhat.com>
+ <20130715171800.GD6442@somewhere>
+ <20130715172423.GA27745@redhat.com>
+ <20130715173848.GA1066@redhat.com>
+ <1373914182.17876.165.camel@gandalf.local.home>
+ <20130716010538.GD13562@somewhere>
+ <1373984532.17876.276.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 5/5] iio: add configuration option for debug support
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Tue, 16 Jul 2013 17:11:07 +0100
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        Otavio Salvador <otavio@ossystems.com.br>
-CC: Kernel development list <linux-kernel@vger.kernel.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
-Message-ID: <07271c08-5b24-4d86-8833-4ff2e15c8bed@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373984532.17876.276.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 16, 2013 at 10:22:12AM -0400, Steven Rostedt wrote:
+> If the user enables CONFIG_NO_HZ_FULL and runs the kernel on a machine
+> with an unstable TSC, it will produce a WARN_ON dump as well as taint
+> the kernel. This is a bit extreme for a kernel that just enables a
+> feature but doesn't use it.
+> 
+> The warning should only happen if the user tries to use the feature by
+> either adding nohz_full to the kernel command line, or by enabling
+> CONFIG_NO_HZ_FULL_ALL that makes nohz used on all CPUs at boot up. Note,
+> this second feature should not (yet) be used by distros or anyone that
+> doesn't care if NO_HZ is used or not.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 6960172..6f47049 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -182,7 +182,8 @@ static bool can_stop_full_tick(void)
+>  		 * Don't allow the user to think they can get
+>  		 * full NO_HZ with this machine.
+>  		 */
+> -		WARN_ONCE(1, "NO_HZ FULL will not work with unstable sched clock");
+> +		WARN_ONCE(have_nohz_full_mask,
+> +			  "NO_HZ FULL will not work with unstable sched clock");
 
+Seems good, indeed the warning and taint can be justified if the user filled the
+nohz_full mask.
 
-Lars-Peter Clausen <lars@metafoo.de> wrote:
->On 07/16/2013 02:01 PM, Otavio Salvador wrote:
->> On Tue, Jul 16, 2013 at 7:26 AM, Lars-Peter Clausen <lars@metafoo.de>
->wrote:
->>> On 07/16/2013 11:58 AM, Jonathan Cameron wrote:
->>>> On 07/15/2013 03:22 PM, Otavio Salvador wrote:
->>>>> Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
->>>> seems a sensible facility to have available.
->>>>
->>>> Applied to the togreg branch of iio.git
->>>
->>> Can you update the Kconfig help text?
->> 
->> Sure I can. Jonathan seem to have applied it so should I send a v2 or
->> a new patch?
->> 
->
->He hasn't pushed things out yet, I think a v2 will be fine.
->
+Ok I'll apply this and let the last word to Ingo in a pull request.
 
-Yup a v2 is fine.  Actually I regularly rebase this tree and it may eat babies! All work more or less should be against Greg's staging/staging-next tree as that is nice and non debasing.
->>>>> ---
->>>>>  drivers/iio/Kconfig  | 7 +++++++
->>>>>  drivers/iio/Makefile | 2 ++
->>>>>  2 files changed, 9 insertions(+)
->>>>>
->>>>> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
->>>>> index 9af763a..d1f06f2 100644
->>>>> --- a/drivers/iio/Kconfig
->>>>> +++ b/drivers/iio/Kconfig
->>>>> @@ -12,6 +12,13 @@ menuconfig IIO
->>>>>
->>>>>  if IIO
->>>>>
->>>>> +config IIO_DEBUG
->>>>> +    boolean "Debug support for Industrial I/O"
->>>>> +    depends on DEBUG_KERNEL
->>>>> +    help
->>>>> +      Say "yes" to enable debug messaging (like dev_dbg and
->pr_debug),
->>>>> +      sysfs, and debugfs support in Industrial I/O subsystem and
->drivers.
->>>
->>> This has nothing to do with either sysfs or debugfs support.
->> 
->>      Say "yes" to enable debug messaging (like dev_dbg and pr_debug)
->>      support in Industrial I/O subsystem and drivers.
->> 
->> ?
->> 
->> --
->> Otavio Salvador                             O.S. Systems
->> http://www.ossystems.com.br        http://projetos.ossystems.com.br
->> Mobile: +55 (53) 9981-7854            Mobile: +1 (347) 903-9750
->> 
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks.
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+>  		return false;
+>  	}
+>  #endif
+> 
+> 
