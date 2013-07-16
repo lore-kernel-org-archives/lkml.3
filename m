@@ -1,87 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933769Ab3GPSey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:34:54 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:43511 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933000Ab3GPSew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:34:52 -0400
-Date: Tue, 16 Jul 2013 21:34:46 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: v3.11-rc1 USB regressions
-Message-ID: <20130716183446.GC14385@blackmetal.musicnaut.iki.fi>
-References: <20130715225647.GE3296@blackmetal.musicnaut.iki.fi>
- <51E4E922.2040707@gmail.com>
- <51E4EF70.3040502@ti.com>
- <20130716080836.GC8880@arwen.pp.htv.fi>
- <20130716082247.GD8880@arwen.pp.htv.fi>
- <20130716182601.GB14385@blackmetal.musicnaut.iki.fi>
- <51E5913D.3080205@gmail.com>
+	id S933471Ab3GPSfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:35:42 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37016 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933000Ab3GPSfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 14:35:41 -0400
+Date: Tue, 16 Jul 2013 11:34:41 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        PaX Team <pageexec@gmail.com>
+Subject: [PATCH v5] x86: make sure IDT is page aligned
+Message-ID: <20130716183441.GA14232@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E5913D.3080205@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 08:30:21PM +0200, Daniel Mack wrote:
-> On 16.07.2013 20:26, Aaro Koskinen wrote:
-> > Hi,
-> > 
-> > On Tue, Jul 16, 2013 at 11:22:47AM +0300, Felipe Balbi wrote:
-> >>> On Tue, Jul 16, 2013 at 12:30:00PM +0530, Kishon Vijay Abraham I wrote:
-> >>>> On Tuesday 16 July 2013 12:03 PM, Daniel Mack wrote:
-> >>>>> Hi Aaro,
-> >>>>>
-> >>>>> On 16.07.2013 00:56, Aaro Koskinen wrote:
-> >>>>>> Hi,
-> >>>>>>
-> >>>>>> I think USB tree introduced regressions in v3.11-rc1, at least for some
-> >>>>>> OMAP devices using legacy boot.
-> >>>>>
-> >>>>> Thanks for checking the tree so early.
-> >>>>>
-> >>>>>> I have only bisected these; I have no
-> >>>>>> idea what the real fixes are but the following reverts make Nokia OMAP2+
-> >>>>>> boards again usable for kernel development work (they need working USB
-> >>>>>> connection for interacting with the device):
-> >>>>>>
-> >>>>>> 1) USB peripheral mode (g_ether) is broken on Nokia N900, N950 and N9
-> >>>>>>    (USB_MUSB_OMAP2PLUS). To make it it work, I need to revert three
-> >>>>>>    commits:
-> >>>>>>
-> >>>>>> 	09fc7d22b024692b2fe8a943b246de1af307132b
-> >>>>>> 	usb: musb: fix incorrect usage of resource pointer
-> >>>>>> 	(Reverting this fixes the g_ether probe failure "couldn't find
-> >>>>>> 	 an available UDC")
-> >>>>
-> >>>> I've posted a patch fixing the issue
-> >>>> http://comments.gmane.org/gmane.linux.usb.general/89541
-> >>>> There were some comments on it. I'll be posting a new version for it.
-> >>>
-> >>> hmm, n8x0 used tusb6010, so perhaps a similar patch needs to be cooked
-> >>> for that too. Right now, let's to the minimum fix, which is just to
-> >>> increment the array size to 3 and for v3.12 we do the changes that I
-> >>> suggested.
-> >>
-> >> this should solve the problem on n900 and n8x0, it's pretty much
-> >> kishon's original patch, so I guess it deserves his authorship:
-> > 
-> > Thanks, and yes it fixes this issue. I tested both N900 and N800, so
-> > feel free to add my Tested-by.
-> 
-> Together with my patch I take it? Does your Tested-by apply to this one
-> as well?
+Since the IDT is referenced from a fixmap, make sure it is page aligned.
+Merge with 32-bit one, since it was already aligned to deal with F00F
+bug. Since bss is cleared before IDT setup, it can live there. This also
+moves the other *_idt_table variables into common locations.
 
-I tested also that one (ARM: omap2: fix musb usage for n8x0), so yes,
-it's for both patches.
+This avoids the risk of the IDT ever being moved in the bss and having
+the mapping be offset, resulting in calling incorrect handlers. In the
+current upstream kernel this is not a manifested bug, but heavily patched
+kernels (such as those using the PaX patch series) did encounter this bug.
 
-A.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: PaX Team <pageexec@gmail.com>
+---
+v5:
+ - add comments to all IDTs about alignment reasoning, suggested by Linus
+v4:
+ - rework using __page_aligned_bss, suggested by Yinghai LU
+ - move all the other IDT variables as well, suggested by HPA
+v3:
+ - merge 32-bit and 64-bit idt_table definition
+v2:
+ - 32-bit was already aligned
+---
+ arch/x86/kernel/head_64.S    |   15 ---------------
+ arch/x86/kernel/tracepoint.c |    6 ++----
+ arch/x86/kernel/traps.c      |   12 ++++++------
+ 3 files changed, 8 insertions(+), 25 deletions(-)
+
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 5e4d8a8..e1aabdb 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -512,21 +512,6 @@ ENTRY(phys_base)
+ 
+ #include "../../x86/xen/xen-head.S"
+ 	
+-	.section .bss, "aw", @nobits
+-	.align L1_CACHE_BYTES
+-ENTRY(idt_table)
+-	.skip IDT_ENTRIES * 16
+-
+-	.align L1_CACHE_BYTES
+-ENTRY(debug_idt_table)
+-	.skip IDT_ENTRIES * 16
+-
+-#ifdef CONFIG_TRACING
+-	.align L1_CACHE_BYTES
+-ENTRY(trace_idt_table)
+-	.skip IDT_ENTRIES * 16
+-#endif
+-
+ 	__PAGE_ALIGNED_BSS
+ NEXT_PAGE(empty_zero_page)
+ 	.skip PAGE_SIZE
+diff --git a/arch/x86/kernel/tracepoint.c b/arch/x86/kernel/tracepoint.c
+index 4e584a8..1c113db 100644
+--- a/arch/x86/kernel/tracepoint.c
++++ b/arch/x86/kernel/tracepoint.c
+@@ -12,10 +12,8 @@ atomic_t trace_idt_ctr = ATOMIC_INIT(0);
+ struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
+ 				(unsigned long) trace_idt_table };
+ 
+-#ifndef CONFIG_X86_64
+-gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
+-					= { { { { 0, 0 } } }, };
+-#endif
++/* No need to be aligned, but done to keep all IDTs defined the same way. */
++gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
+ 
+ static int trace_irq_vector_refcount;
+ static DEFINE_MUTEX(irq_vector_mutex);
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b0865e8..1b23a1c 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -63,19 +63,19 @@
+ #include <asm/x86_init.h>
+ #include <asm/pgalloc.h>
+ #include <asm/proto.h>
++
++/* No need to be aligned, but done to keep all IDTs defined the same way. */
++gate_desc debug_idt_table[NR_VECTORS] __page_aligned_bss;
+ #else
+ #include <asm/processor-flags.h>
+ #include <asm/setup.h>
+ 
+ asmlinkage int system_call(void);
+-
+-/*
+- * The IDT has to be page-aligned to simplify the Pentium
+- * F0 0F bug workaround.
+- */
+-gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
+ #endif
+ 
++/* Must be page-aligned because the real IDT is used in a fixmap. */
++gate_desc idt_table[NR_VECTORS] __page_aligned_bss;
++
+ DECLARE_BITMAP(used_vectors, NR_VECTORS);
+ EXPORT_SYMBOL_GPL(used_vectors);
+ 
+-- 
+1.7.9.5
+
+
+-- 
+Kees Cook
+Chrome OS Security
