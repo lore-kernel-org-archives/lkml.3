@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab3GPETB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 00:19:01 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41198 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab3GPETA (ORCPT
+	id S1752072Ab3GPEh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 00:37:29 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:59912 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab3GPEh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 00:19:00 -0400
-Message-ID: <1373948327.15106.3.camel@ThinkPad-T5421>
-Subject: [PATCH] nohz: fix compile warning in tick_nohz_init()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 16 Jul 2013 12:18:47 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071615-3568-0000-0000-000003EE66F1
+	Tue, 16 Jul 2013 00:37:27 -0400
+From: Dragos Foianu <dragos.foianu@gmail.com>
+To: hiralpat@cisco.com
+Cc: sramars@cisco.com, buchino@cisco.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dragos Foianu <dragos.foianu@gmail.com>
+Subject: [PATCH] drivers/scsi/fnic: updated fileoperations structure to use simple_open
+Date: Tue, 16 Jul 2013 07:37:19 +0100
+Message-Id: <1373956639-6187-1-git-send-email-dragos.foianu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu is not used after commit 5b8621a68fdcd2baf1d3b413726f913a5254d46a
+The function has the same implementation as simple_open. I removed it and replaced the reference in the fileoperations struct with simple_open.
 
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Found using Coccinelle.
+
+Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
 ---
- kernel/time/tick-sched.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/scsi/fnic/fnic_debugfs.c |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index e80183f..8145860 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -343,8 +343,6 @@ static int tick_nohz_init_all(void)
+diff --git a/drivers/scsi/fnic/fnic_debugfs.c b/drivers/scsi/fnic/fnic_debugfs.c
+index cbcb012..ddc7e94 100644
+--- a/drivers/scsi/fnic/fnic_debugfs.c
++++ b/drivers/scsi/fnic/fnic_debugfs.c
+@@ -25,23 +25,6 @@ static struct dentry *fnic_trace_debugfs_file;
+ static struct dentry *fnic_trace_enable;
  
- void __init tick_nohz_init(void)
- {
--	int cpu;
+ /*
+- * fnic_trace_ctrl_open - Open the trace_enable file
+- * @inode: The inode pointer.
+- * @file: The file pointer to attach the trace enable/disable flag.
+- *
+- * Description:
+- * This routine opens a debugsfs file trace_enable.
+- *
+- * Returns:
+- * This function returns zero if successful.
+- */
+-static int fnic_trace_ctrl_open(struct inode *inode, struct file *filp)
+-{
+-	filp->private_data = inode->i_private;
+-	return 0;
+-}
 -
- 	if (!have_nohz_full_mask) {
- 		if (tick_nohz_init_all() < 0)
- 			return;
-
+-/*
+  * fnic_trace_ctrl_read - Read a trace_enable debugfs file
+  * @filp: The file pointer to read from.
+  * @ubuf: The buffer to copy the data to.
+@@ -222,7 +205,7 @@ static int fnic_trace_debugfs_release(struct inode *inode,
+ 
+ static const struct file_operations fnic_trace_ctrl_fops = {
+ 	.owner = THIS_MODULE,
+-	.open = fnic_trace_ctrl_open,
++	.open = simple_open,
+ 	.read = fnic_trace_ctrl_read,
+ 	.write = fnic_trace_ctrl_write,
+ };
+-- 
+1.7.10.4
 
