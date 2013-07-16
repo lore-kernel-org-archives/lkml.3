@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab3GPGzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 02:55:04 -0400
-Received: from srv01.voixit.com ([78.47.68.188]:47998 "EHLO srv01.voixit.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029Ab3GPGzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 02:55:03 -0400
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Jul 2013 02:55:02 EDT
-Message-ID: <51E4EC51.6000607@unimore.it>
-Date: Tue, 16 Jul 2013 08:46:41 +0200
-From: Paolo Valente <paolo.valente@unimore.it>
+	id S1752617Ab3GPG5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 02:57:55 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:56363 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab3GPG5y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 02:57:54 -0400
+Message-ID: <51E4EEEA.4000208@cypress.com>
+Date: Tue, 16 Jul 2013 09:57:46 +0300
+From: Ferruh Yigit <fery@cypress.com>
+Organization: Cypress
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>, shemminger@vyatta.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fchecconi@gmail.com, rizzo@iet.unipi.it
-Subject: Re: [PATCH BUGFIX] pkt_sched: sch_qfq: remove a source of high packet
- delay/jitter
-References: <1373911290-6237-1-git-send-email-paolo.valente@unimore.it> <1373911942.2062.24.camel@joe-AO722>
-In-Reply-To: <1373911942.2062.24.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Javier Martinez Canillas <javier@dowhile0.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, ttdrivers@cypress.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] MAINTAINERS: Change maintainer for cyttsp driver
+References: <1373838082-12372-1-git-send-email-javier@dowhile0.org> <1373838082-12372-2-git-send-email-javier@dowhile0.org>
+In-Reply-To: <1373838082-12372-2-git-send-email-javier@dowhile0.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 15/07/2013 20:12, Joe Perches ha scritto:
-> On Mon, 2013-07-15 at 20:01 +0200, Paolo Valente wrote:
->> QFQ+ inherits from QFQ a design choice that may cause a high packet
->> delay/jitter and a severe short-term unfairness.
-> []
->> diff --git a/net/sched/sch_qfq.c b/net/sched/sch_qfq.c
-> []
->> @@ -189,6 +188,7 @@ struct qfq_sched {
->>   	struct qfq_aggregate	*in_serv_agg;   /* Aggregate being served. */
->>   	u32			num_active_agg; /* Num. of active aggregates */
->>   	u32			wsum;		/* weight sum */
->> +	unsigned long		iwsum;		/* inverse weight sum*/
+On 07/15/2013 12:41 AM, Javier Martinez Canillas wrote:
+> I haven't had time to work on this driver for a long time and
+> Ferruh has been doing a great job making it more generic,
+> adding support for new hardware and providing bug fixes.
+Thank you a lot for your work on cyttsp drivers,
+we would like to see your support back whenever you have time again.
+Your expertise/know-how on issue is valuable.
+
 >
-> This is a different size for 32/64 bit compiles
-> and may be better as u32.
+> So, let's make MAINTAINERS reflect reality and add him as the
+> cyttsp maintainer instead of me.
 >
+> Also, since Ferruh works for Cypress, we may change the driver
+> status from Maintained to Supported.
 >
-Sending a new version with u32, thanks.
+> Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
+> ---
+>
+> Ferruh, please send your ack if you are willing to take over
+> maintainance of this driver.
+
+Acked-by: Ferruh Yigit <fery@cypress.com>
+
+>
+> Also, please confirm that you have been working on behalf of
+> Cypress instead of doing it on your free time. Otherwise we
+> should keep the driver status to maintained instead supported.
+Right, I am a Cypress employee and working on TrueTouch drivers.
+>
+> Thanks a lot and best regards,
+> Javier
+>
+>   MAINTAINERS |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 9d771d9..4ba996c 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2458,9 +2458,9 @@ S:	Maintained
+>   F:	drivers/media/common/cypress_firmware*
+>   
+>   CYTTSP TOUCHSCREEN DRIVER
+> -M:	Javier Martinez Canillas <javier@dowhile0.org>
+> +M:	Ferruh Yigit <fery@cypress.com>
+>   L:	linux-input@vger.kernel.org
+> -S:	Maintained
+> +S:	Supported
+>   F:	drivers/input/touchscreen/cyttsp*
+>   F:	include/linux/input/cyttsp.h
+>   
+
+
+-- 
+
+Regards,
+ferruh
+
