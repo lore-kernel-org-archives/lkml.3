@@ -1,146 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab3GPTI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:08:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35076 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933353Ab3GPTI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:08:28 -0400
-Date: Tue, 16 Jul 2013 12:04:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: driver model, duplicate names question
-Message-ID: <20130716190422.GA1186@kroah.com>
-References: <51E57631.2030805@linux.intel.com>
- <20130716164459.GB17827@kroah.com>
- <51E59116.2060801@linux.intel.com>
- <20130716183149.GA6164@kroah.com>
- <51E596E7.5040504@linux.intel.com>
+	id S933747Ab3GPTKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:10:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:33488 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933353Ab3GPTKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 15:10:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,678,1367996400"; 
+   d="scan'208";a="366226117"
+Date: Tue, 16 Jul 2013 15:10:10 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] mm: drop actor argument of do_generic_file_read()
+Message-ID: <20130716191010.GC4855@linux.intel.com>
+References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1373885274-25249-2-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51E596E7.5040504@linux.intel.com>
+In-Reply-To: <1373885274-25249-2-git-send-email-kirill.shutemov@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-A: No.
-Q: Should I include quotations after my reply?
-
-http://daringfireball.net/2007/07/on_top
-
-On Tue, Jul 16, 2013 at 11:54:31AM -0700, Srinivas Pandruvada wrote:
-> Hi,
+On Mon, Jul 15, 2013 at 01:47:47PM +0300, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > 
-> I am assigned to do add a powercap class. There are several 
-> technologies, which will allow to add a power budget to an individual
-> device. For example, you can set a power budget to a individual
-> physical cpu package, each core and uncore devices, GPUs, DRAM etc.
+> There's only one caller of do_generic_file_read() and the only actor is
+> file_read_actor(). No reason to have a callback parameter.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-"classes" all reference a "device" in the system, I don't see that in
-your tree below, where does that come in?  How do I, as someone who
-created a device in the system know to create a your new powercap class
-for it?
+Would it make sense to do the same thing to do_shmem_file_read()?
 
-In other words, are you _sure_ you want a class here and not something
-else (i.e. a bus?)
+From: Matthew Wilcox <willy@linux.intel.com>
 
-> +The Power Capping framework organizes power capping devices under a tree structure.
-> +At the root level, each device is under some "controller", which is the enabler
-> +of technology. For example this can be "RAPL".
-> +Under each controllers, there are multiple power zones, which can be independently
-> +monitored and controlled.
-> +Each power zone can be organized as a tree with parent, children and siblings.
-> +Each power zone defines attributes to enable power monitoring and constraints.
+There's only one caller of do_shmem_file_read() and the only actor is
+file_read_actor(). No reason to have a callback parameter.
 
-Ah, this sounds like you want to be a bus, as you have a controller, and
-then devices attached to it.
+Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
 
-> +Example Sys-FS Interface
-> +
-> +/sys/class/power_cap/intel-rapl
-> +├── package-0
-> +│   ├── constraint-0
-> +│   │   ├── name
-> +│   │   ├── power_limit_uw
-> +│   │   └── time_window_us
-> +│   ├── constraint-1
-> +│   │   ├── name
-> +│   │   ├── power_limit_uw
-> +│   │   └── time_window_us
-> +│   ├── core
-> +│   │   ├── constraint-0
-> +│   │   │   ├── name
-> +│   │   │   ├── power_limit_uw
-> +│   │   │   └── time_window_us
-> +│   │   ├── energy_uj
-> +│   │   └── max_energy_range_uj
-> +│   ├── dram
-> +│   │   ├── constraint-0
-> +│   │   │   ├── name
-> +│   │   │   ├── power_limit_uw
-> +│   │   │   └── time_window_us
-> +│   │   ├── energy_uj
-> +│   │   └── max_energy_range_uj
-> +│   ├── energy_uj
-> +│   ├── max_energy_range_uj
-> +│   └── max_power_range_uw
-> +├── package-1
-> +│   ├── constraint-0
-> +│   │   ├── name
-> +│   │   ├── power_limit_uw
-> +│   │   └── time_window_us
-> +│   ├── constraint-1
-> +│   │   ├── name
-> +│   │   ├── power_limit_uw
-> +│   │   └── time_window_us
-> +│   ├── core
-> +│   │   ├── constraint-0
-> +│   │   │   ├── name
-> +│   │   │   ├── power_limit_uw
-> +│   │   │   └── time_window_us
-> +│   │   ├── energy_uj
-> +│   │   └── max_energy_range_uj
-> +│   ├── dram
-> +│   │   ├── constraint-0
-> +│   │   │   ├── name
-> +│   │   │   ├── power_limit_uw
-> +│   │   │   └── time_window_us
-> +│   │   ├── energy_uj
-> +│   │   └── max_energy_range_uj
-> +│   ├── energy_uj
-> +│   ├── max_energy_range_uj
-> +│   └── max_power_range_uw
-> +├── power
-> +│   ├── async
-> +│   ├── autosuspend_delay_ms
-> +│   ├── control
-> +│   ├── runtime_active_kids
-> +│   ├── runtime_active_time
-> +│   ├── runtime_enabled
-> +│   ├── runtime_status
-> +│   ├── runtime_suspended_time
-> +│   └── runtime_usage
-> +├── subsystem -> ../../../../class/power_cap
-> +└── uevent
-
-Ick.  Rewrite this to use a bus and you should be fine, right?  Don't
-use a class, a class is only to be used if you have a device that is a
-specific "type of thing".  Like a tty device, it is a class, as lots of
-different "real" devices can have tty ports on them (usb, pci, pcmcia,
-platform, etc.)
-
-Rethink this using a bus and see if that solves your issues.  You get a
-hierarchy with that.  And you can have different "types" of devices on
-your bus, making it easy to tell the difference between a "package" and
-a "constraint".
-
-Does that help?
-
-greg k-h
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 5e6a842..6a9c325 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1464,7 +1464,7 @@ shmem_write_end(struct file *file, struct address_space *mapping,
+ 	return copied;
+ }
+ 
+-static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_t *desc, read_actor_t actor)
++static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_t *desc)
+ {
+ 	struct inode *inode = file_inode(filp);
+ 	struct address_space *mapping = inode->i_mapping;
+@@ -1546,13 +1546,14 @@ static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_
+ 		 * Ok, we have the page, and it's up-to-date, so
+ 		 * now we can copy it to user space...
+ 		 *
+-		 * The actor routine returns how many bytes were actually used..
++		 * The file_read_actor routine returns how many bytes were actually
++		 * used..
+ 		 * NOTE! This may not be the same as how much of a user buffer
+ 		 * we filled up (we may be padding etc), so we can only update
+-		 * "pos" here (the actor routine has to update the user buffer
++		 * "pos" here (file_read_actor has to update the user buffer
+ 		 * pointers and the remaining count).
+ 		 */
+-		ret = actor(desc, page, offset, nr);
++		ret = file_read_actor(desc, page, offset, nr);
+ 		offset += ret;
+ 		index += offset >> PAGE_CACHE_SHIFT;
+ 		offset &= ~PAGE_CACHE_MASK;
+@@ -1590,7 +1591,7 @@ static ssize_t shmem_file_aio_read(struct kiocb *iocb,
+ 		if (desc.count == 0)
+ 			continue;
+ 		desc.error = 0;
+-		do_shmem_file_read(filp, ppos, &desc, file_read_actor);
++		do_shmem_file_read(filp, ppos, &desc);
+ 		retval += desc.written;
+ 		if (desc.error) {
+ 			retval = retval ?: desc.error;
