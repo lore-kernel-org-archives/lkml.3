@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933662Ab3GPSqZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:46:25 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40678 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933306Ab3GPSqX (ORCPT
+	id S1755053Ab3GPSrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:47:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58148 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754956Ab3GPSrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:46:23 -0400
-Message-ID: <51E595C6.9020708@linux.vnet.ibm.com>
-Date: Wed, 17 Jul 2013 00:19:42 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Tue, 16 Jul 2013 14:47:04 -0400
+Date: Tue, 16 Jul 2013 14:47:02 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: boris brezillon <b.brezillon@overkiz.com>
+cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 6/7] USB: ohci-at91: add usb_clk for transition to
+ common clk framework
+In-Reply-To: <51E57DFC.5030302@overkiz.com>
+Message-ID: <Pine.LNX.4.44L0.1307161441350.1032-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Gleb Natapov <gleb@redhat.com>, mingo@redhat.com, jeremy@goop.org,
-        x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
-        pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
-        andi@firstfloor.org, attilio.rao@citrix.com, ouyang@cs.pitt.edu,
-        gregkh@suse.de, agraf@suse.de, chegu_vinod@hp.com,
-        torvalds@linux-foundation.org, avi.kivity@gmail.com,
-        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com> <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <20130716154852.GN23818@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130716154852.GN23818@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071618-0260-0000-0000-000003518AB5
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 09:18 PM, Peter Zijlstra wrote:
-> On Tue, Jul 16, 2013 at 09:02:15AM +0300, Gleb Natapov wrote:
->> BTW can NMI handler take spinlocks?
->
-> No -- that is, yes you can using trylock, but you still shouldn't.
+On Tue, 16 Jul 2013, boris brezillon wrote:
 
-Thanks Peter for the clarification.
+> >> +	uclk = clk_get(&pdev->dev, "usb_clk");
+> >> +	if (IS_ERR(uclk)) {
+> >> +		uclk = NULL;
+> >> +		dev_warn(&pdev->dev, "failed to get usb_clk\n");
+> >> +	}
+> > Is this really what you want for backward compatibility?
+> Here are some proposition to remove the warning message:
+> 
+> 1) replace it with a dev_info and change the message:
+>      dev_info(&pdev->dev, "failed to get usb_clk (most likely using old 
+> at91 clk implementation)\n");
+> 2) drop the log and silently ignore the missing clk (I'm not a big fan 
+> of this solution
+>      as it may lead to some errors if we're using new clk implem and the 
+> clock is really missing)
+> 3) rework the current clk_set_rate function to accept clk_set_rate on 
+> usb clk and add clk_lookup entries
+>      for the usb clk (I'm not a big fan of this solution neither as this 
+> modifications will only be used for a short time
+>      until the transition to common clk framework is completed).
 
-I had started checking few of nmi handlers code to confirm.
-Did saw a raw spinlock in drivers/acpi/apei/ghes.c, but then stopped.
+Another possibility is to combine this change with the clock 
+implementation update, and do them in a single patch.  Then backward 
+compatibility would not be an issue.
 
->
->> If it can what happens if NMI is
->> delivered in a section protected by local_irq_save()/local_irq_restore()?
->
-> You deadlock.
->
+Alan Stern
 
