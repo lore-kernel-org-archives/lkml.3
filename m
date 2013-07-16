@@ -1,119 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933776Ab3GPW1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:27:14 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:24609 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933295Ab3GPW1M convert rfc822-to-8bit (ORCPT
+	id S933775Ab3GPWeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:34:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60070 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933233Ab3GPWeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:27:12 -0400
-X-AuditID: cbfec37a-b7fc36d0000050de-eb-51e5c8be427a
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Joe Perches <joe@perches.com>
-Cc: "len.brown@intel.com" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH] power: new trace event to print device suspend and resume
- time
-Thread-topic: [PATCH] power: new trace event to print device suspend and resume
- time
-Thread-index: AQHOgmrHJCbzC2elLE64FOrYSy+QTQ==
-Date: Tue, 16 Jul 2013 22:27:08 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6173C248@sisaex02sj>
-References: <1374009806-11823-1-git-send-email-shuah.kh@samsung.com>
- <1374010741.1949.46.camel@joe-AO722>
- <B8EFE96D1287C24090BAD9D858E15E6173C1B6@sisaex02sj>
- <1374013019.1949.52.camel@joe-AO722>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t9hP919J54GGjTtFrOY+bqbyaJ58Xo2
-	i9n3H7NYzJqyl8ni8q45bBafe48wWlw6sIDJ4tre48wWd08dZbPoX9jLZLGv4wGTxdefDg48
-	Hjtn3WX3aNl3i91j8Z6XTB77565h9/iy6hqzx/t9V9k8Hi1uYfRYsfo7u8fnTXIe67dsZQrg
-	iuKySUnNySxLLdK3S+DK+NjdyFiwTaji/d8mlgbGfv4uRk4OCQETiR/nVjFB2GISF+6tZ+ti
-	5OIQEljGKHFz3XJGCKeXSWLi/BlMEM58Ron5N3aAtbAJqEt8fr2DvYuRg0NEQFHi7hawqcwC
-	e1gkpt4sAwkLC4RKPHrLCVERJtE7JRekQkRAT+J/RyMbiM0ioCpx98sudhCbV8BeYtudO+wQ
-	m04wSvzqWglWxAh03PdTa5ggxotLNLfeZIE4WkBiyZ7zzBC2qMTLx/9YQXZJAF2zfbUVRLmW
-	xPqdx6FatSWevLvACrFLUOLH5HssExjFZiGZOgtJyywkLbOQtCxgZFnFKFZanFxQnJSeWmGo
-	V5yYW1yal66XnJ+7iRES71U7GO98tTnEKMDBqMTDOyHsaaAQa2JZcWXuIUYJDmYlEV6hfUAh
-	3pTEyqrUovz4otKc1OJDjEwcnFINjCFn+tr9N9uaPJPJSuFMDJzBzyLM4dbXnTHngqu5C5fC
-	3GMNGjY5G0uVvgnZHovnsLxrHvt4xk32Kzv3zzvdteWKyLbztpZ7f10u7k+9+WP+1K2K/zzs
-	JkzstEneuKb7h5TfiqmVwbr+4mW8PoY25yxFYtuVW32PdqbUptizbUhvVYk56vRHiaU4I9FQ
-	i7moOBEAdNwbMdUCAAA=
+	Tue, 16 Jul 2013 18:34:14 -0400
+Date: Tue, 16 Jul 2013 15:33:50 -0700
+From: tip-bot for Kees Cook <tipbot@zytor.com>
+Message-ID: <tip-4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, pageexec@gmail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, pageexec@gmail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20130716183441.GA14232@www.outflux.net>
+References: <20130716183441.GA14232@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Make sure IDT is page aligned
+Git-Commit-ID: 4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 16 Jul 2013 15:33:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 04:17 PM, Joe Perches wrote:
-> On Tue, 2013-07-16 at 22:04 +0000, Shuah Khan wrote:
->> On 07/16/2013 03:39 PM, Joe Perches wrote:
->>> On Tue, 2013-07-16 at 15:23 -0600, Shuah Khan wrote:
->>>> A new trace event is added to pm events to print time it takes to suspend and
->>>> resume a device. It generates trace message that includes device, driver,
->>>> parent information in addition to the type of pm ops invoked as well as the
->>>> pm event and error status from the pm ops. Example trace below:
->>>
->>>> diff --git a/include/trace/events/power.h b/include/trace/events/power.h
->>> []
->>>> @@ -66,6 +66,41 @@ TRACE_EVENT(machine_suspend,
->>>>    	TP_printk("state=%lu", (unsigned long)__entry->state)
->>>>    );
->>>>
->>>> +TRACE_EVENT(device_pm_report_time,
->>>> +
->>>> +	TP_PROTO(const char *device, const char *driver, const char *parent,
->>>> +		 const char *pm_ops, ktime_t ops_time, char *pm_event_str,
->>>> +		 int error),
->>>> +
->>>> +	TP_ARGS(device, driver, parent, pm_ops, ops_time, pm_event_str, error),
->>>> +
->>>> +	TP_STRUCT__entry(
->>>> +		__string(device, device)
->>>> +		__string(driver, driver)
->>>> +		__string(parent, parent)
->>>> +		__string(pm_ops, pm_ops)
->>>> +		__string(pm_event_str, pm_event_str)
->>>> +		__field(unsigned long long, ops_time)
->>>
->>> s64
->>
->> Followed the ktime_t example in include/trace/events/timer.h - thinking
->> it would be the correct way to cast ktime_t :)  I can change it to s64.
->
-> You mean this one below where s64 is used for the
-> variable type?
+Commit-ID:  4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
+Gitweb:     http://git.kernel.org/tip/4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Tue, 16 Jul 2013 11:34:41 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 16 Jul 2013 15:14:48 -0700
 
-oh yeah it does have s64.
+x86: Make sure IDT is page aligned
 
->
-> I do think the %llu is odd below here and it should be
-> %lld without the casts.
+Since the IDT is referenced from a fixmap, make sure it is page aligned.
+Merge with 32-bit one, since it was already aligned to deal with F00F
+bug. Since bss is cleared before IDT setup, it can live there. This also
+moves the other *_idt_table variables into common locations.
 
-ok.
+This avoids the risk of the IDT ever being moved in the bss and having
+the mapping be offset, resulting in calling incorrect handlers. In the
+current upstream kernel this is not a manifested bug, but heavily patched
+kernels (such as those using the PaX patch series) did encounter this bug.
 
->
-> I prefer the TP_printk style of "foo=val" over "foo(val)"
-> but there's no requirement for one style over another.
->
+The tables other than idt_table technically do not need to be page
+aligned, at least not at the current time, but using a common
+declaration avoids mistakes.  On 64 bits the table is exactly one page
+long, anyway.
 
-Existing events in power.h use foo=val convention - I will make the 
-change to be consistent.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20130716183441.GA14232@www.outflux.net
+Reported-by: PaX Team <pageexec@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/head_64.S    | 15 ---------------
+ arch/x86/kernel/tracepoint.c |  6 ++----
+ arch/x86/kernel/traps.c      | 12 ++++++------
+ 3 files changed, 8 insertions(+), 25 deletions(-)
 
-thanks for the review.
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 5e4d8a8..e1aabdb 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -512,21 +512,6 @@ ENTRY(phys_base)
+ 
+ #include "../../x86/xen/xen-head.S"
+ 	
+-	.section .bss, "aw", @nobits
+-	.align L1_CACHE_BYTES
+-ENTRY(idt_table)
+-	.skip IDT_ENTRIES * 16
+-
+-	.align L1_CACHE_BYTES
+-ENTRY(debug_idt_table)
+-	.skip IDT_ENTRIES * 16
+-
+-#ifdef CONFIG_TRACING
+-	.align L1_CACHE_BYTES
+-ENTRY(trace_idt_table)
+-	.skip IDT_ENTRIES * 16
+-#endif
+-
+ 	__PAGE_ALIGNED_BSS
+ NEXT_PAGE(empty_zero_page)
+ 	.skip PAGE_SIZE
+diff --git a/arch/x86/kernel/tracepoint.c b/arch/x86/kernel/tracepoint.c
+index 4e584a8..1c113db 100644
+--- a/arch/x86/kernel/tracepoint.c
++++ b/arch/x86/kernel/tracepoint.c
+@@ -12,10 +12,8 @@ atomic_t trace_idt_ctr = ATOMIC_INIT(0);
+ struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
+ 				(unsigned long) trace_idt_table };
+ 
+-#ifndef CONFIG_X86_64
+-gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
+-					= { { { { 0, 0 } } }, };
+-#endif
++/* No need to be aligned, but done to keep all IDTs defined the same way. */
++gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
+ 
+ static int trace_irq_vector_refcount;
+ static DEFINE_MUTEX(irq_vector_mutex);
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b0865e8..1b23a1c 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -63,19 +63,19 @@
+ #include <asm/x86_init.h>
+ #include <asm/pgalloc.h>
+ #include <asm/proto.h>
++
++/* No need to be aligned, but done to keep all IDTs defined the same way. */
++gate_desc debug_idt_table[NR_VECTORS] __page_aligned_bss;
+ #else
+ #include <asm/processor-flags.h>
+ #include <asm/setup.h>
+ 
+ asmlinkage int system_call(void);
+-
+-/*
+- * The IDT has to be page-aligned to simplify the Pentium
+- * F0 0F bug workaround.
+- */
+-gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
+ #endif
+ 
++/* Must be page-aligned because the real IDT is used in a fixmap. */
++gate_desc idt_table[NR_VECTORS] __page_aligned_bss;
++
+ DECLARE_BITMAP(used_vectors, NR_VECTORS);
+ EXPORT_SYMBOL_GPL(used_vectors);
+ 
