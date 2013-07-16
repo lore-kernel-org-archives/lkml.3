@@ -1,147 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab3GPQO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 12:14:59 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:50000 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932666Ab3GPQO6 (ORCPT
+	id S933035Ab3GPQQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 12:16:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4022 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932666Ab3GPQQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 12:14:58 -0400
-Date: Tue, 16 Jul 2013 18:14:58 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Brian Foster <bfoster@redhat.com>
-Cc: Niels de Vos <ndevos@redhat.com>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [fuse-devel] [PATCH] fuse: fix occasional dentry leak when
- readdirplus is used
-Message-ID: <20130716161458.GA19664@tucsk.piliscsaba.szeredi.hu>
-References: <1373893160-30601-1-git-send-email-ndevos@redhat.com>
- <51E456B6.8050601@redhat.com>
- <20130716103939.GL18803@ndevos-laptop.usersys.redhat.com>
- <51E54764.4070106@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E54764.4070106@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Jul 2013 12:16:42 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BvhdhFe28WsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=LhvmM_GddXoA:10 a=4xMmcEmcisl-wHsFKvUA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373991399.6458.6.camel@gandalf.local.home>
+Subject: Re: [ATTEND] How to act on LKML
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Chris Ball <cjb@laptop.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Date: Tue, 16 Jul 2013 12:16:39 -0400
+In-Reply-To: <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+References: <20130715174659.GC15531@xanatos>
+	  <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	  <20130715180403.GD15531@xanatos>
+	  <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	  <20130715184642.GE15531@xanatos>
+	  <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+	  <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
+	  <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	  <1373926109.17876.221.camel@gandalf.local.home>
+	  <20130715223615.GI15531@xanatos> <1373932170.28142.24.camel@envy.home>
+	  <864nbv9qcm.fsf@void.printf.net>
+	 <1373944014.17876.255.camel@gandalf.local.home>
+	 <51E4BFA9.1030600@zytor.com>
+	 <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 09:15:16AM -0400, Brian Foster wrote:
- 
-> I'm not sure why it would need to have a valid inode. A dentry with a
-> NULL inode is valid, no?
+On Tue, 2013-07-16 at 16:49 +0100, Stefano Stabellini wrote:
 
-It is valid, yes.  It's called a "negative" dentry, which caches the information
-that the file does not exist.
+> I have been hacking in several different Open Source communities during
+> the last few years, including qemu-devel, xen-devel, linux-arm and the
+> lkml of course.
+> 
+> The etiquette on the lkml is by far the roughest of them all. It's the
 
-> I think the question is whether the above state (multiple, hashed dentries)
-> can be valid for whatever reason. It certainly looks suspicious.
+It's also the largest of them all.
 
-That state is not valid.  So we certainly need to unhash the negative dentry
-first, before hashing a new one.  We could also reuse the old dentry, but that
-is just an optimization.
+> "bad neighborhood with guns" of the Open Source world. You never know
+> when you are going to get a bullet, but sooner or later you'll get one.
 
-Below patch fixes several issues with that function.  Could you please give it a
-go?
+It just seems that way as it is so large. LKML has the most people and
+will also have the biggest conflict in personalities. It just goes with
+the territory.
 
-Thanks,
-Miklos
+> 
+> I think that it's hurting Linux and in particular it's hurting
+> attracting new talents.
+
+Then why do we have the largest # of developers than any other Open
+Source project?
 
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 0eda527..a8208c5 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1223,28 +1223,45 @@ static int fuse_direntplus_link(struct file *file,
- 		if (name.name[1] == '.' && name.len == 2)
- 			return 0;
- 	}
-+
-+	if (invalid_nodeid(o->nodeid))
-+		return -EIO;
-+	if (!fuse_valid_type(o->attr.mode))
-+		return -EIO;
-+
- 	fc = get_fuse_conn(dir);
- 
- 	name.hash = full_name_hash(name.name, name.len);
- 	dentry = d_lookup(parent, &name);
--	if (dentry && dentry->d_inode) {
-+	if (dentry) {
- 		inode = dentry->d_inode;
--		if (get_node_id(inode) == o->nodeid) {
-+		if (!inode) {
-+			d_drop(dentry);
-+		} else if (get_node_id(inode) != o->nodeid ||
-+			   ((o->attr.mode ^ inode->i_mode) & S_IFMT)) {
-+			err = d_invalidate(dentry);
-+			if (err)
-+				goto out;
-+		} else if (is_bad_inode(inode)) {
-+			err = -EIO;
-+			goto out;
-+		} else {
- 			struct fuse_inode *fi;
- 			fi = get_fuse_inode(inode);
- 			spin_lock(&fc->lock);
- 			fi->nlookup++;
- 			spin_unlock(&fc->lock);
- 
-+			fuse_change_attributes(inode, &o->attr,
-+					       entry_attr_timeout(o),
-+					       attr_version);
-+
- 			/*
- 			 * The other branch to 'found' comes via fuse_iget()
- 			 * which bumps nlookup inside
- 			 */
- 			goto found;
- 		}
--		err = d_invalidate(dentry);
--		if (err)
--			goto out;
- 		dput(dentry);
- 		dentry = NULL;
- 	}
-@@ -1259,25 +1276,30 @@ static int fuse_direntplus_link(struct file *file,
- 	if (!inode)
- 		goto out;
- 
--	alias = d_materialise_unique(dentry, inode);
--	err = PTR_ERR(alias);
--	if (IS_ERR(alias))
--		goto out;
-+	if (S_ISDIR(inode->i_mode)) {
-+		mutex_lock(&fc->inst_mutex);
-+		alias = fuse_d_add_directory(dentry, inode);
-+		mutex_unlock(&fc->inst_mutex);
-+		err = PTR_ERR(alias);
-+		if (IS_ERR(alias)) {
-+			iput(inode);
-+			goto out;
-+		}
-+	} else {
-+		alias = d_splice_alias(inode, dentry);
-+	}
-+
- 	if (alias) {
- 		dput(dentry);
- 		dentry = alias;
- 	}
- 
- found:
--	fuse_change_attributes(inode, &o->attr, entry_attr_timeout(o),
--			       attr_version);
--
- 	fuse_change_entry_timeout(dentry, o);
- 
- 	err = 0;
- out:
--	if (dentry)
--		dput(dentry);
-+	dput(dentry);
- 	return err;
- }
- 
+>   Not just devs for hire but people passionate
+> about what they do and eager to become more involved in the project.
+> I met more than one good ex-Linux hacker that decided to move to do
+> other things because of this.
+
+Honestly, I think LKML over the years has become more tame. Yeah, back
+in 2005 it was rather harsh, but I don't really see that anymore. I
+don't see the nasty flame wars going on. Everything seems to be focused
+more on the technical side, and there's really very little personal
+attacks out there. Sure, with 15,000 emails a month, you get a few. And
+Linus will get fed up and burst. But they are really few and far
+between. And sometimes, a Linus burst gets things moving along much
+faster than being "professional". You think ARM would have gotten their
+act together as quick as they did if Linus didn't curse them out and
+threaten to stop pulling their crap?
+
+-- Steve
+
+
