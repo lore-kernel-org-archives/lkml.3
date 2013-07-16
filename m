@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934016Ab3GPWLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:11:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:34765 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933329Ab3GPWLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:11:50 -0400
-Date: Wed, 17 Jul 2013 00:11:20 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>,
+	id S964792Ab3GPWMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:12:48 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:37900 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab3GPWMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 18:12:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <4384290.4rZz7uttsZ@vostro.rjw.lan>
+References: <20130715155202.GC29526@xanatos>
+	<20130716210856.GF4994@xanatos>
+	<CA+55aFwcT3pRjKKB3c+QPVZ3tREVKJwszE5EMwJ_eQTjPkOzXQ@mail.gmail.com>
+	<4384290.4rZz7uttsZ@vostro.rjw.lan>
+Date: Tue, 16 Jul 2013 15:12:45 -0700
+X-Google-Sender-Auth: t6FNq-cSY4CTDnxXvp8eI6c7Iho
+Message-ID: <CA+55aFy=XOKNePc+buJovaBu-WVUHHh=J35SSG1HyraGqH6PXQ@mail.gmail.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130716221120.GA21611@1wt.eu>
-References: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com> <20130715174659.GC15531@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <20130715191727.GC10157@1wt.eu> <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com> <8738rf14zl.fsf@rustcorp.com.au> <20130716210856.GF4994@xanatos>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716210856.GF4994@xanatos>
-User-Agent: Mutt/1.4.2.3i
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 02:08:56PM -0700, Sarah Sharp wrote:
-> Rusty hit the nail on the head here.  I want everyone (including Linus)
-> to be harsh with code but gentle with people.
+On Tue, Jul 16, 2013 at 2:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> In fact, I didn't say what I really wanted to say in that reply to the reporter
+> and that evidently confused you, which only made me think it was better to be
+> more careful about sending replies to regression reports when Linus is on the
+> CC list.  But it was kind of fun to watch you go ballistic by mistake. ;-)
 
-Just as a side note Sarah, in some cultures/languages, "I want" is
-extremely impolite, almost insulting to your interlocutor. In France,
-if you want to quickly upset someone, simply say "I want you to do this
-or that". The polite form is "I would like you to do that", "I would
-appreciate..." or "let's do that", and when you're slightly upset or
-in a hurry, better simply say "do that" without putting yourself
-prominently as the one who has some unexplained reasons for demanding
-something.
+And that's why I actually mentioned in my reply to Sarah that "(in
+fact, with Rafael it was at least partially just bad communication,
+and I haven't had that issue with him before)", because I have this
+distinct memory that we ended up having that exact discussion about
+misunderstanding and bad wording at the time.
 
-With that said, this thread has probably lived too long. I think we're
-starting to fuck flies, and once we won't have any living flies left,
-someone will have to bring new files, and it's certainly not me.
+I react very strongly when somebody argues against fixing regressions.
+Let's just say that there's too many years of baggage that I carry
+around on that issue..
 
-Regards,
-Willy
+So that is definitely one of the things that make me go ballistic.
+Buggy code isn't actually one of them. Bugs happen. Even really stupid
+bugs happen, and happen to good people. They had a bad day, or it was
+just a brainfart.  Not that I will be _polite_ about bad code, mind
+you, and there might be some bad words in there, but it doesn't make
+me blow up.
 
+Being cavalier about known regressions is definitely the primary
+trigger. I suspect there are others, but I can't seem to recall any
+other particular hot-button issues right now. Maybe Sarah can post a
+few more pointers..
+
+              Linus
