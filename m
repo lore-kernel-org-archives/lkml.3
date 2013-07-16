@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab3GPNn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 09:43:56 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31323 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932119Ab3GPNny (ORCPT
+	id S932724Ab3GPNtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 09:49:51 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:64211 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932119Ab3GPNtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 09:43:54 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/kNYnEQL1Ey4Q57wZVx4x9
-Date: Tue, 16 Jul 2013 06:43:50 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: benoit.cousson@linaro.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: [PATCH v2 4/4] ARM: OMAP2+: Provide alias to USB PHY clock
-Message-ID: <20130716134350.GD7656@atomide.com>
-References: <1371571487-14389-1-git-send-email-rogerq@ti.com>
- <1371571487-14389-5-git-send-email-rogerq@ti.com>
- <51E40199.9070906@ti.com>
- <20130716123256.GY7656@atomide.com>
- <51E54D0D.3030200@ti.com>
-MIME-Version: 1.0
+	Tue, 16 Jul 2013 09:49:50 -0400
+X-Nat-Received: from [202.181.97.72]:60180 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1373982578.4466
+To: herbert@gondor.hengli.com.au
+Cc: tim.c.chen@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to moduledependency.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201307162053.GBC56724.MFVOJtSLQHFOOF@I-love.SAKURA.ne.jp>
+	<20130716115527.GA1034@gondor.apana.org.au>
+In-Reply-To: <20130716115527.GA1034@gondor.apana.org.au>
+Message-Id: <201307162249.JEA41532.FFOLHVQJFtOOMS@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 16 Jul 2013 22:49:34 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E54D0D.3030200@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 16072013 #10604793, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130716 06:45]:
-> On 07/16/2013 03:32 PM, Tony Lindgren wrote:
-> > * Roger Quadros <rogerq@ti.com> [130715 07:11]:
-> >> Hi Tony,
-> >>
-> >> On 06/18/2013 07:04 PM, Roger Quadros wrote:
-> >>> Till the OMAP clocks are correctly defined in device tree, use
-> >>> this temporary hack to provide clock alias to the USB PHY clocks.
-> >>>
-> >>> Without this, USB Host & Ethernet will not be functional with
-> >>> device tree boots on Panda and uEVM.
-> >>
-> >> Looks like this one got missed out.
-> >>
-> >> USB host no longer works on Panda with DT boot.
-> >> Could you please queue this for next 3.11-rc? Thanks.
-> > 
-> > OK thanks for checking, applying into omap-for-v3.11/fixes.
-> 
-> Thanks.
-> 
-> > 
-> > Looks like I also have some pending the .dts changes in
-> > omap-for-v3.11/dt branch:
-> > 
-> > 4cf2198b1e3cee47a1cccbb500b67782c36615d5 ARM: dts: omap3-beagle-xm: Add USB host supprot for Rev. Ax/Bx
-> > 9bc44515819a00c0ffaf751ad497ddf275089ede ARM: dts: omap3-beagle-xm: Add USB Host support
-> > fd65d7df4598c1d2ad27d664c719611a1a070edc ARM: dts: omap3-beagle: Make USB host pin naming consistent
-> 
-> Please disregard those. They are old versions.
+Herbert Xu wrote:
+> Looks like a bug in whatever is creating the initrd as it isn't
+> including modules necessary for the boot.
 
-OK, poof that branch is now gone.
- 
-> Benoit had agreed to take the newer version of those for 3.12.
-> 
-> Please pick this one to get usb host working on 3.11 with DT.
-> 
-> http://www.spinics.net/lists/arm-kernel/msg253612.html
-> 
-> > 39ea891d9da6ae1824bc9f689db3f306f5ce0724 ARM: dts: omap4-panda: Add USB Host support
-> 
-> This one is already in through Benoit.
+It turned out that it is already wrong as of creating modules.dep.
 
-It's best that Benoit queue all those to avoid more confusion :)
+  # grep crc /lib/modules/3.11.0-rc1/modules.dep
+  kernel/crypto/crct10dif.ko:
+  kernel/drivers/scsi/sd_mod.ko: kernel/lib/crc-t10dif.ko
+  kernel/lib/crc-t10dif.ko:
 
-Regards,
+modules.dep says
 
-Tony
+  (1) sd_mod.ko depends on crc-t10dif.ko
+  (2) crc-t10dif.ko does not depend on crct10dif.ko
+
+but commit 2d31e518 made crc-t10dif.ko depend on crct10dif.ko , didn't it?
+
+crct10dif.ko need to be loaded before crc-t10dif.ko is loaded, but doing
+
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 35da513..53ee0fd 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -68,6 +68,7 @@ config CRC_T10DIF
+ 	tristate "CRC calculation for the T10 Data Integrity Field"
+ 	select CRYPTO
+ 	select CRYPTO_CRCT10DIF
++	depends on CRYPTO_CRCT10DIF
+ 	help
+ 	  This option is only needed if a module that's not in the
+ 	  kernel tree needs to calculate CRC checks for use with the
+
+causes below warning.
+
+  crypto/Kconfig:379:     symbol CRYPTO_CRCT10DIF is selected by CRC_T10DIF
+  warning: (BLK_DEV_SD && SCSI_LPFC && SCSI_DEBUG) selects CRC_T10DIF which has unmet direct dependencies (CRYPTO_CRCT10DIF)
