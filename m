@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab3GPVva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 17:51:30 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45541 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933561Ab3GPVv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 17:51:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Aaron Lu <aaron.lwe@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
-        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: [Update][PATCH] ACPI / video / i915: Remove ACPI backlight if firmware expects Windows 8
-Date: Wed, 17 Jul 2013 00:01:24 +0200
-Message-ID: <2132122.eIEvjmIrrj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1373994495.9314.1.camel@x230>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1373981554.1956.5.camel@ThinkPad-X230.localdomain> <1373994495.9314.1.camel@x230>
+	id S933702Ab3GPV7O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 17:59:14 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:37756 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933201Ab3GPV7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 17:59:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <51E5A207.30204@zytor.com>
+References: <1373659660-31123-1-git-send-email-keescook@chromium.org>
+	<20130712203802.GA14702@www.outflux.net>
+	<CAE9FiQWJin8-hXsodo46vhYPMrWiiboEVQySPO-LgXtebYmUzw@mail.gmail.com>
+	<CAGXu5jJs5ve-31AYKbv6EaV5PKCf5cOEeWTRsYsi_kBbLWj5uQ@mail.gmail.com>
+	<51E5A0A9.90108@zytor.com>
+	<CAGXu5jJJXgnJxuvc851UZ4Du10HSBJnDWc7rKgRb4_=ojMmtug@mail.gmail.com>
+	<51E5A207.30204@zytor.com>
+Date: Tue, 16 Jul 2013 14:59:11 -0700
+X-Google-Sender-Auth: H53Hs4VhK1KNTUYIl7QoCtFe0m4
+Message-ID: <CAE9FiQUW2QTkmT=n3jnL_s09wrSBU5u9rvzNKvCUzcz6pVEgWw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 16, 2013 05:08:16 PM Matthew Garrett wrote:
-> On Tue, 2013-07-16 at 17:32 +0400, Igor Gnatenko wrote:
-> > Hmm. I found regression in user-space. In GNOME (maybe and other DEs) we no longer see switch status of backlight.
-> 
-> Yeah, I can duplicate that. Rafael, we have to call
-> acpi_video_init_brightness() even if we're not going to initialise the
-> backlight - Thinkpads seem to use this as the trigger for enabling ACPI
-> notifications rather than handling it in firmware. This seems to do the
-> job:
+On Tue, Jul 16, 2013 at 12:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/16/2013 12:40 PM, Kees Cook wrote:
+>>>
+>>> I think setting up a dynamic #PF handler is the right thing for the
+>>> decompressor, we already did for the kernel proper.
+>>
+>> I'm not sure how to accomplish this yet. I'm still trying to
+>> understand how the page tables are arranged. :)
+>>
+>
+> Look at the handler at the top of arch/x86/kernel/head64.c.
 
-Igor, does this additional patch from Matthew help?
+could extract code from arch/x86/kernel/{head64.c, head_64.S},
+and share them with arch/x86/boot/compressed/{misc.c, head_64.S}
 
-Rafael
-
-
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index 01b1a25..71865f7 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -900,6 +900,9 @@ static void acpi_video_device_find_cap(struct
-> acpi_video_device *device)
->  		device->cap._DDC = 1;
->  	}
->  
-> +	if (acpi_video_init_brightness(device))
-> +		return;
-> +
->  	if (acpi_video_verify_backlight_support()) {
->  		struct backlight_properties props;
->  		struct pci_dev *pdev;
-> @@ -909,9 +912,6 @@ static void acpi_video_device_find_cap(struct
-> acpi_video_device *device)
->  		static int count = 0;
->  		char *name;
->  
-> -		result = acpi_video_init_brightness(device);
-> -		if (result)
-> -			return;
->  		name = kasprintf(GFP_KERNEL, "acpi_video%d", count);
->  		if (!name)
->  			return;
-> 
-> 
-> -- 
-> Matthew Garrett | mjg59@srcf.ucam.org
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yinghai
