@@ -1,120 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab3GPOog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:44:36 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:49269 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab3GPOoe (ORCPT
+	id S932807Ab3GPOpG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:45:06 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:63489 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932652Ab3GPOpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:44:34 -0400
-Message-ID: <51E55B7D.2040209@linux.vnet.ibm.com>
-Date: Tue, 16 Jul 2013 20:11:01 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, bhelgaas@google.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: workqueue, pci: INFO: possible recursive locking detected
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071614-5140-0000-0000-00000386C60C
+	Tue, 16 Jul 2013 10:45:04 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, john.stultz@linaro.org,
+        tglx@linutronix.de, u.kleine-koenig@pengutronix.de,
+        tomasz.figa@gmail.com, linus.walleij@linaro.org,
+        thomas.petazzoni@free-electrons.com, arnd@arndb.de,
+        daniel.lezcano@linaro.org, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v8] ARM: clocksource: add support for MOXA ART SoCs
+Date: Tue, 16 Jul 2013 16:44:40 +0200
+Message-Id: <1373985880-23469-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1373024773-24574-1-git-send-email-jonas.jensen@gmail.com>
+References: <1373024773-24574-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds an clocksource driver for the main timer(s)
+found on MOXA ART SoCs.
 
-I have been seeing this warning every time during boot. I haven't
-spent time digging through it though... Please let me know if
-any machine-specific info is needed.
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-Regards,
-Srivatsa S. Bhat
+Notes:
+    Changes since v7:
+    
+    1. use BIT macro
+    2. set moxart_clockevent.irq
+    
+    Applies to next-20130716
 
+ drivers/clocksource/Makefile       |   1 +
+ drivers/clocksource/moxart_timer.c | 164 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 165 insertions(+)
+ create mode 100644 drivers/clocksource/moxart_timer.c
 
-----------------------------------------------------
-
-=============================================
-[ INFO: possible recursive locking detected ]
-3.11.0-rc1-lockdep-fix-a #6 Not tainted
----------------------------------------------
-kworker/0:1/142 is trying to acquire lock:
- ((&wfc.work)){+.+.+.}, at: [<ffffffff81077100>] flush_work+0x0/0xb0
-
-but task is already holding lock:
- ((&wfc.work)){+.+.+.}, at: [<ffffffff81075dd9>] process_one_work+0x169/0x610
-
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock((&wfc.work));
-  lock((&wfc.work));
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-3 locks held by kworker/0:1/142:
- #0:  (events){.+.+.+}, at: [<ffffffff81075dd9>] process_one_work+0x169/0x610
- #1:  ((&wfc.work)){+.+.+.}, at: [<ffffffff81075dd9>] process_one_work+0x169/0x610
- #2:  (&__lockdep_no_validate__){......}, at: [<ffffffff8139a3ba>] device_attach+0x2a/0xc0
-
-stack backtrace:
-CPU: 0 PID: 142 Comm: kworker/0:1 Not tainted 3.11.0-rc1-lockdep-fix-a #6
-Hardware name: IBM  -[8737R2A]-/00Y2738, BIOS -[B2E120RUS-1.20]- 11/30/2012
-Workqueue: events work_for_cpu_fn
- ffff881036fecd88 ffff881036fef678 ffffffff8161a919 0000000000000003
- ffff881036fec400 ffff881036fef6a8 ffffffff810c2234 ffff881036fec400
- ffff881036fecd88 ffff881036fec400 0000000000000000 ffff881036fef708
-Call Trace:
- [<ffffffff8161a919>] dump_stack+0x59/0x80
- [<ffffffff810c2234>] print_deadlock_bug+0xf4/0x100
- [<ffffffff810c3d14>] validate_chain+0x504/0x750
- [<ffffffff810c426d>] __lock_acquire+0x30d/0x580
- [<ffffffff810c4577>] lock_acquire+0x97/0x170
- [<ffffffff81077100>] ? start_flush_work+0x220/0x220
- [<ffffffff81077148>] flush_work+0x48/0xb0
- [<ffffffff81077100>] ? start_flush_work+0x220/0x220
- [<ffffffff810c2c10>] ? mark_held_locks+0x80/0x130
- [<ffffffff81074cfb>] ? queue_work_on+0x4b/0xa0
- [<ffffffff810c2f85>] ? trace_hardirqs_on_caller+0x105/0x1d0
- [<ffffffff810c305d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81077320>] work_on_cpu+0x80/0x90
- [<ffffffff8106f950>] ? wqattrs_hash+0x190/0x190
- [<ffffffff812d37b0>] ? pci_pm_prepare+0x60/0x60
- [<ffffffff812a0059>] ? cpumask_next_and+0x29/0x50
- [<ffffffff812d38da>] __pci_device_probe+0x9a/0xe0
- [<ffffffff81620850>] ? _raw_spin_unlock_irq+0x30/0x50
- [<ffffffff812d4be2>] ? pci_dev_get+0x22/0x30
- [<ffffffff812d4c2a>] pci_device_probe+0x3a/0x60
- [<ffffffff81620850>] ? _raw_spin_unlock_irq+0x30/0x50
- [<ffffffff8139a4bc>] really_probe+0x6c/0x320
- [<ffffffff8139a7b7>] driver_probe_device+0x47/0xa0
- [<ffffffff8139a8c0>] ? __driver_attach+0xb0/0xb0
- [<ffffffff8139a913>] __device_attach+0x53/0x60
- [<ffffffff81398404>] bus_for_each_drv+0x74/0xa0
- [<ffffffff8139a430>] device_attach+0xa0/0xc0
- [<ffffffff812cb2d9>] pci_bus_add_device+0x39/0x60
- [<ffffffff812eec21>] virtfn_add+0x251/0x3e0
- [<ffffffff810c305d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff812ef29f>] sriov_enable+0x22f/0x3d0
- [<ffffffff812ef48d>] pci_enable_sriov+0x4d/0x60
- [<ffffffffa0143045>] be_vf_setup+0x175/0x410 [be2net]
- [<ffffffffa01493ca>] be_setup+0x37a/0x4b0 [be2net]
- [<ffffffffa0149ac0>] be_probe+0x5c0/0x820 [be2net]
- [<ffffffff812d37fe>] local_pci_probe+0x4e/0x90
- [<ffffffff8106f968>] work_for_cpu_fn+0x18/0x30
- [<ffffffff81075e4a>] process_one_work+0x1da/0x610
- [<ffffffff81075dd9>] ? process_one_work+0x169/0x610
- [<ffffffff8107650c>] worker_thread+0x28c/0x3a0
- [<ffffffff81076280>] ? process_one_work+0x610/0x610
- [<ffffffff8107da3e>] kthread+0xee/0x100
- [<ffffffff8107d950>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff8162a71c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8107d950>] ? __init_kthread_worker+0x70/0x70
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 8b00c5c..704d6d3 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_ARMADA_370_XP_TIMER)	+= time-armada-370-xp.o
+ obj-$(CONFIG_ORION_TIMER)	+= time-orion.o
+ obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
+ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
++obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
+ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+diff --git a/drivers/clocksource/moxart_timer.c b/drivers/clocksource/moxart_timer.c
+new file mode 100644
+index 0000000..08a5943
+--- /dev/null
++++ b/drivers/clocksource/moxart_timer.c
+@@ -0,0 +1,164 @@
++/*
++ * MOXA ART SoCs timer handling.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/clockchips.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/irqreturn.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
++#include <linux/clocksource.h>
++
++#define TIMER1_BASE		0x00
++#define TIMER2_BASE		0x10
++#define TIMER3_BASE		0x20
++
++#define REG_COUNT		0x0 /* writable */
++#define REG_LOAD		0x4
++#define REG_MATCH1		0x8
++#define REG_MATCH2		0xC
++
++#define TIMER_CR		0x30
++#define TIMER_INTR_STATE	0x34
++#define TIMER_INTR_MASK		0x38
++
++/*
++ * TIMER_CR flags:
++ *
++ * TIMEREG_CR_*_CLOCK	0: PCLK, 1: EXT1CLK
++ * TIMEREG_CR_*_INT	overflow interrupt enable bit
++ */
++#define TIMEREG_CR_1_ENABLE	BIT(0)
++#define TIMEREG_CR_1_CLOCK	BIT(1)
++#define TIMEREG_CR_1_INT	BIT(2)
++#define TIMEREG_CR_2_ENABLE	BIT(3)
++#define TIMEREG_CR_2_CLOCK	BIT(4)
++#define TIMEREG_CR_2_INT	BIT(5)
++#define TIMEREG_CR_3_ENABLE	BIT(6)
++#define TIMEREG_CR_3_CLOCK	BIT(7)
++#define TIMEREG_CR_3_INT	BIT(8)
++#define TIMEREG_CR_COUNT_UP	BIT(9)
++
++#define TIMER1_ENABLE		(TIMEREG_CR_2_ENABLE | TIMEREG_CR_1_ENABLE)
++#define TIMER1_DISABLE		(TIMEREG_CR_2_ENABLE)
++
++static void __iomem *base;
++static unsigned int clock_count_per_tick;
++
++static void moxart_clkevt_mode(enum clock_event_mode mode,
++			       struct clock_event_device *clk)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_RESUME:
++	case CLOCK_EVT_MODE_ONESHOT:
++		writel(TIMER1_DISABLE, base + TIMER_CR);
++		writel(~0, base + TIMER1_BASE + REG_LOAD);
++		break;
++	case CLOCK_EVT_MODE_PERIODIC:
++		writel(clock_count_per_tick, base + TIMER1_BASE + REG_LOAD);
++		writel(TIMER1_ENABLE, base + TIMER_CR);
++		break;
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++	default:
++		writel(TIMER1_DISABLE, base + TIMER_CR);
++		break;
++	}
++}
++
++static int moxart_clkevt_next_event(unsigned long cycles,
++				    struct clock_event_device *unused)
++{
++	u32 u;
++
++	writel(TIMER1_DISABLE, base + TIMER_CR);
++
++	u = readl(base + TIMER1_BASE + REG_COUNT) - cycles;
++	writel(u, base + TIMER1_BASE + REG_MATCH1);
++
++	writel(TIMER1_ENABLE, base + TIMER_CR);
++
++	return 0;
++}
++
++static struct clock_event_device moxart_clockevent = {
++	.name		= "moxart_timer",
++	.rating		= 200,
++	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
++	.set_mode	= moxart_clkevt_mode,
++	.set_next_event	= moxart_clkevt_next_event,
++};
++
++static irqreturn_t moxart_timer_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = dev_id;
++	evt->event_handler(evt);
++	return IRQ_HANDLED;
++}
++
++static struct irqaction moxart_timer_irq = {
++	.name		= "moxart-timer",
++	.flags		= IRQF_TIMER,
++	.handler	= moxart_timer_interrupt,
++	.dev_id		= &moxart_clockevent,
++};
++
++static void __init moxart_timer_init(struct device_node *node)
++{
++	int ret, irq;
++	unsigned long pclk;
++	struct clk *clk;
++
++	base = of_iomap(node, 0);
++	if (!base)
++		panic("%s: of_iomap failed\n", node->full_name);
++
++	irq = irq_of_parse_and_map(node, 0);
++	if (irq <= 0)
++		panic("%s: irq_of_parse_and_map failed\n", node->full_name);
++
++	ret = setup_irq(irq, &moxart_timer_irq);
++	if (ret)
++		panic("%s: setup_irq failed\n", node->full_name);
++
++	clk = of_clk_get(node, 0);
++	if (IS_ERR(clk))
++		panic("%s: of_clk_get failed\n", node->full_name);
++
++	pclk = clk_get_rate(clk);
++
++	if (clocksource_mmio_init(base + TIMER2_BASE + REG_COUNT,
++				  "moxart_timer", pclk, 200, 32,
++				  clocksource_mmio_readl_down))
++		panic("%s: clocksource_mmio_init failed\n", node->full_name);
++
++	clock_count_per_tick = DIV_ROUND_CLOSEST(pclk, HZ);
++
++	writel(~0, base + TIMER2_BASE + REG_LOAD);
++	writel(TIMEREG_CR_2_ENABLE, base + TIMER_CR);
++
++	moxart_clockevent.cpumask = cpumask_of(0);
++	moxart_clockevent.irq = irq;
++
++	/*
++	 * documentation is not publicly available:
++	 * min_delta / max_delta obtained by trial-and-error,
++	 * max_delta 0xfffffffe should be ok because count
++	 * register size is u32
++	 */
++	clockevents_config_and_register(&moxart_clockevent, pclk,
++					0x4, 0xfffffffe);
++}
++CLOCKSOURCE_OF_DECLARE(moxart, "moxa,moxart-timer", moxart_timer_init);
+-- 
+1.8.2.1
 
