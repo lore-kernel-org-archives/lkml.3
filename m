@@ -1,143 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775Ab3GPWeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:34:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60070 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933233Ab3GPWeO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:34:14 -0400
-Date: Tue, 16 Jul 2013 15:33:50 -0700
-From: tip-bot for Kees Cook <tipbot@zytor.com>
-Message-ID: <tip-4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        keescook@chromium.org, pageexec@gmail.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, pageexec@gmail.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20130716183441.GA14232@www.outflux.net>
-References: <20130716183441.GA14232@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Make sure IDT is page aligned
-Git-Commit-ID: 4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933847Ab3GPWen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:34:43 -0400
+Received: from mout.web.de ([212.227.15.4]:64781 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933233Ab3GPWel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 18:34:41 -0400
+From: Martin Walch <walch.martin@web.de>
+To: linux-kernel@vger.kernel.org
+Subject: [kconfig] results of some syntactical checks
+Date: Wed, 17 Jul 2013 00:34:38 +0200
+Message-ID: <7121962.G9xfZAqBSy@tacticalops>
+User-Agent: KMail/4.10.5 (Linux/3.9.9-gentoo-gnu; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 16 Jul 2013 15:33:57 -0700 (PDT)
+Content-Type: multipart/signed; boundary="nextPart1403344.zgUQRAtCLa"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:PNsMoFrydMtuud6VpS5L1Hdlm6Q89xAMhxC4IU2LGM1jYLnpi0N
+ pZgczWj+RbD/6VL4Z1qpCPBMlfhHIgCI9HVK9ud8MyKYDs+cwOaZn9UHCmuayuXp8uZRa/D
+ w+rAnTRcQ8zjmRLNrKI/Ad4S3eTToQk1bYZuEIvRb/nkQzMNCulj6bz3NB6O99RzQEj8hOk
+ iYYes2kCeYENz5Mw+0bvQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
-Gitweb:     http://git.kernel.org/tip/4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
-Author:     Kees Cook <keescook@chromium.org>
-AuthorDate: Tue, 16 Jul 2013 11:34:41 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 16 Jul 2013 15:14:48 -0700
 
-x86: Make sure IDT is page aligned
+--nextPart1403344.zgUQRAtCLa
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 
-Since the IDT is referenced from a fixmap, make sure it is page aligned.
-Merge with 32-bit one, since it was already aligned to deal with F00F
-bug. Since bss is cleared before IDT setup, it can live there. This also
-moves the other *_idt_table variables into common locations.
+As I am working on yet another project for analyzing LKC's input files, I have 
+some intermediate results from simple syntactical checks.
 
-This avoids the risk of the IDT ever being moved in the bss and having
-the mapping be offset, resulting in calling incorrect handlers. In the
-current upstream kernel this is not a manifested bug, but heavily patched
-kernels (such as those using the PaX patch series) did encounter this bug.
+The results below are an excerpt from a run against tche current master. If 
+anyone is interested in the code (it's written in Java), please contact me. I 
+plan on releasing my program under a FLOSS license later this year. If you find 
+the results interesting or even useful, I can post updates on a regular basis.
 
-The tables other than idt_table technically do not need to be page
-aligned, at least not at the current time, but using a common
-declaration avoids mistakes.  On 64 bits the table is exactly one page
-long, anyway.
+Actually defined symbols with dangerous names: 2
+  8260 at
+    arch/powerpc/platforms/82xx/Kconfig:55:0
+  8272 at
+    arch/powerpc/platforms/82xx/Kconfig:64:0
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Link: http://lkml.kernel.org/r/20130716183441.GA14232@www.outflux.net
-Reported-by: PaX Team <pageexec@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/head_64.S    | 15 ---------------
- arch/x86/kernel/tracepoint.c |  6 ++----
- arch/x86/kernel/traps.c      | 12 ++++++------
- 3 files changed, 8 insertions(+), 25 deletions(-)
+Symbols used, but not defined: 31
+  Symbol: ARCH_EFM32 at
+    drivers/tty/serial/Kconfig:1427:0
+  Symbol: ARCH_MULTI_V4 at
+    arch/arm/Kconfig:914:0
+  Symbol: ARM_S3C24XX at
+    arch/arm/mach-s3c24xx/Kconfig:210:0
+  Symbol: ATHEROS_AR231X at
+    drivers/net/wireless/ath/ath5k/Kconfig:2:0
+    drivers/net/wireless/ath/ath5k/Kconfig:8:0
+    drivers/net/wireless/ath/ath5k/Kconfig:9:0
+    drivers/net/wireless/ath/ath5k/Kconfig:56:0
+    drivers/net/wireless/ath/ath5k/Kconfig:63:0
+  Symbol: CPU_MMP3 at
+    drivers/video/mmp/Kconfig:2:0
+    drivers/video/mmp/hw/Kconfig:4:0
+    drivers/usb/phy/Kconfig:53:0
+  Symbol: CPU_PXA988 at
+    drivers/video/mmp/Kconfig:2:0
+    drivers/video/mmp/hw/Kconfig:4:0
+  Symbol: CPU_SUBTYPE_SH7764 at
+    arch/sh/drivers/dma/Kconfig:14:0
+  Symbol: DEPRECATED at
+    arch/mn10300/Kconfig.debug:34:0
+  Symbol: EXYNOS_DEV_SYSMMU at
+    drivers/iommu/Kconfig:170:0
+  Symbol: GENERIC_HAS_IOMAP at
+    arch/score/Kconfig:27:0
+    arch/score/Kconfig:33:0
+    arch/score/Kconfig:39:0
+  Symbol: GENERIC_TIME at
+    arch/arm/mach-bcm/Kconfig:11:0
+  Symbol: GPIO_BCM at
+    arch/arm/mach-bcm/Kconfig:12:0
+  Symbol: HAVE_SCHED_CLOCK at
+    arch/arm/mach-keystone/Kconfig:10:0
+  Symbol: HOTPLUG at
+    arch/powerpc/platforms/pseries/Kconfig:22:0
+  Symbol: M at
+    drivers/usb/host/Kconfig:568:0
+    drivers/usb/misc/Kconfig:130:0
+  Symbol: MACH_NOKIA_RM696 at
+    arch/arm/mach-omap2/Kconfig:314:0
+  Symbol: MACH_OMAP_H4_OTG at
+    drivers/usb/gadget/Kconfig:208:0
+  Symbol: MACH_SMDKC210 at
+    sound/soc/samsung/Kconfig:138:0
+  Symbol: MACH_SMDKV310 at
+    sound/soc/samsung/Kconfig:138:0
+  Symbol: MN10300_PROC_MN2WS0038 at
+    arch/mn10300/Kconfig:185:0
+  Symbol: MPILIB_EXTRA at
+    crypto/asymmetric_keys/Kconfig:24:0
+  Symbol: MTD_JEDEC at
+    drivers/mtd/maps/Kconfig:161:0
+    drivers/mtd/maps/Kconfig:170:0
+  Symbol: MV64360 at
+    arch/powerpc/Kconfig:400:0
+  Symbol: N at
+    drivers/usb/core/Kconfig:12:0
+    drivers/usb/host/Kconfig:336:0
+    drivers/usb/host/Kconfig:348:0
+    drivers/staging/usbip/Kconfig:3:0
+    drivers/staging/usbip/Kconfig:20:0
+    drivers/staging/usbip/Kconfig:31:0
+    drivers/staging/usbip/Kconfig:42:0
+    drivers/staging/asus_oled/Kconfig:3:0
+    drivers/staging/rtl8187se/Kconfig:8:0
+    drivers/staging/rtl8192u/Kconfig:7:0
+    drivers/staging/rtl8192e/rtl8192e/Kconfig:7:0
+    drivers/staging/rtl8712/Kconfig:6:0
+    drivers/staging/rtl8712/Kconfig:14:0
+    drivers/staging/frontier/Kconfig:3:0
+    drivers/staging/bcm/Kconfig:3:0
+    drivers/staging/media/go7007/Kconfig:15:0
+    drivers/staging/media/go7007/Kconfig:26:0
+    drivers/staging/media/go7007/Kconfig:48:0
+    drivers/staging/android/Kconfig:4:0
+    drivers/staging/android/Kconfig:61:0
+    arch/cris/arch-v32/drivers/Kconfig:13:0
+    arch/cris/arch-v32/drivers/Kconfig:413:0
+    arch/arc/Kconfig:357:0
+  Symbol: OF_VIDEOMODE at
+    drivers/staging/imx-drm/Kconfig:36:0
+  Symbol: OMAP_PM_SRF at
+    drivers/staging/tidspbridge/Kconfig:19:0
+  Symbol: PICOXCELL_PC3X3 at
+    drivers/char/hw_random/Kconfig:242:0
+  Symbol: PLATFORM_MICROBLAZE_AUTO at
+    arch/microblaze/platform/Kconfig.platform:10:0
+  Symbol: PLAT_SPEAR_SINGLE at
+    arch/arm/mach-spear/Kconfig:6:0
+    arch/arm/mach-spear/Kconfig:19:0
+    arch/arm/mach-spear/Kconfig:51:0
+    arch/arm/mach-spear/Kconfig:84:0
+    arch/arm/mach-spear/Kconfig:99:0
+  Symbol: SOC_DRA7XX at
+    drivers/thermal/ti-soc-thermal/Kconfig:52:0
+  Symbol: false at
+    drivers/staging/lustre/lustre/Kconfig:45:0
+-- 
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 5e4d8a8..e1aabdb 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -512,21 +512,6 @@ ENTRY(phys_base)
- 
- #include "../../x86/xen/xen-head.S"
- 	
--	.section .bss, "aw", @nobits
--	.align L1_CACHE_BYTES
--ENTRY(idt_table)
--	.skip IDT_ENTRIES * 16
--
--	.align L1_CACHE_BYTES
--ENTRY(debug_idt_table)
--	.skip IDT_ENTRIES * 16
--
--#ifdef CONFIG_TRACING
--	.align L1_CACHE_BYTES
--ENTRY(trace_idt_table)
--	.skip IDT_ENTRIES * 16
--#endif
--
- 	__PAGE_ALIGNED_BSS
- NEXT_PAGE(empty_zero_page)
- 	.skip PAGE_SIZE
-diff --git a/arch/x86/kernel/tracepoint.c b/arch/x86/kernel/tracepoint.c
-index 4e584a8..1c113db 100644
---- a/arch/x86/kernel/tracepoint.c
-+++ b/arch/x86/kernel/tracepoint.c
-@@ -12,10 +12,8 @@ atomic_t trace_idt_ctr = ATOMIC_INIT(0);
- struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
- 				(unsigned long) trace_idt_table };
- 
--#ifndef CONFIG_X86_64
--gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
--					= { { { { 0, 0 } } }, };
--#endif
-+/* No need to be aligned, but done to keep all IDTs defined the same way. */
-+gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
- 
- static int trace_irq_vector_refcount;
- static DEFINE_MUTEX(irq_vector_mutex);
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b0865e8..1b23a1c 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -63,19 +63,19 @@
- #include <asm/x86_init.h>
- #include <asm/pgalloc.h>
- #include <asm/proto.h>
-+
-+/* No need to be aligned, but done to keep all IDTs defined the same way. */
-+gate_desc debug_idt_table[NR_VECTORS] __page_aligned_bss;
- #else
- #include <asm/processor-flags.h>
- #include <asm/setup.h>
- 
- asmlinkage int system_call(void);
--
--/*
-- * The IDT has to be page-aligned to simplify the Pentium
-- * F0 0F bug workaround.
-- */
--gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
- #endif
- 
-+/* Must be page-aligned because the real IDT is used in a fixmap. */
-+gate_desc idt_table[NR_VECTORS] __page_aligned_bss;
-+
- DECLARE_BITMAP(used_vectors, NR_VECTORS);
- EXPORT_SYMBOL_GPL(used_vectors);
- 
+--nextPart1403344.zgUQRAtCLa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iEYEABECAAYFAlHlyn4ACgkQM6S4K8IXn9c2sQCgoXIBAXJ1hm6GruHKGhTUqq73
+SqUAnAj4sFU/VxXRMR9ngsdM6fDrWhFu
+=cbvp
+-----END PGP SIGNATURE-----
+
+--nextPart1403344.zgUQRAtCLa--
+
