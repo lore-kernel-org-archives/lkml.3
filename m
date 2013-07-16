@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab3GPLNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 07:13:45 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:36071 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab3GPLNo (ORCPT
+	id S932153Ab3GPLPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 07:15:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14686 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab3GPLPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 07:13:44 -0400
+	Tue, 16 Jul 2013 07:15:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 16 Jul 2013 04:13:49 -0700
+Message-ID: <51E52B28.9090708@nvidia.com>
+Date: Tue, 16 Jul 2013 19:14:48 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130716083140.GK2823@cantiga.alporthouse.com>
-References: <20130714163009.22374.22100.stgit@zurg>
-	<CAKMK7uEtReZxvzJj9LsSXEJEBNiK492CCONdsF5VFK2cA3u0FA@mail.gmail.com>
-	<51E2E65D.5050803@openvz.org>
-	<20130716063101.GK5784@phenom.ffwll.local>
-	<CALYGNiOtt7FUCTqcyBELoHYEVw_zqmA=bpmHy_nDkhXCduB9qg@mail.gmail.com>
-	<20130716074458.GM5784@phenom.ffwll.local>
-	<20130716083140.GK2823@cantiga.alporthouse.com>
-Date: Tue, 16 Jul 2013 13:13:43 +0200
-X-Google-Sender-Auth: opQY_lMvLAWV-1LOhK8HQy2-jts
-Message-ID: <CAKMK7uFyu74z5+EFJHdXxHaaVHN=YG89Ak2obZ_hubxam+1G5w@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915: fix long-standing SNB regression in power
- consumption after resume
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] Enable lm90 in Tegra30 and Tegra114.
+References: <1373615364-18559-1-git-send-email-wni@nvidia.com> <51E427F1.9010106@wwwdotorg.org> <51E42DB0.8090006@wwwdotorg.org>
+In-Reply-To: <51E42DB0.8090006@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 10:31 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, Jul 16, 2013 at 09:44:59AM +0200, Daniel Vetter wrote:
->> The issue I have with the current patch is that it looks a bit like
->> duct-tape since the point where we drop the forcewake references seems to
->> lack justification. The write to MBCTL itself will temporarily wake up the
->> chip, so just wrapping that up in with forcewake is very likely not good
->> enough. So I fear that we'll only hold forcewake long enough on most
->> systems and still have a bunch of oddball broken systems out there.
+On 07/16/2013 01:13 AM, Stephen Warren wrote:
+> On 07/15/2013 10:48 AM, Stephen Warren wrote:
+>> On 07/12/2013 01:49 AM, Wei Ni wrote:
+>>> Enable thermal sensor lm90 for Tegra30 Cardhu and Tegra114 Dalmore.
 >>
->> Holding forcewake otoh until we've fully set up rps/rc6 makes imo tons of
->> sense, hence why I've brought up the idea. Same reasoning applies to
->> extending the w/a to all systems supporting rc6.
->
-> In which case disable rc6 at the start of init gating and only enable it
-> at the end of the deferred task. That I think will better test your
-> hypothesis and make the transistion steps clearer.
-
-Hm yeah, that would be much clearer instead of risky tricks with a
-refcount which is only dropped someplace completely else.
--Daniel
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+>> I have applied the series to Tegra's for-3.12/dt branch.
+> 
+> Actually, I see the following on Dalmore (although Cardhu works):
+> 
+> [   29.448539] lm90 0-004c: Register 0x4 read failed (-121)
+> [   29.453930] lm90 0-004c: Failed to read convrate register!
+> [   29.460034] lm90 0-004c: Register 0x3 read failed (-121)
+> [   29.465408] lm90 0-004c: Initialization failed!
+> 
+> So, there's something wrong here, and I've dropped the patch for
+> Dalmore. Does this patch actually work for you?
+> 
+I test it with the Chrome u-boot, the lm90 works fine.
+But today, if I tried to use the uboot from
+git://git.denx.de/u-boot-tegra.git, I can repo your errors, it seems the
+i2c can't work, the lm90 driver read register failed.
+I traced it, but can't find the root cause yet.
