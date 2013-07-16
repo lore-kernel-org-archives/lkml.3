@@ -1,131 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738Ab3GPS0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 14:26:09 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:45055 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933299Ab3GPS0I (ORCPT
+	id S933750Ab3GPS1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 14:27:16 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42387 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933193Ab3GPS1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 14:26:08 -0400
-Date: Tue, 16 Jul 2013 21:26:01 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Daniel Mack <zonque@gmail.com>,
+	Tue, 16 Jul 2013 14:27:14 -0400
+Message-ID: <1373999229.2148.87.camel@dabdike>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [
+ 00/19] 3.10.1-stable review)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: v3.11-rc1 USB regressions
-Message-ID: <20130716182601.GB14385@blackmetal.musicnaut.iki.fi>
-References: <20130715225647.GE3296@blackmetal.musicnaut.iki.fi>
- <51E4E922.2040707@gmail.com>
- <51E4EF70.3040502@ti.com>
- <20130716080836.GC8880@arwen.pp.htv.fi>
- <20130716082247.GD8880@arwen.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716082247.GD8880@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Date: Tue, 16 Jul 2013 22:27:09 +0400
+In-Reply-To: <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com>
+References: <20130715155202.GC29526@xanatos>
+	 <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+	 <20130715174659.GC15531@xanatos>
+	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	 <20130715180403.GD15531@xanatos>
+	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	 <20130715184642.GE15531@xanatos>
+	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
+	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	 <1373926109.17876.221.camel@gandalf.local.home>
+	 <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Jul 16, 2013 at 11:22:47AM +0300, Felipe Balbi wrote:
-> > On Tue, Jul 16, 2013 at 12:30:00PM +0530, Kishon Vijay Abraham I wrote:
-> > > On Tuesday 16 July 2013 12:03 PM, Daniel Mack wrote:
-> > > > Hi Aaro,
-> > > > 
-> > > > On 16.07.2013 00:56, Aaro Koskinen wrote:
-> > > >> Hi,
-> > > >>
-> > > >> I think USB tree introduced regressions in v3.11-rc1, at least for some
-> > > >> OMAP devices using legacy boot.
-> > > > 
-> > > > Thanks for checking the tree so early.
-> > > > 
-> > > >> I have only bisected these; I have no
-> > > >> idea what the real fixes are but the following reverts make Nokia OMAP2+
-> > > >> boards again usable for kernel development work (they need working USB
-> > > >> connection for interacting with the device):
-> > > >>
-> > > >> 1) USB peripheral mode (g_ether) is broken on Nokia N900, N950 and N9
-> > > >>    (USB_MUSB_OMAP2PLUS). To make it it work, I need to revert three
-> > > >>    commits:
-> > > >>
-> > > >> 	09fc7d22b024692b2fe8a943b246de1af307132b
-> > > >> 	usb: musb: fix incorrect usage of resource pointer
-> > > >> 	(Reverting this fixes the g_ether probe failure "couldn't find
-> > > >> 	 an available UDC")
-> > > 
-> > > I've posted a patch fixing the issue
-> > > http://comments.gmane.org/gmane.linux.usb.general/89541
-> > > There were some comments on it. I'll be posting a new version for it.
-> > 
-> > hmm, n8x0 used tusb6010, so perhaps a similar patch needs to be cooked
-> > for that too. Right now, let's to the minimum fix, which is just to
-> > increment the array size to 3 and for v3.12 we do the changes that I
-> > suggested.
+On Mon, 2013-07-15 at 15:38 -0700, Linus Torvalds wrote:
+> On Mon, Jul 15, 2013 at 3:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > Can we please make this into a Kernel Summit discussion. I highly doubt
+> > we would solve anything, but it certainly would be a fun segment to
+> > watch :-)
 > 
-> this should solve the problem on n900 and n8x0, it's pretty much
-> kishon's original patch, so I guess it deserves his authorship:
+> I think we should, because I think it's the kind of thing we really
+> need at the KS - talking about "process".
 
-Thanks, and yes it fixes this issue. I tested both N900 and N800, so
-feel free to add my Tested-by.
+Can you formulate the process issue to discuss?  I've heard "Linus needs
+to yell less at people" and "the mailing lists need to be more
+'professional'" neither of which seems to identify an actual process.
+Are we perhaps discussing guidelines for giving feedback on patches?
 
-> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-> index 6708a3b..f44e8b5 100644
-> --- a/drivers/usb/musb/omap2430.c
-> +++ b/drivers/usb/musb/omap2430.c
-> @@ -481,7 +481,7 @@ static u64 omap2430_dmamask = DMA_BIT_MASK(32);
->  
->  static int omap2430_probe(struct platform_device *pdev)
->  {
-> -	struct resource			musb_resources[2];
-> +	struct resource			musb_resources[3];
->  	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
->  	struct omap_musb_board_data	*data;
->  	struct platform_device		*musb;
-> @@ -581,6 +581,11 @@ static int omap2430_probe(struct platform_device *pdev)
->  	musb_resources[1].end = pdev->resource[1].end;
->  	musb_resources[1].flags = pdev->resource[1].flags;
->  
-> +	musb_resources[2].name = pdev->resource[2].name;
-> +	musb_resources[2].start = pdev->resource[2].start;
-> +	musb_resources[2].end = pdev->resource[2].end;
-> +	musb_resources[2].flags = pdev->resource[2].flags;
-> +
->  	ret = platform_device_add_resources(musb, musb_resources,
->  			ARRAY_SIZE(musb_resources));
->  	if (ret) {
-> diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
-> index 2c06a89..6f8a9ca 100644
-> --- a/drivers/usb/musb/tusb6010.c
-> +++ b/drivers/usb/musb/tusb6010.c
-> @@ -1156,7 +1156,7 @@ static u64 tusb_dmamask = DMA_BIT_MASK(32);
->  
->  static int tusb_probe(struct platform_device *pdev)
->  {
-> -	struct resource musb_resources[2];
-> +	struct resource musb_resources[3];
->  	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
->  	struct platform_device		*musb;
->  	struct tusb6010_glue		*glue;
-> @@ -1199,6 +1199,11 @@ static int tusb_probe(struct platform_device *pdev)
->  	musb_resources[1].end = pdev->resource[1].end;
->  	musb_resources[1].flags = pdev->resource[1].flags;
->  
-> +	musb_resources[2].name = pdev->resource[2].name;
-> +	musb_resources[2].start = pdev->resource[2].start;
-> +	musb_resources[2].end = pdev->resource[2].end;
-> +	musb_resources[2].flags = pdev->resource[2].flags;
-> +
->  	ret = platform_device_add_resources(musb, musb_resources,
->  			ARRAY_SIZE(musb_resources));
->  	if (ret) {
-> 
-> -- 
-> balbi
+> At the same time, I really don't know what the format would possibly
+> be like for it to really work as a reasonable discussion. And I think
+> that is important, because this kind of subject is *not* likely
+> possible in the traditional "people sit around tables and maybe
+> somebody has a few slides" format.
 
-A.
+> A small panel discussion with a few people (fiveish?) that have very
+> different viewpoints, along with baskets of rotten fruit set out on
+> the tables? That could be fun. And I'm serious, although we might want
+> to limit the size of the fruit to smaller berries ;)
+
+How about Lychees?  They're prickly on the outside, very wet on the
+inside and have large stones ...
+
+But what are the viewpoints?  "maintainers need to yell more"?
+"maintainers need to yell less"?  I don't think I agree with either.
+I'm perfectly happy to run linux-scsi along reasonable standards of
+civility and try to keep the debates technical, but that's far easier to
+do on a low traffic list; obviously, I realise that style of argument
+doesn't suit everyone, so it's not a standard of behaviour I'd like to
+see universally imposed.  In fact, I've got to say that I wouldn't like
+to see *any* behaviour standard imposed ... they're all basically cover
+for power plays (or soon get abused as power plays); the only real way
+to display leadership on behaviour standards is by example not by fiat.
+
+James
+
+
