@@ -1,38 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab3GPTBy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:01:54 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:63154 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984Ab3GPTBv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:01:51 -0400
-Message-ID: <51E5972C.4060306@twiddle.net>
-Date: Tue, 16 Jul 2013 11:55:40 -0700
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933724Ab3GPTC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:02:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754929Ab3GPTC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 15:02:27 -0400
+Date: Tue, 16 Jul 2013 20:57:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/4] tracing: Change remove_event_from_tracers() to
+	clear d_subdirs->i_private
+Message-ID: <20130716185720.GA21189@redhat.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru, mattst88@gmail.com,
-        linux-alpha@vger.kernel.org
-Subject: Re: [PATCH 3/7] alpha: Modernize lib/mpi/longlong.h
-References: <1373994280-12047-1-git-send-email-rth@twiddle.net>  <1373994280-12047-4-git-send-email-rth@twiddle.net> <1373995159.1949.8.camel@joe-AO722>
-In-Reply-To: <1373995159.1949.8.camel@joe-AO722>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716185658.GA21167@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 10:19 AM, Joe Perches wrote:
-> On Tue, 2013-07-16 at 10:04 -0700, Richard Henderson wrote:
->> Remove the compile warning for __udiv_qrnnd not having a prototype.
->> Use the __builtin_alpha_umulh introduced in gcc 4.0.
-> 
-> Isn't gcc 3.x still a supported compiler?
+Preparation to make the next patches more understandable.
 
-Further investigation shows the builtin was added for gcc 3.2.
-I just failed to update gcc's own longlong.h til 3 years later.
+The caller of trace_remove_event_call() is going to free call/files,
+this means that every opened id/filter/enable/format file will use
+the already freed memory via filp->private_data / inode->i_private.
 
-r~
+Change remove_event_from_tracers() to clear ->i_private for every
+child. This fixes nothing and even makes the crash more possible,
+but this allows to fix the problem later.
+
+Note: this doesn't affect instance_rmdir() paths. It has the similar
+problems and they will be fixed separately.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace_events.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 9d2b499..cbd1a57 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1534,6 +1534,14 @@ static void remove_subsystem(struct ftrace_subsystem_dir *dir)
+ 	}
+ }
+ 
++static void invalidate_event_file(struct dentry *dir)
++{
++	struct dentry *child;
++	/* ->i_mutex is not needed, nodody can create/remove a file */
++	list_for_each_entry(child, &dir->d_subdirs, d_u.d_child)
++		child->d_inode->i_private = NULL;
++}
++
+ static void remove_event_from_tracers(struct ftrace_event_call *call)
+ {
+ 	struct ftrace_event_file *file;
+@@ -1545,6 +1553,7 @@ static void remove_event_from_tracers(struct ftrace_event_call *call)
+ 			continue;
+ 
+ 		list_del(&file->list);
++		invalidate_event_file(file->dir);
+ 		debugfs_remove_recursive(file->dir);
+ 		remove_subsystem(file->system);
+ 		kmem_cache_free(file_cachep, file);
+-- 
+1.5.5.1
+
