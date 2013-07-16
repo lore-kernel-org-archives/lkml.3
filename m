@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933596Ab3GPRrN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:47:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47996 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab3GPRrL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 13:47:11 -0400
-Date: Tue, 16 Jul 2013 18:47:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
-        Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH] um/configs: don't use devtmpfs in defconfig
-Message-ID: <20130716174708.GN4165@ZenIV.linux.org.uk>
-References: <1373993525-25629-1-git-send-email-artagnon@gmail.com>
- <51E57BC1.4090904@nod.at>
- <CALkWK0nrDsZiHe2==DQZuHV7id=6gc4UHUj1xXu9jN5cr3SUcQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALkWK0nrDsZiHe2==DQZuHV7id=6gc4UHUj1xXu9jN5cr3SUcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933545Ab3GPRxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:53:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64950 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932337Ab3GPRxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 13:53:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,678,1367996400"; 
+   d="scan'208";a="371287808"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130702064538.GB3143@gmail.com>
+References: <20130626095108.GB29181@gmail.com>
+	 <1372282560.22432.139.camel@schen9-DESK>
+	 <1372292701.22432.152.camel@schen9-DESK> <20130627083651.GA3730@gmail.com>
+	 <1372366385.22432.185.camel@schen9-DESK>
+	 <1372375873.22432.200.camel@schen9-DESK> <20130628093809.GB29205@gmail.com>
+	 <1372453461.22432.216.camel@schen9-DESK> <20130629071245.GA5084@gmail.com>
+	 <1372710497.22432.224.camel@schen9-DESK>  <20130702064538.GB3143@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Jul 2013 10:53:15 -0700
+Message-ID: <1373997195.22432.297.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 10:36:25PM +0530, Ramkumar Ramachandra wrote:
-> Richard Weinberger wrote:
-> > If you don't want devtmpfs, just disable it in your config.
+On Tue, 2013-07-02 at 08:45 +0200, Ingo Molnar wrote:
+> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
 > 
-> I don't understand: is this not a good default?  Why is creating bogus
-> devices, confusing systemd, and making um Linux hard to boot
-> desirable?
+> > On Sat, 2013-06-29 at 09:12 +0200, Ingo Molnar wrote:
+> > > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > > 
+> > > > > If my analysis is correct so far then it might be useful to add two 
+> > > > > more stats: did rwsem_spin_on_owner() fail because lock->owner == NULL 
+> > > > > [owner released the rwsem], or because owner_running() failed [owner 
+> > > > > went to sleep]?
+> > > > 
+> > > > Ingo,
+> > > > 
+> > > > I tabulated the cases where rwsem_spin_on_owner returns false and causes 
+> > > > us to stop spinning.
+> > > > 
+> > > > 97.12%  was due to lock's owner switching to another writer
+> > > >  0.01% was due to the owner of the lock sleeping
+> > > >  2.87%  was due to need_resched() 
+> > > > 
+> > > > I made a change to allow us to continue to spin even when lock's owner 
+> > > > switch to another writer.  I did get the lock to be acquired now mostly 
+> > > > (98%) via optimistic spin and lock stealing, but my benchmark's 
+> > > > throughput actually got reduced by 30% (too many cycles spent on useless 
+> > > > spinning?).
+> > > 
+> > > Hm, I'm running out of quick ideas :-/ The writer-ends-spinning sequence 
+> > > is pretty similar in the rwsem and in the mutex case. I'd have a look at 
+> > > one more detail: is the wakeup of another writer in the rwsem case 
+> > > singular, is only a single writer woken? I suspect the answer is yes ...
+> > 
+> > Ingo, we can only wake one writer, right? In __rwsem_do_wake, that is 
+> > indeed the case.  Or you are talking about something else?
+> 
+> Yeah, I was talking about that, and my understanding and reading of the 
+> code says that too - I just wanted to make sure :-)
+> 
+> > >
+> > > A quick glance suggests that the ordering of wakeups of waiters is the 
+> > > same for mutexes and rwsems: FIFO, single waiter woken on 
+> > > slowpath-unlock. So that shouldn't make a big difference.
+> > 
 
-As for the devices, they are *not* bogus.  RTFM, already.
-Documentation/virtual/uml/UserModeLinux-HOWTO.txt, if you can't be bothered
-to say git grep UML Documentation/ and find where it on your own.  The
-relevant section is called "Setting up serial lines and consoles".
-Seriously, it's not as if the documentation didn't exist or had been
-hard to find...
+Ingo,
 
-FWIW, default config is rather annoying - 6 xterms spawned and associated
-with /dev/tty[1-6].  con0=fd:0,fd:1 con=pts mentioned in the HOWTO would,
-IMO, make for much saner default.
+I tried MCS locking to order the writers but
+it didn't make much difference on my particular workload.
+After thinking about this some more,  a likely explanation of the
+performance difference between mutex and rwsem performance is:
 
-No comments on systemd behaviour - take that with LP and his crowd.  They
-may or may not be confused by /dev/tty1 not being a virtual console.  One
-practical issue is the lack of VT102 emulation; TERM=linux when logged
-in on those is not right - you want either TERM=xterm (for xterms) or
-TERM=screen (when accessing pts-associated ones with screen /dev/pts/n),
-etc.  In any case, it's a dumb serial line as far as the guest kernel
-is concerned - all terminal emulation is going to happen elsewhere (xterms
-running on host and interpreting escape sequences from guest userland,
-etc.)
+1) Jobs acquiring mutex put itself on the wait list only after
+optimistic spinning.  That's only 2% of the time on my
+test workload so they access the wait list rarely.
+
+2) Jobs acquiring rw-sem for write *always* put itself on the wait 
+list first before trying lock stealing and optimistic spinning.  
+This creates a bottleneck at the wait list, and also more 
+cache bouncing.
+
+One possible optimization is to delay putting the writer on the
+wait list till after optimistic spinning, but we may need to keep
+track of the number of writers waiting.  We could add a WAIT_BIAS 
+to count for each write waiter and remove the WAIT_BIAS each time a
+writer job completes.  This is tricky as I'm changing the
+semantics of the count field and likely will require a number of changes
+to rwsem code.  Your thoughts on a better way to do this?
+
+Thanks.
+
+Tim
+
