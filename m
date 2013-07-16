@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3GPJjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:39:37 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58799 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322Ab3GPJjf (ORCPT
+	id S1754784Ab3GPJkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:40:46 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50582 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab3GPJkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:39:35 -0400
-X-AuditID: cbfee61b-b7f1f6d000000f14-f3-51e514d56a91
-Date: Tue, 16 Jul 2013 11:39:24 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "l.majewski@majess.pl" <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v5 1/7] cpufreq: Store cpufreq policies in a list
-Message-id: <20130716113924.46f40467@amdc308.digital.local>
-In-reply-to: <CAKohponOEcwq4eAjwxHMM6puuqGmtJ4GpqqRHyEqvhXM+Yt6wQ@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-2-git-send-email-l.majewski@samsung.com>
- <CAKohponOEcwq4eAjwxHMM6puuqGmtJ4GpqqRHyEqvhXM+Yt6wQ@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xgO5VkaeBBg+uaFn8ebuc1eJp0w92
-	i3mfZS3W7P/JZNF59gmzRe+Cq2wWbx5xW1zeNYfN4nPvEUaL240r2Cz6F/YyWTx52MdmsfGr
-	hwOvx+I9L5k87lzbw+axbtpbZo++LasYPR4tbmH0OH5jO5PH501yAexRXDYpqTmZZalF+nYJ
-	XBlHe9tZC+ZyVMzvWsfawHiDrYuRg0NCwERi1szCLkZOIFNM4sK99UBhLg4hgUWMEj8nf2cH
-	SQgJtDNJTPpRDWKzCKhKHGvZxgJiswnoSXy++5QJZI6IgJbEy5upIL3MAj0sEoeubGcDqREW
-	cJU49ewZmM0rYC0xdXUDM0g9p0CwROd8H4jxLUwSf6Ywg9j8ApIS7f9+MEPcYydx7tMGdohW
-	QYkfk++BrWUGWrV5WxMrhC0vsXnNW+YJjIKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJ
-	ucWleel6yfm5mxjBMfRMegfjqgaLQ4wCHIxKPLwHOZ8ECrEmlhVX5h5ilOBgVhLhvcX/NFCI
-	NyWxsiq1KD++qDQntfgQozQHi5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QDo87f3HWff3oy
-	bthXIV5rHxgkf9Cg775HcaFeuPXviIa7B9NfF1qs+y2uu0Lvj8y8drGdxz2lq6qe/uFY0vPm
-	r9uuw6HXpsQEZK/N335x/r+bQh5n/v/e325w9IERp5GU+I9kxeTK/g2xPcnf9hyNDnn85Viv
-	1pTyhVWeHk9yGb/Wxa+NE1g/Q4mlOCPRUIu5qDgRADe/quedAgAA
+	Tue, 16 Jul 2013 05:40:45 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <51E5150C.3000905@jp.fujitsu.com>
+Date: Tue, 16 Jul 2013 18:40:28 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: kexec@lists.infradead.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
+References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com> <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com> <51DA4ED9.60903@jp.fujitsu.com> <20130708112839.498ccfc6@holzheu> <20130708142826.GA9094@redhat.com> <51DBA47C.8090708@jp.fujitsu.com> <20130710104252.479a0f92@holzheu> <51DD2E5A.1030200@jp.fujitsu.com> <20130710143309.GD5819@redhat.com> <51DFE2FB.2000804@jp.fujitsu.com> <20130715142059.GA23772@redhat.com> <51E49383.9030308@jp.fujitsu.com>
+In-Reply-To: <51E49383.9030308@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013 10:51:27 +0200 Viresh Kumar wrote,
-> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> 
-> > @@ -2056,6 +2058,7 @@ int cpufreq_unregister_driver(struct
-> > cpufreq_driver *driver)
-> > subsys_interface_unregister(&cpufreq_interface);
-> > unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
-> >
-> > +       list_del(&cpufreq_policy_list);
-> 
-> You can't delete the list this way... You must have passed the list
-> entry you wanted to delete. More precisely link from the struct
-> cpufreq_policy.
+(2013/07/16 9:27), HATAYAMA Daisuke wrote:
+> (2013/07/15 23:20), Vivek Goyal wrote:
+>> On Fri, Jul 12, 2013 at 08:05:31PM +0900, HATAYAMA Daisuke wrote:
+>>
+>> [..]
+>>> How about
+>>>
+>>> static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>>> {
+>>> ...
+>>>          char *buf;
+>>>          int rc;
+>>>
+>>> #ifndef CONFIG_S390
+>>>          return VM_FAULT_SIGBUS;
+>>> #endif
+>>>          page = find_or_create_page(mapping, index, GFP_KERNEL);
+>>>
+>>> Considering again, I don't think WARN_ONCE() is good now. The fact that fault occurs on
+>>> mmap() region indicates some kind of buggy situation occurs on the process. The process
+>>> should be killed as soon as possible. If user still wants to get crash dump, he should
+>>> try again in another process.
+>>
+>> I don't understand that. Process should be killed only if there was no
+>> mapping created for the region process is trying to access.
+>>
+>> If there is a mapping but we are trying to fault in the actual contents,
+>> then it is not a problem of process. Process is accessing a region of
+>> memory which it is supposed to access.
+>>
+>> Potential problem here is that remap_pfn_range() did not map everything
+>> it was expected to so we have to resort on page fault handler to read
+>> that in. So it is more of a kernel issue and not process issue and for
+>> that WARN_ONCE() sounds better?
+>>
+>
+> On the current design, there's no page faults on memory mapped by remap_pfn_range().
+> They map a whole range in the current design. If there are page faults, page table of the process
+> is broken in their some page entries. This indicates the process's bahaviour is affected by
+> some software/hardware bugs. In theory, process could result in arbitrary behaviour. We cannot
+> detect the reason and recover the original sane state. The only thing we can do is to kill
+> the process and drop the possibility of the process to affect other system components and of
+> system to result in worse situation.
+>
 
-Yes. I shouldn't delete statically defined head of the list. Thanks for
-spotting.
+In summary, it seems that you two and I have different implementation
+policy on how to deal with the process that is no longer in healthy state.
 
-> 
-> Over that, it shouldn't be done at the time of unregistering cpufreq
-> driver but as and when cpus are removed and _cpu_remove_dev
-> is called.
+You two's idea is try to continue dump in non-healthy state as much as possible
+as long as there is possibility of continuing it, while my idea kill the process
+promptly and to retry crash dump in another new process since the process is no longer
+in healthy state and could behave arbitrarily.
 
-OK, I will iterate the list at __cpufreq_remove_dev() and remove each
-of them there.
+The logic in non-healthy states depends on implementation policy since there
+is no obviously correct logic. I guess this discussion would not end soon.
+I believe it is supposed that maintainer's idea should basically have high
+priority over others. So I don't object anymore, though I don't think it best
+at all.
 
 -- 
-Best regards,
+Thanks.
+HATAYAMA, Daisuke
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
