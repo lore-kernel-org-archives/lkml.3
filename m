@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934054Ab3GPVCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 17:02:16 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34149 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933195Ab3GPVCN (ORCPT
+	id S934046Ab3GPVD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 17:03:58 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57630 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933320Ab3GPVDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 17:02:13 -0400
-Message-ID: <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: Hannes Reinecke <hare@suse.de>, Jens Axboe <axboe@kernel.dk>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        James Smart <James.Smart@Emulex.Com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kmo@daterainc.com" <kmo@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Date: Tue, 16 Jul 2013 14:07:29 -0700
-In-Reply-To: <1373698410.2922.10.camel@dabdike>
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
-	 <20130712010223.GA15673@kroah.com>
-	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
-	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Jul 2013 17:03:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jJJXgnJxuvc851UZ4Du10HSBJnDWc7rKgRb4_=ojMmtug@mail.gmail.com>
+References: <1373659660-31123-1-git-send-email-keescook@chromium.org>
+	<20130712203802.GA14702@www.outflux.net>
+	<CAE9FiQWJin8-hXsodo46vhYPMrWiiboEVQySPO-LgXtebYmUzw@mail.gmail.com>
+	<CAGXu5jJs5ve-31AYKbv6EaV5PKCf5cOEeWTRsYsi_kBbLWj5uQ@mail.gmail.com>
+	<51E5A0A9.90108@zytor.com>
+	<CAGXu5jJJXgnJxuvc851UZ4Du10HSBJnDWc7rKgRb4_=ojMmtug@mail.gmail.com>
+Date: Tue, 16 Jul 2013 14:03:54 -0700
+X-Google-Sender-Auth: oD-gVA9-QACU4bHMESPl8qpakvY
+Message-ID: <CAE9FiQUAGPgqU3vOOjKJva=nN71CKoOEdpyjg_23-OfgFSkG=A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
-> On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
-> > On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
-> > > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
-> > >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
-> > >>> Drilling down the work items ahead of a real mainline push is high on
-> > >>> priority list for discussion.
-> > >>>
-> > >>> The parties to be included in such a discussion are:
-> > >>>
-> > >>>   - Jens Axboe (blk-mq author)
-> > >>>   - James Bottomley (scsi maintainer)
-> > >>>   - Christoph Hellwig (scsi)
-> > >>>   - Martin Petersen (scsi)
-> > >>>   - Tejun Heo (block + libata)
-> > >>>   - Hannes Reinecke (scsi error recovery)
-> > >>>   - Kent Overstreet (block, per-cpu ida)
-> > >>>   - Stephen Cameron (scsi-over-pcie driver)
-> > >>>   - Andrew Vasquez (qla2xxx LLD)
-> > >>>   - James Smart (lpfc LLD)
-> > >>
-> > >> Isn't this something that should have been discussed at the storage
-> > >> mini-summit a few months ago?
-> > > 
-> > > The scsi-mq prototype, along with blk-mq (in it's current form) did not
-> > > exist a few short months ago.  ;)
-> > > 
-> > >>  It seems very specific to one subsystem to be a kernel summit topic,
-> > >> don't you think?
-> > > 
-> > > It's no more subsystem specific than half of the other proposals so far,
-> > > and given it's reach across multiple subsystems (block, scsi, target),
-> > > and the amount of off-list interest on the topic, I think it would make
-> > > a good candidate for discussion.
-> > > 
-> > And it'll open up new approaches which previously were dismissed,
-> > like re-implementing multipathing on top of scsi-mq, giving us the
-> > single scsi device like other UNIX systems.
-> > 
-> > Also I do think there's quite some synergy to be had, as with blk-mq
-> > we could nail each queue to a processor, which would eliminate the
-> > need for locking.
-> > Which could be useful for other subsystems, too.
-> 
-> Lets start with discussing this on the list, please, and then see where
-> we go from there ...
-> 
+On Tue, Jul 16, 2013 at 12:40 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Tue, Jul 16, 2013 at 12:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 07/16/2013 12:31 PM, Kees Cook wrote:
+>>>
+>>> Could the first step be documenting the limitation? I've found this
+>>> patch extremely useful for my case already, and I imagine there might
+>>> be other people that need the early mmio stuff to. Generally the
+>>> compressed boot serial console stuff is going to be used in the more
+>>> common non-kexec situations at least for a while.
+>>>
+>>> Does this patch create any _problems_? Right now, neither low nor >4G
+>>> kernel can use an mmio serial port. :) This this, we'd at least gain
+>>> it for the low case.
+>>>
+>>
+>> Even documenting the limitation is likely to end up with a bunch of
+>> emails asking why their kernel crashed.
+>>
+>> I think setting up a dynamic #PF handler is the right thing for the
+>> decompressor, we already did for the kernel proper.
+>
+> I'm not sure how to accomplish this yet. I'm still trying to
+> understand how the page tables are arranged. :)
 
-Yes, the discussion is beginning to make it's way to the list.  I've
-mostly been waiting for blk-mq to get a wider review before taking the
-early scsi-mq prototype driver to a larger public audience.
+Other way could be:
 
-Primarily, I'm now reaching out to the people most effected by existing
-scsi_request_fn() based performance limitations.  Most of them have
-abandoned existing scsi_request_fn() based logic in favor of raw block
-make_request() based drivers, and are now estimating the amount of
-effort to move to an scsi-mq based approach.
+Detect if it get into misc.c directly from
+arch/x86/boot/compressed/head_64.S::startup_64. that is from 64bit
+bootloader.
 
-Regardless, as the prototype progresses over the next months, having a
-face-to-face discussion with the key parties in the room would be very
-helpful given the large amount of effort involved to actually make this
-type of generational shift in SCSI actually happen.
+others go through startup_32 should be 32bit bootloader.
 
---nab
+If it with 64bit boot loader path, You can skip parsing mmio in
+misc.c::console_init() calling.
 
+Yinghai
