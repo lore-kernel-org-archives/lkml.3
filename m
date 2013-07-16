@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865Ab3GPXca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 19:32:30 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:42721 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933764Ab3GPXc2 (ORCPT
+	id S933903Ab3GPXcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 19:32:52 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:50140 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933788Ab3GPXcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 19:32:28 -0400
+	Tue, 16 Jul 2013 19:32:51 -0400
+Date: Tue, 16 Jul 2013 19:32:48 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Jon Medhurst <tixy@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
+        Achin Gupta <achin.gupta@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [RFC PATCH v5 1/1] drivers: mfd: vexpress: add Serial Power
+ Controller (SPC) support
+In-Reply-To: <51E5A785.1040805@gmail.com>
+Message-ID: <alpine.LFD.2.03.1307161917580.14924@syhkavp.arg>
+References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com> <1373990743-23106-2-git-send-email-lorenzo.pieralisi@arm.com> <51E5A785.1040805@gmail.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAOULuOZgAFv29LTZ5Zy7ZqQs+-L9OVgsB-i5vFoqiTHjC+wwQg@mail.gmail.com>
-References: <CAOULuOb3-gA36S=xhA_pwLT0vf9Bb973d3Qq40KfsnS15R_qWA@mail.gmail.com>
- <CALCETrUs9Udhv7KqL+Dy8UNnHd6Amyb1mYjkC8zniF=F-RNZgw@mail.gmail.com> <CAOULuOZgAFv29LTZ5Zy7ZqQs+-L9OVgsB-i5vFoqiTHjC+wwQg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 16 Jul 2013 16:32:06 -0700
-Message-ID: <CALCETrUETkBdR_Bn1ZdHCxjjnPTbQBbOCzpuM26yoQO8tnkk3Q@mail.gmail.com>
-Subject: Re: [PATCH] BGRT: Don't ioremap if image address is in System RAM
- (was: Re: BGRT Pointer in System RAM)
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 4:23 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->
-> On Jul 16, 2013 6:55 PM, "Andy Lutomirski" <luto@amacapital.net> wrote:
->
->> > Ok, so I played around with it a bit and the following patch works
->> > fine on my system. (I.E. image size is reasonable, cat
->> > /sys/firmware/acpi/bgrt/image > img.bmp generates a valid,
->> > non-distorted bitmap, which it did before too, btw as despite of the
->> > ioremap WARN_ON the ioremap seems to succeed if !(is_ram &&
->> > pfn_valid(pfn) && !PageReserved.)
->> >
->>
->> How reliable is this?  That is, is there any guarantee that nothing
->> will have overwritten the image in memory before this code runs?
->>
-> From the little digging I did, this code runs fairly early in the boot
-> process, right after ACPI acquires all tables. If I am not mistaken it runs
-> as part of efi_late_init which should be before efi_free_boot_services() is
-> called.
->
-> Image address on my system is  00000000B2E1B018. At boot EFI prints the
-> following -
->
-> [    0.000000] efi: mem23: type=4, attr=0xf,
-> range=[0x00000000b2c34000-0x00000000b2e5d0
->
-> Type=4, again if I am not mistaken is EFI_BOOT_SERVICES_DATA. So all put
-> together I think it should be reliable to read off of that address when
-> efi-bgrt-init runs, which is before the boot services code and data are
-> discarded.
+On Tue, 16 Jul 2013, Rob Herring wrote:
 
-Fair enough.  I leave it to the experts to comment on whether there
-should be some explicit check of whether this is
-EFI_BOOT_SERVICES_DATA.
+> On 07/16/2013 11:05 AM, Lorenzo Pieralisi wrote:
+> > The TC2 versatile express core tile integrates a logic block that provides the
+> > interface between the dual cluster test-chip and the M3 microcontroller that
+> > carries out power management. The logic block, called Serial Power Controller
+> > (SPC), contains several memory mapped registers to control among other things
+> > low-power states, wake-up irqs and per-CPU jump addresses registers.
+> > 
+> > This patch provides a driver that enables run-time control of features
+> > implemented by the SPC power management control logic.
+> > 
+> > The SPC control logic is required to be programmed very early in the boot
+> > process to reset secondary CPUs on the TC2 testchip, set-up jump addresses and
+> > wake-up IRQs for power management. Hence, waiting for core changes to be
+> > made in the device core code to enable early registration of platform
+> > devices, the driver puts in place an early init scheme that allows kernel
+> > drivers to initialize the SPC driver directly from the components requiring
+> > it, if their initialization routine is called before the driver init
+> > function by the boot process.
+> > 
+> > Device tree bindings documentation for the SPC component is provided with
+> > the patchset.
+> 
+> Just curious, wouldn't a TC2 PSCI implementation eliminate the need for
+> most/all of this code?
 
-FWIW, if my board does indeed have a DWORD-swapped address, it's in
-plain old RAM (type=7).
+There is a PSCI equivalent for the above already, in the sense that 
+there is a simple MCPM backend that bypass most of the MCPM race 
+avoidance code paths and simply calls into PSCI instead.  But not all 
+the world is going to be PSCI, and therefore we need to ensure good 
+support for non-PSCI platforms as well.
 
---Andy
+This is why TC2 supports both, and this also ensure that the PSCI 
+implementation, which won't be part of the kernel and therefore unlikely 
+to get the same level of scrutiny, is properly implemented and doesn't 
+introduce any regression when compared to the non PSCI case.
+
+Remember that TC2 is multi-cluster which means that the PSCI 
+implementation has to carry the same amount of complexity as the whole 
+in-kernel MCPM layer and that doesn't make me overly confident it is 
+going to always be right.
+
+All this to say that we do need this code despite PSCI availability.
+
+
+Nicolas
