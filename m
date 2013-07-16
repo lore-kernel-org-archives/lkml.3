@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab3GPPQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:16:30 -0400
-Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:43796 "EHLO
+	id S933084Ab3GPPUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:20:39 -0400
+Received: from 5.mo1.mail-out.ovh.net ([178.33.45.107]:60035 "EHLO
 	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932580Ab3GPPQ2 (ORCPT
+	with ESMTP id S932907Ab3GPPUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:16:28 -0400
+	Tue, 16 Jul 2013 11:20:38 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
+        Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v3 5/7] spi: atmel: prepare clk before calling enable
-Date: Tue, 16 Jul 2013 17:16:22 +0200
-Message-Id: <1373987782-24463-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH v3 0/7] ARM: at91: prepare transition to common clk framework
+Date: Tue, 16 Jul 2013 17:03:15 +0200
+Message-Id: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 7182678456438192236
+X-Ovh-Tracer-Id: 6962565025895381100
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -36,65 +32,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+Hello,
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/spi/spi-atmel.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+This patch series prepares the transition to common clk framework by
+1) replacing all the clk_enable and clk_disable calls by clk_prepare_unable and
+   clk_disable_unprepare to avoid common clock framework warnings.
+2) adding explicit configuration of clk (set_rate) within drivers instead of
+   default configuration done in arch/arm/mach-at91/clock.c (udc and ohci
+   drivers)
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index ea1ec00..4c6c455 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -1579,7 +1579,9 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 		goto out_unmap_regs;
- 
- 	/* Initialize the hardware */
--	clk_enable(clk);
-+	ret = clk_prepare_enable(clk);
-+	if (ret)
-+		goto out_unmap_regs;
- 	spi_writel(as, CR, SPI_BIT(SWRST));
- 	spi_writel(as, CR, SPI_BIT(SWRST)); /* AT91SAM9263 Rev B workaround */
- 	if (as->caps.has_wdrbt) {
-@@ -1609,7 +1611,7 @@ out_free_dma:
- 
- 	spi_writel(as, CR, SPI_BIT(SWRST));
- 	spi_writel(as, CR, SPI_BIT(SWRST)); /* AT91SAM9263 Rev B workaround */
--	clk_disable(clk);
-+	clk_disable_unprepare(clk);
- 	free_irq(irq, master);
- out_unmap_regs:
- 	iounmap(as->regs);
-@@ -1661,7 +1663,7 @@ static int atmel_spi_remove(struct platform_device *pdev)
- 	dma_free_coherent(&pdev->dev, BUFFER_SIZE, as->buffer,
- 			as->buffer_dma);
- 
--	clk_disable(as->clk);
-+	clk_disable_unprepare(as->clk);
- 	clk_put(as->clk);
- 	free_irq(as->irq, master);
- 	iounmap(as->regs);
-@@ -1678,7 +1680,7 @@ static int atmel_spi_suspend(struct platform_device *pdev, pm_message_t mesg)
- 	struct spi_master	*master = platform_get_drvdata(pdev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 
--	clk_disable(as->clk);
-+	clk_disable_unprepare(as->clk);
- 	return 0;
- }
- 
-@@ -1687,7 +1689,7 @@ static int atmel_spi_resume(struct platform_device *pdev)
- 	struct spi_master	*master = platform_get_drvdata(pdev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 
--	clk_enable(as->clk);
-+	return clk_prepare_enable(as->clk);
- 	return 0;
- }
- 
+If the second part of this patch series (the last 2 patches) does not belong
+here, please tell me and I'll move it into the "move to common clk framework"
+series.
+
+Best Regards,
+Boris
+
+Changes since v2:
+ - add configuraton of usb clock in ohci and udc drivers
+ - add clk_prepare patch for usba udc driver
+ - add clk_prepare patch for spi driver
+ - remove already applied udc clk_prepare patch
+
+Changes since v1:
+ - remove unneeded clk_unprepare in mci driver
+ - remove already applied patches (ehci, ohci, dma and serial)
+
+Changes since common clk patch series:
+ - add clk_prepare_enable return check
+ - fix a deadlock in atmel-mci (missing spin_unlock)
+ - remove already applied patches (atmel-ssc and pwm-atmel-tcb)
+
+
+Boris BREZILLON (7):
+  ARM: at91/tc/clocksource: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  mmc: atmel-mci: prepare clk before calling enable
+  at91/avr32/atmel_lcdfb: prepare clk before calling enable
+  USB: gadget: atmel_usba: prepare clk before calling enable
+  spi: atmel: prepare clk before calling enable
+  USB: ohci-at91: add usb_clk for transition to common clk framework
+  usb: gadget: at91_udc: add usb_clk for transition to common clk
+    framework
+
+ drivers/clocksource/tcb_clksrc.c    |   10 +++++-----
+ drivers/mmc/host/atmel-mci.c        |   27 ++++++++++++++++++---------
+ drivers/spi/spi-atmel.c             |   12 +++++++-----
+ drivers/usb/gadget/at91_udc.c       |   12 ++++++++++++
+ drivers/usb/gadget/at91_udc.h       |    2 +-
+ drivers/usb/gadget/atmel_usba_udc.c |   28 +++++++++++++++++++++-------
+ drivers/usb/host/ohci-at91.c        |   18 +++++++++++++++---
+ drivers/video/atmel_lcdfb.c         |    8 ++++----
+ 8 files changed, 83 insertions(+), 34 deletions(-)
+
 -- 
 1.7.9.5
 
