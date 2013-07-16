@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3GPHeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 03:34:17 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:46661 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab3GPHeQ (ORCPT
+	id S1752860Ab3GPHey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 03:34:54 -0400
+Received: from fep13.mx.upcmail.net ([62.179.121.33]:38426 "EHLO
+	fep13.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab3GPHex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 03:34:16 -0400
-X-Spam-Score: -100.7
-Message-ID: <51E4F73C.4000205@asianux.com>
-Date: Tue, 16 Jul 2013 15:33:16 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 16 Jul 2013 03:34:53 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <51E4F790.6090308@odi.ch>
+Date: Tue, 16 Jul 2013 09:34:40 +0200
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
-CC: v9fs-developer@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fs: 9p: use strlcpy instead of strncpy
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [BUG] 3.10 regression: hang on suspend
+References: <51E4501D.3010001@odi.ch> <20130716065626.GA1587@redhat.com>
+In-Reply-To: <20130716065626.GA1587@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For 'NULL' terminated string, recommend always to be ended by zero.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- fs/9p/vfs_inode.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 25b018e..94de6d1 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -146,7 +146,7 @@ static umode_t p9mode2unixmode(struct v9fs_session_info *v9ses,
- 		char type = 0, ext[32];
- 		int major = -1, minor = -1;
- 
--		strncpy(ext, stat->extension, sizeof(ext));
-+		strlcpy(ext, stat->extension, sizeof(ext));
- 		sscanf(ext, "%c %u %u", &type, &major, &minor);
- 		switch (type) {
- 		case 'c':
-@@ -1186,7 +1186,7 @@ v9fs_stat2inode(struct p9_wstat *stat, struct inode *inode,
- 			 * this even with .u extension. So check
- 			 * for non NULL stat->extension
- 			 */
--			strncpy(ext, stat->extension, sizeof(ext));
-+			strlcpy(ext, stat->extension, sizeof(ext));
- 			/* HARDLINKCOUNT %u */
- 			sscanf(ext, "%13s %u", tag_name, &i_nlink);
- 			if (!strncmp(tag_name, "HARDLINKCOUNT", 13))
--- 
-1.7.7.6
+On 16.07.2013 08:56, Stanislaw Gruszka wrote:
+> Apparently this commit changed suspend procedure on mac80211, but it's
+> not obvious for me why it hangs :-(
+
+Hangs are hard :-) It just sits there with a black screen and a white 
+cursor in the top left corner...
+
+> What is your user space configuration (are you using NM or other
+> software or maybe just wpa_supplicant)? Are you using wowlan?
+> If you do add no_console_suspend boot parameter does it print some
+> diagnostic messages during suspend before the hang ?
+
+Yes, I am using NM under KDE, with KDE triggered suspend. No wowlan 
+AFAIK. The last thing I see in the log is something from NetworkManager 
+that sees the device switching off. I can try again tonight and give you 
+the exact message.
+
+I will also try without NM and bare wpa_supplicant and a plain suspend 
+through sysfs.
+
+Any debug options you want me to enable? Netconsole won't work however...
+
+Ortwin
