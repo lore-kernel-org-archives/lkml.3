@@ -1,152 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934083Ab3GPVC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 17:02:28 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:46372 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933320Ab3GPVC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 17:02:26 -0400
-Message-ID: <51E5B4DE.5060002@schinagl.nl>
-Date: Tue, 16 Jul 2013 23:02:22 +0200
-From: Oliver Schinagl <oliver@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130613 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Oliver Schinagl <oliver+list@schinagl.nl>, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org
-Subject: Re: [linux-sunxi] Re: [PATCH 1/2] Initial support for Allwinner's
- Security ID fuses
-References: <20130624160440.GA15201@kroah.com> <51C87DC7.50005@schinagl.nl> <20130624181509.GA8847@kroah.com> <51C8B84C.3020200@schinagl.nl> <20130624214615.GA17604@kroah.com> <51CAA709.4060801@schinagl.nl> <20130626175144.GC2222@kroah.com> <51D674BF.9030207@schinagl.nl> <20130706193646.GB9778@kroah.com> <51E466A3.4010503@schinagl.nl> <20130716064107.GA10868@kroah.com>
-In-Reply-To: <20130716064107.GA10868@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S934054Ab3GPVCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 17:02:16 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34149 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933195Ab3GPVCN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 17:02:13 -0400
+Message-ID: <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Hannes Reinecke <hare@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        James Smart <James.Smart@Emulex.Com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kmo@daterainc.com" <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
+Date: Tue, 16 Jul 2013 14:07:29 -0700
+In-Reply-To: <1373698410.2922.10.camel@dabdike>
+References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
+	 <20130712010223.GA15673@kroah.com>
+	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
+	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/13 08:41, Greg KH wrote:
-> On Mon, Jul 15, 2013 at 11:16:19PM +0200, Oliver Schinagl wrote:
->> With your latest patches for binary attributes and your blog post, I
->> thought that you want to create your binary attributes before the probe
->> function, to avoid the userspace race. To do that, we have two options,
->> create them in init (ugly?) or fill the .group member if available so it
->> gets automatically created from the register function.
-> Yes, the .group thing should be what is needed here.
-That's what I thought (and used).
->
->> Well in my case, I'm using the module_platform_driver() macro which
->> expects the struct platform_driver. Platform_driver has a device_driver
->> member .driver where the .groups is located. Great, using that works and
->> we should have the sysfs entry race-free. However I don't know hot to
->> exchange data between that and the rest of my driver.
->>
->> Before I used to_platform_device(kobj_to_dev(kobj)) as passed via the
->> .read function to obtain a platform_device where i could use
->> platform_get_drvdata on. All was good, but that doesn't fly now and my
->> knowledge is a bit short as to why.
-> I don't understand, why not use the platform device that was passed to
-> the binary attribute write function?
-Because the pointers don't match and I get a null pointer from 
-platform_get_data
->
->> The second method is finding some other shared structure given that we
->> get a platform_device in the probe function, yet I couldn't find
->> anything and this platform_device isn't the same as the one from the .read.
-> It should be, why isn't it?
-I think that's a little above my grasp :p
->
->> Of course using a global var bypasses this issue, but I'm sure it won't
->> pass review ;)
-> The platform device structure should have what you need, right?
-Should, but doesn't :(
->
->> So using these new patches for binary attributes, how can I pass data
->> between my driver and the sysfs files using a platform_driver? Or are
->> other 'hacks' needed and using the .groups attribute from
->> platform_driver->device_driver->groups is really the wrong approach.
->>
->> I did ask around and still haven't figured it out so far, so I do
->> apologize if you feel I'm wasting your precious time.
-> How is the platform device not the same thing that was passed to your
-> probe function?
-I don't know :( But i'll add the relevant sections with printk results 
-below, which I should have done before, then again those printk's were 
-not supposed to be in that e-mail to begin with ;)
+On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
+> On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
+> > On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
+> > > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
+> > >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
+> > >>> Drilling down the work items ahead of a real mainline push is high on
+> > >>> priority list for discussion.
+> > >>>
+> > >>> The parties to be included in such a discussion are:
+> > >>>
+> > >>>   - Jens Axboe (blk-mq author)
+> > >>>   - James Bottomley (scsi maintainer)
+> > >>>   - Christoph Hellwig (scsi)
+> > >>>   - Martin Petersen (scsi)
+> > >>>   - Tejun Heo (block + libata)
+> > >>>   - Hannes Reinecke (scsi error recovery)
+> > >>>   - Kent Overstreet (block, per-cpu ida)
+> > >>>   - Stephen Cameron (scsi-over-pcie driver)
+> > >>>   - Andrew Vasquez (qla2xxx LLD)
+> > >>>   - James Smart (lpfc LLD)
+> > >>
+> > >> Isn't this something that should have been discussed at the storage
+> > >> mini-summit a few months ago?
+> > > 
+> > > The scsi-mq prototype, along with blk-mq (in it's current form) did not
+> > > exist a few short months ago.  ;)
+> > > 
+> > >>  It seems very specific to one subsystem to be a kernel summit topic,
+> > >> don't you think?
+> > > 
+> > > It's no more subsystem specific than half of the other proposals so far,
+> > > and given it's reach across multiple subsystems (block, scsi, target),
+> > > and the amount of off-list interest on the topic, I think it would make
+> > > a good candidate for discussion.
+> > > 
+> > And it'll open up new approaches which previously were dismissed,
+> > like re-implementing multipathing on top of scsi-mq, giving us the
+> > single scsi device like other UNIX systems.
+> > 
+> > Also I do think there's quite some synergy to be had, as with blk-mq
+> > we could nail each queue to a processor, which would eliminate the
+> > need for locking.
+> > Which could be useful for other subsystems, too.
+> 
+> Lets start with discussing this on the list, please, and then see where
+> we go from there ...
+> 
 
-So if I'm not seeing something stupidly obvious, feel free to shout at me :)
+Yes, the discussion is beginning to make it's way to the list.  I've
+mostly been waiting for blk-mq to get a wider review before taking the
+early scsi-mq prototype driver to a larger public audience.
 
-static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-             struct bin_attribute *attr, char *buf,
-             loff_t pos, size_t size)
-{
-     struct platform_device *pdev;
-     void __iomem *sid_reg_base;
-     int i;
+Primarily, I'm now reaching out to the people most effected by existing
+scsi_request_fn() based performance limitations.  Most of them have
+abandoned existing scsi_request_fn() based logic in favor of raw block
+make_request() based drivers, and are now estimating the amount of
+effort to move to an scsi-mq based approach.
 
-     pdev = to_platform_device(kobj_to_dev(kobj));
-     sid_reg_base = (void __iomem *)platform_get_drvdata(pdev);
-     printk("0x%p, 0x%p, 0x%p, 0x%p\n", kobj, kobj_to_dev(kobj), pdev, 
-sid_reg_base);
+Regardless, as the prototype progresses over the next months, having a
+face-to-face discussion with the key parties in the room would be very
+helpful given the large amount of effort involved to actually make this
+type of generational shift in SCSI actually happen.
 
-0xef1e7c80, 0xef1e7c78, 0xef1e7c68, 0x  (null)
-
-     if (pos < 0 || pos >= SID_SIZE)
-         return 0;
-     if (size > SID_SIZE - pos)
-         size = SID_SIZE - pos;
-
-     for (i = 0; i < size; i++)
-         buf[i] = sunxi_sid_read_byte(sid_reg_base, pos + i);
-
-     return i;
-}
-
-
-static struct bin_attribute sid_bin_attr = {
-     .attr = { .name = "eeprom", .mode = S_IRUGO, },
-     .size = SID_SIZE,
-     .read = sid_read,
-};
-
-static struct bin_attribute *sunxi_sid_attrs[] = {
-     &sid_bin_attr,
-     NULL,
-};
-
-static const struct attribute_group sunxi_sid_group = {
-     .bin_attrs = sunxi_sid_attrs,
-};
-
-static const struct attribute_group *sunxi_sid_groups[] = {
-     &sunxi_sid_group,
-     NULL,
-};
-
-static int __init sunxi_sid_probe(struct platform_device *pdev)
-{
-     struct resource *res;
-     void __iomem *sid_reg_base;
-     u8 entropy[SID_SIZE];
-     unsigned int i;
-
-     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-     sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
-     if (IS_ERR(sid_reg_base))
-         return PTR_ERR(sid_reg_base);
-     platform_set_drvdata(pdev, sid_reg_base);
-
-     for (i = 0; i < SID_SIZE; i++)
-         entropy[i] = sunxi_sid_read_byte(sid_reg_base, i);
-     add_device_randomness(entropy, SID_SIZE);
-     dev_dbg(&pdev->dev, "%s loaded\n", DRV_NAME);
-     printk("0x%p, 0x%p\n", pdev, sid_reg_base);
-
-0xef02b000, 0xf1c23800
-
-     return 0;
-}
-
+--nab
 
