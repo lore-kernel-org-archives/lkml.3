@@ -1,142 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934010Ab3GPWPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:15:46 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:64516 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933295Ab3GPWPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:15:44 -0400
-MIME-Version: 1.0
-Date: Tue, 16 Jul 2013 18:15:42 -0400
-Message-ID: <CAOULuOb3-gA36S=xhA_pwLT0vf9Bb973d3Qq40KfsnS15R_qWA@mail.gmail.com>
-Subject: [PATCH] BGRT: Don't ioremap if image address is in System RAM (was:
- Re: BGRT Pointer in System RAM)
-From: Parag Warudkar <parag.lkml@gmail.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, LKML <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934005Ab3GPWRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:17:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35061 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933295Ab3GPWRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 18:17:01 -0400
+Message-ID: <1374013019.1949.52.camel@joe-AO722>
+Subject: Re: [PATCH] power: new trace event to print device suspend and
+ resume time
+From: Joe Perches <joe@perches.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "len.brown@intel.com" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Date: Tue, 16 Jul 2013 15:16:59 -0700
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6173C1B6@sisaex02sj>
+References: <1374009806-11823-1-git-send-email-shuah.kh@samsung.com>
+	 <1374010741.1949.46.camel@joe-AO722>
+	 <B8EFE96D1287C24090BAD9D858E15E6173C1B6@sisaex02sj>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 8:00 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
-> On Mon, Jul 15, 2013 at 7:56 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->> On Mon, Jul 15, 2013 at 7:04 PM, Josh Triplett <josh@joshtriplett.org> wrote:
->>
->>> We do need to handle the case of a valid pointer into memory that e820
->>> calls system RAM, as well as the case of a valid pointer into memory
->>> reserved for the BIOS or similar, but not the case of an invalid
->>> pointer.
->>
->> Would that be as simple as
->>
->>                      page_is_ram(
->
-> Damn shortcuts -
->                         virt_addr = phys_to_virt(image->base_address);
->                         if(page_is_ram(virt_to_page(virt_addr))) {
->                             //direct read from virt addr
->                         }
->
-> Would that suffice for the System RAM case or some other MM trickery
-> is involved?
+On Tue, 2013-07-16 at 22:04 +0000, Shuah Khan wrote:
+> On 07/16/2013 03:39 PM, Joe Perches wrote:
+> > On Tue, 2013-07-16 at 15:23 -0600, Shuah Khan wrote:
+> >> A new trace event is added to pm events to print time it takes to suspend and
+> >> resume a device. It generates trace message that includes device, driver,
+> >> parent information in addition to the type of pm ops invoked as well as the
+> >> pm event and error status from the pm ops. Example trace below:
+> >
+> >> diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+> > []
+> >> @@ -66,6 +66,41 @@ TRACE_EVENT(machine_suspend,
+> >>   	TP_printk("state=%lu", (unsigned long)__entry->state)
+> >>   );
+> >>
+> >> +TRACE_EVENT(device_pm_report_time,
+> >> +
+> >> +	TP_PROTO(const char *device, const char *driver, const char *parent,
+> >> +		 const char *pm_ops, ktime_t ops_time, char *pm_event_str,
+> >> +		 int error),
+> >> +
+> >> +	TP_ARGS(device, driver, parent, pm_ops, ops_time, pm_event_str, error),
+> >> +
+> >> +	TP_STRUCT__entry(
+> >> +		__string(device, device)
+> >> +		__string(driver, driver)
+> >> +		__string(parent, parent)
+> >> +		__string(pm_ops, pm_ops)
+> >> +		__string(pm_event_str, pm_event_str)
+> >> +		__field(unsigned long long, ops_time)
+> >
+> > s64
+> 
+> Followed the ktime_t example in include/trace/events/timer.h - thinking 
+> it would be the correct way to cast ktime_t :)  I can change it to s64.
 
-Ok, so I played around with it a bit and the following patch works
-fine on my system. (I.E. image size is reasonable, cat
-/sys/firmware/acpi/bgrt/image > img.bmp generates a valid,
-non-distorted bitmap, which it did before too, btw as despite of the
-ioremap WARN_ON the ioremap seems to succeed if !(is_ram &&
-pfn_valid(pfn) && !PageReserved.)
+You mean this one below where s64 is used for the
+variable type?
 
-The patch also includes a check for the status bit - if it's not 1,
-the boot image cannot be assumed to be valid per the spec, so we just
-ignore it in that case.
+I do think the %llu is odd below here and it should be
+%lld without the casts.
 
-This also shouldn't impact other machines unless the page_is_ram check
-is wrong - but that's copied straight out of ioremap.c!
+I prefer the TP_printk style of "foo=val" over "foo(val)"
+but there's no requirement for one style over another.
 
-Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 166)   TP_STRUCT__entry(
+434a83c3f (Ingo Molnar         2009-10-15 11:50:39 +0200 167)           __field( void *,        hrtimer         )
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 168)           __field( void *,        function        )
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 169)           __field( s64,           expires         )
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 170)           __field( s64,           softexpires     )
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 171)   ),
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 172) 
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 173)   TP_fast_assign(
+434a83c3f (Ingo Molnar         2009-10-15 11:50:39 +0200 174)           __entry->hrtimer        = hrtimer;
+434a83c3f (Ingo Molnar         2009-10-15 11:50:39 +0200 175)           __entry->function       = hrtimer->function;
+434a83c3f (Ingo Molnar         2009-10-15 11:50:39 +0200 176)           __entry->expires        = hrtimer_get_expires(hrtimer).tv64;
+434a83c3f (Ingo Molnar         2009-10-15 11:50:39 +0200 177)           __entry->softexpires    = hrtimer_get_softexpires(hrtimer).tv64;
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 178)   ),
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 179) 
+434a83c3f (Ingo Molnar         2009-10-15 11:50:39 +0200 180)   TP_printk("hrtimer=%p function=%pf expires=%llu softexpires=%llu",
+434a83c3f (Ingo Molnar         2009-10-15 11:50:39 +0200 181)             __entry->hrtimer, __entry->function,
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 182)             (unsigned long long)ktime_to_ns((ktime_t) {
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 183)                             .tv64 = __entry->expires }),
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 184)             (unsigned long long)ktime_to_ns((ktime_t) {
+c6a2a1770 (Xiao Guangrong      2009-08-10 10:51:23 +0800 185)                             .tv64 = __entry->softexpires }))
 
-diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-index 7145ec6..c894047 100644
---- a/arch/x86/platform/efi/efi-bgrt.c
-+++ b/arch/x86/platform/efi/efi-bgrt.c
-@@ -16,6 +16,8 @@
- #include <linux/efi.h>
- #include <linux/efi-bgrt.h>
 
-+extern int page_is_ram(unsigned long pfn);
-+
- struct acpi_table_bgrt *bgrt_tab;
- void *__initdata bgrt_image;
- size_t __initdata bgrt_image_size;
-@@ -31,6 +33,7 @@ void __init efi_bgrt_init(void)
-  void __iomem *image;
-  bool ioremapped = false;
-  struct bmp_header bmp_header;
-+ int img_addr_in_ram;
-
-  if (acpi_disabled)
-  return;
-@@ -42,25 +45,36 @@ void __init efi_bgrt_init(void)
-
-  if (bgrt_tab->header.length < sizeof(*bgrt_tab))
-  return;
-- if (bgrt_tab->version != 1)
-+ if (!bgrt_tab->status || bgrt_tab->version != 1)
-  return;
-  if (bgrt_tab->image_type != 0 || !bgrt_tab->image_address)
-  return;
--
-- image = efi_lookup_mapped_addr(bgrt_tab->image_address);
-- if (!image) {
-- image = ioremap(bgrt_tab->image_address, sizeof(bmp_header));
-- ioremapped = true;
-- if (!image)
-- return;
-+ /* Before ioremap check if image address falls in System RAM */
-+ img_addr_in_ram = page_is_ram(bgrt_tab->image_address >> PAGE_SHIFT);
-+ if (img_addr_in_ram) {
-+ pr_info("BGRT: Image Address falls in System RAM");
-+ image = phys_to_virt(bgrt_tab->image_address);
-+ } else {
-+ image = efi_lookup_mapped_addr(bgrt_tab->image_address);
-+ if (!image) {
-+ image = ioremap(bgrt_tab->image_address,
-+ sizeof(bmp_header));
-+ ioremapped = true;
-+ }
-  }
-
-- memcpy_fromio(&bmp_header, image, sizeof(bmp_header));
-+ if (!image)
-+ return;
-+ if (img_addr_in_ram)
-+ memcpy(&bmp_header, image, sizeof(bmp_header));
-+ else
-+ memcpy_fromio(&bmp_header, image, sizeof(bmp_header));
-  if (ioremapped)
-  iounmap(image);
-- bgrt_image_size = bmp_header.size;
-
-+ bgrt_image_size = bmp_header.size;
-  bgrt_image = kmalloc(bgrt_image_size, GFP_KERNEL);
-+
-  if (!bgrt_image)
-  return;
-
-@@ -72,8 +86,10 @@ void __init efi_bgrt_init(void)
-  return;
-  }
-  }
--
-- memcpy_fromio(bgrt_image, image, bgrt_image_size);
-+ if (img_addr_in_ram)
-+ memcpy(bgrt_image, image, bgrt_image_size);
-+ else
-+ memcpy_fromio(bgrt_image, image, bgrt_image_size);
-  if (ioremapped)
-  iounmap(image);
- }
