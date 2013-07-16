@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640Ab3GPRIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 13:08:22 -0400
-Received: from 12.mo1.mail-out.ovh.net ([87.98.162.229]:42829 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933397Ab3GPRIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933646Ab3GPRIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 13:08:35 -0400
+Received: from mail-bn1lp0156.outbound.protection.outlook.com ([207.46.163.156]:58501
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933296Ab3GPRIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Jul 2013 13:08:20 -0400
-Message-ID: <51E57DFC.5030302@overkiz.com>
-Date: Tue, 16 Jul 2013 19:08:12 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
+        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [Update][PATCH] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+Thread-Topic: [Update][PATCH] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+Thread-Index: AQHOf2EOf9xYEw7JIEmM0Xd7JOJCBJlnUxkAgAA8Q4A=
+Date: Tue, 16 Jul 2013 17:08:16 +0000
+Message-ID: <1373994495.9314.1.camel@x230>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+	 <12270512.1rshgKaUug@vostro.rjw.lan> <51DA7190.6080208@gmail.com>
+	 <1683364.CdnoW81WLH@vostro.rjw.lan>
+	 <1373981554.1956.5.camel@ThinkPad-X230.localdomain>
+In-Reply-To: <1373981554.1956.5.camel@ThinkPad-X230.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+x-forefront-prvs: 09090B6B69
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(377424004)(199002)(189002)(76482001)(76786001)(50986001)(56776001)(16406001)(81342001)(69226001)(54356001)(83072001)(31966008)(74876001)(47446002)(33716001)(46102001)(63696002)(80022001)(56816003)(79102001)(47976001)(74366001)(77982001)(74706001)(54316002)(59766001)(49866001)(65816001)(51856001)(81542001)(33646001)(47736001)(77096001)(74502001)(74662001)(53806001)(76796001)(4396001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:10.255.84.4;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <6DB627994CA01C41BF352B8A36AB0F73@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH v3 6/7] USB: ohci-at91: add usb_clk for transition to
- common clk framework
-References: <Pine.LNX.4.44L0.1307161246130.1032-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1307161246130.1032-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 9071657025925380198
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6GH8hrc019451
 
-Hello Alan,
+On Tue, 2013-07-16 at 17:32 +0400, Igor Gnatenko wrote:
+> Hmm. I found regression in user-space. In GNOME (maybe and other DEs) we no longer see switch status of backlight.
 
-On 16/07/2013 18:48, Alan Stern wrote:
-> On Tue, 16 Jul 2013, Boris BREZILLON wrote:
->
->> The AT91 PMC (Power Management Controller) provides an USB clock used by
->> USB Full Speed host (ohci) and USB Full Speed device (udc).
->> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
->> This configuration was formely done in mach-at91/clock.c, but this
->> implementation will be removed when moving to common clk framework.
->>
->> This patch add support for usb clock retrieval and configuration, and is
->> backward compatible with the current at91 clk implementation (if usb clk
->> is not found, it does not configure/enable the usb clk).
-> But it does print a warning in the system log, right?
-Yes it does.
->
->> @@ -144,6 +150,11 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
->>   		goto err2;
->>   	}
->>   
->> +	uclk = clk_get(&pdev->dev, "usb_clk");
->> +	if (IS_ERR(uclk)) {
->> +		uclk = NULL;
->> +		dev_warn(&pdev->dev, "failed to get usb_clk\n");
->> +	}
-> Is this really what you want for backward compatibility?
-Here are some proposition to remove the warning message:
+Yeah, I can duplicate that. Rafael, we have to call
+acpi_video_init_brightness() even if we're not going to initialise the
+backlight - Thinkpads seem to use this as the trigger for enabling ACPI
+notifications rather than handling it in firmware. This seems to do the
+job:
 
-1) replace it with a dev_info and change the message:
-     dev_info(&pdev->dev, "failed to get usb_clk (most likely using old 
-at91 clk implementation)\n");
-2) drop the log and silently ignore the missing clk (I'm not a big fan 
-of this solution
-     as it may lead to some errors if we're using new clk implem and the 
-clock is really missing)
-3) rework the current clk_set_rate function to accept clk_set_rate on 
-usb clk and add clk_lookup entries
-     for the usb clk (I'm not a big fan of this solution neither as this 
-modifications will only be used for a short time
-     until the transition to common clk framework is completed).
-> Alan Stern
->
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 01b1a25..71865f7 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -900,6 +900,9 @@ static void acpi_video_device_find_cap(struct
+acpi_video_device *device)
+ 		device->cap._DDC = 1;
+ 	}
+ 
++	if (acpi_video_init_brightness(device))
++		return;
++
+ 	if (acpi_video_verify_backlight_support()) {
+ 		struct backlight_properties props;
+ 		struct pci_dev *pdev;
+@@ -909,9 +912,6 @@ static void acpi_video_device_find_cap(struct
+acpi_video_device *device)
+ 		static int count = 0;
+ 		char *name;
+ 
+-		result = acpi_video_init_brightness(device);
+-		if (result)
+-			return;
+ 		name = kasprintf(GFP_KERNEL, "acpi_video%d", count);
+ 		if (!name)
+ 			return;
 
-Thanks for your review.
 
-Best Regards,
-
-Boris
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
