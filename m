@@ -1,123 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab3GPCFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 22:05:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40655 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755466Ab3GPCFg (ORCPT
+	id S1758544Ab3GPCJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 22:09:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6014 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755793Ab3GPCJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 22:05:36 -0400
-Date: Tue, 16 Jul 2013 12:05:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Ben Widawsky <ben@bwidawsk.net>
-Subject: linux-next: manual merge of the drm-intel tree with the
- drm-intel-fixes tree
-Message-Id: <20130716120523.32e132972134f55a0655d3c9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+	Mon, 15 Jul 2013 22:09:58 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pKJnpFkXxSEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=H1u3HIS9vXkA:10 a=4fnmUe_o-lTAl6ZDmPcA:9 a=QEXdDO2ut3YA:10 a=s63Zvm6LGvzMyHRQ:21 a=Xpb5ZfbhSCX1gdlY:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373940594.17876.241.camel@gandalf.local.home>
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg KH <greg@kroah.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Mon, 15 Jul 2013 22:09:54 -0400
+In-Reply-To: <20130716000623.GB26261@kroah.com>
+References: <1373916476.2748.69.camel@dabdike>
+	 <20130715214422.GA2478@kroah.com>
+	 <1373925699.17876.218.camel@gandalf.local.home>
+	 <20130716000623.GB26261@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__16_Jul_2013_12_05_23_+1000_NoX30Asz.kNAkGtd"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Jul_2013_12_05_23_+1000_NoX30Asz.kNAkGtd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-07-15 at 17:06 -0700, Greg KH wrote:
 
-Hi all,
+> Maintainers are our most limited resource, I'm getting their "ack" when
+> they themselves tag the patch to be backported with the Cc: line.
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/i915_gem.c between commits 19b2dbde5732
-("drm/i915: Restore fences after resume and GPU resets") from Linus' tree
-and d18b96190342 ("drm/i915: Fix incoherence with fence updates on
-Sandybridge+") from the drm-intel-fixes tree and commits f343c5f64773
-("drm/i915: Getter/setter for object attributes") and db1b76ca6a79
-("drm/i915: don't frob mm.suspended when not using ums") from the
-drm-intel tree.
+I find stable maintainers even more limited.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I'm not sure our maintainers are the most limited resource, we just have
+the few that have proved themselves and it's hard to find people we
+trust to expand. There's plenty of good people out there to help, but
+the issue is more trust than anything else.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> I then cc: them when the patch goes into the patch queue.
+> 
+> I then cc: them again when the patch is in the -rc1 phase.
+> 
+> How many times do I need to do this to give people a chance to say
+> "nak"?
 
-diff --cc drivers/gpu/drm/i915/i915_gem.c
-index 97afd26,20b10a0..0000000
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@@ -2666,27 -2673,12 +2665,27 @@@ static void i965_write_fence_reg(struc
-  		fence_pitch_shift =3D I965_FENCE_PITCH_SHIFT;
-  	}
- =20
- +	fence_reg +=3D reg * 8;
- +
- +	/* To w/a incoherency with non-atomic 64-bit register updates,
- +	 * we split the 64-bit update into two 32-bit writes. In order
- +	 * for a partial fence not to be evaluated between writes, we
- +	 * precede the update with write to turn off the fence register,
- +	 * and only enable the fence as the last step.
- +	 *
- +	 * For extra levels of paranoia, we make sure each step lands
- +	 * before applying the next step.
- +	 */
- +	I915_WRITE(fence_reg, 0);
- +	POSTING_READ(fence_reg);
- +
-  	if (obj) {
-- 		u32 size =3D obj->gtt_space->size;
-+ 		u32 size =3D i915_gem_obj_ggtt_size(obj);
- +		uint64_t val;
- =20
-- 		val =3D (uint64_t)((obj->gtt_offset + size - 4096) &
-+ 		val =3D (uint64_t)((i915_gem_obj_ggtt_offset(obj) + size - 4096) &
-  				 0xfffff000) << 32;
-- 		val |=3D obj->gtt_offset & 0xfffff000;
-+ 		val |=3D i915_gem_obj_ggtt_offset(obj) & 0xfffff000;
-  		val |=3D (uint64_t)((obj->stride / 128) - 1) << fence_pitch_shift;
-  		if (obj->tiling_mode =3D=3D I915_TILING_Y)
-  			val |=3D 1 << I965_FENCE_TILING_Y_SHIFT;
-@@@ -3992,11 -4008,8 +3980,6 @@@ i915_gem_idle(struct drm_device *dev
-  	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-  		i915_gem_evict_everything(dev);
- =20
-- 	/* Hack!  Don't let anybody do execbuf while we don't control the chip.
-- 	 * We need to replace this with a semaphore, or something.
-- 	 * And not confound mm.suspended!
-- 	 */
-- 	dev_priv->mm.suspended =3D 1;
- -	i915_gem_reset_fences(dev);
- -
-  	del_timer_sync(&dev_priv->gpu_error.hangcheck_timer);
- =20
-  	i915_kernel_lost_context(dev);
+It can be missed by a big INBOX. Or put off till a later time that never
+comes. The issue is that the default is to go in unless there is a
+complaint, but if the maintainer needs to acknowledge before it goes
+further, then it goes in when the maintainer is ready, not a short time
+after it gets pulled into Linus's tree.
 
---Signature=_Tue__16_Jul_2013_12_05_23_+1000_NoX30Asz.kNAkGtd
-Content-Type: application/pgp-signature
+If the maintainer wants some patches to spend a bit of time in Linus's
+tree before going to stable, then they need to not put the stable tag on
+them, and manually do the work. Which may end up never going to stable
+in the first place.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> 
+> > The big problem with the above is that the process depends highly on
+> > this guy named "Greg".
+> > 
+> > If "Greg" gets tired of doing this, or gets sick, or "see other KS topic
+> > about mortality of maintainers", then the entire process fails.
+> 
+> "Greg" has documented how he does all of this work, and the scripts I
+> use are all published as well.
+> 
+> "Greg" has also asked for help with all of this, a number of times, with
+> a specific list of things that he needs help with.  And almost no one
+> has ever offered to help.  That's fine, I can live with that, we all
+> have jobs to do in other areas, and the LF now lets me do this as part
+> of my job, so I can focus on it.
 
-iQIcBAEBCAAGBQJR5KpnAAoJEECxmPOUX5FEaDwP/A6ByAaF5QwOunTILeDsz+Gw
-0u1E7niw0vh4eSKmQe/P/KMJ0z6b0ZRQEfee+vVloZH3IgDwmCmWqBEWToZ86czy
-/gcuWuYd/jN7Kwxg6iYzYgJfC1yCj987ngeFEhnataUiJcalUXOZwJoH4nQ3Tavj
-EWr8PSP80bKgXlgTNRmmvx5LaZ+28ivOKjRBaiuHYbhkfs5vwycIEx400jHAFDjx
-RQpAK0QHrKtSfka+LVOWWmHToQtzkICGZfchviiOCQU8NGDcvqyIfU9ZnNetPSEm
-yqiuySs6OrbownmrEjphjpc0yxsRQcWUgY1O26NOZgZIZTa/MclaMiyI4515/wOX
-7NAWFfFLtOsgjEBa+weY63cVx+akpdXJjXJjN1Ism9CyCUeE/wWSRTypi+Uv9NYs
-kHzHLMvwIuM6LxEz63Gsx7dXU9OGN8QPl376FjGUpc+eGbeW2xEnt8xFPQP7ZSAD
-R1tDditg3YV8kTc7FJq9RfJze4g6heDXCJ7ojysPdAEJ2jrpiJDirEEXtQYqOeip
-Bx4y6yIvMSyyg7VPptvV+B7EWi21wDS+tJjpMWPgLykOb9SDLbQlJrfxXY3jFbXt
-vxLtzWM0YQbNTI+foSndvyEFCLZKJgE2HQ2+uzZBGLhPMGbsySjHa1azFslLwmvx
-v1/zxjAuNEomQ1AKuPzT
-=LOWI
------END PGP SIGNATURE-----
+This is exactly my point. "Greg"'s problem is that he does too good of a
+job at this. People look at what "Greg" does and say "he must be a God"
+and start worshiping Him. I'm sure there are distros of people that have
+sacrificed the sacred gecko in a burning altar chanting the subjects of
+the stable patch bombs "Greg" does every week, praying that next week
+there will come another holy trinity of the three stable releases "Greg"
+maintains.
 
---Signature=_Tue__16_Jul_2013_12_05_23_+1000_NoX30Asz.kNAkGtd--
+> 
+> > OK, you are not the only one that does the stable release. There's Ben
+> > and Luis doing it as well, and various others. But there seems to be a
+> > bit of an issue here. How much should go into stable? Who really
+> > decides?
+> 
+> The subsystem maintainers do by tagging the patches.  Every once in a
+> while I dig stuff up on my own, but again, I give the subsystem
+> maintainer at least two separate chances to NAK the patch, so it's not
+> like I'm doing anything in private here.
+
+It's not about doing it in private. But there seems to be some questions
+about what should and should not be tagged stable. And the worse thing
+that can happen is that a stable patch causes a regression in the stable
+tree.
+
+> 
+> > How important is the stable releases? Are maintainers willing to do a
+> > little more work now to make sure their subsystems work fine in older
+> > kernels? This isn't the same stable as it was 8 years ago.
+> 
+> And that annoys the hell out of some Linux companies who feel that the
+> stable kernels compete with them.  So people working for those companies
+> might not get as much help with doing any additional work for stable
+> kernel releases (this is not just idle gossip, I've heard it directly
+> from management's mouths.)
+
+Hmm, this is new to me. Really, I thought the whole point of the stable
+releases was to help Linux companies.
+
+
+> 
+> So I need to, for both a resource management issue, and a business
+> issue, make this as painless for maintainers as possible, which I have
+> tried to do.
+> 
+> And given the uptick in the past few years of maintainers tagging
+> patches, I think it's worked out so well that people are now doing it
+> too much, which gets back to my original complaints last week that I am
+> now working to address in a different manner.
+
+Well, the final decision hangs with you and Linus. But would be good to
+talk about this at Kernel Summit anyway. From other comments in the
+thread, it looks like this will definitely be a topic there.
+
+-- Steve
+
+
