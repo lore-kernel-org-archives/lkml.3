@@ -1,104 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832Ab3GPWTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:19:19 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:12494 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933747Ab3GPWTR (ORCPT
+	id S933737Ab3GPWXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:23:11 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:43418
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933387Ab3GPWXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:19:17 -0400
-Date: Tue, 16 Jul 2013 17:19:12 -0500
-From: scameron@beardog.cce.hp.com
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: James Bottomley <jbottomley@parallels.com>, Hannes Reinecke <hare@suse.de>,
-        Jens Axboe <axboe@kernel.dk>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        James Smart <James.Smart@Emulex.Com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kmo@daterainc.com" <kmo@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Message-ID: <20130716221912.GZ24437@beardog.cce.hp.com>
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com> <20130712010223.GA15673@kroah.com> <1373592815.7397.477.camel@haakon3.risingtidesystems.com> <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike> <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
-Mime-Version: 1.0
+	Tue, 16 Jul 2013 18:23:09 -0400
+Date: Tue, 16 Jul 2013 22:23:08 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] allow some kernel filesystems to be mounted in a
+ user namespace
+Message-ID: <20130716222308.GA24408@mail.hallyn.com>
+References: <20130716192920.GA8980@sergelap>
+ <20130716193826.GP4165@ZenIV.linux.org.uk>
+ <20130716195002.GA23370@mail.hallyn.com>
+ <51E5BC0D.3090303@mit.edu>
+ <20130716213748.GA24076@mail.hallyn.com>
+ <CALCETrV8QFZU947=OjL-abxAmHiLso-uhbmoJt45kfmtaw26Tg@mail.gmail.com>
+ <20130716220301.GA24223@mail.hallyn.com>
+ <CALCETrXgU560Vk382xsPJD+uE7EQzqkbCobV8BXwVXrK8EryNw@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <CALCETrXgU560Vk382xsPJD+uE7EQzqkbCobV8BXwVXrK8EryNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 02:07:29PM -0700, Nicholas A. Bellinger wrote:
-> On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
-> > On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
-> > > On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
-> > > > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
-> > > >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
-> > > >>> Drilling down the work items ahead of a real mainline push is high on
-> > > >>> priority list for discussion.
-> > > >>>
-> > > >>> The parties to be included in such a discussion are:
-> > > >>>
-> > > >>>   - Jens Axboe (blk-mq author)
-> > > >>>   - James Bottomley (scsi maintainer)
-> > > >>>   - Christoph Hellwig (scsi)
-> > > >>>   - Martin Petersen (scsi)
-> > > >>>   - Tejun Heo (block + libata)
-> > > >>>   - Hannes Reinecke (scsi error recovery)
-> > > >>>   - Kent Overstreet (block, per-cpu ida)
-> > > >>>   - Stephen Cameron (scsi-over-pcie driver)
-> > > >>>   - Andrew Vasquez (qla2xxx LLD)
-> > > >>>   - James Smart (lpfc LLD)
-> > > >>
-> > > >> Isn't this something that should have been discussed at the storage
-> > > >> mini-summit a few months ago?
-> > > > 
-> > > > The scsi-mq prototype, along with blk-mq (in it's current form) did not
-> > > > exist a few short months ago.  ;)
-> > > > 
-> > > >>  It seems very specific to one subsystem to be a kernel summit topic,
-> > > >> don't you think?
-> > > > 
-> > > > It's no more subsystem specific than half of the other proposals so far,
-> > > > and given it's reach across multiple subsystems (block, scsi, target),
-> > > > and the amount of off-list interest on the topic, I think it would make
-> > > > a good candidate for discussion.
-> > > > 
-> > > And it'll open up new approaches which previously were dismissed,
-> > > like re-implementing multipathing on top of scsi-mq, giving us the
-> > > single scsi device like other UNIX systems.
-> > > 
-> > > Also I do think there's quite some synergy to be had, as with blk-mq
-> > > we could nail each queue to a processor, which would eliminate the
-> > > need for locking.
-> > > Which could be useful for other subsystems, too.
-> > 
-> > Lets start with discussing this on the list, please, and then see where
-> > we go from there ...
-> > 
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On Tue, Jul 16, 2013 at 3:03 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> On Tue, Jul 16, 2013 at 2:37 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> >> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> >> On 07/16/2013 12:50 PM, Serge E. Hallyn wrote:
+> >> >> > Quoting Al Viro (viro@ZenIV.linux.org.uk):
+> >> >> >> On Tue, Jul 16, 2013 at 02:29:20PM -0500, Serge Hallyn wrote:
+> >> >> >>> All the files will be owned by host root, so there's no security
+> >> >> >>> concern in allowing this.
+> >> >> >>
+> >> >> >> Files owned by root != very bad things can't be done by non-root.
+> >> >> >> Especially for debugfs, which is very much a "don't even think about
+> >> >> >> mounting that on a production box" thing...
+> >> >> >
+> >> >> > I would prefer it not be mounted.  But near as I can tell there
+> >> >> > should be no regression security-wise whether an unprivileged
+> >> >> > user on the host has access to it, or whether a user in a
+> >> >> > non-init user ns is allowed to mount it.  (Obviously I could very
+> >> >> > well be wrong)
+> >> >>
+> >> >> I would argue that either (a) debugfs denies everything to non-root, so
+> >> >> mounting it in a (rootless) userns is useless or (b) it doesn't, in
+> >> >> which case it's dangerous.
+> >> >>
+> >> >> In neither case does it make sense to me to allow the mount.
+> >> >
+> >> > It makes sense from the POV of having sane user-space.  I can obviously
+> >> > work around this by tweaking a stock container rootfs to be different
+> >> > from a stock host rootfs.  It is undesirable.
+> >> >
+> >> > For debug and fusectl there is another option which I'm happy to
+> >> > pursue, namely tweaking how mountall handles 'nofail' to ignore these
+> >> > errors.
+> >>
+> >> I don't know enough about fuse to know whether it should work in a
+> >> container, but presumably the fusectl FS needs to be aware of userns
+> >
+> > Again it's not about working - we actually don't (through LSM) allow
+> > writes under any of them anyway.  It's about containers and
+> > non-containers having similar boot sequences when possible.
 > 
-> Yes, the discussion is beginning to make it's way to the list.  I've
-> mostly been waiting for blk-mq to get a wider review before taking the
-> early scsi-mq prototype driver to a larger public audience.
+> I, and many other people, run kernel.org kernels with LSM disabled.
+> userns defaults to on, and that configuration needs to be secure.
+
+My point was just that not being able to write under those mounts will
+not break the containers.  I'm not saying it would be ok to push this
+patch is it did require an LSM to be safe.
+
+> >> mappings for it to work right.  But ISTM it would be better for
+> >> containers to be smart enough to keep going if debugfs fails to mount
+> >
+> > "smart enough" in this case means finding ways to figure out information
+> > that it wouldn't otherwise need, and the form of which could at some point
+> > change, and generally just increases the future potential fragility.
 > 
-> Primarily, I'm now reaching out to the people most effected by existing
-> scsi_request_fn() based performance limitations.  Most of them have
-> abandoned existing scsi_request_fn() based logic in favor of raw block
-> make_request() based drivers, and are now estimating the amount of
-> effort to move to an scsi-mq based approach.
+> Presumably this is as simple as making 'mountall' report success if
+> nofail is set and mount returns -EPERM.
 > 
-> Regardless, as the prototype progresses over the next months, having a
-> face-to-face discussion with the key parties in the room would be very
-> helpful given the large amount of effort involved to actually make this
-> type of generational shift in SCSI actually happen.
+> That being said, it would probably be okay to modify debugfs to detect
+> that it's in a nonroot userns and show up empty when mounted.
 
-I'd be very interested in attending this, if invited.
+That'd obviously work for containers.
 
--- steve
+> > Well, to be fair that's again really referring to the securityfs one.
+> > Basically solving that would require teaching mountall to parse
+> > /proc/self/uid_map to decide its namespace.
+> 
+> Huh?
 
+I don't think it's going to be ok to have mountall proceed on
+real hosts with /sys/kernel/security not mounted, risking the expected
+security policy *quietly* not being setup on hosts.
 
+That's why I consider it better and safer to simply allow the
+securityfs mount.
+
+> >> -- this really seems like a userspace problem that ought to be fixed
+> >> in userspace.
+> >
+> >> > But for /sys/kernel/security, the failure of which to mount on a
+> >> > non-container can be a real problem, that is not good enough.  So
+> >> > at least I'd like securityfs to be mountable in a non-init userns.
+> >> >
+> >>
+> >> Will the container work if /sys/kernel/security is inaccessible even to "root"?
+> >
+> > Yes.  As it is they're actually not allowed to write under there (by
+> > LSM).  Containers start fine for me with these three mounted this way.
+> >
+> 
+> At least for securityfs, relying on LSM is legit.
+
+I'm not "relying on LSM" to make these safe.  I'm relying on the
+uid mappings to make these safe.
+
+Nevertheless I at least have hope of working around the others (in a
+distro-acceptable way), so if the others are too scary I'll pursue
+the workaround for the others and see where I get.  But I really feel
+the securityfs one is the best solution.
+
+thanks,
+-serge
