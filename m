@@ -1,97 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933806Ab3GPTDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 15:03:44 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48076 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933327Ab3GPTDm (ORCPT
+	id S933735Ab3GPTI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 15:08:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35076 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933353Ab3GPTI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 15:03:42 -0400
-Date: Tue, 16 Jul 2013 20:03:40 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
-        Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH] um/configs: don't use devtmpfs in defconfig
-Message-ID: <20130716190340.GO4165@ZenIV.linux.org.uk>
-References: <1373993525-25629-1-git-send-email-artagnon@gmail.com>
- <51E57BC1.4090904@nod.at>
- <CALkWK0nrDsZiHe2==DQZuHV7id=6gc4UHUj1xXu9jN5cr3SUcQ@mail.gmail.com>
- <20130716174708.GN4165@ZenIV.linux.org.uk>
- <CALkWK0mY8OgqUiOAmyLzZpaS1U7Vw_xPSHytqggikGWBoghd_g@mail.gmail.com>
+	Tue, 16 Jul 2013 15:08:28 -0400
+Date: Tue, 16 Jul 2013 12:04:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: driver model, duplicate names question
+Message-ID: <20130716190422.GA1186@kroah.com>
+References: <51E57631.2030805@linux.intel.com>
+ <20130716164459.GB17827@kroah.com>
+ <51E59116.2060801@linux.intel.com>
+ <20130716183149.GA6164@kroah.com>
+ <51E596E7.5040504@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CALkWK0mY8OgqUiOAmyLzZpaS1U7Vw_xPSHytqggikGWBoghd_g@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51E596E7.5040504@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:42:55PM +0530, Ramkumar Ramachandra wrote:
-> Leave aside the fact that I could not find the uml-utils upstream [1],
-> and didn't have a /uml/port-helper to connect the xterms for a second;
-> I didn't even understand what was supposed to happen.  Why do we spawn
-> xterms, and attach to the host's /dev/tty*?  So far, I just used
-> /dev/console inside my existing tmux session in urxvt, and it seems to
-> work fine.
 
-There are several things that can be attached to them.  Again, see the
-HOWTO for details.  FWIW, I prefer to have console in whatever I'm
-launching the whole thing in (usually - ssh session to the box I'm
-using to run all kinds of testing stuff on) with tty[1-6] attached to
-pts and accessed via screen /dev/pts/<n> on the same box (again, from ssh
-sessions, obviously).
+A: No.
+Q: Should I include quotations after my reply?
 
-> > One
-> > practical issue is the lack of VT102 emulation;
+http://daringfireball.net/2007/07/on_top
+
+On Tue, Jul 16, 2013 at 11:54:31AM -0700, Srinivas Pandruvada wrote:
+> Hi,
 > 
-> This detail is not at all clear from the Documentation.  I spent a lot
-> of time trying to figure out why systemd wasn't able to getty on
-> /dev/tty1.
+> I am assigned to do add a powercap class. There are several 
+> technologies, which will allow to add a power budget to an individual
+> device. For example, you can set a power budget to a individual
+> physical cpu package, each core and uncore devices, GPUs, DRAM etc.
 
-No fscking idea - sysvinit has no problem with launching getty instances
-(on explicit lines in inittab, that is), so it's not a problem on getty
-side of things.  And as much as I dislike systemd, I think it's not to blame
-in this case.  It looks like it *does* lauch getty just fine, but your host
-is misconfigured in a way that makes attempts to open the corresponding device
-nodes fail.  With the messages you've quoted.  The same HOWTO has
-     2.3 Compiling and installing uml_utilities
-right after
-     2.1 Compiling the kernel
-     2.2 Compiling and installing kernel modules
-so it's not as if the needed setup had not been mentioned.
+"classes" all reference a "device" in the system, I don't see that in
+your tree below, where does that come in?  How do I, as someone who
+created a device in the system know to create a your new powercap class
+for it?
 
-FWIW, it would be a good idea to package the damn thing for Fedora -
-Debian has
-$ apt-cache search 'User-Mode Linux'
-rootstrap - A tool for building complete Linux filesystem images
-uml-utilities - User-mode Linux (utility programs)
-user-mode-linux-doc - User-mode Linux (Documentation)
-user-mode-linux - User-mode Linux (kernel)
-$
+In other words, are you _sure_ you want a class here and not something
+else (i.e. a bus?)
 
-> > TERM=linux when logged
-> > in on those is not right - you want either TERM=xterm (for xterms) or
-> > TERM=screen (when accessing pts-associated ones with screen /dev/pts/n),
-> > etc.  In any case, it's a dumb serial line as far as the guest kernel
-> > is concerned - all terminal emulation is going to happen elsewhere (xterms
-> > running on host and interpreting escape sequences from guest userland,
-> > etc.)
-> 
-> Hm, what does $TERM have to do with all this?
+> +The Power Capping framework organizes power capping devices under a tree structure.
+> +At the root level, each device is under some "controller", which is the enabler
+> +of technology. For example this can be "RAPL".
+> +Under each controllers, there are multiple power zones, which can be independently
+> +monitored and controlled.
+> +Each power zone can be organized as a tree with parent, children and siblings.
+> +Each power zone defines attributes to enable power monitoring and constraints.
 
-Huh?  That's what tells all curses-based stuff which escape sequences to
-emit.  And that's the *only* thing in which "it's not a VT" matters at
-all.  Again, your description of symptoms doesn't look like "systemd gets
-confused by tty1 not being a VT and fails to launch getty"; it appears to
-be "systemd does see tty1 and does launch getty, albeit with slightly wrong
-terminal type argument.  Which doesn't matter, since getty fails to open the
-device nodes due to missing utilities on host".  Install said utilities
-or switch to explicit con=... in command line and getty will launch just
-fine.  That's where TERM= settings come into play - some curses-based stuff
-will assume it has all linux VT escape sequences to play with and the
-thing you are using to access it might not be happy.  Other than that
-(and this is the thing you pass to getty as terminal type - the last
-argument for agetty(8)), everything seems to boil down to lack of uml utils
-on host...
+Ah, this sounds like you want to be a bus, as you have a controller, and
+then devices attached to it.
+
+> +Example Sys-FS Interface
+> +
+> +/sys/class/power_cap/intel-rapl
+> +├── package-0
+> +│   ├── constraint-0
+> +│   │   ├── name
+> +│   │   ├── power_limit_uw
+> +│   │   └── time_window_us
+> +│   ├── constraint-1
+> +│   │   ├── name
+> +│   │   ├── power_limit_uw
+> +│   │   └── time_window_us
+> +│   ├── core
+> +│   │   ├── constraint-0
+> +│   │   │   ├── name
+> +│   │   │   ├── power_limit_uw
+> +│   │   │   └── time_window_us
+> +│   │   ├── energy_uj
+> +│   │   └── max_energy_range_uj
+> +│   ├── dram
+> +│   │   ├── constraint-0
+> +│   │   │   ├── name
+> +│   │   │   ├── power_limit_uw
+> +│   │   │   └── time_window_us
+> +│   │   ├── energy_uj
+> +│   │   └── max_energy_range_uj
+> +│   ├── energy_uj
+> +│   ├── max_energy_range_uj
+> +│   └── max_power_range_uw
+> +├── package-1
+> +│   ├── constraint-0
+> +│   │   ├── name
+> +│   │   ├── power_limit_uw
+> +│   │   └── time_window_us
+> +│   ├── constraint-1
+> +│   │   ├── name
+> +│   │   ├── power_limit_uw
+> +│   │   └── time_window_us
+> +│   ├── core
+> +│   │   ├── constraint-0
+> +│   │   │   ├── name
+> +│   │   │   ├── power_limit_uw
+> +│   │   │   └── time_window_us
+> +│   │   ├── energy_uj
+> +│   │   └── max_energy_range_uj
+> +│   ├── dram
+> +│   │   ├── constraint-0
+> +│   │   │   ├── name
+> +│   │   │   ├── power_limit_uw
+> +│   │   │   └── time_window_us
+> +│   │   ├── energy_uj
+> +│   │   └── max_energy_range_uj
+> +│   ├── energy_uj
+> +│   ├── max_energy_range_uj
+> +│   └── max_power_range_uw
+> +├── power
+> +│   ├── async
+> +│   ├── autosuspend_delay_ms
+> +│   ├── control
+> +│   ├── runtime_active_kids
+> +│   ├── runtime_active_time
+> +│   ├── runtime_enabled
+> +│   ├── runtime_status
+> +│   ├── runtime_suspended_time
+> +│   └── runtime_usage
+> +├── subsystem -> ../../../../class/power_cap
+> +└── uevent
+
+Ick.  Rewrite this to use a bus and you should be fine, right?  Don't
+use a class, a class is only to be used if you have a device that is a
+specific "type of thing".  Like a tty device, it is a class, as lots of
+different "real" devices can have tty ports on them (usb, pci, pcmcia,
+platform, etc.)
+
+Rethink this using a bus and see if that solves your issues.  You get a
+hierarchy with that.  And you can have different "types" of devices on
+your bus, making it easy to tell the difference between a "package" and
+a "constraint".
+
+Does that help?
+
+greg k-h
