@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab3GPLzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 07:55:35 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:34907 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932328Ab3GPLzd (ORCPT
+	id S1754929Ab3GPMAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 08:00:50 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40255 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab3GPMAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 07:55:33 -0400
-Date: Tue, 16 Jul 2013 21:55:27 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: tim.c.chen@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module
- dependency.
-Message-ID: <20130716115527.GA1034@gondor.apana.org.au>
-References: <201307162053.GBC56724.MFVOJtSLQHFOOF@I-love.SAKURA.ne.jp>
+	Tue, 16 Jul 2013 08:00:48 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Paul Zimmerman <paul.zimmerman@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: DWC2 and/or S3C-HSOTG for STA2X11 board
+Date: Tue, 16 Jul 2013 14:01:33 +0200
+Message-ID: <38175373.Cq6zxae9tO@harkonnen>
+User-Agent: KMail/4.10.4 (Linux/3.9.9-201.fc18.x86_64; KDE/4.10.4; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201307162053.GBC56724.MFVOJtSLQHFOOF@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 08:53:02PM +0900, Tetsuo Handa wrote:
-> I got below failure.
-> 
->   [    5.258911] scsi 1:0:0:0: CD-ROM            NECVMWar VMware IDE CDR10 1.00 PQ: 0 ANSI: 5
->   [    5.267651] modprobe (156) used greatest stack depth: 4064 bytes left
->   [    5.293607] Fusion MPT base driver 3.04.20
->   [    5.294416] Copyright (c) 1999-2008 LSI Corporation
->   [    5.300109] Fusion MPT SPI Host driver 3.04.20
->   [    5.300967] Switched to clocksource tsc
->   [    5.310921] mptbase: ioc0: Initiating bringup
->   [    5.329480] ioc0: LSI53C1030 B0: Capabilities={Initiator}
->   [    5.373136] scsi2 : ioc0: LSI53C1030 B0, FwRev=01032920h, Ports=1, MaxQ=128, IRQ=17
->   [    5.406190] scsi 2:0:0:0: Direct-Access     VMware,  VMware Virtual S 1.0  PQ: 0 ANSI: 2
->   [    5.408582] scsi target2:0:0: Beginning Domain Validation
->   [    5.415451] scsi target2:0:0: Domain Validation skipping write tests
->   [    5.416399] scsi target2:0:0: Ending Domain Validation
->   [    5.417445] scsi target2:0:0: FAST-40 WIDE SCSI 80.0 MB/s ST (25 ns, offset 127)
->   [    5.419855] scsi 2:0:1:0: Direct-Access     VMware,  VMware Virtual S 1.0  PQ: 0 ANSI: 2
->   [    5.420404] scsi target2:0:1: Beginning Domain Validation
->   [    5.423171] scsi target2:0:1: Domain Validation skipping write tests
->   [    5.423363] scsi target2:0:1: Ending Domain Validation
->   [    5.424440] scsi target2:0:1: FAST-40 WIDE SCSI 80.0 MB/s ST (25 ns, offset 127)
->   [    5.439700] modprobe (211) used greatest stack depth: 3872 bytes left
->   [    5.561700] sr0: scsi3-mmc drive: 1x/1x writer dvd-ram cd/rw xa/form2 cdda tray
->   [    5.562596] cdrom: Uniform CD-ROM driver Revision: 3.20
->   [    5.667330] scsi_id (264) used greatest stack depth: 3568 bytes left
->   FATAL: Module scsi_wait_scan not found.
->   
->   FATAL: Module scsi_wait_scan not found.
->   
->   FATAL: Module scsi_wait_scan not found.
->   (...snipped...)
->   [   60.308916] dracut Warning: Boot has failed. To debug this issue add "rdshell" to the kernel command line.
->   [   60.311431] dracut Warning: Signal caught!
-> 
-> Kernel config is at http://I-love.SAKURA.ne.jp/tmp/config-3.11-rc1
-> 
-> Bisected to commit 2d31e518 "crypto: crct10dif - Wrap crc_t10dif function all
-> to use crypto transform framework", and confirmed that changing from
-> CONFIG_CRYPTO_CRCT10DIF=m to CONFIG_CRYPTO_CRCT10DIF=y solves this problem.
+Hello,
 
-Looks like a bug in whatever is creating the initrd as it isn't
-including modules necessary for the boot.
+I have an x86 board made by STMicroelectronics (STA2X11) with the Synopsis 
+USB-OTG DesignWare 2 on it and connected through the PCI-e bus.
 
-Cheers,
+
+I know that there are two drivers for the same controller:
+
+   (host)   drivers/staging/dwc2/*
+   (device) drivers/usb/gadget/s3c-hsotg.{c|h}
+
+
+So, at the moment I cannot have a board with both host/device working at the 
+same time. I have to choose to use the block as device or host, right?
+
+I know that the plan is to merge the s3c-hsotg in the dwc2 driver 
+(https://lwn.net/Articles/540283/). Are still accepted patch to s3c-hsotg? Or 
+it is work in progress right now (soon), so it is better to wait after the 
+merge?
+
+In order to use the s3c-hsotg I must implement a PCI wrapper that uses this 
+driver. It will be accepted in the kernel even if it will be removed sooner or 
+later because of the driver merge?
+
+Thank you :)
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Federico Vaga
