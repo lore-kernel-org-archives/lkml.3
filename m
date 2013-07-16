@@ -1,110 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab3GPKju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 06:39:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2274 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754107Ab3GPKjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 06:39:49 -0400
-Date: Tue, 16 Jul 2013 12:39:39 +0200
-From: Niels de Vos <ndevos@redhat.com>
-To: Brian Foster <bfoster@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [fuse-devel] [PATCH] fuse: fix occasional dentry leak when
- readdirplus is used
-Message-ID: <20130716103939.GL18803@ndevos-laptop.usersys.redhat.com>
-References: <1373893160-30601-1-git-send-email-ndevos@redhat.com>
- <51E456B6.8050601@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E456B6.8050601@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755062Ab3GPKj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 06:39:58 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:45991 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267Ab3GPKjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 06:39:55 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>
+Subject: [PATCH] microblaze: Fix clone syscall
+Date: Tue, 16 Jul 2013 12:39:46 +0200
+Message-Id: <2dd2f768912e04aa378d358c9a4e20eccbf848d2.1373971170.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-14755-1373971186-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 04:08:22PM -0400, Brian Foster wrote:
-> On 07/15/2013 08:59 AM, Niels de Vos wrote:
-> > In case d_lookup() returns a dentry with d_inode == NULL, the dentry is
-> > not returned with dput(). This results in triggering a BUG() in
-> > shrink_dcache_for_umount_subtree():
-> > 
-> >   BUG: Dentry ...{i=0,n=...} still in use (1) [unmount of fuse fuse]
-> > 
-> > Reported-by: Justin Clift <jclift@redhat.com>
-> > Signed-off-by: Niels de Vos <ndevos@redhat.com>
-> > 
-> > --
-> > Reproducing the BUG() on kernels with fuse that support READDIRPLUS can
-> > be done with the GlusterFS tests:
-> > - http://www.gluster.org/community/documentation/index.php/Using_the_Gluster_Test_Framework
-> > 
-> > After some stressing of the VFS and fuse mountpoints, bug-860663.t will
-> > hit the BUG(). It does not happen on running this test stand-alone.
-> 
-> Hi Neils,
-> 
-> FYI, this is fairly easy to reproduce on-demand with gluster:
-> 
-> - mount a volume to two local mountpoints (i.e., I used a single
-> storage/posix translator volume):
-> 	glusterfs --volfile=./test.vol /mnt/{1,2} --use-readdirp=1
-> - create a negative dentry in one mountpoint:
-> 	ls /mnt/1/file (results in ENOENT)
-> - create the file via the second mountpoint:
-> 	touch /mnt/2/file
-> - run a readdirp on the first mountpoint:
-> 	ls /mnt/1/
-> - umount /mnt/2 /mnt/1
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Thanks, that definitely makes it easier to verify the fix.
+--=_mimegpg-monstr-desktop-14755-1373971186-0001
 
-> > ---
-> >  fs/fuse/dir.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> > index 0eda527..da67a15 100644
-> > --- a/fs/fuse/dir.c
-> > +++ b/fs/fuse/dir.c
-> > @@ -1246,7 +1246,9 @@ static int fuse_direntplus_link(struct file *file,
-> >  		if (err)
-> >  			goto out;
-> >  		dput(dentry);
-> > -		dentry = NULL;
-> > +	} else if (dentry) {
-> > +		/* this dentry does not have a d_inode, just drop it */
-> > +		dput(dentry);
-> >  	}
-> 
-> I'm not really familiar with the dcache code, but is it appropriate to
-> also d_invalidate() the dentry in this case (as the previous code block
-> does)? Perhaps Miklos or somebody more familiar with dcache can confirm...
+Microblaze was assign to CLONE_BACKWARDS type where
+parent tid was passed via 3rd argument.
+Microblaze glibc is using 4th argument for it.
 
-I do not *think* d_invalidate() is needed. The vmcores I have seem where 
-this BUG() happened, only have dentry->d_flags = 0x18 which translates 
-to (DCACHE_OP_DELETE | DCACHE_OP_PRUNE) and d_subdirs as an empty list.  
-d_invalidate() only calls __d_drop(), which only does something when the 
-dentry is hashed.
+Create new CLONE_BACKWARDS3 type where stack_size is passed
+via 3rd argument, parent thread id pointer via 4th,
+child thread id pointer via 5th and tls value as 6th
+argument
 
-I am not sure if a dentry can be hashed, but still does not have a valid 
-non-NULL d_inode. If that is the case, d_invalidate() should indeed be 
-called.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+Hi Al,
+
+We have found this problem based on debugging timer_create()
+reported by customer which wasn't cover by LTP testing.
+What tool do you use for syscall testing?
+
+IRC there was any discussion about adding syscall tests
+directly to the kernel.
+
+I am not sure if there is more elegant way how to fix this
+in syscalls.h.
 
 Thanks,
-Niels
+Michal
 
-> Brian
-> 
-> >  
-> >  	dentry = d_alloc(parent, &name);
-> > 
-> 
+---
+ arch/Kconfig             | 6 ++++++
+ arch/microblaze/Kconfig  | 2 +-
+ include/linux/syscalls.h | 5 +++++
+ kernel/fork.c            | 6 ++++++
+ 4 files changed, 18 insertions(+), 1 deletion(-)
 
--- 
-Niels de Vos
-Sr. Software Maintenance Engineer
-Support Engineering Group
-Red Hat Global Support Services
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 8d2ae24..1feb169 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -407,6 +407,12 @@ config CLONE_BACKWARDS2
+ 	help
+ 	  Architecture has the first two arguments of clone(2) swapped.
+
++config CLONE_BACKWARDS3
++	bool
++	help
++	  Architecture has tls passed as the 3rd argument of clone(2),
++	  not the 5th one.
++
+ config ODD_RT_SIGACTION
+ 	bool
+ 	help
+diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
+index d22a4ec..4fab522 100644
+--- a/arch/microblaze/Kconfig
++++ b/arch/microblaze/Kconfig
+@@ -28,7 +28,7 @@ config MICROBLAZE
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_IDLE_POLL_SETUP
+ 	select MODULES_USE_ELF_RELA
+-	select CLONE_BACKWARDS
++	select CLONE_BACKWARDS3
+
+ config SWAP
+ 	def_bool n
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 4147d70..71d8931 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -802,9 +802,14 @@ asmlinkage long sys_vfork(void);
+ asmlinkage long sys_clone(unsigned long, unsigned long, int __user *, int,
+ 	       int __user *);
+ #else
++#if CONFIG_CLONE_BACKWARDS3
++asmlinkage long sys_clone(unsigned long, unsigned long, int, int __user *,
++			  int __user *, int);
++#else
+ asmlinkage long sys_clone(unsigned long, unsigned long, int __user *,
+ 	       int __user *, int);
+ #endif
++#endif
+
+ asmlinkage long sys_execve(const char __user *filename,
+ 		const char __user *const __user *argv,
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 66635c8..da6b699 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1679,6 +1679,12 @@ SYSCALL_DEFINE5(clone, unsigned long, newsp, unsigned long, clone_flags,
+ 		 int __user *, parent_tidptr,
+ 		 int __user *, child_tidptr,
+ 		 int, tls_val)
++#elif defined(CONFIG_CLONE_BACKWARDS3)
++SYSCALL_DEFINE6(clone, unsigned long, clone_flags, unsigned long, newsp,
++		int, stack_size,
++		int __user *, parent_tidptr,
++		int __user *, child_tidptr,
++		int, tls_val)
+ #else
+ SYSCALL_DEFINE5(clone, unsigned long, clone_flags, unsigned long, newsp,
+ 		 int __user *, parent_tidptr,
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-14755-1373971186-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlHlIvIACgkQykllyylKDCFJ9wCdFXb7bJaCwiwTE8wg0dxf/2Bd
+05QAnjhFVi/VMwuqA2LUU1phOLoYn9AI
+=IPZI
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-14755-1373971186-0001--
