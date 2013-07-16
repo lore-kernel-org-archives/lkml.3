@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab3GPMra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 08:47:30 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40792 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932086Ab3GPMr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 08:47:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Gy+XlliVlM57r8XPN9iLm
-Date: Tue, 16 Jul 2013 05:47:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, gregkh@linuxfoundation.org,
-        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] usb: musb: fix USB enumeration issue in OMAP3
- platform
-Message-ID: <20130716124721.GB7656@atomide.com>
-References: <1373282057-20181-1-git-send-email-kishon@ti.com>
- <51E4DFA6.2010501@ti.com>
- <20130716124227.GC15036@arwen.pp.htv.fi>
+	id S932655Ab3GPMt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 08:49:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932540Ab3GPMtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 08:49:25 -0400
+Date: Tue, 16 Jul 2013 14:48:46 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V5 12/12] perf tools: add a sample parsing test
+Message-ID: <20130716124846.GE9964@krava.brq.redhat.com>
+References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
+ <1373548341-24119-13-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130716124227.GC15036@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1373548341-24119-13-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [130716 05:49]:
-> Hi,
-> 
-> On Tue, Jul 16, 2013 at 11:22:38AM +0530, Kishon Vijay Abraham I wrote:
-> > Tony,
-> > 
-> > On Monday 08 July 2013 04:44 PM, Kishon Vijay Abraham I wrote:
-> > > This series fixes the USB enumeration issue caused because of the controller
-> > > not able to get a reference to the PHY because of incorrect binding in the
-> > > board file.
-> > > 
-> > > In the case of non-dt boot, the platform specific initialization file
-> > > (board file) will do usb_bind_phy that binds the usb controller with the
-> > > PHY using device names. After the device names are created using 
-> > > PLATFORM_DEVID_AUTO, our original method of binding by device names doesn't
-> > > work reliably (since the device name changes). Hence the usb controller
-> > > is made to use labels for getting the PHY.
-> > > 
-> > > Here the PHY name is added in the plat data of USB controller device which
-> > > should be used by the controller driver to get the PHY.
-> > > Two new APIs usb_get_phy_by_name and devm_usb_get_phy_by_name are added to
-> > > be used by the controller to get the PHY by name.
-> > 
-> > You haven't picked this patch series?
-> 
-> yeah and now it's too much to send during the -rc series. Here's what we
-> can do, we can to minimum fix for -rc series (patching the names again)
-> and I'll queue everything else for mailine if tony gives me his Ack for
-> all arch/arm/*omap* parts.
-> 
-> Sounds good ?
+On Thu, Jul 11, 2013 at 04:12:21PM +0300, Adrian Hunter wrote:
+> Add a test that checks that sample parsing is correctly
+> implemented.
 
-Sounds good to me, except let's queue the last patch separately as cleanup
-after the others are merged. I've acked the first patch, that should not
-cause merge conflicts.
+nice!!! :)
 
-Regards,
+> 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-Tony
+SNIP
+
+> +static int do_test(u64 sample_type, u64 sample_regs_user)
+> +{
+> +	struct perf_evsel evsel = {
+> +		.needs_swap = false,
+> +		.attr = {
+> +			.sample_type = sample_type,
+> +			.sample_regs_user = sample_regs_user,
+> +		},
+> +	};
+> +	union perf_event event = {
+> +		.header = {
+> +			.type = PERF_RECORD_SAMPLE,
+> +			.size = sizeof(union perf_event),
+> +		},
+> +	};
+
+maybe I'm missing something but how does event.sample.array get
+allocated? It's used in perf_event__synthesize_sample func.
+
+do we need to use something like in the patch below..
+
+thanks,
+jirka
+
+---
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index c6e6813..dcbd40d 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -111,12 +111,8 @@ static int do_test(u64 sample_type, u64 sample_regs_user)
+ 			.sample_regs_user = sample_regs_user,
+ 		},
+ 	};
+-	union perf_event event = {
+-		.header = {
+-			.type = PERF_RECORD_SAMPLE,
+-			.size = sizeof(union perf_event),
+-		},
+-	};
++	u64 buf[100];
++	union perf_event *event = (union perf_event *) buf;
+ 	union {
+ 		struct ip_callchain callchain;
+ 		u64 data[64];
+@@ -162,10 +158,15 @@ static int do_test(u64 sample_type, u64 sample_regs_user)
+ 	size_t i;
+ 	int err;
+ 
++	event->sample.header = (struct perf_event_header) {
++		.type = PERF_RECORD_SAMPLE,
++		.size = sizeof(union perf_event),
++	};
++
+ 	for (i = 0; i < sizeof(user_regs); i++)
+ 		*(u8 *)user_regs = i;
+ 
+-	err = perf_event__synthesize_sample(&event, sample_type,
++	err = perf_event__synthesize_sample(event, sample_type,
+ 					    sample_regs_user, &sample, false);
+ 	if (err) {
+ 		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
+@@ -175,7 +176,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user)
+ 
+ 	evsel.sample_size = __perf_evsel__sample_size(sample_type);
+ 
+-	err = perf_evsel__parse_sample(&evsel, &event, &sample_out);
++	err = perf_evsel__parse_sample(&evsel, event, &sample_out);
+ 	if (err) {
+ 		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
+ 			 "perf_evsel__parse_sample", sample_type, err);
