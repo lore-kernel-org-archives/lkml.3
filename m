@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab3GPOeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 10:34:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37967 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754734Ab3GPOeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 10:34:05 -0400
-Subject: Re: [PATCH 3/3] kconfig: cleanup symbol-search code
-From: Jean Delvare <jdelvare@suse.de>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-In-Reply-To: <1373738905-23396-4-git-send-email-yann.morin.1998@free.fr>
-References: <1373738905-23396-1-git-send-email-yann.morin.1998@free.fr>
-	 <1373738905-23396-4-git-send-email-yann.morin.1998@free.fr>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Tue, 16 Jul 2013 16:33:47 +0200
-Message-ID: <1373985227.4513.12.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1754997Ab3GPOfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 10:35:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39424 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754599Ab3GPOfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 10:35:36 -0400
+Date: Tue, 16 Jul 2013 16:34:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/5] perf: add two new features
+Message-ID: <20130716143429.GK23818@dyad.programming.kicks-ass.net>
+References: <1372425741-1676-1-git-send-email-adrian.hunter@intel.com>
+ <20130628152745.GH6626@twins.programming.kicks-ass.net>
+ <51CDE273.9080209@intel.com>
+ <51E4E688.10405@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E4E688.10405@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Saturday 13 July 2013 à 20:08 +0200, Yann E. MORIN a écrit :
-> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+On Tue, Jul 16, 2013 at 09:22:00AM +0300, Adrian Hunter wrote:
+> On 28/06/13 22:22, Adrian Hunter wrote:
+> > On 28/06/2013 6:27 p.m., Peter Zijlstra wrote:
+> >> On Fri, Jun 28, 2013 at 04:22:16PM +0300, Adrian Hunter wrote:
+> >>> Hi
+> >>>
+> >>> Please consider these two new perf features:
+> >>>        x86: add ability to calculate TSC from perf sample timestamps
+> >>>        perf: add 'keep tracking' flag to PERF_EVENT_IOC_DISABLE
+> >>
+> >> Please explain to us why you'd like to do this..
+> > 
+> > I will see what information I can dig up.  The short answer is that I need
+> > to disable and re-enable a perf event but still be able to map IPs to their
+> > DSOs and symbols - which means not losing mmap events.
 > 
-> - no need for a double-indirection for the temporary sym_match_arr array
-> - the temporary sym_match_arr array is not NULL terminated, so no need
->   to allocate n+1 elements
-> - two minor style fixes
-> - grammar fix in comment
-> 
-> Reported-by: Jean Delvare <jdelvare@suse.de>
-> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Cc: Jean Delvare <jdelvare@suse.de>
-> ---
->  scripts/kconfig/symbol.c | 39 +++++++++++++++------------------------
->  1 file changed, 15 insertions(+), 24 deletions(-)
->  (...)
+> Any other comments?
 
-You mixed style cleanups with actual code changes, which is usually
-avoided. Michal may ask you to split these changes into two separate
-patches.
+Ah, thanks for the reminder.. well, I've applied patches 1-3 as those seem
+useful on their own. I'm not entirely convinced about the 'keep tracking' thing
+though.
 
-Still, I'm happy with all the changes:
-
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-
--- 
-Jean Delvare
-Suse L3
-
+It seems to me you could get the same by opening a second event into the same
+buffer and keeping that enabled.
