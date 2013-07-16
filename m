@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933915Ab3GPU36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 16:29:58 -0400
-Received: from mail.lang.hm ([64.81.33.126]:53959 "EHLO bifrost.lang.hm"
+	id S933941Ab3GPUcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 16:32:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11773 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933829Ab3GPU34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 16:29:56 -0400
-Date: Tue, 16 Jul 2013 13:29:27 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Willy Tarreau <w@1wt.eu>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        ksummit-2013-discuss@lists.linux-foundation.org,
-        torvalds@linux-foundation.org
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-In-Reply-To: <51E593B6.1050607@zytor.com>
-Message-ID: <alpine.DEB.2.02.1307161326070.15520@nftneq.ynat.uz>
-References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org> <20130712051451.GC25815@1wt.eu> <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz> <51E593B6.1050607@zytor.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S933879Ab3GPUcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 16:32:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,679,1367996400"; 
+   d="scan'208";a="269155843"
+Message-ID: <51E5ADC5.9010105@linux.intel.com>
+Date: Tue, 16 Jul 2013 13:32:05 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
+        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        alex.shi@intel.com, efault@gmx.de, pjt@google.com, len.brown@intel.com,
+        corbet@lwn.net, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
+References: <51E166C8.3000902@linux.intel.com> <20130715195914.GC23818@dyad.programming.kicks-ass.net> <51E45E8B.705@linux.intel.com> <20130715210650.GF23818@dyad.programming.kicks-ass.net> <20130715211230.GG23818@dyad.programming.kicks-ass.net> <51E47D30.5030203@linux.intel.com> <20130716173848.GA22795@dyad.programming.kicks-ass.net> <51E5947F.4090109@linux.intel.com> <20130716192145.GV17211@twins.programming.kicks-ass.net> <51E5A5AE.7010903@linux.intel.com> <20130716201702.GW17211@twins.programming.kicks-ass.net>
+In-Reply-To: <20130716201702.GW17211@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013, H. Peter Anvin wrote:
-
-> On 07/16/2013 12:19 AM, David Lang wrote:
->> On Fri, 12 Jul 2013, Willy Tarreau wrote:
->>
->>> And maybe in the end, having 1/10 patch cause a regression is not *that*
->>> dramatic, and probably less than not fixing the 9 other bugs. In one case
->>> we rely on -stable to merge the 10 fixes, and on the other case we'd rely
->>> on -stable to just revert one of them.
->>
->> Apologies for the late post, I'm catching up on things, but this jumped
->> out at me.
->>
->> We went through a LOT of pain several years ago when people got into the
->> mindset that a patch was acceptable if it fixed more people than it
->> broke. eliminating that mindset did wonders for kernel stability.
->>
->> Regressions are a lot more of a negative than bugfixes are a positive, a
->> 10:1 ratio of fixes to regressions is _not_ good enough.
->>
+On 7/16/2013 1:17 PM, Peter Zijlstra wrote:
+> On Tue, Jul 16, 2013 at 12:57:34PM -0700, Arjan van de Ven wrote:
+>> then the question of how much remaining capacity; this is a hard one, and not just
+>> for Intel. Almost all mobile devices today are thermally constrained, ARM and Intel
+>> alike (at least the higher performance ones)... the curse of wanting very thin and light
+>> phones that are made of thermally isolating plastic (so that radio waves can go through)
+>> and have a nice and bright screen...
 >
-> In my opinion, there is one exception, and that is when the problem
-> being fixed is much more severe than the fix.  *In particular* two
-> cases: permanently damaging hardware and corrupting data.  For example:
-> no boot, as severe as it is, is much better than either of these two
-> scenarios.
+> Right, so we might need to track a !idle avg over the thermal domain to
+> guestimate the head-room and inter-cpu relations.
 
-True, but the key point of this subthread is that regressions are _really_ bad, 
-and in practice it's impossible to do enough testing to guarantee that there 
-aren't regressions.
 
-as a result, you should only risk regressions if the problem that is being fixed 
-is really important. Just because someone found a bug doesn't make it important 
-enough to risk regressions over.
+btw one thing to realize is that many of the thermal limits in mobile devices don't have the CPU cores
+as the primary reason.
+Other components on the board (screens, modems etc) as well as the GPU likely impact
+this at least as much as actual cpu usage does.
+It's usually just that the CPU is the easiest to control down,
+so that tends to be the first one impacted.
 
-David Lang
