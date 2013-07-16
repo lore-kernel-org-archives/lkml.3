@@ -1,104 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3GPJl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 05:41:57 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:36163 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430Ab3GPJlz (ORCPT
+	id S932086Ab3GPJml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 05:42:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41594 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3GPJmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 05:41:55 -0400
+	Tue, 16 Jul 2013 05:42:40 -0400
+Date: Tue, 16 Jul 2013 12:42:12 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+CC: <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-omap: always send stop after nack
+Message-ID: <20130716094212.GL8880@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <51E50217.1000507@yahoo.es>
+ <20130716090300.GG8880@arwen.pp.htv.fi>
+ <51E5137B.7000302@yahoo.es>
 MIME-Version: 1.0
-In-Reply-To: <1372927830-2949-3-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-3-git-send-email-l.majewski@samsung.com>
-Date: Tue, 16 Jul 2013 15:11:54 +0530
-Message-ID: <CAKohpomfWKiRjznXeYsg32xAAWPTBQ4Gd0D_pftbA5=zMDiH4Q@mail.gmail.com>
-Subject: Re: [PATCH v5 2/7] cpufreq: Add boost frequency support in core
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q8dntDJTu318bll0"
+Content-Disposition: inline
+In-Reply-To: <51E5137B.7000302@yahoo.es>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+--q8dntDJTu318bll0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +int cpufreq_boost_trigger_state(int state)
-> +{
-> +       unsigned long flags;
-> +       int ret = 0;
-> +
-> +       if (boost_enabled != state) {
-> +               write_lock_irqsave(&cpufreq_driver_lock, flags);
-> +               boost_enabled = state;
-> +
-> +               ret = cpufreq_driver->enable_boost(state);
-> +               if (ret)
-> +                       boost_enabled = 0;
-> +
-> +               write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> +
-> +               if (ret)
-> +                       pr_err("%s: BOOST cannot enable (%d)\n",
+Hi,
 
-Who said we are enabling it?
+On Tue, Jul 16, 2013 at 05:33:47PM +0800, Hein Tibosch wrote:
+> On 7/16/2013 5:03 PM, Felipe Balbi wrote:
+> > Hi,
+> >
+> > On Tue, Jul 16, 2013 at 04:19:35PM +0800, Hein Tibosch wrote:
+> >> Hi Vikram,
+> >>
+> >> On a OMAP4460, i2c-bus-3:
+> >>
+> >> A driver (lm75) is causing many 'timeout waiting for bus ready' errors.
+> >> SDA remains high (as it should), but SCL remains low after a NACK.
+> >> The bus becomes _unusable for other clients_.
+> >>
+> >> While probing, "lm75" writes a command, followed by a read + stop,
+> >> but the write command is NACK'd. The chip does accept other writes/rea=
+ds,
+> >> it just refuses to ack invalid commands.
+> >>
+> >> Can you tell me if the patch below would make any sense? Or is it the
+> >> responsibility of the client to reset the i2c_smbus?
+> > patch below breaks repeated start.
+> Hi,
+>=20
+> No, after the NACK, no more commands are being processed,
+> including a repeated start. omap_i2c_xfer() returns -EREMOTEIO
+> without ever freeing the bus.
+>=20
+> The bus is left in an impossible state with SCL constantly low
+> and all next commands (to different chips) will therefore get
+> a -ETIMEDOUT
+>=20
+> With this patch, the bus will become idle again and new commands
+> can be processed normally
 
-> +                              __func__, ret);
-> +       }
-> +
-> +       return ret;
-> +}
-> +
-> +int cpufreq_boost_supported(void)
-> +{
-> +       if (cpufreq_driver)
-> +               return cpufreq_driver->boost_supported;
-> +
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(cpufreq_boost_supported);
-> +
-> +int cpufreq_boost_enabled(void)
-> +{
-> +       return boost_enabled;
-> +}
-> +EXPORT_SYMBOL_GPL(cpufreq_boost_enabled);
-> +
-> +void cpufreq_set_boost_enabled(int state)
+but you mentioned that if you have IGNORE_NAK set, everything is fine,
+since lm75 will get a return value of 0 and things will work just fine,
+right ?
 
-Maybe cpufreq_block_boost? As suggested by Rafael.
+Also, you also said that the chip 'refuses to ack invalid commands', why
+are you sending invalid commands to start with ? This could be a bug in
+i2c-omap.c, sure, but let's try to figure out why IGNORE_NAK helps and
+why is lm75 driver sending invalid commands.
 
-> +{
-> +       boost_enabled = state;
-> +}
-> +EXPORT_SYMBOL_GPL(cpufreq_set_boost_enabled);
-> +
-> +/*********************************************************************
->   *               REGISTER / UNREGISTER CPUFREQ DRIVER                *
->   *********************************************************************/
->
-> @@ -2001,6 +2094,22 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
->         cpufreq_driver = driver_data;
->         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
->
-> +       if (cpufreq_driver->boost_supported) {
-> +               /*
-> +                * Check if boost driver provides function to enable boost -
-> +                * if not, use cpufreq_boost_enable_sw as default
-> +                */
-> +               if (!cpufreq_driver->enable_boost)
-> +                       cpufreq_driver->enable_boost = &cpufreq_boost_enable_sw;
+--=20
+balbi
 
-& is redundant.
+--q8dntDJTu318bll0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR5RV0AAoJEIaOsuA1yqREpygP/ipVcvfnN78uLBUqhCHYv7MQ
+AEcY4FGzhVz5NnfwqKU15iz8EWT1HBEjXzQAFmcph6bKM+w+aHeLxoaYJFOKjcZN
+wgysI8q4xWMizjrQOgXprzMg3TYUW0VLVgZ3GJDILMpzCyp7MfZ9mT111d52ERVL
+MSz0v0Q+rXmJcKXJpbIPkpffYEGw2oI6/p1xsPP3vanR5abmSkq1V0h99mYEXF7k
+t0vBipPtnIRJJ8yCfkCNmXrtEqJFdBkIpUvV9g8Fg6l1a9XDiVkrJd2vC33n3URO
+YiOl6D90XVutBYxQQUgDCUZZ4oyYve1zaT7ZduPSlrixnKcxo+FnciGKS3qY0MQj
+qqDhZjpuC/BN9TbjLdFnBhzSDUvSSk2RhCczEcz0LKXAckGTyTqVgYDh0g1a1yAT
+4z/RUuUpxgOVYnh0Zbdek0YtUC3gBqG7JScOy9PCzjMgZVJC1bWxefRk288GHtB9
+BDRwz3L37zE5yj/rK1cIENswNoOYvo6D38tIFwpoaE7xfRiKLj/EyYnhSS9ysXip
+ajBV0qjjyJaYwyaFutXmoelxaOHOXSqtxqw+qlF+EisVxwYupKDq4TWfdNGUPn3h
+ordXYiXbes8mnbJyi03rzx5XsWWFRkU753Mr1bxZpVRlw3tB+uFKNcFi9+JWTMyT
+Ey+4jhFsHl90lnNZMDy5
+=5TVr
+-----END PGP SIGNATURE-----
+
+--q8dntDJTu318bll0--
