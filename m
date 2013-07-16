@@ -1,137 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab3GPPG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 11:06:58 -0400
-Received: from 16.mo1.mail-out.ovh.net ([178.33.104.224]:56201 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392Ab3GPPG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 11:06:57 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Chris Ball <cjb@laptop.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v3 2/7] mmc: atmel-mci: prepare clk before calling enable
-Date: Tue, 16 Jul 2013 17:06:48 +0200
-Message-Id: <1373987208-24120-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-References: <1373986995-23899-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 7021111819719309420
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S932821Ab3GPPKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 11:10:09 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:52587 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932619Ab3GPPKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 11:10:06 -0400
+Date: Tue, 16 Jul 2013 08:09:40 -0700
+From: Kees Cook <kees@outflux.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130716150940.GP17379@outflux.net>
+References: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+ <20130715174659.GC15531@xanatos>
+ <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+ <20130715180403.GD15531@xanatos>
+ <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+ <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+ <20130715195316.GF15531@xanatos>
+ <20130715204135.GH15531@xanatos>
+ <CAMuHMdUVBJh1KoV==jq2y1TTe3-QtPzAqfTcydm0xtHJosuA_A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUVBJh1KoV==jq2y1TTe3-QtPzAqfTcydm0xtHJosuA_A@mail.gmail.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On Tue, Jul 16, 2013 at 04:30:45PM +0200, Geert Uytterhoeven wrote:
+> On Mon, Jul 15, 2013 at 10:41 PM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+> > I should not have to ask for professional behavior on the mailing lists.
+> > Professional behavior should be the default.
+> 
+> So, what does "professional" mean? A professional is paid for his work, an
+> amateur isn't. But this doesn't say anything about code quality, maintainer
+> responsiveness, etc.
+> Does it imply behavior that (hopefully) keeps getting you paid?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
----
- drivers/mmc/host/atmel-mci.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+I think we're getting hung up on this specific phrase. I've interpreted
+this issue with lkml communication as a need to avoid bullying.  I think
+"no bullying", while still up for heavy interpretation, is better to
+focus on than "being professional".
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index bdb84da..4636af6 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -378,6 +378,8 @@ static int atmci_regs_show(struct seq_file *s, void *v)
- {
- 	struct atmel_mci	*host = s->private;
- 	u32			*buf;
-+	int			ret = 0;
-+
- 
- 	buf = kmalloc(ATMCI_REGS_SIZE, GFP_KERNEL);
- 	if (!buf)
-@@ -389,9 +391,13 @@ static int atmci_regs_show(struct seq_file *s, void *v)
- 	 * consistent.
- 	 */
- 	spin_lock_bh(&host->lock);
--	clk_enable(host->mck);
-+	ret = clk_prepare_enable(host->mck);
-+	if (ret) {
-+		spin_unlock_bh(&host->lock);
-+		goto out;
-+	}
- 	memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
--	clk_disable(host->mck);
-+	clk_disable_unprepare(host->mck);
- 	spin_unlock_bh(&host->lock);
- 
- 	seq_printf(s, "MR:\t0x%08x%s%s ",
-@@ -442,9 +448,10 @@ static int atmci_regs_show(struct seq_file *s, void *v)
- 				val & ATMCI_CFG_LSYNC ? " LSYNC" : "");
- 	}
- 
-+out:
- 	kfree(buf);
- 
--	return 0;
-+	return ret;
- }
- 
- static int atmci_regs_open(struct inode *inode, struct file *file)
-@@ -1279,7 +1286,7 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 
- 		spin_lock_bh(&host->lock);
- 		if (!host->mode_reg) {
--			clk_enable(host->mck);
-+			clk_prepare_enable(host->mck);
- 			atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
- 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIEN);
- 			if (host->caps.has_cfg_reg)
-@@ -1359,7 +1366,7 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
- 			if (host->mode_reg) {
- 				atmci_readl(host, ATMCI_MR);
--				clk_disable(host->mck);
-+				clk_disable_unprepare(host->mck);
- 			}
- 			host->mode_reg = 0;
- 		}
-@@ -2376,10 +2383,12 @@ static int __init atmci_probe(struct platform_device *pdev)
- 	if (!host->regs)
- 		goto err_ioremap;
- 
--	clk_enable(host->mck);
-+	ret = clk_prepare_enable(host->mck);
-+	if (ret)
-+		goto err_request_irq;
- 	atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
- 	host->bus_hz = clk_get_rate(host->mck);
--	clk_disable(host->mck);
-+	clk_disable_unprepare(host->mck);
- 
- 	host->mapbase = regs->start;
- 
-@@ -2482,11 +2491,11 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 			atmci_cleanup_slot(host->slot[i], i);
- 	}
- 
--	clk_enable(host->mck);
-+	clk_prepare_enable(host->mck);
- 	atmci_writel(host, ATMCI_IDR, ~0UL);
- 	atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
- 	atmci_readl(host, ATMCI_SR);
--	clk_disable(host->mck);
-+	clk_disable_unprepare(host->mck);
- 
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
+-Kees
+
 -- 
-1.7.9.5
-
+Kees Cook                                            @outflux.net
