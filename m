@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751132Ab3GPFKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 01:10:22 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48359 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab3GPFKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 01:10:20 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-aa-51e4d5b999cb
-Date: Tue, 16 Jul 2013 14:10:20 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] mm, hugetlb: move up the code which check
- availability of free huge page
-Message-ID: <20130716051020.GA30116@lge.com>
-References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1373881967-16153-2-git-send-email-iamjoonsoo.kim@lge.com>
- <87a9lnkjlu.fsf@linux.vnet.ibm.com>
- <20130716011607.GD2430@lge.com>
- <87a9lni3bv.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
+	id S1751182Ab3GPFMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 01:12:38 -0400
+Received: from 1wt.eu ([62.212.114.60]:34689 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812Ab3GPFMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 01:12:36 -0400
+Date: Tue, 16 Jul 2013 07:12:14 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Subject: Re: [ATTEND] How to act on LKML (was: [ 00/19] 3.10.1-stable review)
+Message-ID: <20130716051214.GC12242@1wt.eu>
+References: <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home> <20130715223615.GI15531@xanatos> <20130715231555.GA24650@roeck-us.net> <1373933850.17876.224.camel@gandalf.local.home>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87a9lni3bv.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1373933850.17876.224.camel@gandalf.local.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 09:06:04AM +0530, Aneesh Kumar K.V wrote:
-> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Mon, Jul 15, 2013 at 08:17:30PM -0400, Steven Rostedt wrote:
+> On Mon, 2013-07-15 at 16:15 -0700, Guenter Roeck wrote:
+> >  
+> > One thing you should keep in mind in your discussion is what can happen
+> > if people get too polite with each other.
+> > 
+> > I have seen this happen at two large companies I worked for. Early on, flames
+> > are acceptable and expected as response to someone publishing bad code which
+> > breaks everything for everyone. Then, at some point, it is not acceptable
+> > anymore to flame, and one is expected to be polite and friendly at all times.
+> > "Your code breaks the build for every platform. Would you please kindly
+> > consider fixing it ?"
+> > Result is that code quality suffers, to the point where images don't even
+> > build anymore.
+> > 
+> > I hope the Linux kernel never gets into that stage. To avoid that,
+> > I am willing to be cursed at by Linus if I am the responsible party.
 > 
-> > On Mon, Jul 15, 2013 at 07:31:33PM +0530, Aneesh Kumar K.V wrote:
-> >> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
-> >> 
-> >> > We don't need to proceede the processing if we don't have any usable
-> >> > free huge page. So move this code up.
-> >> 
-> >> I guess you can also mention that since we are holding hugetlb_lock
-> >> hstate values can't change.
-> >
-> > Okay. I will mention this for v2.
-> >
-> >> 
-> >> 
-> >> Also.
-> >> 
-> >> >
-> >> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >> >
-> >> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> >> > index e2bfbf7..d87f70b 100644
-> >> > --- a/mm/hugetlb.c
-> >> > +++ b/mm/hugetlb.c
-> >> > @@ -539,10 +539,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
-> >> >  	struct zoneref *z;
-> >> >  	unsigned int cpuset_mems_cookie;
-> >> >
-> >> > -retry_cpuset:
-> >> > -	cpuset_mems_cookie = get_mems_allowed();
-> >> > -	zonelist = huge_zonelist(vma, address,
-> >> > -					htlb_alloc_mask, &mpol, &nodemask);
-> >> >  	/*
-> >> >  	 * A child process with MAP_PRIVATE mappings created by their parent
-> >> >  	 * have no page reserves. This check ensures that reservations are
-> >> > @@ -550,11 +546,16 @@ retry_cpuset:
-> >> >  	 */
-> >> >  	if (!vma_has_reserves(vma) &&
-> >> >  			h->free_huge_pages - h->resv_huge_pages == 0)
-> >> > -		goto err;
-> >> > +		return NULL;
-> >> >
-> >> 
-> >> If you don't do the above change, the patch will be much simpler. 
-> >
-> > The patch will be, but output code will not.
-> > With this change, we can remove one goto label('err:') and
-> > this makes code more readable.
-> >
+> Didn't Jim Zemlin show some research where there were two groups:
 > 
-> If you feel stronly about the cleanup, you can do another path for the
-> cleanups. Don't mix things in a single patch. That makes review difficult.
+>  One that did a bunch of brain storming where no idea was a bad idea
+> 
+>  The other required you to defend your idea while the others bashed it.
+> 
+> The results always showed that the second group not only did a better
+> job, but also faster and more efficient.
+> 
+> I'm afraid if we worry too much about politeness, we will fall into that
+> first group.
 
-Okay! I will make an another patch for clean-up.
+Linus already said you don't need to feer this change from him :-)
 
-Thanks.
+Willy
 
-> 
-> -aneesh
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
