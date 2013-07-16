@@ -1,37 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758467Ab3GPAaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 20:30:14 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44048 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757865Ab3GPAaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 20:30:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ksummit-2013-discuss@lists.linuxfoundation.org
-Cc: Greg KH <greg@kroah.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable kernel, let's dump the cc: stable tag
-Date: Tue, 16 Jul 2013 02:40:06 +0200
-Message-ID: <2026124.8UngzyUmTA@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130715230825.GA1739@kroah.com>
-References: <1373916476.2748.69.camel@dabdike> <51E4712E.5010501@zytor.com> <20130715230825.GA1739@kroah.com>
+	id S1758487Ab3GPAhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 20:37:55 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46916 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758317Ab3GPAhy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Jul 2013 20:37:54 -0400
+X-AuditID: 9c93016f-b7b50ae0000021a9-1e-51e495dfb540
+Date: Tue, 16 Jul 2013 09:37:54 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: Dave Hansen <dave.hansen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/5] mm, page_alloc: support multiple pages allocation
+Message-ID: <20130716003754.GB2430@lge.com>
+References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <51DDE5BA.9020800@intel.com>
+ <20130711010248.GB7756@lge.com>
+ <51DE44CC.2070700@sr71.net>
+ <20130711061201.GA2400@lge.com>
+ <51E02F6E.1060303@sr71.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E02F6E.1060303@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 15, 2013 04:08:25 PM Greg KH wrote:
-> On Mon, Jul 15, 2013 at 03:01:18PM -0700, H. Peter Anvin wrote:
-> > Perhaps the KS topic should be about different stable workflows and what
-> > the maintainers' options are, rather than about a specific proposal.
-> > This seems like a good discussion topic.
+On Fri, Jul 12, 2013 at 09:31:42AM -0700, Dave Hansen wrote:
+> On 07/10/2013 11:12 PM, Joonsoo Kim wrote:
+> > On Wed, Jul 10, 2013 at 10:38:20PM -0700, Dave Hansen wrote:
+> >> You're probably right for small numbers of pages.  But, if we're talking
+> >> about things that are more than, say, 100 pages (isn't the pcp batch
+> >> size clamped to 128 4k pages?) you surely don't want to be doing
+> >> buffered_rmqueue().
+> > 
+> > Yes, you are right.
+> > Firstly, I thought that I can use this for readahead. On my machine,
+> > readahead reads (maximum) 32 pages in advance if faulted. And batch size
+> > of percpu pages list is close to or larger than 32 pages
+> > on today's machine. So I didn't consider more than 32 pages before.
+> > But to cope with a request for more pages, using rmqueue_bulk() is
+> > a right way. How about using rmqueue_bulk() conditionally?
 > 
-> I agree, that sounds good to me.
+> How about you test it both ways and see what is faster?
 
-+1
+It is not easy to test which one is better, because a difference may be
+appeared on certain circumstances only. Do not grab the global lock
+as much as possible is preferable approach to me.
 
-Rafael
+> 
+> > Hmm, rmqueue_bulk() doesn't stop until all requested pages are allocated.
+> > If we request too many pages (1024 pages or more), interrupt latency can
+> > be a problem.
+> 
+> OK, so only call it for the number of pages you believe allows it to
+> have acceptable interrupt latency.  If you want 200 pages, and you can
+> only disable interrupts for 100 pages, then just do it in two batches.
+> 
+> The point is that you want to avoid messing with the buffering by the
+> percpu structures.  They're just overhead in your case.
 
+Okay.
+
+Thanks.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
