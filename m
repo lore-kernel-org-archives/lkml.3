@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934077Ab3GPWNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 18:13:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49267 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933329Ab3GPWNc (ORCPT
+	id S934108Ab3GPWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 18:13:58 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:34754 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933295Ab3GPWNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 18:13:32 -0400
-Message-ID: <51E5C55C.4060609@infradead.org>
-Date: Tue, 16 Jul 2013 15:12:44 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 16 Jul 2013 18:13:54 -0400
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/v2] [trivial] treewide: Fix typo in printk
-References: <1373896210-21316-1-git-send-email-standby24x7@gmail.com> <1374003464-32302-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1374003464-32302-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <51E5C31C.8000606@zytor.com>
+References: <20130716183441.GA14232@www.outflux.net>
+	<CAE9FiQWSe-M8XhFvWM3Q5P3kj6_EvUFMSvCkrDZUH7WdPPp35g@mail.gmail.com>
+	<CAGXu5jJd11FeaTEQc6=8=PgL56VeC0W37U=RvS-iJ-sP+Raeaw@mail.gmail.com>
+	<1374006818.6458.62.camel@gandalf.local.home>
+	<CAGXu5jJNjHFJS0GfJVQm2++YtTn2yUfCAkf3u10REh=8DdeZCg@mail.gmail.com>
+	<51E5C31C.8000606@zytor.com>
+Date: Tue, 16 Jul 2013 15:13:54 -0700
+X-Google-Sender-Auth: hXGWA6I9HT-93q6dToxm5CLzXr4
+Message-ID: <CAE9FiQW-3H=rx-VewjMQjx2EOwcyDt351aQ0wnP8op6ZLViZag@mail.gmail.com>
+Subject: Re: [PATCH v5] x86: make sure IDT is page aligned
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        PaX Team <pageexec@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/13 12:37, Masanari Iida wrote:
-> Correct spelling typo in printk
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+On Tue, Jul 16, 2013 at 3:03 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/16/2013 01:47 PM, Kees Cook wrote:
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+>> The other IDTs don't need to be page aligned, but I marked them that
+>> way in the clean up because it seemed sensible to define these tables
+>> similarly. I can change the others to be __cacheline_aligned_bss if
+>> that's desired.
+>>
+>
+> I'm fine keeping them as page aligned.  They are page-sized on x86-64
+> anyway (half page on i386).
 
-Thanks.
+ok, then should change
 
-> ---
->  drivers/crypto/ux500/hash/hash_core.c               | 2 +-
->  drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c | 4 ++--
->  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c      | 2 +-
->  drivers/net/wireless/cw1200/wsm.c                   | 2 +-
->  drivers/net/wireless/iwlwifi/mvm/time-event.c       | 2 +-
->  drivers/net/wireless/rtlwifi/rtl8188ee/fw.c         | 4 ++--
->  drivers/net/wireless/rtlwifi/rtl8723ae/fw.c         | 4 ++--
->  drivers/power/88pm860x_charger.c                    | 4 ++--
->  drivers/power/pm2301_charger.c                      | 2 +-
->  drivers/scsi/lpfc/lpfc_attr.c                       | 8 ++++----
->  drivers/scsi/qla2xxx/qla_mr.c                       | 2 +-
->  11 files changed, 18 insertions(+), 18 deletions(-)
+> +/* No need to be aligned, but done to keep all IDTs defined the same way. */
+> +gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
 
+==>
 
-
--- 
-~Randy
+> +/* Only need to be cacheline aligned, but keep all IDTs defined the same way to be page aligned. */
+> +gate_desc trace_idt_table[NR_VECTORS] __page_aligned_bss;
