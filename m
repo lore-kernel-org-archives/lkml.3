@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758613Ab3GPCO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Jul 2013 22:14:29 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:45193 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758522Ab3GPCO2 (ORCPT
+	id S1758550Ab3GPCO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Jul 2013 22:14:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61083 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307Ab3GPCO0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Jul 2013 22:14:28 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-bf-51e4ac826cf6
-Date: Tue, 16 Jul 2013 11:14:29 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Sam Ben <sam.bennn@gmail.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] mm, hugetlb: clean-up and possible bug fix
-Message-ID: <20130716021429.GJ2430@lge.com>
-References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
- <871u6zkj7b.fsf@linux.vnet.ibm.com>
- <20130716011054.GC2430@lge.com>
- <51E4A181.2030707@gmail.com>
- <20130716014558.GG2430@lge.com>
- <51E4A824.3030308@gmail.com>
+	Mon, 15 Jul 2013 22:14:26 -0400
+Date: Mon, 15 Jul 2013 22:13:50 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Documentation: update references to v2.6.x in
+ development-process
+Message-ID: <20130716021349.GA26761@windriver.com>
+References: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com>
+ <20130716101543.b458d507331c4ac32fe6686e@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51E4A824.3030308@gmail.com>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130716101543.b458d507331c4ac32fe6686e@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 09:55:48AM +0800, Sam Ben wrote:
-> On 07/16/2013 09:45 AM, Joonsoo Kim wrote:
-> >On Tue, Jul 16, 2013 at 09:27:29AM +0800, Sam Ben wrote:
-> >>On 07/16/2013 09:10 AM, Joonsoo Kim wrote:
-> >>>On Mon, Jul 15, 2013 at 07:40:16PM +0530, Aneesh Kumar K.V wrote:
-> >>>>Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
-> >>>>
-> >>>>>First 5 patches are almost trivial clean-up patches.
-> >>>>>
-> >>>>>The others are for fixing three bugs.
-> >>>>>Perhaps, these problems are minor, because this codes are used
-> >>>>>for a long time, and there is no bug reporting for these problems.
-> >>>>>
-> >>>>>These patches are based on v3.10.0 and
-> >>>>>passed sanity check of libhugetlbfs.
-> >>>>does that mean you had run with libhugetlbfs test suite ?
-> >>>Yes! I can't find any reggression on libhugetlbfs test suite.
-> >>Where can get your test case?
-> >These are my own test cases.
-> >I will plan to submit these test cases to libhugetlbfs test suite.
+[Re: [PATCH] Documentation: update references to v2.6.x in development-process] On 16/07/2013 (Tue 10:15) Stephen Rothwell wrote:
+
+> Hi Paul,
 > 
-> Could you point out where can get libhugetlbfs test suite？ ;-)
-
-You can get here :)
-http://sourceforge.net/projects/libhugetlbfs/
-
-Thanks.
-
+> Good work!
 > 
+> On Mon, 15 Jul 2013 19:34:44 -0400 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 > >
-> >Thanks.
-> >
-> >>>>-aneesh
-> >>>>
-> >>>>--
-> >>>>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>>>the body of a message to majordomo@vger.kernel.org
-> >>>>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>>Please read the FAQ at  http://www.tux.org/lkml/
-> >>>--
-> >>>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>>the body of a message to majordomo@vger.kernel.org
-> >>>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>Please read the FAQ at  http://www.tux.org/lkml/
-> >>--
-> >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >>the body to majordomo@kvack.org.  For more info on Linux MM,
-> >>see: http://www.linux-mm.org/ .
-> >>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >  Linux-next trees are announced on the linux-kernel and linux-next mailing
+> >  lists when they are assembled; they can be downloaded from:
+> >  
+> > -	http://www.kernel.org/pub/linux/kernel/people/sfr/linux-next/
+> > +	https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Maybe:
+> 
+> "	git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> 
+> Or as patches relative to Linus' latest -rc or releases from:
+> 
+> 	https://www.kernel.org/pub/linux/kernel/next/
+> 
+> Or viewed online at:
+> 
+> 	https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
+> "
+> 
+> Or maybe that is a bit verbose.
+
+Probably no harm in it.  I'd cc'd you and akpm for exactly that reason;
+I wasn't sure I'd updated to the authoratative source.  I'll fold that
+into a v2 once there has been a chance for other feedback to come in.
+
+On a similar note, I was thinking about the recent thread on linux-next
+where we were indicating that people shouldn't rebase linux-next content
+on a whim, and that new devel (vs. bugfix) content shouldn't appear in
+the linux-next content during the merge window.  There is no question
+that the linux-next process is integral to the main flow of patches to
+mainline, so I think Documentation/development-process/2.Process (the
+same file) should also capture those points in the linux-next section.
+Do you have some pre-canned text we can insert there, or should I draft
+something up for you to review?
+
+Thanks,
+Paul.
+--
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+
+
