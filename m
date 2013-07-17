@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3GQO3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:29:24 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47556 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885Ab3GQO3W (ORCPT
+	id S1755487Ab3GQOaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:30:15 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:52843 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab3GQOaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:29:22 -0400
-Message-ID: <51E6A66D.7090407@linux.vnet.ibm.com>
-Date: Wed, 17 Jul 2013 19:43:01 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        ouyang@cs.pitt.edu, agraf@suse.de, chegu_vinod@hp.com,
-        torvalds@linux-foundation.org, avi.kivity@gmail.com,
-        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com> <51E66C71.6020605@linux.vnet.ibm.com> <20130717124511.GW11772@redhat.com> <51E69429.7040309@linux.vnet.ibm.com> <20130717132503.GA13732@redhat.com>
-In-Reply-To: <20130717132503.GA13732@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071714-5564-0000-0000-000008D6FB5A
+	Wed, 17 Jul 2013 10:30:12 -0400
+X-AuditID: cbfee68e-b7f276d000002279-1f-51e6aa7276fb
+From: Heesub Shin <heesub.shin@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunae Seo <sunae.seo@samsung.com>, Heesub Shin <heesub@gmail.com>,
+        Heesub Shin <heesub.shin@samsung.com>
+Subject: [PATCH] mm: zbud: fix condition check on allocation size
+Date: Wed, 17 Jul 2013 23:30:10 +0900
+Message-id: <1374071410-9337-1-git-send-email-heesub.shin@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t8zTd2iVc8CDf7Pt7CYs34Nm8XLQ5oW
+	Jy7WWhycvYTJYvOaRUwWl3fNYbO4t+Y/q8WhfavYLRp3v2Nz4PTYOesuu8emT5PYPU7M+M3i
+	8eDQZhaPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyui8tZ2pYCV7xf17K5kaGH+xdjFyckgI
+	mEhM/LWMHcIWk7hwbz1bFyMXh5DAMkaJ20+PsMEUfZrawQ6RWMQoMXXzbCYIp51JonHqA6AM
+	BwebgLbEoW3BIA0iAroSq57vYgapYRb4xijxpXsLI0hCWMBRon36J7B1LAKqErf3f2UBsXkF
+	3CSOHtgOdZKCxLIva8GaJQSms0vsmL2NFaJBQOLb5EMsIMskBGQlNh1ghqiXlDi44gbLBEbB
+	BYwMqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzFCQrpvB+PNA9aHGJOBxk1klhJNzgfGRF5J
+	vKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGKsVc9/Z
+	x6xn6tdXv7jb9cbDFs2K2v+LXok+qCveWxkncn1mzdpva1LqL77ltijOefd1p0BJg0PPwxmP
+	DR8bzN6vqfp77Z83iWsWpBaFR4ibqL2VSnz2uYtb7pFdRsbqR+1T0zfdteufzCL0ctVqkenr
+	JifGl5q9KROw8irclNok6i2s92DKCiWW4oxEQy3mouJEAGWlyB5/AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t9jAd2iVc8CDSYeMbaYs34Nm8XLQ5oW
+	Jy7WWhycvYTJYvOaRUwWl3fNYbO4t+Y/q8WhfavYLRp3v2Nz4PTYOesuu8emT5PYPU7M+M3i
+	8eDQZhaPvi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LI
+	S8xNtVVy8QnQdcvMATpKSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5jR
+	eWs7U8FK9or791YyNTD+Yu1i5OSQEDCR+DS1gx3CFpO4cG89WxcjF4eQwCJGiambZzNBOO1M
+	Eo1THwBVcXCwCWhLHNoWDNIgIqArser5LmaQGmaBb4wSX7q3MIIkhAUcJdqnfwKbyiKgKnF7
+	/1cWEJtXwE3i6IHtUJsVJJZ9Wcs8gZF7ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzg
+	iHkmvYNxVYPFIUYBDkYlHt4JYU8DhVgTy4orcw8xSnAwK4nwHlzyLFCINyWxsiq1KD++qDQn
+	tfgQYzLQ9onMUqLJ+cBoziuJNzQ2MTOyNDIzNjE3NiZNWEmc92CrdaCQQHpiSWp2ampBahHM
+	FiYOTqkGxv5uBy4B+7UXzM3N5ilHOSSa7dsWb2ikGyt7hFnPu/qds/K/tiU5IrIs5sHVBq9X
+	BJ2ysruR3Lzm5/2IN1uuFZRz9DXe/KzCtcT68ds/gdEdr9n8jPZPP78nzCX+zYzQ9u7ilL5c
+	w0q/w2fuTrvd9tFg3Ytkycr6rUVsDA0z5LlM366+8HymEktxRqKhFnNRcSIA+uj10dwCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 06:55 PM, Gleb Natapov wrote:
-> On Wed, Jul 17, 2013 at 06:25:05PM +0530, Raghavendra K T wrote:
->> On 07/17/2013 06:15 PM, Gleb Natapov wrote:
->>> On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
->>>>>> Instead of halt we started with a sleep hypercall in those
->>>>>>   versions. Changed to halt() once Avi suggested to reuse existing sleep.
->>>>>>
->>>>>> If we use older hypercall with few changes like below:
->>>>>>
->>>>>> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
->>>>>> {
->>>>>>   // a0 reserved for flags
->>>>>> if (!w->lock)
->>>>>> return;
->>>>>> DEFINE_WAIT
->>>>>> ...
->>>>>> end_wait
->>>>>> }
->>>>>>
->>>>> How would this help if NMI takes lock in critical section. The thing
->>>>> that may happen is that lock_waiting->want may have NMI lock value, but
->>>>> lock_waiting->lock will point to non NMI lock. Setting of want and lock
->>>>> have to be atomic.
->>>>
->>>> True. so we are here
->>>>
->>>>          non NMI lock(a)
->>>>          w->lock = NULL;
->>>>          smp_wmb();
->>>>          w->want = want;
->>>>                                 NMI
->>>>                           <---------------------
->>>>                            NMI lock(b)
->>>>                            w->lock = NULL;
->>>>                            smp_wmb();
->>>>                            w->want = want;
->>>>                            smp_wmb();
->>>>                            w->lock = lock;
->>>>                           ---------------------->
->>>>          smp_wmb();
->>>>          w->lock = lock;
->>>>
->>>> so how about fixing like this?
->>>>
->>>> again:
->>>>          w->lock = NULL;
->>>>          smp_wmb();
->>>>          w->want = want;
->>>>          smp_wmb();
->>>>          w->lock = lock;
->>>>
->>>> if (!lock || w->want != want) goto again;
->>>>
->>> NMI can happen after the if() but before halt and the same situation
->>> we are trying to prevent with IRQs will occur.
->>
->> True, we can not fix that. I thought to fix the inconsistency of
->> lock,want pair.
->> But NMI could happen after the first OR condition also.
->> /me thinks again
->>
-> lock_spinning() can check that it is called in nmi context and bail out.
+zbud_alloc() incorrectly verifies the size of allocation limit. It
+should deny the allocation request greater than (PAGE_SIZE -
+ZHDR_SIZE_ALIGNED - CHUNK_SIZE), not (PAGE_SIZE - ZHDR_SIZE_ALIGNED)
+which has no remaining spaces for its buddy. There is no point in
+spending the entire zbud page storing only a single page, since we don't
+have any benefits.
 
-Good point.
-I think we can check for even irq context and bailout so that in irq 
-context we continue spinning instead of slowpath. no ?
+Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
+---
+ mm/zbud.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> How often this will happens anyway.
->
-
-I know NMIs occur frequently with watchdogs. or used by sysrq-trigger
-etc.. But I am not an expert how frequent it is otherwise. But even
-then if they do not use spinlock, we have no problem as already pointed.
-
-I can measure with debugfs counter how often it happens.
+diff --git a/mm/zbud.c b/mm/zbud.c
+index 9bb4710..ad1e781 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -257,7 +257,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ 
+ 	if (size <= 0 || gfp & __GFP_HIGHMEM)
+ 		return -EINVAL;
+-	if (size > PAGE_SIZE - ZHDR_SIZE_ALIGNED)
++	if (size > PAGE_SIZE - ZHDR_SIZE_ALIGNED - CHUNK_SIZE)
+ 		return -ENOSPC;
+ 	chunks = size_to_chunks(size);
+ 	spin_lock(&pool->lock);
+-- 
+1.8.3.2
 
