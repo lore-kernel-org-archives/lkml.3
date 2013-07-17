@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab3GQJaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 05:30:55 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:36061 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752431Ab3GQJay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 05:30:54 -0400
-Date: Wed, 17 Jul 2013 04:30:52 -0500
-From: Robin Holt <holt@sgi.com>
-To: Sam Ben <sam.bennn@gmail.com>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-Message-ID: <20130717093051.GK3421@sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
- <51E628F8.6030303@gmail.com>
+	id S1753486Ab3GQJbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 05:31:08 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10628 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab3GQJbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 05:31:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 17 Jul 2013 02:29:21 -0700
+Message-ID: <51E663FC.5050209@nvidia.com>
+Date: Wed, 17 Jul 2013 17:29:32 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E628F8.6030303@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jean Delvare <khali@linux-fr.org>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status
+ bit
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com> <1373615287-18502-3-git-send-email-wni@nvidia.com> <20130715185727.4ebde8c4@endymion.delvare>	<51E641C7.4000107@nvidia.com> <20130717102803.6ee36313@endymion.delvare>
+In-Reply-To: <20130717102803.6ee36313@endymion.delvare>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 01:17:44PM +0800, Sam Ben wrote:
-> On 07/12/2013 10:03 AM, Robin Holt wrote:
-> >We have been working on this since we returned from shutdown and have
-> >something to discuss now.  We restricted ourselves to 2MiB initialization
-> >to keep the patch set a little smaller and more clear.
-> >
-> >First, I think I want to propose getting rid of the page flag.  If I knew
-> >of a concrete way to determine that the page has not been initialized,
-> >this patch series would look different.  If there is no definitive
-> >way to determine that the struct page has been initialized aside from
-> >checking the entire page struct is zero, then I think I would suggest
-> >we change the page flag to indicate the page has been initialized.
-> >
-> >The heart of the problem as I see it comes from expand().  We nearly
-> >always see a first reference to a struct page which is in the middle
-> >of the 2MiB region.  Due to that access, the unlikely() check that was
-> >originally proposed really ends up referencing a different page entirely.
-> >We actually did not introduce an unlikely and refactor the patches to
-> >make that unlikely inside a static inline function.  Also, given the
-> >strong warning at the head of expand(), we did not feel experienced
-> >enough to refactor it to make things always reference the 2MiB page
-> >first.
-> >
-> >With this patch, we did boot a 16TiB machine.  Without the patches,
-> >the v3.10 kernel with the same configuration took 407 seconds for
-> >free_all_bootmem.  With the patches and operating on 2MiB pages instead
-> >of 1GiB, it took 26 seconds so performance was improved.  I have no feel
-> >for how the 1GiB chunk size will perform.
+On 07/17/2013 04:28 PM, Jean Delvare wrote:
+> Hi Wei,
 > 
-> How to test how much time spend on free_all_bootmem?
+> On Wed, 17 Jul 2013 15:03:35 +0800, Wei Ni wrote:
+>> On 07/16/2013 12:57 AM, Jean Delvare wrote:
+>>> On Fri, 12 Jul 2013 15:48:05 +0800, Wei Ni wrote:
+>>>> Add bit defines for the status register.
+>>>
+>>> Regarding the subject: for me these are constants, not macros. AFAIK
+>>> the term "macro" refers to defines with parameters only.
+>>
+>> How about "Introduce status bits"
+> 
+> I'd say "Define status bits" as this is exactly what you're doing ;-)
+> That being said, your patch actually does more than this, as you are
+> moving code around and to a separate function. The patch description
+> should say that and explain why.
 
-We had put a pr_emerg at the beginning and end of free_all_bootmem and
-then used a modified version of script which record the time in uSecs
-at the beginning of each line of output.
-
-Robin
+ok, I will update it in my next version.
 
 > 
-> >
-> >I am on vacation for the next three days so I am sorry in advance for
-> >my infrequent or non-existant responses.
-> >
-> >
-> >Signed-off-by: Robin Holt <holt@sgi.com>
-> >Signed-off-by: Nate Zimmer <nzimmer@sgi.com>
-> >To: "H. Peter Anvin" <hpa@zytor.com>
-> >To: Ingo Molnar <mingo@kernel.org>
-> >Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-> >Cc: Linux MM <linux-mm@kvack.org>
-> >Cc: Rob Landley <rob@landley.net>
-> >Cc: Mike Travis <travis@sgi.com>
-> >Cc: Daniel J Blueman <daniel@numascale-asia.com>
-> >Cc: Andrew Morton <akpm@linux-foundation.org>
-> >Cc: Greg KH <gregkh@linuxfoundation.org>
-> >Cc: Yinghai Lu <yinghai@kernel.org>
-> >Cc: Mel Gorman <mgorman@suse.de>
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >Please read the FAQ at  http://www.tux.org/lkml/
+>>>> (...)
+>>>> +	if ((status & 0x7f) == 0 && (status2 & 0xfe) == 0)
+>>>> +		return false;
+>>>
+>>> It's a bit disappointing to not use the freshly introduced constants.
+>>> That being said I agree it would make the code hard to read, so you can
+>>> leave it as is.
+>>
+>> Sorry, I forgot it.
+>> How about to define:
+>> #define LM90_STATUS_MASK 0x7f
+>> #define MAX6696_STATUS2_MASK 0xfe
+> 
+> I wouldn't bother. I suspect that this code will have to be reworked
+> soon anyway and these constants may no longer be needed then.
+
+Ok, let's leave it as is.
+
+> 
+>> Or since Guenter is for vacation, I can just leave it as is, and wait
+>> him back to talk about below issue.
+> 
+> I do maintain the lm90 driver, so the decision is up to me. Guenter did
+> a preliminary review of your patches and I am grateful for that, but I
+> do not intend to wait for his return to continue with your patches.
+> Otherwise he will have to do the same when he returns and I am gone,
+> and this may end up delaying your patches by one kernel version.
+
+I will send out patches soon :)
+
+> 
+>>>> (...)
+>>>> +		struct lm90_data *data = i2c_get_clientdata(client);
+>>>> +		u8 config, alarms;
+>>>> +
+>>>> +		lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
+>>>
+>>> You end up reading LM90_REG_R_STATUS, which is not OK. This register
+>>> contains self-clearing bits, so there is no guarantee that the second
+>>> read will return the same value as the first read. You'll have to come
+>>> up with a different approach that reads LM90_REG_R_STATUS only once.
+>>
+>> Oh, yes, this is a problem, I didn't noticed it.
+>> How about to use this:
+>> bool lm90_alarms_tripped(*client, *status);
+>> bool lm90_alarms2_tripped(*client, *status2);
+>> So we can read the status only once and pass it.
+> 
+> This is a good idea but you only need status, not status2, so it can be
+> made simpler:
+> bool lm90_is_tripped(*client, *status);
+> (handling both status and status 2 as you already do.)
+
+Yes this is simpler, but I think in the future we may need to handle the
+status2, how to handle it ? Or we can define the status as
+bit[0~7]->status and bit[8~15]->status2 .
+
+> 
+
