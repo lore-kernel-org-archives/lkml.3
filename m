@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933755Ab3GQQt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:49:58 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50231 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932843Ab3GQQpG (ORCPT
+	id S964805Ab3GQQt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:49:59 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:32834 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932841Ab3GQQpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:45:06 -0400
+	Wed, 17 Jul 2013 12:45:05 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,12 +15,10 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 15/18] vtime: Describe overriden functions in dedicated arch headers
-Date: Wed, 17 Jul 2013 18:44:28 +0200
-Message-Id: <1374079471-3129-16-git-send-email-fweisbec@gmail.com>
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 14/18] context_tracking: Split low level state headers
+Date: Wed, 17 Jul 2013 18:44:27 +0200
+Message-Id: <1374079471-3129-15-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
 References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
@@ -28,10 +26,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the arch overrides some generic vtime APIs, let it describe
-these on a dedicated and standalone header. This way it becomes
-convenient to include it in vtime generic headers without irrelevant
-stuff in such a low level header.
+We plan to use the context tracking static key on inline
+vtime APIs. For this we need to include the context tracking
+headers from those of vtime.
+
+However vtime headers need to stay low level because they are
+included in hardirq.h that mostly contains standalone
+definitions. But context_tracking.h includes sched.h for
+a few task_struct references, therefore it wouldn't be sensible
+to include it from vtime.h
+
+To solve this, lets split the context tracking headers and move
+out the pure state definitions that only require a few low level
+headers. We can safely include that small part in vtime.h later.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -43,96 +50,111 @@ Cc: Borislav Petkov <bp@alien8.de>
 Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- arch/ia64/include/asm/Kbuild    |    1 +
- arch/powerpc/include/asm/Kbuild |    1 +
- arch/s390/include/asm/cputime.h |    3 ---
- arch/s390/include/asm/vtime.h   |    7 +++++++
- arch/s390/kernel/vtime.c        |    1 +
- include/linux/vtime.h           |    4 ++++
- 6 files changed, 14 insertions(+), 3 deletions(-)
- create mode 100644 arch/s390/include/asm/vtime.h
- create mode 100644 include/asm-generic/vtime.h
+ include/linux/context_tracking.h       |   31 +------------------------
+ include/linux/context_tracking_state.h |   39 ++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+), 30 deletions(-)
+ create mode 100644 include/linux/context_tracking_state.h
 
-diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
-index 05b03ec..a3456f3 100644
---- a/arch/ia64/include/asm/Kbuild
-+++ b/arch/ia64/include/asm/Kbuild
-@@ -3,3 +3,4 @@ generic-y += clkdev.h
- generic-y += exec.h
- generic-y += kvm_para.h
- generic-y += trace_clock.h
-+generic-y += vtime.h
-\ No newline at end of file
-diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
-index 650757c..704e6f1 100644
---- a/arch/powerpc/include/asm/Kbuild
-+++ b/arch/powerpc/include/asm/Kbuild
-@@ -2,3 +2,4 @@
- generic-y += clkdev.h
- generic-y += rwsem.h
- generic-y += trace_clock.h
-+generic-y += vtime.h
-\ No newline at end of file
-diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
-index d2ff4137..f65bd36 100644
---- a/arch/s390/include/asm/cputime.h
-+++ b/arch/s390/include/asm/cputime.h
-@@ -13,9 +13,6 @@
- #include <asm/div64.h>
+diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+index 77f7306..8635dbb 100644
+--- a/include/linux/context_tracking.h
++++ b/include/linux/context_tracking.h
+@@ -2,40 +2,12 @@
+ #define _LINUX_CONTEXT_TRACKING_H
  
+ #include <linux/sched.h>
+-#include <linux/percpu.h>
+ #include <linux/vtime.h>
+-#include <linux/static_key.h>
++#include <linux/context_tracking_state.h>
+ #include <asm/ptrace.h>
  
--#define __ARCH_HAS_VTIME_ACCOUNT
--#define __ARCH_HAS_VTIME_TASK_SWITCH
+-struct context_tracking {
+-	/*
+-	 * When active is false, probes are unset in order
+-	 * to minimize overhead: TIF flags are cleared
+-	 * and calls to user_enter/exit are ignored. This
+-	 * may be further optimized using static keys.
+-	 */
+-	bool active;
+-	enum ctx_state {
+-		IN_KERNEL = 0,
+-		IN_USER,
+-	} state;
+-};
 -
- /* We want to use full resolution of the CPU timer: 2**-12 micro-seconds. */
  
- typedef unsigned long long __nocast cputime_t;
-diff --git a/arch/s390/include/asm/vtime.h b/arch/s390/include/asm/vtime.h
+ #ifdef CONFIG_CONTEXT_TRACKING
+-extern struct static_key context_tracking_enabled;
+-DECLARE_PER_CPU(struct context_tracking, context_tracking);
+-
+-static inline bool context_tracking_in_user(void)
+-{
+-	return __this_cpu_read(context_tracking.state) == IN_USER;
+-}
+-
+-static inline bool context_tracking_active(void)
+-{
+-	return __this_cpu_read(context_tracking.active);
+-}
+-
+ extern void context_tracking_cpu_set(int cpu);
+ 
+ extern void context_tracking_user_enter(void);
+@@ -83,7 +55,6 @@ static inline void context_tracking_task_switch(struct task_struct *prev,
+ 		__context_tracking_task_switch(prev, next);
+ }
+ #else
+-static inline bool context_tracking_in_user(void) { return false; }
+ static inline void user_enter(void) { }
+ static inline void user_exit(void) { }
+ static inline enum ctx_state exception_enter(void) { return 0; }
+diff --git a/include/linux/context_tracking_state.h b/include/linux/context_tracking_state.h
 new file mode 100644
-index 0000000..af9896c
+index 0000000..0f1979d
 --- /dev/null
-+++ b/arch/s390/include/asm/vtime.h
-@@ -0,0 +1,7 @@
-+#ifndef _S390_VTIME_H
-+#define _S390_VTIME_H
++++ b/include/linux/context_tracking_state.h
+@@ -0,0 +1,39 @@
++#ifndef _LINUX_CONTEXT_TRACKING_STATE_H
++#define _LINUX_CONTEXT_TRACKING_STATE_H
 +
-+#define __ARCH_HAS_VTIME_ACCOUNT
-+#define __ARCH_HAS_VTIME_TASK_SWITCH
++#include <linux/percpu.h>
++#include <linux/static_key.h>
 +
-+#endif /* _S390_VTIME_H */
-diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-index 3fb0935..785c73f 100644
---- a/arch/s390/kernel/vtime.c
-+++ b/arch/s390/kernel/vtime.c
-@@ -19,6 +19,7 @@
- #include <asm/irq_regs.h>
- #include <asm/cputime.h>
- #include <asm/vtimer.h>
-+#include <asm/vtime.h>
- #include <asm/irq.h>
- #include "entry.h"
- 
-diff --git a/include/asm-generic/vtime.h b/include/asm-generic/vtime.h
-new file mode 100644
-index 0000000..e69de29
-diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index b1dd2db..2ad0739 100644
---- a/include/linux/vtime.h
-+++ b/include/linux/vtime.h
-@@ -1,6 +1,10 @@
- #ifndef _LINUX_KERNEL_VTIME_H
- #define _LINUX_KERNEL_VTIME_H
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+#include <asm/vtime.h>
++struct context_tracking {
++	/*
++	 * When active is false, probes are unset in order
++	 * to minimize overhead: TIF flags are cleared
++	 * and calls to user_enter/exit are ignored. This
++	 * may be further optimized using static keys.
++	 */
++	bool active;
++	enum ctx_state {
++		IN_KERNEL = 0,
++		IN_USER,
++	} state;
++};
++
++#ifdef CONFIG_CONTEXT_TRACKING
++extern struct static_key context_tracking_enabled;
++DECLARE_PER_CPU(struct context_tracking, context_tracking);
++
++static inline bool context_tracking_in_user(void)
++{
++	return __this_cpu_read(context_tracking.state) == IN_USER;
++}
++
++static inline bool context_tracking_active(void)
++{
++	return __this_cpu_read(context_tracking.active);
++}
++#else
++static inline bool context_tracking_in_user(void) { return false; }
++static inline bool context_tracking_active(void) { return false; }
++#endif /* CONFIG_CONTEXT_TRACKING */
++
 +#endif
-+
- struct task_struct;
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
 -- 
 1.7.5.4
 
