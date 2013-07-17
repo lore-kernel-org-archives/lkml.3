@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab3GQAFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 20:05:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46515 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755248Ab3GQAFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 20:05:04 -0400
-Message-ID: <1374019445.19894.403.camel@pasglop>
-Subject: Re: [PATCH] module: ppc64 module CRC relocation fix causes perf
- issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Paul Mackerras <paulus@samba.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Neil Horman <nhorman@tuxdriver.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
-Date: Wed, 17 Jul 2013 10:04:05 +1000
-In-Reply-To: <1374014420.8183.342@snotra>
-References: <1374014420.8183.342@snotra>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933989Ab3GQAFP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 20:05:15 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:49197 "HELO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755248Ab3GQAFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 20:05:10 -0400
+Date: Wed, 17 Jul 2013 12:03:47 +1200
+From: Michael Cree <cree@waikato.ac.nz>
+To: Rob Landley <rob@landley.net>
+Cc: Richard Henderson <rth@twiddle.net>, linux-kernel@vger.kernel.org,
+        ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        linux-alpha@vger.kernel.org
+Subject: Re: [PATCH 0/7] Minor Alpha updates for 3.11
+Message-ID: <20130717000347.GB2483@stolen.phys.waikato.ac.nz>
+References: <1373994280-12047-1-git-send-email-rth@twiddle.net>
+ <1374017707.3719.11@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374017707.3719.11@driftwood>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 17:40 -0500, Scott Wood wrote:
-> On 07/15/2013 03:47:06 AM, Benjamin Herrenschmidt wrote:
-> > On Mon, 2013-07-15 at 14:04 +1000, Anton Blanchard wrote:
-> > > Module CRCs are implemented as absolute symbols that get resolved by
-> > > a linker script. We build an intermediate .o that contains an
-> > > unresolved symbol for each CRC. genksysms parses this .o, calculates
-> > > the CRCs and writes a linker script that "resolves" the symbols to
-> > > the calc
-> > 
-> > Scott, can somebody from FSL test that on 32-bit and Ack it ?
-> > 
-> > Thanks !
-> > 
-> > Cheers,
-> > Ben.
+On Tue, Jul 16, 2013 at 06:35:07PM -0500, Rob Landley wrote:
+> On 07/16/2013 12:04:33 PM, Richard Henderson wrote:
+> >Here's a set of minor updates for arch/alpha that should not
+> >be controversial.
 > 
-> It boots for me on e500mc and I can insert modules.
+> I also note that I had to do this to get busybox to build against
+> uClibc:
+> -#define __NR_umount		 22
+> +#define __NR_umount2		 22
+> -#define __NR_oldumount		321
+> +#define __NR_umount		321
 
-But does perf work ? :-)
+I anticipate that this will likely break userspace.
 
-Cheers,
-Ben.
+busybox should be fixed to test for __NR_oldumount and then call the
+correct functions, namely oldumount and umount if __NR_oldumount is defined
+and umount and umount2 if it is not defined.
 
-
+Cheers
+Michael.
