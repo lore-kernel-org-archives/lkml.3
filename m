@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917Ab3GQW4o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56802 "EHLO
+	id S1757951Ab3GQW4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:56:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56829 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934588Ab3GQW4j (ORCPT
+	with ESMTP id S1757870Ab3GQW4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:39 -0400
+	Wed, 17 Jul 2013 18:56:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Seth Heasley <seth.heasley@intel.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 036/145] powerpc/hw_brk: Fix setting of length for exact mode breakpoints
-Date: Wed, 17 Jul 2013 15:46:08 -0700
-Message-Id: <1374101277-7915-37-git-send-email-kamal@canonical.com>
+Subject: [PATCH 029/145] ahci: AHCI-mode SATA patch for Intel Coleto Creek DeviceIDs
+Date: Wed, 17 Jul 2013 15:46:01 -0700
+Message-Id: <1374101277-7915-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,44 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit b0b0aa9c7faf94e92320eabd8a1786c7747e40a8 upstream.
+commit 1cfc7df3de10c40ed459e13cce6de616023bf41c upstream.
 
-The smallest match region for both the DABR and DAWR is 8 bytes, so the
-kernel needs to filter matches when users want to look at regions smaller than
-this.
+This patch adds the AHCI-mode SATA DeviceIDs for the Intel Coleto Creek PCH.
 
-Currently we set the length of PPC_BREAKPOINT_MODE_EXACT breakpoints to 8.
-This is wrong as in exact mode we should only match on 1 address, hence the
-length should be 1.
-
-This ensures that the kernel will filter out any exact mode hardware breakpoint
-matches on any addresses other than the requested one.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/ptrace.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/ata/ahci.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index c497000..33ff9be 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -1413,7 +1413,9 @@ static long ppc_set_hwdebug(struct task_struct *child,
- 	 */
- 	if (bp_info->addr_mode == PPC_BREAKPOINT_MODE_RANGE_INCLUSIVE) {
- 		len = bp_info->addr2 - bp_info->addr;
--	} else if (bp_info->addr_mode != PPC_BREAKPOINT_MODE_EXACT) {
-+	} else if (bp_info->addr_mode == PPC_BREAKPOINT_MODE_EXACT)
-+		len = 1;
-+	else {
- 		ptrace_put_breakpoints(child);
- 		return -EINVAL;
- 	}
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index c8a38ce..d340976 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -289,6 +289,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8d64), board_ahci }, /* Wellsburg RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
++	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 -- 
 1.8.1.2
 
