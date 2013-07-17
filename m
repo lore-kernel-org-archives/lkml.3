@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab3GQNPo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:15:44 -0400
-Received: from 1wt.eu ([62.212.114.60]:34811 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705Ab3GQNPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:15:33 -0400
-Date: Wed, 17 Jul 2013 15:10:51 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ricardo Ferreira <rikajff@gmail.com>, Jeff Liu <jeff.liu@oracle.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Message-ID: <20130717131051.GD24293@1wt.eu>
-References: <20130716212704.GB9371@thunk.org> <20130716224357.GK4994@xanatos> <1374015299.6458.76.camel@gandalf.local.home> <20130716231217.GL4994@xanatos> <51E5E609.1030202@oracle.com> <1374022296.6458.118.camel@gandalf.local.home> <20130717055139.GC21611@1wt.eu> <1374063678.6458.124.camel@gandalf.local.home> <CACtES-ouVn+w8oJoe8+MLLEdnKA-XwBNhhuNQFGa84o9x=1yZA@mail.gmail.com> <1374066215.6458.135.camel@gandalf.local.home>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374066215.6458.135.camel@gandalf.local.home>
-User-Agent: Mutt/1.4.2.3i
+	id S1755335Ab3GQNQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:16:10 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:54280 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab3GQNQF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 09:16:05 -0400
+Message-ID: <51E69911.3000804@twiddle.net>
+Date: Wed, 17 Jul 2013 06:16:01 -0700
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Matt Turner <mattst88@gmail.com>
+CC: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru,
+        linux-alpha@vger.kernel.org
+Subject: Re: [RFC PATCH 05/10] alpha: Primitive support for CPU power down.
+References: <1373996058-13399-1-git-send-email-rth@twiddle.net> <1373996058-13399-6-git-send-email-rth@twiddle.net> <CAEdQ38FF32t+Ca0EsEk=uArhU28HKGf91=F1DzA+NE88WDVKtw@mail.gmail.com>
+In-Reply-To: <CAEdQ38FF32t+Ca0EsEk=uArhU28HKGf91=F1DzA+NE88WDVKtw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 09:03:35AM -0400, Steven Rostedt wrote:
-> On Wed, 2013-07-17 at 13:30 +0100, Ricardo Ferreira wrote:
-> > Slashdot is just a cesspool of trolls, not a good comparison.
+On 07/16/2013 10:17 PM, Matt Turner wrote:
+> On Tue, Jul 16, 2013 at 10:34 AM, Richard Henderson <rth@twiddle.net> wrote:
+>> Use WTINT to wait for the next interrupt.  Squash the WTINT call
+>> if the PALcode doesn't support it (e.g. MILO).  No attempt is yet
+>> made to skip clock ticks during normal scheduling in order to stay
+>> in power down mode longer.
 > 
-> Point taken.
+> The architecture reference manual says
 > 
-> I posted this privately, and I think I'll repost it here. I need to
-> modify it a bit as it wasn't meant to be public.
+>> The counter, PCC, may increment at a lower rate or may stop entirely
+>> during wtint execution. This side effect is implementation dependent.
 > 
-> 
-> When I started sending patches to LKML it was not the cursing I was
-> afraid of, it was the possibility of top notch developers pointing out
-> my flaws. Linux is intimidating not because it can be harsh, but because
-> its the big league. You are posting code not only to the world but also
-> to some of the best programmers on the planet, and frankly, that's
-> really scary. And I think that's the real reason people who are shy tend
-> not to want to participate. They use the harshness of LKML as an excuse,
-> but I think it's really that they may be insecure about their own work
-> and how it will compare with the best of the best.
-> 
-> Both my wife and I have done karate for decades. My wife has even won a
-> national tournament. She can do demos without a problem, but when she
-> has to get up in front of other top black belts, she's a nervous wreck.
-> She's her biggest critic, but she tends to know that when performing in
-> front of people as good as she is, or better, they can see her flaws as
-> much as she can. That is intimidating.
-> 
-> The point I'm making is that we need to find out what is preventing good
-> developers from joining the Linux community. Is it really the harshness
-> of the project, or is it because we expect you to have the best code,
-> and you will not be accepted if you are not that good. And I do not want
-> people joining that are not good programmers.
-> 
-> The answer is not to bash Linus into being a nice guy (which seems to be
-> what Sarah's trying to do), but we can get mentors or even "scouts" to
-> look for people of talent and help them get into the community. What
-> those people need is not a nicer LKML that will let mediocre developers
-> in, but someone that recognizes their talent and encourages them to
-> join, by reinforcing to them how good of a developer they are. I've
-> helped people this way. Talented programmers that were unsure of
-> themselves, and they have done extremely well in our community.
+> Is that anything to worry about?
 
-+1
+Hmm, yes.  It means that we can't use both this and rpcc as a clocksource.
+Which we can't do while SMP either, so perhaps that's not so bad.  So, right
+now, with an SMP EV6 system we ought not worry.  Care to report whether that
+hypothesis is true?
 
-Willy
+It may well be a tradeoff we want to CONFIG though, since nothing in the EV5
+thru PCA56 can make use of the power down state, and were often uniprocessor
+systems...
 
+>> @@ -243,6 +243,18 @@ do_entIF(unsigned long type, struct pt_regs *regs)
+>>                                (const char *)(data[1] | (long)data[2] << 32),
+>>                                data[0]);
+>>                 }
+>> +               if (type == 4) {
+>> +                       /* If CALL_PAL WTINT is not supported by the PALcode,
+>> +                          "emulate" it by overwriting the insn.  */
+> 
+> The pseudo-code for WTINT contains an IF(implemented) check, where the
+> ELSE case just does v0 <- 0. So is overwriting with nop just an
+> optimization to avoid the (expensive) PAL call? If it is, could we
+> clarify the comment?
+
+No, notice where this code is: entIF, aka SIGILL.  Looking at MILO sources
+I can tell you that WTINT isn't implemented at all.  Overwriting with the
+mov insn is what I call "emulating" the unimplemented PALcall.
+
+
+r~
