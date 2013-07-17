@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab3GQWtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:49:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56263 "EHLO
+	id S1757577Ab3GQWtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:49:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56251 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757595Ab3GQWtK (ORCPT
+	with ESMTP id S932573Ab3GQWsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:49:10 -0400
+	Wed, 17 Jul 2013 18:48:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 134/145] perf: Remove WARN_ON_ONCE() check in __perf_event_enable() for valid scenario
-Date: Wed, 17 Jul 2013 15:47:46 -0700
-Message-Id: <1374101277-7915-135-git-send-email-kamal@canonical.com>
+Cc: Zach Bobroff <zacharyb@ami.com>, Matt Fleming <matt.fleming@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 018/145] x86, efi: retry ExitBootServices() on failure
+Date: Wed, 17 Jul 2013 15:45:50 -0700
+Message-Id: <1374101277-7915-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -31,99 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Zach Bobroff <zacharyb@ami.com>
 
-commit 06f417968beac6e6b614e17b37d347aa6a6b1d30 upstream.
+commit d3768d885c6ccbf8a137276843177d76c49033a7 upstream.
 
-The '!ctx->is_active' check has a valid scenario, so
-there's no need for the warning.
+ExitBootServices is absolutely supposed to return a failure if any
+ExitBootServices event handler changes the memory map.  Basically the
+get_map loop should run again if ExitBootServices returns an error the
+first time.  I would say it would be fair that if ExitBootServices gives
+an error the second time then Linux would be fine in returning control
+back to BIOS.
 
-The reason is that there's a time window between the
-'ctx->is_active' check in the perf_event_enable() function
-and the __perf_event_enable() function having:
+The second change is the following line:
 
-  - IRQs on
-  - ctx->lock unlocked
+again:
+        size += sizeof(*mem_map) * 2;
 
-where the task could be killed and 'ctx' deactivated by
-perf_event_exit_task(), ending up with the warning below.
+Originally you were incrementing it by the size of one memory map entry.
+The issue here is all related to the low_alloc routine you are using.
+In this routine you are making allocations to get the memory map itself.
+Doing this allocation or allocations can affect the memory map by more
+than one record.
 
-So remove the WARN_ON_ONCE() check and add comments to
-explain it all.
-
-This addresses the following warning reported by Vince Weaver:
-
-[  324.983534] ------------[ cut here ]------------
-[  324.984420] WARNING: at kernel/events/core.c:1953 __perf_event_enable+0x187/0x190()
-[  324.984420] Modules linked in:
-[  324.984420] CPU: 19 PID: 2715 Comm: nmi_bug_snb Not tainted 3.10.0+ #246
-[  324.984420] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
-[  324.984420]  0000000000000009 ffff88043fce3ec8 ffffffff8160ea0b ffff88043fce3f00
-[  324.984420]  ffffffff81080ff0 ffff8802314fdc00 ffff880231a8f800 ffff88043fcf7860
-[  324.984420]  0000000000000286 ffff880231a8f800 ffff88043fce3f10 ffffffff8108103a
-[  324.984420] Call Trace:
-[  324.984420]  <IRQ>  [<ffffffff8160ea0b>] dump_stack+0x19/0x1b
-[  324.984420]  [<ffffffff81080ff0>] warn_slowpath_common+0x70/0xa0
-[  324.984420]  [<ffffffff8108103a>] warn_slowpath_null+0x1a/0x20
-[  324.984420]  [<ffffffff81134437>] __perf_event_enable+0x187/0x190
-[  324.984420]  [<ffffffff81130030>] remote_function+0x40/0x50
-[  324.984420]  [<ffffffff810e51de>] generic_smp_call_function_single_interrupt+0xbe/0x130
-[  324.984420]  [<ffffffff81066a47>] smp_call_function_single_interrupt+0x27/0x40
-[  324.984420]  [<ffffffff8161fd2f>] call_function_single_interrupt+0x6f/0x80
-[  324.984420]  <EOI>  [<ffffffff816161a1>] ? _raw_spin_unlock_irqrestore+0x41/0x70
-[  324.984420]  [<ffffffff8113799d>] perf_event_exit_task+0x14d/0x210
-[  324.984420]  [<ffffffff810acd04>] ? switch_task_namespaces+0x24/0x60
-[  324.984420]  [<ffffffff81086946>] do_exit+0x2b6/0xa40
-[  324.984420]  [<ffffffff8161615c>] ? _raw_spin_unlock_irq+0x2c/0x30
-[  324.984420]  [<ffffffff81087279>] do_group_exit+0x49/0xc0
-[  324.984420]  [<ffffffff81096854>] get_signal_to_deliver+0x254/0x620
-[  324.984420]  [<ffffffff81043057>] do_signal+0x57/0x5a0
-[  324.984420]  [<ffffffff8161a164>] ? __do_page_fault+0x2a4/0x4e0
-[  324.984420]  [<ffffffff8161665c>] ? retint_restore_args+0xe/0xe
-[  324.984420]  [<ffffffff816166cd>] ? retint_signal+0x11/0x84
-[  324.984420]  [<ffffffff81043605>] do_notify_resume+0x65/0x80
-[  324.984420]  [<ffffffff81616702>] retint_signal+0x46/0x84
-[  324.984420] ---[ end trace 442ec2f04db3771a ]---
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1373384651-6109-2-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+[ mfleming - changelog, code style ]
+Signed-off-by: Zach Bobroff <zacharyb@ami.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/boot/compressed/eboot.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index e133177..d28d8d0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1723,7 +1723,16 @@ static int __perf_event_enable(void *info)
- 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
- 	int err;
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index c205035..d606463 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -992,18 +992,20 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
+ 	efi_memory_desc_t *mem_map;
+ 	efi_status_t status;
+ 	__u32 desc_version;
++	bool called_exit = false;
+ 	u8 nr_entries;
+ 	int i;
  
--	if (WARN_ON_ONCE(!ctx->is_active))
-+	/*
-+	 * There's a time window between 'ctx->is_active' check
-+	 * in perf_event_enable function and this place having:
-+	 *   - IRQs on
-+	 *   - ctx->lock unlocked
-+	 *
-+	 * where the task could be killed and 'ctx' deactivated
-+	 * by perf_event_exit_task.
-+	 */
-+	if (!ctx->is_active)
- 		return -EINVAL;
+ 	size = sizeof(*mem_map) * 32;
  
- 	raw_spin_lock(&ctx->lock);
+ again:
+-	size += sizeof(*mem_map);
++	size += sizeof(*mem_map) * 2;
+ 	_size = size;
+ 	status = low_alloc(size, 1, (unsigned long *)&mem_map);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
++get_map:
+ 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
+ 				mem_map, &key, &desc_size, &desc_version);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+@@ -1029,8 +1031,20 @@ again:
+ 	/* Might as well exit boot services now */
+ 	status = efi_call_phys2(sys_table->boottime->exit_boot_services,
+ 				handle, key);
+-	if (status != EFI_SUCCESS)
+-		goto free_mem_map;
++	if (status != EFI_SUCCESS) {
++		/*
++		 * ExitBootServices() will fail if any of the event
++		 * handlers change the memory map. In which case, we
++		 * must be prepared to retry, but only once so that
++		 * we're guaranteed to exit on repeated failures instead
++		 * of spinning forever.
++		 */
++		if (called_exit)
++			goto free_mem_map;
++
++		called_exit = true;
++		goto get_map;
++	}
+ 
+ 	/* Historic? */
+ 	boot_params->alt_mem_k = 32 * 1024;
 -- 
 1.8.1.2
 
