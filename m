@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934647Ab3GQW5C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:57:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56892 "EHLO
+	id S934663Ab3GQW5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:57:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56904 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934615Ab3GQW46 (ORCPT
+	with ESMTP id S934649Ab3GQW5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:58 -0400
+	Wed, 17 Jul 2013 18:57:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 045/145] [SCSI] aacraid: Fix for arrays are going offline in the system. System hangs
-Date: Wed, 17 Jul 2013 15:46:17 -0700
-Message-Id: <1374101277-7915-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 049/145] UBIFS: prepare to fix a horrid bug
+Date: Wed, 17 Jul 2013 15:46:21 -0700
+Message-Id: <1374101277-7915-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,42 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit c5bebd829dd95602c15f8da8cc50fa938b5e0254 upstream.
+commit 33f1a63ae84dfd9ad298cf275b8f1887043ced36 upstream.
 
-One of the customer had reported that the set of raid logical arrays will
-become unavailable (I/O offline) after a long hours of IO stress test.  The OS
-wouldn`t be accessible afterwards and require a hard reset.
+Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
+mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
+in the middle of 'ubifs_readdir()'.
 
-This driver patch has a fix for race condition between the doorbell and the
-circular buffer. The driver is modified to do an extra read after clearing the
-doorbell in case there had been a completion posted during the small timing
-window.
+First of all, this means that 'file->private_data' can be freed while
+'ubifs_readdir()' uses it.  But this particular patch does not fix the problem.
+This patch is only a preparation, and the fix will follow next.
 
-With this fix, we ran IO stress for ~13 days. There were no IO failures.
+In this patch we make 'ubifs_readdir()' stop using 'file->f_pos' directly,
+because 'file->f_pos' can be changed by '->llseek()' at any point. This may
+lead 'ubifs_readdir()' to returning inconsistent data: directory entry names
+may correspond to incorrect file positions.
 
-Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+So here we introduce a local variable 'pos', read 'file->f_pose' once at very
+the beginning, and then stick to 'pos'. The result of this is that when
+'ubifs_dir_llseek()' changes 'file->f_pos' while we are in the middle of
+'ubifs_readdir()', the latter "wins".
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[ luis: backported to 3.8: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/aacraid/src.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/ubifs/dir.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/scsi/aacraid/src.c b/drivers/scsi/aacraid/src.c
-index 3b021ec..e34418f 100644
---- a/drivers/scsi/aacraid/src.c
-+++ b/drivers/scsi/aacraid/src.c
-@@ -93,6 +93,9 @@ static irqreturn_t aac_src_intr_message(int irq, void *dev_id)
- 			int send_it = 0;
- 			extern int aac_sync_mode;
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 8a57477..62d0256 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -349,15 +349,16 @@ static unsigned int vfs_dent_type(uint8_t type)
+ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ {
+ 	int err, over = 0;
++	loff_t pos = file->f_pos;
+ 	struct qstr nm;
+ 	union ubifs_key key;
+ 	struct ubifs_dent_node *dent;
+ 	struct inode *dir = file->f_path.dentry->d_inode;
+ 	struct ubifs_info *c = dir->i_sb->s_fs_info;
  
-+			src_writel(dev, MUnit.ODR_C, bellbits);
-+			src_readl(dev, MUnit.ODR_C);
-+
- 			if (!aac_sync_mode) {
- 				src_writel(dev, MUnit.ODR_C, bellbits);
- 				src_readl(dev, MUnit.ODR_C);
+-	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, file->f_pos);
++	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, pos);
+ 
+-	if (file->f_pos > UBIFS_S_KEY_HASH_MASK || file->f_pos == 2)
++	if (pos > UBIFS_S_KEY_HASH_MASK || pos == 2)
+ 		/*
+ 		 * The directory was seek'ed to a senseless position or there
+ 		 * are no more entries.
+@@ -365,15 +366,15 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 		return 0;
+ 
+ 	/* File positions 0 and 1 correspond to "." and ".." */
+-	if (file->f_pos == 0) {
++	if (pos == 0) {
+ 		ubifs_assert(!file->private_data);
+ 		over = filldir(dirent, ".", 1, 0, dir->i_ino, DT_DIR);
+ 		if (over)
+ 			return 0;
+-		file->f_pos = 1;
++		file->f_pos = pos = 1;
+ 	}
+ 
+-	if (file->f_pos == 1) {
++	if (pos == 1) {
+ 		ubifs_assert(!file->private_data);
+ 		over = filldir(dirent, "..", 2, 1,
+ 			       parent_ino(file->f_path.dentry), DT_DIR);
+@@ -389,7 +390,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 			goto out;
+ 		}
+ 
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
+ 
+@@ -397,17 +398,16 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 	if (!dent) {
+ 		/*
+ 		 * The directory was seek'ed to and is now readdir'ed.
+-		 * Find the entry corresponding to @file->f_pos or the
+-		 * closest one.
++		 * Find the entry corresponding to @pos or the closest one.
+ 		 */
+-		dent_key_init_hash(c, &key, dir->i_ino, file->f_pos);
++		dent_key_init_hash(c, &key, dir->i_ino, pos);
+ 		nm.name = NULL;
+ 		dent = ubifs_tnc_next_ent(c, &key, &nm);
+ 		if (IS_ERR(dent)) {
+ 			err = PTR_ERR(dent);
+ 			goto out;
+ 		}
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
+ 
+@@ -419,7 +419,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 			     ubifs_inode(dir)->creat_sqnum);
+ 
+ 		nm.len = le16_to_cpu(dent->nlen);
+-		over = filldir(dirent, dent->name, nm.len, file->f_pos,
++		over = filldir(dirent, dent->name, nm.len, pos,
+ 			       le64_to_cpu(dent->inum),
+ 			       vfs_dent_type(dent->type));
+ 		if (over)
+@@ -435,7 +435,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 		}
+ 
+ 		kfree(file->private_data);
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
+ 	}
 -- 
 1.8.1.2
 
