@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934713Ab3GQXBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:01:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56841 "EHLO
+	id S1757930Ab3GQXCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:02:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56824 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757924Ab3GQW4q (ORCPT
+	with ESMTP id S1757598Ab3GQW4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:46 -0400
+	Wed, 17 Jul 2013 18:56:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        John Youn <johnyoun@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 026/145] xhci: check for failed dma pool allocation
-Date: Wed, 17 Jul 2013 15:45:58 -0700
-Message-Id: <1374101277-7915-27-git-send-email-kamal@canonical.com>
+Subject: [PATCH 024/145] cgroup: fix umount vs cgroup_cfts_commit() race
+Date: Wed, 17 Jul 2013 15:45:56 -0700
+Message-Id: <1374101277-7915-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -30,41 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
+commit 084457f284abf6789d90509ee11dae383842b23b upstream.
 
-Fail and free the container context in case dma_pool_alloc() can't allocate
-the raw context data part of it
+cgroup_cfts_commit() uses dget() to keep cgroup alive after cgroup_mutex
+is dropped, but dget() won't prevent cgroupfs from being umounted. When
+the race happens, vfs will see some dentries with non-zero refcnt while
+umount is in process.
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
-Support for 64-byte contexts".
+Keep running this:
+  mount -t cgroup -o blkio xxx /cgroup
+  umount /cgroup
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: John Youn <johnyoun@synopsys.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+And this:
+  modprobe cfq-iosched
+  rmmod cfs-iosched
+
+After a while, the BUG() in shrink_dcache_for_umount_subtree() may
+be triggered:
+
+  BUG: Dentry xxx{i=0,n=blkio.yyy} still in use (1) [umount of cgroup cgroup]
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[ luis: backported to 3.8:
+  - fixed build error: added '&' to atomic_inc_not_zero parameter;
+    this was fixed upstream by commit e8c82d20a9f729cf4b9f73043f7fd4e0872bebfd ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-mem.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/cgroup.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 0618f25..1ffbbfb 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -369,6 +369,10 @@ static struct xhci_container_ctx *xhci_alloc_container_ctx(struct xhci_hcd *xhci
- 		ctx->size += CTX_SIZE(xhci->hcc_params);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 02ddadb..b6a1f62 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2813,13 +2813,17 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+ {
+ 	LIST_HEAD(pending);
+ 	struct cgroup *cgrp, *n;
++	struct super_block *sb = ss->root->sb;
  
- 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
-+	if (!ctx->bytes) {
-+		kfree(ctx);
-+		return NULL;
-+	}
- 	memset(ctx->bytes, 0, ctx->size);
- 	return ctx;
+ 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
+-	if (cfts && ss->root != &rootnode) {
++	if (cfts && ss->root != &rootnode &&
++	    atomic_inc_not_zero(&sb->s_active)) {
+ 		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
+ 			dget(cgrp->dentry);
+ 			list_add_tail(&cgrp->cft_q_node, &pending);
+ 		}
++	} else {
++		sb = NULL;
+ 	}
+ 
+ 	mutex_unlock(&cgroup_mutex);
+@@ -2842,6 +2846,9 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+ 		dput(cgrp->dentry);
+ 	}
+ 
++	if (sb)
++		deactivate_super(sb);
++
+ 	mutex_unlock(&cgroup_cft_mutex);
  }
+ 
 -- 
 1.8.1.2
 
