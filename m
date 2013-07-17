@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab3GQT5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 15:57:30 -0400
-Received: from pyr75-3-78-192-68-46.fbxo.proxad.net ([78.192.68.46]:60519 "EHLO
-	molly.corsac.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab3GQT52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 15:57:28 -0400
-Message-ID: <1374091038.3844.23.camel@scapa>
-Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
-From: Yves-Alexis Perez <corsac@debian.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-acpi@vger.kernel.org,
-        seth.forshee@canonical.com, joeyli.kernel@gmail.com,
-        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rjw@sisk.pl,
-        Henrique de Moraes Holschuh <hmh@debian.org>
-Date: Wed, 17 Jul 2013 21:57:18 +0200
-In-Reply-To: <CAMP44s3uz5fyXKLgS8TFroCVy7Rx-zpXYvX4TGFDX=65ki5T6w@mail.gmail.com>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-	 <1371937599.17761.19.camel@scapa>
-	 <CAMP44s3uz5fyXKLgS8TFroCVy7Rx-zpXYvX4TGFDX=65ki5T6w@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-RgWotCFNINvcdOx3X3Ii"
-X-Mailer: Evolution 3.8.2-1 
-Mime-Version: 1.0
+	id S1757243Ab3GQT6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 15:58:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43150 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752025Ab3GQT6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 15:58:44 -0400
+Message-ID: <51E6F73F.3000202@zytor.com>
+Date: Wed, 17 Jul 2013 12:57:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, PaX Team <pageexec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86: Make sure IDT is page aligned
+References: <20130716183441.GA14232@www.outflux.net> <tip-4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7@git.kernel.org> <CAE9FiQV86WdgN3+3FOSSTUvNJ6TgH4zbYkWOS7EPPHwO2Rf2TQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQV86WdgN3+3FOSSTUvNJ6TgH4zbYkWOS7EPPHwO2Rf2TQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/17/2013 11:57 AM, Yinghai Lu wrote:
+> 
+> Hi, Peter,
+> 
+> Any reason for why following changelog get dropped?
+> 
+> ---
+> v5:
+>  - add comments to all IDTs about alignment reasoning, suggested by Linus
+> v4:
+>  - rework using __page_aligned_bss, suggested by Yinghai LU
+>  - move all the other IDT variables as well, suggested by HPA
+> v3:
+>  - merge 32-bit and 64-bit idt_table definition
+> v2:
+>  - 32-bit was already aligned
+> ---
+> 
+> That at least would help us to check if you apply the right version.
+> 
 
---=-RgWotCFNINvcdOx3X3Ii
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Procedurally, the changelogs don't belong in commit messages.  I tend to
+leave them in if they are particularly illustrative or if the commit
+message only makes sense with the additional context, but neither of
+those is really ideal.
 
-On mer., 2013-07-17 at 10:51 -0500, Felipe Contreras wrote:
-> On Sat, Jun 22, 2013 at 4:46 PM, Yves-Alexis Perez <corsac@debian.org> wr=
-ote:
-> > Before Linux support for acpi_osi("Windows 2012") (and when booting wit=
-h
-> > acpi_osi=3D"!Windows 2012"), brightness keys were handled by the kernel
-> > just fine, whether in console, in the display manager or in my desktop
-> > environment (Xfce). xfce4-power-manager just needs to be told that the
-> > brightness keys are already handled and it doesn't need to do anything.
->=20
-> How do you tell xfce4-power-manager that?
+Technically, because of the --- line which indicates the end of the
+commit message.
 
-xfconf-query -c xfce4-power-manager
--p /xfce4-power-manager/change-brightness-on-key-events -s false
+	-hpa
 
-You might have to create the key before. See
-https://bugzilla.xfce.org/show_bug.cgi?id=3D7541 for more information.
 
-Regards,
---=20
-Yves-Alexis
-
---=-RgWotCFNINvcdOx3X3Ii
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQEcBAABCAAGBQJR5vceAAoJEG3bU/KmdcClIx8IAItqi0S7EP1eCnW+S00Mpdv1
-xKQC/b23auzglz51SFZ+CDtkRwysS7jB9/3CUBbYuilxYJrCqelsb2MtI+Zv7jaM
-2JgO1nF9KT3jlw43EUocZ8aXjhoel6y6DyTk8TLTVphm/IjMiqCZLbxiIXCqd7CR
-Wfs0NorlUgjtmuorNQzOuQychvYj9TA96GgcSm/l/rdNpgSEYq/mho+UdmlnJPFy
-MM6A1dTzl4HCg+mRurkIyjl1AW80zvjGS07G9Fpfx7vPBFJ3G3pWqzhAoZk2+S7X
-Jj5qk9ycocvY0zrjy4Es/WuN/JkOtTq0eoR4BLpbec2KDBKtBqilD32fcOwSRUg=
-=dxdM
------END PGP SIGNATURE-----
-
---=-RgWotCFNINvcdOx3X3Ii--
