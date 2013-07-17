@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab3GQW4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56650 "EHLO
+	id S965092Ab3GQXKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:10:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56690 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964954Ab3GQWzs (ORCPT
+	with ESMTP id S964892Ab3GQWz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:55:48 -0400
+	Wed, 17 Jul 2013 18:55:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Magnus Damm <damm@opensource.se>,
-        Simon Horman <horms+renesas@verge.net.au>,
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 112/145] ARM: shmobile: emev2 GIO3 resource fix
-Date: Wed, 17 Jul 2013 15:47:24 -0700
-Message-Id: <1374101277-7915-113-git-send-email-kamal@canonical.com>
+Subject: [PATCH 121/145] drm/nva3/disp: Fix HDMI audio regression
+Date: Wed, 17 Jul 2013 15:47:33 -0700
+Message-Id: <1374101277-7915-122-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,45 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Magnus Damm <damm@opensource.se>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 1eb14ea1e6bcd11d6d0ba937fc39808bb4d3453e upstream.
+commit bf03d1b293cc556df53545e318110505014d805e upstream.
 
-Fix GIO3 base addresses for EMEV2.
+This is the nva3 counterpart to commit beba44b17 (drm/nv84/disp: Fix
+HDMI audio regression). The regression happened as a result of
+refactoring in commit 8e9e3d2de (drm/nv84/disp: move hdmi control into
+core).
 
-This bug was introduced by 088efd9273b5076a0aead479aa31f1066d182b3e
-("mach-shmobile: Emma Mobile EV2 GPIO support V3") which was included in v3.5.
-
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Reported-and-tested-by: Max Baldwin <archerseven@gmail.com>
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-shmobile/setup-emev2.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/mach-shmobile/setup-emev2.c b/arch/arm/mach-shmobile/setup-emev2.c
-index a47beeb..c02a9fd 100644
---- a/arch/arm/mach-shmobile/setup-emev2.c
-+++ b/arch/arm/mach-shmobile/setup-emev2.c
-@@ -287,14 +287,14 @@ static struct gpio_em_config gio3_config = {
- static struct resource gio3_resources[] = {
- 	[0] = {
- 		.name	= "GIO_096",
--		.start	= 0xe0050100,
--		.end	= 0xe005012b,
-+		.start	= 0xe0050180,
-+		.end	= 0xe00501ab,
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	[1] = {
- 		.name	= "GIO_096",
--		.start	= 0xe0050140,
--		.end	= 0xe005015f,
-+		.start	= 0xe00501c0,
-+		.end	= 0xe00501df,
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	[2] = {
+diff --git a/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c b/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c
+index f065fc2..db8c6fd 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c
++++ b/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c
+@@ -55,6 +55,10 @@ nva3_hdmi_ctrl(struct nv50_disp_priv *priv, int head, int or, u32 data)
+ 	nv_wr32(priv, 0x61c510 + soff, 0x00000000);
+ 	nv_mask(priv, 0x61c500 + soff, 0x00000001, 0x00000001);
+ 
++	nv_mask(priv, 0x61c5d0 + soff, 0x00070001, 0x00010001); /* SPARE, HW_CTS */
++	nv_mask(priv, 0x61c568 + soff, 0x00010101, 0x00000000); /* ACR_CTRL, ?? */
++	nv_mask(priv, 0x61c578 + soff, 0x80000000, 0x80000000); /* ACR_0441_ENABLE */
++
+ 	/* ??? */
+ 	nv_mask(priv, 0x61733c, 0x00100000, 0x00100000); /* RESETF */
+ 	nv_mask(priv, 0x61733c, 0x10000000, 0x10000000); /* LOOKUP_EN */
 -- 
 1.8.1.2
 
