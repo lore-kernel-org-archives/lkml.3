@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab3GQKoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 06:44:23 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55661 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249Ab3GQKoW convert rfc822-to-8bit (ORCPT
+	id S1753938Ab3GQKog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 06:44:36 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57730 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab3GQKoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 06:44:22 -0400
-Date: Wed, 17 Jul 2013 11:44:17 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Pawel Moll <Pawel.Moll@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Subject: Re: [RFC PATCH v5 0/1] drivers: mfd: Versatile Express SPC support
-Message-ID: <20130717104416.GA1896@e102568-lin.cambridge.arm.com>
-References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1374052705.3146.86.camel@hornet>
+	Wed, 17 Jul 2013 06:44:34 -0400
+Message-ID: <51E67414.7070606@linux.vnet.ibm.com>
+Date: Wed, 17 Jul 2013 16:08:12 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1374052705.3146.86.camel@hornet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 17 Jul 2013 10:44:20.0061 (UTC) FILETIME=[97BDE8D0:01CE82DA]
-X-MC-Unique: 113071711442002401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, agraf@suse.de,
+        chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com> <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com> <51E66C71.6020605@linux.vnet.ibm.com>
+In-Reply-To: <51E66C71.6020605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071710-5490-0000-0000-000003D6365B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 10:18:25AM +0100, Pawel Moll wrote:
-> On Tue, 2013-07-16 at 17:05 +0100, Lorenzo Pieralisi wrote:
-> > /drivers/mfd is probably not the right place for this code as it stands (but
-> > probably will be when the entire driver, with DVFS and config interface, is
-> > complete).
-> 
-> Not that it really matters now, but my vexpress-sysreg rework will -
-> most likely - leave only skeleton in the MFD (registering mfd_cells) and
-> other stuff is going to be spread all around. Then I'm planning to move
-> the remaining of the vexpress-specific initialization to
-> drivers/platform/arm/vexpress.c, so maybe sticking vexpress-spc.c to
-> this (non-existing yet) directory would be the right thing to do?
+On 07/17/2013 03:35 PM, Raghavendra K T wrote:
+> On 07/17/2013 03:04 PM, Gleb Natapov wrote:
+>> On Wed, Jul 17, 2013 at 12:12:35AM +0530, Raghavendra K T wrote:
+>>>> I do not think it is very rare to get interrupt between
+>>>> local_irq_restore() and halt() under load since any interrupt that
+>>>> occurs between local_irq_save() and local_irq_restore() will be
+>>>> delivered
+>>>> immediately after local_irq_restore(). Of course the chance of no
+>>>> other
+>>>> random interrupt waking lock waiter is very low, but waiter can sleep
+>>>> for much longer then needed and this will be noticeable in
+>>>> performance.
+>>>
+>>> Yes, I meant the entire thing. I did infact turned WARN on
+>>> w->lock==null before halt() [ though we can potentially have irq right
+>>> after that ], but did not hit so far.
+>> Depends on your workload of course. To hit that you not only need to get
+>> interrupt in there, but the interrupt handler needs to take contended
+>> spinlock.
+>>
+>
+> Yes. Agree.
+>
+>>>
+>>>> BTW can NMI handler take spinlocks? If it can what happens if NMI is
+>>>> delivered in a section protected by
+>>>> local_irq_save()/local_irq_restore()?
+>>>>
+>>>
+>>> Had another idea if NMI, halts are causing problem until I saw
+>>> PeterZ's reply similar to V2 of pvspinlock posted  here:
+>>>
+>>>   https://lkml.org/lkml/2011/10/23/211
+>>>
+>>> Instead of halt we started with a sleep hypercall in those
+>>>   versions. Changed to halt() once Avi suggested to reuse existing
+>>> sleep.
+>>>
+>>> If we use older hypercall with few changes like below:
+>>>
+>>> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
+>>> {
+>>>   // a0 reserved for flags
+>>> if (!w->lock)
+>>> return;
+>>> DEFINE_WAIT
+>>> ...
+>>> end_wait
+>>> }
+>>>
+>> How would this help if NMI takes lock in critical section. The thing
+>> that may happen is that lock_waiting->want may have NMI lock value, but
+>> lock_waiting->lock will point to non NMI lock. Setting of want and lock
+>> have to be atomic.
+>
+> True. so we are here
+>
+>          non NMI lock(a)
+>          w->lock = NULL;
+>          smp_wmb();
+>          w->want = want;
+>                                 NMI
+>                           <---------------------
+>                            NMI lock(b)
+>                            w->lock = NULL;
+>                            smp_wmb();
+>                            w->want = want;
+>                            smp_wmb();
+>                            w->lock = lock;
+>                           ---------------------->
+>          smp_wmb();
+>          w->lock = lock;
+>
+> so how about fixing like this?
+>
+> again:
+>          w->lock = NULL;
+>          smp_wmb();
+>          w->want = want;
+>          smp_wmb();
+>          w->lock = lock;
+>
+> if (!lock || w->want != want) goto again;
+>
+Sorry,
+I meant if (!w->lock || w->want !=want) here
 
-Done. I do not think there is a point in splitting the patch to create
-the dir and make infrastructure, so I squashed everything in the
-original patch. I have not added any maintainer for that dir/file, I
-guess it can wait till you finish the rework so that you can add
-yourself there.
 
-If that's all I need to change I do not even think that reposting is
-necessary.
-
-It does matter though, since it implies changes on who is in charge of
-ack/nack'ing this code, if it is no more an mfd matter.
-
-I will wait to check all interested/concerned parties opinions, that are
-always welcome.
-
-> Other than that:
-> 
-> Acked-by: Pawel Moll <pawel.moll@arm.com>
-
-Thank you !!!
-Lorenzo
+[...]
 
