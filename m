@@ -1,63 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3GQPHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:07:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33670 "EHLO
+	id S932243Ab3GQPIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:08:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33599 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162Ab3GQPFq (ORCPT
+	with ESMTP id S1754138Ab3GQPE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:05:46 -0400
+	Wed, 17 Jul 2013 11:04:59 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>
 CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 4/9] arm: dts: flag omap4430 with needs-cooling for cpu node
-Date: Wed, 17 Jul 2013 11:02:44 -0400
-Message-ID: <1374073374-30946-9-git-send-email-eduardo.valentin@ti.com>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, <cpufreq@vger.kernel.org>
+Subject: [PATCH 3/8] cpufreq: cpufreq-cpu0: add dt node parsing on cooling need
+Date: Wed, 17 Jul 2013 11:02:42 -0400
+Message-ID: <1374073374-30946-7-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
 References: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP4430 devices can reach high temperatures and thus
-needs to have cpufreq-cooling on systems running on it.
+This patch changes the cpufreq-cpu0 driver to consider if
+a cpu needs cooling (with cpufreq). In case the cooling is needed,
+it can be flagged at the cpu0 device tree node, with the boolean
+property 'needs-cooling'.
 
-This patch adds the flag so that cpufreq-cpu0 driver
-loads the cooling device to use cpufreq on OMAP4430.
+In case this boolean is present, the driver will
+load a cpufreq cooling device in the system. The cpufreq-cpu0
+driver is not capable of determining how the system should
+be using the cooling device. This can be described using device
+tree, to determine what needs to be done with the loaded
+cpufreq cooling device, in case the system temperature is detected
+to be high, with help of temperature sensors (check
+Documentation/devicetree/bindings/thermal/thermal.txt).
 
-Cc: "Benoît Cousson" <b-cousson@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: cpufreq@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/omap443x.dtsi | 1 +
- 1 file changed, 1 insertion(+)
+ .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |  3 ++
+ .../devicetree/bindings/thermal/thermal.txt        | 34 ++++++++++++++++++++++
+ drivers/cpufreq/cpufreq-cpu0.c                     |  8 +++++
+ 3 files changed, 45 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-index bcf455e..4a4dcc3 100644
---- a/arch/arm/boot/dts/omap443x.dtsi
-+++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -22,6 +22,7 @@
- 				1008000 1375000
- 			>;
- 			clock-latency = <300000>; /* From legacy driver */
-+			needs-cooling; /* make sure we have cpufreq-cooling */
- 		};
+diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+index 051f764..e8ff916 100644
+--- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
++++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+@@ -15,6 +15,8 @@ Optional properties:
+ - clock-latency: Specify the possible maximum transition latency for clock,
+   in unit of nanoseconds.
+ - voltage-tolerance: Specify the CPU voltage tolerance in percentage.
++- needs-cooling: The generic cpu cooling (freq clipping) is loaded by the
++generic cpufreq-cpu0 driver in case the device tree node has this boolean.
+ 
+ Examples:
+ 
+@@ -33,6 +35,7 @@ cpus {
+ 			198000  850000
+ 		>;
+ 		clock-latency = <61036>; /* two CLK32 periods */
++		needs-cooling;
  	};
+ 
+ 	cpu@1 {
+diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+index 03751bb..ac0c7b9 100644
+--- a/Documentation/devicetree/bindings/thermal/thermal.txt
++++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+@@ -97,3 +97,37 @@ thermal_zone {
+                     };
+             };
+ };
++
++***************
++cpufreq-cooling
++***************
++
++The generic cpu cooling (freq clipping) can be loaded by the
++generic cpufreq-cpu0 driver in case the device tree node informs
++this need.
++
++In order to load the cpufreq cooling device, it is possible to
++inform that the cpu needs cooling by adding the boolean flag
++'needs-cooling' at the cpu0 phandle.
++
++Example:
++	cpus {
++		cpu@0 {
++			operating-points = <
++				/* kHz    uV */
++				800000  1313000
++				1008000 1375000
++			>;
++			needs-cooling; /* make sure we have cpufreq-cooling */
++		};
++	...
++	};
++
++The above will cause the cpufreq-cpu0 driver to understand that
++the cpu will need passive cooling and while probing that node it will
++also load the cpufreq cpu cooling device in that system.
++
++However, be advised that this flag will not describe what needs to
++be done or how the cpufreq cooling device will be used. In order to
++accomplish this, one needs to write a phandle for a thermal zone, as
++described in the section 'thermal_zone'.
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index ad1fde2..4a8747a 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -20,6 +20,9 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
++#include <linux/thermal.h>
++#include <linux/cpu_cooling.h>
++#include <linux/cpumask.h>
+ 
+ static unsigned int transition_latency;
+ static unsigned int voltage_tolerance; /* in percentage */
+@@ -28,6 +31,7 @@ static struct device *cpu_dev;
+ static struct clk *cpu_clk;
+ static struct regulator *cpu_reg;
+ static struct cpufreq_frequency_table *freq_table;
++static struct thermal_cooling_device *cdev;
+ 
+ static int cpu0_verify_speed(struct cpufreq_policy *policy)
+ {
+@@ -268,6 +272,9 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 		goto out_free_table;
+ 	}
+ 
++	if (of_property_read_bool(np, "needs-cooling"))
++		cdev = cpufreq_cooling_register(cpu_present_mask);
++
+ 	of_node_put(np);
+ 	of_node_put(parent);
+ 	return 0;
+@@ -283,6 +290,7 @@ out_put_parent:
+ 
+ static int cpu0_cpufreq_remove(struct platform_device *pdev)
+ {
++	cpufreq_cooling_unregister(cdev);
+ 	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
+ 	opp_free_cpufreq_table(cpu_dev, &freq_table);
  
 -- 
 1.8.2.1.342.gfa7285d
