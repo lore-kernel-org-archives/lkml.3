@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219Ab3GQQqW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:46:22 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57819 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932850Ab3GQQqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:46:18 -0400
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <benoit.cousson@linaro.org>,
-        Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        J Keerthy <j-keerthy@ti.com>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 9/9] ARM: dts: omap5-uevm: update SDCARD LDO9 and resource REGEN3
-Date: Wed, 17 Jul 2013 11:45:38 -0500
-Message-ID: <1374079538-19548-10-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374079538-19548-1-git-send-email-nm@ti.com>
-References: <1374079538-19548-1-git-send-email-nm@ti.com>
+	id S933338Ab3GQQq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:46:58 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:7997 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933167Ab3GQQqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 12:46:21 -0400
+Message-ID: <51E6CA5B.6030501@tilera.com>
+Date: Wed, 17 Jul 2013 12:46:19 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Chen Gang <gang.chen@asianux.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH v2] arch: tile: include: asm: add cmpxchg64() definition
+References: <51CA6D21.3090901@asianux.com> <51CC492C.1040105@tilera.com> <51CCD891.8000806@asianux.com> <51CCEC27.8050508@asianux.com> <20130628150941.GA22767@linux-mips.org> <51D0E4B3.6080402@asianux.com> <51D0E7BF.9030206@asianux.com>
+In-Reply-To: <51D0E7BF.9030206@asianux.com>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e00c27ef3b4c23e39d0a77b7c8e5be44c28001c7
-(ARM: dts: OMAP5: Add Palmas MFD node and regulator nodes)
-introduced regulator entries for OMAP5uEVM.
+On 6/30/2013 10:21 PM, Chen Gang wrote:
+> Need add cmpxchg64(), or will cause compiling issue.
+>
+> Need define it as cmpxchg() only for 64-bit operation, since cmpxchg()
+> can support 8 bytes.
+>
+> The related error (with allmodconfig):
+>
+>   drivers/block/blockconsole.c: In function ‘bcon_advance_console_bytes’:
+>   drivers/block/blockconsole.c:164:2: error: implicit declaration of function ‘cmpxchg64’ [-Werror=implicit-function-declaration]
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-However, The regulator information is based on an older temporary
-pre-production board variant and does not reflect production board
-750-2628-XXX boards.
+Thanks, taken into the tile tree.
 
-LDO9 supplies the board specified vdds_sdcard supply going within SoC
-specification of 1.8V or 3.0V. Further the supply is controlled by
-switch enabled by REGEN3. So, introduce REGEN3 and map sdcard slot to
-be powered by LDO9. Remove 'always-on' allowing the LDO to be disabled
-on need basis.
-
-Reported-by: Marc Jüttner <m-juettner@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- arch/arm/boot/dts/omap5-uevm.dts |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index ef05676..65d7b60 100644
---- a/arch/arm/boot/dts/omap5-uevm.dts
-+++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -235,7 +235,7 @@
- };
- 
- &mmc1 {
--	vmmc-supply = <&vmmcsd_fixed>;
-+	vmmc-supply = <&ldo9_reg>;
- 	bus-width = <4>;
- };
- 
-@@ -417,8 +417,7 @@
- 					/* VCC_DV_SDIO: vdds_sdcard */
- 					regulator-name = "ldo9";
- 					regulator-min-microvolt = <1800000>;
--					regulator-max-microvolt = <3300000>;
--					regulator-always-on;
-+					regulator-max-microvolt = <3000000>;
- 					regulator-boot-on;
- 				};
- 
-@@ -439,6 +438,13 @@
- 					regulator-always-on;
- 					regulator-boot-on;
- 				};
-+
-+				regen3_reg: regen3 {
-+					/* REGEN3 controls LDO9 supply to card */
-+					regulator-name = "regen3";
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
- 			};
- 		};
- 	};
 -- 
-1.7.9.5
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
