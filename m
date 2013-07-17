@@ -1,165 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3GQFWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 01:22:34 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:52303 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3GQFWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 01:22:31 -0400
-Message-ID: <51E62A0E.1070102@gmail.com>
-Date: Wed, 17 Jul 2013 13:22:22 +0800
-From: Sam Ben <sam.bennn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/18] mm: numa: Scan pages with elevated page_mapcount
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de> <1373901620-2021-14-git-send-email-mgorman@suse.de>
-In-Reply-To: <1373901620-2021-14-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751446Ab3GQFWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 01:22:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23063 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab3GQFWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 01:22:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,682,1367996400"; 
+   d="scan'208";a="346818505"
+Message-ID: <1374038558.7622.7.camel@envy.home>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [
+ 00/19] 3.10.1-stable review)
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Olivier Galibert <galibert@pobox.com>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>
+Date: Tue, 16 Jul 2013 22:22:38 -0700
+In-Reply-To: <CA+55aFyE0c6DQVn9Unbjriya27W-8nJQcZwUM7vc_1Hk0n38WQ@mail.gmail.com>
+References: <20130715195316.GF15531@xanatos>
+	 <20130715204135.GH15531@xanatos>
+	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	 <1373926109.17876.221.camel@gandalf.local.home>
+	 <20130715223615.GI15531@xanatos>
+	 <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+	 <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+	 <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org>
+	 <20130716224357.GK4994@xanatos> <20130716235008.GC9371@thunk.org>
+	 <1374027494.2537.47.camel@deadeye.wl.decadent.org.uk>
+	 <CA+55aFyaNLt3HBO7a9NLbm9j-ppw1bhda+3rDtHbr48FJpiB_g@mail.gmail.com>
+	 <1374031004.2537.84.camel@deadeye.wl.decadent.org.uk>
+	 <CA+55aFyE0c6DQVn9Unbjriya27W-8nJQcZwUM7vc_1Hk0n38WQ@mail.gmail.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 11:20 PM, Mel Gorman wrote:
-> Currently automatic NUMA balancing is unable to distinguish between false
-> shared versus private pages except by ignoring pages with an elevated
+On Tue, 2013-07-16 at 21:48 -0700, Linus Torvalds wrote:
 
-What's the meaning of false shared?
+> Guys, I love my job. The kernel developer community is great. But I
+> suspect that some of you don't necessarily think about the other side.
+> I had slashdot discussing my abusive relationship with my wife and
+> kids thanks to Sarah's comments. Talk about having a thick skin -
+> trust me when I tell you that I get as well as I give out.
 
-> page_mapcount entirely. This avoids shared pages bouncing between the
-> nodes whose task is using them but that is ignored quite a lot of data.
->
-> This patch kicks away the training wheels in preparation for adding support
-> for identifying shared/private pages is now in place. The ordering is so
-> that the impact of the shared/private detection can be easily measured. Note
-> that the patch does not migrate shared, file-backed within vmas marked
-> VM_EXEC as these are generally shared library pages. Migrating such pages
-> is not beneficial as there is an expectation they are read-shared between
-> caches and iTLB and iCache pressure is generally low.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->   include/linux/migrate.h |  7 ++++---
->   mm/memory.c             |  7 ++-----
->   mm/migrate.c            | 17 ++++++-----------
->   mm/mprotect.c           |  4 +---
->   4 files changed, 13 insertions(+), 22 deletions(-)
->
-> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-> index a405d3dc..e7e26af 100644
-> --- a/include/linux/migrate.h
-> +++ b/include/linux/migrate.h
-> @@ -92,11 +92,12 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
->   #endif /* CONFIG_MIGRATION */
->   
->   #ifdef CONFIG_NUMA_BALANCING
-> -extern int migrate_misplaced_page(struct page *page, int node);
-> -extern int migrate_misplaced_page(struct page *page, int node);
-> +extern int migrate_misplaced_page(struct page *page,
-> +				  struct vm_area_struct *vma, int node);
->   extern bool migrate_ratelimited(int node);
->   #else
-> -static inline int migrate_misplaced_page(struct page *page, int node)
-> +static inline int migrate_misplaced_page(struct page *page,
-> +					 struct vm_area_struct *vma, int node)
->   {
->   	return -EAGAIN; /* can't migrate now */
->   }
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ab933be..62ae8a7 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3586,7 +3586,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   	}
->   
->   	/* Migrate to the requested node */
-> -	migrated = migrate_misplaced_page(page, target_nid);
-> +	migrated = migrate_misplaced_page(page, vma, target_nid);
->   	if (migrated)
->   		current_nid = target_nid;
->   
-> @@ -3651,9 +3651,6 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   		page = vm_normal_page(vma, addr, pteval);
->   		if (unlikely(!page))
->   			continue;
-> -		/* only check non-shared pages */
-> -		if (unlikely(page_mapcount(page) != 1))
-> -			continue;
->   
->   		/*
->   		 * Note that the NUMA fault is later accounted to either
-> @@ -3671,7 +3668,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   
->   		/* Migrate to the requested node */
->   		pte_unmap_unlock(pte, ptl);
-> -		migrated = migrate_misplaced_page(page, target_nid);
-> +		migrated = migrate_misplaced_page(page, vma, target_nid);
->   		if (migrated)
->   			curr_nid = target_nid;
->   		task_numa_fault(last_nid, curr_nid, 1, migrated);
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 3bbaf5d..23f8122 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -1579,7 +1579,8 @@ int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
->    * node. Caller is expected to have an elevated reference count on
->    * the page that will be dropped by this function before returning.
->    */
-> -int migrate_misplaced_page(struct page *page, int node)
-> +int migrate_misplaced_page(struct page *page, struct vm_area_struct *vma,
-> +			   int node)
->   {
->   	pg_data_t *pgdat = NODE_DATA(node);
->   	int isolated;
-> @@ -1587,10 +1588,11 @@ int migrate_misplaced_page(struct page *page, int node)
->   	LIST_HEAD(migratepages);
->   
->   	/*
-> -	 * Don't migrate pages that are mapped in multiple processes.
-> -	 * TODO: Handle false sharing detection instead of this hammer
-> +	 * Don't migrate file pages that are mapped in multiple processes
-> +	 * with execute permissions as they are probably shared libraries.
->   	 */
-> -	if (page_mapcount(page) != 1)
-> +	if (page_mapcount(page) != 1 && page_is_file_cache(page) &&
-> +	    (vma->vm_flags & VM_EXEC))
->   		goto out;
->   
->   	/*
-> @@ -1641,13 +1643,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
->   	int page_lru = page_is_file_cache(page);
->   
->   	/*
-> -	 * Don't migrate pages that are mapped in multiple processes.
-> -	 * TODO: Handle false sharing detection instead of this hammer
-> -	 */
-> -	if (page_mapcount(page) != 1)
-> -		goto out_dropref;
-> -
-> -	/*
->   	 * Rate-limit the amount of data that is being migrated to a node.
->   	 * Optimal placement is no good if the memory bus is saturated and
->   	 * all the time is being spent migrating!
-> diff --git a/mm/mprotect.c b/mm/mprotect.c
-> index 94722a4..cacc64a 100644
-> --- a/mm/mprotect.c
-> +++ b/mm/mprotect.c
-> @@ -69,9 +69,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
->   					if (last_nid != this_nid)
->   						all_same_node = false;
->   
-> -					/* only check non-shared pages */
-> -					if (!pte_numa(oldpte) &&
-> -					    page_mapcount(page) == 1) {
-> +					if (!pte_numa(oldpte)) {
->   						ptent = pte_mknuma(ptent);
->   						updated = true;
->   					}
+That's awful. People suck. I stopped reading slashdot years ago for the
+quality of the content and commentary, apparently it has not improved.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
 
