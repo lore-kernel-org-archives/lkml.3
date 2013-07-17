@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965082Ab3GQXII (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:08:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56742 "EHLO
+	id S965060Ab3GQXHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:07:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56748 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934517Ab3GQW40 (ORCPT
+	with ESMTP id S934529Ab3GQW42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:26 -0400
+	Wed, 17 Jul 2013 18:56:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 077/145] netfilter: nfnetlink_cttimeout: fix incomplete dumping of objects
-Date: Wed, 17 Jul 2013 15:46:49 -0700
-Message-Id: <1374101277-7915-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 084/145] tracing: Use current_uid() for critical time tracing
+Date: Wed, 17 Jul 2013 15:46:56 -0700
+Message-Id: <1374101277-7915-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,39 +27,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 37bc4f8dfa72fb43b84381abca39cfdbbc8ff2df upstream.
+commit f17a5194859a82afe4164e938b92035b86c55794 upstream.
 
-Fix broken incomplete object dumping if the list of objects does not
-fit into one single netlink message.
+The irqsoff tracer records the max time that interrupts are disabled.
+There are hooks in the assembly code that calls back into the tracer when
+interrupts are disabled or enabled.
 
-Reported-by: Gabriel Lazar <Gabriel.Lazar@com.utcluj.ro>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+When they are enabled, the tracer checks if the amount of time they
+were disabled is larger than the previous recorded max interrupts off
+time. If it is, it creates a snapshot of the currently running trace
+to store where the last largest interrupts off time was held and how
+it happened.
+
+During testing, this RCU lockdep dump appeared:
+
+[ 1257.829021] ===============================
+[ 1257.829021] [ INFO: suspicious RCU usage. ]
+[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
+[ 1257.829021] -------------------------------
+[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
+[ 1257.829021]
+[ 1257.829021] other info that might help us debug this:
+[ 1257.829021]
+[ 1257.829021]
+[ 1257.829021] RCU used illegally from idle CPU!
+[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
+[ 1257.829021] RCU used illegally from extended quiescent state!
+[ 1257.829021] 2 locks held by trace-cmd/4831:
+[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
+[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
+[ 1257.829021]
+[ 1257.829021] stack backtrace:
+[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
+[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
+[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
+[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
+[ 1257.829021] Call Trace:
+[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
+[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
+[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
+[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
+[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
+[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
+[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
+
+What happened was entering into the user code, the interrupts were enabled
+and a max interrupts off was recorded. The trace buffer was saved along with
+various information about the task: comm, pid, uid, priority, etc.
+
+The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
+to retrieve the data, and this happened to happen where RCU is blind (user_enter).
+
+As only the preempt and irqs off tracers can have this happen, and they both
+only have the tsk == current, if tsk == current, use current_uid() instead of
+task_uid(), as current_uid() does not use RCU as only current can change its uid.
+
+This fixes the RCU suspicious splat.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netfilter/nfnetlink_cttimeout.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ kernel/trace/trace.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/net/netfilter/nfnetlink_cttimeout.c b/net/netfilter/nfnetlink_cttimeout.c
-index 701c88a..65074df 100644
---- a/net/netfilter/nfnetlink_cttimeout.c
-+++ b/net/netfilter/nfnetlink_cttimeout.c
-@@ -220,9 +220,12 @@ ctnl_timeout_dump(struct sk_buff *skb, struct netlink_callback *cb)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 55a9d05..98937b6 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -682,7 +682,15 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
  
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(cur, &cttimeout_list, head) {
--		if (last && cur != last)
--			continue;
-+		if (last) {
-+			if (cur != last)
-+				continue;
- 
-+			last = NULL;
-+		}
- 		if (ctnl_timeout_fill_info(skb, NETLINK_CB(cb->skb).portid,
- 					   cb->nlh->nlmsg_seq,
- 					   NFNL_MSG_TYPE(cb->nlh->nlmsg_type),
+ 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
+ 	max_data->pid = tsk->pid;
+-	max_data->uid = task_uid(tsk);
++	/*
++	 * If tsk == current, then use current_uid(), as that does not use
++	 * RCU. The irq tracer can be called out of RCU scope.
++	 */
++	if (tsk == current)
++		max_data->uid = current_uid();
++	else
++		max_data->uid = task_uid(tsk);
++
+ 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+ 	max_data->policy = tsk->policy;
+ 	max_data->rt_priority = tsk->rt_priority;
 -- 
 1.8.1.2
 
