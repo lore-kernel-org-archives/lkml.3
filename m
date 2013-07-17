@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965052Ab3GQXNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:13:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56628 "EHLO
+	id S964992Ab3GQXOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:14:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56624 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964918Ab3GQWzm (ORCPT
+	with ESMTP id S964897Ab3GQWzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:55:42 -0400
+	Wed, 17 Jul 2013 18:55:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 111/145] svcrpc: don't error out on small tcp fragment
-Date: Wed, 17 Jul 2013 15:47:23 -0700
-Message-Id: <1374101277-7915-112-git-send-email-kamal@canonical.com>
+Subject: [PATCH 120/145] drm/nouveau: use vmalloc for pgt allocation
+Date: Wed, 17 Jul 2013 15:47:32 -0700
+Message-Id: <1374101277-7915-121-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,37 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 1f691b07c5dc51b2055834f58c0f351defd97f27 upstream.
+commit d005f51eb93d71cd40ebd11dd377453fa8c8a42a upstream.
 
-Though clients we care about mostly don't do this, it is possible for
-rpc requests to be sent in multiple fragments.  Here we have a sanity
-check to ensure that the final received rpc isn't too small--except that
-the number we're actually checking is the length of just the final
-fragment, not of the whole rpc.  So a perfectly legal rpc that's
-unluckily fragmented could cause the server to close the connection
-here.
+Page tables on nv50 take 48kB, which can be hard to allocate in one piece.
+Let's use vmalloc.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sunrpc/svcsock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/subdev/vm/base.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index df74919..305374d 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1095,7 +1095,7 @@ static int svc_tcp_recvfrom(struct svc_rqst *rqstp)
- 		goto err_noclose;
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
+index 77c67fc..e66fb77 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
+@@ -362,7 +362,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
+ 	vm->fpde = offset >> (vmm->pgt_bits + 12);
+ 	vm->lpde = (offset + length - 1) >> (vmm->pgt_bits + 12);
+ 
+-	vm->pgt  = kcalloc(vm->lpde - vm->fpde + 1, sizeof(*vm->pgt), GFP_KERNEL);
++	vm->pgt  = vzalloc((vm->lpde - vm->fpde + 1) * sizeof(*vm->pgt));
+ 	if (!vm->pgt) {
+ 		kfree(vm);
+ 		return -ENOMEM;
+@@ -371,7 +371,7 @@ nouveau_vm_create(struct nouveau_vmmgr *vmm, u64 offset, u64 length,
+ 	ret = nouveau_mm_init(&vm->mm, mm_offset >> 12, mm_length >> 12,
+ 			      block >> 12);
+ 	if (ret) {
+-		kfree(vm->pgt);
++		vfree(vm->pgt);
+ 		kfree(vm);
+ 		return ret;
+ 	}
+@@ -446,7 +446,7 @@ nouveau_vm_del(struct nouveau_vm *vm)
  	}
  
--	if (svc_sock_reclen(svsk) < 8) {
-+	if (svsk->sk_datalen < 8) {
- 		svsk->sk_datalen = 0;
- 		goto err_delete; /* client is nuts. */
- 	}
+ 	nouveau_mm_fini(&vm->mm);
+-	kfree(vm->pgt);
++	vfree(vm->pgt);
+ 	kfree(vm);
+ }
+ 
 -- 
 1.8.1.2
 
