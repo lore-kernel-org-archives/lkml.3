@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab3GQSqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:46:31 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:40097 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755738Ab3GQSq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:46:29 -0400
+	id S1756821Ab3GQSso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:48:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25103 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752213Ab3GQSsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 14:48:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,686,1367996400"; 
+   d="scan'208";a="347227189"
+Message-ID: <51E6E88D.3030107@linux.intel.com>
+Date: Wed, 17 Jul 2013 11:55:09 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31C8FE9D@ORSMSX106.amr.corp.intel.com>
-References: <20130715204135.GH15531@xanatos>
-	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	<1373926109.17876.221.camel@gandalf.local.home>
-	<20130715223615.GI15531@xanatos>
-	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-	<20130716211235.GG4994@xanatos>
-	<20130716221821.GB21611@1wt.eu>
-	<20130716223957.GJ4994@xanatos>
-	<51E5DB59.2050209@schaufler-ca.com>
-	<20130717010244.GM4994@xanatos>
-	<CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
-	<3908561D78D1C84285E8C5FCA982C28F31C8FE9D@ORSMSX106.amr.corp.intel.com>
-Date: Wed, 17 Jul 2013 13:46:28 -0500
-Message-ID: <CAMP44s2CkFO2-0va5CfAcneR3Na7X=D=oYX66b_28ULqansTcg@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, David Lang <david@lang.hm>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, Ingo Molnar <mingo@kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: driver model, duplicate names question
+References: <51E57631.2030805@linux.intel.com> <20130716164459.GB17827@kroah.com> <51E59116.2060801@linux.intel.com> <20130716183149.GA6164@kroah.com> <51E596E7.5040504@linux.intel.com> <20130716190422.GA1186@kroah.com> <51E59FEF.90404@linux.intel.com> <20130716193235.GA8142@kroah.com> <51E6DDE8.1080700@linux.intel.com> <20130717183105.GA14988@kroah.com>
+In-Reply-To: <20130717183105.GA14988@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 1:24 PM, Luck, Tony <tony.luck@intel.com> wrote:
->> Those are just stories; things that happened. What you need to provide
->> is *evidence* that if the community changes, things will be better,
->> and unless you have a study of series of collaborative groups like the
->> Linux kernel, that demonstrates that suppressing swearing has a
->> positive effect in the community, I'd say all you have is an
->> *opinion*.
+On 07/17/2013 11:31 AM, Greg KH wrote:
+> On Wed, Jul 17, 2013 at 11:09:44AM -0700, Srinivas Pandruvada wrote:
+>>> But thermal devices are not "real" at all.  There are just a number of
+>>> "cooling devices" on a virtual bus and not attached to any type of a
+>>> real device at all.
+>>>
+>>> There's also no hierarchy that I can see with the thermal class, but you
+>>> want to have this, so you will have to do something different because
+>>> classes do not have hierarchies.
+>>>
+>>> So try using a device and a bus and see if that helps out.  If not,
+>>> please let me know.
+>> Experimented by using a device and a bus. As your initial mail pointed
+>> out, it still fails.
+>> It will try to create symlink to /sys/bus/BUSTYPE/devices/, which will
+>> prevent duplicate names.
+> Where are you going to create a symlink from?  That doesn't make sense,
+> just use a class if you want a link.
+Sorry, my reply may not be clear here. I am not creating any symlinks.
+device_register will create a symlink. For example, if I create a bus 
+named "test",
+with two parents and one child each:
+ls -l /sys/bus/test/devices
+lrwxrwxrwx 1 root root 0 Jul 17 09:05 child_0 -> 
+../../../devices/parent_0/child_0
+lrwxrwxrwx 1 root root 0 Jul 17 09:05 child_1 -> 
+../../../devices/parent_1/child_1
+lrwxrwxrwx 1 root root 0 Jul 17 09:05 parent_0 -> ../../../devices/parent_0
+lrwxrwxrwx 1 root root 0 Jul 17 09:05 parent_1 -> ../../../devices/parent_1
+
+>> Someone suggested to do like usb by creating file system entries, which
+>> will require me to wear a body armour to post upstream for review.
+> So a separate filesystem alltogether?  That would work, but you then
+> loose any benifit that the driver core and sysfs provides you, for no
+> benifit other than looking at a pretty tree in a filesystem.  I don't
+> see the real need for that at all.
 >
-> 1) There isn't going to be any hard evidence - this isn't a physics problem,
-> or even an engineering problem. It's a social problem.  There are no other
-> collaborative groups sufficiently similar to the Linux kernel community, so there
-> are no studies that would be relevant. Asking for the impossible is just a
-> lame delaying tactic.
+>> So I think the solution is to use prevent duplicate names. So in the
+>> above example of sys-fs:
+>>
+>> "package-0" may be called power_zone#, with attribute "name" =
+>> "package_0". Its children can
+>> be called power_zone#:#. I will still use parent child relationships
+>> during device_register.
+>> For constraints, I will be using attributes like constraint_0_name,
+>> constraint_0_power_limit etc. under each power_zone.
+>> Hope this is an acceptable solution.
+> That's what other busses have used for this very reason :)
+>
+> Also look at the "type" of device you are creating for your bus, that
+> will help you differentiate them from each other instead of having to
+> rely on the names of them to determine what is going on within the
+> kernel.
+<Thanks for your time and help.>
+> good luck,
+>
+> greg k-h
+>
 
-There is evidence for social problems and their solutions, but anyway,
-so in fact Sarah doesn't *know* if changing that behavior would be
-beneficial or detrimental to the project.
-
-> 2) Sarah hasn't even asked to cut down on the swearing - so why mention
-> it at all? Did you even read the thread?
-
-She didn't ask, she essentially demanded[1]:
-
-> I want everyone (including Linus) to be harsh with code but gentle with people.
-
-Let's call things by their name; Sarah doesn't know if what she wants
-will help the project, she merely thinks so. It is merely an
-**opinion**, it is not backed by evidence, and it might be shared by
-some Linux developers, but it's still just an opinion.
-
-Linus already said he is not going to change, so that's that. Now the
-only thing that remains open is the discussion about better ways to
-work together, which probably will happen in the kernel summit, but I
-think it's pretty clear that an official code of conduct that forbids
-insulting either people or code is out of the question.
-
-Cheers.
-
-[1] http://article.gmane.org/gmane.linux.kernel.stable/58443
-
--- 
-Felipe Contreras
