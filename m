@@ -1,76 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab3GQH73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 03:59:29 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:62630 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab3GQH71 (ORCPT
+	id S1752546Ab3GQIFg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 04:05:36 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:44488 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab3GQIFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 03:59:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130717093614.1ee4839e@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-8-git-send-email-l.majewski@samsung.com>
-	<CAKohpo=oB_4gGtNn6jvxSCp665pOq6oqeTCCyGzmN_eWqt0Lhg@mail.gmail.com>
-	<20130716133319.49ed0838@amdc308.digital.local>
-	<CAKohponeZ15ruJA9__V70u1Ztr4F9aT+zBinMT5Ewyew53rbyQ@mail.gmail.com>
-	<20130717093614.1ee4839e@amdc308.digital.local>
-Date: Wed, 17 Jul 2013 13:29:26 +0530
-Message-ID: <CAKohpo=n6JBWZVmdLqUjs0kUVj3BvUs9gNcVu4B7_2Z7ezFgVw@mail.gmail.com>
-Subject: Re: [PATCH v5 7/7] Documentation:cpufreq:boost: Update BOOST documentation
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 17 Jul 2013 04:05:22 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, john.stultz@linaro.org,
+        tglx@linutronix.de, u.kleine-koenig@pengutronix.de,
+        tomasz.figa@gmail.com, linus.walleij@linaro.org,
+        thomas.petazzoni@free-electrons.com, arnd@arndb.de,
+        daniel.lezcano@linaro.org, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v9] ARM: clocksource: add support for MOXA ART SoCs
+Date: Wed, 17 Jul 2013 10:04:57 +0200
+Message-Id: <1374048297-4321-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1373985880-23469-1-git-send-email-jonas.jensen@gmail.com>
+References: <1373985880-23469-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 July 2013 13:06, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> At v4 there was the old acpi-cpufreq.c behaviour preserved (with always
-> exporting boost - when not supported ro, when supported rw).
->
-> Due to Rafael and Dirk comments it has been rewritten at v5:
->
-> http://thread.gmane.org/gmane.linux.kernel/1511831/match=patch+v4+2+7+cpufreq+add+boost+frequency+support+core
->
->
->>
->> Rafael Said:
->> "Simple: Export it only when supported."
->               [*]
->
->>
->> AND
->>
->> "Don't change behavior of acpi-cpufreq driver"
->               [**]
->>
->> If you see acpi-cpufreq driver carefully, it always creates "boost"
->> sysfs entry. If its not supported then it creates a read only entry.
->
-> For me those two statements [*] and [**] contradict:
->
-> At v5:
-> 1. ARM - export "boost" only when supported (rw)
-> 2. x86 - export boost only when x86 supports it (as rw). When x86
->          doesn't support HW boost - DO NOT export it at all.
->
-> At v4:
-> 1. ARM - export "boost" only when supported (rw)
-> 2. x86 - always export boost - no matter if supported or not. If not
->          supported, then export it as ro only.
+This patch adds an clocksource driver for the main timer(s)
+found on MOXA ART SoCs.
 
-Okay, there is some confusion..
+The MOXA ART SoC provides three separate timers with individual
+count/load/match registers, two are used here:
 
-I have raised a query on your v4 mail.. lets see what people have to say.
+TIMER1: clockevents, used to support oneshot and periodic events
+TIMER2: set up as a free running counter, used as clocksource
+
+Timers are preconfigured by bootloader to count down and interrupt
+on match or zero. Count increments every APB clock cycle and is
+automatically reloaded when it reaches zero.
+
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
+
+Notes:
+    Changes since v8:
+    
+    1. add devicetree bindings document
+    
+    Applies to next-20130716
+
+ .../bindings/timer/moxa,moxart-timer.txt           |  17 +++
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/moxart_timer.c                 | 164 +++++++++++++++++++++
+ 3 files changed, 182 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt
+ create mode 100644 drivers/clocksource/moxart_timer.c
+
+diff --git a/Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt b/Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt
+new file mode 100644
+index 0000000..77c4cfa
+--- /dev/null
++++ b/Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt
+@@ -0,0 +1,17 @@
++MOXA ART timer
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-timer"
++- reg : Should contain registers location and length
++- interrupts : Should contain the timer interrupt number
++- clocks : Should contain phandle for APB clock "clkapb"
++
++Example:
++
++	timer: timer@98400000 {
++		compatible = "moxa,moxart-timer";
++		reg = <0x98400000 0x42>;
++		interrupts = <19 1>;
++		clocks = <&clkapb>;
++	};
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 8b00c5c..704d6d3 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_ARMADA_370_XP_TIMER)	+= time-armada-370-xp.o
+ obj-$(CONFIG_ORION_TIMER)	+= time-orion.o
+ obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
+ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
++obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
+ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+diff --git a/drivers/clocksource/moxart_timer.c b/drivers/clocksource/moxart_timer.c
+new file mode 100644
+index 0000000..08a5943
+--- /dev/null
++++ b/drivers/clocksource/moxart_timer.c
+@@ -0,0 +1,164 @@
++/*
++ * MOXA ART SoCs timer handling.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/clockchips.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/irqreturn.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
++#include <linux/clocksource.h>
++
++#define TIMER1_BASE		0x00
++#define TIMER2_BASE		0x10
++#define TIMER3_BASE		0x20
++
++#define REG_COUNT		0x0 /* writable */
++#define REG_LOAD		0x4
++#define REG_MATCH1		0x8
++#define REG_MATCH2		0xC
++
++#define TIMER_CR		0x30
++#define TIMER_INTR_STATE	0x34
++#define TIMER_INTR_MASK		0x38
++
++/*
++ * TIMER_CR flags:
++ *
++ * TIMEREG_CR_*_CLOCK	0: PCLK, 1: EXT1CLK
++ * TIMEREG_CR_*_INT	overflow interrupt enable bit
++ */
++#define TIMEREG_CR_1_ENABLE	BIT(0)
++#define TIMEREG_CR_1_CLOCK	BIT(1)
++#define TIMEREG_CR_1_INT	BIT(2)
++#define TIMEREG_CR_2_ENABLE	BIT(3)
++#define TIMEREG_CR_2_CLOCK	BIT(4)
++#define TIMEREG_CR_2_INT	BIT(5)
++#define TIMEREG_CR_3_ENABLE	BIT(6)
++#define TIMEREG_CR_3_CLOCK	BIT(7)
++#define TIMEREG_CR_3_INT	BIT(8)
++#define TIMEREG_CR_COUNT_UP	BIT(9)
++
++#define TIMER1_ENABLE		(TIMEREG_CR_2_ENABLE | TIMEREG_CR_1_ENABLE)
++#define TIMER1_DISABLE		(TIMEREG_CR_2_ENABLE)
++
++static void __iomem *base;
++static unsigned int clock_count_per_tick;
++
++static void moxart_clkevt_mode(enum clock_event_mode mode,
++			       struct clock_event_device *clk)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_RESUME:
++	case CLOCK_EVT_MODE_ONESHOT:
++		writel(TIMER1_DISABLE, base + TIMER_CR);
++		writel(~0, base + TIMER1_BASE + REG_LOAD);
++		break;
++	case CLOCK_EVT_MODE_PERIODIC:
++		writel(clock_count_per_tick, base + TIMER1_BASE + REG_LOAD);
++		writel(TIMER1_ENABLE, base + TIMER_CR);
++		break;
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++	default:
++		writel(TIMER1_DISABLE, base + TIMER_CR);
++		break;
++	}
++}
++
++static int moxart_clkevt_next_event(unsigned long cycles,
++				    struct clock_event_device *unused)
++{
++	u32 u;
++
++	writel(TIMER1_DISABLE, base + TIMER_CR);
++
++	u = readl(base + TIMER1_BASE + REG_COUNT) - cycles;
++	writel(u, base + TIMER1_BASE + REG_MATCH1);
++
++	writel(TIMER1_ENABLE, base + TIMER_CR);
++
++	return 0;
++}
++
++static struct clock_event_device moxart_clockevent = {
++	.name		= "moxart_timer",
++	.rating		= 200,
++	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
++	.set_mode	= moxart_clkevt_mode,
++	.set_next_event	= moxart_clkevt_next_event,
++};
++
++static irqreturn_t moxart_timer_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = dev_id;
++	evt->event_handler(evt);
++	return IRQ_HANDLED;
++}
++
++static struct irqaction moxart_timer_irq = {
++	.name		= "moxart-timer",
++	.flags		= IRQF_TIMER,
++	.handler	= moxart_timer_interrupt,
++	.dev_id		= &moxart_clockevent,
++};
++
++static void __init moxart_timer_init(struct device_node *node)
++{
++	int ret, irq;
++	unsigned long pclk;
++	struct clk *clk;
++
++	base = of_iomap(node, 0);
++	if (!base)
++		panic("%s: of_iomap failed\n", node->full_name);
++
++	irq = irq_of_parse_and_map(node, 0);
++	if (irq <= 0)
++		panic("%s: irq_of_parse_and_map failed\n", node->full_name);
++
++	ret = setup_irq(irq, &moxart_timer_irq);
++	if (ret)
++		panic("%s: setup_irq failed\n", node->full_name);
++
++	clk = of_clk_get(node, 0);
++	if (IS_ERR(clk))
++		panic("%s: of_clk_get failed\n", node->full_name);
++
++	pclk = clk_get_rate(clk);
++
++	if (clocksource_mmio_init(base + TIMER2_BASE + REG_COUNT,
++				  "moxart_timer", pclk, 200, 32,
++				  clocksource_mmio_readl_down))
++		panic("%s: clocksource_mmio_init failed\n", node->full_name);
++
++	clock_count_per_tick = DIV_ROUND_CLOSEST(pclk, HZ);
++
++	writel(~0, base + TIMER2_BASE + REG_LOAD);
++	writel(TIMEREG_CR_2_ENABLE, base + TIMER_CR);
++
++	moxart_clockevent.cpumask = cpumask_of(0);
++	moxart_clockevent.irq = irq;
++
++	/*
++	 * documentation is not publicly available:
++	 * min_delta / max_delta obtained by trial-and-error,
++	 * max_delta 0xfffffffe should be ok because count
++	 * register size is u32
++	 */
++	clockevents_config_and_register(&moxart_clockevent, pclk,
++					0x4, 0xfffffffe);
++}
++CLOCKSOURCE_OF_DECLARE(moxart, "moxa,moxart-timer", moxart_timer_init);
+-- 
+1.8.2.1
+
