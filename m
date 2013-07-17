@@ -1,83 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab3GQJk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 05:40:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58998 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab3GQJk1 (ORCPT
+	id S1753516Ab3GQJnX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 05:43:23 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:60973 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab3GQJnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 05:40:27 -0400
-Date: Wed, 17 Jul 2013 11:39:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
- frequently
-Message-ID: <20130717093913.GP23818@dyad.programming.kicks-ass.net>
-References: <1374002463.3944.11.camel@j-VirtualBox>
- <20130716202015.GX17211@twins.programming.kicks-ass.net>
- <1374014881.2332.21.camel@j-VirtualBox>
- <20130717072504.GY17211@twins.programming.kicks-ass.net>
- <1374048701.6000.21.camel@j-VirtualBox>
+	Wed, 17 Jul 2013 05:43:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374048701.6000.21.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <51E65577.7010403@samsung.com>
+References: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com> <51E65577.7010403@samsung.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Wed, 17 Jul 2013 11:43:01 +0200
+Message-ID: <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
+Subject: Re: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 01:11:41AM -0700, Jason Low wrote:
-> For the more complex model, are you suggesting that each completion time
-> is the time it takes to complete 1 iteration of the for_each_domain()
-> loop? 
+Hi Marek
 
-Per sd, yes? So higher domains (or lower depending on how you model the thing
-in you head) have bigger CPU spans, and thus take longer to complete. Imagine
-the top domain of a 4096 cpu system, it would go look at all cpus to see if it
-could find a task.
+ alloc_pages_exact returns pages of order 0, every single page is
+filled into buf->pages, that then is used by vb2_dma_sg_mmap(), that
+also expects order 0 pages (its loops increments in PAGE_SIZE). The
+code has been tested on real HW.
 
-> Based on some of the data I collected, a single iteration of the
-> for_each_domain() loop is almost always significantly lower than the
-> approximate CPU idle time, even in workloads where idle_balance is
-> lowering performance. The bigger issue is that it takes so many of these
-> attempts before idle_balance actually "worked" and pulls a tasks.
+Your concern is that that alloc_pages_exact splits the higher order pages?
 
-I'm confused, so:
+Do you want that videobuf2-dma-sg to have support for higher order pages?
 
-  schedule()
-    if (!rq->nr_running)
-      idle_balance()
-        for_each_domain(sd)
-          load_balance(sd)
 
-is the entire thing, there's no other loop in there.
+Best regards
 
-> I initially was thinking about each "completion time" of an idle balance
-> as the sum total of the times of all iterations to complete until a task
-> is successfully pulled within each domain.
+PS: sorry for the duplicated post, previous one contained html parts
+and was rejected by the list
 
-So you're saying that normally idle_balance() won't find a task to pull? And we
-need many times going newidle before we do get something?
+On Wed, Jul 17, 2013 at 10:27 AM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> Hello,
+>
+>
+> On 7/15/2013 11:34 AM, Ricardo Ribalda Delgado wrote:
+>>
+>> Most DMA engines have limitations regarding the number of DMA segments
+>> (sg-buffers) that they can handle. Videobuffers can easily spread through
+>> houndreds of pages.
+>>
+>> In the previous aproach, the pages were allocated individually, this
+>> could led to the creation houndreds of dma segments (sg-buffers) that
+>> could not be handled by some DMA engines.
+>>
+>> This patch tries to minimize the number of DMA segments by using
+>> alloc_pages_exact. In the worst case it will behave as before, but most
+>> of the times it will reduce the number fo dma segments
+>>
+>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>
+>
+> I like the idea, but the code doesn't seem to be correct. buf->pages array
+> is
+> needed for vb2_dma_sg_mmap() function to map pages to userspace. However in
+> your
+> code I don't see any place where you fill it with the pages of order higher
+> than 0. AFAIR vm_insert_page() can handle compound pages, but
+> alloc_pages_exact()
+> splits such pages into a set of pages of order 0, so you need to change your
+> code
+> to correctly fill buf->pages array.
+>
+>
+>> ---
+>>   drivers/media/v4l2-core/videobuf2-dma-sg.c |   49
+>> +++++++++++++++++++++-------
+>>   1 file changed, 38 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>> b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>> index 16ae3dc..67a94ab 100644
+>> --- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>> +++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>> @@ -42,10 +42,44 @@ struct vb2_dma_sg_buf {
+>>     static void vb2_dma_sg_put(void *buf_priv);
+>>   +static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
+>> +               gfp_t gfp_flags)
+>> +{
+>> +       unsigned int last_page = 0;
+>> +       void *vaddr = NULL;
+>> +       unsigned int req_pages;
+>> +
+>> +       while (last_page < buf->sg_desc.num_pages) {
+>> +               req_pages = buf->sg_desc.num_pages-last_page;
+>> +               while (req_pages >= 1) {
+>> +                       vaddr = alloc_pages_exact(req_pages*PAGE_SIZE,
+>> +                               GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN);
+>> +                       if (vaddr)
+>> +                               break;
+>> +                       req_pages >>= 1;
+>> +               }
+>> +               if (!vaddr) {
+>> +                       while (--last_page >= 0)
+>> +                               __free_page(buf->pages[last_page]);
+>> +                       return -ENOMEM;
+>> +               }
+>> +               while (req_pages) {
+>> +                       buf->pages[last_page] = virt_to_page(vaddr);
+>> +                       sg_set_page(&buf->sg_desc.sglist[last_page],
+>> +                                       buf->pages[last_page], PAGE_SIZE,
+>> 0);
+>> +                       vaddr += PAGE_SIZE;
+>> +                       last_page++;
+>> +                       req_pages--;
+>> +               }
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>>   static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t
+>> gfp_flags)
+>>   {
+>>         struct vb2_dma_sg_buf *buf;
+>> -       int i;
+>> +       int ret;
+>>         buf = kzalloc(sizeof *buf, GFP_KERNEL);
+>>         if (!buf)
+>> @@ -69,14 +103,9 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx,
+>> unsigned long size, gfp_t gfp_fla
+>>         if (!buf->pages)
+>>                 goto fail_pages_array_alloc;
+>>   -     for (i = 0; i < buf->sg_desc.num_pages; ++i) {
+>> -               buf->pages[i] = alloc_page(GFP_KERNEL | __GFP_ZERO |
+>> -                                          __GFP_NOWARN | gfp_flags);
+>> -               if (NULL == buf->pages[i])
+>> -                       goto fail_pages_alloc;
+>> -               sg_set_page(&buf->sg_desc.sglist[i],
+>> -                           buf->pages[i], PAGE_SIZE, 0);
+>> -       }
+>> +       ret = vb2_dma_sg_alloc_compacted(buf, gfp_flags);
+>> +       if (ret)
+>> +               goto fail_pages_alloc;
+>>         buf->handler.refcount = &buf->refcount;
+>>         buf->handler.put = vb2_dma_sg_put;
+>> @@ -89,8 +118,6 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned
+>> long size, gfp_t gfp_fla
+>>         return buf;
+>>     fail_pages_alloc:
+>> -       while (--i >= 0)
+>> -               __free_page(buf->pages[i]);
+>>         kfree(buf->pages);
+>>     fail_pages_array_alloc:
+>
+>
+> Best regards
+> --
+> Marek Szyprowski
+> Samsung R&D Institute Poland
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Wouldn't this mean that there simply weren't enough tasks to keep all cpus busy?
 
-If there were tasks we could've pulled, we might need to look at why they
-weren't and maybe fix that. Now it could be that it things this cpu, even with
-the (little) idle time it has is sufficiently loaded and we'll get a 'local'
-wakeup soon enough. That's perfectly fine.
 
-What we should avoid is spending more time looking for tasks then we have idle,
-since that reduces the total time we can spend doing useful work. So that is I
-think the critical cut-off point.
+-- 
+Ricardo Ribalda
