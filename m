@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab3GQS5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:57:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52392 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756878Ab3GQS5S (ORCPT
+	id S1756919Ab3GQS5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:57:38 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:39705 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095Ab3GQS5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:57:18 -0400
-Date: Wed, 17 Jul 2013 11:57:15 -0700 (PDT)
-Message-Id: <20130717.115715.965921785189776151.davem@davemloft.net>
-To: kys@microsoft.com
-Cc: haiyangz@microsoft.com, netdev@vger.kernel.org, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH net] hyperv: Fix the NETIF_F_SG flag setting in netvsc
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <8906250c5dfc4f7ab0d84019bf7b9a44@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1374040880-20468-1-git-send-email-haiyangz@microsoft.com>
-	<8906250c5dfc4f7ab0d84019bf7b9a44@SN2PR03MB061.namprd03.prod.outlook.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 17 Jul 2013 14:57:35 -0400
+Message-ID: <51E6E91C.1090700@linaro.org>
+Date: Wed, 17 Jul 2013 11:57:32 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Baruch Siach <baruch@tkos.co.il>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: add the generic sched_clock under timekeeping
+References: <a38977cc6608170b69b21b8a5ee985685c7e8a0d.1374055149.git.baruch@tkos.co.il>
+In-Reply-To: <a38977cc6608170b69b21b8a5ee985685c7e8a0d.1374055149.git.baruch@tkos.co.il>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 17 Jul 2013 11:57:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KY Srinivasan <kys@microsoft.com>
-Date: Wed, 17 Jul 2013 11:40:41 +0000
+On 07/17/2013 03:05 AM, Baruch Siach wrote:
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+> ---
+>   MAINTAINERS | 2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index bf61e04..bd9616a 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7129,6 +7129,7 @@ M:	Thomas Gleixner <tglx@linutronix.de>
+>   T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
+>   S:	Supported
+>   F:	include/linux/clocksource.h
+> +F:	include/linux/sched_clock.h
+>   F:	include/linux/time.h
+>   F:	include/linux/timex.h
+>   F:	include/uapi/linux/time.h
+> @@ -7136,6 +7137,7 @@ F:	include/uapi/linux/timex.h
+>   F:	kernel/time/clocksource.c
+>   F:	kernel/time/time*.c
+>   F:	kernel/time/ntp.c
+> +F:	kernel/time/sched_clock.c
 
-> 
-> 
->> -----Original Message-----
->> From: Haiyang Zhang [mailto:haiyangz@microsoft.com]
->> Sent: Wednesday, July 17, 2013 2:01 AM
->> To: davem@davemloft.net; netdev@vger.kernel.org
->> Cc: Haiyang Zhang; KY Srinivasan; olaf@aepfle.de; jasowang@redhat.com; linux-
->> kernel@vger.kernel.org; devel@linuxdriverproject.org
->> Subject: [PATCH net] hyperv: Fix the NETIF_F_SG flag setting in netvsc
->> 
->> SG mode is not currently supported by netvsc, so remove this flag for now.
->> Otherwise, it will be unconditionally enabled by commit ec5f0615642
->>     "Kill link between CSUM and SG features"
->> Previously, the SG feature is disabled because CSUM is not set here.
->> 
->> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
->> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> 
-> We would need to apply this patch to 3.9 and 3.10 as well that are currently broken.
+It seems like we could probably simplify this bit to kernel/time/*, no?
 
-I have already queued this patch up for -stable submission.
+thanks
+-john
+
+
