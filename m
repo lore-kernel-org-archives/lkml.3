@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934597Ab3GQW4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56778 "EHLO
+	id S934736Ab3GQXDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:03:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56806 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934485Ab3GQW4f (ORCPT
+	with ESMTP id S934592Ab3GQW4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:35 -0400
+	Wed, 17 Jul 2013 18:56:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 078/145] netfilter: nfnetlink_acct: fix incomplete dumping of objects
-Date: Wed, 17 Jul 2013 15:46:50 -0700
-Message-Id: <1374101277-7915-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 022/145] ACPICA: Do not use extended sleep registers unless HW-reduced bit is set
+Date: Wed, 17 Jul 2013 15:45:54 -0700
+Message-Id: <1374101277-7915-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,39 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 991a6b735ff47710769545b11e481bb140b2e6f7 upstream.
+commit 7cec7048fe22e3e92389da2cd67098f6c4284e7f upstream.
 
-Fix broken incomplete object dumping if the list of objects does not
-fit into one single netlink message.
+Previous implementation incorrectly used the ACPI 5.0 extended
+sleep registers if they were simply populated. This caused
+problems on some non-HW-reduced machines. As per the ACPI spec,
+they should only be used if the HW-reduced bit is set.  Lv Zheng,
+ACPICA BZ 1020.
 
-Reported-by: Gabriel Lazar <Gabriel.Lazar@com.utcluj.ro>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=54181
+References: https://bugs.acpica.org/show_bug.cgi?id=1020
+Reported-by: Daniel Rowe <bart@fathom13.com>
+Bisected-by: Brint E. Kriebel <kernel@bekit.net>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netfilter/nfnetlink_acct.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/acpi/acpica/hwxfsleep.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/net/netfilter/nfnetlink_acct.c b/net/netfilter/nfnetlink_acct.c
-index 589d686..125bd35 100644
---- a/net/netfilter/nfnetlink_acct.c
-+++ b/net/netfilter/nfnetlink_acct.c
-@@ -147,9 +147,12 @@ nfnl_acct_dump(struct sk_buff *skb, struct netlink_callback *cb)
+diff --git a/drivers/acpi/acpica/hwxfsleep.c b/drivers/acpi/acpica/hwxfsleep.c
+index ae443fe2..fac67f0 100644
+--- a/drivers/acpi/acpica/hwxfsleep.c
++++ b/drivers/acpi/acpica/hwxfsleep.c
+@@ -240,12 +240,14 @@ static acpi_status acpi_hw_sleep_dispatch(u8 sleep_state, u32 function_id)
+ 	    &acpi_sleep_dispatch[function_id];
  
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(cur, &nfnl_acct_list, head) {
--		if (last && cur != last)
--			continue;
-+		if (last) {
-+			if (cur != last)
-+				continue;
- 
-+			last = NULL;
-+		}
- 		if (nfnl_acct_fill_info(skb, NETLINK_CB(cb->skb).portid,
- 				       cb->nlh->nlmsg_seq,
- 				       NFNL_MSG_TYPE(cb->nlh->nlmsg_type),
+ #if (!ACPI_REDUCED_HARDWARE)
+-
+ 	/*
+ 	 * If the Hardware Reduced flag is set (from the FADT), we must
+-	 * use the extended sleep registers
++	 * use the extended sleep registers (FADT). Note: As per the ACPI
++	 * specification, these extended registers are to be used for HW-reduced
++	 * platforms only. They are not general-purpose replacements for the
++	 * legacy PM register sleep support.
+ 	 */
+-	if (acpi_gbl_reduced_hardware || acpi_gbl_FADT.sleep_control.address) {
++	if (acpi_gbl_reduced_hardware) {
+ 		status = sleep_functions->extended_function(sleep_state);
+ 	} else {
+ 		/* Legacy sleep */
 -- 
 1.8.1.2
 
