@@ -1,140 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab3GQVPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 17:15:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45597 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756151Ab3GQVPC (ORCPT
+	id S1757386Ab3GQVQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 17:16:53 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:39735 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab3GQVQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 17:15:02 -0400
-Message-ID: <51E70953.1000601@wwwdotorg.org>
-Date: Wed, 17 Jul 2013 15:14:59 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 17 Jul 2013 17:16:52 -0400
+Date: Wed, 17 Jul 2013 23:16:49 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, celinux-dev@lists.celinuxforum.org,
+        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
+        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
+        Florian Fainelli <florian@openwrt.org>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Chanho Min <chanho.min@lge.com>
+Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the
+	new streaming format
+Message-ID: <20130717211649.GA5619@merkur.ravnborg.org>
+References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com> <20130716004727.b60b2c96.akpm@linux-foundation.org> <20130716005611.e4ccab02.akpm@linux-foundation.org> <201307161008.07643.yann.morin.1998@free.fr> <20130716180408.GA19863@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
-References: <20130716090310.5541.36777.stgit@localhost> <20130716090536.5541.36289.stgit@localhost>
-In-Reply-To: <20130716090536.5541.36289.stgit@localhost>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716180408.GA19863@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 03:05 AM, Tony Lindgren wrote:
-> To toggle dynamic states, let's add the optional active state in
-> addition to the static default state. Then if the optional active
-> state is defined, we can require that idle and sleep states cover
-> the same pingroups as the active state.
 > 
-> Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
-> to use instead of pinctrl_select() to avoid breaking existing users.
+> We could extend the symbol option part to retreive values from a binary.
+> Something like this:
 > 
-> With pinctrl_check_dynamic() we can check that idle and sleep states
-> match the active state for pingroups during init, and don't need to
-> do it during runtime.
+> config FOOBAR
+>         bool
+>         option exec="true"
 > 
-> Then with the states pre-validated, pinctrl_select_dynamic() can
-> just toggle between the dynamic states without extra checks.
+> FOOBAR would assume the value "y" if the command true has exit code == 0, otherwise "n".
+> And similar conversions for other types.
 > 
-> Note that pinctr_select_state() still has valid use cases, such as
-> changing states when the pins can be shared between two drivers
-> and don't necessarily cover the same pingroups. For dynamic runtime
-> toggling of pin states, we should eventually always use just
-> pinctrl_select_dynamic().
+> This only extendt Kconfig slightly - using an already present method to import
+> external values.
+> 
+> The drawback I see with this approach is that we may execute a lot of small programs
+> where the value is never used.
 
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+Following is a quick patch implmenting this idea.
+You need to run gperf manually to enable this.
 
-> @@ -887,6 +887,8 @@ static void pinctrl_free(struct pinctrl *p, bool inlist)
->  		list_for_each_entry_safe(setting, n2, &state->settings, node) {
->  			pinctrl_free_setting(state == p->state[PINCTRL_STATIC],
->  					     setting);
-> +			pinctrl_free_setting(state == p->state[PINCTRL_DYNAMIC],
-> +					     setting);
+"gperf -C scripts/kconfig/zconf.gperf > scripts/kconfig/zconf.hash.c"
 
-This will cause pinmux_free_setting() or pinconf_free_setting() to be
-called twice on the setting object. Right now they don't do anything,
-but if they start to kfree() some dynamically-allocated data that's
-stored within the setting, that'll cause problems. I would suggest a
-loop body something more like:
+I did not figure out how to use the built-in rules to generate this file :-(
 
-bool disable_setting = state == XXX || state == YYY;
-pinctrl_free_setting(disable_setting, setting);
+I have tested this lightly - as we should discuss if this is a viable way forward.
+For now I used popen() - so return value of the executed program are ignored.
 
-> +int pinctrl_check_dynamic(struct device *dev, struct pinctrl_state *st1,
-> +			  struct pinctrl_state *st2)
-> +{
-> +	struct pinctrl_setting *s1, *s2;
-> +
-> +	list_for_each_entry(s1, &st1->settings, node) {
-...
-> +		list_for_each_entry(s2, &st2->settings, node) {
-...
-> +			if (pctldev1 != pctldev2) {
-> +				dev_dbg(dev, "pctldev must be the same for states\n");
-> +				return -EINVAL;
-> +			}
+To test this I used:
 
-I don't think we should require that; it's perfectly legal at the moment
-for some device's pinctrl configuration to include settings from
-multiple different pin controllers.
+config FOOBAR
+	bool
+	option exec="echo y"
 
-> +			for (i = 0; i < num_pins1; i++) {
-> +				int pin1 = pins1[i];
-> +
-> +				for (j = 0; j < num_pins2; j++) {
-> +					int pin2 = pins2[j];
-> +
-> +					if (pin1 == pin2) {
-> +						found++;
-> +						break;
-> +					}
-> +				}
-> +			}
-> +
-> +			if (found != num_pins1) {
+config FOOBAR_SELECTOR
+	bool
+	default FOOBAR
 
-I guess this make sure that every entry in the dynamic state is in the
-state state, but not vice-versa; the static state can affect more stuff
-than the dynamic state?
+Nothing fancy - but it shows the idea.
 
-If so, shouldn't that check be if (found != num_pins2)?
+	Sam
 
-> +int pinctrl_select_dynamic(struct pinctrl *p, struct pinctrl_state *state)
 
-The body of this function is rather duplicated with pinctrl_select().
-
-> @@ -1241,7 +1371,13 @@ static int pinctrl_pm_select_state(struct device *dev, struct pinctrl_state *sta
->  		return 0;
->  	if (IS_ERR(state))
->  		return 0; /* No such state */
-> -	ret = pinctrl_select_state(pins->p, state);
-> +
-> +	/* Configured for proper dynamic muxing? */
-
-I don't think "proper" is correct here; it's just fine not to have any
-dynamic configuration.
-
-> +	if (!IS_ERR(dev->pins->active_state))
-> +		ret = pinctrl_select_dynamic(pins->p, state);
-> +	else
-> +		ret = pinctrl_select_state(pins->p, state);
-
-Hmmm. I'm not quite sure this is right... Surely this function should
-just do nothing if the dynamic states aren't defined? The system should
-just, and only, be in the "default" state and never do anything else.
-
-Looking back at patch 1, I see the are
-pinctrl_pm_select_{default,sleep,idle}_state(). Shouldn't that list be
-active/sleep/idle, since I assume default is that "static" state, and
-the other three are the "dynamic" states?
-
-> +static int pinctrl_pm_check_state(struct device *dev,
-> +				  struct pinctrl_state *state)
-
-Naming this pinctrl_pm_is_state_error() or pinctrl_pm_is_state_ok()
-might give more clue what its return value is expected to be.
+diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
+index df198a5..a68258b 100644
+--- a/scripts/kconfig/expr.h
++++ b/scripts/kconfig/expr.h
+@@ -133,6 +133,7 @@ enum prop_type {
+ 	P_SELECT,   /* select BAR */
+ 	P_RANGE,    /* range 7..100 (for a symbol) */
+ 	P_ENV,      /* value from environment variable */
++	P_EXEC,     /* value from executable (using symbol option) */
+ 	P_SYMBOL,   /* where a symbol is defined */
+ };
+ 
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index 09f4edf..371f73b 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -61,6 +61,7 @@ enum conf_def_mode {
+ #define T_OPT_MODULES		1
+ #define T_OPT_DEFCONFIG_LIST	2
+ #define T_OPT_ENV		3
++#define T_OPT_EXEC		4
+ 
+ struct kconf_id {
+ 	int name;
+diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+index 7e233a6..cfa7aaa 100644
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -213,6 +213,9 @@ void menu_add_option(int token, char *arg)
+ 	case T_OPT_ENV:
+ 		prop_add_env(arg);
+ 		break;
++	case T_OPT_EXEC:
++		prop_add_exec(arg);
++		break;
+ 	}
+ }
+ 
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index d550300..b7179a6 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -1331,6 +1331,8 @@ const char *prop_get_type_name(enum prop_type type)
+ 		return "prompt";
+ 	case P_ENV:
+ 		return "env";
++	case P_EXEC:
++		return "exec";
+ 	case P_COMMENT:
+ 		return "comment";
+ 	case P_MENU:
+@@ -1379,3 +1381,56 @@ static void prop_add_env(const char *env)
+ 	else
+ 		menu_warn(current_entry, "environment variable %s undefined", env);
+ }
++
++static void exec_command(const char *command, struct symbol *sym)
++{
++	char buffer[2048];
++	FILE *stream;
++
++	stream = popen(command, "r");
++
++	if (stream != NULL) {
++		if (fgets(buffer, sizeof(buffer), stream) != NULL) {
++			int i;
++
++			buffer[sizeof(buffer) - 1] = '\0';
++
++			/* Drop any trialing newlines */
++			i = strlen(buffer);
++			while (i > 0 && buffer[i - 1] == '\n') {
++				buffer[i - 1] = '\0';
++				i--;
++			}
++			/* Validate the output of the command */
++			if (strlen(buffer) == 0) {
++				menu_warn(current_entry,
++				          "command '%s' - invalid (empty?) return value: \"%s\"",
++				          command, buffer);
++				return;
++			}
++
++			menu_warn(current_entry, "default: %s", buffer);
++			sym_add_default(sym, buffer);
++		} else {
++			menu_warn(current_entry, "command '%s' - empty return value", command);
++		}
++		pclose(stream);
++	} else {
++		menu_warn(current_entry, "command '%s' failed to execute", command);
++	}
++}
++
++static void prop_add_exec(const char *command)
++{
++	struct property *prop;
++	struct symbol *sym;
++
++	sym = current_entry->sym;
++	sym->flags |= SYMBOL_AUTO;
++
++	prop = prop_alloc(P_EXEC, sym);
++	prop->expr = expr_alloc_symbol(sym_lookup(command, SYMBOL_CONST));
++
++	exec_command(command, sym);
++}
++
+diff --git a/scripts/kconfig/zconf.gperf b/scripts/kconfig/zconf.gperf
+index f14ab41..02c6a59 100644
+--- a/scripts/kconfig/zconf.gperf
++++ b/scripts/kconfig/zconf.gperf
+@@ -44,4 +44,5 @@ on,		T_ON,		TF_PARAM
+ modules,	T_OPT_MODULES,	TF_OPTION
+ defconfig_list,	T_OPT_DEFCONFIG_LIST,TF_OPTION
+ env,		T_OPT_ENV,	TF_OPTION
++exec,		T_OPT_EXEC,	TF_OPTION
+ %%
