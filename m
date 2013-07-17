@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab3GQPTI (ORCPT <rfc822;w@1wt.eu>);
+	id S1756203Ab3GQPUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:20:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51080 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756141Ab3GQPTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Jul 2013 11:19:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34454 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab3GQPTE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:19:04 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>
 CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [RESEND PATCH V1 8/9] hwmon: lm75: expose to thermal fw via DT nodes
-Date: Wed, 17 Jul 2013 11:17:27 -0400
-Message-ID: <1374074248-31690-9-git-send-email-eduardo.valentin@ti.com>
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [RESEND PATCH V1 3/9] thermal: thermal_core: allow binding with limits on bind_params
+Date: Wed, 17 Jul 2013 11:17:22 -0400
+Message-ID: <1374074248-31690-4-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
 References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
@@ -25,97 +24,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds to lm75 temperature sensor the possibility
-to expose itself as thermal zone device, registered on the
-thermal framework.
+When registering a thermal zone device using platform information
+via bind_params, the thermal framework will always perform the
+cdev binding using the lowest and highest limits (THERMAL_NO_LIMIT).
 
-The thermal zone is built only if a device tree node
-describing a thermal zone for this sensor is present
-inside the lm75 DT node. Otherwise, the driver behavior
-will be the same.
+This patch changes the data structures so that it is possible
+to inform what are the desired limits for each trip point
+inside a bind_param. The way the binding is performed is also
+changed so that it uses the new data structure.
 
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: lm-sensors@lm-sensors.org
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/hwmon/lm75.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ Documentation/thermal/sysfs-api.txt |  7 +++++++
+ drivers/thermal/thermal_core.c      | 19 +++++++++++++++----
+ include/linux/thermal.h             | 10 ++++++++++
+ 3 files changed, 32 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
-index c03b490..0aa5e28 100644
---- a/drivers/hwmon/lm75.c
-+++ b/drivers/hwmon/lm75.c
-@@ -27,6 +27,8 @@
- #include <linux/hwmon-sysfs.h>
- #include <linux/err.h>
- #include <linux/mutex.h>
-+#include <linux/thermal.h>
-+#include <linux/of.h>
- #include "lm75.h"
+diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+index a71bd5b..2ad50e7 100644
+--- a/Documentation/thermal/sysfs-api.txt
++++ b/Documentation/thermal/sysfs-api.txt
+@@ -134,6 +134,13 @@ temperature) and throttle appropriate devices.
+                this thermal zone and cdev, for a particular trip point.
+                If nth bit is set, then the cdev and thermal zone are bound
+                for trip point n.
++    .limits: This is an array of cooling state limits. Must have exactly
++         2 * thermal_zone.number_of_trip_points. It is an array consisting
++         of tuples <lower-state upper-state> of state limits. Each trip
++         will be associated with one state limit tuple when binding.
++         A NULL pointer means <THERMAL_NO_LIMITS THERMAL_NO_LIMITS>
++         on all trips. These limits are used when binding a cdev to a
++         trip point.
+     .match: This call back returns success(0) if the 'tz and cdev' need to
+ 	    be bound, as per platform data.
+ 1.4.2 struct thermal_zone_params
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 247528b..096c8be 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -202,14 +202,23 @@ static void print_bind_err_msg(struct thermal_zone_device *tz,
+ }
  
- 
-@@ -70,6 +72,7 @@ static const u8 LM75_REG_TEMP[3] = {
- /* Each client has this additional data */
- struct lm75_data {
- 	struct device		*hwmon_dev;
-+	struct thermal_zone_device	*tz;
- 	struct mutex		update_lock;
- 	u8			orig_conf;
- 	u8			resolution;	/* In bits, between 9 and 12 */
-@@ -92,6 +95,19 @@ static struct lm75_data *lm75_update_device(struct device *dev);
- 
- /* sysfs attributes for hwmon */
- 
-+static int lm75_read_temp(void *dev, unsigned long *temp)
-+{
-+	struct lm75_data *data = lm75_update_device(dev);
-+
-+	if (IS_ERR(data))
-+		return PTR_ERR(data);
-+
-+	*temp = ((data->temp[0] >> (16 - data->resolution)) * 1000) >>
-+			(data->resolution - 8);
-+
-+	return 0;
-+}
-+
- static ssize_t show_temp(struct device *dev, struct device_attribute *da,
- 			 char *buf)
+ static void __bind(struct thermal_zone_device *tz, int mask,
+-			struct thermal_cooling_device *cdev)
++			struct thermal_cooling_device *cdev,
++			unsigned long *limits)
  {
-@@ -271,11 +287,23 @@ lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		goto exit_remove;
+ 	int i, ret;
+ 
+ 	for (i = 0; i < tz->trips; i++) {
+ 		if (mask & (1 << i)) {
++			unsigned long upper, lower;
++
++			upper = THERMAL_NO_LIMIT;
++			lower = THERMAL_NO_LIMIT;
++			if (limits) {
++				lower = limits[i * 2];
++				upper = limits[i * 2 + 1];
++			}
+ 			ret = thermal_zone_bind_cooling_device(tz, i, cdev,
+-					THERMAL_NO_LIMIT, THERMAL_NO_LIMIT);
++							       upper, lower);
+ 			if (ret)
+ 				print_bind_err_msg(tz, cdev, ret);
+ 		}
+@@ -254,7 +263,8 @@ static void bind_cdev(struct thermal_cooling_device *cdev)
+ 			if (tzp->tbp[i].match(pos, cdev))
+ 				continue;
+ 			tzp->tbp[i].cdev = cdev;
+-			__bind(pos, tzp->tbp[i].trip_mask, cdev);
++			__bind(pos, tzp->tbp[i].trip_mask, cdev,
++			       tzp->tbp[i].binding_limits);
+ 		}
  	}
  
-+	if (of_find_node_by_name(client->dev.of_node, "thermal_zone")) {
-+		data->tz = thermal_zone_of_device_register(&client->dev,
-+							   &client->dev,
-+							   lm75_read_temp);
-+		if (IS_ERR(data->tz)) {
-+			status = PTR_ERR(data->tz);
-+			goto exit_hwmon;
-+		}
-+	}
+@@ -292,7 +302,8 @@ static void bind_tz(struct thermal_zone_device *tz)
+ 			if (tzp->tbp[i].match(tz, pos))
+ 				continue;
+ 			tzp->tbp[i].cdev = pos;
+-			__bind(tz, tzp->tbp[i].trip_mask, pos);
++			__bind(tz, tzp->tbp[i].trip_mask, pos,
++			       tzp->tbp[i].binding_limits);
+ 		}
+ 	}
+ exit:
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index a386a1c..39575eb 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -207,6 +207,16 @@ struct thermal_bind_params {
+ 	 * See Documentation/thermal/sysfs-api.txt for more information.
+ 	 */
+ 	int trip_mask;
 +
- 	dev_info(&client->dev, "%s: sensor '%s'\n",
- 		 dev_name(data->hwmon_dev), client->name);
- 
- 	return 0;
- 
-+exit_hwmon:
-+	hwmon_device_unregister(data->hwmon_dev);
- exit_remove:
- 	sysfs_remove_group(&client->dev.kobj, &lm75_group);
- 	return status;
-@@ -285,6 +313,7 @@ static int lm75_remove(struct i2c_client *client)
- {
- 	struct lm75_data *data = i2c_get_clientdata(client);
- 
-+	thermal_zone_device_unregister(data->tz);
- 	hwmon_device_unregister(data->hwmon_dev);
- 	sysfs_remove_group(&client->dev.kobj, &lm75_group);
- 	lm75_write_value(client, LM75_REG_CONF, data->orig_conf);
++	/*
++	 * This is an array of cooling state limits. Must have exactly
++	 * 2 * thermal_zone.number_of_trip_points. It is an array consisting
++	 * of tuples <lower-state upper-state> of state limits. Each trip
++	 * will be associated with one state limit tuple when binding.
++	 * A NULL pointer means <THERMAL_NO_LIMITS THERMAL_NO_LIMITS>
++	 * on all trips.
++	 */
++	unsigned long *binding_limits;
+ 	int (*match) (struct thermal_zone_device *tz,
+ 			struct thermal_cooling_device *cdev);
+ };
 -- 
 1.8.2.1.342.gfa7285d
 
