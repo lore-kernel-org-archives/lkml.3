@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332Ab3GQByP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 21:54:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9107 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3GQByN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 21:54:13 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=E3gBSPWCDXAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=O94bg-4ezZgLHmR5GZwA:9 a=QEXdDO2ut3YA:10 a=wEVeK66uBPoA:10 a=oiAIZxVsNA0A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374026050.6458.119.camel@gandalf.local.home>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Steven Rostedt <rostedt@goodmis.org>
+	id S1751366Ab3GQB4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 21:56:42 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40873 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751179Ab3GQB4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 21:56:41 -0400
+Message-ID: <1374026199.1949.62.camel@joe-AO722>
+Subject: Re: [v3.11-rc1 PATCH 0/5] printk: Initial restructuring
+From: Joe Perches <joe@perches.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Tue, 16 Jul 2013 21:54:10 -0400
-In-Reply-To: <CA+55aFw9E4mORqJaC+5n_dy8GgiQN6QRZh3-2GH99sedrYoEkA@mail.gmail.com>
-References: <20130715155202.GC29526@xanatos>
-	 <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
-	 <20130715174659.GC15531@xanatos>
-	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	 <20130715180403.GD15531@xanatos>
-	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	 <20130715184642.GE15531@xanatos> <20130715191727.GC10157@1wt.eu>
-	 <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com>
-	 <8738rf14zl.fsf@rustcorp.com.au> <20130716210856.GF4994@xanatos>
-	 <878v16yp57.fsf@rustcorp.com.au>
-	 <CA+55aFw9E4mORqJaC+5n_dy8GgiQN6QRZh3-2GH99sedrYoEkA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 16 Jul 2013 18:56:39 -0700
+In-Reply-To: <CA+55aFwJh5yFeOmPrR=3VqY1StmqTn0sRzwtkCA5N8b=-==otQ@mail.gmail.com>
+References: <cover.1373922863.git.joe@perches.com>
+	 <CA+55aFwJh5yFeOmPrR=3VqY1StmqTn0sRzwtkCA5N8b=-==otQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 18:37 -0700, Linus Torvalds wrote:
+On Tue, 2013-07-16 at 18:48 -0700, Linus Torvalds wrote:
+> On Mon, Jul 15, 2013 at 2:51 PM, Joe Perches <joe@perches.com> wrote:
+> >
+> > If this is acceptable, I'll post 5 or so patches at a time
+> > after/if each block of patches is applied.
+> 
+> I didn't see anything objectionable, but I'm assuming this comes in
+> through Andrew?
 
-> Emotions aren't bad. Quite the reverse. 
+I'd rather you take it directly now.
 
-Spock and Dr. Sheldon Cooper strongly disagree.
+> And hopefully gets comments from others too..
 
--- Steve
+There were a few 9 months ago.
+
+Mostly it was a timing issue as to who
+takes it and when.
+
+printk still moves around quite a bit
+and Andrew suggested shortly after
+an -rc1 was likely the best timing.
+
+http://lkml.indiana.edu/hypermail/linux/kernel/1212.0/02931.html
+
+As far as I'm concerned, the biggest
+deal is starting this refactoring.
+
+It doesn't have to be an big blast
+like what was submitted last year,
+but it should be started sooner
+rather never.
 
 
