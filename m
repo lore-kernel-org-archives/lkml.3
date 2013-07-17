@@ -1,252 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab3GQQp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:45:59 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:36570 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932850Ab3GQQpI (ORCPT
+	id S933088Ab3GQQqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:46:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40589 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932850Ab3GQQqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:45:08 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 16/18] vtime: Optimize full dynticks accounting off case with static keys
-Date: Wed, 17 Jul 2013 18:44:29 +0200
-Message-Id: <1374079471-3129-17-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
-References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
+	Wed, 17 Jul 2013 12:46:10 -0400
+From: Nishanth Menon <nm@ti.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <benoit.cousson@linaro.org>,
+        Tony Lindgren <tony@atomide.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        J Keerthy <j-keerthy@ti.com>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH 8/9] ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
+Date: Wed, 17 Jul 2013 11:45:37 -0500
+Message-ID: <1374079538-19548-9-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374079538-19548-1-git-send-email-nm@ti.com>
+References: <1374079538-19548-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If no CPU is in the full dynticks range, we can avoid the full
-dynticks cputime accounting through generic vtime along with its
-overhead and use the traditional tick based accounting instead.
+commit e00c27ef3b4c23e39d0a77b7c8e5be44c28001c7
+(ARM: dts: OMAP5: Add Palmas MFD node and regulator nodes)
+introduced regulator entries for OMAP5uEVM.
 
-Let's do this and nope the off case with static keys.
+However, The regulator information is based on an older temporary
+pre-production board variant and does not reflect production board
+750-2628-XXX boards.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
+LDO4 supplies VDD_VPP which is vpp1. This is currently configured for
+1.5V which as per data manual "A pulse width of 1000 ns and an amplitude
+of 2V is required to program each eFuse bit. Otherwise, VPP1 must not
+be supplied".
+
+So, fix the voltage to 2V. and disable the supply since we have no plans
+of programming efuse bits - it can only be done once - in factory.
+
+Further it is not enabled by default by PMIC so, 'boot-on' must be
+removed, and the 'always-on' needs to be removed to achieve pulsing
+if efuse needs to be programmed.
+
+Reported-by: Marc Jüttner <m-juettner@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- include/linux/context_tracking.h |    6 +--
- include/linux/vtime.h            |   70 +++++++++++++++++++++++++++++++++-----
- kernel/sched/cputime.c           |   22 ++----------
- 3 files changed, 67 insertions(+), 31 deletions(-)
+ arch/arm/boot/dts/omap5-uevm.dts |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index 8635dbb..07cdf93 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -66,8 +66,7 @@ static inline void context_tracking_task_switch(struct task_struct *prev,
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- static inline void guest_enter(void)
- {
--	if (static_key_false(&context_tracking_enabled) &&
--	    vtime_accounting_enabled())
-+	if (vtime_accounting_enabled())
- 		vtime_guest_enter(current);
- 	else
- 		current->flags |= PF_VCPU;
-@@ -75,8 +74,7 @@ static inline void guest_enter(void)
+diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
+index 3ff5874..ef05676 100644
+--- a/arch/arm/boot/dts/omap5-uevm.dts
++++ b/arch/arm/boot/dts/omap5-uevm.dts
+@@ -397,10 +397,10 @@
+ 				ldo7_reg: ldo7 {
+ 					/* VDD_VPP: vpp1 */
+ 					regulator-name = "ldo7";
+-					regulator-min-microvolt = <1500000>;
+-					regulator-max-microvolt = <1500000>;
+-					regulator-always-on;
+-					regulator-boot-on;
++					regulator-min-microvolt = <2000000>;
++					regulator-max-microvolt = <2000000>;
++					/* Only for efuse reprograming! */
++					status = "disabled";
+ 				};
  
- static inline void guest_exit(void)
- {
--	if (static_key_false(&context_tracking_enabled) &&
--	    vtime_accounting_enabled())
-+	if (vtime_accounting_enabled())
- 		vtime_guest_exit(current);
- 	else
- 		current->flags &= ~PF_VCPU;
-diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index 2ad0739..f5b72b3 100644
---- a/include/linux/vtime.h
-+++ b/include/linux/vtime.h
-@@ -1,22 +1,68 @@
- #ifndef _LINUX_KERNEL_VTIME_H
- #define _LINUX_KERNEL_VTIME_H
- 
-+#include <linux/context_tracking_state.h>
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- #include <asm/vtime.h>
- #endif
- 
-+
- struct task_struct;
- 
-+/*
-+ * vtime_accounting_enabled() definitions/declarations
-+ */
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+static inline bool vtime_accounting_enabled(void) { return true; }
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
-+
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+static inline bool vtime_accounting_enabled(void)
-+{
-+	if (static_key_false(&context_tracking_enabled)) {
-+		if (context_tracking_active())
-+			return true;
-+	}
-+
-+	return false;
-+}
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
-+
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+static inline bool vtime_accounting_enabled(void) { return false; }
-+#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
-+
-+
-+/*
-+ * Common vtime APIs
-+ */
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+
-+#ifdef __ARCH_HAS_VTIME_TASK_SWITCH
- extern void vtime_task_switch(struct task_struct *prev);
-+#else
-+extern void vtime_common_task_switch(struct task_struct *prev);
-+static inline void vtime_task_switch(struct task_struct *prev)
-+{
-+	if (vtime_accounting_enabled())
-+		vtime_common_task_switch(prev);
-+}
-+#endif /* __ARCH_HAS_VTIME_TASK_SWITCH */
-+
- extern void vtime_account_system(struct task_struct *tsk);
- extern void vtime_account_idle(struct task_struct *tsk);
- extern void vtime_account_user(struct task_struct *tsk);
--extern void vtime_account_irq_enter(struct task_struct *tsk);
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
--static inline bool vtime_accounting_enabled(void) { return true; }
--#endif
-+#ifdef __ARCH_HAS_VTIME_ACCOUNT
-+extern void vtime_account_irq_enter(struct task_struct *tsk);
-+#else
-+extern void vtime_common_account_irq_enter(struct task_struct *tsk);
-+static inline void vtime_account_irq_enter(struct task_struct *tsk)
-+{
-+	if (vtime_accounting_enabled())
-+		vtime_common_account_irq_enter(tsk);
-+}
-+#endif /* __ARCH_HAS_VTIME_ACCOUNT */
- 
- #else /* !CONFIG_VIRT_CPU_ACCOUNTING */
- 
-@@ -24,14 +70,20 @@ static inline void vtime_task_switch(struct task_struct *prev) { }
- static inline void vtime_account_system(struct task_struct *tsk) { }
- static inline void vtime_account_user(struct task_struct *tsk) { }
- static inline void vtime_account_irq_enter(struct task_struct *tsk) { }
--static inline bool vtime_accounting_enabled(void) { return false; }
--#endif
-+#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- extern void arch_vtime_task_switch(struct task_struct *tsk);
--extern void vtime_account_irq_exit(struct task_struct *tsk);
--extern bool vtime_accounting_enabled(void);
-+extern void vtime_gen_account_irq_exit(struct task_struct *tsk);
-+
-+static inline void vtime_account_irq_exit(struct task_struct *tsk)
-+{
-+	if (vtime_accounting_enabled())
-+		vtime_gen_account_irq_exit(tsk);
-+}
-+
- extern void vtime_user_enter(struct task_struct *tsk);
-+
- static inline void vtime_user_exit(struct task_struct *tsk)
- {
- 	vtime_account_user(tsk);
-@@ -39,7 +91,7 @@ static inline void vtime_user_exit(struct task_struct *tsk)
- extern void vtime_guest_enter(struct task_struct *tsk);
- extern void vtime_guest_exit(struct task_struct *tsk);
- extern void vtime_init_idle(struct task_struct *tsk, int cpu);
--#else
-+#else /* !CONFIG_VIRT_CPU_ACCOUNTING_GEN  */
- static inline void vtime_account_irq_exit(struct task_struct *tsk)
- {
- 	/* On hard|softirq exit we always account to hard|softirq cputime */
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index b62d5c0..0831b06 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -378,11 +378,8 @@ static inline void irqtime_account_process_tick(struct task_struct *p, int user_
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
- 
- #ifndef __ARCH_HAS_VTIME_TASK_SWITCH
--void vtime_task_switch(struct task_struct *prev)
-+void vtime_common_task_switch(struct task_struct *prev)
- {
--	if (!vtime_accounting_enabled())
--		return;
--
- 	if (is_idle_task(prev))
- 		vtime_account_idle(prev);
- 	else
-@@ -404,11 +401,8 @@ void vtime_task_switch(struct task_struct *prev)
-  * vtime_account().
-  */
- #ifndef __ARCH_HAS_VTIME_ACCOUNT
--void vtime_account_irq_enter(struct task_struct *tsk)
-+void vtime_common_account_irq_enter(struct task_struct *tsk)
- {
--	if (!vtime_accounting_enabled())
--		return;
--
- 	if (!in_interrupt()) {
- 		/*
- 		 * If we interrupted user, context_tracking_in_user()
-@@ -428,7 +422,7 @@ void vtime_account_irq_enter(struct task_struct *tsk)
- 	}
- 	vtime_account_system(tsk);
- }
--EXPORT_SYMBOL_GPL(vtime_account_irq_enter);
-+EXPORT_SYMBOL_GPL(vtime_common_account_irq_enter);
- #endif /* __ARCH_HAS_VTIME_ACCOUNT */
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
- 
-@@ -669,11 +663,8 @@ void vtime_account_system(struct task_struct *tsk)
- 	write_sequnlock(&tsk->vtime_seqlock);
- }
- 
--void vtime_account_irq_exit(struct task_struct *tsk)
-+void vtime_gen_account_irq_exit(struct task_struct *tsk)
- {
--	if (!vtime_accounting_enabled())
--		return;
--
- 	write_seqlock(&tsk->vtime_seqlock);
- 	if (context_tracking_in_user())
- 		tsk->vtime_snap_whence = VTIME_USER;
-@@ -732,11 +723,6 @@ void vtime_account_idle(struct task_struct *tsk)
- 	account_idle_time(delta_cpu);
- }
- 
--bool vtime_accounting_enabled(void)
--{
--	return context_tracking_active();
--}
--
- void arch_vtime_task_switch(struct task_struct *prev)
- {
- 	write_seqlock(&prev->vtime_seqlock);
+ 				ldo8_reg: ldo8 {
 -- 
-1.7.5.4
+1.7.9.5
 
