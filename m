@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3GQNZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:25:56 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:26964 "EHLO SMTP.CITRIX.COM"
+	id S1755363Ab3GQN0M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:26:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50235 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753939Ab3GQNZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:25:55 -0400
-X-IronPort-AV: E=Sophos;i="4.89,684,1367971200"; 
-   d="scan'208";a="37502964"
-Date: Wed, 17 Jul 2013 14:25:38 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Julien Grall <julien.grall@linaro.org>
-CC: <linux@arm.linux.org.uk>, <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, <patches@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] arm: choose debug/uncompress.h include when uncompress
- debug is disabled
-In-Reply-To: <1373897706-15331-1-git-send-email-julien.grall@linaro.org>
-Message-ID: <alpine.DEB.2.02.1307171420350.8258@kaball.uk.xensource.com>
-References: <1373897706-15331-1-git-send-email-julien.grall@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754502Ab3GQN0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 09:26:09 -0400
+Date: Wed, 17 Jul 2013 16:25:03 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        ouyang@cs.pitt.edu, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+Message-ID: <20130717132503.GA13732@redhat.com>
+References: <20130714131241.GA11772@redhat.com>
+ <51E3C5CE.7000009@linux.vnet.ibm.com>
+ <20130715103648.GN11772@redhat.com>
+ <51E4C011.4060803@linux.vnet.ibm.com>
+ <20130716060215.GE11772@redhat.com>
+ <51E5941B.3090300@linux.vnet.ibm.com>
+ <20130717093420.GU11772@redhat.com>
+ <51E66C71.6020605@linux.vnet.ibm.com>
+ <20130717124511.GW11772@redhat.com>
+ <51E69429.7040309@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E69429.7040309@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Jul 2013, Julien Grall wrote:
-> Even if uncompress debug is disabled, some board will continue to print
-> information during uncompress step.
-
-Are you talking about DEBUG_UNCOMPRESS?
-Should I read the sentence as "even if DEBUG_UNCOMPRESS is not selected,
-some board will continue to print information during the uncompress step"?
-
-Isn't this a bug in the platform specific code that should be fixed anyway?
-
-
-> By using debug/uncompress.h include, all debug output will be disabled.
-
-I am not sure if this is the right solution to the problem.
-I think it might be better to add the appropriate ifdefs into the
-platform specific code.
-
-Arnd, what do you think?
-
-
-> This is usefull in Xen environment for DOM0 because the UART is stolen by
-> Xen.
+On Wed, Jul 17, 2013 at 06:25:05PM +0530, Raghavendra K T wrote:
+> On 07/17/2013 06:15 PM, Gleb Natapov wrote:
+> >On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
+> >>>>Instead of halt we started with a sleep hypercall in those
+> >>>>  versions. Changed to halt() once Avi suggested to reuse existing sleep.
+> >>>>
+> >>>>If we use older hypercall with few changes like below:
+> >>>>
+> >>>>kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
+> >>>>{
+> >>>>  // a0 reserved for flags
+> >>>>if (!w->lock)
+> >>>>return;
+> >>>>DEFINE_WAIT
+> >>>>...
+> >>>>end_wait
+> >>>>}
+> >>>>
+> >>>How would this help if NMI takes lock in critical section. The thing
+> >>>that may happen is that lock_waiting->want may have NMI lock value, but
+> >>>lock_waiting->lock will point to non NMI lock. Setting of want and lock
+> >>>have to be atomic.
+> >>
+> >>True. so we are here
+> >>
+> >>         non NMI lock(a)
+> >>         w->lock = NULL;
+> >>         smp_wmb();
+> >>         w->want = want;
+> >>                                NMI
+> >>                          <---------------------
+> >>                           NMI lock(b)
+> >>                           w->lock = NULL;
+> >>                           smp_wmb();
+> >>                           w->want = want;
+> >>                           smp_wmb();
+> >>                           w->lock = lock;
+> >>                          ---------------------->
+> >>         smp_wmb();
+> >>         w->lock = lock;
+> >>
+> >>so how about fixing like this?
+> >>
+> >>again:
+> >>         w->lock = NULL;
+> >>         smp_wmb();
+> >>         w->want = want;
+> >>         smp_wmb();
+> >>         w->lock = lock;
+> >>
+> >>if (!lock || w->want != want) goto again;
+> >>
+> >NMI can happen after the if() but before halt and the same situation
+> >we are trying to prevent with IRQs will occur.
 > 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
->
->  arch/arm/Kconfig.debug |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> True, we can not fix that. I thought to fix the inconsistency of
+> lock,want pair.
+> But NMI could happen after the first OR condition also.
+> /me thinks again
 > 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 21cc8a7..86c023d 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -679,7 +679,7 @@ config DEBUG_UNCOMPRESS
->  
->  config UNCOMPRESS_INCLUDE
->  	string
-> -	default "debug/uncompress.h" if ARCH_MULTIPLATFORM
-> +	default "debug/uncompress.h" if ARCH_MULTIPLATFORM || !DEBUG_UNCOMPRESS
->  	default "mach/uncompress.h"
->  
->  config EARLY_PRINTK
-> -- 
-> 1.7.10.4
-> 
+lock_spinning() can check that it is called in nmi context and bail out.
+How often this will happens anyway.
+
+--
+			Gleb.
