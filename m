@@ -1,89 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750872Ab3GQAxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 20:53:35 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25717 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab3GQAxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 20:53:34 -0400
-X-Spam-Score: -100.8
-Message-ID: <51E5EAD4.4030104@asianux.com>
-Date: Wed, 17 Jul 2013 08:52:36 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1750899Ab3GQBCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 21:02:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30949 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789Ab3GQBCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 21:02:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,680,1367996400"; 
+   d="scan'208";a="371465263"
+Date: Tue, 16 Jul 2013 18:02:44 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Willy Tarreau <w@1wt.eu>, Olivier Galibert <galibert@pobox.com>,
+        David Lang <david@lang.hm>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Subject: Re: [ATTEND] How to act on LKML
+Message-ID: <20130717010244.GM4994@xanatos>
+References: <20130715204135.GH15531@xanatos>
+ <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+ <1373926109.17876.221.camel@gandalf.local.home>
+ <20130715223615.GI15531@xanatos>
+ <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+ <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+ <20130716211235.GG4994@xanatos>
+ <20130716221821.GB21611@1wt.eu>
+ <20130716223957.GJ4994@xanatos>
+ <51E5DB59.2050209@schaufler-ca.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: trace: remove __init from race_selftest_startup_function()
- and trace_selftest_startup_function_graph()
-References: <51DDFCF8.2090808@asianux.com>    <1373561279.17876.45.camel@gandalf.local.home>    <51DF44FA.9060000@asianux.com>   <1373593261.17876.61.camel@gandalf.local.home>   <51DF62DB.3010409@asianux.com>  <1373596735.17876.84.camel@gandalf.local.home>  <51DF7250.9020209@asianux.com> <51DFAE5A.2060005@asianux.com>  <51E35A7D.8000008@asianux.com> <1373905251.17876.150.camel@gandalf.local.home> <51E49236.6080600@asianux.com>
-In-Reply-To: <51E49236.6080600@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E5DB59.2050209@schaufler-ca.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 16, 2013 at 04:46:33PM -0700, Casey Schaufler wrote:
+> On 7/16/2013 3:39 PM, Sarah Sharp wrote:
+> > On Wed, Jul 17, 2013 at 12:18:21AM +0200, Willy Tarreau wrote:
+> >> On Tue, Jul 16, 2013 at 02:12:35PM -0700, Sarah Sharp wrote:
+> >>> I *hate* both direct personal insults and indirect personal insults.
+> >>> Neither should be acceptable in our community.
+> >>>
+> >>> As I stated in an email to Rusty, what I'm objecting to here is not
+> >>> kernel developers criticizing code.  I'm objecting to personal attacks,
+> >>> and developers directing personal verbal abuse towards each other.  This
+> >>> include all developers, not just Linus.
+> >> Well, there are people like me who don't mind getting personally
+> >> insulted but who are really pained when their work is criticized.
+> >>
+> >> You'd rather tell me I'm a fucking moron than all what I carefully
+> >> designed, wrote and tested is pure crap. Probably that part of the
+> >> reason is that I'm as I am and I'm not really responsible for this,
+> >> so I don't care. Call me ugly if you want, why should I bother ? But
+> >> if you tell me I did some crap, it's entirely my fault and that hurts
+> >> a lot more.
+> > I think we come from different perspectives here.  I can change my code.
+> > Therefore, I don't mind my code being insulted.  I cannot change myself.
+> 
+> Sure you can, he began politely.
+> 
+> It's a process called personal growth, and it happens to most
+> of us as we go through life. It is in reasonable to expect change
+> and to some degree manage the way in which one's self changes. It
+> is unreasonable and expect to manage changes in others, although we
+> do insist on trying.
 
-Oh, sorry for my original impolite reply (at least it is not quite gentle).
+Personal change does happen, but at a much slower pace.  And it takes
+both a will to change, and incentive in order for change to happen.  If
+someone wants personal change in others or in the community, there needs
+to be both incentive to change, and a will to change in the community.
 
-:-)
+I've provided examples and personal stories in an attempt to give
+incentive to change.  I cannot force on anyone the will to change, nor
+would I want to.  I cannot "manage" change in others.  I can only
+politely point out that the current community behavior does hurt other
+people, and keep people from contributing.
 
-On 07/16/2013 08:22 AM, Chen Gang wrote:
-> On 07/16/2013 12:20 AM, Steven Rostedt wrote:
->> On Mon, 2013-07-15 at 10:12 +0800, Chen Gang wrote:
->>
->>>> Hello Frederic and Ingo:
->> Are you trying to go around me? I wrote this code and I'm one of the
->> maintainers for it. Your issue is very minor, and can wait till other
->> things get done first.
->>
->> You said my previous patch fixed your problem, right? Then I'll add your
->> tested by and push it in due course.
->>
->> I'll also get around to adding __init's to other functions too. But it
->> is *very* low on the totem pole of importance.
->>
-> 
-> I only provide my suggestions (or recommendations) which I think might
-> be useful for us, and I don't care about whether you accept or not.
-> 
-> If you want discuss, we can continue, if you won't (now, I guess so),
-> you can just provide your choice is OK.
-> 
->>>>
->>>> Could you provide your suggestions or completions for it ?
->>>>
->>>> The trace_selftest_startup_* funcitons are mostly added by you without
->>>> '__init', do you have additional considerations about it (intend to have
->>>> no '__init') ?
->>>>
->>>> If no reply, I recommend to keep no '__init': apply this patch or
->>>> regress part of the patch "f1ed7c7 ftrace: Do not run selftest if
->>>> command line parameter is set" (at least, it can avoid related warnings
->>>> and treat all *selftest* fair).
->> It's a compile time warning that's a false positive. Not a run time
->> crash or other issue of importance. It can wait, relax. Otherwise you
->> are starting to become annoying.
-> 
-> At least this patch is not 'urgent' (not a run time crash, or other
-> issue of 'urgent'), but every members have their own opinions to treat
-> this issue whether 'important' or not ('important' != 'urgent').
-> 
-> And every members' time resources are expensive (not only you, but also
-> me, and other members).
-> 
-> When I got none-reply, I don't know what happened (whether you agree, or
-> not, what I said correct or incorrect ?), it is a polite to give a
-> confirmation reply to tell whether you accept or not.
-> 
-> 
-> Thanks.
-> 
+> Communities develop expectations of behavior based on many factors.
+> No community responds well to individuals who demand changes in the
+> norms of the community. This is especially true when the change is
+> a demand that some aspect of the community that is seen as unique
+> or empowering by the members of the community be suppressed.
 
+The majority in the community never reacts well to minority voices in
+the community asking for change.  (Note, I'm talking a majority of
+numbers, not a racial or gender minority.)
 
--- 
-Chen Gang
+I'm not demanding change.  I'm merely asking to discuss the possibly of
+change at KS.
+
+> Email communities are notorious for what would be considered
+> inexcusable behavior in most other kinds of community. I do not
+> know of any explanation, nor will I attempt to justify the claim.
+> I suspect that the relative anonymity has something to do with it,
+> as does the fact you can't actually raise your voice or glare. Or
+> smile smugly, for that matter.
+
+I do smile often in email. :)  And be sad. :( And be apologetic. :-/
+Smug. ^~^  Angry. >:[  Sarcastic. ;)  Trolling/crazy. 8)  D'oh. (>.<)
+Worried. (>_>);  Disappointed. (-_-)  Kitty! =^_^=  Meow!
+
+Be creative.  There are ways of expressing emotion without cussing.
+
+> The norms of the Linux kernel community have changed over time,
+> and will continue to do so. Communities, like the individuals that
+> make them up, change over time. Linus and Al Viro have changed over
+> the years. I have changed over the years. If you stick around, you
+> will too. If you don't you'll still change, but in different ways.
+
+I do believe I have changed over the six years I've been involved in
+the kernel.  If anything, I've gotten better at being loud, speaking my
+mind, and figuring out what's bad code and how to politely tell people I
+don't take their code.
+
+I do think it is a mark of respect, both from the community, and from
+me, that people are actually listening and responding to me raising this
+issue.  The discussion has been mainly civil, even if we disagree.
+Five, ten years ago, I probably would have gotten flamed out of the
+community entirely.
+
+So, in short, thank you for listening.  We may disagree, but I
+appreciate being listened to.
+
+> The changes that the community makes may or may not suit you when
+> they happen. You can certainly work to influence the behavior of
+> the community. Demanding that the community change to suit your
+> desires doesn't work in your apartment building (dorm, homeowner's
+> association or county courthouse) either. That's basic social
+> behavior. Look to yourself for change before you look to change
+> others. It works better.
+
+As I mentioned, I have changed much over the past six years.  I suspect
+this particular thread will change me, although over a longer period of
+time, and in ways that may not be immediately obvious to the community.
+I suspect the same will be true of changes in the community.
+
+The point is that if no one stands up and asks for change, nothing will
+change.  I do not demand, I merely ask for people to consider change.
+
+Sarah Sharp
