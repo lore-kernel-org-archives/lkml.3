@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab3GQRBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:01:51 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37297 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932466Ab3GQRBt (ORCPT
+	id S932866Ab3GQRDX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:03:23 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:36385 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932620Ab3GQRDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:01:49 -0400
-Date: Wed, 17 Jul 2013 18:00:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Jon Medhurst <tixy@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Achin Gupta <Achin.Gupta@arm.com>,
+	Wed, 17 Jul 2013 13:03:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130717165743.GK8731@rric.localhost>
+References: <20130710133742.GA29368@emu.suse.cz>
+	<CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
+	<20130711135445.GA21500@sepie.suse.cz>
+	<CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
+	<20130712105721.GF8731@rric.localhost>
+	<20130717160506.GI8731@rric.localhost>
+	<CA+55aFx4G5gME3ByqE0Wr-_t2x_6WkP3Ta4k1z4jfW+PrcK0og@mail.gmail.com>
+	<20130717165743.GK8731@rric.localhost>
+Date: Wed, 17 Jul 2013 10:03:20 -0700
+X-Google-Sender-Auth: 97pbLnF9wXmvHChRfQlBwtBWg24
+Message-ID: <CA+55aFzhmV7iq+Pv37trMCmdNzk53ORAoj0a6rV14fzKta3Dhw@mail.gmail.com>
+Subject: Re: [PATCH] arm, kbuild: make "make install" not depend on vmlinux
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Robert Richter <rric@kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v5 0/1] drivers: mfd: Versatile Express SPC support
-Message-ID: <20130717170038.GP24642@n2100.arm.linux.org.uk>
-References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com> <1374052705.3146.86.camel@hornet> <alpine.LFD.2.03.1307170825240.14924@syhkavp.arg> <1374067786.3146.123.camel@hornet> <alpine.LFD.2.03.1307171014510.14924@syhkavp.arg> <1374070811.3146.124.camel@hornet> <alpine.LFD.2.03.1307171148160.14924@syhkavp.arg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.03.1307171148160.14924@syhkavp.arg>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 11:57:55AM -0400, Nicolas Pitre wrote:
-> The sanest location at this point might simply be 
-> drivers/platform/vexpress_spc.c or drivers/platform/vexpress/spc.c 
-> depending on whether or not more such driver glue is expected in the 
-> vexpress future.  No point putting "arm" in the path, especially if this 
-> is later reused on arm64.
+On Wed, Jul 17, 2013 at 9:57 AM, Robert Richter <rric@kernel.org> wrote:
+>
+> If kernel.release doen't exist KERNEL_RELEASE is empty, thus all args
+> for install.sh shift one arg left.
 
-You wouldn't be making that argument if it were arch/arm64 and arch/arm32 -
-you'd probably be arguing that "arm" made perfect sense.
+You know what? I read the patch, but I didn't read your changelog well
+enough. You already explained that in the commit log, and I just
+missed it like some blind monkey. My bad.
 
-Don't get too hung up on names please, it's really not worth the time
-and effort being soo pedantic, and being soo pedantic leads to "pointless
-churn" when someone comes along and wants to pedantically change the
-names because it no longer matches the users.
+> Will splitt the patches and resend.
+
+No need to split, I was wrong, it wasn't some unrelated cleanup, and
+you were right the first time.
+
+So Michal (or ARM people - whoever wants to take the patch), just take
+my ack. No objections.
+
+                 Linus
