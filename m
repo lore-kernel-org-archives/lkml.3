@@ -1,119 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab3GQGXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 02:23:09 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:62185 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab3GQGXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 02:23:07 -0400
-Subject: [PATCH v2] drm/i915: fix long-standing SNB regression in power
- consumption after resume
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: rockorequin@hotmail.com, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>, alexkaltsas@gmail.com,
-        dri-devel@lists.freedesktop.org
-Date: Wed, 17 Jul 2013 10:22:58 +0400
-Message-ID: <20130717062258.5467.69414.stgit@zurg>
-In-Reply-To: <20130714163009.22374.22100.stgit@zurg>
-References: <20130714163009.22374.22100.stgit@zurg>
-User-Agent: StGit/0.15
+	id S1752132Ab3GQG1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 02:27:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36969 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab3GQG1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 02:27:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,682,1367996400"; 
+   d="scan'208";a="269327905"
+Message-ID: <51E63ABA.9030803@intel.com>
+Date: Wed, 17 Jul 2013 09:33:30 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V6 05/12] perf tools: tidy up sample parsing overflow
+ checking
+References: <1373956698-27540-1-git-send-email-adrian.hunter@intel.com> <1373956698-27540-6-git-send-email-adrian.hunter@intel.com> <20130716115323.GA9964@krava.brq.redhat.com>
+In-Reply-To: <20130716115323.GA9964@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes regression in power consumtion of sandy bridge gpu, which
-exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
-it's extremely busy. After that it never reaches rc6 state.
+On 16/07/13 14:53, Jiri Olsa wrote:
+> On Tue, Jul 16, 2013 at 09:38:11AM +0300, Adrian Hunter wrote:
+>> The size of data retrieved from a sample event must be
+>> validated to ensure it does not go past the end of the
+>> event.  That was being done sporadically and without
+>> considering integer overflows.
+>>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>  tools/perf/util/evsel.c | 102 ++++++++++++++++++++++++++++++------------------
+>>  1 file changed, 64 insertions(+), 38 deletions(-)
+>>
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index 724b75a..20e2ed9 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -1114,24 +1114,38 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+>>  	return 0;
+>>  }
+>>  
+>> -static bool sample_overlap(const union perf_event *event,
+>> -			   const void *offset, u64 size)
+>> +static inline bool overflow_one(const void *endp, const void *offset)
+>>  {
+>> -	const void *base = event;
+>> -
+>> -	if (offset + size > base + event->header.size)
+>> -		return true;
+>> +	return offset + sizeof(u64) > endp;
+>> +}
+>>  
+>> -	return false;
+>> +static inline bool overflow(const void *endp, u16 max_size, const void *offset,
+>> +			    u64 size)
+>> +{
+>> +	return size > max_size || offset + size > endp;
+> 
+> hum, does '(size > max_size)' catch anything that would
+> not be catched by '(offset + size > endp)' ?
 
-Bug exists since kernel v3.6, commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
-("drm/i915: load boot context at driver init time").
+'offset + size' can overflow and end up less than endp
 
-For some reason RC6 is already enabled at the beginning of resuming process.
-Following initliaztion breaks some internal state and confuses RPS engine.
-This patch disables RC6 at the beginnig of resume and initialization.
+> 
+>>  }
+>>  
+>> +#define OVERFLOW_CHECK_ONE(offset)				\
+>> +	do {							\
+>> +		if (overflow_one(endp, (offset)))		\
+>> +			return -EFAULT;				\
+>> +	} while (0)
+>> +
+>> +#define OVERFLOW_CHECK(offset, size)				\
+>> +	do {							\
+>> +		if (overflow(endp, max_size, (offset), (size)))	\
+>> +			return -EFAULT;				\
+>> +	} while (0)
+> 
+> I think, it'd be better to have just one overflow check function, like:
+> 
+> static inline bool overflow(const void *endp, const void *offset, u64 size)
+> {
+>         return offset + size > endp;
+> }
+> 
+> #define OVERFLOW_CHECK(offset, size)                            \
+>         do {                                                    \
+>                 if (overflow(endp, (offset), (size)))           \
+>                         return -EFAULT;                         \
+>         } while (0)
+> 
+> #define OVERFLOW_CHECK_u64(offset) OVERFLOW_CHECK(offset, sizeof(u64))
+> 
 
-I've rearranged initialization sequence, because intel_disable_gt_powersave()
-needs initialized force_wake_get/put and some locks from the dev_priv.
+OK
 
-References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
-References: https://bugzilla.kernel.org/show_bug.cgi?id=58971
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/gpu/drm/i915/i915_dma.c |   16 ++++++++--------
- drivers/gpu/drm/i915/intel_pm.c |    5 +++--
- 2 files changed, 11 insertions(+), 10 deletions(-)
+>> +
+>>  int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+>>  			     struct perf_sample *data)
+>>  {
+> 
+> Hum, I was thinking of making this check more general and
+> cover also perf_event__synthesize_sample function.. but
+> looks like it's not needed there..?
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 3b315ba..d1ee611 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1511,6 +1511,13 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
- 	dev_priv->dev = dev;
- 	dev_priv->info = info;
- 
-+	spin_lock_init(&dev_priv->irq_lock);
-+	spin_lock_init(&dev_priv->gpu_error.lock);
-+	spin_lock_init(&dev_priv->rps.lock);
-+	mutex_init(&dev_priv->dpio_lock);
-+	mutex_init(&dev_priv->rps.hw_lock);
-+	mutex_init(&dev_priv->modeset_restore_lock);
-+
- 	i915_dump_device_info(dev_priv);
- 
- 	if (i915_get_bridge_dev(dev)) {
-@@ -1602,6 +1609,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
- 
- 	intel_irq_init(dev);
- 	intel_gt_init(dev);
-+	intel_gt_reset(dev);
- 
- 	/* Try to make sure MCHBAR is enabled before poking at it */
- 	intel_setup_mchbar(dev);
-@@ -1626,14 +1634,6 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
- 	if (!IS_I945G(dev) && !IS_I945GM(dev))
- 		pci_enable_msi(dev->pdev);
- 
--	spin_lock_init(&dev_priv->irq_lock);
--	spin_lock_init(&dev_priv->gpu_error.lock);
--	spin_lock_init(&dev_priv->rps.lock);
--	mutex_init(&dev_priv->dpio_lock);
--
--	mutex_init(&dev_priv->rps.hw_lock);
--	mutex_init(&dev_priv->modeset_restore_lock);
--
- 	dev_priv->num_plane = 1;
- 	if (IS_VALLEYVIEW(dev))
- 		dev_priv->num_plane = 2;
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index aa01128..b86db1e 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4497,6 +4497,9 @@ void intel_gt_reset(struct drm_device *dev)
- 		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
- 			__gen6_gt_force_wake_mt_reset(dev_priv);
- 	}
-+
-+	/* BIOS often leaves RC6 enabled, but disable it for hw init */
-+	intel_disable_gt_powersave(dev);
- }
- 
- void intel_gt_init(struct drm_device *dev)
-@@ -4505,8 +4508,6 @@ void intel_gt_init(struct drm_device *dev)
- 
- 	spin_lock_init(&dev_priv->gt_lock);
- 
--	intel_gt_reset(dev);
--
- 	if (IS_VALLEYVIEW(dev)) {
- 		dev_priv->gt.force_wake_get = vlv_force_wake_get;
- 		dev_priv->gt.force_wake_put = vlv_force_wake_put;
+Currently the caller must ensure there is enough space.
+
+> 
+> 
+>>  	u64 type = evsel->attr.sample_type;
+>> -	u64 regs_user = evsel->attr.sample_regs_user;
+>>  	bool swapped = evsel->needs_swap;
+>>  	const u64 *array;
+>> +	u16 max_size = event->header.size;
+>> +	const void *endp = (void *)event + max_size;
+>> +	u64 sz;
+>>  
+>>  	/*
+>>  	 * used for cross-endian analysis. See git commit 65014ab3
+>> @@ -1153,6 +1167,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+>>  
+>>  	array = event->sample.array;
+>>  
+>> +	/*
+>> +	 * sample_size is based on PERF_SAMPLE_MASK which includes up to
+> 
+> please prepend ^^^: The evsel's
+
+OK
+
+> 
+>> +	 * PERF_SAMPLE_PERIOD.  After that overflow_one() or overflow() must be
+>> +	 * used to check the format does not go past the end of the event.
+>> +	 */
+>>  	if (evsel->sample_size + sizeof(event->header) > event->header.size)
+>>  		return -EFAULT;
+>>  
 
