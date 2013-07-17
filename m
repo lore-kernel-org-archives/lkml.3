@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934269Ab3GQX1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:27:24 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47813 "EHLO hydra.sisk.pl"
+	id S934413Ab3GQXdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:33:13 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47859 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757698Ab3GQX1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:14 -0400
+	id S964933Ab3GQX1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:23 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -13,9 +13,9 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 28/30] ACPI / hotplug / PCI: Redefine enable_device() and disable_device()
-Date: Thu, 18 Jul 2013 01:35:05 +0200
-Message-ID: <15117547.14X2XaKnYp@vostro.rjw.lan>
+Subject: [PATCH 17/30] ACPI / hotplug / PCI: Store parent in functions and bus in slots
+Date: Thu, 18 Jul 2013 01:26:44 +0200
+Message-ID: <2524990.k3VvUAygWI@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
 References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
@@ -28,140 +28,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Notice that functions enable_device() and disable_device() cannot
-fail and their return values are ignored in the majority of places,
-so redefine them as void and use the opportunity to change their
-names to enable_slot() and disable_slot(), respectively, which much
-better reflects what they do.
+To avoid chasing more pointers than necessary in some situations,
+move the bridge pointer from struct acpiphp_slot to struct
+acpiphp_func (and call it 'parent') and add a bus pointer to
+struct acpiphp_slot.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   33 ++++++++++++---------------------
- 1 file changed, 12 insertions(+), 21 deletions(-)
+ drivers/pci/hotplug/acpiphp.h      |    5 +++--
+ drivers/pci/hotplug/acpiphp_core.c |    6 ++----
+ drivers/pci/hotplug/acpiphp_glue.c |   25 +++++++++++++------------
+ 3 files changed, 18 insertions(+), 18 deletions(-)
 
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -97,7 +97,7 @@ struct acpiphp_bridge {
+  */
+ struct acpiphp_slot {
+ 	struct list_head node;
+-	struct acpiphp_bridge *bridge;	/* parent */
++	struct pci_bus *bus;
+ 	struct list_head funcs;		/* one slot may have different
+ 					   objects (i.e. for each function) */
+ 	struct slot *slot;
+@@ -115,7 +115,8 @@ struct acpiphp_slot {
+  * typically 8 objects per slot (i.e. for each PCI function)
+  */
+ struct acpiphp_func {
+-	struct acpiphp_slot *slot;	/* parent */
++	struct acpiphp_bridge *parent;
++	struct acpiphp_slot *slot;
+ 
+ 	struct list_head sibling;
+ 
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -532,13 +532,13 @@ static void check_hotplug_bridge(struct
+@@ -165,7 +165,7 @@ static void free_bridge(struct kref *kre
+ 	/* Root bridges will not have hotplug context. */
+ 	if (context) {
+ 		/* Release the reference taken by acpiphp_enumerate_slots(). */
+-		put_bridge(context->func.slot->bridge);
++		put_bridge(context->func.parent);
+ 		context->bridge = NULL;
+ 		acpiphp_put_context(context);
+ 	}
+@@ -187,7 +187,7 @@ static void free_bridge(struct kref *kre
+ static void post_dock_fixups(acpi_handle not_used, u32 event, void *data)
+ {
+ 	struct acpiphp_context *context = data;
+-	struct pci_bus *bus = context->func.slot->bridge->pci_bus;
++	struct pci_bus *bus = context->func.slot->bus;
+ 	u32 buses;
+ 
+ 	if (!bus->self)
+@@ -248,14 +248,14 @@ static void acpiphp_dock_init(void *data
+ {
+ 	struct acpiphp_context *context = data;
+ 
+-	get_bridge(context->func.slot->bridge);
++	get_bridge(context->func.parent);
  }
  
- /**
-- * enable_device - enable, configure a slot
-+ * enable_slot - enable, configure a slot
-  * @slot: slot to be enabled
-  *
-  * This function should be called per *physical slot*,
-  * not per each slot object in ACPI namespace.
-  */
--static int __ref enable_device(struct acpiphp_slot *slot)
-+static void __ref enable_slot(struct acpiphp_slot *slot)
+ static void acpiphp_dock_release(void *data)
+ {
+ 	struct acpiphp_context *context = data;
+ 
+-	put_bridge(context->func.slot->bridge);
++	put_bridge(context->func.parent);
+ }
+ 
+ /* callback routine to register each ACPI PCI slot object */
+@@ -294,6 +294,7 @@ static acpi_status register_slot(acpi_ha
+ 	}
+ 	newfunc = &context->func;
+ 	newfunc->function = function;
++	newfunc->parent = bridge;
+ 	mutex_unlock(&acpiphp_context_lock);
+ 
+ 	if (acpi_has_method(handle, "_EJ0"))
+@@ -322,7 +323,7 @@ static acpi_status register_slot(acpi_ha
+ 		goto err;
+ 	}
+ 
+-	slot->bridge = bridge;
++	slot->bus = bridge->pci_bus;
+ 	slot->device = device;
+ 	INIT_LIST_HEAD(&slot->funcs);
+ 	mutex_init(&slot->crit_sect);
+@@ -639,7 +640,7 @@ static void check_hotplug_bridge(struct
+ static int __ref enable_device(struct acpiphp_slot *slot)
  {
  	struct pci_dev *dev;
- 	struct pci_bus *bus = slot->bus;
-@@ -556,6 +556,7 @@ static int __ref enable_device(struct ac
- 		list_for_each_entry(dev, &bus->devices, bus_list) {
- 			if (PCI_SLOT(dev->devfn) != slot->device)
- 				continue;
-+
- 			if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
- 			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
- 				max = pci_scan_bridge(bus, dev, max, pass);
-@@ -594,8 +595,6 @@ static int __ref enable_device(struct ac
- 			continue;
- 		}
- 	}
--
--	return 0;
- }
- 
- /* return first device in slot, acquiring a reference on it */
-@@ -617,16 +616,16 @@ static struct pci_dev *dev_in_slot(struc
- }
- 
- /**
-- * disable_device - disable a slot
-+ * disable_slot - disable a slot
-  * @slot: ACPI PHP slot
-  */
--static int disable_device(struct acpiphp_slot *slot)
-+static void disable_slot(struct acpiphp_slot *slot)
- {
+-	struct pci_bus *bus = slot->bridge->pci_bus;
++	struct pci_bus *bus = slot->bus;
  	struct acpiphp_func *func;
- 	struct pci_dev *pdev;
- 
- 	/*
--	 * enable_device() enumerates all functions in this device via
-+	 * enable_slot() enumerates all functions in this device via
- 	 * pci_scan_slot(), whether they have associated ACPI hotplug
- 	 * methods (_EJ0, etc.) or not.  Therefore, we remove all functions
- 	 * here.
-@@ -640,8 +639,6 @@ static int disable_device(struct acpiphp
- 		acpiphp_bus_trim(func_to_handle(func));
- 
- 	slot->flags &= (~SLOT_ENABLED);
--
--	return 0;
- }
- 
- 
-@@ -751,9 +748,9 @@ static void acpiphp_check_bridge(struct
- 					trim_stale_devices(dev);
- 
- 			/* configure all functions */
--			enable_device(slot);
-+			enable_slot(slot);
- 		} else {
--			disable_device(slot);
-+			disable_slot(slot);
- 		}
- 		mutex_unlock(&slot->crit_sect);
- 	}
-@@ -860,7 +857,7 @@ static void hotplug_event(acpi_handle ha
- 			struct acpiphp_slot *slot = func->slot;
- 
- 			mutex_lock(&slot->crit_sect);
--			enable_device(slot);
-+			enable_slot(slot);
- 			mutex_unlock(&slot->crit_sect);
- 		}
- 		break;
-@@ -1047,16 +1044,13 @@ void acpiphp_remove_slots(struct pci_bus
-  */
- int acpiphp_enable_slot(struct acpiphp_slot *slot)
+ 	int num, max, pass;
+ 	LIST_HEAD(add_list);
+@@ -709,7 +710,7 @@ static int __ref enable_device(struct ac
+ /* return first device in slot, acquiring a reference on it */
+ static struct pci_dev *dev_in_slot(struct acpiphp_slot *slot)
  {
--	int retval = 0;
--
- 	mutex_lock(&slot->crit_sect);
--
- 	/* configure all functions */
- 	if (!(slot->flags & SLOT_ENABLED))
--		retval = enable_device(slot);
-+		enable_slot(slot);
+-	struct pci_bus *bus = slot->bridge->pci_bus;
++	struct pci_bus *bus = slot->bus;
+ 	struct pci_dev *dev;
+ 	struct pci_dev *ret = NULL;
  
- 	mutex_unlock(&slot->crit_sect);
--	return retval;
-+	return 0;
+@@ -781,7 +782,7 @@ static unsigned int get_slot_status(stru
+ 		} else {
+ 			u32 dvid;
+ 
+-			pci_bus_read_config_dword(slot->bridge->pci_bus,
++			pci_bus_read_config_dword(slot->bus,
+ 						  PCI_DEVFN(slot->device,
+ 							    func->function),
+ 						  PCI_VENDOR_ID, &dvid);
+@@ -970,7 +971,7 @@ static void hotplug_event(acpi_handle ha
+ 		if (bridge)
+ 			acpiphp_check_bridge(bridge);
+ 		else
+-			acpiphp_check_bridge(func->slot->bridge);
++			acpiphp_check_bridge(func->parent);
+ 
+ 		break;
+ 
+@@ -1025,7 +1026,7 @@ static void hotplug_event_work(struct wo
+ 
+ 	acpi_scan_lock_release();
+ 	kfree(hp_work); /* allocated in handle_hotplug_event() */
+-	put_bridge(context->func.slot->bridge);
++	put_bridge(context->func.parent);
  }
  
  /**
-@@ -1071,9 +1065,7 @@ int acpiphp_disable_and_eject_slot(struc
- 	mutex_lock(&slot->crit_sect);
+@@ -1043,7 +1044,7 @@ static void handle_hotplug_event(acpi_ha
+ 	mutex_lock(&acpiphp_context_lock);
+ 	context = acpiphp_get_context(handle);
+ 	if (context) {
+-		get_bridge(context->func.slot->bridge);
++		get_bridge(context->func.parent);
+ 		acpiphp_put_context(context);
+ 	}
+ 	mutex_unlock(&acpiphp_context_lock);
+@@ -1113,7 +1114,7 @@ void acpiphp_enumerate_slots(struct pci_
+ 		bridge->context = context;
+ 		context->bridge = bridge;
+ 		/* Get a reference to the parent bridge. */
+-		get_bridge(context->func.slot->bridge);
++		get_bridge(context->func.parent);
+ 		mutex_unlock(&acpiphp_context_lock);
+ 	}
  
- 	/* unconfigure all functions */
--	retval = disable_device(slot);
--	if (retval)
--		goto err_exit;
-+	disable_slot(slot);
+Index: linux-pm/drivers/pci/hotplug/acpiphp_core.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_core.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_core.c
+@@ -321,10 +321,8 @@ int acpiphp_register_hotplug_slot(struct
+ 	slot->sun = sun;
+ 	snprintf(name, SLOT_NAME_SIZE, "%u", sun);
  
- 	list_for_each_entry(func, &slot->funcs, sibling)
- 		if (func->flags & FUNC_HAS_EJ0) {
-@@ -1085,7 +1077,6 @@ int acpiphp_disable_and_eject_slot(struc
- 			break;
- 		}
- 
-- err_exit:
- 	mutex_unlock(&slot->crit_sect);
- 	return retval;
- }
+-	retval = pci_hp_register(slot->hotplug_slot,
+-					acpiphp_slot->bridge->pci_bus,
+-					acpiphp_slot->device,
+-					name);
++	retval = pci_hp_register(slot->hotplug_slot, acpiphp_slot->bus,
++				 acpiphp_slot->device, name);
+ 	if (retval == -EBUSY)
+ 		goto error_hpslot;
+ 	if (retval) {
 
