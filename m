@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab3GQHBB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 03:01:01 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50585 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab3GQHA7 (ORCPT
+	id S1752453Ab3GQHBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 03:01:22 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:56514 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab3GQHBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 03:00:59 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-80-51e641239430
-Date: Wed, 17 Jul 2013 09:00:44 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v5 2/7] cpufreq: Add boost frequency support in core
-Message-id: <20130717090044.4392d86a@amdc308.digital.local>
-In-reply-to: <CAKohpokni=zPob9yz2-ak_g_xhwFaLBhk6wNGV5EGSfxx-eGZA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-3-git-send-email-l.majewski@samsung.com>
- <CAKohpomfWKiRjznXeYsg32xAAWPTBQ4Gd0D_pftbA5=zMDiH4Q@mail.gmail.com>
- <20130716140632.70fb2838@amdc308.digital.local>
- <CAKohpokni=zPob9yz2-ak_g_xhwFaLBhk6wNGV5EGSfxx-eGZA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xgK6y47NAg4UL5Sz+vF3OavG06Qe7
-	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4LS7vmsNm8bn3CKPF7cYVbBb9C3uZLJ487GOz2PjV
-	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
-	royFfb3MBd84KlbdvMHWwNjN3sXIySEhYCIx6c5bZghbTOLCvfVsXYxcHEICixgllh//wg7h
-	tDNJTFpzgw2kikVAVeL3v0dgNpuAnsTnu0+Zuhg5OEQEtCRe3kwFqWcW+MgscffgbRaQGmEB
-	D4lFu++A1fAKWEt8nJsNEuYUCJbYOHsWM8T8v0wSE343gF3BLyAp0f7vB9RFdhLnPm0Au5RX
-	QFDix+R7YDOZgXZt3tbECmHLS2xe85Z5AqPgLCRls5CUzUJStoCReRWjaGpBckFxUnqukV5x
-	Ym5xaV66XnJ+7iZGcCQ9k97BuKrB4hCjAAejEg/vhLCngUKsiWXFlbmHGCU4mJVEeKs1ngUK
-	8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYGz+Pf2KWvDD
-	xxJF97bsZdstIWvXsuDt7qR1C0wmGU/iOR93lGHSVQnbQ0wlCff0rm+OvDFlz/yzT9cFbmH5
-	N83HdY98wOqX/2QNvRiWuHIWmh+ZsW/H26APPz6HyR7gy3FdyHi4Tj+NXzdR+UntqlXbHnBn
-	G894sPCXqt+KST3XPmtecDjGr2WqxFKckWioxVxUnAgACYFlHKACAAA=
+	Wed, 17 Jul 2013 03:01:20 -0400
+Date: Wed, 17 Jul 2013 03:01:04 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: NeilBrown <neilb@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Message-ID: <63085134.1788414.1374044464118.JavaMail.root@redhat.com>
+In-Reply-To: <1373932252.2062.55.camel@joe-AO722>
+References: <20130715155202.GC29526@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715190505.GA3336@fieldses.org> <1373915984.17876.176.camel@gandalf.local.home> <20130716094241.43dbabb0@notabene.brown> <1373932252.2062.55.camel@joe-AO722>
+Subject: Re: [ 00/19] 3.10.1-stable review
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
+Thread-Topic: 3.10.1-stable review
+Thread-Index: eCazH6kzMK5Qm6D77SLAvsEKj736Yw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013 10:58:40 +0530 Viresh Kumar viresh.kumar@linaro.org
-wrote,
-> On 16 July 2013 17:36, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > On Tue, 16 Jul 2013 15:11:54 +0530 Viresh Kumar
-> > viresh.kumar@linaro.org wrote,
-> >> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com>
-> >> wrote:
+
+
+----- Original Message -----
+> From: "Joe Perches" <joe@perches.com>
+> To: "NeilBrown" <neilb@suse.de>
+> Cc: "Steven Rostedt" <rostedt@goodmis.org>, "J. Bruce Fields" <bfields@fieldses.org>, "Linus Torvalds"
+> <torvalds@linux-foundation.org>, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>, "Ingo Molnar" <mingo@kernel.org>,
+> "Guenter Roeck" <linux@roeck-us.net>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>, "Dave Jones"
+> <davej@redhat.com>, "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, "Andrew Morton"
+> <akpm@linux-foundation.org>, "stable" <stable@vger.kernel.org>, "Darren Hart" <dvhart@linux.intel.com>
+> Sent: Tuesday, July 16, 2013 7:50:52 AM
+> Subject: Re: [ 00/19] 3.10.1-stable review
 > 
-> >> > +void cpufreq_set_boost_enabled(int state)
-> >           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
-> >
-> >>
-> >> Maybe cpufreq_block_boost? As suggested by Rafael.
-> >
-> > What do you mean by cpufreq_block_boost()? This name would reverse
-> > the logic.
-> >
-> > Function [*] is used to change boost_enabled static flag (defined at
-> > cpufreq.c file) state according to acpi-cpufreq.c boost support
-> > status.
+> On Tue, 2013-07-16 at 09:42 +1000, NeilBrown wrote:
+> > Being "polite" without being "nice" is quite possible.
+> > It even has a name:  Diplomacy.
 > 
-> I misread it again :(
+> And we all know how circular/indirect/implied/useless
+> some of those diplomatic conversations can be.
+Modern human is more diplomatic than ancient barbarians. Will the trend
+continue?
 > 
-> So, what about adding another field in struct cpufreq_driver:
-> boost_enabled? And get rid of the global boost_enabled we have used?
-> Similar to how boost_supported is used, then we don't need this
-> routine.
-
-Ok, I will implement this.
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+> Just remember to bring a 'Big Stick' and don't be shy
+> when it's necessary to display it.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
