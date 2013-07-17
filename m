@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757637Ab3GQX0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:26:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56239 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312Ab3GQWsq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932440Ab3GQWsq (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Jul 2013 18:48:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56187 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757409Ab3GQWso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 18:48:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 003/145] [SCSI] zfcp: block queue limits with data router
-Date: Wed, 17 Jul 2013 15:45:35 -0700
-Message-Id: <1374101277-7915-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 001/145] UBIFS: correct mount message
+Date: Wed, 17 Jul 2013 15:45:33 -0700
+Message-Id: <1374101277-7915-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,72 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-commit 5fea4291deacd80188b996d2f555fc6a1940e5d4 upstream.
+commit beadadfa5467e09e36891f39cae1f5d8d3bbf17e upstream.
 
-Commit 86a9668a8d29ea711613e1cb37efa68e7c4db564
-"[SCSI] zfcp: support for hardware data router"
-reduced the initial block queue limits in the scsi_host_template to the
-absolute minimum and adjusted them later on. However, the adjustment was
-too late for the BSG devices of Scsi_Host and fc_host.
+When mounting an UBIFS R/W volume, we have the message:
+UBIFS: mounted UBI device 0, volume 1, name "rootfs"(null)
+With this patch, we'll have:
+UBIFS: mounted UBI device 0, volume 1, name "rootfs"
+Which is, I think, what was intended.
 
-Therefore, ioctl(..., SG_IO, ...) with request or response size > 4kB to a
-BSG device of an fc_host or a Scsi_Host fails with EINVAL. As a result,
-users of such ioctl such as HBA_SendCTPassThru() in libzfcphbaapi return
-with error HBA_STATUS_ERROR.
-
-Initialize the block queue limits in zfcp_scsi_host_template to the
-greatest common denominator (GCD).
-
-While we cannot exploit the slightly enlarged maximum request size with
-data router, this should be neglectible. Doing so also avoids running into
-trouble after live guest relocation (LGR) / migration from a data router
-FCP device to an FCP device that does not support data router. In that
-case, zfcp would figure out the new limits on adapter recovery, but the
-fc_host and Scsi_Host (plus in fact all sdevs) still exist with the old and
-now too large queue limits.
-
-It should also OK, not to use half the size as in the DIX case, because
-fc_host and Scsi_Host do not transport FCP requests including SCSI commands
-using protection data.
-
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/s390/scsi/zfcp_scsi.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/ubifs/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/s390/scsi/zfcp_scsi.c b/drivers/s390/scsi/zfcp_scsi.c
-index 7b31e3f..7b35364 100644
---- a/drivers/s390/scsi/zfcp_scsi.c
-+++ b/drivers/s390/scsi/zfcp_scsi.c
-@@ -3,7 +3,7 @@
-  *
-  * Interface to Linux SCSI midlayer.
-  *
-- * Copyright IBM Corp. 2002, 2010
-+ * Copyright IBM Corp. 2002, 2013
-  */
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index 97f6875..d00b7d4 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1412,7 +1412,7 @@ static int mount_ubifs(struct ubifs_info *c)
  
- #define KMSG_COMPONENT "zfcp"
-@@ -311,8 +311,12 @@ static struct scsi_host_template zfcp_scsi_host_template = {
- 	.proc_name		 = "zfcp",
- 	.can_queue		 = 4096,
- 	.this_id		 = -1,
--	.sg_tablesize		 = 1, /* adjusted later */
--	.max_sectors		 = 8, /* adjusted later */
-+	.sg_tablesize		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
-+				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2),
-+				   /* GCD, adjusted later */
-+	.max_sectors		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
-+				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2) * 8,
-+				   /* GCD, adjusted later */
- 	.dma_boundary		 = ZFCP_QDIO_SBALE_LEN - 1,
- 	.cmd_per_lun		 = 1,
- 	.use_clustering		 = 1,
+ 	ubifs_msg("mounted UBI device %d, volume %d, name \"%s\"%s",
+ 		  c->vi.ubi_num, c->vi.vol_id, c->vi.name,
+-		  c->ro_mount ? ", R/O mode" : NULL);
++		  c->ro_mount ? ", R/O mode" : "");
+ 	x = (long long)c->main_lebs * c->leb_size;
+ 	y = (long long)c->log_lebs * c->leb_size + c->max_bud_bytes;
+ 	ubifs_msg("LEB size: %d bytes (%d KiB), min./max. I/O unit sizes: %d bytes/%d bytes",
 -- 
 1.8.1.2
 
