@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab3GQSnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:43:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50529 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096Ab3GQSm6 (ORCPT
+	id S933008Ab3GQSqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:46:31 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:40097 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738Ab3GQSq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:42:58 -0400
-Date: Wed, 17 Jul 2013 19:42:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        CAI Qian <caiqian@redhat.com>, David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
+	Wed, 17 Jul 2013 14:46:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31C8FE9D@ORSMSX106.amr.corp.intel.com>
+References: <20130715204135.GH15531@xanatos>
+	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	<1373926109.17876.221.camel@gandalf.local.home>
+	<20130715223615.GI15531@xanatos>
+	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+	<20130716211235.GG4994@xanatos>
+	<20130716221821.GB21611@1wt.eu>
+	<20130716223957.GJ4994@xanatos>
+	<51E5DB59.2050209@schaufler-ca.com>
+	<20130717010244.GM4994@xanatos>
+	<CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
+	<3908561D78D1C84285E8C5FCA982C28F31C8FE9D@ORSMSX106.amr.corp.intel.com>
+Date: Wed, 17 Jul 2013 13:46:28 -0500
+Message-ID: <CAMP44s2CkFO2-0va5CfAcneR3Na7X=D=oYX66b_28ULqansTcg@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>,
+        Olivier Galibert <galibert@pobox.com>, Ingo Molnar <mingo@kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Message-ID: <20130717184244.GU4165@ZenIV.linux.org.uk>
-References: <1374015299.6458.76.camel@gandalf.local.home>
- <20130716231217.GL4994@xanatos>
- <51E5D7C8.5000306@gmail.com>
- <1374018809.2249.29.camel@leira.trondhjem.org>
- <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>
- <20130717144849.GB16513@xanatos>
- <1374073771.6458.143.camel@gandalf.local.home>
- <alpine.DEB.2.02.1307171759100.8258@kaball.uk.xensource.com>
- <CAMP44s1zvPPDwu=HdhxBm5PqrtyCfvE05=XdwrfPJ-yK2ZsVKA@mail.gmail.com>
- <alpine.DEB.2.02.1307171824020.8258@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307171824020.8258@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Willy Tarreau <w@1wt.eu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 06:56:16PM +0100, Stefano Stabellini wrote:
+On Wed, Jul 17, 2013 at 1:24 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> Those are just stories; things that happened. What you need to provide
+>> is *evidence* that if the community changes, things will be better,
+>> and unless you have a study of series of collaborative groups like the
+>> Linux kernel, that demonstrates that suppressing swearing has a
+>> positive effect in the community, I'd say all you have is an
+>> *opinion*.
+>
+> 1) There isn't going to be any hard evidence - this isn't a physics problem,
+> or even an engineering problem. It's a social problem.  There are no other
+> collaborative groups sufficiently similar to the Linux kernel community, so there
+> are no studies that would be relevant. Asking for the impossible is just a
+> lame delaying tactic.
 
-> Abuse is never justified, I hope that's clear for everybody.
+There is evidence for social problems and their solutions, but anyway,
+so in fact Sarah doesn't *know* if changing that behavior would be
+beneficial or detrimental to the project.
 
-Depends on details of your definition of abuse.
+> 2) Sarah hasn't even asked to cut down on the swearing - so why mention
+> it at all? Did you even read the thread?
 
-> So we are down to the definition of verbal abuse.
-> The Oxford dictionary gives me:
-> 
-> "speak to (someone) in an insulting and offensive way"
+She didn't ask, she essentially demanded[1]:
 
-Insufficient details to tell if the statement above is correct.
-Insulting and offensive to *whom*?
+> I want everyone (including Linus) to be harsh with code but gentle with people.
 
-I have seen people making completely revolting statements about
-e.g. females in general and get extremely insulted when said
-statements had been described as sexist, no matter how neutral
-had description been.  I have seen people deeply insulted by
-being told (in absolutely neutral expressions) that recipe they
-had offered for some task will not do what they said it would,
-when the simple experiment (reproduced by a lot of people
-present) would have clearly demonstrated just that.  The same
-people tend to get _really_ insulted when somebody reports
-the result of said experiment.  And anybody who'd been on
-the net for a year (hell, a month would suffice) can bring
-a lot more interesting cases...
+Let's call things by their name; Sarah doesn't know if what she wants
+will help the project, she merely thinks so. It is merely an
+**opinion**, it is not backed by evidence, and it might be shared by
+some Linux developers, but it's still just an opinion.
 
-BTW, is it an abuse to describe somebody as a demagogue?
+Linus already said he is not going to change, so that's that. Now the
+only thing that remains open is the discussion about better ways to
+work together, which probably will happen in the kernel summit, but I
+think it's pretty clear that an official code of conduct that forbids
+insulting either people or code is out of the question.
+
+Cheers.
+
+[1] http://article.gmane.org/gmane.linux.kernel.stable/58443
+
+-- 
+Felipe Contreras
