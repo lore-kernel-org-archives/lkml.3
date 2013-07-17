@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934776Ab3GQXho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:37:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56210 "EHLO
+	id S934726Ab3GQXhm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:37:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56208 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757518Ab3GQWso (ORCPT
+	with ESMTP id S1757516Ab3GQWso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Jul 2013 18:48:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Jiang Liu <jiang.liu@huawei.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 010/145] zram: use zram->lock to protect zram_free_page() in swap free notify path
-Date: Wed, 17 Jul 2013 15:45:42 -0700
-Message-Id: <1374101277-7915-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 012/145] zram: avoid access beyond the zram device
+Date: Wed, 17 Jul 2013 15:45:44 -0700
+Message-Id: <1374101277-7915-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -30,60 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <liuj97@gmail.com>
 
-commit 57ab048532c0d975538cebd4456491b5c34248f4 upstream.
+commit 12a7ad3b810e77137d0caf97a6dd97591e075b30 upstream.
 
-zram_slot_free_notify() is free-running without any protection from
-concurrent operations. So there are race conditions between
-zram_bvec_read()/zram_bvec_write() and zram_slot_free_notify(),
-and possible consequences include:
-1) Trigger BUG_ON(!handle) on zram_bvec_write() side.
-2) Access to freed pages on zram_bvec_read() side.
-3) Break some fields (bad_compress, good_compress, pages_stored)
-   in zram->stats if the swap layer makes concurrently call to
-   zram_slot_free_notify().
-
-So enhance zram_slot_free_notify() to acquire writer lock on zram->lock
-before calling zram_free_page().
+Function valid_io_request() should verify the entire request are within
+the zram device address range. Otherwise it may cause invalid memory
+access when accessing/modifying zram->meta->table[index] because the
+'index' is out of range. Then it may access non-exist memory, randomly
+modify memory belong to other subsystems, which is hard to track down.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.8: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_drv.c | 2 ++
- drivers/staging/zram/zram_drv.h | 5 +++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/staging/zram/zram_drv.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index c9c1e0e..0113897 100644
+index ff2228e..62f8276 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -615,7 +615,9 @@ static void zram_slot_free_notify(struct block_device *bdev,
- 	struct zram *zram;
+@@ -461,13 +461,20 @@ out:
+  */
+ static inline int valid_io_request(struct zram *zram, struct bio *bio)
+ {
+-	if (unlikely(
+-		(bio->bi_sector >= (zram->disksize >> SECTOR_SHIFT)) ||
+-		(bio->bi_sector & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)) ||
+-		(bio->bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))) {
++	u64 start, end, bound;
++	
++	/* unaligned request */
++	if (unlikely(bio->bi_sector & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
++		return 0;
++	if (unlikely(bio->bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
++		return 0;
  
- 	zram = bdev->bd_disk->private_data;
-+	down_write(&zram->lock);
- 	zram_free_page(zram, index);
-+	up_write(&zram->lock);
- 	zram_stat64_inc(zram, &zram->stats.notify_free);
- }
++	start = bio->bi_sector;
++	end = start + (bio->bi_size >> SECTOR_SHIFT);
++	bound = zram->disksize >> SECTOR_SHIFT;
++	/* out of range range */
++	if (unlikely(start >= bound || end >= bound || start > end))
+ 		return 0;
+-	}
  
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index df2eec4..4265ab4 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -92,8 +92,9 @@ struct zram {
- 	void *compress_buffer;
- 	struct table *table;
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
--	struct rw_semaphore lock; /* protect compression buffers and table
--				   * against concurrent read and writes */
-+	struct rw_semaphore lock; /* protect compression buffers, table,
-+				   * 32bit stat counters against concurrent
-+				   * notifications, reads and writes */
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
+ 	/* I/O request is valid */
+ 	return 1;
 -- 
 1.8.1.2
 
