@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab3GQPE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:04:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39194 "EHLO comal.ext.ti.com"
+	id S1756061Ab3GQPFC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:05:02 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51622 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab3GQPEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:04:53 -0400
+	id S1753695Ab3GQPE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 11:04:58 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>
 CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 2/9] thermal: hwmon: move hwmon support to single file
-Date: Wed, 17 Jul 2013 11:02:40 -0400
-Message-ID: <1374073374-30946-5-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 1/8] thermal: hwmon: move hwmon support to single file
+Date: Wed, 17 Jul 2013 11:02:38 -0400
+Message-ID: <1374073374-30946-3-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
 References: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
@@ -41,10 +41,10 @@ Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
  drivers/thermal/Kconfig         |   9 ++
  drivers/thermal/Makefile        |   3 +
- drivers/thermal/thermal_core.c  | 255 +------------------------------------
- drivers/thermal/thermal_hwmon.c | 269 ++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/thermal_core.c  | 255 +-------------------------------------
+ drivers/thermal/thermal_hwmon.c | 268 ++++++++++++++++++++++++++++++++++++++++
  drivers/thermal/thermal_hwmon.h |  49 ++++++++
- 5 files changed, 331 insertions(+), 254 deletions(-)
+ 5 files changed, 330 insertions(+), 254 deletions(-)
  create mode 100644 drivers/thermal/thermal_hwmon.c
  create mode 100644 drivers/thermal/thermal_hwmon.h
 
@@ -359,10 +359,10 @@ index 1f02e8e..247528b 100644
   * @tz:		pointer to struct thermal_zone_device
 diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
 new file mode 100644
-index 0000000..ab52a96
+index 0000000..576de84
 --- /dev/null
 +++ b/drivers/thermal/thermal_hwmon.c
-@@ -0,0 +1,269 @@
+@@ -0,0 +1,268 @@
 +/*
 + *  thermal_hwmon.c - Generic Thermal Management hwmon support.
 + *
@@ -394,7 +394,6 @@ index 0000000..ab52a96
 +#include <linux/thermal.h>
 +#include <linux/slab.h>
 +#include <linux/err.h>
-+#include "thermal_hwmon.h"
 +
 +/* hwmon sys I/F */
 +/* thermal zone devices with the same type share one hwmon device */
