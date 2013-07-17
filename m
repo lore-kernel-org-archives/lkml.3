@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3GQO5X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:57:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755301Ab3GQO5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:57:22 -0400
-Date: Wed, 17 Jul 2013 16:51:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing
-	event_file/call in inode->i_private
-Message-ID: <20130717145148.GB7358@redhat.com>
-References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E5FD33.4040604@hitachi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755888Ab3GQO7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:59:13 -0400
+Received: from 15.mo1.mail-out.ovh.net ([188.165.38.232]:40579 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755730Ab3GQO7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 10:59:12 -0400
+X-Greylist: delayed 85713 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 10:59:12 EDT
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Andrew Victor <linux@maxim.org.za>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH v2 21/42] ARM: at91: move at91sam9 SoCs to new at91 clk implem
+Date: Wed, 17 Jul 2013 16:59:04 +0200
+Message-Id: <1374073144-19933-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
+References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 12762919870577211500
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17, Masami Hiramatsu wrote:
->
-> (2013/07/16 3:16), Oleg Nesterov wrote:
-> > On 07/09, Masami Hiramatsu wrote:
-> >>
-> >> To avoid this, when opening events/*/*/enable, we have to ensure
-> >> the dentry of the file is not unlinked yet, under event_mutex
-> >> is locked.
-> >
-> > Probably this can work, but I am starting to think that this ref
-> > count becomes toooooo complex....
->
-> Oleg, I agree that is a bit complex way to fix but it can fix.
->
-> However, I think we should fix bugs first, because there are bugs.
-> I don't like to leave a bug in the kernel as it is, while we re-
-> start discussing new approach...
+Make use of common clk framework for all at91sam9 SoCs
 
-And I am trying to fix the same problems, just _I think_ there is
-another and simpler approach.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/mach-at91/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-> So, I'd like to suggest you getting these fixes into ftrace as
-> first-aid treatment, and discuss your new series.
-
-Well, perhaps you are right... But this TRACE_EVENT_FL_REF_MASK code
-is new too, it is not that we only need a small fixlets to finish it.
-
-So I think that it makes sense to discuss the alternatives before we
-decide what exactly we should do.
-
-Oleg.
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 3253373..9901316 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -32,6 +32,7 @@ config HAVE_AT91_SMD
+ 
+ config SOC_AT91SAM9
+ 	bool
++	select COMMON_CLK
+ 	select AT91_SAM9_TIME
+ 	select CPU_ARM926T
+ 	select GENERIC_CLOCKEVENTS
+-- 
+1.7.9.5
 
