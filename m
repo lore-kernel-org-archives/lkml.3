@@ -1,113 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751129Ab3GQBWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 21:22:00 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:53956 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab3GQBV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 21:21:58 -0400
-Message-ID: <51E5F1AF.2020408@gmail.com>
-Date: Tue, 16 Jul 2013 21:21:51 -0400
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, David Lang <david@lang.hm>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+	id S1751187Ab3GQBXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 21:23:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59351 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974Ab3GQBXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 21:23:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,680,1367996400"; 
+   d="scan'208";a="371470762"
+Date: Tue, 16 Jul 2013 18:23:17 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jeff Liu <jeff.liu@oracle.com>, David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Olivier Galibert <galibert@pobox.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
+        Ingo Molnar <mingo@kernel.org>
 Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-References: <20130715204135.GH15531@xanatos>  <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>  <1373926109.17876.221.camel@gandalf.local.home>  <20130715223615.GI15531@xanatos>  <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>  <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>  <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org>  <20130716224357.GK4994@xanatos>  <1374015299.6458.76.camel@gandalf.local.home>  <20130716231217.GL4994@xanatos> <51E5D7C8.5000306@gmail.com> <1374018809.2249.29.camel@leira.trondhjem.org>
-In-Reply-To: <1374018809.2249.29.camel@leira.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20130717012317.GN4994@xanatos>
+References: <20130715223615.GI15531@xanatos>
+ <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+ <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+ <20130716211235.GG4994@xanatos>
+ <20130716212704.GB9371@thunk.org>
+ <20130716224357.GK4994@xanatos>
+ <1374015299.6458.76.camel@gandalf.local.home>
+ <20130716231217.GL4994@xanatos>
+ <51E5E609.1030202@oracle.com>
+ <1374022296.6458.118.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374022296.6458.118.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 07:53 PM, Myklebust, Trond wrote:
-> On Tue, 2013-07-16 at 19:31 -0400, Ric Wheeler wrote:
->> On 07/16/2013 07:12 PM, Sarah Sharp wrote:
->>> On Tue, Jul 16, 2013 at 06:54:59PM -0400, Steven Rostedt wrote:
->>>> On Tue, 2013-07-16 at 15:43 -0700, Sarah Sharp wrote:
->>>>
->>>>> Yes, that's true.  Some kernel developers are better at moderating their
->>>>> comments and tone towards individuals who are "sensitive".  Others
->>>>> simply don't give a shit.  So we need to figure out how to meet
->>>>> somewhere in the middle, in order to establish a baseline of civility.
->>>> I have to ask this because I'm thick, and don't really understand,
->>>> but ...
->>>>
->>>> What problem exactly are we trying to solve here?
->>> Personal attacks are not cool Steve.  Some people simply don't care if a
->>> verbal tirade is directed at them.  Others do not want anyone to attack
->>> them personally, but they're fine with people attacking their code.
->>>
->>> Bystanders that don't understand the kernel community structure are
->>> discouraged from contributing because they don't want to be verbally
->>> abused, and they really don't want to see either personal attacks or
->>> intense belittling, demeaning comments about code.
->>>
->>> In order to make our community better, we need to figure out where the
->>> baseline of "good" behavior is.  We need to define what behavior we want
->>> from both maintainers and patch submitters.  E.g. "No regressions" and
->>> "don't break userspace" and "no personal attacks".  That needs to be
->>> written down somewhere, and it isn't.  If it's documented somewhere,
->>> point me to the file in Documentation.  Hint: it's not there.
->>>
->>> That is the problem.
->>>
->>> Sarah Sharp
->> The problem you are pointing out - and it is a problem - makes us less effective
->> as a community.
-> Not really. Most of the people who already work as part of this
-> community are completely used to it. We've created the environment, and
-> have no problems with it.
-
-You should never judge success by being popular with those people who are 
-already contributing and put up with things. If you did that in business, you 
-would never reach new customers.
-
+On Tue, Jul 16, 2013 at 08:51:36PM -0400, Steven Rostedt wrote:
+> On Wed, 2013-07-17 at 08:32 +0800, Jeff Liu wrote:
+> 
+> > Another thing might deviated from the main theme, but I'd like to raise it
+> > here because I would like to see what's the proper way for that.
+> > 
+> > For instance, people A posted a patch set to the mailing list at first,
+> > people B think that there are some issues in A's implementation, and he
+> > happened to play around the same stuff recently, so he submitted another
+> > patch series.  Finally, people B made it.
+> > (In that period, people A kept silent, maybe because he/she was unhappy) 
+> > 
+> > This is a actual occurrence I once observed from a subsystem list(my
+> > apologies, I just want to talk this case rather than against somebody),
+> > it seems people A is a new comer(because I can not searched any past
+> > commits of him/her from the git log), people B is definitely a senior guy.
+> > 
+> > So that's my question, is that a proper collaboration form in kernel
+> > community?  Does it better if people B could give some suggestions to
+> > help A to improve the code, especially if those help would help A stepping
+> > into the kernel development -- maybe it's depend largely on one's opinion. :(
+> 
+> This is a completely different issue from the one in this thread, but it
+> is also a legitimate issue and honestly, a bigger one than perceived
+> insults.
+> 
+> Is it proper collaboration? Absolutely not. Something that I try to be
+> sensitive to as it's something I can do as well. There's been things on
+> my todo list, where someone would send me patches that do it. I would be
+> thinking "darn it, I wanted to do it" and even worse, the patches that
+> were sent wouldn't be of the way I wanted them. But I've tried to be
+> good, and instead of just going about and implementing it myself, I
+> would try to help the person massage the patches into what I wanted.
+> That takes a lot of effort and discipline, and honestly, helping someone
+> else do the work you wanted is much harder than just doing it yourself. 
 >
-> Where it could possibly be a problem is when it comes to recruiting
-> _new_ members to our community. Particularly so given that some
-> journalists take a special pleasure in reporting particularly juicy
-> comments and antics. That would tend to scare off a lot of gun-shy
-> newbies.
+> Sometimes the maintainer just takes the easier route, and does the work
+> themselves (because it's also more fun too). But that's really a slap in
+> the face of the person that submitted the work in the first place. If
+> anything hurts the community, it's this behavior. Not Linus giving
+> someone an ass wipe.
 
-That is my point - recruiting new members is made harder. As some one who 
-manages *a lot* of upstream kernel developers, I will add that it is not just 
-new comers that find this occasionally offensive and off putting.
+/me hands Steve a box of wet-wipes. :)
 
-> On the other hand, it might tend to bias our recruitment toward people
-> of a more "special" disposition. Perhaps we finally need the services of
-> a social scientist to help us find out...
->
+There's a lot of controversy over whether a senior developer
+re-implementing someone's patchset is bad behavior.  I've seen it argued
+both ways.  "If I don't write code, I will just become a patch-pushing,
+pencil-pushing maintainer."  Or "I don't want to bother working with
+newbies, it's faster to just implement this myself."
 
-To be fair, we usually do very well at this, especially with new comers to our 
-community.
+I really think it's up to the maintainer whether they want to mentor
+someone through a big submission, or do it themselves.  I usually lean
+towards mentorship, but hey, not everyone has the time.
 
-I think that most of the problems come up between people who know each other 
-quite well and are friendly with each other in person. The problem is that when 
-you use language that you would use with good friends over drinks to tell them 
-they are being stupid and do that on a public list, you set a tone that reaches 
-far beyond your intended target. All of those new comers also read this list and 
-do not see it as funny or friendly.
+One thing that might make it easier for the original submitter is making
+sure they get a Signed-off-by line in the patchset that the maintainer
+submits.  At the very least, their line should be directly below the
+maintainer's.  That way, they get credit for the idea, and possibly help
+improve their statistics in the Signed-off-by count for that kernel
+revision.
 
-I really don't think that we have to be politically correct or overly kind to 
-make things better.
+I suspect people would object if I suggested the original submitter
+should be the first Signed-off-by line, but in some cases it may be
+appropriate.  Sometimes I take someone's code, leave it mostly intact,
+and fix the bugs or add a feature that we really need before the code
+can land.  In that case, it makes sense to give the original submitter
+credit before the maintainer.
 
-As a very low bar, we could start by trying to avoid using language that would 
-get you fired when you send off an email to someone that you have power over 
-(either manage directly or indirectly control their career).
-
-Ric
-
-
+Sarah Sharp
