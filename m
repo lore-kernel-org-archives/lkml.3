@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3GQPTB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:19:01 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40090 "EHLO comal.ext.ti.com"
+	id S1756157Ab3GQPTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:19:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51079 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab3GQPS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:18:58 -0400
+	id S1755735Ab3GQPTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 11:19:08 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>
 CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, <cpufreq@vger.kernel.org>
-Subject: [RESEND PATCH V1 1/9] cpufreq: cpufreq-cpu0: add dt node parsing for 'needs-cooling'
-Date: Wed, 17 Jul 2013 11:17:20 -0400
-Message-ID: <1374074248-31690-2-git-send-email-eduardo.valentin@ti.com>
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [RESEND PATCH V1 2/9] thermal: hwmon: move hwmon support to single file
+Date: Wed, 17 Jul 2013 11:17:21 -0400
+Message-ID: <1374074248-31690-3-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
 References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
@@ -27,96 +24,669 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the cpufreq-cpu0 driver to consider if
-a cpu needs cooling (with cpufreq). In case the cooling is needed,
-it can be flagged at the cpu0 device tree node, with the boolean
-property 'needs-cooling'.
+In order to improve code organization, this patch
+moves the hwmon sysfs support to a file named
+thermal_hwmon. This helps to add extra support
+for hwmon without scrambling the code.
 
-In case this boolean is present, the driver will
-load a cpufreq cooling device in the system. The cpufreq-cpu0
-driver is not interested in determining how the system should
-be using the cooling device. The driver is responsible
-only of loading the cooling device.
+In order to do this move, the hwmon list head is now
+using its own locking. Before, the list used
+the global thermal locking. Also, some minor changes
+in the code were required, as recommended by checkpatch.pl.
 
-Describing how the cooling device will be used can be
-accomplished by setting up a thermal zone that references
-and is composed by the cpufreq cooling device.
-
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: cpufreq@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt | 3 +++
- drivers/cpufreq/cpufreq-cpu0.c                             | 8 ++++++++
- 2 files changed, 11 insertions(+)
+ drivers/thermal/Kconfig         |   9 ++
+ drivers/thermal/Makefile        |   3 +
+ drivers/thermal/thermal_core.c  | 255 +------------------------------------
+ drivers/thermal/thermal_hwmon.c | 269 ++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/thermal_hwmon.h |  49 ++++++++
+ 5 files changed, 331 insertions(+), 254 deletions(-)
+ create mode 100644 drivers/thermal/thermal_hwmon.c
+ create mode 100644 drivers/thermal/thermal_hwmon.h
 
-diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-index 051f764..e8ff916 100644
---- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-+++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-@@ -15,6 +15,8 @@ Optional properties:
- - clock-latency: Specify the possible maximum transition latency for clock,
-   in unit of nanoseconds.
- - voltage-tolerance: Specify the CPU voltage tolerance in percentage.
-+- needs-cooling: The generic cpu cooling (freq clipping) is loaded by the
-+generic cpufreq-cpu0 driver in case the device tree node has this boolean.
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index e988c81..7fb16bc 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -17,8 +17,17 @@ if THERMAL
  
- Examples:
- 
-@@ -33,6 +35,7 @@ cpus {
- 			198000  850000
- 		>;
- 		clock-latency = <61036>; /* two CLK32 periods */
-+		needs-cooling;
- 	};
- 
- 	cpu@1 {
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index ad1fde2..4a8747a 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -20,6 +20,9 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/consumer.h>
- #include <linux/slab.h>
-+#include <linux/thermal.h>
-+#include <linux/cpu_cooling.h>
-+#include <linux/cpumask.h>
- 
- static unsigned int transition_latency;
- static unsigned int voltage_tolerance; /* in percentage */
-@@ -28,6 +31,7 @@ static struct device *cpu_dev;
- static struct clk *cpu_clk;
- static struct regulator *cpu_reg;
- static struct cpufreq_frequency_table *freq_table;
-+static struct thermal_cooling_device *cdev;
- 
- static int cpu0_verify_speed(struct cpufreq_policy *policy)
- {
-@@ -268,6 +272,9 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		goto out_free_table;
- 	}
- 
-+	if (of_property_read_bool(np, "needs-cooling"))
-+		cdev = cpufreq_cooling_register(cpu_present_mask);
+ config THERMAL_HWMON
+ 	bool
++	prompt "Expose thermal sensors as hwmon device"
+ 	depends on HWMON=y || HWMON=THERMAL
+ 	default y
++	help
++	  In case a sensor is registered with the thermal
++	  framework, this option will also register it
++	  as a hwmon. The sensor will then have the common
++	  hwmon sysfs interface.
 +
- 	of_node_put(np);
- 	of_node_put(parent);
- 	return 0;
-@@ -283,6 +290,7 @@ out_put_parent:
++	  Say 'Y' here if you want all thermal sensors to
++	  have hwmon sysfs interface too.
  
- static int cpu0_cpufreq_remove(struct platform_device *pdev)
- {
-+	cpufreq_cooling_unregister(cdev);
- 	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
- 	opp_free_cpufreq_table(cpu_dev, &freq_table);
+ choice
+ 	prompt "Default Thermal governor"
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index 67184a2..24cb894 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -5,6 +5,9 @@
+ obj-$(CONFIG_THERMAL)		+= thermal_sys.o
+ thermal_sys-y			+= thermal_core.o
  
++# interface to/from other layers providing sensors
++thermal_sys-$(CONFIG_THERMAL_HWMON)		+= thermal_hwmon.o
++
+ # governors
+ thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
+ thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 1f02e8e..247528b 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -38,6 +38,7 @@
+ #include <net/genetlink.h>
+ 
+ #include "thermal_core.h"
++#include "thermal_hwmon.h"
+ 
+ MODULE_AUTHOR("Zhang Rui");
+ MODULE_DESCRIPTION("Generic thermal management sysfs support");
+@@ -859,260 +860,6 @@ thermal_cooling_device_trip_point_show(struct device *dev,
+ 
+ /* Device management */
+ 
+-#if defined(CONFIG_THERMAL_HWMON)
+-
+-/* hwmon sys I/F */
+-#include <linux/hwmon.h>
+-
+-/* thermal zone devices with the same type share one hwmon device */
+-struct thermal_hwmon_device {
+-	char type[THERMAL_NAME_LENGTH];
+-	struct device *device;
+-	int count;
+-	struct list_head tz_list;
+-	struct list_head node;
+-};
+-
+-struct thermal_hwmon_attr {
+-	struct device_attribute attr;
+-	char name[16];
+-};
+-
+-/* one temperature input for each thermal zone */
+-struct thermal_hwmon_temp {
+-	struct list_head hwmon_node;
+-	struct thermal_zone_device *tz;
+-	struct thermal_hwmon_attr temp_input;	/* hwmon sys attr */
+-	struct thermal_hwmon_attr temp_crit;	/* hwmon sys attr */
+-};
+-
+-static LIST_HEAD(thermal_hwmon_list);
+-
+-static ssize_t
+-name_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	struct thermal_hwmon_device *hwmon = dev_get_drvdata(dev);
+-	return sprintf(buf, "%s\n", hwmon->type);
+-}
+-static DEVICE_ATTR(name, 0444, name_show, NULL);
+-
+-static ssize_t
+-temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	long temperature;
+-	int ret;
+-	struct thermal_hwmon_attr *hwmon_attr
+-			= container_of(attr, struct thermal_hwmon_attr, attr);
+-	struct thermal_hwmon_temp *temp
+-			= container_of(hwmon_attr, struct thermal_hwmon_temp,
+-				       temp_input);
+-	struct thermal_zone_device *tz = temp->tz;
+-
+-	ret = thermal_zone_get_temp(tz, &temperature);
+-
+-	if (ret)
+-		return ret;
+-
+-	return sprintf(buf, "%ld\n", temperature);
+-}
+-
+-static ssize_t
+-temp_crit_show(struct device *dev, struct device_attribute *attr,
+-		char *buf)
+-{
+-	struct thermal_hwmon_attr *hwmon_attr
+-			= container_of(attr, struct thermal_hwmon_attr, attr);
+-	struct thermal_hwmon_temp *temp
+-			= container_of(hwmon_attr, struct thermal_hwmon_temp,
+-				       temp_crit);
+-	struct thermal_zone_device *tz = temp->tz;
+-	long temperature;
+-	int ret;
+-
+-	ret = tz->ops->get_trip_temp(tz, 0, &temperature);
+-	if (ret)
+-		return ret;
+-
+-	return sprintf(buf, "%ld\n", temperature);
+-}
+-
+-
+-static struct thermal_hwmon_device *
+-thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
+-{
+-	struct thermal_hwmon_device *hwmon;
+-
+-	mutex_lock(&thermal_list_lock);
+-	list_for_each_entry(hwmon, &thermal_hwmon_list, node)
+-		if (!strcmp(hwmon->type, tz->type)) {
+-			mutex_unlock(&thermal_list_lock);
+-			return hwmon;
+-		}
+-	mutex_unlock(&thermal_list_lock);
+-
+-	return NULL;
+-}
+-
+-/* Find the temperature input matching a given thermal zone */
+-static struct thermal_hwmon_temp *
+-thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
+-			  const struct thermal_zone_device *tz)
+-{
+-	struct thermal_hwmon_temp *temp;
+-
+-	mutex_lock(&thermal_list_lock);
+-	list_for_each_entry(temp, &hwmon->tz_list, hwmon_node)
+-		if (temp->tz == tz) {
+-			mutex_unlock(&thermal_list_lock);
+-			return temp;
+-		}
+-	mutex_unlock(&thermal_list_lock);
+-
+-	return NULL;
+-}
+-
+-static int
+-thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+-{
+-	struct thermal_hwmon_device *hwmon;
+-	struct thermal_hwmon_temp *temp;
+-	int new_hwmon_device = 1;
+-	int result;
+-
+-	hwmon = thermal_hwmon_lookup_by_type(tz);
+-	if (hwmon) {
+-		new_hwmon_device = 0;
+-		goto register_sys_interface;
+-	}
+-
+-	hwmon = kzalloc(sizeof(struct thermal_hwmon_device), GFP_KERNEL);
+-	if (!hwmon)
+-		return -ENOMEM;
+-
+-	INIT_LIST_HEAD(&hwmon->tz_list);
+-	strlcpy(hwmon->type, tz->type, THERMAL_NAME_LENGTH);
+-	hwmon->device = hwmon_device_register(NULL);
+-	if (IS_ERR(hwmon->device)) {
+-		result = PTR_ERR(hwmon->device);
+-		goto free_mem;
+-	}
+-	dev_set_drvdata(hwmon->device, hwmon);
+-	result = device_create_file(hwmon->device, &dev_attr_name);
+-	if (result)
+-		goto free_mem;
+-
+- register_sys_interface:
+-	temp = kzalloc(sizeof(struct thermal_hwmon_temp), GFP_KERNEL);
+-	if (!temp) {
+-		result = -ENOMEM;
+-		goto unregister_name;
+-	}
+-
+-	temp->tz = tz;
+-	hwmon->count++;
+-
+-	snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
+-		 "temp%d_input", hwmon->count);
+-	temp->temp_input.attr.attr.name = temp->temp_input.name;
+-	temp->temp_input.attr.attr.mode = 0444;
+-	temp->temp_input.attr.show = temp_input_show;
+-	sysfs_attr_init(&temp->temp_input.attr.attr);
+-	result = device_create_file(hwmon->device, &temp->temp_input.attr);
+-	if (result)
+-		goto free_temp_mem;
+-
+-	if (tz->ops->get_crit_temp) {
+-		unsigned long temperature;
+-		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+-			snprintf(temp->temp_crit.name,
+-				 sizeof(temp->temp_crit.name),
+-				"temp%d_crit", hwmon->count);
+-			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+-			temp->temp_crit.attr.attr.mode = 0444;
+-			temp->temp_crit.attr.show = temp_crit_show;
+-			sysfs_attr_init(&temp->temp_crit.attr.attr);
+-			result = device_create_file(hwmon->device,
+-						    &temp->temp_crit.attr);
+-			if (result)
+-				goto unregister_input;
+-		}
+-	}
+-
+-	mutex_lock(&thermal_list_lock);
+-	if (new_hwmon_device)
+-		list_add_tail(&hwmon->node, &thermal_hwmon_list);
+-	list_add_tail(&temp->hwmon_node, &hwmon->tz_list);
+-	mutex_unlock(&thermal_list_lock);
+-
+-	return 0;
+-
+- unregister_input:
+-	device_remove_file(hwmon->device, &temp->temp_input.attr);
+- free_temp_mem:
+-	kfree(temp);
+- unregister_name:
+-	if (new_hwmon_device) {
+-		device_remove_file(hwmon->device, &dev_attr_name);
+-		hwmon_device_unregister(hwmon->device);
+-	}
+- free_mem:
+-	if (new_hwmon_device)
+-		kfree(hwmon);
+-
+-	return result;
+-}
+-
+-static void
+-thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+-{
+-	struct thermal_hwmon_device *hwmon;
+-	struct thermal_hwmon_temp *temp;
+-
+-	hwmon = thermal_hwmon_lookup_by_type(tz);
+-	if (unlikely(!hwmon)) {
+-		/* Should never happen... */
+-		dev_dbg(&tz->device, "hwmon device lookup failed!\n");
+-		return;
+-	}
+-
+-	temp = thermal_hwmon_lookup_temp(hwmon, tz);
+-	if (unlikely(!temp)) {
+-		/* Should never happen... */
+-		dev_dbg(&tz->device, "temperature input lookup failed!\n");
+-		return;
+-	}
+-
+-	device_remove_file(hwmon->device, &temp->temp_input.attr);
+-	if (tz->ops->get_crit_temp)
+-		device_remove_file(hwmon->device, &temp->temp_crit.attr);
+-
+-	mutex_lock(&thermal_list_lock);
+-	list_del(&temp->hwmon_node);
+-	kfree(temp);
+-	if (!list_empty(&hwmon->tz_list)) {
+-		mutex_unlock(&thermal_list_lock);
+-		return;
+-	}
+-	list_del(&hwmon->node);
+-	mutex_unlock(&thermal_list_lock);
+-
+-	device_remove_file(hwmon->device, &dev_attr_name);
+-	hwmon_device_unregister(hwmon->device);
+-	kfree(hwmon);
+-}
+-#else
+-static int
+-thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+-{
+-	return 0;
+-}
+-
+-static void
+-thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+-{
+-}
+-#endif
+-
+ /**
+  * thermal_zone_bind_cooling_device() - bind a cooling device to a thermal zone
+  * @tz:		pointer to struct thermal_zone_device
+diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
+new file mode 100644
+index 0000000..ab52a96
+--- /dev/null
++++ b/drivers/thermal/thermal_hwmon.c
+@@ -0,0 +1,269 @@
++/*
++ *  thermal_hwmon.c - Generic Thermal Management hwmon support.
++ *
++ *  Code based on Intel thermal_core.c. Copyrights of the original code:
++ *  Copyright (C) 2008 Intel Corp
++ *  Copyright (C) 2008 Zhang Rui <rui.zhang@intel.com>
++ *  Copyright (C) 2008 Sujith Thomas <sujith.thomas@intel.com>
++ *
++ *  Copyright (C) 2013 Texas Instruments
++ *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++#include <linux/hwmon.h>
++#include <linux/thermal.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include "thermal_hwmon.h"
++
++/* hwmon sys I/F */
++/* thermal zone devices with the same type share one hwmon device */
++struct thermal_hwmon_device {
++	char type[THERMAL_NAME_LENGTH];
++	struct device *device;
++	int count;
++	struct list_head tz_list;
++	struct list_head node;
++};
++
++struct thermal_hwmon_attr {
++	struct device_attribute attr;
++	char name[16];
++};
++
++/* one temperature input for each thermal zone */
++struct thermal_hwmon_temp {
++	struct list_head hwmon_node;
++	struct thermal_zone_device *tz;
++	struct thermal_hwmon_attr temp_input;	/* hwmon sys attr */
++	struct thermal_hwmon_attr temp_crit;	/* hwmon sys attr */
++};
++
++static LIST_HEAD(thermal_hwmon_list);
++
++static DEFINE_MUTEX(thermal_hwmon_list_lock);
++
++static ssize_t
++name_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct thermal_hwmon_device *hwmon = dev_get_drvdata(dev);
++	return sprintf(buf, "%s\n", hwmon->type);
++}
++static DEVICE_ATTR(name, 0444, name_show, NULL);
++
++static ssize_t
++temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	long temperature;
++	int ret;
++	struct thermal_hwmon_attr *hwmon_attr
++			= container_of(attr, struct thermal_hwmon_attr, attr);
++	struct thermal_hwmon_temp *temp
++			= container_of(hwmon_attr, struct thermal_hwmon_temp,
++				       temp_input);
++	struct thermal_zone_device *tz = temp->tz;
++
++	ret = thermal_zone_get_temp(tz, &temperature);
++
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%ld\n", temperature);
++}
++
++static ssize_t
++temp_crit_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct thermal_hwmon_attr *hwmon_attr
++			= container_of(attr, struct thermal_hwmon_attr, attr);
++	struct thermal_hwmon_temp *temp
++			= container_of(hwmon_attr, struct thermal_hwmon_temp,
++				       temp_crit);
++	struct thermal_zone_device *tz = temp->tz;
++	long temperature;
++	int ret;
++
++	ret = tz->ops->get_trip_temp(tz, 0, &temperature);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%ld\n", temperature);
++}
++
++
++static struct thermal_hwmon_device *
++thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
++{
++	struct thermal_hwmon_device *hwmon;
++
++	mutex_lock(&thermal_hwmon_list_lock);
++	list_for_each_entry(hwmon, &thermal_hwmon_list, node)
++		if (!strcmp(hwmon->type, tz->type)) {
++			mutex_unlock(&thermal_hwmon_list_lock);
++			return hwmon;
++		}
++	mutex_unlock(&thermal_hwmon_list_lock);
++
++	return NULL;
++}
++
++/* Find the temperature input matching a given thermal zone */
++static struct thermal_hwmon_temp *
++thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
++			  const struct thermal_zone_device *tz)
++{
++	struct thermal_hwmon_temp *temp;
++
++	mutex_lock(&thermal_hwmon_list_lock);
++	list_for_each_entry(temp, &hwmon->tz_list, hwmon_node)
++		if (temp->tz == tz) {
++			mutex_unlock(&thermal_hwmon_list_lock);
++			return temp;
++		}
++	mutex_unlock(&thermal_hwmon_list_lock);
++
++	return NULL;
++}
++
++int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
++{
++	struct thermal_hwmon_device *hwmon;
++	struct thermal_hwmon_temp *temp;
++	int new_hwmon_device = 1;
++	int result;
++
++	hwmon = thermal_hwmon_lookup_by_type(tz);
++	if (hwmon) {
++		new_hwmon_device = 0;
++		goto register_sys_interface;
++	}
++
++	hwmon = kzalloc(sizeof(*hwmon), GFP_KERNEL);
++	if (!hwmon)
++		return -ENOMEM;
++
++	INIT_LIST_HEAD(&hwmon->tz_list);
++	strlcpy(hwmon->type, tz->type, THERMAL_NAME_LENGTH);
++	hwmon->device = hwmon_device_register(NULL);
++	if (IS_ERR(hwmon->device)) {
++		result = PTR_ERR(hwmon->device);
++		goto free_mem;
++	}
++	dev_set_drvdata(hwmon->device, hwmon);
++	result = device_create_file(hwmon->device, &dev_attr_name);
++	if (result)
++		goto free_mem;
++
++ register_sys_interface:
++	temp = kzalloc(sizeof(*hwmon), GFP_KERNEL);
++	if (!temp) {
++		result = -ENOMEM;
++		goto unregister_name;
++	}
++
++	temp->tz = tz;
++	hwmon->count++;
++
++	snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
++		 "temp%d_input", hwmon->count);
++	temp->temp_input.attr.attr.name = temp->temp_input.name;
++	temp->temp_input.attr.attr.mode = 0444;
++	temp->temp_input.attr.show = temp_input_show;
++	sysfs_attr_init(&temp->temp_input.attr.attr);
++	result = device_create_file(hwmon->device, &temp->temp_input.attr);
++	if (result)
++		goto free_temp_mem;
++
++	if (tz->ops->get_crit_temp) {
++		unsigned long temperature;
++		if (!tz->ops->get_crit_temp(tz, &temperature)) {
++			snprintf(temp->temp_crit.name,
++				 sizeof(temp->temp_crit.name),
++				"temp%d_crit", hwmon->count);
++			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
++			temp->temp_crit.attr.attr.mode = 0444;
++			temp->temp_crit.attr.show = temp_crit_show;
++			sysfs_attr_init(&temp->temp_crit.attr.attr);
++			result = device_create_file(hwmon->device,
++						    &temp->temp_crit.attr);
++			if (result)
++				goto unregister_input;
++		}
++	}
++
++	mutex_lock(&thermal_hwmon_list_lock);
++	if (new_hwmon_device)
++		list_add_tail(&hwmon->node, &thermal_hwmon_list);
++	list_add_tail(&temp->hwmon_node, &hwmon->tz_list);
++	mutex_unlock(&thermal_hwmon_list_lock);
++
++	return 0;
++
++ unregister_input:
++	device_remove_file(hwmon->device, &temp->temp_input.attr);
++ free_temp_mem:
++	kfree(temp);
++ unregister_name:
++	if (new_hwmon_device) {
++		device_remove_file(hwmon->device, &dev_attr_name);
++		hwmon_device_unregister(hwmon->device);
++	}
++ free_mem:
++	if (new_hwmon_device)
++		kfree(hwmon);
++
++	return result;
++}
++
++void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
++{
++	struct thermal_hwmon_device *hwmon;
++	struct thermal_hwmon_temp *temp;
++
++	hwmon = thermal_hwmon_lookup_by_type(tz);
++	if (unlikely(!hwmon)) {
++		/* Should never happen... */
++		dev_dbg(&tz->device, "hwmon device lookup failed!\n");
++		return;
++	}
++
++	temp = thermal_hwmon_lookup_temp(hwmon, tz);
++	if (unlikely(!temp)) {
++		/* Should never happen... */
++		dev_dbg(&tz->device, "temperature input lookup failed!\n");
++		return;
++	}
++
++	device_remove_file(hwmon->device, &temp->temp_input.attr);
++	if (tz->ops->get_crit_temp)
++		device_remove_file(hwmon->device, &temp->temp_crit.attr);
++
++	mutex_lock(&thermal_hwmon_list_lock);
++	list_del(&temp->hwmon_node);
++	kfree(temp);
++	if (!list_empty(&hwmon->tz_list)) {
++		mutex_unlock(&thermal_hwmon_list_lock);
++		return;
++	}
++	list_del(&hwmon->node);
++	mutex_unlock(&thermal_hwmon_list_lock);
++
++	device_remove_file(hwmon->device, &dev_attr_name);
++	hwmon_device_unregister(hwmon->device);
++	kfree(hwmon);
++}
+diff --git a/drivers/thermal/thermal_hwmon.h b/drivers/thermal/thermal_hwmon.h
+new file mode 100644
+index 0000000..c798fdb
+--- /dev/null
++++ b/drivers/thermal/thermal_hwmon.h
+@@ -0,0 +1,49 @@
++/*
++ *  thermal_hwmon.h - Generic Thermal Management hwmon support.
++ *
++ *  Code based on Intel thermal_core.c. Copyrights of the original code:
++ *  Copyright (C) 2008 Intel Corp
++ *  Copyright (C) 2008 Zhang Rui <rui.zhang@intel.com>
++ *  Copyright (C) 2008 Sujith Thomas <sujith.thomas@intel.com>
++ *
++ *  Copyright (C) 2013 Texas Instruments
++ *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
++ *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++#ifndef __THERMAL_HWMON_H__
++#define __THERMAL_HWMON_H__
++
++#include <linux/thermal.h>
++
++#ifdef CONFIG_THERMAL_HWMON
++int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz);
++void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz);
++#else
++static int
++thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
++{
++	return 0;
++}
++
++static void
++thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
++{
++}
++#endif
++
++#endif /* __THERMAL_HWMON_H__ */
 -- 
 1.8.2.1.342.gfa7285d
 
