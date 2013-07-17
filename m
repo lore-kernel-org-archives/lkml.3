@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3GQPPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:15:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:49048 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab3GQPPN (ORCPT
+	id S1755292Ab3GQPQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:16:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14249 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab3GQPQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:15:13 -0400
-Date: Wed, 17 Jul 2013 11:08:58 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-Message-ID: <20130717150857.GA2291@tuxdriver.com>
-References: <1373916476.2748.69.camel@dabdike>
- <20130715214422.GA2478@kroah.com>
- <1373951852.2148.9.camel@dabdike>
- <20130716062058.GB19052@kroah.com>
- <1373960616.2148.34.camel@dabdike>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373960616.2148.34.camel@dabdike>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Jul 2013 11:16:16 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=QIZFyTDxVIcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=WKn5AdJQQDgA:10 a=M_hnxo_MEYx3oxdosq8A:9 a=QEXdDO2ut3YA:10 a=N4w7ZklE4n8A:10 a=UUpEAJXpyccA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374074169.6458.145.camel@gandalf.local.home>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Ricardo Ferreira <rikajff@gmail.com>, Willy Tarreau <w@1wt.eu>,
+        Jeff Liu <jeff.liu@oracle.com>, David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Wed, 17 Jul 2013 11:16:09 -0400
+In-Reply-To: <20130717150203.GC16513@xanatos>
+References: <20130716212704.GB9371@thunk.org>
+	 <20130716224357.GK4994@xanatos>
+	 <1374015299.6458.76.camel@gandalf.local.home>
+	 <20130716231217.GL4994@xanatos> <51E5E609.1030202@oracle.com>
+	 <1374022296.6458.118.camel@gandalf.local.home>
+	 <20130717055139.GC21611@1wt.eu>
+	 <1374063678.6458.124.camel@gandalf.local.home>
+	 <CACtES-ouVn+w8oJoe8+MLLEdnKA-XwBNhhuNQFGa84o9x=1yZA@mail.gmail.com>
+	 <1374066215.6458.135.camel@gandalf.local.home>
+	 <20130717150203.GC16513@xanatos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:43:36AM +0400, James Bottomley wrote:
-> On Mon, 2013-07-15 at 23:20 -0700, Greg KH wrote:
-> 
-> > I think the real stable issue that _everyone_ keeps ignoring, is my
-> > original complaint, in that people are using the -rc1 merge window to
-> > get fixes in they should have sent to Linus for .0.
-> 
-> You mean we delay fixes to the merge window (tagged for stable) because
-> we can't get them into Linus' tree at -rc5 on?  Guilty ... that's
-> because the friction for getting stuff in rises.  It's a big fight to
-> get something marginal in after -rc5 ... it's easy to silently tag it
-> for stable (did I mention that I think the tag part enables this
-> behaviour?).
+On Wed, 2013-07-17 at 08:02 -0700, Sarah Sharp wrote:
 
-I'll just chime-in here and agree that I have delayed minor fixes,
-preventing them from being merged during an -rc6 or -rc7 but tagging
-them for -stable.  It has long been 'tradition' (at least in the
-networking space) that fixes so late in the cycle should tend to be
-really small (i.e. "one-liners") and/or really, really, important.
-In other words, they need to avoid potentially delaying a release
-unless they are absolutely necessary.
+> Are you volunteering to be a mentor for the FOSS Outreach Program for
+> Women? ;)  I will happily take more mentors for the next round in
+> November!
 
-Fixes merged early in the next release cycle at least have a fighting
-chance of getting some testing before getting into the hands of the
-unwashed masses.  If they have problems in 3.<previous>.1 then they
-can still be reverted in -stable, but they can never be removed from
-the .0 release -- does this matter?  I'm not sure.  Is having a flood
-of fixes in x.y.1 any worse than having to got to an -rc8 or an -rc9?
+If you have someone interested in Real Time OS development. Sure!
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+-- Steve
+
+
