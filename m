@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab3GQX1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:27:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47850 "EHLO hydra.sisk.pl"
+	id S934351Ab3GQX21 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:28:27 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47901 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934267Ab3GQX1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:24 -0400
+	id S1757798Ab3GQX1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:36 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -13,9 +13,9 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 14/30] ACPI / hotplug / PCI: Embed function struct into struct acpiphp_context
-Date: Thu, 18 Jul 2013 01:24:47 +0200
-Message-ID: <2262769.XioakSTT7I@vostro.rjw.lan>
+Subject: [PATCH 1/30] ACPI / PCI: Make bus registration and unregistration symmetric
+Date: Thu, 18 Jul 2013 01:15:58 +0200
+Message-ID: <1395739.1IFp3cq75N@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
 References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
@@ -28,192 +28,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Since there has to be a struct acpiphp_func object for every struct
-acpiphp_context created by register_slot(), the struct acpiphp_func
-one can be embedded into the struct acpiphp_context one, which allows
-some code simplifications to be made.
+Since acpi_pci_slot_enumerate() and acpiphp_enumerate_slots() can get
+the ACPI device handle they need from bus->bridge, it is not
+necessary to pass that handle to them as an argument.
+
+Drop the second argument of acpi_pci_slot_enumerate() and
+acpiphp_enumerate_slots(), rework them to obtain the ACPI handle
+from bus->bridge and make acpi_pci_add_bus() and
+acpi_pci_remove_bus() entirely symmetrical.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp.h      |    8 +++++-
- drivers/pci/hotplug/acpiphp_glue.c |   44 +++++++++++++------------------------
- 2 files changed, 22 insertions(+), 30 deletions(-)
+ drivers/acpi/pci_slot.c            |   14 +++++++++-----
+ drivers/pci/hotplug/acpiphp_glue.c |    6 ++++--
+ drivers/pci/pci-acpi.c             |   16 ++++------------
+ include/linux/pci-acpi.h           |   10 ++++------
+ 4 files changed, 21 insertions(+), 25 deletions(-)
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+Index: linux-pm/drivers/acpi/pci_slot.c
 ===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -116,7 +116,6 @@ struct acpiphp_slot {
-  * typically 8 objects per slot (i.e. for each PCI function)
-  */
- struct acpiphp_func {
--	struct acpiphp_context *context;
- 	struct acpiphp_slot *slot;	/* parent */
+--- linux-pm.orig/drivers/acpi/pci_slot.c
++++ linux-pm/drivers/acpi/pci_slot.c
+@@ -159,12 +159,16 @@ register_slot(acpi_handle handle, u32 lv
+ 	return AE_OK;
+ }
  
- 	struct list_head sibling;
-@@ -128,11 +127,16 @@ struct acpiphp_func {
- 
- struct acpiphp_context {
- 	acpi_handle handle;
--	struct acpiphp_func *func;
-+	struct acpiphp_func func;
- 	struct acpiphp_bridge *bridge;
- 	unsigned int refcount;
- };
- 
-+static inline struct acpiphp_context *func_to_context(struct acpiphp_func *func)
-+{
-+	return container_of(func, struct acpiphp_context, func);
-+}
+-void acpi_pci_slot_enumerate(struct pci_bus *bus, acpi_handle handle)
++void acpi_pci_slot_enumerate(struct pci_bus *bus)
+ {
+-	mutex_lock(&slot_list_lock);
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
+-			    register_slot, NULL, bus, NULL);
+-	mutex_unlock(&slot_list_lock);
++	acpi_handle handle = ACPI_HANDLE(bus->bridge);
 +
- /*
-  * struct acpiphp_attention_info - device specific attention registration
-  *
++	if (handle) {
++		mutex_lock(&slot_list_lock);
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
++				    register_slot, NULL, bus, NULL);
++		mutex_unlock(&slot_list_lock);
++	}
+ }
+ 
+ void acpi_pci_slot_remove(struct pci_bus *bus)
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -128,7 +128,7 @@ static void acpiphp_put_context(struct a
- 	if (--context->refcount)
+@@ -1147,14 +1147,16 @@ static void handle_hotplug_event_func(ac
+  * Create hotplug slots for the PCI bus.
+  * It should always return 0 to avoid skipping following notifiers.
+  */
+-void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
++void acpiphp_enumerate_slots(struct pci_bus *bus)
+ {
++	acpi_handle handle;
+ 	struct acpiphp_bridge *bridge;
+ 
+ 	if (acpiphp_disabled)
  		return;
  
--	WARN_ON(context->func || context->bridge);
-+	WARN_ON(context->bridge);
- 	acpi_detach_data(context->handle, acpiphp_context_handler);
- 	kfree(context);
- }
-@@ -155,12 +155,9 @@ static void free_bridge(struct kref *kre
- 	bridge = container_of(kref, struct acpiphp_bridge, ref);
+-	if (detect_ejectable_slots(handle) <= 0)
++	handle = ACPI_HANDLE(bus->bridge);
++	if (!handle || detect_ejectable_slots(handle) <= 0)
+ 		return;
  
- 	list_for_each_entry_safe(slot, next, &bridge->slots, node) {
--		list_for_each_entry_safe(func, tmp, &slot->funcs, sibling) {
--			context = func->context;
--			context->func = NULL;
--			acpiphp_put_context(context);
--			kfree(func);
--		}
-+		list_for_each_entry_safe(func, tmp, &slot->funcs, sibling)
-+			acpiphp_put_context(func_to_context(func));
-+
- 		kfree(slot);
- 	}
+ 	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
+Index: linux-pm/drivers/pci/pci-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci-acpi.c
++++ linux-pm/drivers/pci/pci-acpi.c
+@@ -290,24 +290,16 @@ static struct pci_platform_pm_ops acpi_p
  
-@@ -168,7 +165,7 @@ static void free_bridge(struct kref *kre
- 	/* Root bridges will not have hotplug context. */
- 	if (context) {
- 		/* Release the reference taken by acpiphp_enumerate_slots(). */
--		put_bridge(context->func->slot->bridge);
-+		put_bridge(context->func.slot->bridge);
- 		context->bridge = NULL;
- 		acpiphp_put_context(context);
- 	}
-@@ -190,7 +187,7 @@ static void free_bridge(struct kref *kre
- static void post_dock_fixups(acpi_handle not_used, u32 event, void *data)
+ void acpi_pci_add_bus(struct pci_bus *bus)
  {
- 	struct acpiphp_context *context = data;
--	struct pci_bus *bus = context->func->slot->bridge->pci_bus;
-+	struct pci_bus *bus = context->func.slot->bridge->pci_bus;
- 	u32 buses;
- 
- 	if (!bus->self)
-@@ -251,14 +248,14 @@ static void acpiphp_dock_init(void *data
- {
- 	struct acpiphp_context *context = data;
- 
--	get_bridge(context->func->slot->bridge);
-+	get_bridge(context->func.slot->bridge);
- }
- 
- static void acpiphp_dock_release(void *data)
- {
- 	struct acpiphp_context *context = data;
- 
--	put_bridge(context->func->slot->bridge);
-+	put_bridge(context->func.slot->bridge);
- }
- 
- /* callback routine to register each ACPI PCI slot object */
-@@ -288,23 +285,16 @@ static acpi_status register_slot(acpi_ha
- 	device = (adr >> 16) & 0xffff;
- 	function = adr & 0xffff;
- 
--	newfunc = kzalloc(sizeof(struct acpiphp_func), GFP_KERNEL);
--	if (!newfunc)
--		return AE_NO_MEMORY;
+-	acpi_handle handle = NULL;
 -
--	newfunc->handle = handle;
--	newfunc->function = function;
--
- 	mutex_lock(&acpiphp_context_lock);
- 	context = acpiphp_init_context(handle);
- 	if (!context) {
- 		mutex_unlock(&acpiphp_context_lock);
- 		acpi_handle_err(handle, "No hotplug context\n");
--		kfree(newfunc);
- 		return AE_NOT_EXIST;
- 	}
--	newfunc->context = context;
--	context->func = newfunc;
-+	newfunc = &context->func;
-+	newfunc->handle = handle;
-+	newfunc->function = function;
- 	mutex_unlock(&acpiphp_context_lock);
+-	if (bus->bridge)
+-		handle = ACPI_HANDLE(bus->bridge);
+-	if (acpi_pci_disabled || handle == NULL)
++	if (acpi_pci_disabled || !bus->bridge)
+ 		return;
  
- 	if (acpi_has_method(handle, "_EJ0"))
-@@ -404,10 +394,8 @@ static acpi_status register_slot(acpi_ha
- 
-  err:
- 	mutex_lock(&acpiphp_context_lock);
--	context->func = NULL;
- 	acpiphp_put_context(context);
- 	mutex_unlock(&acpiphp_context_lock);
--	kfree(newfunc);
- 	return status;
+-	acpi_pci_slot_enumerate(bus, handle);
+-	acpiphp_enumerate_slots(bus, handle);
++	acpi_pci_slot_enumerate(bus);
++	acpiphp_enumerate_slots(bus);
  }
  
-@@ -938,7 +926,7 @@ void acpiphp_check_host_bridge(acpi_hand
- static void hotplug_event(acpi_handle handle, u32 type, void *data)
+ void acpi_pci_remove_bus(struct pci_bus *bus)
  {
- 	struct acpiphp_context *context = data;
--	struct acpiphp_func *func = context->func;
-+	struct acpiphp_func *func = &context->func;
- 	struct acpiphp_bridge *bridge;
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
-@@ -1029,7 +1017,7 @@ static void hotplug_event_work(struct wo
+-	/*
+-	 * bus->bridge->acpi_node.handle has already been reset to NULL
+-	 * when acpi_pci_remove_bus() is called, so don't check ACPI handle.
+-	 */
+-	if (acpi_pci_disabled)
++	if (acpi_pci_disabled || !bus->bridge)
+ 		return;
  
- 	acpi_scan_lock_release();
- 	kfree(hp_work); /* allocated in handle_hotplug_event() */
--	put_bridge(context->func->slot->bridge);
-+	put_bridge(context->func.slot->bridge);
- }
+ 	acpiphp_remove_slots(bus);
+Index: linux-pm/include/linux/pci-acpi.h
+===================================================================
+--- linux-pm.orig/include/linux/pci-acpi.h
++++ linux-pm/include/linux/pci-acpi.h
+@@ -47,24 +47,22 @@ void acpi_pci_remove_bus(struct pci_bus
  
- /**
-@@ -1047,7 +1035,7 @@ static void handle_hotplug_event(acpi_ha
- 	mutex_lock(&acpiphp_context_lock);
- 	context = acpiphp_get_context(handle);
- 	if (context) {
--		get_bridge(context->func->slot->bridge);
-+		get_bridge(context->func.slot->bridge);
- 		acpiphp_put_context(context);
- 	}
- 	mutex_unlock(&acpiphp_context_lock);
-@@ -1109,7 +1097,7 @@ void acpiphp_enumerate_slots(struct pci_
- 		 */
- 		mutex_lock(&acpiphp_context_lock);
- 		context = acpiphp_get_context(handle);
--		if (WARN_ON(!context || !context->func)) {
-+		if (WARN_ON(!context)) {
- 			mutex_unlock(&acpiphp_context_lock);
- 			put_device(&bus->dev);
- 			kfree(bridge);
-@@ -1118,7 +1106,7 @@ void acpiphp_enumerate_slots(struct pci_
- 		bridge->context = context;
- 		context->bridge = bridge;
- 		/* Get a reference to the parent bridge. */
--		get_bridge(context->func->slot->bridge);
-+		get_bridge(context->func.slot->bridge);
- 		mutex_unlock(&acpiphp_context_lock);
- 	}
+ #ifdef	CONFIG_ACPI_PCI_SLOT
+ void acpi_pci_slot_init(void);
+-void acpi_pci_slot_enumerate(struct pci_bus *bus, acpi_handle handle);
++void acpi_pci_slot_enumerate(struct pci_bus *bus);
+ void acpi_pci_slot_remove(struct pci_bus *bus);
+ #else
+ static inline void acpi_pci_slot_init(void) { }
+-static inline void acpi_pci_slot_enumerate(struct pci_bus *bus,
+-					   acpi_handle handle) { }
++static inline void acpi_pci_slot_enumerate(struct pci_bus *bus) { }
+ static inline void acpi_pci_slot_remove(struct pci_bus *bus) { }
+ #endif
  
+ #ifdef	CONFIG_HOTPLUG_PCI_ACPI
+ void acpiphp_init(void);
+-void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle);
++void acpiphp_enumerate_slots(struct pci_bus *bus);
+ void acpiphp_remove_slots(struct pci_bus *bus);
+ void acpiphp_check_host_bridge(acpi_handle handle);
+ #else
+ static inline void acpiphp_init(void) { }
+-static inline void acpiphp_enumerate_slots(struct pci_bus *bus,
+-					   acpi_handle handle) { }
++static inline void acpiphp_enumerate_slots(struct pci_bus *bus) { }
+ static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
+ static inline void acpiphp_check_host_bridge(acpi_handle handle) { }
+ #endif
 
