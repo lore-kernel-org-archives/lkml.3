@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab3GQQpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:45:15 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:59632 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701Ab3GQQpL (ORCPT
+	id S932985Ab3GQQp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:45:59 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:36570 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932850Ab3GQQpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:45:11 -0400
+	Wed, 17 Jul 2013 12:45:08 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 18/18] vtime: Always debug check snapshot source _before_ updating it
-Date: Wed, 17 Jul 2013 18:44:31 +0200
-Message-Id: <1374079471-3129-19-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 16/18] vtime: Optimize full dynticks accounting off case with static keys
+Date: Wed, 17 Jul 2013 18:44:29 +0200
+Message-Id: <1374079471-3129-17-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
 References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
@@ -26,15 +26,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vtime delta update performed by get_vtime_delta() always check
-that the source of the snapshot is valid.
+If no CPU is in the full dynticks range, we can avoid the full
+dynticks cputime accounting through generic vtime along with its
+overhead and use the traditional tick based accounting instead.
 
-Meanhile the snapshot updaters that rely on get_vtime_delta() also
-set the new snapshot origin. But some of them do this right before
-the call to get_vtime_delta(), making its debug check useless.
-
-This is easily fixable by moving the snapshot origin update after
-the call to get_vtime_delta(). The order doesn't matter there.
+Let's do this and nope the off case with static keys.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -47,34 +43,210 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- kernel/sched/cputime.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/context_tracking.h |    6 +--
+ include/linux/vtime.h            |   70 +++++++++++++++++++++++++++++++++-----
+ kernel/sched/cputime.c           |   22 ++----------
+ 3 files changed, 67 insertions(+), 31 deletions(-)
 
+diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+index 8635dbb..07cdf93 100644
+--- a/include/linux/context_tracking.h
++++ b/include/linux/context_tracking.h
+@@ -66,8 +66,7 @@ static inline void context_tracking_task_switch(struct task_struct *prev,
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+ static inline void guest_enter(void)
+ {
+-	if (static_key_false(&context_tracking_enabled) &&
+-	    vtime_accounting_enabled())
++	if (vtime_accounting_enabled())
+ 		vtime_guest_enter(current);
+ 	else
+ 		current->flags |= PF_VCPU;
+@@ -75,8 +74,7 @@ static inline void guest_enter(void)
+ 
+ static inline void guest_exit(void)
+ {
+-	if (static_key_false(&context_tracking_enabled) &&
+-	    vtime_accounting_enabled())
++	if (vtime_accounting_enabled())
+ 		vtime_guest_exit(current);
+ 	else
+ 		current->flags &= ~PF_VCPU;
+diff --git a/include/linux/vtime.h b/include/linux/vtime.h
+index 2ad0739..f5b72b3 100644
+--- a/include/linux/vtime.h
++++ b/include/linux/vtime.h
+@@ -1,22 +1,68 @@
+ #ifndef _LINUX_KERNEL_VTIME_H
+ #define _LINUX_KERNEL_VTIME_H
+ 
++#include <linux/context_tracking_state.h>
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ #include <asm/vtime.h>
+ #endif
+ 
++
+ struct task_struct;
+ 
++/*
++ * vtime_accounting_enabled() definitions/declarations
++ */
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
++static inline bool vtime_accounting_enabled(void) { return true; }
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
++
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
++static inline bool vtime_accounting_enabled(void)
++{
++	if (static_key_false(&context_tracking_enabled)) {
++		if (context_tracking_active())
++			return true;
++	}
++
++	return false;
++}
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
++
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++static inline bool vtime_accounting_enabled(void) { return false; }
++#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
++
++
++/*
++ * Common vtime APIs
++ */
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING
++
++#ifdef __ARCH_HAS_VTIME_TASK_SWITCH
+ extern void vtime_task_switch(struct task_struct *prev);
++#else
++extern void vtime_common_task_switch(struct task_struct *prev);
++static inline void vtime_task_switch(struct task_struct *prev)
++{
++	if (vtime_accounting_enabled())
++		vtime_common_task_switch(prev);
++}
++#endif /* __ARCH_HAS_VTIME_TASK_SWITCH */
++
+ extern void vtime_account_system(struct task_struct *tsk);
+ extern void vtime_account_idle(struct task_struct *tsk);
+ extern void vtime_account_user(struct task_struct *tsk);
+-extern void vtime_account_irq_enter(struct task_struct *tsk);
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+-static inline bool vtime_accounting_enabled(void) { return true; }
+-#endif
++#ifdef __ARCH_HAS_VTIME_ACCOUNT
++extern void vtime_account_irq_enter(struct task_struct *tsk);
++#else
++extern void vtime_common_account_irq_enter(struct task_struct *tsk);
++static inline void vtime_account_irq_enter(struct task_struct *tsk)
++{
++	if (vtime_accounting_enabled())
++		vtime_common_account_irq_enter(tsk);
++}
++#endif /* __ARCH_HAS_VTIME_ACCOUNT */
+ 
+ #else /* !CONFIG_VIRT_CPU_ACCOUNTING */
+ 
+@@ -24,14 +70,20 @@ static inline void vtime_task_switch(struct task_struct *prev) { }
+ static inline void vtime_account_system(struct task_struct *tsk) { }
+ static inline void vtime_account_user(struct task_struct *tsk) { }
+ static inline void vtime_account_irq_enter(struct task_struct *tsk) { }
+-static inline bool vtime_accounting_enabled(void) { return false; }
+-#endif
++#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
+ 
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+ extern void arch_vtime_task_switch(struct task_struct *tsk);
+-extern void vtime_account_irq_exit(struct task_struct *tsk);
+-extern bool vtime_accounting_enabled(void);
++extern void vtime_gen_account_irq_exit(struct task_struct *tsk);
++
++static inline void vtime_account_irq_exit(struct task_struct *tsk)
++{
++	if (vtime_accounting_enabled())
++		vtime_gen_account_irq_exit(tsk);
++}
++
+ extern void vtime_user_enter(struct task_struct *tsk);
++
+ static inline void vtime_user_exit(struct task_struct *tsk)
+ {
+ 	vtime_account_user(tsk);
+@@ -39,7 +91,7 @@ static inline void vtime_user_exit(struct task_struct *tsk)
+ extern void vtime_guest_enter(struct task_struct *tsk);
+ extern void vtime_guest_exit(struct task_struct *tsk);
+ extern void vtime_init_idle(struct task_struct *tsk, int cpu);
+-#else
++#else /* !CONFIG_VIRT_CPU_ACCOUNTING_GEN  */
+ static inline void vtime_account_irq_exit(struct task_struct *tsk)
+ {
+ 	/* On hard|softirq exit we always account to hard|softirq cputime */
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index e9e742e..c1d7493 100644
+index b62d5c0..0831b06 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
-@@ -660,9 +660,9 @@ void vtime_account_system(struct task_struct *tsk)
- void vtime_gen_account_irq_exit(struct task_struct *tsk)
+@@ -378,11 +378,8 @@ static inline void irqtime_account_process_tick(struct task_struct *p, int user_
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING
+ 
+ #ifndef __ARCH_HAS_VTIME_TASK_SWITCH
+-void vtime_task_switch(struct task_struct *prev)
++void vtime_common_task_switch(struct task_struct *prev)
  {
+-	if (!vtime_accounting_enabled())
+-		return;
+-
+ 	if (is_idle_task(prev))
+ 		vtime_account_idle(prev);
+ 	else
+@@ -404,11 +401,8 @@ void vtime_task_switch(struct task_struct *prev)
+  * vtime_account().
+  */
+ #ifndef __ARCH_HAS_VTIME_ACCOUNT
+-void vtime_account_irq_enter(struct task_struct *tsk)
++void vtime_common_account_irq_enter(struct task_struct *tsk)
+ {
+-	if (!vtime_accounting_enabled())
+-		return;
+-
+ 	if (!in_interrupt()) {
+ 		/*
+ 		 * If we interrupted user, context_tracking_in_user()
+@@ -428,7 +422,7 @@ void vtime_account_irq_enter(struct task_struct *tsk)
+ 	}
+ 	vtime_account_system(tsk);
+ }
+-EXPORT_SYMBOL_GPL(vtime_account_irq_enter);
++EXPORT_SYMBOL_GPL(vtime_common_account_irq_enter);
+ #endif /* __ARCH_HAS_VTIME_ACCOUNT */
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+ 
+@@ -669,11 +663,8 @@ void vtime_account_system(struct task_struct *tsk)
+ 	write_sequnlock(&tsk->vtime_seqlock);
+ }
+ 
+-void vtime_account_irq_exit(struct task_struct *tsk)
++void vtime_gen_account_irq_exit(struct task_struct *tsk)
+ {
+-	if (!vtime_accounting_enabled())
+-		return;
+-
  	write_seqlock(&tsk->vtime_seqlock);
-+	__vtime_account_system(tsk);
  	if (context_tracking_in_user())
  		tsk->vtime_snap_whence = VTIME_USER;
--	__vtime_account_system(tsk);
- 	write_sequnlock(&tsk->vtime_seqlock);
+@@ -732,11 +723,6 @@ void vtime_account_idle(struct task_struct *tsk)
+ 	account_idle_time(delta_cpu);
  }
  
-@@ -680,8 +680,8 @@ void vtime_account_user(struct task_struct *tsk)
- void vtime_user_enter(struct task_struct *tsk)
+-bool vtime_accounting_enabled(void)
+-{
+-	return context_tracking_active();
+-}
+-
+ void arch_vtime_task_switch(struct task_struct *prev)
  {
- 	write_seqlock(&tsk->vtime_seqlock);
--	tsk->vtime_snap_whence = VTIME_USER;
- 	__vtime_account_system(tsk);
-+	tsk->vtime_snap_whence = VTIME_USER;
- 	write_sequnlock(&tsk->vtime_seqlock);
- }
- 
+ 	write_seqlock(&prev->vtime_seqlock);
 -- 
 1.7.5.4
 
