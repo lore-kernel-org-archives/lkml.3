@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964993Ab3GQXOd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:14:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56610 "EHLO
+	id S965011Ab3GQXOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:14:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56605 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964859Ab3GQWzd (ORCPT
+	with ESMTP id S964837Ab3GQWzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:55:33 -0400
+	Wed, 17 Jul 2013 18:55:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 106/145] writeback: Fix periodic writeback after fs mount
-Date: Wed, 17 Jul 2013 15:47:18 -0700
-Message-Id: <1374101277-7915-107-git-send-email-kamal@canonical.com>
+Subject: [PATCH 110/145] svcrpc: fix handling of too-short rpc's
+Date: Wed, 17 Jul 2013 15:47:22 -0700
+Message-Id: <1374101277-7915-111-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,60 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
+commit cf3aa02cb4a0c5af5557dd47f15a08a7df33182a upstream.
 
-Code in blkdev.c moves a device inode to default_backing_dev_info when
-the last reference to the device is put and moves the device inode back
-to its bdi when the first reference is acquired. This includes moving to
-wb.b_dirty list if the device inode is dirty. The code however doesn't
-setup timer to wake corresponding flusher thread and while wb.b_dirty
-list is non-empty __mark_inode_dirty() will not set it up either. Thus
-periodic writeback is effectively disabled until a sync(2) call which can
-lead to unexpected data loss in case of crash or power failure.
+If we detect that an rpc is too short, we abort and close the
+connection.  Except, there's a bug here: we're leaving sk_datalen
+nonzero without leaving any pages in the sk_pages array.  The most
+likely result of the inconsistency is a subsequent crash in
+svc_tcp_clear_pages.
 
-Fix the problem by setting up a timer for periodic writeback in case we
-add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
+Also demote the BUG_ON in svc_tcp_clear_pages to a WARN.
 
-Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/block_dev.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ net/sunrpc/svcsock.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 883dc49..33f984f 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -57,17 +57,24 @@ static void bdev_inode_switch_bdi(struct inode *inode,
- 			struct backing_dev_info *dst)
- {
- 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-+	bool wakeup_bdi = false;
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index 0f679df..df74919 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -917,7 +917,10 @@ static void svc_tcp_clear_pages(struct svc_sock *svsk)
+ 	len = svsk->sk_datalen;
+ 	npages = (len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	for (i = 0; i < npages; i++) {
+-		BUG_ON(svsk->sk_pages[i] == NULL);
++		if (svsk->sk_pages[i] == NULL) {
++			WARN_ON_ONCE(1);
++			continue;
++		}
+ 		put_page(svsk->sk_pages[i]);
+ 		svsk->sk_pages[i] = NULL;
+ 	}
+@@ -1092,8 +1095,10 @@ static int svc_tcp_recvfrom(struct svc_rqst *rqstp)
+ 		goto err_noclose;
+ 	}
  
- 	if (unlikely(dst == old))		/* deadlock avoidance */
- 		return;
- 	bdi_lock_two(&old->wb, &dst->wb);
- 	spin_lock(&inode->i_lock);
- 	inode->i_data.backing_dev_info = dst;
--	if (inode->i_state & I_DIRTY)
-+	if (inode->i_state & I_DIRTY) {
-+		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
-+			wakeup_bdi = true;
- 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
+-	if (svc_sock_reclen(svsk) < 8)
++	if (svc_sock_reclen(svsk) < 8) {
++		svsk->sk_datalen = 0;
+ 		goto err_delete; /* client is nuts. */
 +	}
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&old->wb.list_lock);
- 	spin_unlock(&dst->wb.list_lock);
-+
-+	if (wakeup_bdi)
-+		bdi_wakeup_thread_delayed(dst);
- }
  
- /* Kill _all_ buffers and pagecache , dirty or not.. */
+ 	rqstp->rq_arg.len = svsk->sk_datalen;
+ 	rqstp->rq_arg.page_base = 0;
 -- 
 1.8.1.2
 
