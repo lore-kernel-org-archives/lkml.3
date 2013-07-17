@@ -1,143 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab3GQKmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 06:42:31 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49667 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab3GQKma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 06:42:30 -0400
-Message-ID: <51E6750A.9060900@oracle.com>
-Date: Wed, 17 Jul 2013 18:42:18 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+	id S1753860Ab3GQKnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 06:43:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50053 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753368Ab3GQKnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 06:43:12 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: zswap: How to determine whether it is compressing swap pages?
-References: <1674223.HVFdAhB7u5@merkaba>
-In-Reply-To: <1674223.HVFdAhB7u5@merkaba>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net 2/2] macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
+Date: Wed, 17 Jul 2013 18:32:11 +0800
+Message-Id: <1374057131-39207-2-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1374057131-39207-1-git-send-email-jasowang@redhat.com>
+References: <1374057131-39207-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+We try to linearize part of the skb when the number of iov is greater than
+MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
+one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
+network.
 
-On 07/17/2013 06:04 PM, Martin Steigerwald wrote:
-> Hi Seth, hi everyone,
->
-> Yesterday I build 3.11-rc1 with CONFIG_ZSWAP and wanted to test it.
->
-> I added zswap.enabled=1 and get:
->
-> martin@merkaba:~> dmesg | grep zswap
-> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
-> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
-> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
-> [    0.000000] Kernel command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
-> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
-> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
-> [    1.452443] zswap: loading zswap
-> [    1.452465] zswap: using lzo compressor
->
->
-> I did a stress -m 1 --vm-keep --vm-bytes 4G on this 8 GB ThinkPad T520 in
-> order to allocate some swap.
->
+Solve this problem by calculate the pages needed for iov before trying to do
+zerocopy and switch to use copy instead of zerocopy if it needs more than
+MAX_SKB_FRAGS.
 
-Thank you for your testing.
-I'm glad to see there is new people interested with memory compression.
+This is done through introducing a new helper to count the pages for iov, and
+call uarg->callback() manually when switching from zerocopy to copy to notify
+vhost.
 
-> Still I think zswap didn´t do anything:
->
-> merkaba:/sys/kernel/debug/zswap> grep . *
-> duplicate_entry:0
-> pool_limit_hit:0
-> pool_pages:0
-> reject_alloc_fail:0
-> reject_compress_poor:0
-> reject_kmemcache_fail:0
-> reject_reclaim_fail:0
-> stored_pages:0
-> written_back_pages:0
->
->
-> However:
->
-> merkaba:/sys/kernel/slab/zswap_entry> grep . *
-> aliases:9
-> align:8
-> grep: alloc_calls: Die angeforderte Funktion ist nicht implementiert
-> cache_dma:0
-> cpu_partial:0
-> cpu_slabs:4 N0=4
-> destroy_by_rcu:0
-> grep: free_calls: Die angeforderte Funktion ist nicht implementiert
-> hwcache_align:0
-> min_partial:5
-> objects:2550 N0=2550
-> object_size:48
-> objects_partial:0
-> objs_per_slab:85
-> order:0
-> partial:0
-> poison:0
-> reclaim_account:0
-> red_zone:0
-> remote_node_defrag_ratio:100
-> reserved:0
-> sanity_checks:0
-> slabs:30 N0=30
-> slabs_cpu_partial:0(0)
-> slab_size:48
-> store_user:0
-> total_objects:2550 N0=2550
-> trace:0
->
-> It has some objects it seems.
->
->
-> How do I know whether zswap actually does something?
->
-> Will zswap work even with zcache enabled? As I understand zcache compresses
-> swap device pages on the block device level in addition to compressing read
-> cache pages of usual filesystems. Which one takes precedence, zcache or zswap?
-> Can I disable zcache for swap device?
->
+We can do further optimization on top.
 
-Please disable zcache and try again.
+This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
+(macvtap: zerocopy: validate vectors before building skb).
 
->
->
-> Here is dmesg for zcache:
->
-> martin@merkaba:~> dmesg | grep zcache
-> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
-> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
-> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
-> [    0.000000] Kernel command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
-> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
-> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
-> [    1.453531] zcache: using lzo compressor
-> [    1.453634] zcache: cleancache enabled using kernel transcendent memory and
-> compression buddies
-> [    1.453679] zcache: frontswap enabled using kernel transcendent memory and
-> compression buddies
-> [    1.453722] zcache: frontswap_ops overridden
-> [    5.358288] zcache: created ephemeral local tmem pool, id=0
-> [    8.155684] zcache: created persistent local tmem pool, id=1
-> [    8.331680] zcache: created ephemeral local tmem pool, id=2
-> [    8.593235] zcache: created ephemeral local tmem pool, id=3
-> [    8.743330] zcache: created ephemeral local tmem pool, id=4
->
->
-> Thanks,
->
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvtap.c |   58 +++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 37 insertions(+), 21 deletions(-)
 
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index a7c5654..e200f11 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -698,6 +698,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 	return 0;
+ }
+ 
++static unsigned long iov_pages(const struct iovec *iv, int offset,
++			       unsigned long nr_segs)
++{
++	unsigned long seg, base;
++	int pages = 0, len, size;
++
++	while (nr_segs && (offset >= iv->iov_len)) {
++		offset -= iv->iov_len;
++		++iv;
++		--nr_segs;
++	}
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		base = (unsigned long)iv[seg].iov_base + offset;
++		len = iv[seg].iov_len - offset;
++		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		pages += size;
++		offset = 0;
++	}
++
++	return pages;
++}
+ 
+ /* Get packet from user space buffer */
+ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+@@ -744,31 +766,19 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 	if (unlikely(count > UIO_MAXIOV))
+ 		goto err;
+ 
+-	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
+-		zerocopy = true;
+-
+-	if (zerocopy) {
++	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
+ 		/* Userspace may produce vectors with count greater than
+ 		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+ 		 * to let the rest of data to be fit in the frags.
+ 		 */
+-		if (count > MAX_SKB_FRAGS) {
+-			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
+-			if (copylen < vnet_hdr_len)
+-				copylen = 0;
+-			else
+-				copylen -= vnet_hdr_len;
+-		}
+-		/* There are 256 bytes to be copied in skb, so there is enough
+-		 * room for skb expand head in case it is used.
+-		 * The rest buffer is mapped from userspace.
+-		 */
+-		if (copylen < vnet_hdr.hdr_len)
+-			copylen = vnet_hdr.hdr_len;
+-		if (!copylen)
+-			copylen = GOODCOPY_LEN;
++		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
+ 		linear = copylen;
+-	} else {
++		if (iov_pages(iv, vnet_hdr_len + copylen, count)
++		    <= MAX_SKB_FRAGS)
++			zerocopy = true;
++	}
++
++	if (!zerocopy) {
+ 		copylen = len;
+ 		linear = vnet_hdr.hdr_len;
+ 	}
+@@ -780,9 +790,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 
+ 	if (zerocopy)
+ 		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
+-	else
++	else {
+ 		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
+ 						   len);
++		if (!err && m && m->msg_control) {
++			struct ubuf_info *uarg = m->msg_control;
++			uarg->callback(uarg, false);
++		}
++	}
++
+ 	if (err)
+ 		goto err_kfree;
+ 
 -- 
-Regards,
--Bob
+1.7.1
+
