@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab3GQRFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:05:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52944 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641Ab3GQRFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:05:13 -0400
-Message-ID: <51E6CEC5.7050402@wwwdotorg.org>
-Date: Wed, 17 Jul 2013 11:05:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756613Ab3GQRFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:05:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47692 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755507Ab3GQRFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 13:05:40 -0400
+Message-ID: <51E6CCB6.2000907@ti.com>
+Date: Wed, 17 Jul 2013 19:56:22 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] Enable lm90 in Tegra30 and Tegra114.
-References: <1373615364-18559-1-git-send-email-wni@nvidia.com> <51E427F1.9010106@wwwdotorg.org> <51E42DB0.8090006@wwwdotorg.org> <51E52B28.9090708@nvidia.com> <51E65309.6000101@nvidia.com>
-In-Reply-To: <51E65309.6000101@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 2/3] ARM: OMAP2+: omap_device: add pinctrl handling
+References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com> <1374061312-25469-3-git-send-email-grygorii.strashko@ti.com> <20130717153838.GJ7656@atomide.com>
+In-Reply-To: <20130717153838.GJ7656@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 02:17 AM, Wei Ni wrote:
-> On 07/16/2013 07:14 PM, Wei Ni wrote:
->> On 07/16/2013 01:13 AM, Stephen Warren wrote:
->>> On 07/15/2013 10:48 AM, Stephen Warren wrote:
->>>> On 07/12/2013 01:49 AM, Wei Ni wrote:
->>>>> Enable thermal sensor lm90 for Tegra30 Cardhu and Tegra114 Dalmore.
->>>>
->>>> I have applied the series to Tegra's for-3.12/dt branch.
->>>
->>> Actually, I see the following on Dalmore (although Cardhu works):
->>>
->>> [   29.448539] lm90 0-004c: Register 0x4 read failed (-121)
->>> [   29.453930] lm90 0-004c: Failed to read convrate register!
->>> [   29.460034] lm90 0-004c: Register 0x3 read failed (-121)
->>> [   29.465408] lm90 0-004c: Initialization failed!
->>>
->>> So, there's something wrong here, and I've dropped the patch for
->>> Dalmore. Does this patch actually work for you?
->>>
->> I test it with the Chrome u-boot, the lm90 works fine.
->> But today, if I tried to use the uboot from
->> git://git.denx.de/u-boot-tegra.git, I can repo your errors, it seems the
->> i2c can't work, the lm90 driver read register failed.
->> I traced it, but can't find the root cause yet.
-> 
-> Hi, Stephen
-> I found the root cause.
-> In the Chrome u-boot, it will turn on the regulator for the lm90, but in
-> the upstream u-boot, it didn't do it.
+On 07/17/2013 06:38 PM, Tony Lindgren wrote:
+> * Grygorii Strashko <grygorii.strashko@ti.com> [130717 04:49]:
+>> Before switching to DT pinctrl states of OMAP IPs have been handled by hwmod
+>> framework. After switching to DT-boot the pinctrl handling was dropped from
+>> hwmod framework and, as it was recommended, OMAP IP's drivers have to be updated
+>> to handle pinctrl states by itself using pinctrl_pm_select_xx() helpers
+>> (see http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173514.html)
+>>
+>> But this is not right for OMAP2+ SoC where real IPs state is controlled
+>> by omap_device core which enables/disables modules & clocks actually.
+>
+> I'm not convinced we should try to handle this in a generic way
+> as only some devices need dynamic remuxing of some pins.
+>
+>> For example, if OMAP I2C driver will handle pinctrl state during system wide
+>> suspend the following issue may occure:
+>> - suspend_noirq - I2C device can be still active because of PM auto-suspend
+>>    |-_od_suspend_noirq
+>>       |- omap_i2c_suspend_noirq
+>>          |- PINs state set to SLEEP
+>>    |- pm_generic_runtime_suspend
+>>       |- omap_i2c_runtime_suspend()
+>>          |- PINs state set to IDLE  <--- *oops* PINs state is IDLE and not SLEEP
+>>    |- omap_device_idle()
+>>       |- omap_hwmod_idle()
+>>          |- _idle()
+>>             |- disbale module (sysc&clocks)
+>
+> And in this example you are assuming that you need separate idle and
+> sleep states, which is not true at least for most cases I've seen.
 
-> I think this regulator should be handled in the kernel driver, but it
-> seems the regulator palmas tps65913 didn't be supported on the dalmore yet.
-> So may be we have to wait the palmas ready on dalmore.
+I don't need both states (at least right now) :), but
+- if any OMAP2+ driver will have two states defined: "idle" and "sleep"
+- and if it will try to manage them from drivers callbacks only using
+   pure calls to pinctrl_pm_select_xx() helpers
 
-Yes, I agree. (although Laxman's regulator patch caused the SD card to
-stop working, so that needs to be fixed up, but hopefully it's a simple
-issue).
+the "idle" state will be selected during suspend and *not* "sleep".
+
+>
+> It is possible that am33xx needs separate idle and sleep states, but
+> most likely only for some pins. For omap[345] we can get away with
+> just the default state for most cases.
+>
+
+
+In case, if only "default" state is defined for device - nothing will
+  be done by OMAP device framework for it (I mean any call to
+pinctrl_pm_select_xx() will do nothing - it just checks that there is
+no state and returns 0).
+
+> Regards,
+>
+> Tony
+>
+
+Regards,
+- grygorii
