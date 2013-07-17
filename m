@@ -1,112 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab3GQJbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 05:31:08 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10628 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431Ab3GQJbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 05:31:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 17 Jul 2013 02:29:21 -0700
-Message-ID: <51E663FC.5050209@nvidia.com>
-Date: Wed, 17 Jul 2013 17:29:32 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753477Ab3GQJd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 05:33:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35984 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753222Ab3GQJdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 05:33:55 -0400
+Message-ID: <51E664CB.8050906@ti.com>
+Date: Wed, 17 Jul 2013 15:02:59 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status
- bit
-References: <1373615287-18502-1-git-send-email-wni@nvidia.com> <1373615287-18502-3-git-send-email-wni@nvidia.com> <20130715185727.4ebde8c4@endymion.delvare>	<51E641C7.4000107@nvidia.com> <20130717102803.6ee36313@endymion.delvare>
-In-Reply-To: <20130717102803.6ee36313@endymion.delvare>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
+        <arnd@arndb.de>, <swarren@nvidia.com>, <sylvester.nawrocki@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <benoit.cousson@linaro.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
+        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
+        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>, <balajitk@ti.com>,
+        <george.cherian@ti.com>
+Subject: Re: [PATCH v9 1/8] drivers: phy: add generic PHY framework
+References: <1372247257-30186-1-git-send-email-kishon@ti.com> <1372247257-30186-2-git-send-email-kishon@ti.com> <20130717062944.GA24968@kroah.com>
+In-Reply-To: <20130717062944.GA24968@kroah.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 04:28 PM, Jean Delvare wrote:
-> Hi Wei,
-> 
-> On Wed, 17 Jul 2013 15:03:35 +0800, Wei Ni wrote:
->> On 07/16/2013 12:57 AM, Jean Delvare wrote:
->>> On Fri, 12 Jul 2013 15:48:05 +0800, Wei Ni wrote:
->>>> Add bit defines for the status register.
->>>
->>> Regarding the subject: for me these are constants, not macros. AFAIK
->>> the term "macro" refers to defines with parameters only.
->>
->> How about "Introduce status bits"
-> 
-> I'd say "Define status bits" as this is exactly what you're doing ;-)
-> That being said, your patch actually does more than this, as you are
-> moving code around and to a separate function. The patch description
-> should say that and explain why.
+Hi,
 
-ok, I will update it in my next version.
-
+On Wednesday 17 July 2013 11:59 AM, Greg KH wrote:
+> On Wed, Jun 26, 2013 at 05:17:29PM +0530, Kishon Vijay Abraham I wrote:
+>> +menuconfig GENERIC_PHY
+>> +	tristate "PHY Subsystem"
+>> +	help
+>> +	  Generic PHY support.
+>> +
+>> +	  This framework is designed to provide a generic interface for PHY
+>> +	  devices present in the kernel. This layer will have the generic
+>> +	  API by which phy drivers can create PHY using the phy framework and
+>> +	  phy users can obtain reference to the PHY.
 > 
->>>> (...)
->>>> +	if ((status & 0x7f) == 0 && (status2 & 0xfe) == 0)
->>>> +		return false;
->>>
->>> It's a bit disappointing to not use the freshly introduced constants.
->>> That being said I agree it would make the code hard to read, so you can
->>> leave it as is.
->>
->> Sorry, I forgot it.
->> How about to define:
->> #define LM90_STATUS_MASK 0x7f
->> #define MAX6696_STATUS2_MASK 0xfe
+> Shouldn't this be something that other drivers select?  How will anyone
+> know if they need this or not?
+
+All the PHY drivers should go here. So only if *GENERIC_PHY* is enabled those
+PHY drivers can be selected like in [1].
+The PHY consumer driver should ideally use *depends on* in their Kconfig.
+
+[1] ->
+http://archive.arm.linux.org.uk/lurker/message/20130628.134308.4a8f7668.ca.html
 > 
-> I wouldn't bother. I suspect that this code will have to be reworked
-> soon anyway and these constants may no longer be needed then.
-
-Ok, let's leave it as is.
-
+>> --- /dev/null
+>> +++ b/drivers/phy/phy-core.c
+>> @@ -0,0 +1,544 @@
+>> +/*
+>> + * phy-core.c  --  Generic Phy framework.
+>> + *
+>> + * Copyright (C) 2013 Texas Instruments
+>> + *
+>> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
+>> + *
+>> + * This program is free software; you can redistribute  it and/or modify it
+>> + * under  the terms of  the GNU General  Public License as published by the
+>> + * Free Software Foundation;  either version 2 of the  License, or (at your
+>> + * option) any later version.
 > 
->> Or since Guenter is for vacation, I can just leave it as is, and wait
->> him back to talk about below issue.
+> You really mean "any later version" (I have to ask)?
+
+That was copied from somewhere :-s
 > 
-> I do maintain the lm90 driver, so the decision is up to me. Guenter did
-> a preliminary review of your patches and I am grateful for that, but I
-> do not intend to wait for his return to continue with your patches.
-> Otherwise he will have to do the same when he returns and I am gone,
-> and this may end up delaying your patches by one kernel version.
-
-I will send out patches soon :)
-
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 > 
->>>> (...)
->>>> +		struct lm90_data *data = i2c_get_clientdata(client);
->>>> +		u8 config, alarms;
->>>> +
->>>> +		lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
->>>
->>> You end up reading LM90_REG_R_STATUS, which is not OK. This register
->>> contains self-clearing bits, so there is no guarantee that the second
->>> read will return the same value as the first read. You'll have to come
->>> up with a different approach that reads LM90_REG_R_STATUS only once.
->>
->> Oh, yes, this is a problem, I didn't noticed it.
->> How about to use this:
->> bool lm90_alarms_tripped(*client, *status);
->> bool lm90_alarms2_tripped(*client, *status2);
->> So we can read the status only once and pass it.
+> Are these two paragraphs needed?  This isn't a "program", and they got a
+> copy of the GPL already with the kernel.
+
+hmm.. I can remove that.
 > 
-> This is a good idea but you only need status, not status2, so it can be
-> made simpler:
-> bool lm90_is_tripped(*client, *status);
-> (handling both status and status 2 as you already do.)
-
-Yes this is simpler, but I think in the future we may need to handle the
-status2, how to handle it ? Or we can define the status as
-bit[0~7]->status and bit[8~15]->status2 .
-
+>> +static struct class *phy_class;
 > 
+> Why do you need a class?
 
+Wanted to group all the PHY drivers to be used by different subsystems
+(SATA/USB/PCIE/HDMI/VIDEO) into a single entity. There were some comments in my
+initial version [3] on using a bus_type instead of class but then it was
+decided to go with class itself.
+
+[3] -> http://lkml.indiana.edu/hypermail/linux/kernel/1302.2/01389.html
+> 
+> When modifying/adding new sysfs stuff, you need a Documentation/ABI/
+> entry as well.
+
+I'm not actually adding any new sysfs entry other than what a *class_create*
+must have created. Do I need to add one for that?
+
+Thanks
+Kishon
