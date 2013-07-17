@@ -1,147 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933697Ab3GQUPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 16:15:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25431 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab3GQUPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 16:15:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,687,1367996400"; 
-   d="scan'208";a="347286087"
-Message-ID: <1374092140.7622.36.camel@envy.home>
-Subject: Re: [PATCH 1/3] pch_uart: Use DMI interface for board detection
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Michael Brunner <mibru@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 17 Jul 2013 13:15:40 -0700
-In-Reply-To: <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
-References: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
-	 <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934154Ab3GQURt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 16:17:49 -0400
+Received: from 13.mo1.mail-out.ovh.net ([178.33.253.128]:52410 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934126Ab3GQURr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 16:17:47 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Wenyou Yang <wenyou.yang@atmel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH v2 39/42] ARM: at91/dt: move sam9g45 boards to new at91 clk implem
+Date: Wed, 17 Jul 2013 22:17:25 +0200
+Message-Id: <1374092245-22121-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
+References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 18140499300083136620
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 17:58 -0700, Darren Hart wrote:
-> Use the DMI interface rather than manually matching DMI strings.
+Define the main clock frequency in every at91sam9g45 boards.
+Remove the old main clock definition.
 
-Greg,
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/boot/dts/at91sam9m10g45ek.dts |   17 ++++++-----------
+ arch/arm/boot/dts/pm9g45.dts           |   16 +++++-----------
+ 2 files changed, 11 insertions(+), 22 deletions(-)
 
-The rest of this series is either being dropped or has moved on to
-netdev. This patch however remains unchanged. Would you like me to
-resend individually or can you pull in this one?
-
-Thanks,
-
-Darren
-
-> 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Cc: Michael Brunner <mibru@gmx.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/tty/serial/pch_uart.c | 71 +++++++++++++++++++++++++++++--------------
->  1 file changed, 49 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-> index 572d481..271cc73 100644
-> --- a/drivers/tty/serial/pch_uart.c
-> +++ b/drivers/tty/serial/pch_uart.c
-> @@ -373,35 +373,62 @@ static const struct file_operations port_regs_ops = {
->  };
->  #endif	/* CONFIG_DEBUG_FS */
->  
-> +static struct dmi_system_id __initdata pch_uart_dmi_table[] = {
-> +	{
-> +		.ident = "CM-iTC",
-> +		{
-> +			DMI_MATCH(DMI_BOARD_NAME, "CM-iTC"),
-> +		},
-> +		(void *)CMITC_UARTCLK,
-> +	},
-> +	{
-> +		.ident = "FRI2",
-> +		{
-> +			DMI_MATCH(DMI_BIOS_VERSION, "FRI2"),
-> +		},
-> +		(void *)FRI2_64_UARTCLK,
-> +	},
-> +	{
-> +		.ident = "Fish River Island II",
-> +		{
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "Fish River Island II"),
-> +		},
-> +		(void *)FRI2_48_UARTCLK,
-> +	},
-> +	{
-> +		.ident = "COMe-mTT",
-> +		{
-> +			DMI_MATCH(DMI_BOARD_NAME, "COMe-mTT"),
-> +		},
-> +		(void *)NTC1_UARTCLK,
-> +	},
-> +	{
-> +		.ident = "nanoETXexpress-TT",
-> +		{
-> +			DMI_MATCH(DMI_BOARD_NAME, "nanoETXexpress-TT"),
-> +		},
-> +		(void *)NTC1_UARTCLK,
-> +	},
-> +	{
-> +		.ident = "MinnowBoard",
-> +		{
-> +			DMI_MATCH(DMI_BOARD_NAME, "MinnowBoard"),
-> +		},
-> +		(void *)MINNOW_UARTCLK,
-> +	},
-> +};
-> +
->  /* Return UART clock, checking for board specific clocks. */
->  static int pch_uart_get_uartclk(void)
->  {
-> -	const char *cmp;
-> +	const struct dmi_system_id *d;
->  
->  	if (user_uartclk)
->  		return user_uartclk;
->  
-> -	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> -	if (cmp && strstr(cmp, "CM-iTC"))
-> -		return CMITC_UARTCLK;
-> -
-> -	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
-> -	if (cmp && strnstr(cmp, "FRI2", 4))
-> -		return FRI2_64_UARTCLK;
-> -
-> -	cmp = dmi_get_system_info(DMI_PRODUCT_NAME);
-> -	if (cmp && strstr(cmp, "Fish River Island II"))
-> -		return FRI2_48_UARTCLK;
-> -
-> -	/* Kontron COMe-mTT10 (nanoETXexpress-TT) */
-> -	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> -	if (cmp && (strstr(cmp, "COMe-mTT") ||
-> -		    strstr(cmp, "nanoETXexpress-TT")))
-> -		return NTC1_UARTCLK;
-> -
-> -	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-> -	if (cmp && strstr(cmp, "MinnowBoard"))
-> -		return MINNOW_UARTCLK;
-> +	d = dmi_first_match(pch_uart_dmi_table);
-> +	if (d)
-> +		return (int)d->driver_data;
->  
->  	return DEFAULT_UARTCLK;
->  }
-
+diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+index a4b00e5..f83bda2 100644
+--- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
++++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+@@ -21,17 +21,6 @@
+ 		reg = <0x70000000 0x4000000>;
+ 	};
+ 
+-	clocks {
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-		ranges;
+-
+-		main_clock: clock@0 {
+-			compatible = "atmel,osc", "fixed-clock";
+-			clock-frequency = <12000000>;
+-		};
+-	};
+-
+ 	ahb {
+ 		apb {
+ 			dbgu: serial@ffffee00 {
+@@ -121,6 +110,12 @@
+ 				atmel,vbus-gpio = <&pioB 19 GPIO_ACTIVE_HIGH>;
+ 				status = "okay";
+ 			};
++
++			pmc: pmc@fffffc00 {
++				main: mainck {
++					clock-frequency = <12000000>;
++				};
++			};
+ 		};
+ 
+ 		nand0: nand@40000000 {
+diff --git a/arch/arm/boot/dts/pm9g45.dts b/arch/arm/boot/dts/pm9g45.dts
+index 33ffabe..3d8af99 100644
+--- a/arch/arm/boot/dts/pm9g45.dts
++++ b/arch/arm/boot/dts/pm9g45.dts
+@@ -20,17 +20,6 @@
+ 		reg = <0x70000000 0x8000000>;
+ 	};
+ 
+-	clocks {
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-		ranges;
+-
+-		main_clock: clock@0 {
+-			compatible = "atmel,osc", "fixed-clock";
+-			clock-frequency = <12000000>;
+-		};
+-	};
+-
+ 	ahb {
+ 		apb {
+ 			dbgu: serial@ffffee00 {
+@@ -73,6 +62,11 @@
+ 				status = "okay";
+ 			};
+ 
++			pmc: pmc@fffffc00 {
++				main: mainck {
++					clock-frequency = <12000000>;
++				};
++			};
+ 		};
+ 
+ 		nand0: nand@40000000 {
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
-
+1.7.9.5
 
