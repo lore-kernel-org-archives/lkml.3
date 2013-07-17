@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab3GQTTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 15:19:10 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:65013 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab3GQTTI (ORCPT
+	id S1756934Ab3GQTUb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 15:20:31 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51268 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756014Ab3GQTUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 15:19:08 -0400
-From: enselic@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, sfr@canb.auug.org.au,
-        Martin Nordholts <enselic@gmail.com>
-Subject: [PATCH] Documentation: development-process: Update -mm and -next URLs
-Date: Wed, 17 Jul 2013 21:19:06 +0200
-Message-Id: <1374088746-6862-1-git-send-email-enselic@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 17 Jul 2013 15:20:30 -0400
+Date: Wed, 17 Jul 2013 20:20:04 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Robin Holt <holt@sgi.com>,
+        Pawel Moll <Pawel.Moll@arm.com>
+Subject: Re: [PATCH] arm64: use common reboot infrastructure
+Message-ID: <20130717192004.GD16496@MacBook-Pro.local>
+References: <1373541180-7452-1-git-send-email-marc.zyngier@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373541180-7452-1-git-send-email-marc.zyngier@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Nordholts <enselic@gmail.com>
+On Thu, Jul 11, 2013 at 12:13:00PM +0100, Marc Zyngier wrote:
+> Commit 7b6d864b48d9 (reboot: arm: change reboot_mode to use enum
+> reboot_mode) changed the way reboot is handled on arm, which has a
+> direct impact on arm64 as we share the reset driver on the VE platform.
+> 
+> The obvious fix is to move arm64 to use the same infrastructure.
+> 
+> Cc: Robin Holt <holt@sgi.com>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 
-Both old URLs are broken, so update them.
+I just did the same before I saw your patch. Anyway, I'll take yours as
+you did it first ;)
 
-Signed-off-by: Martin Nordholts <enselic@gmail.com>
----
- Documentation/development-process/2.Process |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> --- a/kernel/reboot.c
+> +++ b/kernel/reboot.c
+> @@ -25,7 +25,7 @@ int C_A_D = 1;
+>  struct pid *cad_pid;
+>  EXPORT_SYMBOL(cad_pid);
+>  
+> -#if defined(CONFIG_ARM) || defined(CONFIG_UNICORE32)
+> +#if defined(CONFIG_ARM) || defined(CONFIG_ARM64) || defined(CONFIG_UNICORE32)
+>  #define DEFAULT_REBOOT_MODE		= REBOOT_HARD
+>  #else
+>  #define DEFAULT_REBOOT_MODE
 
-diff --git a/Documentation/development-process/2.Process b/Documentation/development-process/2.Process
-index 4823577..2e06179 100644
---- a/Documentation/development-process/2.Process
-+++ b/Documentation/development-process/2.Process
-@@ -276,7 +276,7 @@ mainline get there via -mm.
- The current -mm patch is available in the "mmotm" (-mm of the moment)
- directory at:
- 
--	http://userweb.kernel.org/~akpm/mmotm/
-+	http://www.ozlabs.org/~akpm/mmotm/
- 
- Use of the MMOTM tree is likely to be a frustrating experience, though;
- there is a definite chance that it will not even compile.
-@@ -287,7 +287,7 @@ the mainline is expected to look like after the next merge window closes.
- Linux-next trees are announced on the linux-kernel and linux-next mailing
- lists when they are assembled; they can be downloaded from:
- 
--	http://www.kernel.org/pub/linux/kernel/people/sfr/linux-next/
-+	http://www.kernel.org/pub/linux/kernel/next/
- 
- Some information about linux-next has been gathered at:
- 
+Do we need this or we could use the default (I think REBOOT_COLD is 0)?
+
 -- 
-1.7.10.4
-
+Catalin
