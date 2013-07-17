@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab3GQFXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 01:23:42 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36671
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab3GQFXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 01:23:41 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net] hyperv: Fix the NETIF_F_SG flag setting in netvsc
-Date: Tue, 16 Jul 2013 23:01:20 -0700
-Message-Id: <1374040880-20468-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751920Ab3GQFY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 01:24:58 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:57794 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab3GQFY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 01:24:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130716135022.64a102f8@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+	<1372927830-2949-7-git-send-email-l.majewski@samsung.com>
+	<CAKohpokR=jrcLQQ7VAD+vr7GWgSFBfuqbOhWHwA3FCgk__EJ3Q@mail.gmail.com>
+	<20130716135022.64a102f8@amdc308.digital.local>
+Date: Wed, 17 Jul 2013 10:54:55 +0530
+Message-ID: <CAKohpo=XbUtYBVQ_y4_R18wpag_HAVvXrxfSfmaNSqq=wLpciQ@mail.gmail.com>
+Subject: Re: [PATCH v5 6/7] cpufreq:boost:Kconfig: Enable software managed
+ BOOST support at Kconfig
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SG mode is not currently supported by netvsc, so remove this flag for now.
-Otherwise, it will be unconditionally enabled by commit ec5f0615642
-    "Kill link between CSUM and SG features"
-Previously, the SG feature is disabled because CSUM is not set here.
+On 16 July 2013 17:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Tue, 16 Jul 2013 15:28:40 +0530 Viresh Kumar viresh.kumar@linaro.org
+> wrote,
+>> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>> > diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+>>
+>> > +config CPU_FREQ_BOOST_SW
+>> > +       bool "CPU frequency overclocking (BOOST)"
+>>
+>> Name it "CPU Frequency Overclocking - Software"
+>
+> Thanks, I had a puzzle to came up with a good short name :-).
+>
+>>
+>> > +       depends on ARM_EXYNOS_CPUFREQ && EXYNOS_THERMAL
+>                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
+>>
+>> Remote Exynos from here. If you want to enable it for your platform by
+>> default, then select it from EXYNOS.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/netvsc_drv.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I misread it a bit. I wanted to say make it dependent only on THERMAL and
+not on Exynos.
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 4dccead..23a0fff 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -431,8 +431,8 @@ static int netvsc_probe(struct hv_device *dev,
- 	net->netdev_ops = &device_ops;
- 
- 	/* TODO: Add GSO and Checksum offload */
--	net->hw_features = NETIF_F_SG;
--	net->features = NETIF_F_SG | NETIF_F_HW_VLAN_CTAG_TX;
-+	net->hw_features = 0;
-+	net->features = NETIF_F_HW_VLAN_CTAG_TX;
- 
- 	SET_ETHTOOL_OPS(net, &ethtool_ops);
- 	SET_NETDEV_DEV(net, &dev->device);
--- 
-1.7.4.1
+> The purpose of the condition [*] here is to prevent from enabling
+> boost when thermal for Exynos is not supported.
 
+Why? Can't others use it? Its not exynos specific :)
