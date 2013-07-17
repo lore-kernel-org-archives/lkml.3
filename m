@@ -1,33 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab3GQUck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 16:32:40 -0400
-Received: from 17.mo1.mail-out.ovh.net ([87.98.179.142]:41759 "EHLO
+	id S932328Ab3GQUdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 16:33:01 -0400
+Received: from 18.mo1.mail-out.ovh.net ([46.105.35.72]:47538 "EHLO
 	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754086Ab3GQUcj (ORCPT
+	with ESMTP id S1751371Ab3GQUc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 16:32:39 -0400
-X-Greylist: delayed 17214 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 16:32:39 EDT
-Message-ID: <51E6FF63.6050805@overkiz.com>
-Date: Wed, 17 Jul 2013 22:32:35 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+	Wed, 17 Jul 2013 16:32:59 -0400
+X-Greylist: delayed 20571 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 16:32:59 EDT
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Mike Turquette <mturquette@linaro.org>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH v2 24/42] ARM: at91: move at91sam9 boards to new at91
- clk implem
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com> <1374075433-20170-1-git-send-email-b.brezillon@overkiz.com> <20130717171343.GS24642@n2100.arm.linux.org.uk>
-In-Reply-To: <20130717171343.GS24642@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 18394952679247214771
+Subject: [PATCH v2 42/42] ARM: at91/dt: move sama5d3 boards to new at91 clk implem
+Date: Wed, 17 Jul 2013 22:32:51 +0200
+Message-Id: <1374093171-22330-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
+References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 18400863653814761580
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -41,25 +37,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/07/2013 19:13, Russell King - ARM Linux wrote:
-> On Wed, Jul 17, 2013 at 05:37:13PM +0200, Boris BREZILLON wrote:
->> Move at91 clk init from early_init to timer_init for all at91sam9 non dt
->> boards.
-> Using black ball point pen, please complete the following sentence using
-> as many words as you desire.  Additional underscores are available on
-> request.
->
-> The reason for this change is ______________________________________.
->
-> Thanks. :)
-Indeed, this commit message is a bit useless as it only describe what is 
-done not why...
+Define the main clock frequency in every sama5d3 boards.
+Remove the old main clock definition.
+Include the appropriate peripheral options according to peripherals
+availability.
 
-The reason for this is that dynamic allocator is not ready yet when 
-early_init callback is called,
-and new at91 clk implementation calls kzalloc functions.
-It is moved in timer_init (before timer init) because at91sam9 init 
-timer (pit timer) request the
-mck clk which is registered by at91 clk init function.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/boot/dts/sama5d31ek.dts  |    4 ++++
+ arch/arm/boot/dts/sama5d33ek.dts  |    2 ++
+ arch/arm/boot/dts/sama5d34ek.dts  |    4 ++++
+ arch/arm/boot/dts/sama5d35ek.dts  |    6 ++++++
+ arch/arm/boot/dts/sama5d3xcm.dtsi |   17 ++++++-----------
+ 5 files changed, 22 insertions(+), 11 deletions(-)
 
-I'll change this commit message in the next version.
+diff --git a/arch/arm/boot/dts/sama5d31ek.dts b/arch/arm/boot/dts/sama5d31ek.dts
+index 027bac7..4628533 100644
+--- a/arch/arm/boot/dts/sama5d31ek.dts
++++ b/arch/arm/boot/dts/sama5d31ek.dts
+@@ -9,6 +9,10 @@
+ /dts-v1/;
+ #include "sama5d3xmb.dtsi"
+ #include "sama5d3xdm.dtsi"
++#include "sama5d3_lcd.dtsi"
++#include "sama5d3_emac.dtsi"
++#include "sama5d3_mci2.dtsi"
++#include "sama5d3_uart.dtsi"
+ 
+ / {
+ 	model = "Atmel SAMA5D31-EK";
+diff --git a/arch/arm/boot/dts/sama5d33ek.dts b/arch/arm/boot/dts/sama5d33ek.dts
+index 99bd0c8..5aa32f5 100644
+--- a/arch/arm/boot/dts/sama5d33ek.dts
++++ b/arch/arm/boot/dts/sama5d33ek.dts
+@@ -9,6 +9,8 @@
+ /dts-v1/;
+ #include "sama5d3xmb.dtsi"
+ #include "sama5d3xdm.dtsi"
++#include "sama5d3_lcd.dtsi"
++#include "sama5d3_gmac.dtsi"
+ 
+ / {
+ 	model = "Atmel SAMA5D33-EK";
+diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
+index fb8ee11..272a611 100644
+--- a/arch/arm/boot/dts/sama5d34ek.dts
++++ b/arch/arm/boot/dts/sama5d34ek.dts
+@@ -9,6 +9,10 @@
+ /dts-v1/;
+ #include "sama5d3xmb.dtsi"
+ #include "sama5d3xdm.dtsi"
++#include "sama5d3_lcd.dtsi"
++#include "sama5d3_gmac.dtsi"
++#include "sama5d3_can.dtsi"
++#include "sama5d3_mci2.dtsi"
+ 
+ / {
+ 	model = "Atmel SAMA5D34-EK";
+diff --git a/arch/arm/boot/dts/sama5d35ek.dts b/arch/arm/boot/dts/sama5d35ek.dts
+index 509a53d..155bb9d 100644
+--- a/arch/arm/boot/dts/sama5d35ek.dts
++++ b/arch/arm/boot/dts/sama5d35ek.dts
+@@ -8,6 +8,12 @@
+  */
+ /dts-v1/;
+ #include "sama5d3xmb.dtsi"
++#include "sama5d3_gmac.dtsi"
++#include "sama5d3_emac.dtsi"
++#include "sama5d3_can.dtsi"
++#include "sama5d3_mci2.dtsi"
++#include "sama5d3_uart.dtsi"
++#include "sama5d3_tcb1.dtsi"
+ 
+ / {
+ 	model = "Atmel SAMA5D35-EK";
+diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
+index 1f80508..f58aa43 100644
+--- a/arch/arm/boot/dts/sama5d3xcm.dtsi
++++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+@@ -19,17 +19,6 @@
+ 		reg = <0x20000000 0x20000000>;
+ 	};
+ 
+-	clocks {
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-		ranges;
+-
+-		main_clock: clock@0 {
+-			compatible = "atmel,osc", "fixed-clock";
+-			clock-frequency = <12000000>;
+-		};
+-	};
+-
+ 	ahb {
+ 		apb {
+ 			spi0: spi@f0004000 {
+@@ -39,6 +28,12 @@
+ 			macb0: ethernet@f0028000 {
+ 				phy-mode = "rgmii";
+ 			};
++
++			pmc: pmc@fffffc00 {
++				main: mainck {
++					clock-frequency = <12000000>;
++				};
++			};
+ 		};
+ 
+ 		nand0: nand@60000000 {
+-- 
+1.7.9.5
+
