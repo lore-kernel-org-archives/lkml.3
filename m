@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab3GQWWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:22:50 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:41383 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703Ab3GQWWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:22:49 -0400
-Date: Wed, 17 Jul 2013 18:22:46 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Jon Medhurst <tixy@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Achin Gupta <Achin.Gupta@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v5 0/1] drivers: mfd: Versatile Express SPC support
-In-Reply-To: <20130717212343.GC19864@zurbaran>
-Message-ID: <alpine.LFD.2.03.1307171758591.14924@syhkavp.arg>
-References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com> <1374052705.3146.86.camel@hornet> <alpine.LFD.2.03.1307170825240.14924@syhkavp.arg> <1374067786.3146.123.camel@hornet> <alpine.LFD.2.03.1307171014510.14924@syhkavp.arg>
- <1374070811.3146.124.camel@hornet> <alpine.LFD.2.03.1307171148160.14924@syhkavp.arg> <20130717170038.GP24642@n2100.arm.linux.org.uk> <alpine.LFD.2.03.1307171416490.14924@syhkavp.arg> <20130717212343.GC19864@zurbaran>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S1756777Ab3GQWYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:24:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10478 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755796Ab3GQWYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 18:24:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,687,1367996400"; 
+   d="scan'208";a="372095722"
+Date: Wed, 17 Jul 2013 15:24:18 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, CAI Qian <caiqian@redhat.com>,
+        David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Message-ID: <20130717222418.GG17906@xanatos>
+References: <20130716231217.GL4994@xanatos>
+ <51E5D7C8.5000306@gmail.com>
+ <1374018809.2249.29.camel@leira.trondhjem.org>
+ <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>
+ <20130717144849.GB16513@xanatos>
+ <1374073771.6458.143.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1307171759100.8258@kaball.uk.xensource.com>
+ <CAMP44s1zvPPDwu=HdhxBm5PqrtyCfvE05=XdwrfPJ-yK2ZsVKA@mail.gmail.com>
+ <alpine.DEB.2.02.1307171824020.8258@kaball.uk.xensource.com>
+ <20130717184244.GU4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717184244.GU4165@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013, Samuel Ortiz wrote:
+On Wed, Jul 17, 2013 at 07:42:44PM +0100, Al Viro wrote:
+> On Wed, Jul 17, 2013 at 06:56:16PM +0100, Stefano Stabellini wrote:
+> 
+> > Abuse is never justified, I hope that's clear for everybody.
+> 
+> Depends on details of your definition of abuse.
+> 
+> > So we are down to the definition of verbal abuse.
+> > The Oxford dictionary gives me:
+> > 
+> > "speak to (someone) in an insulting and offensive way"
+> 
+> Insufficient details to tell if the statement above is correct.
+> Insulting and offensive to *whom*?
 
-> On Wed, Jul 17, 2013 at 02:29:02PM -0400, Nicolas Pitre wrote:
-> > At this point I don't really care about the name.  I just want the damn 
-> > thing merged upstream.  But after several iterations to either fit one 
-> > or another maintainers taste, each rework ends up in that maintainer 
-> > saying: "Now that you've reworked the code, I still don't like it since 
-> > this no longer fits in my subsystem tree."
-> FWIW, we asked Pawel to rework the sysreg and config parts of the
-> vexpress driver, make it an actual MFD driver, and spread the remaining
-> bits of the code into their respective subsystems. I don't think
-> this is an eccentric requirement.
+It's not helpful to look at a dictionary definition of verbal abuse,
+because it's much too short.
 
-I agree.  However the code that Lorenzo just posted can't be deprived 
-of any more sysreg/config parts.  They are simply nonexistent.
+Here's a much longer description of verbally abusive behaviors:
 
-Even the larger code you reviewed before is completely useless without 
-_additional_ drivers to go on top which are indeed waiting after this 
-code to be merged before they are submitted to their respective 
-subsystems.
+http://outofthefog.net/CommonBehaviors/VerbalAbuse.html
 
-And those additional drivers are way more interesting than this dumb 
-register access arbitrator.  Because this is fundamentally the only 
-thing it does.
+Key ones that apply to LKML communications:  belittlement, demeaning
+statements, hysteria, name-calling, raging and violent statements, and
+mocking sarcasm.
 
-> > In fact what we'd need at this point is 
-> > drivers/code_that_no_subsystem_maintainers_wants/.  
-> Which is what some people think drivers/mfd/ is...
-
-Does mfd still stand for "Multi Function Device"?
-
-> I don't mind merging Lorenzo's SPC driver as it is if he can explain to
-> me how it will eventually evolve into an actual MFD driver. If that's
-> not the case, I don't see how I could justify merging it through the
-> MFD tree.
-
-Maybe the misunderstanding is about what actually is a MFD driver.
-Given your persisting reluctance, I may only conclude that this is 
-indeed not a MFD driver after all.
-
-So I'll follow existing precedents in the kernel and move Lorenzo's code 
-to drivers/platform/vexpress/.
-
-
-Nicolas
+Sarah Sharp
