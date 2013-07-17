@@ -1,44 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3GQNEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:04:51 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:50359 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab3GQNEu (ORCPT
+	id S1755348Ab3GQNE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:04:59 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:36049 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951Ab3GQNEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:04:50 -0400
+	Wed, 17 Jul 2013 09:04:55 -0400
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20130717112009.GU18803@ndevos-laptop.usersys.redhat.com>
-References: <1373893160-30601-1-git-send-email-ndevos@redhat.com>
-	<51E456B6.8050601@redhat.com>
-	<20130716103939.GL18803@ndevos-laptop.usersys.redhat.com>
-	<51E54764.4070106@redhat.com>
-	<20130716161458.GA19664@tucsk.piliscsaba.szeredi.hu>
-	<20130717112009.GU18803@ndevos-laptop.usersys.redhat.com>
-Date: Wed, 17 Jul 2013 15:04:49 +0200
-Message-ID: <CAJfpegue8zVwLM3TO3fU6h2kHZRJRLpGXft10n5Dv+7UZWZ2oA@mail.gmail.com>
-Subject: Re: [fuse-devel] [PATCH] fuse: fix occasional dentry leak when
- readdirplus is used
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Niels de Vos <ndevos@redhat.com>
-Cc: Brian Foster <bfoster@redhat.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130717075706.GC5291@arwen.pp.htv.fi>
+References: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
+	<20130715165209.GA6000@kroah.com>
+	<CA+k=oDzZ5sf_wFMUvE_vkkqRQaOV0P3vWP99tDpoZkrwMN7Q+A@mail.gmail.com>
+	<20130716063117.GA30320@kroah.com>
+	<20130717075706.GC5291@arwen.pp.htv.fi>
+Date: Wed, 17 Jul 2013 21:04:54 +0800
+Message-ID: <CA+k=oDza-oN++KCYtVMD0V62xgkJ3ctUOmzNkaYYYhXuKtaWKQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
+From: Rong Wang <wr011235813@gmail.com>
+To: balbi@ti.com
+Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rong.Wang@csr.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 1:20 PM, Niels de Vos <ndevos@redhat.com> wrote:
-> I can confirm that your patch fixes the original panic/BUG() with both
-> Brian's test-case and the GlusterFS regression tests.
+Hi Felipe,
+
+On Wed, Jul 17, 2013 at 3:57 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
-> Feel free to add my Tested-by/Reviewed-by signoff for this patch.
+> On Mon, Jul 15, 2013 at 11:31:17PM -0700, Greg KH wrote:
+>> > The question is since we default GADGET, so the g_mass_storage.ko is
+>> > installed early but connecting to a host PC
+>> > is randomly, But the udev has no idea when a host PC connects our device.
+>> >
+>> > So we consider it's reasonable to let the udev know the GADGET device state.
+>> > Is there any alternative to our question?
+>>
+>> I thought we already export events for gadget device states, have you
+>> looked for them?  I can't dig through the code at the moment, but this
+>> seems like a pretty common issue...
+>>
+>> Felipe, any ideas?
+>
+> we already expose that in sysfs. IIRC udev can act on sysfs changes,
+> no ?
 
-Thanks for the review and testing, patches pushed to
+I do not know if udev can polling sysfs file content change. I'll study this.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-next
+But the change is triggered by calling usb_gadget_set_state, and I find
+composite framework do not call this. Then we should do this common work
+in every udc driver?
 
-Thanks,
-Miklos
+>
+> --
+> balbi
+
+
+===============================================
+
+Hi Greg,
+
+On Tue, Jul 16, 2013 at 2:31 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Jul 16, 2013 at 11:49:07AM +0800, Rong Wang wrote:
+>> Hi Greg,
+>>
+>> The USB on our platform can change roles between HOST and GADGET, but
+>> it is not capable of OTG.
+>
+> That kind of sounds like the definition of OTG :)
+
+Yes. But it just initiates its role according to the ID pin status.
+
+>
+>> When the USB changes between roles the udev will run some scripts
+>> automatically according to the udev rules.
+>
+> What exactly does udev/userspace see when the roles change?
+>
+
+Take HOST -> GADGET for example, the driver removes the USB hcd first,
+
+ACTION=remove
+DEVPATH=/devices/axi.0/uus-
+iobg.13/b8010000.usbcontroller/ci_hdrc.0/usb1/1-0:1.0
+SUBSYSTEM=usb
+DEVTYPE=usb_interface
+PRODUCT=1d6b/2/310
+TYPE=9/0/1
+INTERFACE=9/0/0
+MODALIAS=usb:v1D6Bp0002d0310dc09dsc00dp01ic09isc00ip00in00
+SEQNUM=1843
+
+Then it initiates the GADGET role which will call usb_add_gadget_udc
+
+ACTION=add
+DEVPATH=/devices/axi.0/uus-iobg.13/b8010000.usbcontroller/ci_hdrc.0/udc/ci_hdrc.0
+SUBSYSTEM=udc
+USB_UDC_NAME=ci13xxx_sirf
+SEQNUM=1845
+
+At this time, the udev finds this matches the rule and it will install
+g_mass_storage.ko. But we are actually not connecting to a PC now, so
+we do not umount the back-end file storage on our device.
+
+Currently the udc framework introduces an API usb_gadget_set_state
+to report to user-space the USB device state. But it's not compatible with
+udev. It needs user-space utility polling the "status" file under /sys.
+And it cannot be called in interrupt context but drivers do the state change
+in interrupt service routine.
+
+What's more, I grep the USB driver and find few driver apply this API except
+the udc core. But it just initiated its state as "NOT ATTACHED" when registering
+a new udc.
+
+In my opinion, the USB device state change is a common operation and it
+should be implemented by driver framework. The best place to do this is
+when composite framework handling standard USB requests. But it's not
+implemented yet.
+
+So we are not informed the USB state until the role changes again.
+We do not know when to secure the back-end file between our device and the
+host PC.
+
+> And what can trigger the change in roles?
+
+The role changes according to the ID pin status.
+When we plug in a mini-A (ID pin connects to ground) it will cause a
+ID pin interrupt
+and we will change to HOST role.
+If the ID pin connects to nothing we will act as GADGET.
+
+In a sum, role change takes place when we plug in different USB connectors.
+
+>
+>> The default role is GADGET, and we bind the g_mass_storage to the USB
+>> GADGET role.
+>>
+>> We should secure the back end file storage between the device and the
+>> host PC connecting to our device.
+>> We need to know when the GADGET is really connect to a host PC, then
+>> we can umount the file on the device
+>> and export it to the g_mass_storage.
+>
+> I thought you already get an event for this, otherwise no one would be
+> able to properly deal with this.
+
+Yes. We install file storage module on this event but we do not get
+further notice
+as mentioned above.
+
+>
+>> The question is since we default GADGET, so the g_mass_storage.ko is
+>> installed early but connecting to a host PC
+>> is randomly, But the udev has no idea when a host PC connects our device.
+>>
+>> So we consider it's reasonable to let the udev know the GADGET device state.
+>> Is there any alternative to our question?
+>
+> I thought we already export events for gadget device states, have you
+> looked for them?  I can't dig through the code at the moment, but this
+> seems like a pretty common issue...
+>
+> Felipe, any ideas?
+>
+> greg k-h
