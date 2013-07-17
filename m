@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934161Ab3GQWwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:52:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56314 "EHLO
+	id S1757822Ab3GQWww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:52:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56359 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757813Ab3GQWu5 (ORCPT
+	with ESMTP id S1757644Ab3GQWwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:50:57 -0400
+	Wed, 17 Jul 2013 18:52:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Slaby <jslaby@suse.cz>, Samuel Ortiz <sameo@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 136/145] MFD: rtsx_pcr: Fix probe fail path
-Date: Wed, 17 Jul 2013 15:47:48 -0700
-Message-Id: <1374101277-7915-137-git-send-email-kamal@canonical.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 143/145] ext4: don't show usrquota/grpquota twice in /proc/mounts
+Date: Wed, 17 Jul 2013 15:47:55 -0700
+Message-Id: <1374101277-7915-144-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,57 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 9d66b568a215fe2da2a9db736ebf9b8d66082d88 upstream.
+commit ad065dd01662ae22138899e6b1c8eeb3a529964f upstream.
 
-When rtsx_pci_acquire_irq fails in rtsx_pci_probe, we forget to
-disable an MSI (if we enabled it). This results in this warning on the
-next attempt to load the module:
-WARNING: at drivers/pci/msi.c:834 pci_enable_msi_block+0x2a4/0x2b0()
-Hardware name: HP EliteBook 840 G1
-Modules linked in: rtsx_pci(+) ...
-Pid: 4056, comm: modprobe Tainted: G          I  3.8.0-9405-gd895cb1-1-vanilla #1
-Call Trace:
- [<ffffffff81045c6a>] warn_slowpath_common+0x7a/0xc0
- [<ffffffff81045cc5>] warn_slowpath_null+0x15/0x20
- [<ffffffff81302544>] pci_enable_msi_block+0x2a4/0x2b0
- [<ffffffffa05e335a>] rtsx_pci_probe+0x55a/0x720 [rtsx_pci]
-...
+We now print mount options in a generic fashion in
+ext4_show_options(), so we shouldn't be explicitly printing the
+{usr,grp}quota options in ext4_show_quota_options().
 
-So properly disable MSI in that case.
+Without this patch, /proc/mounts can look like this:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+ /dev/vdb /vdb ext4 rw,relatime,quota,usrquota,data=ordered,usrquota 0 0
+                                      ^^^^^^^^              ^^^^^^^^
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/rtsx_pcr.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/ext4/super.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 1e2d120..148aa18 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1136,7 +1136,7 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 5575a45..f036930 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1738,12 +1738,6 @@ static inline void ext4_show_quota_options(struct seq_file *seq,
  
- 	ret = rtsx_pci_acquire_irq(pcr);
- 	if (ret < 0)
--		goto free_dma;
-+		goto disable_msi;
+ 	if (sbi->s_qf_names[GRPQUOTA])
+ 		seq_printf(seq, ",grpjquota=%s", sbi->s_qf_names[GRPQUOTA]);
+-
+-	if (test_opt(sb, USRQUOTA))
+-		seq_puts(seq, ",usrquota");
+-
+-	if (test_opt(sb, GRPQUOTA))
+-		seq_puts(seq, ",grpquota");
+ #endif
+ }
  
- 	pci_set_master(pcidev);
- 	synchronize_irq(pcr->irq);
-@@ -1160,7 +1160,9 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
- 
- disable_irq:
- 	free_irq(pcr->irq, (void *)pcr);
--free_dma:
-+disable_msi:
-+	if (pcr->msi_en)
-+		pci_disable_msi(pcr->pci);
- 	dma_free_coherent(&(pcr->pci->dev), RTSX_RESV_BUF_LEN,
- 			pcr->rtsx_resv_buf, pcr->rtsx_resv_buf_addr);
- unmap:
 -- 
 1.8.1.2
 
