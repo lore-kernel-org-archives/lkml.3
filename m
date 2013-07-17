@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab3GQQTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:19:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab3GQQTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:19:51 -0400
-Date: Wed, 17 Jul 2013 12:19:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-ext4@vger.kernel.org
-Subject: kernel BUG at fs/ext4/namei.c:2572!
-Message-ID: <20130717161944.GA19405@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756498Ab3GQQUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:20:43 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:50172 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab3GQQUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 12:20:41 -0400
+X-AuditID: cbfec7f4-b7fd76d0000035e1-52-51e6c457df6c
+Message-id: <51E6C455.5080907@samsung.com>
+Date: Wed, 17 Jul 2013 18:20:37 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH RFC FINAL v5] media: OF: add "sync-on-green-active" property
+References: <1374076022-10960-1-git-send-email-prabhakar.csengg@gmail.com>
+In-reply-to: <1374076022-10960-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xy7rhR54FGrybxWJx7lYDq8WB2Q9Z
+	LRa2LWGxuLxrDptFz4atrBYv769gdmDz2DnrLrvHnGlNLB7nZyxk9Pi8SS6AJYrLJiU1J7Ms
+	tUjfLoEr48nP24wFnVIV+/ofMzUwzhHtYuTkkBAwkZi+cgcLhC0mceHeerYuRi4OIYGljBKH
+	W66wgSSEBD4xSuz8ogNi8wpoSdx5sp8VxGYRUJVYuq+XGcRmEzCU6D3axwhiiwoESCxeco4d
+	ol5Q4sfke2ALRAT0JJYsOAZWzyxwDGjmtigQWxiovnPhSUaIXV4S2y79A6vhFPCW+P+0hx2i
+	Xkdif+s0NghbXmLzmrfMExgFZiFZMQtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn
+	525ihAT0lx2Mi49ZHWIU4GBU4uGdGPY0UIg1say4MvcQowQHs5II78ElzwKFeFMSK6tSi/Lj
+	i0pzUosPMTJxcEo1MHJ7KXKsiHtjOI9/2USjhNrLp6xizq3cJWBl/WeznmKPRs2Ea75X7Zbv
+	FljA+sMj48+BaUWcmf1ss1Y0e3grbW7+ekN7gWTrwp0/70YmLgGGiFSnQOiLr7/a5kQtC3Wd
+	J/z7EwPHKr69uzSbZpTn3PRSbd3302luV64Q+/EzHhvXin8uuOO3U4mlOCPRUIu5qDgRAHsm
+	R2JGAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seen while fuzzing..
+On 07/17/2013 05:47 PM, Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+> This patch adds 'sync-on-green-active' property as part
+> of endpoint property.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-kernel BUG at fs/ext4/namei.c:2572!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: dlci bridge stp hidp cmtp kernelcapi l2tp_ppp l2tp_netlink l2tp_core sctp libcrc32c rfcomm tun fuse nfnetli
-nk can_raw ipt_ULOG can_bcm x25 scsi_transport_iscsi ipx p8023 p8022 appletalk phonet psnap vmw_vsock_vmci_transport af_key vmw_vmci rose vsock atm can netrom ax25 af_rxrpc ir
-da pppoe pppox ppp_generic slhc bluetooth nfc rfkill rds caif_socket caif crc_ccitt af_802154 llc2 llc snd_hda_codec_realtek snd_hda_intel snd_hda_codec serio_raw snd_pcm pcsp
-kr edac_core snd_page_alloc snd_timer snd soundcore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
-CPU: 1 PID: 1812571 Comm: trinity-child2 Not tainted 3.11.0-rc1+ #12
-Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
-task: ffff88007dfe69a0 ti: ffff88010f7b6000 task.ti: ffff88010f7b6000
-RIP: 0010:[<ffffffff8125ce69>]  [<ffffffff8125ce69>] ext4_orphan_add+0x299/0x2b0
-RSP: 0018:ffff88010f7b7cf8  EFLAGS: 00010202
-RAX: 0000000000000000 RBX: ffff8800966d3020 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88007dfe70b8 RDI: 0000000000000001
-RBP: ffff88010f7b7d40 R08: ffff880126a3c4e0 R09: ffff88010f7b7ca0
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801271fd668
-R13: ffff8800966d2f78 R14: ffff88011d7089f0 R15: ffff88007dfe69a0
-FS:  00007f70441a3740(0000) GS:ffff88012a800000(0000) knlGS:00000000f77c96c0
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000002834000 CR3: 0000000107964000 CR4: 00000000000007e0
-DR0: 0000000000780000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-Stack:
- 0000000000002000 00000020810b6dde 0000000000000000 ffff88011d46db00
- ffff8800966d3020 ffff88011d7089f0 ffff88009c7f4c10 ffff88010f7b7f2c
- ffff88007dfe69a0 ffff88010f7b7da8 ffffffff8125cfac ffff880100000004
-Call Trace:
- [<ffffffff8125cfac>] ext4_tmpfile+0x12c/0x180
- [<ffffffff811cba78>] path_openat+0x238/0x700
- [<ffffffff8100afc4>] ? native_sched_clock+0x24/0x80
- [<ffffffff811cc647>] do_filp_open+0x47/0xa0
- [<ffffffff811db73f>] ? __alloc_fd+0xaf/0x200
- [<ffffffff811ba2e4>] do_sys_open+0x124/0x210
- [<ffffffff81010725>] ? syscall_trace_enter+0x25/0x290
- [<ffffffff811ba3ee>] SyS_open+0x1e/0x20
- [<ffffffff816ca8d4>] tracesys+0xdd/0xe2
- [<ffffffff81001001>] ? start_thread_common.constprop.6+0x1/0xa0
-Code: 04 00 00 00 89 04 24 31 c0 e8 c4 77 04 00 e9 43 fe ff ff 66 25 00 d0 66 3d 00 80 0f 84 0e fe ff ff 83 7b 48 00 0f 84 04 fe ff ff <0f> 0b 49 8b 8c 24 50 07 00 00 e9 88 fe ff ff 0f 1f 84 00 00 00 
+Thanks Prabhakar, it looks good to me.
+Just a side note, the 'From' tag above isn't needed. It wasn't
+added automatically, was it ?
+Unless there are comments from others I think this patch should
+be merged together with the users of this new property.
 
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-2571         J_ASSERT((S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-2572                   S_ISLNK(inode->i_mode)) || inode->i_nlink == 0);
+Regards,
+Sylwester
+> ---
+>   Changes for v5:
+>   1: Changed description for sync-on-green-active property in
+>      documentation file as suggested by Sylwester.
+>   
+>   Changes for v4:
+>   1: Fixed review comments pointed by Sylwester.
+> 
+>   Changes for v3:
+>   1: Fixed review comments pointed by Laurent and Sylwester.
+> 
+>   RFC v2 https://patchwork.kernel.org/patch/2578091/
+> 
+>   RFC V1 https://patchwork.kernel.org/patch/2572341/
+> 
+>  .../devicetree/bindings/media/video-interfaces.txt |    2 ++
+>  drivers/media/v4l2-core/v4l2-of.c                  |    4 ++++
+>  include/media/v4l2-mediabus.h                      |    2 ++
+>  3 files changed, 8 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
+> index e022d2d..ce719f8 100644
+> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
+> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
+> @@ -88,6 +88,8 @@ Optional endpoint properties
+>  - field-even-active: field signal level during the even field data transmission.
+>  - pclk-sample: sample data on rising (1) or falling (0) edge of the pixel clock
+>    signal.
+> +- sync-on-green-active: active state of Sync-on-green (SoG) signal, 0/1 for
+> +  LOW/HIGH respectively.
+>  - data-lanes: an array of physical data lane indexes. Position of an entry
+>    determines the logical lane number, while the value of an entry indicates
+>    physical lane, e.g. for 2-lane MIPI CSI-2 bus we could have
+> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+> index aa59639..5c4c9f0 100644
+> --- a/drivers/media/v4l2-core/v4l2-of.c
+> +++ b/drivers/media/v4l2-core/v4l2-of.c
+> @@ -100,6 +100,10 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
+>  	if (!of_property_read_u32(node, "data-shift", &v))
+>  		bus->data_shift = v;
+>  
+> +	if (!of_property_read_u32(node, "sync-on-green-active", &v))
+> +		flags |= v ? V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH :
+> +			V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW;
+> +
+>  	bus->flags = flags;
+>  
+>  }
+> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
+> index 83ae07e..d47eb81 100644
+> --- a/include/media/v4l2-mediabus.h
+> +++ b/include/media/v4l2-mediabus.h
+> @@ -40,6 +40,8 @@
+>  #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
+>  /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
+>  #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
+> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH	(1 << 12)
+> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW		(1 << 13)
+>  
+>  /* Serial flags */
+>  /* How many lanes the client can use */
+> 
 
-
+-- 
+Sylwester Nawrocki
+Samsung R&D Institute Poland
