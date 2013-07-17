@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934187Ab3GQWx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:53:56 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:51720 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934166Ab3GQWxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934174Ab3GQWxy (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Jul 2013 18:53:54 -0400
-Date: Wed, 17 Jul 2013 18:53:51 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Javi Merino <javi.merino@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if UP
- system
-In-Reply-To: <51E71C78.6080604@codeaurora.org>
-Message-ID: <alpine.LFD.2.03.1307171849180.14924@syhkavp.arg>
-References: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org> <20130712111322.GC3213@e102654-lin.cambridge.arm.com> <20130712121023.GB27430@codeaurora.org> <51E71249.4050200@codeaurora.org> <alpine.LFD.2.03.1307171830170.14924@syhkavp.arg>
- <51E71C78.6080604@codeaurora.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+Received: from youngberry.canonical.com ([91.189.89.112]:56397 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933538Ab3GQWxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 18:53:51 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 105/145] rtlwifi: rtl8723ae: Fix typo in firmware names
+Date: Wed, 17 Jul 2013 15:47:17 -0700
+Message-Id: <1374101277-7915-106-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013, Stephen Boyd wrote:
+3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
 
-> On 07/17/13 15:34, Nicolas Pitre wrote:
-> > On Wed, 17 Jul 2013, Stephen Boyd wrote:
-> >
-> >> On 07/12/13 05:10, Stephen Boyd wrote:
-> >>> On 07/12, Javi Merino wrote:
-> >>>> I agree, we should drop the check.  It's annoying in uniprocessors and
-> >>>> unlikely to be found in the real world unless your gic entry in the dt
-> >>>> is wrong.
-> > And that's a likely outcome in the real world.
-> >
-> >>> Ok. How about this?
-> >> Any comments?
-> > What about this instead:
-> 
-> Unfortunately arm64 doesn't have SMP_ON_UP. 
+------------------
 
-And why does that matter?
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-> It sounds like you preferred the first patch using num_possible_cpus()
+commit 73e088ed17c2880a963cc760a78af8a06d4a4d9d upstream.
 
-Probably, yes.  I didn't follow the early conversation though.
+The driver loads its firmware from files rtlwifi/rtl8723fw*.bin, but the
+MODULE_FIRMWARE macros refer to rtlwifi/RTL8723aefw*.bin.
 
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Axel Köllhofer <AxelKoellhofer@web.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/wireless/rtlwifi/rtl8723ae/sw.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Nicolas
+diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
+index bb7cc90..2b2a522 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
+@@ -251,7 +251,7 @@ static struct rtl_hal_cfg rtl8723ae_hal_cfg = {
+ 	.bar_id = 2,
+ 	.write_readback = true,
+ 	.name = "rtl8723ae_pci",
+-	.fw_name = "rtlwifi/rtl8723aefw.bin",
++	.fw_name = "rtlwifi/rtl8723fw.bin",
+ 	.ops = &rtl8723ae_hal_ops,
+ 	.mod_params = &rtl8723ae_mod_params,
+ 	.maps[SYS_ISO_CTRL] = REG_SYS_ISO_CTRL,
+@@ -353,8 +353,8 @@ MODULE_AUTHOR("Realtek WlanFAE	<wlanfae@realtek.com>");
+ MODULE_AUTHOR("Larry Finger	<Larry.Finger@lwfinger.net>");
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Realtek 8723E 802.11n PCI wireless");
+-MODULE_FIRMWARE("rtlwifi/rtl8723aefw.bin");
+-MODULE_FIRMWARE("rtlwifi/rtl8723aefw_B.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8723fw.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8723fw_B.bin");
+ 
+ module_param_named(swenc, rtl8723ae_mod_params.sw_crypto, bool, 0444);
+ module_param_named(debug, rtl8723ae_mod_params.debug, int, 0444);
+-- 
+1.8.1.2
+
