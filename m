@@ -1,90 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab3GQSs6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:48:58 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:37235 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756838Ab3GQSs5 (ORCPT
+	id S1756840Ab3GQSug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:50:36 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:32858 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab3GQSuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:48:57 -0400
-Message-ID: <1374086931.1816.2.camel@j-VirtualBox>
-Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
- frequently
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 17 Jul 2013 11:48:51 -0700
-In-Reply-To: <20130717180156.GS23818@dyad.programming.kicks-ass.net>
-References: <1374002463.3944.11.camel@j-VirtualBox>
-	 <20130716202015.GX17211@twins.programming.kicks-ass.net>
-	 <1374014881.2332.21.camel@j-VirtualBox>
-	 <20130717072504.GY17211@twins.programming.kicks-ass.net>
-	 <1374048701.6000.21.camel@j-VirtualBox>
-	 <20130717093913.GP23818@dyad.programming.kicks-ass.net>
-	 <1374076741.7412.35.camel@j-VirtualBox>
-	 <20130717161815.GR23818@dyad.programming.kicks-ass.net>
-	 <51E6D9B7.1030705@redhat.com>
-	 <20130717180156.GS23818@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 17 Jul 2013 14:50:35 -0400
+Message-ID: <51E6E77A.6030901@candelatech.com>
+Date: Wed, 17 Jul 2013 11:50:34 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 3.11.0-rc1:  Mellanox mlx5 fails to compile on 32-bit kernels
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-17 at 20:01 +0200, Peter Zijlstra wrote:
-> On Wed, Jul 17, 2013 at 01:51:51PM -0400, Rik van Riel wrote:
-> > On 07/17/2013 12:18 PM, Peter Zijlstra wrote:
-> 
-> > >So the way I see things is that the only way newidle balance can slow down
-> > >things is if it runs when we could have ran something useful.
-> > 
-> > Due to contention on the runqueue locks of other CPUs,
-> > newidle also has the potential to keep _others_ from
-> > running something useful.
-> 
-> Right, although that should only happen when we do have an imbalance and want
-> to go move something. Which in Jason's case is 'rare'. But yes, I suppose
-> there's other scenarios where this is far more likely.
-> 
-> > Could we prevent that downside by measuring both the
-> > time spent idle, and the time spent in idle balancing,
-> > and making sure the idle balancing time never exceeds
-> > more than N% of the idle time?
-> 
-> Sure:
-> 
-> idle_balance(u64 idle_duration)
-> {
->   u64 cost = 0;
-> 
->   for_each_domain(sd) {
->     if (cost + sd->cost > idle_duration/N)
->       break;
-> 
->     ...
-> 
->     sd->cost = (sd->cost + this_cost) / 2;
->     cost += this_cost;
->   }
-> }
-> 
-> I would've initially suggested using something like N=2 since we're dealing
-> with averages and half should ensure we don't run over except for the worst
-> peaks. But we could easily use a bigger N.
+Seems there is a 64-bit division in there somewhere.
 
-Okay, I'll try this out. Thank you for your suggestions.
+Thanks,
+Ben
 
-Jason.
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
