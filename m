@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab3GQSmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:42:31 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:59951 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096Ab3GQSm3 (ORCPT
+	id S1756834Ab3GQSnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:43:00 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50529 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab3GQSm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:42:29 -0400
-Date: Wed, 17 Jul 2013 20:42:26 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: commit f8f559422b (KVM: MMU: fast invalidate all mmio sptes)
- causes hang
-Message-ID: <20130717184226.GA358@x4>
-References: <20130717163215.GA359@x4>
- <20130717164232.GI13732@redhat.com>
- <20130717165743.GA357@x4>
- <A242AFC1-86E6-4716-8DF7-6FD169DB6EC8@gmail.com>
+	Wed, 17 Jul 2013 14:42:58 -0400
+Date: Wed, 17 Jul 2013 19:42:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        CAI Qian <caiqian@redhat.com>, David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Message-ID: <20130717184244.GU4165@ZenIV.linux.org.uk>
+References: <1374015299.6458.76.camel@gandalf.local.home>
+ <20130716231217.GL4994@xanatos>
+ <51E5D7C8.5000306@gmail.com>
+ <1374018809.2249.29.camel@leira.trondhjem.org>
+ <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>
+ <20130717144849.GB16513@xanatos>
+ <1374073771.6458.143.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1307171759100.8258@kaball.uk.xensource.com>
+ <CAMP44s1zvPPDwu=HdhxBm5PqrtyCfvE05=XdwrfPJ-yK2ZsVKA@mail.gmail.com>
+ <alpine.DEB.2.02.1307171824020.8258@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A242AFC1-86E6-4716-8DF7-6FD169DB6EC8@gmail.com>
+In-Reply-To: <alpine.DEB.2.02.1307171824020.8258@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.07.18 at 01:25 +0800, Xiao Guangrong wrote:
-> Hi Markus,
-> 
-> Thanks for your report! I am downloading the ubuntu iso and will try to reproducible it.
-> 
-> Could you please enable these tracepoints:
-> kvmmmu/check_mmio_spte
-> kvmmmu/handle_mmio_page_fault
-> kvmmmu/kvm_mmu_invalidate_zap_all_pages
-> kvmmmu/mark_mmio_spte
-> kvm/kvm_mmio
-> kvm/vcpu_match_mmio
-> 
-> and post the output?
-> 
-First line repeated ad nauseam.
-...
-10346367  qemu-system-x86-1403  [001]  1451.422225: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346368  qemu-system-x86-1403  [001]  1451.422226: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346369  qemu-system-x86-1403  [001]  1451.422227: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346370  qemu-system-x86-1403  [001]  1451.422228: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346371  qemu-system-x86-1403  [001]  1451.422229: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346372  qemu-system-x86-1404  [002]  1451.422229: kvm_mmio:             mmio write len 4 gpa 0xfee000b0 val 0x0
-10346373  qemu-system-x86-1403  [001]  1451.422230: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346374  qemu-system-x86-1403  [001]  1451.422231: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346375  qemu-system-x86-1403  [001]  1451.422232: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346376  qemu-system-x86-1403  [001]  1451.422233: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346377  qemu-system-x86-1403  [001]  1451.422234: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346378  qemu-system-x86-1403  [001]  1451.422235: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346379  qemu-system-x86-1404  [002]  1451.422236: kvm_mmio:             mmio write len 4 gpa 0xfee00380 val 0x3c7b0
-10346380  qemu-system-x86-1403  [001]  1451.422237: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346381  qemu-system-x86-1403  [001]  1451.422238: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346382  qemu-system-x86-1403  [001]  1451.422239: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346383  qemu-system-x86-1403  [001]  1451.422240: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346384  qemu-system-x86-1403  [001]  1451.422241: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346385  qemu-system-x86-1403  [001]  1451.422242: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346386  qemu-system-x86-1403  [001]  1451.422243: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346387  qemu-system-x86-1403  [001]  1451.422244: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0
-10346403  qemu-system-x86-1403  [001]  1451.422260: check_mmio_spte:      spte ffff0000fee00e3f kvm_gen 7ffc8 spte-gen 7ffc7 valid 0  
-...
-Last line repeated ad nauseam.
+On Wed, Jul 17, 2013 at 06:56:16PM +0100, Stefano Stabellini wrote:
 
-Whole output is over 1.3G of size.
+> Abuse is never justified, I hope that's clear for everybody.
 
---
-Markus
+Depends on details of your definition of abuse.
+
+> So we are down to the definition of verbal abuse.
+> The Oxford dictionary gives me:
+> 
+> "speak to (someone) in an insulting and offensive way"
+
+Insufficient details to tell if the statement above is correct.
+Insulting and offensive to *whom*?
+
+I have seen people making completely revolting statements about
+e.g. females in general and get extremely insulted when said
+statements had been described as sexist, no matter how neutral
+had description been.  I have seen people deeply insulted by
+being told (in absolutely neutral expressions) that recipe they
+had offered for some task will not do what they said it would,
+when the simple experiment (reproduced by a lot of people
+present) would have clearly demonstrated just that.  The same
+people tend to get _really_ insulted when somebody reports
+the result of said experiment.  And anybody who'd been on
+the net for a year (hell, a month would suffice) can bring
+a lot more interesting cases...
+
+BTW, is it an abuse to describe somebody as a demagogue?
