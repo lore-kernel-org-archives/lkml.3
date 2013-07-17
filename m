@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab3GQQTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:19:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40407 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755479Ab3GQQTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:19:32 -0400
-Date: Wed, 17 Jul 2013 18:18:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
- frequently
-Message-ID: <20130717161815.GR23818@dyad.programming.kicks-ass.net>
-References: <1374002463.3944.11.camel@j-VirtualBox>
- <20130716202015.GX17211@twins.programming.kicks-ass.net>
- <1374014881.2332.21.camel@j-VirtualBox>
- <20130717072504.GY17211@twins.programming.kicks-ass.net>
- <1374048701.6000.21.camel@j-VirtualBox>
- <20130717093913.GP23818@dyad.programming.kicks-ass.net>
- <1374076741.7412.35.camel@j-VirtualBox>
+	id S932556Ab3GQQTx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:19:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755557Ab3GQQTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 12:19:51 -0400
+Date: Wed, 17 Jul 2013 12:19:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-ext4@vger.kernel.org
+Subject: kernel BUG at fs/ext4/namei.c:2572!
+Message-ID: <20130717161944.GA19405@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374076741.7412.35.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 08:59:01AM -0700, Jason Low wrote:
-> 
-> So if we have the following: 
-> 
-> for_each_domain(sd)
-> 	before = sched_clock_cpu
-> 	load_balance(sd)
-> 	after = sched_clock_cpu
-> 	idle_balance_completion_time = after - before
-> 
-> At this point, the "idle_balance_completion_time" is usually a very
-> small value and is usually a lot smaller than the avg CPU idle time.
-> However, the vast majority of the time, load_balance returns 0.
+Seen while fuzzing..
 
-I think the interesting question here is: is it significantly more when we do
-find a task?
+kernel BUG at fs/ext4/namei.c:2572!
+invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in: dlci bridge stp hidp cmtp kernelcapi l2tp_ppp l2tp_netlink l2tp_core sctp libcrc32c rfcomm tun fuse nfnetli
+nk can_raw ipt_ULOG can_bcm x25 scsi_transport_iscsi ipx p8023 p8022 appletalk phonet psnap vmw_vsock_vmci_transport af_key vmw_vmci rose vsock atm can netrom ax25 af_rxrpc ir
+da pppoe pppox ppp_generic slhc bluetooth nfc rfkill rds caif_socket caif crc_ccitt af_802154 llc2 llc snd_hda_codec_realtek snd_hda_intel snd_hda_codec serio_raw snd_pcm pcsp
+kr edac_core snd_page_alloc snd_timer snd soundcore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
+CPU: 1 PID: 1812571 Comm: trinity-child2 Not tainted 3.11.0-rc1+ #12
+Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+task: ffff88007dfe69a0 ti: ffff88010f7b6000 task.ti: ffff88010f7b6000
+RIP: 0010:[<ffffffff8125ce69>]  [<ffffffff8125ce69>] ext4_orphan_add+0x299/0x2b0
+RSP: 0018:ffff88010f7b7cf8  EFLAGS: 00010202
+RAX: 0000000000000000 RBX: ffff8800966d3020 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff88007dfe70b8 RDI: 0000000000000001
+RBP: ffff88010f7b7d40 R08: ffff880126a3c4e0 R09: ffff88010f7b7ca0
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801271fd668
+R13: ffff8800966d2f78 R14: ffff88011d7089f0 R15: ffff88007dfe69a0
+FS:  00007f70441a3740(0000) GS:ffff88012a800000(0000) knlGS:00000000f77c96c0
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000002834000 CR3: 0000000107964000 CR4: 00000000000007e0
+DR0: 0000000000780000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+Stack:
+ 0000000000002000 00000020810b6dde 0000000000000000 ffff88011d46db00
+ ffff8800966d3020 ffff88011d7089f0 ffff88009c7f4c10 ffff88010f7b7f2c
+ ffff88007dfe69a0 ffff88010f7b7da8 ffffffff8125cfac ffff880100000004
+Call Trace:
+ [<ffffffff8125cfac>] ext4_tmpfile+0x12c/0x180
+ [<ffffffff811cba78>] path_openat+0x238/0x700
+ [<ffffffff8100afc4>] ? native_sched_clock+0x24/0x80
+ [<ffffffff811cc647>] do_filp_open+0x47/0xa0
+ [<ffffffff811db73f>] ? __alloc_fd+0xaf/0x200
+ [<ffffffff811ba2e4>] do_sys_open+0x124/0x210
+ [<ffffffff81010725>] ? syscall_trace_enter+0x25/0x290
+ [<ffffffff811ba3ee>] SyS_open+0x1e/0x20
+ [<ffffffff816ca8d4>] tracesys+0xdd/0xe2
+ [<ffffffff81001001>] ? start_thread_common.constprop.6+0x1/0xa0
+Code: 04 00 00 00 89 04 24 31 c0 e8 c4 77 04 00 e9 43 fe ff ff 66 25 00 d0 66 3d 00 80 0f 84 0e fe ff ff 83 7b 48 00 0f 84 04 fe ff ff <0f> 0b 49 8b 8c 24 50 07 00 00 e9 88 fe ff ff 0f 1f 84 00 00 00 
 
-I would also expect sd->newidle_balance_cost (less typing there) to scale with the
-number of CPUs in the domain - thus larger domains will take longer etc.
 
-And (obviously) the cost of the entire newidle balance is the direct sum of
-individual domain costs.
+2571         J_ASSERT((S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
+2572                   S_ISLNK(inode->i_mode)) || inode->i_nlink == 0);
 
-> Do you think its worth a try to consider each newidle balance attempt as
-> the total load_balance attempts until it is able to move a task, and
-> then skip balancing within the domain if a CPU's avg idle time is less
-> than that avg time doing newidle balance? 
 
-So the way I see things is that the only way newidle balance can slow down
-things is if it runs when we could have ran something useful.
-
-So all we need to ensure is to not run longer than we expect to be idle for and
-things should be 'free', right?
-
-So the problem I have with your proposal is that supposing we're successful
-once every 10 newidle balances. Then the sd->newidle_balance_cost gets inflated
-by a factor 10 -- for we'd count 10 of them before 'success'.
-
-However when we're idle for that amount of time (10 times longer than it takes
-to do a single newidle balance) we'd still only do a single newidle balance,
-not 10.
