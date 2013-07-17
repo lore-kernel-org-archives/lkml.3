@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290Ab3GQPkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:40:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46679 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754263Ab3GQPkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:40:05 -0400
-Date: Wed, 17 Jul 2013 17:40:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Robert Richter <rric@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix 'make tools/perf'
-Message-ID: <20130717154001.GA4454@pd.tnic>
-References: <1370964158-4135-1-git-send-email-rric@kernel.org>
- <tip-107de3724eff5a6fa6474a4d2aa5460b63749ebf@git.kernel.org>
- <20130712093909.GD8731@rric.localhost>
- <20130716145036.GH8731@rric.localhost>
- <20130717153118.GC2071@ghostprotocols.net>
+	id S1756305Ab3GQPkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:40:45 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56523 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756080Ab3GQPkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 11:40:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Vq0QPFaH0FZ36b3LbwQ2k
+Date: Wed, 17 Jul 2013 08:40:39 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/3] pinctrl: rollback check for !dev->pins in
+ pinctrl_pm_select*() APIs
+Message-ID: <20130717154038.GK7656@atomide.com>
+References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com>
+ <1374061312-25469-2-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130717153118.GC2071@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374061312-25469-2-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 12:31:18PM -0300, Arnaldo Carvalho de Melo wrote:
-> Humm, probably it will look at the top level 'install' target? There
-> was some discussion about this, right? Can you refresh my mind?
+* Grygorii Strashko <grygorii.strashko@ti.com> [130717 04:49]:
+> The pinctrl support in Device core assumed to be optional - so, It's
+> valid case, when there are no definition for default device's pinctrl
+> states in DT at all ("default", "active", "idle", "sleep").
+> And in this case dev->pins == NULL and pinctrl_pm_select*() API
+> should return 0 always.
+> 
+> Now the checks for !dev->pins have been removed from
+> pinctrl_pm_select*() API mistakenly by the patch
+> pinctrl: Remove duplicate code in pinctrl_pm_select_state functions
+> http://www.spinics.net/lists/arm-kernel/msg258829.html
+> 
+> Hence, rollback these checks in in pinctrl_pm_select*() APIs.
 
-that's
+Thanks, it's best that I fold this fix into my patch as it has not
+been committed yet.
 
-make tools/perf_install.
+Regards,
 
-which goes to the target in tools/Makefile as the rest of the tools
-there.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Tony
