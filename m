@@ -1,459 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab3GQLUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:20:41 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:65265 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab3GQLUj (ORCPT
+	id S1754183Ab3GQLUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:20:49 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50426 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab3GQLUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:20:39 -0400
-Date: Wed, 17 Jul 2013 12:20:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        broonie@kernel.org
-Subject: Re: [PATCH 1/3] mfd: add LP3943 MFD driver
-Message-ID: <20130717112033.GB3336@laptop>
-References: <A874F61F95741C4A9BA573A70FE3998F82E815C3@DQHE06.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E815C3@DQHE06.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Jul 2013 07:20:47 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>
+Date: Wed, 17 Jul 2013 12:20:37 +0100
+Message-Id: <1374060037-18527-2-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374060037-18527-1-git-send-email-broonie@kernel.org>
+References: <1374060037-18527-1-git-send-email-broonie@kernel.org>
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 2/2] mfd: wm8994: Remove check for active audio in runtime suspend
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is heavily regmap based, so I think it would make sense
-for Mark Brown to glance over it briefly.
+From: Mark Brown <broonie@linaro.org>
 
-> LP3943 has 16 output LED channels which can be used as GPIO expander and
-> PWM generators.
-> This patch supports the MFD structure of those features.
-> 
-> * Regmap I2C interface for R/W LP3943 registers
-> 
-> * Device tree bindings updated
->   PWM generator output ports can be defined in the platform data.
->   Those are configurable with the DT structure as well.
-> 
-> Signed-off-by: Milo Kim <milo.kim@ti.com>
-> ---
->  Documentation/devicetree/bindings/mfd/lp3943.txt |   23 +++
->  drivers/mfd/Kconfig                              |    8 +
->  drivers/mfd/Makefile                             |    1 +
->  drivers/mfd/lp3943.c                             |  206 ++++++++++++++++++++++
->  include/linux/mfd/lp3943.h                       |   98 ++++++++++
->  5 files changed, 336 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/lp3943.txt
->  create mode 100644 drivers/mfd/lp3943.c
->  create mode 100644 include/linux/mfd/lp3943.h
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/lp3943.txt b/Documentation/devicetree/bindings/mfd/lp3943.txt
-> new file mode 100644
-> index 0000000..4eb251d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/lp3943.txt
-> @@ -0,0 +1,23 @@
-> +Bindings for TI/National Semiconductor LP3943 Driver
-> +
-> +Required properties:
-> +  - compatible: "ti,lp3943"
-> +  - reg: 7bit I2C slave address. 0x60 ~ 0x67
-> +
-> +Optional properties:
-> +  - ti,pwm0, ti,pwm1: Output channel definition for PWM port 0 and 1
-> +                      0 = invalid, 1 = LED0, 2 = LED 1, ... 16 = LED15
-                                         No space here ^      ^ comma here
+Since enabling VMID takes a runtime PM reference there is no need to
+suppress suspend when doing a runtime suspend. Similarly the digital
+inputs and outputs are DAPM widgets and therefore the ASoC core will
+be holding a reference for them.
 
-This is actually pretty confusing. 
+This used to be required when integration with system suspend was being
+bodged.
 
-Any way you can put the invalid entry at the end so, 0 == LED0?
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/mfd/wm8994-core.c | 30 +-----------------------------
+ 1 file changed, 1 insertion(+), 29 deletions(-)
 
-> +Datasheet
-> +  http://www.ti.com/lit/ds/snvs256b/snvs256b.pdf
-
-Ah, I see.... So the above are pins, rather than arbitrary channel Nos.
-
-Would it make sense to use pinctrl instead then?
-
-> +Application note: How to use LP3943 as a GPIO expander and PWM generator
-> +  http://www.ti.com/lit/an/snva287a/snva287a.pdf
-> +
-> +Example:
-> +
-> +	lp3943@60 {
-> +		compatible = "ti,lp3943";
-> +		reg = <0x60>;
-> +		pwm1 = /bits/ 8 <2>;	/* use LED1 output as PWM #1 */
-> +	};
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index ff553ba..cf9b943 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -506,6 +506,14 @@ config PMIC_ADP5520
->  	  individual components like LCD backlight, LEDs, GPIOs and Kepad
->  	  under the corresponding menus.
->  
-> +config MFD_LP3943
-> +	tristate "TI/National Semiconductor LP3943 MFD Driver"
-> +	depends on I2C
-> +	select MFD_CORE
-> +	select REGMAP_I2C
-> +	help
-> +	  TI LP3943 supports a GPIO expander and two PWM generators.
-> +
->  config MFD_LP8788
->  	bool "Texas Instruments LP8788 Power Management Unit Driver"
->  	depends on I2C=y
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 8b977f8..8f129a4 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -96,6 +96,7 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
->  obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
->  obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
->  
-> +obj-$(CONFIG_MFD_LP3943)	+= lp3943.o
->  obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
->  
->  da9055-objs			:= da9055-core.o da9055-i2c.o
-> diff --git a/drivers/mfd/lp3943.c b/drivers/mfd/lp3943.c
-> new file mode 100644
-> index 0000000..6d31066
-> --- /dev/null
-> +++ b/drivers/mfd/lp3943.c
-> @@ -0,0 +1,206 @@
-> +/*
-> + * TI/National Semiconductor LP3943 MFD Core Driver
-> + *
-> + * Copyright 2013 Texas Instruments
-> + *
-> + * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/gpio.h>
-> +#include <linux/i2c.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/mfd/lp3943.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/slab.h>
-> +
-> +#define LP3943_MAX_REGISTERS		0x09
-> +
-> +/* Register configuration for pin MUX */
-> +static const struct lp3943_reg_cfg lp3943_mux_cfg[16] = {
-> +	/* address, mask, shift */
-> +	{ LP3943_REG_MUX0, 0x03, 0 },
-> +	{ LP3943_REG_MUX0, 0x0C, 2 },
-> +	{ LP3943_REG_MUX0, 0x30, 4 },
-> +	{ LP3943_REG_MUX0, 0xC0, 6 },
-> +	{ LP3943_REG_MUX1, 0x03, 0 },
-> +	{ LP3943_REG_MUX1, 0x0C, 2 },
-> +	{ LP3943_REG_MUX1, 0x30, 4 },
-> +	{ LP3943_REG_MUX1, 0xC0, 6 },
-> +	{ LP3943_REG_MUX2, 0x03, 0 },
-> +	{ LP3943_REG_MUX2, 0x0C, 2 },
-> +	{ LP3943_REG_MUX2, 0x30, 4 },
-> +	{ LP3943_REG_MUX2, 0xC0, 6 },
-> +	{ LP3943_REG_MUX3, 0x03, 0 },
-> +	{ LP3943_REG_MUX3, 0x0C, 2 },
-> +	{ LP3943_REG_MUX3, 0x30, 4 },
-> +	{ LP3943_REG_MUX3, 0xC0, 6 },
-> +};
-> +
-> +static struct mfd_cell lp3943_devs[] = {
-> +	{
-> +		.name = "lp3943-pwm",
-> +	},
-> +	{
-> +		.name = "lp3943-gpio",
-> +	},
-> +};
-> +
-> +int lp3943_read_byte(struct lp3943 *l, u8 reg, u8 *read)
-
-Not sure I like 'l' as a variable name. The function is small enough
-to get away with it in this context, but it would probably be better
-if it were renamed to something more meaningful. 
-
-> +{
-> +	int ret;
-> +	unsigned int val;
-> +
-> +	ret = regmap_read(l->regmap, reg, &val);
-> +	if (ret < 0) {
-> +		dev_err(l->dev, "failed to read 0x%.2x\n", reg);
-> +		return ret;
-> +	}
-> +
-> +	*read = (u8)val;
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(lp3943_read_byte);
-> +
-> +int lp3943_write_byte(struct lp3943 *l, u8 reg, u8 data)
-> +{
-> +	return regmap_write(l->regmap, reg, data);
-> +}
-> +EXPORT_SYMBOL_GPL(lp3943_write_byte);
-> +
-> +int lp3943_update_bits(struct lp3943 *l, u8 reg, u8 mask, u8 data)
-> +{
-> +	return regmap_update_bits(l->regmap, reg, mask, data);
-> +}
-> +EXPORT_SYMBOL_GPL(lp3943_update_bits);
-> +
-> +#ifdef CONFIG_OF
-> +static int lp3943_parse_dt(struct device *dev, struct device_node *node)
-> +{
-> +	struct lp3943_platform_data *pdata;
-> +	u8 port = 0;
-> +
-> +	if (!node) {
-> +		dev_err(dev, "no platform data\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return -ENOMEM;
-> +
-> +	of_property_read_u8(node, "ti,pwm0", &port);
-> +	pdata->pwm0 = (enum lp3943_pwm_output)port;
-> +	port = 0;
-> +	of_property_read_u8(node, "ti,pwm1", &port);
-> +	pdata->pwm1 = (enum lp3943_pwm_output)port;
-> +
-> +	dev->platform_data = pdata;
-> +	return 0;
-> +}
-> +#else
-> +static int lp3943_parse_dt(struct device *dev, struct device_node *node)
-> +{
-> +	return -EINVAL;
-> +}
-> +#endif
-> +
-> +static const struct regmap_config lp3943_regmap_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +	.max_register = LP3943_MAX_REGISTERS,
-> +};
-> +
-> +static int lp3943_probe(struct i2c_client *cl, const struct i2c_device_id *id)
-> +{
-> +	struct lp3943_platform_data *pdata;
-> +	struct lp3943 *l;
-> +	int err;
-> +
-> +	if (!cl->dev.platform_data) {
-> +		err = lp3943_parse_dt(&cl->dev, cl->dev.of_node);
-> +		if (err)
-> +			return err;
-> +	}
-> +
-> +	pdata = cl->dev.platform_data;
-> +
-> +	l = devm_kzalloc(&cl->dev, sizeof(struct lp3943), GFP_KERNEL);
-> +	if (!l)
-> +		return -ENOMEM;
-> +
-> +	l->regmap = devm_regmap_init_i2c(cl, &lp3943_regmap_config);
-> +	if (IS_ERR(l->regmap)) {
-> +		err = PTR_ERR(l->regmap);
-> +		dev_err(&cl->dev, "regmap init i2c err: %d\n", err);
-> +		return err;
-> +	}
-> +
-> +	l->pdata = pdata;
-> +	l->dev = &cl->dev;
-> +	l->mux_cfg = lp3943_mux_cfg;
-> +	i2c_set_clientdata(cl, l);
-> +
-> +	err = mfd_add_devices(l->dev, -1, lp3943_devs, ARRAY_SIZE(lp3943_devs),
-> +			NULL, 0, NULL);
-> +	if (err) {
-> +		dev_err(l->dev, "add device err: %d\n", err);
-> +		return err;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int lp3943_remove(struct i2c_client *cl)
-> +{
-> +	struct lp3943 *l = i2c_get_clientdata(cl);
-> +
-> +	mfd_remove_devices(l->dev);
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id lp3943_ids[] = {
-> +	{"lp3943", 0},
-
-Lack of consistency ...
-
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, lp3943_ids);
-> +
-> +static const struct of_device_id lp3943_dt_ids[] = {
-> +	{ .compatible = "ti,lp3943", },
-
-... with this one. Personally, I prefer this one.
-
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, lp3943_dt_ids);
-> +
-> +static struct i2c_driver lp3943_driver = {
-> +	.driver = {
-> +		.name = "lp3943",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(lp3943_dt_ids),
-> +	},
-> +	.probe = lp3943_probe,
-> +	.remove = lp3943_remove,
-> +	.id_table = lp3943_ids,
-> +};
-> +
-> +static int __init lp3943_init(void)
-> +{
-> +	return i2c_add_driver(&lp3943_driver);
-> +}
-> +subsys_initcall(lp3943_init);
-> +
-> +static void __exit lp3943_exit(void)
-> +{
-> +	i2c_del_driver(&lp3943_driver);
-> +}
-> +module_exit(lp3943_exit);
-> +
-> +MODULE_DESCRIPTION("TI LP3943 MFD Core Driver");
-> +MODULE_AUTHOR("Milo Kim");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/mfd/lp3943.h b/include/linux/mfd/lp3943.h
-> new file mode 100644
-> index 0000000..208fc73
-> --- /dev/null
-> +++ b/include/linux/mfd/lp3943.h
-> @@ -0,0 +1,98 @@
-> +/*
-> + * TI/National Semiconductor LP3943 Device
-> + *
-> + * Copyright 2013 Texas Instruments
-> + *
-> + * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#ifndef __MFD_LP3943_H__
-> +#define __MFD_LP3943_H__
-> +
-> +#include <linux/gpio.h>
-> +#include <linux/pwm.h>
-> +#include <linux/regmap.h>
-> +
-> +/* Registers */
-> +#define LP3943_REG_GPIO_A		0x00
-> +#define LP3943_REG_GPIO_B		0x01
-> +#define LP3943_REG_PRESCALE0		0x02
-> +#define LP3943_REG_PWM0			0x03
-> +#define LP3943_REG_PRESCALE1		0x04
-> +#define LP3943_REG_PWM1			0x05
-> +#define LP3943_REG_MUX0			0x06
-> +#define LP3943_REG_MUX1			0x07
-> +#define LP3943_REG_MUX2			0x08
-> +#define LP3943_REG_MUX3			0x09
-> +
-> +/* Bit description for LP3943_REG_MUX0 ~ 3 */
-> +#define LP3943_GPIO_IN			0x00
-> +#define LP3943_GPIO_OUT_HIGH		0x00
-> +#define LP3943_GPIO_OUT_LOW		0x01
-> +#define LP3943_DIM_PWM0			0x02
-> +#define LP3943_DIM_PWM1			0x03
-> +
-> +enum lp3943_pwm_output {
-> +	LP3943_PWM_INVALID,
-> +	LP3943_PWM_LED0,
-> +	LP3943_PWM_LED1,
-> +	LP3943_PWM_LED2,
-> +	LP3943_PWM_LED3,
-> +	LP3943_PWM_LED4,
-> +	LP3943_PWM_LED5,
-> +	LP3943_PWM_LED6,
-> +	LP3943_PWM_LED7,
-> +	LP3943_PWM_LED8,
-> +	LP3943_PWM_LED9,
-> +	LP3943_PWM_LED10,
-> +	LP3943_PWM_LED11,
-> +	LP3943_PWM_LED12,
-> +	LP3943_PWM_LED13,
-> +	LP3943_PWM_LED14,
-> +	LP3943_PWM_LED15,
-> +};
-> +
-> +/**
-> + * struct lp3943_platform_data
-> + * @pwm0: LED output channel definition for PWM 0 port
-> + * @pwm1: LED output channel definition for PWM 1 port
-> + */
-> +struct lp3943_platform_data {
-> +	enum lp3943_pwm_output pwm0;
-> +	enum lp3943_pwm_output pwm1;
-> +};
-> +
-> +/*
-> + * struct lp3943_reg_cfg
-> + * @reg: Register address
-> + * @mask: Register bit mask to be updated
-> + * @shift: Register bit shift
-> + */
-> +struct lp3943_reg_cfg {
-> +	u8 reg;
-> +	u8 mask;
-> +	u8 shift;
-> +};
-> +
-> +/*
-> + * struct lp3943
-> + * @dev: Parent device pointer
-> + * @regmap: Used for i2c communcation on accessing registers
-> + * @pdata: LP3943 platform specific data
-> + */
-> +struct lp3943 {
-> +	struct device *dev;
-> +	struct regmap *regmap;
-> +	struct lp3943_platform_data *pdata;
-> +	const struct lp3943_reg_cfg *mux_cfg;
-> +};
-> +
-> +int lp3943_read_byte(struct lp3943 *lm, u8 reg, u8 *read);
-> +int lp3943_write_byte(struct lp3943 *lm, u8 reg, u8 data);
-> +int lp3943_update_bits(struct lp3943 *lm, u8 reg, u8 mask, u8 data);
-> +#endif
-
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index e8ecb8e..e1c283e 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -201,35 +201,7 @@ static int wm8994_suspend(struct device *dev)
+ 	int ret;
+ 
+ 	/* Don't actually go through with the suspend if the CODEC is
+-	 * still active (eg, for audio passthrough from CP. */
+-	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_1);
+-	if (ret < 0) {
+-		dev_err(dev, "Failed to read power status: %d\n", ret);
+-	} else if (ret & WM8994_VMID_SEL_MASK) {
+-		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
+-		return 0;
+-	}
+-
+-	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_4);
+-	if (ret < 0) {
+-		dev_err(dev, "Failed to read power status: %d\n", ret);
+-	} else if (ret & (WM8994_AIF2ADCL_ENA | WM8994_AIF2ADCR_ENA |
+-			  WM8994_AIF1ADC2L_ENA | WM8994_AIF1ADC2R_ENA |
+-			  WM8994_AIF1ADC1L_ENA | WM8994_AIF1ADC1R_ENA)) {
+-		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
+-		return 0;
+-	}
+-
+-	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_5);
+-	if (ret < 0) {
+-		dev_err(dev, "Failed to read power status: %d\n", ret);
+-	} else if (ret & (WM8994_AIF2DACL_ENA | WM8994_AIF2DACR_ENA |
+-			  WM8994_AIF1DAC2L_ENA | WM8994_AIF1DAC2R_ENA |
+-			  WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA)) {
+-		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
+-		return 0;
+-	}
+-
++	 * still active for accessory detect. */
+ 	switch (wm8994->type) {
+ 	case WM8958:
+ 	case WM1811:
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
