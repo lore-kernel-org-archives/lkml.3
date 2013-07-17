@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965169Ab3GQX1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:27:42 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47898 "EHLO hydra.sisk.pl"
+	id S965153Ab3GQX1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:27:40 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47893 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757823Ab3GQX1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:36 -0400
+	id S1757752Ab3GQX1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:33 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -13,12 +13,12 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 0/30] ACPI / hotplug / PCI: Major rework + Thunderbolt workarounds
-Date: Thu, 18 Jul 2013 01:05:53 +0200
-Message-ID: <2366394.4EoP1MXmG2@vostro.rjw.lan>
+Subject: [PATCH 5/30] ACPI / hotplug / PCI: Unified notify handler for hotplug events
+Date: Thu, 18 Jul 2013 01:18:36 +0200
+Message-ID: <1551099.EAQDd0lEcY@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3718119.FLASu5DBx8@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan>
+In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,101 +26,257 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Now the series has been rebased on top of current linux-pm.git/linux-next
-and tested on two systems with Thunderbolt.  Some changes have been made too. ->
+Using the hotplug context objects introduced previously rework the
+ACPI-based PCI hotplug (ACPIPHP) core code so that all notifications
+for ACPI device objects corresponding to the hotplug PCI devices are
+handled by one function, handle_hotplug_event(), which recognizes
+whether it has to handle a bridge or a function.
 
-On Friday, July 12, 2013 01:34:20 AM Rafael J. Wysocki wrote:
-> Hi,
-> 
-> I've made some progress with my ACPIPHP rework since I posted the series last
-> time and here goes an update.
-> 
-> First off, the previous series was somewhat racy, which should be fixed now.
-> Apart from this there's quite some new material on top of the patches I posted
-> last time (or rather on top of their new versions) and I integrated the
-> Thunderbolt series from Mika with that.  As a result,
-> 
-> https://patchwork.kernel.org/patch/2817341/
-> 
-> is required to be applied.
-> 
-> Still untested, still based on 3.10 with ACPI+PM 3.11 material merged on top,
-> but this time I don't have any plans to add more patches to the series for the
-> time being.  Also 3.11-rc1 should be out in a couple of days, so I'll be able
-> to integrate this work with the previous cleanups series from Gerry and myself
-> on top of it.
-> 
-> I did my best not to change too much at a time and some steps add stuff that
-> is removed by the subsequent ones, so hopefully it is bisectable.
-> 
-> If anyone finds something questionable or outright bogus in these patches,
-> please let me know before it's too late. ;-)
-> 
-> [ 1/30] Make bus registration and unregistration symmetric.  [Resend]
-> [ 2/30] Consolidate acpiphp_enumerate_slots().  [Resend]
-> [ 3/30] Fix error code path in register_slot().  [Resend]
-> [ 4/30] Introduce hotplug context objects for ACPI device objects corresponding
->         to PCI hotplug devices.  [Update]
-> [ 5/30] Unified notify handler for hotplug events.  [Update]
-> [ 6/30] Drop acpiphp_handle_to_bridge() and use context objects instead of it.  [Update]
-> [ 7/30] Pass entire hotplug context objects (instead of their fields
->         individually) to event handling work functions.  [Update]
-> [ 8/30] Merge hotplug event handling functions.  [Update]
-> [ 9/30] Drop func field from struct acpiphp_bridge.
-> [10/30] Refactor slot allocation code in register_slot().
-> [11/30] Make acpiphp_enumerate_slots() to register all devices on the given bus
->         and install the notification handler for all of them.
-> [12/30] Drop sun field from struct acpiphp_slot.
-> [13/30] Use common slot count variable in register_slot().
+In addition to code size reduction it allows some ugly pieces of code
+where notify handlers have to be uninstalled and installed again to
+go away.  Moreover, it fixes a theoretically possible race between
+handle_hotplug_event() and free_bridge() tearing down data structures
+for the same handle.
 
--> The one above has been dropped, because it might cause regressions to appear
-on some systems, but that's not a big deal.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/hotplug/acpiphp.h      |    1 
+ drivers/pci/hotplug/acpiphp_glue.c |  132 ++++++++++++++-----------------------
+ 2 files changed, 53 insertions(+), 80 deletions(-)
 
-The numbering of the patches below has changed as a result, so the next one is
-[13/30] now and so on.
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -59,11 +59,10 @@ static DEFINE_MUTEX(acpiphp_context_lock
+ 
+ #define MY_NAME "acpiphp_glue"
+ 
+-static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
++static void handle_hotplug_event(acpi_handle handle, u32 type, void *data);
+ static void acpiphp_sanitize_bus(struct pci_bus *bus);
+ static void acpiphp_set_hpp_values(struct pci_bus *bus);
+ static void hotplug_event_func(acpi_handle handle, u32 type, void *context);
+-static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
+ static void free_bridge(struct kref *kref);
+ 
+ /* callback routine to check for the existence of a pci dock device */
+@@ -179,13 +178,13 @@ static void free_bridge(struct kref *kre
+ 		kfree(slot);
+ 	}
+ 
++	context = bridge->context;
+ 	/* Release the reference acquired by acpiphp_enumerate_slots(). */
+-	if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)
++	if (context->handler_for_func)
+ 		put_bridge(bridge->func->slot->bridge);
+ 
+ 	put_device(&bridge->pci_bus->dev);
+ 	pci_dev_put(bridge->pci_dev);
+-	context = bridge->context;
+ 	context->bridge = NULL;
+ 	acpiphp_put_context(context);
+ 	kfree(bridge);
+@@ -414,12 +413,12 @@ static acpi_status register_slot(acpi_ha
+ 
+ 	/* install notify handler */
+ 	if (!(newfunc->flags & FUNC_HAS_DCK)) {
+-		status = acpi_install_notify_handler(handle,
+-					     ACPI_SYSTEM_NOTIFY,
+-					     handle_hotplug_event_func,
+-					     newfunc);
+-
+-		if (ACPI_FAILURE(status))
++		status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
++						     handle_hotplug_event,
++						     context);
++		if (ACPI_SUCCESS(status))
++			context->handler_for_func = true;
++		else
+ 			err("failed to register interrupt notify handler\n");
+ 	}
+ 
+@@ -476,32 +475,23 @@ static void cleanup_bridge(struct acpiph
+ 	acpi_status status;
+ 	acpi_handle handle = bridge->handle;
+ 
+-	if (!pci_is_root_bus(bridge->pci_bus)) {
+-		status = acpi_remove_notify_handler(handle,
+-					    ACPI_SYSTEM_NOTIFY,
+-					    handle_hotplug_event_bridge);
++	if (!bridge->context->handler_for_func) {
++		status = acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
++						    handle_hotplug_event);
+ 		if (ACPI_FAILURE(status))
+ 			err("failed to remove notify handler\n");
+ 	}
+ 
+-	if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
+-		status = acpi_install_notify_handler(bridge->func->handle,
+-						ACPI_SYSTEM_NOTIFY,
+-						handle_hotplug_event_func,
+-						bridge->func);
+-		if (ACPI_FAILURE(status))
+-			err("failed to install interrupt notify handler\n");
+-	}
+-
+ 	list_for_each_entry(slot, &bridge->slots, node) {
+ 		list_for_each_entry(func, &slot->funcs, sibling) {
+ 			if (is_dock_device(func->handle)) {
+ 				unregister_hotplug_dock_device(func->handle);
+ 			}
+ 			if (!(func->flags & FUNC_HAS_DCK)) {
++				func->context->handler_for_func = false;
+ 				status = acpi_remove_notify_handler(func->handle,
+-						ACPI_SYSTEM_NOTIFY,
+-						handle_hotplug_event_func);
++							ACPI_SYSTEM_NOTIFY,
++							handle_hotplug_event);
+ 				if (ACPI_FAILURE(status))
+ 					err("failed to remove notify handler\n");
+ 			}
+@@ -1071,31 +1061,6 @@ static void _handle_hotplug_event_bridge
+ 	put_bridge(bridge);
+ }
+ 
+-/**
+- * handle_hotplug_event_bridge - handle ACPI event on bridges
+- * @handle: Notify()'ed acpi_handle
+- * @type: Notify code
+- * @context: pointer to acpiphp_bridge structure
+- *
+- * Handles ACPI event notification on {host,p2p} bridges.
+- */
+-static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
+-					void *context)
+-{
+-	struct acpiphp_bridge *bridge = context;
+-
+-	/*
+-	 * Currently the code adds all hotplug events to the kacpid_wq
+-	 * queue when it should add hotplug events to the kacpi_hotplug_wq.
+-	 * The proper way to fix this is to reorganize the code so that
+-	 * drivers (dock, etc.) do not call acpi_os_execute(), etc.
+-	 * For now just re-add this work to the kacpi_hotplug_wq so we
+-	 * don't deadlock on hotplug actions.
+-	 */
+-	get_bridge(bridge);
+-	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+-}
+-
+ static void hotplug_event_func(acpi_handle handle, u32 type, void *context)
+ {
+ 	struct acpiphp_func *func = context;
+@@ -1153,17 +1118,33 @@ static void _handle_hotplug_event_func(s
+ }
+ 
+ /**
+- * handle_hotplug_event_func - handle ACPI event on functions (i.e. slots)
++ * handle_hotplug_event - handle ACPI hotplug event
+  * @handle: Notify()'ed acpi_handle
+  * @type: Notify code
+- * @context: pointer to acpiphp_func structure
++ * @data: pointer to acpiphp_context structure
+  *
+  * Handles ACPI event notification on slots.
+  */
+-static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+-				      void *context)
++static void handle_hotplug_event(acpi_handle handle, u32 type, void *data)
+ {
+-	struct acpiphp_func *func = context;
++	struct acpiphp_context *context;
++	void (*work_func)(struct work_struct *work) = NULL;
++
++	mutex_lock(&acpiphp_context_lock);
++	context = acpiphp_get_context(handle);
++	if (context) {
++		if (context->bridge) {
++			get_bridge(context->bridge);
++			data = context->bridge;
++			work_func = _handle_hotplug_event_bridge;
++		} else if (context->func) {
++			get_bridge(context->func->slot->bridge);
++			data = context->func;
++			work_func = _handle_hotplug_event_func;
++		}
++		acpiphp_put_context(context);
++	}
++	mutex_unlock(&acpiphp_context_lock);
+ 
+ 	/*
+ 	 * Currently the code adds all hotplug events to the kacpid_wq
+@@ -1173,8 +1154,8 @@ static void handle_hotplug_event_func(ac
+ 	 * For now just re-add this work to the kacpi_hotplug_wq so we
+ 	 * don't deadlock on hotplug actions.
+ 	 */
+-	get_bridge(func->slot->bridge);
+-	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
++	if (work_func)
++		alloc_acpi_hp_work(handle, type, data, work_func);
+ }
+ 
+ /*
+@@ -1245,33 +1226,24 @@ void acpiphp_enumerate_slots(struct pci_
+ 	if (pci_is_root_bus(bridge->pci_bus))
+ 		return;
+ 
+-	/* install notify handler for P2P bridges */
+-	status = acpi_install_notify_handler(bridge->handle, ACPI_SYSTEM_NOTIFY,
+-					     handle_hotplug_event_bridge,
+-					     bridge);
+-	if (ACPI_FAILURE(status)) {
+-		acpi_handle_err(bridge->handle,
+-				"failed to register notify handler\n");
+-		goto err;
++	if (acpi_has_method(bridge->handle, "_EJ0")) {
++		dbg("found ejectable p2p bridge\n");
++		bridge->flags |= BRIDGE_HAS_EJ0;
++	}
++	if (context->handler_for_func) {
++		/* Notify handler already installed. */
++		bridge->func = context->func;
++		get_bridge(context->func->slot->bridge);
++		return;
+ 	}
+ 
+-	if (!acpi_has_method(bridge->handle, "_EJ0"))
++	/* install notify handler for P2P bridges */
++	status = acpi_install_notify_handler(bridge->handle, ACPI_SYSTEM_NOTIFY,
++					     handle_hotplug_event, NULL);
++	if (ACPI_SUCCESS(status))
+ 		return;
+ 
+-	dbg("found ejectable p2p bridge\n");
+-	bridge->flags |= BRIDGE_HAS_EJ0;
+-	if (context->func) {
+-		get_bridge(context->func->slot->bridge);
+-		bridge->func = context->func;
+-		handle = context->handle;
+-		WARN_ON(bridge->handle != handle);
+-		status = acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-						    handle_hotplug_event_func);
+-		if (ACPI_FAILURE(status))
+-			acpi_handle_err(handle,
+-					"failed to remove notify handler\n");
+-	}
+-	return;
++	acpi_handle_err(bridge->handle, "failed to register notify handler\n");
+ 
+  err:
+ 	cleanup_bridge(bridge);
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -136,6 +136,7 @@ struct acpiphp_context {
+ 	struct acpiphp_func *func;
+ 	struct acpiphp_bridge *bridge;
+ 	unsigned int refcount;
++	bool handler_for_func;
+ };
+ 
+ /*
 
-> [14/30] Drop flags field from struct acpiphp_bridge.
-> [15/30] Embed function structure into struct acpiphp_context.
-> [16/30] Drop handle field from struct acpiphp_func.
-> [17/30] Drop handle field from struct acpiphp_bridge.
-> [18/30] Store parent bridge pointer in function objects and bus pointer in slot
->         objects.
-> [19/30] Rework ACPI namespace scanning and trimming routines.
-> [20/30] Drop redundant checks from check_hotplug_bridge().
-> [21/30] Consolidate slot disabling and ejecting
-> [22/30] Do not queue up event handling work items for non-hotplug events.
-> [23/30] Do not execute _PS0 and _PS3 directly.
-
-This one was fixed after Mika had reported a problem with it.
-
-> [24/30] Do not check SLOT_ENABLED in enable_device().  [Thunderbolt series]
-> [25/30] Allow slots without new devices to be rescanned.  [Thunderbolt series]
-> [26/30] Check for new devices on enabled slots.  [Thunderbolt series, TBD]
-
-This one was reworked to use acpi_bus_trim() on ACPI device objects
-corresponding to PCI devices being removed (it also uses _STA to check the
-status of those devices if available).
-
-> [27/30] Get rid of unused constands in acpiphp.h.  [Thunderbolt series]
-> [28/30] Sanitize acpiphp_get_(latch)|(adapter)_status().  [Thunderbolt series]
-> [29/30] Redefine enable_device() and disable_device() (rename and change to void).
-> [30/30] Clean up the usage of bridge_mutex.
-
-The one above is [29/30] now and we have added one more patch:
-
-[30/30] Drop check_sub_bridges() which isn't necessary any more.
-
-The updated patches follow.
-
-If you don't hate this stuff, I'll put it into linux-next over the weekend for
-further testing.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
