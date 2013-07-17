@@ -1,147 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab3GQLFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:05:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751393Ab3GQLFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:05:41 -0400
-Date: Wed, 17 Jul 2013 14:06:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net 2/2] macvtap: do not zerocopy if iov needs more pages
- than MAX_SKB_FRAGS
-Message-ID: <20130717110658.GA22599@redhat.com>
-References: <1374057131-39207-1-git-send-email-jasowang@redhat.com>
- <1374057131-39207-2-git-send-email-jasowang@redhat.com>
+	id S1753862Ab3GQLK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:10:27 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51461 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab3GQLKZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 07:10:25 -0400
+Message-ID: <51E67B98.9040101@arm.com>
+Date: Wed, 17 Jul 2013 12:10:16 +0100
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374057131-39207-2-git-send-email-jasowang@redhat.com>
+To: =?UTF-8?B?QW5kcsOpIEhlbnRzY2hlbA==?= <nerv@dawncrow.de>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: arm: Only load TLS values when needed
+References: <51E42E11.1010903@dawncrow.de> <51E5836B.1010904@arm.com> <51E59E8F.1060501@dawncrow.de>
+In-Reply-To: <51E59E8F.1060501@dawncrow.de>
+X-OriginalArrivalTime: 17 Jul 2013 11:10:22.0826 (UTC) FILETIME=[3B38ECA0:01CE82DE]
+X-MC-Unique: 113071712102303401
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 06:32:11PM +0800, Jason Wang wrote:
-> We try to linearize part of the skb when the number of iov is greater than
-> MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-> one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-> network.
-> 
-> Solve this problem by calculate the pages needed for iov before trying to do
-> zerocopy and switch to use copy instead of zerocopy if it needs more than
-> MAX_SKB_FRAGS.
-> 
-> This is done through introducing a new helper to count the pages for iov, and
-> call uarg->callback() manually when switching from zerocopy to copy to notify
-> vhost.
-> 
-> We can do further optimization on top.
-> 
-> This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-> (macvtap: zerocopy: validate vectors before building skb).
-> 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/macvtap.c |   58 +++++++++++++++++++++++++++++++-----------------
->  1 files changed, 37 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index a7c5654..e200f11 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -698,6 +698,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
->  	return 0;
->  }
->  
-> +static unsigned long iov_pages(const struct iovec *iv, int offset,
-> +			       unsigned long nr_segs)
-> +{
-> +	unsigned long seg, base;
-> +	int pages = 0, len, size;
-> +
-> +	while (nr_segs && (offset >= iv->iov_len)) {
-> +		offset -= iv->iov_len;
-> +		++iv;
-> +		--nr_segs;
-> +	}
-> +
-> +	for (seg = 0; seg < nr_segs; seg++) {
-> +		base = (unsigned long)iv[seg].iov_base + offset;
-> +		len = iv[seg].iov_len - offset;
-> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-> +		pages += size;
-> +		offset = 0;
-> +	}
-> +
-> +	return pages;
-> +}
->  
->  /* Get packet from user space buffer */
->  static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-> @@ -744,31 +766,19 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->  	if (unlikely(count > UIO_MAXIOV))
->  		goto err;
->  
-> -	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
-> -		zerocopy = true;
-> -
-> -	if (zerocopy) {
-> +	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
->  		/* Userspace may produce vectors with count greater than
->  		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
->  		 * to let the rest of data to be fit in the frags.
->  		 */
+Hi André,
 
-We don't linearize parts to make them fit, we simply
-fall back to data copy.
-So this comment no longer applies, right?
+On 16/07/13 20:27, André Hentschel wrote:
+> Hi Jonathan, First, thank you for your review.
+>
+> Am 16.07.2013 19:31, schrieb Jonathan Austin:
+>> Hi André,
+>>
+>> On 15/07/13 18:14, André Hentschel wrote:
+>>> From: André Hentschel <nerv@dawncrow.de>
+>>>
+>>> This patch intents to reduce loading instructions when the
+>>> resulting value is not used. It's a follow up on
+>>> a4780adeefd042482f624f5e0d577bf9cdcbb760
+>>>
+>>
+>> Have you done any benchmarking to see that this has any real
+>> impact? Or tested on a !Vv6k system? It looks possible that the
+>> only case where this will perform better is where we're using
+>> switch_tls_none or switch_tls_software (both rare cases, I think)
+>> and there's some change it will make things worse in other cases?
+>
+> I have to admit that i only tested it on v6k and did no benchmark.
+>
+Do you have access to anything v6-NOT-k-ish? If not I can try and test 
+this on something appropriate. How does your test-case access tpidrurw? 
+If it uses inline asm then it won't work on v6-not-k, as those 
+instructions aren't defined...
 
-> -		if (count > MAX_SKB_FRAGS) {
-> -			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
-> -			if (copylen < vnet_hdr_len)
-> -				copylen = 0;
-> -			else
-> -				copylen -= vnet_hdr_len;
-> -		}
-> -		/* There are 256 bytes to be copied in skb, so there is enough
-> -		 * room for skb expand head in case it is used.
-> -		 * The rest buffer is mapped from userspace.
-> -		 */
-> -		if (copylen < vnet_hdr.hdr_len)
-> -			copylen = vnet_hdr.hdr_len;
-> -		if (!copylen)
-> -			copylen = GOODCOPY_LEN;
-> +		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
->  		linear = copylen;
-> -	} else {
-> +		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-> +		    <= MAX_SKB_FRAGS)
-> +			zerocopy = true;
-> +	}
-> +
-> +	if (!zerocopy) {
->  		copylen = len;
->  		linear = vnet_hdr.hdr_len;
->  	}
-> @@ -780,9 +790,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->  
->  	if (zerocopy)
->  		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
-> -	else
-> +	else {
->  		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
->  						   len);
-> +		if (!err && m && m->msg_control) {
-> +			struct ubuf_info *uarg = m->msg_control;
-> +			uarg->callback(uarg, false);
-> +		}
-> +	}
-> +
->  	if (err)
->  		goto err_kfree;
->  
-> -- 
-> 1.7.1
+>> One of the reasons for Russell's suggestion of placing the ldrd
+>> (which became the two ldr instructions you've removed from
+>> __switch_to, in order to maintain building for older cores) where
+>> it is was in order to reduce the chance of pipeline stalls.
+>>
+>> As I've pointed out below, there is some risk that changing that
+>> has implications for the v6 only case below (and the v6k case is
+>> now more prone to stalls with !CONFIG_CPU_USE_DOMAINS, but newer
+>> cores should have more advanced scheduling to avoid such issues
+>> anyway...)
+>
+> I'm not sure how this could make things worse on v6k, could you
+> elaborate please? Besides of the ldr and str being too close to each
+> other
+
+Yea, that's the only issue, and in the !CONFIG_CPU_USE_DOMAINS case 
+things are slightly worse than they were before
+
+> i thought this patch is a good idea, because it removes two ldr
+> which are always executed. (Continuing below...)
+
+Indeed, as long as it doesn't cause pipeline stalls then that's a gain 
+for some cases :)
+
+[...]
+>> Now we've only got one instruction between the store and the load
+>> and risk stalling the pipeline...
+>>
+>> Dave M cautiously says "The ancient advice was that one instruction
+>> was enough" but this is very core dependent... I wonder if anyone
+>> has a good idea about whether this is an issue here...?
+>
+> We could use a ldrd at the top, that'd be nearly what we have right
+> now, don't we?
+
+Yea, that'd be good - as far as I can see from an 1136 TRM, the ldrd 
+*may* be two cycles (depending on alignment of the words) but the ldr 
+and ldrne will always be two cycles. Ahhh, the joys of modifying the 
+fast path ;)
+
+Jonny
+>
+>
+>
+
+
