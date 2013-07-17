@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab3GQIYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 04:24:12 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8748 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab3GQIYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752603Ab3GQIYJ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Jul 2013 04:24:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 17 Jul 2013 01:23:57 -0700
-Message-ID: <51E6549A.1010006@nvidia.com>
-Date: Wed, 17 Jul 2013 11:23:54 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38920 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3GQIYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 04:24:05 -0400
+Date: Wed, 17 Jul 2013 10:23:55 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: drm/imx: drop "select OF_VIDEOMODE"
+Message-ID: <20130717082355.GC10380@pengutronix.de>
+References: <1373801388.1370.15.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] Enable lm90 in Tegra30 and Tegra114.
-References: <1373615364-18559-1-git-send-email-wni@nvidia.com> <51E427F1.9010106@wwwdotorg.org> <51E42DB0.8090006@wwwdotorg.org> <51E52B28.9090708@nvidia.com> <51E65309.6000101@nvidia.com>
-In-Reply-To: <51E65309.6000101@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373801388.1370.15.camel@x61.thuisdomein>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:23:21 up 21:19, 61 users,  load average: 1.99, 1.24, 0.74
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 11:17 AM, Wei Ni wrote:
-> On 07/16/2013 07:14 PM, Wei Ni wrote:
->> On 07/16/2013 01:13 AM, Stephen Warren wrote:
->>> On 07/15/2013 10:48 AM, Stephen Warren wrote:
->>>> On 07/12/2013 01:49 AM, Wei Ni wrote:
->>>>> Enable thermal sensor lm90 for Tegra30 Cardhu and Tegra114 Dalmore.
->>>>
->>>> I have applied the series to Tegra's for-3.12/dt branch.
->>>
->>> Actually, I see the following on Dalmore (although Cardhu works):
->>>
->>> [   29.448539] lm90 0-004c: Register 0x4 read failed (-121)
->>> [   29.453930] lm90 0-004c: Failed to read convrate register!
->>> [   29.460034] lm90 0-004c: Register 0x3 read failed (-121)
->>> [   29.465408] lm90 0-004c: Initialization failed!
->>>
->>> So, there's something wrong here, and I've dropped the patch for
->>> Dalmore. Does this patch actually work for you?
->>>
->> I test it with the Chrome u-boot, the lm90 works fine.
->> But today, if I tried to use the uboot from
->> git://git.denx.de/u-boot-tegra.git, I can repo your errors, it seems the
->> i2c can't work, the lm90 driver read register failed.
->> I traced it, but can't find the root cause yet.
->
-> Hi, Stephen
-> I found the root cause.
-> In the Chrome u-boot, it will turn on the regulator for the lm90, but in
-> the upstream u-boot, it didn't do it.
-> I think this regulator should be handled in the kernel driver, but it
-> seems the regulator palmas tps65913 didn't be supported on the dalmore yet.
-> So may be we have to wait the palmas ready on dalmore.
+On Sun, Jul 14, 2013 at 01:29:48PM +0200, Paul Bolle wrote:
+> Commit ac4c1a9b33 ("staging: drm/imx: Add LDB support") added the
+> DRM_IMX_LDB Kconfig entry. That entry selects OF_VIDEOMODE. But there is
+> no Kconfig symbol named OF_VIDEOMODE. The select statement for that
+> symbol is a nop. Drop it.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Not tested!
+> 
+> 1) Perhaps OF_VIDEOMODE was selected because this commit added an
+> include of <video/of_videomode>. But the functionality of that header
+> requires the Kconfig symbol VIDEOMODE_HELPERS. The commit didn't use
+> that Kconfig symbol.
+> 
+> The again, as far as I can tell, the drm/imx code doesn't actually use
+> the videomode of-helper. So it seems the include of <video/of_videomode>
+> isn't needed anyway.
 
-A patch to enable tps65913 on dalmore has already been posted a couple 
-of days
-ago by Laxman Dewangan, so this shouldn't be too problematic.
+Looks all good.
 
->
-> Do you have any suggestions?
->
-> Thanks.
-> Wei.
->
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
