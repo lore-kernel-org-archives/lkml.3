@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3GQN24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:28:56 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:63741 "EHLO SMTP.CITRIX.COM"
+	id S1755380Ab3GQN3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:29:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47268 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab3GQN2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:28:55 -0400
-X-IronPort-AV: E=Sophos;i="4.89,684,1367971200"; 
-   d="scan'208";a="37503721"
-Date: Wed, 17 Jul 2013 14:28:43 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Julien Grall <julien.grall@linaro.org>, <stefano.stabellini@eu.citrix.com>,
-        <ian.campbell@citrix.com>, <patches@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH] xen/arm: disable cpuidle when linux is
- running as dom0
-In-Reply-To: <20130715152532.GC5774@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1307171426300.8258@kaball.uk.xensource.com>
-References: <1373898101-15633-1-git-send-email-julien.grall@linaro.org> <20130715152532.GC5774@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753892Ab3GQN3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 09:29:30 -0400
+From: Alexander Savchenko <oleksandr.savchenko@ti.com>
+To: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Ruchika Kharwar <ruchika@ti.com>,
+        Alexander Savchenko <oleksandr.savchenko@ti.com>
+Subject: [PATCH] serial: omap: Fix IRQ handling return value
+Date: Wed, 17 Jul 2013 16:29:13 +0300
+Message-ID: <1374067753-29560-1-git-send-email-oleksandr.savchenko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Jul 2013, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jul 15, 2013 at 03:21:41PM +0100, Julien Grall wrote:
-> > When linux is running as dom0, Xen doesn't show the physical cpu but a
-> > virtual CPU.
-> > On some ARM SOC (for instance the exynos 5250), linux registers callbacks
-> > for cpuidle. When these callbacks are called, they will modify
-> > directly the physical cpu not the virtual one.
-> It can impact the whole board
-> > instead of dom0.
+From: Ruchika Kharwar <ruchika@ti.com>
 
-Certainly this is something that should be fixed at the hypervisor level
-too. However I agree that Linux should try to avoid doing that when
-running on Xen.
+Ensure the Interrupt handling routine return IRQ_HANDLED vs
+IRQ_NONE.
 
+Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
+Signed-off-by: Alexander Savchenko <oleksandr.savchenko@ti.com>
+---
+ drivers/tty/serial/omap-serial.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index b6d1728..70feeb3 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -479,7 +479,6 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 	struct uart_omap_port *up = dev_id;
+ 	unsigned int iir, lsr;
+ 	unsigned int type;
+-	irqreturn_t ret = IRQ_NONE;
+ 	int max_count = 256;
+ 
+ 	spin_lock(&up->port.lock);
+@@ -490,7 +489,6 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 		if (iir & UART_IIR_NO_INT)
+ 			break;
+ 
+-		ret = IRQ_HANDLED;
+ 		lsr = serial_in(up, UART_LSR);
+ 
+ 		/* extract IRQ type from IIR register */
+@@ -529,7 +527,7 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 	pm_runtime_put_autosuspend(up->dev);
+ 	up->port_activity = jiffies;
+ 
+-	return ret;
++	return IRQ_HANDLED;
+ }
+ 
+ static unsigned int serial_omap_tx_empty(struct uart_port *port)
+-- 
+1.7.9.5
 
-> Should you also call disable_cpufreq() ?
-
-Sounds like a good idea.
-Julien, could you add that to this patch?
-
-
-> > 
-> > Signed-off-by: Julien Grall <julien.grall@linaro.org>
-> > ---
-> >  arch/arm/xen/enlighten.c |    7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> > index 49839d8..a98999f 100644
-> > --- a/arch/arm/xen/enlighten.c
-> > +++ b/arch/arm/xen/enlighten.c
-> > @@ -24,6 +24,8 @@
-> >  #include <linux/of.h>
-> >  #include <linux/of_irq.h>
-> >  #include <linux/of_address.h>
-> > +#include <linux/cpuidle.h>
-> > +#include <linux/cpufreq.h>
-> >  
-> >  #include <linux/mm.h>
-> >  
-> > @@ -292,6 +294,11 @@ static int __init xen_pm_init(void)
-> >  {
-> >  	pm_power_off = xen_power_off;
-> >  	arm_pm_restart = xen_restart;
-> > +	/*
-> > +	 * Making sure board specific code will not set up ops for
-> > +	 * cpu idle.
-> > +	 */
-> > +	disable_cpuidle();
-> >  
-> >  	return 0;
-> >  }
-> > -- 
-> > 1.7.10.4
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> 
