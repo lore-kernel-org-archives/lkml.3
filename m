@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab3GQMhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 08:37:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49447 "EHLO mga01.intel.com"
+	id S1754873Ab3GQMhC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 08:37:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6461 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754782Ab3GQMhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 08:37:10 -0400
+	id S1754782Ab3GQMg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 08:36:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,684,1367996400"; 
-   d="scan'208";a="371625934"
+   d="scan'208";a="371625858"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,174 +17,215 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH V7 09/14] perf: Update perf_event_type documentation
-Date: Wed, 17 Jul 2013 15:43:09 +0300
-Message-Id: <1374064994-17810-10-git-send-email-adrian.hunter@intel.com>
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH V7 05/14] perf tools: tidy up sample parsing overflow checking
+Date: Wed, 17 Jul 2013 15:43:05 +0300
+Message-Id: <1374064994-17810-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1374064994-17810-1-git-send-email-adrian.hunter@intel.com>
 References: <1374064994-17810-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+The size of data retrieved from a sample event must be
+validated to ensure it does not go past the end of the
+event.  That was being done sporadically and without
+considering integer overflows.
 
-Due to a discussion with Adrian I had a good look at the perf_event_type record
-layout and found the documentation to be somewhat unclear.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- include/uapi/linux/perf_event.h | 19 ++++++++++++++++++-
- kernel/events/core.c            | 31 ++++++++++++++++---------------
- 2 files changed, 34 insertions(+), 16 deletions(-)
+ tools/perf/util/evsel.c | 102 ++++++++++++++++++++++++++++++------------------
+ 1 file changed, 64 insertions(+), 38 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 0b1df41..876a18c 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -478,6 +478,16 @@ enum perf_event_type {
- 	 * file will be supported by older perf tools, with these new optional
- 	 * fields being ignored.
- 	 *
-+	 * struct sample_id {
-+	 *	{ u32			pid, tid; } && PERF_SAMPLE_TID
-+	 *	{ u64			time;     } && PERF_SAMPLE_TIME
-+	 *	{ u64			id;       } && PERF_SAMPLE_ID
-+	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
-+	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-+	 * } && perf_event_attr.sample_id_all
-+	 */
-+
-+	/*
- 	 * The MMAP events record the PROT_EXEC mappings so that we can
- 	 * correlate userspace IPs to code. They have the following structure:
- 	 *
-@@ -489,6 +499,7 @@ enum perf_event_type {
- 	 *	u64				len;
- 	 *	u64				pgoff;
- 	 *	char				filename[];
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_MMAP			= 1,
-@@ -498,6 +509,7 @@ enum perf_event_type {
- 	 *	struct perf_event_header	header;
- 	 *	u64				id;
- 	 *	u64				lost;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_LOST			= 2,
-@@ -508,6 +520,7 @@ enum perf_event_type {
- 	 *
- 	 *	u32				pid, tid;
- 	 *	char				comm[];
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_COMM			= 3,
-@@ -518,6 +531,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_EXIT			= 4,
-@@ -528,6 +542,7 @@ enum perf_event_type {
- 	 *	u64				time;
- 	 *	u64				id;
- 	 *	u64				stream_id;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_THROTTLE			= 5,
-@@ -539,6 +554,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_FORK			= 7,
-@@ -549,6 +565,7 @@ enum perf_event_type {
- 	 *	u32				pid, tid;
- 	 *
- 	 *	struct read_format		values;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_READ			= 8,
-@@ -596,7 +613,7 @@ enum perf_event_type {
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 *
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
--	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
-+	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 708ab70..c9ef899 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4462,20 +4462,6 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
- 
--	if (!event->attr.watermark) {
--		int wakeup_events = event->attr.wakeup_events;
--
--		if (wakeup_events) {
--			struct ring_buffer *rb = handle->rb;
--			int events = local_inc_return(&rb->events);
--
--			if (events >= wakeup_events) {
--				local_sub(wakeup_events, &rb->events);
--				local_inc(&rb->wakeup);
--			}
--		}
--	}
--
- 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
- 		if (data->br_stack) {
- 			size_t size;
-@@ -4511,16 +4497,31 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
- 
--	if (sample_type & PERF_SAMPLE_STACK_USER)
-+	if (sample_type & PERF_SAMPLE_STACK_USER) {
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
-+	}
- 
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
- 	if (sample_type & PERF_SAMPLE_DATA_SRC)
- 		perf_output_put(handle, data->data_src.val);
-+
-+	if (!event->attr.watermark) {
-+		int wakeup_events = event->attr.wakeup_events;
-+
-+		if (wakeup_events) {
-+			struct ring_buffer *rb = handle->rb;
-+			int events = local_inc_return(&rb->events);
-+
-+			if (events >= wakeup_events) {
-+				local_sub(wakeup_events, &rb->events);
-+				local_inc(&rb->wakeup);
-+			}
-+		}
-+	}
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 724b75a..20e2ed9 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1114,24 +1114,38 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+ 	return 0;
  }
  
- void perf_prepare_sample(struct perf_event_header *header,
+-static bool sample_overlap(const union perf_event *event,
+-			   const void *offset, u64 size)
++static inline bool overflow_one(const void *endp, const void *offset)
+ {
+-	const void *base = event;
+-
+-	if (offset + size > base + event->header.size)
+-		return true;
++	return offset + sizeof(u64) > endp;
++}
+ 
+-	return false;
++static inline bool overflow(const void *endp, u16 max_size, const void *offset,
++			    u64 size)
++{
++	return size > max_size || offset + size > endp;
+ }
+ 
++#define OVERFLOW_CHECK_ONE(offset)				\
++	do {							\
++		if (overflow_one(endp, (offset)))		\
++			return -EFAULT;				\
++	} while (0)
++
++#define OVERFLOW_CHECK(offset, size)				\
++	do {							\
++		if (overflow(endp, max_size, (offset), (size)))	\
++			return -EFAULT;				\
++	} while (0)
++
+ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *data)
+ {
+ 	u64 type = evsel->attr.sample_type;
+-	u64 regs_user = evsel->attr.sample_regs_user;
+ 	bool swapped = evsel->needs_swap;
+ 	const u64 *array;
++	u16 max_size = event->header.size;
++	const void *endp = (void *)event + max_size;
++	u64 sz;
+ 
+ 	/*
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+@@ -1153,6 +1167,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	array = event->sample.array;
+ 
++	/*
++	 * sample_size is based on PERF_SAMPLE_MASK which includes up to
++	 * PERF_SAMPLE_PERIOD.  After that overflow_one() or overflow() must be
++	 * used to check the format does not go past the end of the event.
++	 */
+ 	if (evsel->sample_size + sizeof(event->header) > event->header.size)
+ 		return -EFAULT;
+ 
+@@ -1221,20 +1240,19 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_CALLCHAIN) {
+-		if (sample_overlap(event, array, sizeof(data->callchain->nr)))
+-			return -EFAULT;
+-
+-		data->callchain = (struct ip_callchain *)array;
++		const u64 max_callchain_nr = UINT64_MAX / sizeof(u64);
+ 
+-		if (sample_overlap(event, array, data->callchain->nr))
++		OVERFLOW_CHECK_ONE(array);
++		data->callchain = (struct ip_callchain *)array++;
++		if (data->callchain->nr > max_callchain_nr)
+ 			return -EFAULT;
+-
+-		array += 1 + data->callchain->nr;
++		sz = data->callchain->nr * sizeof(u64);
++		OVERFLOW_CHECK(array, sz);
++		array = (void *)array + sz;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_RAW) {
+-		const u64 *pdata;
+-
++		OVERFLOW_CHECK_ONE(array);
+ 		u.val64 = *array;
+ 		if (WARN_ONCE(swapped,
+ 			      "Endianness of raw data not corrected!\n")) {
+@@ -1243,65 +1261,73 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			u.val32[0] = bswap_32(u.val32[0]);
+ 			u.val32[1] = bswap_32(u.val32[1]);
+ 		}
+-
+-		if (sample_overlap(event, array, sizeof(u32)))
+-			return -EFAULT;
+-
+ 		data->raw_size = u.val32[0];
+-		pdata = (void *) array + sizeof(u32);
++		array = (void *)array + sizeof(u32);
+ 
+-		if (sample_overlap(event, pdata, data->raw_size))
+-			return -EFAULT;
+-
+-		data->raw_data = (void *) pdata;
+-
+-		array = (void *)array + data->raw_size + sizeof(u32);
++		OVERFLOW_CHECK(array, data->raw_size);
++		data->raw_data = (void *)array;
++		array = (void *)array + data->raw_size;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_BRANCH_STACK) {
+-		u64 sz;
++		const u64 max_branch_nr = UINT64_MAX /
++					  sizeof(struct branch_entry);
+ 
+-		data->branch_stack = (struct branch_stack *)array;
+-		array++; /* nr */
++		OVERFLOW_CHECK_ONE(array);
++		data->branch_stack = (struct branch_stack *)array++;
+ 
++		if (data->branch_stack->nr > max_branch_nr)
++			return -EFAULT;
+ 		sz = data->branch_stack->nr * sizeof(struct branch_entry);
+-		sz /= sizeof(u64);
+-		array += sz;
++		OVERFLOW_CHECK(array, sz);
++		array = (void *)array + sz;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_REGS_USER) {
++		u64 avail;
++
+ 		/* First u64 tells us if we have any regs in sample. */
+-		u64 avail = *array++;
++		OVERFLOW_CHECK_ONE(array);
++		avail = *array++;
+ 
+ 		if (avail) {
++			u64 regs_user = evsel->attr.sample_regs_user;
++
++			sz = hweight_long(regs_user) * sizeof(u64);
++			OVERFLOW_CHECK(array, sz);
+ 			data->user_regs.regs = (u64 *)array;
+-			array += hweight_long(regs_user);
++			array = (void *)array + sz;
+ 		}
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_STACK_USER) {
+-		u64 size = *array++;
++		OVERFLOW_CHECK_ONE(array);
++		sz = *array++;
+ 
+ 		data->user_stack.offset = ((char *)(array - 1)
+ 					  - (char *) event);
+ 
+-		if (!size) {
++		if (!sz) {
+ 			data->user_stack.size = 0;
+ 		} else {
++			OVERFLOW_CHECK(array, sz);
+ 			data->user_stack.data = (char *)array;
+-			array += size / sizeof(*array);
++			array = (void *)array + sz;
++			OVERFLOW_CHECK_ONE(array);
+ 			data->user_stack.size = *array++;
+ 		}
+ 	}
+ 
+ 	data->weight = 0;
+ 	if (type & PERF_SAMPLE_WEIGHT) {
++		OVERFLOW_CHECK_ONE(array);
+ 		data->weight = *array;
+ 		array++;
+ 	}
+ 
+ 	data->data_src = PERF_MEM_DATA_SRC_NONE;
+ 	if (type & PERF_SAMPLE_DATA_SRC) {
++		OVERFLOW_CHECK_ONE(array);
+ 		data->data_src = *array;
+ 		array++;
+ 	}
 -- 
 1.7.11.7
 
