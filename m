@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713Ab3GQWuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:50:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56273 "EHLO
+	id S1757801Ab3GQWux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:50:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56300 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757666Ab3GQWug (ORCPT
+	with ESMTP id S1757776Ab3GQWuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:50:36 -0400
+	Wed, 17 Jul 2013 18:50:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        Alasdair G Kergon <agk@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 126/145] [SCSI] mpt3sas: Infinite loops can occur if MPI2_IOCSTATUS_CONFIG_INVALID_PAGE is not returned
-Date: Wed, 17 Jul 2013 15:47:38 -0700
-Message-Id: <1374101277-7915-127-git-send-email-kamal@canonical.com>
+Subject: [PATCH 131/145] dm verity: fix inability to use a few specific devices sizes
+Date: Wed, 17 Jul 2013 15:47:43 -0700
+Message-Id: <1374101277-7915-132-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,103 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 14be49ac965ebd3f8561d57e01ddb22f93f9b454 upstream.
+commit b1bf2de07271932326af847a3c6a01fdfd29d4be upstream.
 
-Infinite loop can occur if IOCStatus is not equal to
-MPI2_IOCSTATUS_CONFIG_INVALID_PAGE value in the while loops in functions
-_scsih_search_responding_sas_devices,
-_scsih_search_responding_raid_devices and
-_scsih_search_responding_expanders
+Fix a boundary condition that caused failure for certain device sizes.
 
-So, Instead of checking for MPI2_IOCSTATUS_CONFIG_INVALID_PAGE value,
-in this patch code is modified to check for IOCStatus not equals to
-MPI2_IOCSTATUS_SUCCESS to break the while loop.
+The problem is reported at
+  http://code.google.com/p/cryptsetup/issues/detail?id=160
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+For certain device sizes the number of hashes at a specific level was
+calculated incorrectly.
+
+It happens for example for a device with data and metadata block size 4096
+that has 16385 blocks and algorithm sha256.
+
+The user can test if he is affected by this bug by running the
+"veritysetup verify" command and also by activating the dm-verity kernel
+driver and reading the whole block device. If it passes without an error,
+then the user is not affected.
+
+The condition for the bug is:
+
+Split the total number of data blocks (data_block_bits) into bit strings,
+each string has hash_per_block_bits bits. hash_per_block_bits is
+rounddown(log2(metadata_block_size/hash_digest_size)). Equivalently, you
+can say that you convert data_blocks_bits to 2^hash_per_block_bits base.
+
+If there some zero bit string below the most significant bit string and at
+least one bit below this zero bit string is set, then the bug happens.
+
+The same bug exists in the userspace veritysetup tool, so you must use
+fixed veritysetup too if you want to use devices that are affected by
+this boundary condition.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/mpt3sas/mpt3sas_scsih.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ drivers/md/dm-verity.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_scsih.c b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-index 34b229a..1d70b08 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-@@ -6409,7 +6409,7 @@ _scsih_search_responding_sas_devices(struct MPT3SAS_ADAPTER *ioc)
- 	    handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 			break;
- 		handle = le16_to_cpu(sas_device_pg0.DevHandle);
- 		device_info = le32_to_cpu(sas_device_pg0.DeviceInfo);
-@@ -6511,7 +6511,7 @@ _scsih_search_responding_raid_devices(struct MPT3SAS_ADAPTER *ioc)
- 	    &volume_pg1, MPI2_RAID_VOLUME_PGAD_FORM_GET_NEXT_HANDLE, handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 			break;
- 		handle = le16_to_cpu(volume_pg1.DevHandle);
- 
-@@ -6535,7 +6535,7 @@ _scsih_search_responding_raid_devices(struct MPT3SAS_ADAPTER *ioc)
- 		    phys_disk_num))) {
- 			ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 			    MPI2_IOCSTATUS_MASK;
--			if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+			if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 				break;
- 			phys_disk_num = pd_pg0.PhysDiskNum;
- 			handle = le16_to_cpu(pd_pg0.DevHandle);
-@@ -6614,7 +6614,7 @@ _scsih_search_responding_expanders(struct MPT3SAS_ADAPTER *ioc)
- 
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 			break;
- 
- 		handle = le16_to_cpu(expander_pg0.DevHandle);
-@@ -6759,8 +6759,6 @@ _scsih_scan_for_devices_after_reset(struct MPT3SAS_ADAPTER *ioc)
- 	    MPI2_SAS_EXPAND_PGAD_FORM_GET_NEXT_HNDL, handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from expander scan: " \
- 			    "ioc_status(0x%04x), loginfo(0x%08x)\n",
-@@ -6804,8 +6802,6 @@ _scsih_scan_for_devices_after_reset(struct MPT3SAS_ADAPTER *ioc)
- 	    phys_disk_num))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from phys disk scan: "\
- 			    "ioc_status(0x%04x), loginfo(0x%08x)\n",
-@@ -6871,8 +6867,6 @@ _scsih_scan_for_devices_after_reset(struct MPT3SAS_ADAPTER *ioc)
- 	    &volume_pg1, MPI2_RAID_VOLUME_PGAD_FORM_GET_NEXT_HANDLE, handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from volume scan: " \
- 			    "ioc_status(0x%04x), loginfo(0x%08x)\n",
-@@ -6931,8 +6925,6 @@ _scsih_scan_for_devices_after_reset(struct MPT3SAS_ADAPTER *ioc)
- 	    handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from end device scan:"\
- 			    " ioc_status(0x%04x), loginfo(0x%08x)\n",
+diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+index a746f1d..4112d90 100644
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -831,9 +831,8 @@ static int verity_ctr(struct dm_target *ti, unsigned argc, char **argv)
+ 	for (i = v->levels - 1; i >= 0; i--) {
+ 		sector_t s;
+ 		v->hash_level_block[i] = hash_position;
+-		s = verity_position_at_level(v, v->data_blocks, i);
+-		s = (s >> v->hash_per_block_bits) +
+-		    !!(s & ((1 << v->hash_per_block_bits) - 1));
++		s = (v->data_blocks + ((sector_t)1 << ((i + 1) * v->hash_per_block_bits)) - 1)
++					>> ((i + 1) * v->hash_per_block_bits);
+ 		if (hash_position + s < hash_position) {
+ 			ti->error = "Hash device offset overflow";
+ 			r = -E2BIG;
 -- 
 1.8.1.2
 
