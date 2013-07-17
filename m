@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab3GQNBW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:01:22 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:44331 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab3GQNBV (ORCPT
+	id S1755276Ab3GQNBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:01:31 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47083 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab3GQNB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:01:21 -0400
+	Wed, 17 Jul 2013 09:01:27 -0400
+Message-ID: <51E69429.7040309@linux.vnet.ibm.com>
+Date: Wed, 17 Jul 2013 18:25:05 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <2509113.ybUsa2l9tg@vostro.rjw.lan>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<6633375.dICiDrHJgK@vostro.rjw.lan>
-	<CAKohpokw-bSWEgKvx0jd2QZ0RCz5dORHM9z+VYbTdKoCmKFvsg@mail.gmail.com>
-	<2509113.ybUsa2l9tg@vostro.rjw.lan>
-Date: Wed, 17 Jul 2013 18:31:19 +0530
-Message-ID: <CAKohpo=1Qov8p3f2xZkfOqaFRNJPJN60KeK4SOXcL9Hw82MkAg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/7] cpufreq: Add boost frequency support in core
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Lukasz Majewski <l.majewski@majess.pl>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        ouyang@cs.pitt.edu, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com> <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com> <51E66C71.6020605@linux.vnet.ibm.com> <20130717124511.GW11772@redhat.com>
+In-Reply-To: <20130717124511.GW11772@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071712-5490-0000-0000-000003D65E47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 July 2013 17:01, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> First off, I'm not sure how many applications actually use it and I think,
-> if any, they should be able cope with the attribute not being present.
->
-> Of course, if it turns out that yes, there are applications using it and no,
-> they cannot cope with the missing attribute, we'll need to address this.
-> That said such applications wouldn't work with earlier kernels in which that
-> attribute wasn't present at all, so I suppose this is really unlikely.
->
-> So, do whichever makes more sense to you: Design things to preserve the old
-> behavior (which is sightly confusing) or design them to expose the attribute
-> if the feature is actually supported and be prepared to address the (unlikely)
-> case when some hypothetical applications break because of that.
+On 07/17/2013 06:15 PM, Gleb Natapov wrote:
+> On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
+>>>> Instead of halt we started with a sleep hypercall in those
+>>>>   versions. Changed to halt() once Avi suggested to reuse existing sleep.
+>>>>
+>>>> If we use older hypercall with few changes like below:
+>>>>
+>>>> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
+>>>> {
+>>>>   // a0 reserved for flags
+>>>> if (!w->lock)
+>>>> return;
+>>>> DEFINE_WAIT
+>>>> ...
+>>>> end_wait
+>>>> }
+>>>>
+>>> How would this help if NMI takes lock in critical section. The thing
+>>> that may happen is that lock_waiting->want may have NMI lock value, but
+>>> lock_waiting->lock will point to non NMI lock. Setting of want and lock
+>>> have to be atomic.
+>>
+>> True. so we are here
+>>
+>>          non NMI lock(a)
+>>          w->lock = NULL;
+>>          smp_wmb();
+>>          w->want = want;
+>>                                 NMI
+>>                           <---------------------
+>>                            NMI lock(b)
+>>                            w->lock = NULL;
+>>                            smp_wmb();
+>>                            w->want = want;
+>>                            smp_wmb();
+>>                            w->lock = lock;
+>>                           ---------------------->
+>>          smp_wmb();
+>>          w->lock = lock;
+>>
+>> so how about fixing like this?
+>>
+>> again:
+>>          w->lock = NULL;
+>>          smp_wmb();
+>>          w->want = want;
+>>          smp_wmb();
+>>          w->lock = lock;
+>>
+>> if (!lock || w->want != want) goto again;
+>>
+> NMI can happen after the if() but before halt and the same situation
+> we are trying to prevent with IRQs will occur.
 
-Okay. Its better to keep it the way Lukasz designed it in his last patchset.
+True, we can not fix that. I thought to fix the inconsistency of
+lock,want pair.
+But NMI could happen after the first OR condition also.
+/me thinks again
+
+  But if NMI handler do not
+> take locks we shouldn't worry.
+
+Okay. Thanks for the reviews.
+'ll spin the next version with all the suggested changes.
+
