@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934545Ab3GQW4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56707 "EHLO
+	id S965062Ab3GQXHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:07:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56753 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933379Ab3GQW4T (ORCPT
+	with ESMTP id S934487Ab3GQW4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:19 -0400
+	Wed, 17 Jul 2013 18:56:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 073/145] netfilter: add nf_ipv6_ops hook to fix xt_addrtype with IPv6
-Date: Wed, 17 Jul 2013 15:46:45 -0700
-Message-Id: <1374101277-7915-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 038/145] x86: Fix /proc/mtrr with base/size more than 44bits
+Date: Wed, 17 Jul 2013 15:46:10 -0700
+Message-Id: <1374101277-7915-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,239 +27,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 2a7851bffb008ff4882eee673da74718997b4265 upstream.
+commit d5c78673b1b28467354c2c30c3d4f003666ff385 upstream.
 
-Quoting https://bugzilla.netfilter.org/show_bug.cgi?id=812:
+On one sytem that mtrr range is more then 44bits, in dmesg we have
+[    0.000000] MTRR default type: write-back
+[    0.000000] MTRR fixed ranges enabled:
+[    0.000000]   00000-9FFFF write-back
+[    0.000000]   A0000-BFFFF uncachable
+[    0.000000]   C0000-DFFFF write-through
+[    0.000000]   E0000-FFFFF write-protect
+[    0.000000] MTRR variable ranges enabled:
+[    0.000000]   0 [000080000000-0000FFFFFFFF] mask 3FFF80000000 uncachable
+[    0.000000]   1 [380000000000-38FFFFFFFFFF] mask 3F0000000000 uncachable
+[    0.000000]   2 [000099000000-000099FFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   3 [00009A000000-00009AFFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   4 [381FFA000000-381FFBFFFFFF] mask 3FFFFE000000 write-through
+[    0.000000]   5 [381FFC000000-381FFC0FFFFF] mask 3FFFFFF00000 write-through
+[    0.000000]   6 [0000AD000000-0000ADFFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   7 [0000BD000000-0000BDFFFFFF] mask 3FFFFF000000 write-through
+[    0.000000]   8 disabled
+[    0.000000]   9 disabled
 
-[ ip6tables -m addrtype ]
-When I tried to use in the nat/PREROUTING it messes up the
-routing cache even if the rule didn't matched at all.
-[..]
-If I remove the --limit-iface-in from the non-working scenario, so just
-use the -m addrtype --dst-type LOCAL it works!
+but /proc/mtrr report wrong:
+reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
+reg01: base=0x80000000000 (8388608MB), size=1048576MB, count=1: uncachable
+reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
+reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
+reg04: base=0x81ffa000000 (8519584MB), size=   32MB, count=1: write-through
+reg05: base=0x81ffc000000 (8519616MB), size=    1MB, count=1: write-through
+reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
+reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
+reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
 
-This happens when LOCAL type matching is requested with --limit-iface-in,
-and the default ipv6 route is via the interface the packet we test
-arrived on.
+so bit 44 and bit 45 get cut off.
 
-Because xt_addrtype uses ip6_route_output, the ipv6 routing implementation
-creates an unwanted cached entry, and the packet won't make it to the
-real/expected destination.
+We have problems in arch/x86/kernel/cpu/mtrr/generic.c::generic_get_mtrr().
+1. for base, we miss cast base_lo to 64bit before shifting.
+Fix that by adding u64 casting.
 
-Silently ignoring --limit-iface-in makes the routing work but it breaks
-rule matching (--dst-type LOCAL with limit-iface-in is supposed to only
-match if the dst address is configured on the incoming interface;
-without --limit-iface-in it will match if the address is reachable
-via lo).
+2. for size, it only can handle 44 bits aka 32bits + page_shift
+Fix that with 64bit mask instead of 32bit mask_lo, then range could be
+more than 44bits.
+At the same time, we need to update size_or_mask for old cpus that does
+support cpuid 0x80000008 to get phys_addr. Need to set high 32bits
+to all 1s, otherwise will not get correct size for them.
 
-The test should call ipv6_chk_addr() instead.  However, this would add
-a link-time dependency on ipv6.
+Also fix mtrr_add_page: it should check base and (base + size - 1)
+instead of base and size, as base and size could be small but
+base + size could bigger enough to be out of boundary. We can
+use boot_cpu_data.x86_phys_bits directly to avoid size_or_mask.
 
-There are two possible solutions:
+So When are we going to have size more than 44bits? that is 16TiB.
 
-1) Revert the commit that moved ipt_addrtype to xt_addrtype,
-   and put ipv6 specific code into ip6t_addrtype.
-2) add new "nf_ipv6_ops" struct to register pointers to ipv6 functions.
+after patch we have right ouput:
+reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
+reg01: base=0x380000000000 (58720256MB), size=1048576MB, count=1: uncachable
+reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
+reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
+reg04: base=0x381ffa000000 (58851232MB), size=   32MB, count=1: write-through
+reg05: base=0x381ffc000000 (58851264MB), size=    1MB, count=1: write-through
+reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
+reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
+reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
 
-While the former might seem preferable, Pablo pointed out that there
-are more xt modules with link-time dependeny issues regarding ipv6,
-so lets go for 2).
+-v2: simply checking in mtrr_add_page according to hpa.
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+[ hpa: This probably wants to go into -stable only after having sat in
+  mainline for a bit.  It is not a regression. ]
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1371162815-29931-1-git-send-email-yinghai@kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[ luis: backported to 3.8: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/netfilter_ipv6.h | 16 ++++++++++++++++
- include/net/addrconf.h         |  2 +-
- net/ipv6/addrconf.c            |  2 +-
- net/ipv6/netfilter.c           |  7 +++++++
- net/netfilter/core.c           |  2 ++
- net/netfilter/xt_addrtype.c    | 27 ++++++++++++++++-----------
- 6 files changed, 43 insertions(+), 13 deletions(-)
+ arch/x86/kernel/cpu/mtrr/generic.c | 21 +++++++++++----------
+ arch/x86/kernel/cpu/mtrr/main.c    | 16 +++++++++-------
+ 2 files changed, 20 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/netfilter_ipv6.h b/include/linux/netfilter_ipv6.h
-index 98ffb54..2d4df6ce 100644
---- a/include/linux/netfilter_ipv6.h
-+++ b/include/linux/netfilter_ipv6.h
-@@ -17,6 +17,22 @@ extern __sum16 nf_ip6_checksum(struct sk_buff *skb, unsigned int hook,
- 
- extern int ipv6_netfilter_init(void);
- extern void ipv6_netfilter_fini(void);
-+
-+/*
-+ * Hook functions for ipv6 to allow xt_* modules to be built-in even
-+ * if IPv6 is a module.
-+ */
-+struct nf_ipv6_ops {
-+	int (*chk_addr)(struct net *net, const struct in6_addr *addr,
-+			const struct net_device *dev, int strict);
-+};
-+
-+extern const struct nf_ipv6_ops __rcu *nf_ipv6_ops;
-+static inline const struct nf_ipv6_ops *nf_get_ipv6_ops(void)
-+{
-+	return rcu_dereference(nf_ipv6_ops);
-+}
-+
- #else /* CONFIG_NETFILTER */
- static inline int ipv6_netfilter_init(void) { return 0; }
- static inline void ipv6_netfilter_fini(void) { return; }
-diff --git a/include/net/addrconf.h b/include/net/addrconf.h
-index df4ef94..594abec 100644
---- a/include/net/addrconf.h
-+++ b/include/net/addrconf.h
-@@ -61,7 +61,7 @@ extern int			addrconf_set_dstaddr(struct net *net,
- 
- extern int			ipv6_chk_addr(struct net *net,
- 					      const struct in6_addr *addr,
--					      struct net_device *dev,
-+					      const struct net_device *dev,
- 					      int strict);
- 
- #if defined(CONFIG_IPV6_MIP6) || defined(CONFIG_IPV6_MIP6_MODULE)
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index b4b756c..d1d6915 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1409,7 +1409,7 @@ static int ipv6_count_addresses(struct inet6_dev *idev)
- }
- 
- int ipv6_chk_addr(struct net *net, const struct in6_addr *addr,
--		  struct net_device *dev, int strict)
-+		  const struct net_device *dev, int strict)
+diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
+index e9fe907..5ac2152 100644
+--- a/arch/x86/kernel/cpu/mtrr/generic.c
++++ b/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -510,8 +510,9 @@ generic_get_free_region(unsigned long base, unsigned long size, int replace_reg)
+ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
+ 			     unsigned long *size, mtrr_type *type)
  {
- 	struct inet6_ifaddr *ifp;
- 	struct hlist_node *node;
-diff --git a/net/ipv6/netfilter.c b/net/ipv6/netfilter.c
-index 429089c..52d31a0 100644
---- a/net/ipv6/netfilter.c
-+++ b/net/ipv6/netfilter.c
-@@ -4,6 +4,7 @@
- #include <linux/netfilter.h>
- #include <linux/netfilter_ipv6.h>
- #include <linux/export.h>
-+#include <net/addrconf.h>
- #include <net/dst.h>
- #include <net/ipv6.h>
- #include <net/ip6_route.h>
-@@ -180,6 +181,10 @@ static __sum16 nf_ip6_checksum_partial(struct sk_buff *skb, unsigned int hook,
- 	return csum;
- };
+-	unsigned int mask_lo, mask_hi, base_lo, base_hi;
+-	unsigned int tmp, hi;
++	u32 mask_lo, mask_hi, base_lo, base_hi;
++	unsigned int hi;
++	u64 tmp, mask;
  
-+static const struct nf_ipv6_ops ipv6ops = {
-+	.chk_addr	= ipv6_chk_addr,
-+};
-+
- static const struct nf_afinfo nf_ip6_afinfo = {
- 	.family			= AF_INET6,
- 	.checksum		= nf_ip6_checksum,
-@@ -192,6 +197,7 @@ static const struct nf_afinfo nf_ip6_afinfo = {
+ 	/*
+ 	 * get_mtrr doesn't need to update mtrr_state, also it could be called
+@@ -532,18 +533,18 @@ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
+ 	rdmsr(MTRRphysBase_MSR(reg), base_lo, base_hi);
  
- int __init ipv6_netfilter_init(void)
- {
-+	RCU_INIT_POINTER(nf_ipv6_ops, &ipv6ops);
- 	return nf_register_afinfo(&nf_ip6_afinfo);
- }
+ 	/* Work out the shifted address mask: */
+-	tmp = mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
+-	mask_lo = size_or_mask | tmp;
++	tmp = (u64)mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
++	mask = size_or_mask | tmp;
  
-@@ -200,5 +206,6 @@ int __init ipv6_netfilter_init(void)
-  */
- void ipv6_netfilter_fini(void)
- {
-+	RCU_INIT_POINTER(nf_ipv6_ops, NULL);
- 	nf_unregister_afinfo(&nf_ip6_afinfo);
- }
-diff --git a/net/netfilter/core.c b/net/netfilter/core.c
-index a9c488b..3fbdbba 100644
---- a/net/netfilter/core.c
-+++ b/net/netfilter/core.c
-@@ -29,6 +29,8 @@ static DEFINE_MUTEX(afinfo_mutex);
+ 	/* Expand tmp with high bits to all 1s: */
+-	hi = fls(tmp);
++	hi = fls64(tmp);
+ 	if (hi > 0) {
+-		tmp |= ~((1<<(hi - 1)) - 1);
++		tmp |= ~((1ULL<<(hi - 1)) - 1);
  
- const struct nf_afinfo __rcu *nf_afinfo[NFPROTO_NUMPROTO] __read_mostly;
- EXPORT_SYMBOL(nf_afinfo);
-+const struct nf_ipv6_ops __rcu *nf_ipv6_ops __read_mostly;
-+EXPORT_SYMBOL_GPL(nf_ipv6_ops);
+-		if (tmp != mask_lo) {
++		if (tmp != mask) {
+ 			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
+ 			add_taint(TAINT_FIRMWARE_WORKAROUND);
+-			mask_lo = tmp;
++			mask = tmp;
+ 		}
+ 	}
  
- int nf_register_afinfo(const struct nf_afinfo *afinfo)
- {
-diff --git a/net/netfilter/xt_addrtype.c b/net/netfilter/xt_addrtype.c
-index 49c5ff7..68ff29f 100644
---- a/net/netfilter/xt_addrtype.c
-+++ b/net/netfilter/xt_addrtype.c
-@@ -22,6 +22,7 @@
- #include <net/ip6_fib.h>
- #endif
+@@ -551,8 +552,8 @@ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
+ 	 * This works correctly if size is a power of two, i.e. a
+ 	 * contiguous range:
+ 	 */
+-	*size = -mask_lo;
+-	*base = base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
++	*size = -mask;
++	*base = (u64)base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
+ 	*type = base_lo & 0xff;
  
-+#include <linux/netfilter_ipv6.h>
- #include <linux/netfilter/xt_addrtype.h>
- #include <linux/netfilter/x_tables.h>
+ out_put_cpu:
+diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+index 726bf96..ca22b73 100644
+--- a/arch/x86/kernel/cpu/mtrr/main.c
++++ b/arch/x86/kernel/cpu/mtrr/main.c
+@@ -305,7 +305,8 @@ int mtrr_add_page(unsigned long base, unsigned long size,
+ 		return -EINVAL;
+ 	}
  
-@@ -33,12 +34,12 @@ MODULE_ALIAS("ip6t_addrtype");
+-	if (base & size_or_mask || size & size_or_mask) {
++	if ((base | (base + size - 1)) >>
++	    (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)) {
+ 		pr_warning("mtrr: base or size exceeds the MTRR width\n");
+ 		return -EINVAL;
+ 	}
+@@ -583,6 +584,7 @@ static struct syscore_ops mtrr_syscore_ops = {
  
- #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
- static u32 match_lookup_rt6(struct net *net, const struct net_device *dev,
--			    const struct in6_addr *addr)
-+			    const struct in6_addr *addr, u16 mask)
- {
- 	const struct nf_afinfo *afinfo;
- 	struct flowi6 flow;
- 	struct rt6_info *rt;
--	u32 ret;
-+	u32 ret = 0;
- 	int route_err;
+ int __initdata changed_by_mtrr_cleanup;
  
- 	memset(&flow, 0, sizeof(flow));
-@@ -49,12 +50,19 @@ static u32 match_lookup_rt6(struct net *net, const struct net_device *dev,
- 	rcu_read_lock();
++#define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
+ /**
+  * mtrr_bp_init - initialize mtrrs on the boot CPU
+  *
+@@ -600,7 +602,7 @@ void __init mtrr_bp_init(void)
  
- 	afinfo = nf_get_afinfo(NFPROTO_IPV6);
--	if (afinfo != NULL)
-+	if (afinfo != NULL) {
-+		const struct nf_ipv6_ops *v6ops;
-+
-+		if (dev && (mask & XT_ADDRTYPE_LOCAL)) {
-+			v6ops = nf_get_ipv6_ops();
-+			if (v6ops && v6ops->chk_addr(net, addr, dev, true))
-+				ret = XT_ADDRTYPE_LOCAL;
-+		}
- 		route_err = afinfo->route(net, (struct dst_entry **)&rt,
--					flowi6_to_flowi(&flow), !!dev);
--	else
-+					  flowi6_to_flowi(&flow), false);
-+	} else {
- 		route_err = 1;
--
-+	}
- 	rcu_read_unlock();
+ 	if (cpu_has_mtrr) {
+ 		mtrr_if = &generic_mtrr_ops;
+-		size_or_mask = 0xff000000;			/* 36 bits */
++		size_or_mask = SIZE_OR_MASK_BITS(36);
+ 		size_and_mask = 0x00f00000;
+ 		phys_addr = 36;
  
- 	if (route_err)
-@@ -62,15 +70,12 @@ static u32 match_lookup_rt6(struct net *net, const struct net_device *dev,
+@@ -619,7 +621,7 @@ void __init mtrr_bp_init(void)
+ 			     boot_cpu_data.x86_mask == 0x4))
+ 				phys_addr = 36;
  
- 	if (rt->rt6i_flags & RTF_REJECT)
- 		ret = XT_ADDRTYPE_UNREACHABLE;
--	else
--		ret = 0;
- 
--	if (rt->rt6i_flags & RTF_LOCAL)
-+	if (dev == NULL && rt->rt6i_flags & RTF_LOCAL)
- 		ret |= XT_ADDRTYPE_LOCAL;
- 	if (rt->rt6i_flags & RTF_ANYCAST)
- 		ret |= XT_ADDRTYPE_ANYCAST;
- 
--
- 	dst_release(&rt->dst);
- 	return ret;
- }
-@@ -90,7 +95,7 @@ static bool match_type6(struct net *net, const struct net_device *dev,
- 
- 	if ((XT_ADDRTYPE_LOCAL | XT_ADDRTYPE_ANYCAST |
- 	     XT_ADDRTYPE_UNREACHABLE) & mask)
--		return !!(mask & match_lookup_rt6(net, dev, addr));
-+		return !!(mask & match_lookup_rt6(net, dev, addr, mask));
- 	return true;
- }
- 
+-			size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
++			size_or_mask = SIZE_OR_MASK_BITS(phys_addr);
+ 			size_and_mask = ~size_or_mask & 0xfffff00000ULL;
+ 		} else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
+ 			   boot_cpu_data.x86 == 6) {
+@@ -627,7 +629,7 @@ void __init mtrr_bp_init(void)
+ 			 * VIA C* family have Intel style MTRRs,
+ 			 * but don't support PAE
+ 			 */
+-			size_or_mask = 0xfff00000;		/* 32 bits */
++			size_or_mask = SIZE_OR_MASK_BITS(32);
+ 			size_and_mask = 0;
+ 			phys_addr = 32;
+ 		}
+@@ -637,21 +639,21 @@ void __init mtrr_bp_init(void)
+ 			if (cpu_has_k6_mtrr) {
+ 				/* Pre-Athlon (K6) AMD CPU MTRRs */
+ 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
+-				size_or_mask = 0xfff00000;	/* 32 bits */
++				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
+ 			}
+ 			break;
+ 		case X86_VENDOR_CENTAUR:
+ 			if (cpu_has_centaur_mcr) {
+ 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
+-				size_or_mask = 0xfff00000;	/* 32 bits */
++				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
+ 			}
+ 			break;
+ 		case X86_VENDOR_CYRIX:
+ 			if (cpu_has_cyrix_arr) {
+ 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
+-				size_or_mask = 0xfff00000;	/* 32 bits */
++				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
+ 			}
+ 			break;
 -- 
 1.8.1.2
 
