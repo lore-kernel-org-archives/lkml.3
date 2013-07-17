@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934681Ab3GQW5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:57:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56909 "EHLO
+	id S934684Ab3GQW7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:59:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56899 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934649Ab3GQW5K (ORCPT
+	with ESMTP id S934632Ab3GQW47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:57:10 -0400
+	Wed, 17 Jul 2013 18:56:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
+Cc: Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Steve French <smfrench@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 054/145] jbd2: move superblock checksum calculation to jbd2_write_superblock()
-Date: Wed, 17 Jul 2013 15:46:26 -0700
-Message-Id: <1374101277-7915-55-git-send-email-kamal@canonical.com>
+Subject: [PATCH 043/145] Handle big endianness in NTLM (ntlmv2) authentication
+Date: Wed, 17 Jul 2013 15:46:15 -0700
+Message-Id: <1374101277-7915-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,50 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Steve French <smfrench@us.ibm.com>
 
-commit fe52d17cdd343ac43c85cf72940a58865b9d3bfb upstream.
+commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
 
-Some of the functions which modify the jbd2 superblock were not
-updating the checksum before calling jbd2_write_superblock().  Move
-the call to jbd2_superblock_csum_set() to jbd2_write_superblock(), so
-that the checksum is calculated consistently.
+This is RH bug 970891
+Uppercasing of username during calculation of ntlmv2 hash fails
+because UniStrupr function does not handle big endian wchars.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Darrick J. Wong <darrick.wong@oracle.com>
+Also fix a comment in the same code to reflect its correct usage.
+
+[To make it easier for stable (rather than require 2nd patch) fixed
+this patch of Shirish's to remove endian warning generated
+by sparse -- steve f.]
+
+Reported-by: steve <sanpatr1@in.ibm.com>
+Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/jbd2/journal.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/cifs/cifs_unicode.h | 8 ++++----
+ fs/cifs/cifsencrypt.c  | 6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 42f8cf6c..ea9feb9 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1303,6 +1303,7 @@ static int journal_reset(journal_t *journal)
- static void jbd2_write_superblock(journal_t *journal, int write_op)
+diff --git a/fs/cifs/cifs_unicode.h b/fs/cifs/cifs_unicode.h
+index 4fb0974..fe8d627 100644
+--- a/fs/cifs/cifs_unicode.h
++++ b/fs/cifs/cifs_unicode.h
+@@ -327,14 +327,14 @@ UniToupper(register wchar_t uc)
+ /*
+  * UniStrupr:  Upper case a unicode string
+  */
+-static inline wchar_t *
+-UniStrupr(register wchar_t *upin)
++static inline __le16 *
++UniStrupr(register __le16 *upin)
  {
- 	struct buffer_head *bh = journal->j_sb_buffer;
-+	journal_superblock_t *sb = journal->j_superblock;
- 	int ret;
+-	register wchar_t *up;
++	register __le16 *up;
  
- 	trace_jbd2_write_superblock(journal, write_op);
-@@ -1324,6 +1325,7 @@ static void jbd2_write_superblock(journal_t *journal, int write_op)
- 		clear_buffer_write_io_error(bh);
- 		set_buffer_uptodate(bh);
+ 	up = upin;
+ 	while (*up) {		/* For all characters */
+-		*up = UniToupper(*up);
++		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
+ 		up++;
  	}
-+	jbd2_superblock_csum_set(journal, sb);
- 	get_bh(bh);
- 	bh->b_end_io = end_buffer_write_sync;
- 	ret = submit_bh(write_op, bh);
-@@ -1420,7 +1422,6 @@ void jbd2_journal_update_sb_errno(journal_t *journal)
- 	jbd_debug(1, "JBD2: updating superblock error (errno %d)\n",
- 		  journal->j_errno);
- 	sb->s_errno    = cpu_to_be32(journal->j_errno);
--	jbd2_superblock_csum_set(journal, sb);
- 	read_unlock(&journal->j_state_lock);
+ 	return upin;		/* Return input pointer */
+diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+index 652f505..6d718c3 100644
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -415,7 +415,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 	int rc = 0;
+ 	int len;
+ 	char nt_hash[CIFS_NTHASH_SIZE];
+-	wchar_t *user;
++	__le16 *user;
+ 	wchar_t *domain;
+ 	wchar_t *server;
  
- 	jbd2_write_superblock(journal, WRITE_SYNC);
+@@ -440,7 +440,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 		return rc;
+ 	}
+ 
+-	/* convert ses->user_name to unicode and uppercase */
++	/* convert ses->user_name to unicode */
+ 	len = ses->user_name ? strlen(ses->user_name) : 0;
+ 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
+ 	if (user == NULL) {
+@@ -450,7 +450,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 	}
+ 
+ 	if (len) {
+-		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
++		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
+ 		UniStrupr(user);
+ 	} else {
+ 		memset(user, '\0', 2);
 -- 
 1.8.1.2
 
