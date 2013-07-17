@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab3GQVxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 17:53:16 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46550 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756282Ab3GQVxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 17:53:14 -0400
-Message-ID: <51E71249.4050200@codeaurora.org>
-Date: Wed, 17 Jul 2013 14:53:13 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Javi Merino <javi.merino@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if
- UP system
-References: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org> <20130712111322.GC3213@e102654-lin.cambridge.arm.com> <20130712121023.GB27430@codeaurora.org>
-In-Reply-To: <20130712121023.GB27430@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757468Ab3GQVxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 17:53:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5602 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756263Ab3GQVxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 17:53:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,687,1367996400"; 
+   d="scan'208";a="372075202"
+Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure
+ duetomoduledependency.
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+In-Reply-To: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>
+References: <20130716115527.GA1034@gondor.apana.org.au>
+	 <201307162249.JEA41532.FFOLHVQJFtOOMS@I-love.SAKURA.ne.jp>
+	 <1373991828.22432.274.camel@schen9-DESK>
+	 <201307172052.EJE32506.OFMSFJQOFHtVOL@I-love.SAKURA.ne.jp>
+	 <1374079597.22432.314.camel@schen9-DESK>
+	 <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Jul 2013 14:53:21 -0700
+Message-ID: <1374098001.22432.317.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/13 05:10, Stephen Boyd wrote:
-> On 07/12, Javi Merino wrote:
->> I agree, we should drop the check.  It's annoying in uniprocessors and
->> unlikely to be found in the real world unless your gic entry in the dt
->> is wrong.
->>
-> Ok. How about this?
-
-Any comments?
-
->
-> ----8<-----
-> Subject: [PATCH v2] irqchip: gic: Don't complain in gic_get_cpumask()
->
-> In a uniprocessor implementation the interrupt processor targets
-> registers are read-as-zero/write-ignored (RAZ/WI). Unfortunately
-> gic_get_cpumask() will print a critical message saying
->
->  GIC CPU mask not found - kernel will fail to boot.
->
-> if these registers all read as zero, but there won't actually be
-> a problem on uniprocessor systems and the kernel will boot just
-> fine. Remove this check because if you're on a multiprocessor
-> system it's unlikely to be printed unless your DT is wrong or
-> your hardware is broken.
->
-> Cc: Nicolas Pitre <nico@linaro.org>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Javi Merino <javi.merino@arm.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/irqchip/irq-gic.c | 3 ---
->  1 file changed, 3 deletions(-)
->
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 19ceaa60..4fbcea9 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -368,9 +368,6 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
->  			break;
->  	}
->  
-> -	if (!mask)
-> -		pr_crit("GIC CPU mask not found - kernel will fail to boot.\n");
-> -
->  	return mask;
->  }
->  
+On Thu, 2013-07-18 at 05:50 +0900, Tetsuo Handa wrote:
+> Tim Chen wrote:
+> > > Therefore, I think possible solutions are either
+> > > 
+> > >   (a) built-in the dependent modules
+> > > 
+> > >       # grep crc /lib/modules/3.11.0-rc1+/modules.dep
+> > >       kernel/drivers/scsi/sd_mod.ko: kernel/lib/crc-t10dif.ko
+> > >       kernel/lib/crc-t10dif.ko:
+> > 
+> > This approach will increase kernel size for those who are not using
+> > t10dif so some people may object.  
+> > BTW, The PCLMULQDQ version does not need to be build in.
+> 
+> sd_mod.ko must choose one from versions available as of loading sd_mod.ko.
+> Although it is not needed to built-in the PCLMULQDQ version for fixing the boot
+> failure, it is needed to built-in the PCLMULQDQ version for getting performance
+> improvement when PCLMULQDQ is supported.
+> 
+> > Your approach is quite complicated.  I think something simpler like the
+> > following will work:
+> 
+> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
 
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+The following code in crct10dif-pclmul_glue.c
+
+static const struct x86_cpu_id crct10dif_cpu_id[] = {
+        X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
+        {}
+};
+MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+
+will put the module in the device table and get the module
+loaded, as long as the cpu support PCLMULQDQ. So we should be able
+to benefit.
+
+Tim
 
