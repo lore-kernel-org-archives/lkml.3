@@ -1,87 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3GQO2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:28:00 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:62905 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab3GQO17 (ORCPT
+	id S1755466Ab3GQO3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:29:24 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47556 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754885Ab3GQO3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:27:59 -0400
+	Wed, 17 Jul 2013 10:29:22 -0400
+Message-ID: <51E6A66D.7090407@linux.vnet.ibm.com>
+Date: Wed, 17 Jul 2013 19:43:01 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130717010244.GM4994@xanatos>
-References: <20130715204135.GH15531@xanatos>
-	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	<1373926109.17876.221.camel@gandalf.local.home>
-	<20130715223615.GI15531@xanatos>
-	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-	<20130716211235.GG4994@xanatos>
-	<20130716221821.GB21611@1wt.eu>
-	<20130716223957.GJ4994@xanatos>
-	<51E5DB59.2050209@schaufler-ca.com>
-	<20130717010244.GM4994@xanatos>
-Date: Wed, 17 Jul 2013 09:27:57 -0500
-Message-ID: <CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
-Subject: Re: [ATTEND] How to act on LKML
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, Willy Tarreau <w@1wt.eu>,
-        Olivier Galibert <galibert@pobox.com>, David Lang <david@lang.hm>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org
-Content-Type: text/plain; charset=UTF-8
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        ouyang@cs.pitt.edu, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com> <51E66C71.6020605@linux.vnet.ibm.com> <20130717124511.GW11772@redhat.com> <51E69429.7040309@linux.vnet.ibm.com> <20130717132503.GA13732@redhat.com>
+In-Reply-To: <20130717132503.GA13732@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071714-5564-0000-0000-000008D6FB5A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 8:02 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
+On 07/17/2013 06:55 PM, Gleb Natapov wrote:
+> On Wed, Jul 17, 2013 at 06:25:05PM +0530, Raghavendra K T wrote:
+>> On 07/17/2013 06:15 PM, Gleb Natapov wrote:
+>>> On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
+>>>>>> Instead of halt we started with a sleep hypercall in those
+>>>>>>   versions. Changed to halt() once Avi suggested to reuse existing sleep.
+>>>>>>
+>>>>>> If we use older hypercall with few changes like below:
+>>>>>>
+>>>>>> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
+>>>>>> {
+>>>>>>   // a0 reserved for flags
+>>>>>> if (!w->lock)
+>>>>>> return;
+>>>>>> DEFINE_WAIT
+>>>>>> ...
+>>>>>> end_wait
+>>>>>> }
+>>>>>>
+>>>>> How would this help if NMI takes lock in critical section. The thing
+>>>>> that may happen is that lock_waiting->want may have NMI lock value, but
+>>>>> lock_waiting->lock will point to non NMI lock. Setting of want and lock
+>>>>> have to be atomic.
+>>>>
+>>>> True. so we are here
+>>>>
+>>>>          non NMI lock(a)
+>>>>          w->lock = NULL;
+>>>>          smp_wmb();
+>>>>          w->want = want;
+>>>>                                 NMI
+>>>>                           <---------------------
+>>>>                            NMI lock(b)
+>>>>                            w->lock = NULL;
+>>>>                            smp_wmb();
+>>>>                            w->want = want;
+>>>>                            smp_wmb();
+>>>>                            w->lock = lock;
+>>>>                           ---------------------->
+>>>>          smp_wmb();
+>>>>          w->lock = lock;
+>>>>
+>>>> so how about fixing like this?
+>>>>
+>>>> again:
+>>>>          w->lock = NULL;
+>>>>          smp_wmb();
+>>>>          w->want = want;
+>>>>          smp_wmb();
+>>>>          w->lock = lock;
+>>>>
+>>>> if (!lock || w->want != want) goto again;
+>>>>
+>>> NMI can happen after the if() but before halt and the same situation
+>>> we are trying to prevent with IRQs will occur.
+>>
+>> True, we can not fix that. I thought to fix the inconsistency of
+>> lock,want pair.
+>> But NMI could happen after the first OR condition also.
+>> /me thinks again
+>>
+> lock_spinning() can check that it is called in nmi context and bail out.
 
-> I've provided examples and personal stories in an attempt to give
-> incentive to change.
+Good point.
+I think we can check for even irq context and bailout so that in irq 
+context we continue spinning instead of slowpath. no ?
 
-Those are just stories; things that happened. What you need to provide
-is *evidence* that if the community changes, things will be better,
-and unless you have a study of series of collaborative groups like the
-Linux kernel, that demonstrates that suppressing swearing has a
-positive effect in the community, I'd say all you have is an
-*opinion*.
+> How often this will happens anyway.
+>
 
-> I cannot force on anyone the will to change, nor
-> would I want to.  I cannot "manage" change in others.  I can only
-> politely point out that the current community behavior does hurt other
-> people, and keep people from contributing.
+I know NMIs occur frequently with watchdogs. or used by sysrq-trigger
+etc.. But I am not an expert how frequent it is otherwise. But even
+then if they do not use spinlock, we have no problem as already pointed.
 
-Which people have been hurt? Mauro? I would like to hear that from
-him. Another recipient of your stories was Rafael, and he already said
-he didn't feel personally attacked. I have also been a recipient of
-Linus' cursing, and I don't see any reason to change.
+I can measure with debugfs counter how often it happens.
 
-But the more important question is; was the cursing justified? In the
-case of Mauro, it most definitely was, because as Linus mentioned; he
-broke the #1 rule of Linux, and that can't be tolerated from a
-lieutenant.
-
-So no, your stories don't prove that any people were hurt, justified
-or not. But even that is not important, what is important is; was the
-*project* hurt? I'd say you would need more than a couple of stories
-to prove that.
-
-> I'm not demanding change.  I'm merely asking to discuss the possibly of
-> change at KS.
-
-Everything is possible, the question is not "*can* it change", the
-question is "*should* it change". And again, you need evidence to show
-that it should.
-
-Cheers.
-
--- 
-Felipe Contreras
