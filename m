@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab3GQKKF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 06:10:05 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58577 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab3GQKKD (ORCPT
+	id S1754132Ab3GQKLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 06:11:01 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:58287 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab3GQKK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 06:10:03 -0400
-Date: Wed, 17 Jul 2013 11:09:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, arnd@arndb.de
-Message-ID: <20130717100936.GL22506@sirena.org.uk>
-References: <1373978485-17496-1-git-send-email-jonas.jensen@gmail.com>
- <1374052444-5420-1-git-send-email-jonas.jensen@gmail.com>
+	Wed, 17 Jul 2013 06:10:59 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ikqct/fZAlyRpWN7"
-Content-Disposition: inline
-In-Reply-To: <1374052444-5420-1-git-send-email-jonas.jensen@gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4] rtc: Add MOXA ART RTC driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130717010244.GM4994@xanatos>
+References: <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+ <1373926109.17876.221.camel@gandalf.local.home> <20130715223615.GI15531@xanatos>
+ <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz> <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+ <20130716211235.GG4994@xanatos> <20130716221821.GB21611@1wt.eu>
+ <20130716223957.GJ4994@xanatos> <51E5DB59.2050209@schaufler-ca.com> <20130717010244.GM4994@xanatos>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Wed, 17 Jul 2013 15:40:18 +0530
+Message-ID: <CALkWK0mRbku+d+VKGBJbeiZ_xqGELvgPedSTED7gWcMePqWpXw@mail.gmail.com>
+Subject: Re: [ATTEND] How to act on LKML
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>, Willy Tarreau <w@1wt.eu>,
+        Olivier Galibert <galibert@pobox.com>, David Lang <david@lang.hm>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sarah Sharp wrote:
+> I do smile often in email. :)  And be sad. :( And be apologetic. :-/
+> Smug. ^~^  Angry. >:[  Sarcastic. ;)  Trolling/crazy. 8)  D'oh. (>.<)
+> Worried. (>_>);  Disappointed. (-_-)  Kitty! =^_^=  Meow!
+>
+> Be creative.  There are ways of expressing emotion without cussing.
 
---ikqct/fZAlyRpWN7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Personally, I think the whole issue of swearing on-list is taken way
+too seriously [1].  There are many ways of expressing emotion;
+considering one such form "unprofessional" is just a form of
+suffocation.  Members of the mailing list automatically pick up on the
+influential styles (i.e. the styles of the active participants and
+effective communicators).  If you think your style is "better",
+there's exactly one way to verify the claim: you participate actively;
+your style will automatically rub off on the others if it is shown to
+be effective.
 
-On Wed, Jul 17, 2013 at 11:14:04AM +0200, Jonas Jensen wrote:
-> Add RTC driver for MOXA ART SoCs.
->=20
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-
-Reviewed-by: Mark Brown <broonie@linaro.org>
-
---ikqct/fZAlyRpWN7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5m1dAAoJELSic+t+oim9s7MP/jqUVIFRBGUsdvtIJ+VcSoMs
-kaM78WFKbMnCn/c6t5fnt2nl6gcEA5DCI1BFrgTNrfHx6XW217mW3le71xLUyeph
-btAYUT6kvu+o/3U8VcK9ZhCE8T5pPScDTDcRPpMbjpvdo3EV/fgIVfK16KCw6wl3
-aqUAkR/Gr0pbA1uprsaX/B6t2tuzlPsBstTZbTH5rnt9qVBVZRQ3NDrX2F+zDN07
-28urCBIaII9TXl3MO1BeCG0oYaeVTFfnLWm2tKQ44U0FyDjeUbCRbSyxk764PJQ9
-bhCzdDGh0k5j7dPKTuSrTA8clR81BhD34zLJGU8Yd2HBhMi41TsgaZJ40HKrqNju
-Uohxc1FXIx9H5tZmidS8Nx1XDeMD825yJXLLlZ/YrvmwShhluFrs/fB7CKM9q/Bb
-1qIiXzeb7YEoxOR8a4SDzsJphxtcM/hOXfiDuXZjXVDVOJW2AfxJoOZ+SxcJqw2m
-3yUtSiPLgpvLNgN+jK6vncBPjhzTqHQoac/qD/2fufijdsUV7XOZd5LMKZH6ZT+p
-vW/ub7s/AQDkUzX/b97L6pQYbtkse3lsLsm5kSF1x2gb+/rFqr2T1T5Kjt40XS3Y
-w5xYojuulQHqCR/xzcx4bZ0j1qDPW9ZdTr0aUZufOJoqXd4Pr2rJOQixfH8R3v4x
-BCaEJuUjr48a1NvQwSI6
-=sqjH
------END PGP SIGNATURE-----
-
---ikqct/fZAlyRpWN7--
+[1]: http://youtu.be/7raS7hmLkAA
