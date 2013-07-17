@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934425Ab3GQXSF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:18:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56519 "EHLO
+	id S934373Ab3GQWyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:54:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56513 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934378Ab3GQWyx (ORCPT
+	with ESMTP id S934290Ab3GQWys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:54:53 -0400
+	Wed, 17 Jul 2013 18:54:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 061/145] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
-Date: Wed, 17 Jul 2013 15:46:33 -0700
-Message-Id: <1374101277-7915-62-git-send-email-kamal@canonical.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 133/145] perf: Clone child context from parent context pmu
+Date: Wed, 17 Jul 2013 15:47:45 -0700
+Message-Id: <1374101277-7915-134-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -32,69 +31,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit da331ba8e9c5de72a27e50f71105395bba6eebe0 upstream.
+commit 734df5ab549ca44f40de0f07af1c8803856dfb18 upstream.
 
-tasklet_kill() may sleep so call it before taking pch->lock.
+Currently when the child context for inherited events is
+created, it's based on the pmu object of the first event
+of the parent context.
 
-Fixes following lockup:
+This is wrong for the following scenario:
 
-  BUG: scheduling while atomic: cat/2383/0x00000002
-  Modules linked in:
-    unwind_backtrace+0x0/0xfc
-    __schedule_bug+0x4c/0x58
-    __schedule+0x690/0x6e0
-    sys_sched_yield+0x70/0x78
-    tasklet_kill+0x34/0x8c
-    pl330_free_chan_resources+0x24/0x88
-    dma_chan_put+0x4c/0x50
-  [...]
-  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
-   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
-    unwind_backtrace+0x0/0xfc
-    do_raw_spin_lock+0x194/0x204
-    _raw_spin_lock_irqsave+0x20/0x28
-    pl330_tasklet+0x2c/0x5a8
-    tasklet_action+0xfc/0x114
-    __do_softirq+0xe4/0x19c
-    irq_exit+0x98/0x9c
-    handle_IPI+0x124/0x16c
-    gic_handle_irq+0x64/0x68
-    __irq_svc+0x40/0x70
-    cpuidle_wrap_enter+0x4c/0xa0
-    cpuidle_enter_state+0x18/0x68
-    cpuidle_idle_call+0xac/0xe0
-    cpu_idle+0xac/0xf0
+  - HW context having HW and SW event
+  - HW event got removed (closed)
+  - SW event stays in HW context as the only event
+    and its pmu is used to clone the child context
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+The issue starts when the cpu context object is touched
+based on the pmu context object (__get_cpu_context). In
+this case the HW context will work with SW cpu context
+ending up with following WARN below.
+
+Fixing this by using parent context pmu object to clone
+from child context.
+
+Addresses the following warning reported by Vince Weaver:
+
+[ 2716.472065] ------------[ cut here ]------------
+[ 2716.476035] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x)
+[ 2716.476035] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
+[ 2716.476035] CPU: 0 PID: 3164 Comm: perf_fuzzer Not tainted 3.10.0-rc4 #2
+[ 2716.476035] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
+[ 2716.476035]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc18
+[ 2716.476035]  ffff8801175557f0 0000000000000000 ffff880119fda88c ffffffff810ad
+[ 2716.476035]  ffff880119fda880 ffffffff810af02a 0000000000000009 ffff880117550
+[ 2716.476035] Call Trace:
+[ 2716.476035]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
+[ 2716.476035]  [<ffffffff810ab2bd>] ? task_ctx_sched_out+0x3c/0x5f
+[ 2716.476035]  [<ffffffff810af02a>] ? perf_event_exit_task+0xbf/0x194
+[ 2716.476035]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
+[ 2716.476035]  [<ffffffff810cd5ab>] ? __do_fault+0x359/0x394
+[ 2716.476035]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
+[ 2716.476035]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
+[ 2716.476035]  [<ffffffff810ac05c>] ? __perf_event_task_sched_out+0x230/0x2d1
+[ 2716.476035]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
+[ 2716.476035]  [<ffffffff810abbf9>] ? ctx_sched_in+0x43/0x141
+[ 2716.476035]  [<ffffffff810ac2ca>] ? perf_event_context_sched_in+0x7a/0x90
+[ 2716.476035]  [<ffffffff810ac311>] ? __perf_event_task_sched_in+0x31/0x118
+[ 2716.476035]  [<ffffffff81050dd9>] ? mmdrop+0xd/0x1c
+[ 2716.476035]  [<ffffffff81051a39>] ? finish_task_switch+0x7d/0xa6
+[ 2716.476035]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
+[ 2716.476035]  [<ffffffff813654f5>] ? retint_signal+0x3d/0x78
+[ 2716.476035] ---[ end trace 827178d8a5966c3d ]---
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1373384651-6109-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/dma/pl330.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/events/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 80680ee..4bed3f1 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2459,10 +2459,10 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
- 	struct dma_pl330_chan *pch = to_pchan(chan);
- 	unsigned long flags;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1df07c2..e133177 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7137,7 +7137,7 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 		 * child.
+ 		 */
  
--	spin_lock_irqsave(&pch->lock, flags);
--
- 	tasklet_kill(&pch->task);
- 
-+	spin_lock_irqsave(&pch->lock, flags);
-+
- 	pl330_release_channel(pch->pl330_chid);
- 	pch->pl330_chid = NULL;
+-		child_ctx = alloc_perf_context(event->pmu, child);
++		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
+ 		if (!child_ctx)
+ 			return -ENOMEM;
  
 -- 
 1.8.1.2
