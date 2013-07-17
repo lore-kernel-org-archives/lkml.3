@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab3GQD0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 23:26:54 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:52879 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab3GQD0w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 23:26:52 -0400
-Date: Tue, 16 Jul 2013 23:26:49 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Olof Johansson <olof@lixom.net>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>, Achin Gupta <achin.gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Subject: Re: [RFC PATCH v5 0/1] drivers: mfd: Versatile Express SPC support
-In-Reply-To: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com>
-Message-ID: <alpine.LFD.2.03.1307162323530.14924@syhkavp.arg>
-References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751848Ab3GQD2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 23:28:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44830 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab3GQD2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 23:28:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,682,1367996400"; 
+   d="scan'208";a="371434161"
+Message-ID: <1374031686.12825.143.camel@envy.home>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Tue, 16 Jul 2013 20:28:06 -0700
+In-Reply-To: <CA+55aFw9E4mORqJaC+5n_dy8GgiQN6QRZh3-2GH99sedrYoEkA@mail.gmail.com>
+References: <20130715155202.GC29526@xanatos>
+	 <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+	 <20130715174659.GC15531@xanatos>
+	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	 <20130715180403.GD15531@xanatos>
+	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	 <20130715184642.GE15531@xanatos> <20130715191727.GC10157@1wt.eu>
+	 <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com>
+	 <8738rf14zl.fsf@rustcorp.com.au> <20130716210856.GF4994@xanatos>
+	 <878v16yp57.fsf@rustcorp.com.au>
+	 <CA+55aFw9E4mORqJaC+5n_dy8GgiQN6QRZh3-2GH99sedrYoEkA@mail.gmail.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013, Lorenzo Pieralisi wrote:
+On Tue, 2013-07-16 at 18:37 -0700, Linus Torvalds wrote:
+> On Tue, Jul 16, 2013 at 6:02 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >>
+> >> "Mauro, SHUT THE FUCK UP!"
+> >
+> > This one crosses the line.  There's no non-offensive way to tell a geek
+> > "you are wrong", but this isn't even trying.  Bad Linus!
+> 
+> You know what? Not my proudest moment. I was really upset.
 
-> Hello,
-> 
-> version v5 of VExpress SPC driver, please read on the changelog for major
-> changes and explanations.
-> 
-> The probing scheme is unchanged, since after trying the early platform
-> devices approach it appeared that the end result was no better than the
-> current one. The only clean solution relies either on changing how
-> secondaries are brought up in the kernel (later than now) or enable
-> early platform device registration through DT. Please check this
-> thread for the related discussion:
-> 
-> https://lists.ozlabs.org/pipermail/devicetree-discuss/2013-June/036542.html
-> 
-> The interface was adapted to regmap and again reverted to old driver for
-> the following reasons:
-> 
-> - Power down registers locking is hairy and requires arch spinlocks in
->   the MCPM back end to work properly, normal spinlocks cannot be used
-> - Regmap adds unnecessary code to manage SPC since it is just a bunch of
->   registers used to control power management flags, the overhead is just
->   not worth it (talking about power down registers, not the vexpress config
->   interface)
-> - The locking scheme behind regmap requires all registers in the map
->   to be protected with the same lock, which is not exactly what we want
->   here
-> - Given the reasons above, adding a regmap interface buys us nothing from
->   a driver readability and maintainability perspective (again just talking
->   about the power interface, a few registers) because for the SPC it would
->   simply not be used
-> 
-> /drivers/mfd is probably not the right place for this code as it stands (but
-> probably will be when the entire driver, with DVFS and config interface, is
-> complete).
-> 
-> Thank you for the review in advance,
-> Lorenzo
+This goes a long way to resolving the stated issues in my opinion. Of
+the three issues raised, Linus has either adequately justified himself
+or conceded. This wasn't meant to be Linus on trial was it? :-)
 
-I've integrated this patch in my MCPM backend for TC2 patch series.
+I'm sure we could dig up a thousand more references of "bad" behavior
+from others on LKML. Before we do let's first make sure the recipient is
+not being "resistant to education" (a phrase I've picked up from Thomas
+Gleixner and like very much) or has somehow provoked things. Ted Ts'o
+will recall fondly all the pigs in guinea *smirk*.
 
-ACKs from concerned/interested people would be appreciated so I could 
-send this for ARM-SOC inclusion right away.
+I enjoy a good rant as much as anyone, but I recognize personal attacks
+can be very harmful to the individual and possibly (difficult to prove)
+the quality of the project. This is especially true when coming from
+someone that is held in very high regard, such as Linus and the other
+maintainers.
+
+I think the one tangible TODO that has come out of this is to DOCUMENT
+expectations. Paul Gortmaker has already submitted a netdev FAQ which I
+have reviewed and David Miller approved of. I have committed to review
+stable_kernel_rules. It appears there is also call to have Linus'
+expectations of the maintainers documented. This would also be good for
+everyone to read to better understand the responses they receive from
+maintainers and why things are the way they are.
+
+With that done, I think some tolerance in both directions would improve
+things here. And as a last resort, we speak up when someone is under
+attack.
+
+"Whoa Nelly, calm down, don't forget your meds. Seriously though, that
+(is not acceptable code|violates a core policy), see the following
+documentation." This adds some burden on the broader audience to point
+people at the docs, because even RTFM has to get annoying to repeat too
+often.
+
+And with that, I'll sign out of this thread unless anyone wants to
+discuss documentation - but those should probably happen on LKML (or
+maybe KS as some have suggested).
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
 
 
-Nicolas
