@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3GQQqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:46:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40589 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932850Ab3GQQqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:46:10 -0400
+	id S933269Ab3GQQqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:46:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57820 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933143Ab3GQQqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 12:46:18 -0400
 From: Nishanth Menon <nm@ti.com>
 To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <benoit.cousson@linaro.org>,
         Tony Lindgren <tony@atomide.com>
 CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         J Keerthy <j-keerthy@ti.com>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 8/9] ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
-Date: Wed, 17 Jul 2013 11:45:37 -0500
-Message-ID: <1374079538-19548-9-git-send-email-nm@ti.com>
+Subject: [PATCH 4/9] ARM: dts: omap5-uevm: update LDO1 voltage to 1.5V and settings
+Date: Wed, 17 Jul 2013 11:45:33 -0500
+Message-ID: <1374079538-19548-5-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374079538-19548-1-git-send-email-nm@ti.com>
 References: <1374079538-19548-1-git-send-email-nm@ti.com>
@@ -34,43 +33,39 @@ However, The regulator information is based on an older temporary
 pre-production board variant and does not reflect production board
 750-2628-XXX boards.
 
-LDO4 supplies VDD_VPP which is vpp1. This is currently configured for
-1.5V which as per data manual "A pulse width of 1000 ns and an amplitude
-of 2V is required to program each eFuse bit. Otherwise, VPP1 must not
-be supplied".
+LDO1 supplies VDDAPHY_CAM which is OMAP5's vdda_csiporta/b/c. This
+can only be supplied at 1.5V or 1.8V and we currently supply 2.8V.
 
-So, fix the voltage to 2V. and disable the supply since we have no plans
-of programming efuse bits - it can only be done once - in factory.
+To prevent any potential device damage risk, use the specified
+1.5V-1.8V supply.
 
-Further it is not enabled by default by PMIC so, 'boot-on' must be
-removed, and the 'always-on' needs to be removed to achieve pulsing
-if efuse needs to be programmed.
+Remove 'always-on' and 'boot-on' settings here as it is
+a 'on need' supply to SoC IP and is not enabled by PMIC by
+default at boot.
 
 Reported-by: Marc Jüttner <m-juettner@ti.com>
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/boot/dts/omap5-uevm.dts |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/omap5-uevm.dts |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index 3ff5874..ef05676 100644
+index 87b3e9e..a55f4d8 100644
 --- a/arch/arm/boot/dts/omap5-uevm.dts
 +++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -397,10 +397,10 @@
- 				ldo7_reg: ldo7 {
- 					/* VDD_VPP: vpp1 */
- 					regulator-name = "ldo7";
--					regulator-min-microvolt = <1500000>;
--					regulator-max-microvolt = <1500000>;
+@@ -346,10 +346,8 @@
+ 				ldo1_reg: ldo1 {
+ 					/* VDDAPHY_CAM: vdda_csiport */
+ 					regulator-name = "ldo1";
+-					regulator-min-microvolt = <2800000>;
+-					regulator-max-microvolt = <2800000>;
 -					regulator-always-on;
 -					regulator-boot-on;
-+					regulator-min-microvolt = <2000000>;
-+					regulator-max-microvolt = <2000000>;
-+					/* Only for efuse reprograming! */
-+					status = "disabled";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <1800000>;
  				};
  
- 				ldo8_reg: ldo8 {
+ 				ldo2_reg: ldo2 {
 -- 
 1.7.9.5
 
