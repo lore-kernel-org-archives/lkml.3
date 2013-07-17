@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934192Ab3GQX1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:27:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56230 "EHLO
+	id S964943Ab3GQXhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:37:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56202 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757552Ab3GQWsp (ORCPT
+	with ESMTP id S1757515Ab3GQWso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:48:45 -0400
+	Wed, 17 Jul 2013 18:48:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>, Tejun Heo <tj@kernel.org>,
+Cc: Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 007/145] sata_highbank: increase retry count but shorten duration for Calxeda controller
-Date: Wed, 17 Jul 2013 15:45:39 -0700
-Message-Id: <1374101277-7915-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 013/145] zram: protect sysfs handler from invalid memory access
+Date: Wed, 17 Jul 2013 15:45:45 -0700
+Message-Id: <1374101277-7915-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,63 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit ddfef5de3d716f77bad32dbbba6b280158dfd721 upstream.
+commit 5863e10b441e7ea4b492f930f1be180a97d026f3 upstream.
 
-Increase the retry count for the hard reset function to 100 but
-shorten the time out period to 500 ms. See the comment for
-ahci_highbank_hardreset for the reasons why those vaulues were
-chosen.
+Use zram->init_lock to protect access to zram->meta, otherwise it
+may cause invalid memory access if zram->meta has been freed by
+zram_reset_device().
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+This issue may be triggered by:
+Thread 1:
+while true; do cat mem_used_total; done
+Thread 2:
+while true; do echo 8M > disksize; echo 1 > reset; done
+
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.8:
+  - protect access to zram->mem_pool instead of zram->meta ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/sata_highbank.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/staging/zram/zram_sysfs.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index b1a664a..ecaf1ff 100644
---- a/drivers/ata/sata_highbank.c
-+++ b/drivers/ata/sata_highbank.c
-@@ -196,10 +196,26 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
- 	return 0;
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index de1eacf..c07687e 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -186,8 +186,10 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 	u64 val = 0;
+ 	struct zram *zram = dev_to_zram(dev);
+ 
++	down_read(&zram->init_lock);
+ 	if (zram->init_done)
+ 		val = zs_get_total_size_bytes(zram->mem_pool);
++	up_read(&zram->init_lock);
+ 
+ 	return sprintf(buf, "%llu\n", val);
  }
- 
-+/*
-+ * The Calxeda SATA phy intermittently fails to bring up a link with Gen3
-+ * Retrying the phy hard reset can work around the issue, but the drive
-+ * may fail again. In less than 150 out of 15000 test runs, it took more
-+ * than 10 tries for the link to be established (but never more than 35).
-+ * Triple the maximum observed retry count to provide plenty of margin for
-+ * rare events and to guarantee that the link is established.
-+ *
-+ * Also, the default 2 second time-out on a failed drive is too long in
-+ * this situation. The uboot implementation of the same driver function
-+ * uses a much shorter time-out period and never experiences a time out
-+ * issue. Reducing the time-out to 500ms improves the responsiveness.
-+ * The other timing constants were kept the same as the stock AHCI driver.
-+ * This change was also tested 15000 times on 24 drives and none of them
-+ * experienced a time out.
-+ */
- static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
- 				unsigned long deadline)
- {
--	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
-+	static const unsigned long timing[] = { 5, 100, 500};
- 	struct ata_port *ap = link->ap;
- 	struct ahci_port_priv *pp = ap->private_data;
- 	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
-@@ -207,7 +223,7 @@ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
- 	bool online;
- 	u32 sstatus;
- 	int rc;
--	int retry = 10;
-+	int retry = 100;
- 
- 	ahci_stop_engine(ap);
- 
 -- 
 1.8.1.2
 
