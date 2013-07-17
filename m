@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab3GQXCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:02:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56824 "EHLO
+	id S1757585Ab3GQW4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:56:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56777 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757598Ab3GQW4n (ORCPT
+	with ESMTP id S934562Ab3GQW4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:43 -0400
+	Wed, 17 Jul 2013 18:56:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+Cc: Dan Williams <dcbw@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 024/145] cgroup: fix umount vs cgroup_cfts_commit() race
-Date: Wed, 17 Jul 2013 15:45:56 -0700
-Message-Id: <1374101277-7915-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 035/145] USB: option,qcserial: move Novatel Gobi1K IDs to qcserial
+Date: Wed, 17 Jul 2013 15:46:07 -0700
+Message-Id: <1374101277-7915-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,71 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 084457f284abf6789d90509ee11dae383842b23b upstream.
+commit a254810a86aaaac4ac6ba44fa934558b042a17a7 upstream.
 
-cgroup_cfts_commit() uses dget() to keep cgroup alive after cgroup_mutex
-is dropped, but dget() won't prevent cgroupfs from being umounted. When
-the race happens, vfs will see some dentries with non-zero refcnt while
-umount is in process.
+These devices are all Gobi1K devices (according to the Windows INF
+files) and should be handled by qcserial instead of option.  Their
+network port is handled by qmi_wwan.
 
-Keep running this:
-  mount -t cgroup -o blkio xxx /cgroup
-  umount /cgroup
-
-And this:
-  modprobe cfq-iosched
-  rmmod cfs-iosched
-
-After a while, the BUG() in shrink_dcache_for_umount_subtree() may
-be triggered:
-
-  BUG: Dentry xxx{i=0,n=blkio.yyy} still in use (1) [umount of cgroup cgroup]
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[ luis: backported to 3.8:
-  - fixed build error: added '&' to atomic_inc_not_zero parameter;
-    this was fixed upstream by commit e8c82d20a9f729cf4b9f73043f7fd4e0872bebfd ]
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cgroup.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c   | 4 ----
+ drivers/usb/serial/qcserial.c | 8 +++++++-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 02ddadb..b6a1f62 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2813,13 +2813,17 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- {
- 	LIST_HEAD(pending);
- 	struct cgroup *cgrp, *n;
-+	struct super_block *sb = ss->root->sb;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 9162db2..c94fe3e 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -159,8 +159,6 @@ static void option_instat_callback(struct urb *urb);
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
+ #define NOVATELWIRELESS_PRODUCT_E362		0x9010
+-#define NOVATELWIRELESS_PRODUCT_G1		0xA001
+-#define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+ #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
  
- 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
--	if (cfts && ss->root != &rootnode) {
-+	if (cfts && ss->root != &rootnode &&
-+	    atomic_inc_not_zero(&sb->s_active)) {
- 		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
- 			dget(cgrp->dentry);
- 			list_add_tail(&cgrp->cft_q_node, &pending);
- 		}
-+	} else {
-+		sb = NULL;
- 	}
- 
- 	mutex_unlock(&cgroup_mutex);
-@@ -2842,6 +2846,9 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- 		dput(cgrp->dentry);
- 	}
- 
-+	if (sb)
-+		deactivate_super(sb);
-+
- 	mutex_unlock(&cgroup_cft_mutex);
- }
- 
+@@ -730,8 +728,6 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC547) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED) },
+-	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1) },
+-	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1_M) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index bd794b4..c65437c 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -35,7 +35,13 @@ static const struct usb_device_id id_table[] = {
+ 	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
+ 	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
+ 	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
+-	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel/Verizon USB-1000 */
++	{DEVICE_G1K(0x1410, 0xa002)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa003)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa004)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa005)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa006)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa007)},	/* Novatel Gobi Modem device */
+ 	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
+ 	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
+ 	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
 -- 
 1.8.1.2
 
