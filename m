@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3GQC7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 22:59:09 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:40798 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab3GQC7E (ORCPT
+	id S1751495Ab3GQDCn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 23:02:43 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:55695 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab3GQDCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 22:59:04 -0400
-Message-ID: <B8F447E4405F4B7B9B9723556DB3B008@chingDT>
-Reply-To: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-From: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-To: "linux-scsi" <linux-scsi@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] arcmsr: Fix command throttling for ARC188x series adapters
-Date: Wed, 17 Jul 2013 10:59:32 +0800
+	Tue, 16 Jul 2013 23:02:41 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_002B_01CE82DC.B79B5730"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-X-Antivirus: avast! (VPS 130716-1, 2013/07/17), Outbound message
-X-Antivirus-Status: Clean
+In-Reply-To: <1374027494.2537.47.camel@deadeye.wl.decadent.org.uk>
+References: <20130715195316.GF15531@xanatos>
+	<20130715204135.GH15531@xanatos>
+	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	<1373926109.17876.221.camel@gandalf.local.home>
+	<20130715223615.GI15531@xanatos>
+	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+	<20130716211235.GG4994@xanatos>
+	<20130716212704.GB9371@thunk.org>
+	<20130716224357.GK4994@xanatos>
+	<20130716235008.GC9371@thunk.org>
+	<1374027494.2537.47.camel@deadeye.wl.decadent.org.uk>
+Date: Tue, 16 Jul 2013 20:02:40 -0700
+X-Google-Sender-Auth: -qdS1HjRCdLtZ7shzLrxYKQ2uhw
+Message-ID: <CA+55aFyaNLt3HBO7a9NLbm9j-ppw1bhda+3rDtHbr48FJpiB_g@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [ 00/19]
+ 3.10.1-stable review)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Tue, Jul 16, 2013 at 7:18 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>
+> In fact, even in the pull request that's referenced here, Linus, you
+> were polite but firm in your first two responses.  When you're perfectly
+> capable of doing that, why spoil it by adding insults?
 
-------=_NextPart_000_002B_01CE82DC.B79B5730
-Content-Type: text/plain;
-	format=flowed;
-	charset="big5";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
+Umm. Notice how the "Joseph" I replied to had deleted all the comments he wrote?
 
-From: Chingching2048@areca.com.tw
+That should tell you something. I smacked down a troll.
 
-Fix command throttling for ARC188x series adapters.
-Signed-off-by: Chingching2048@areca.com.tw
----
+If I was polite to you all those years ago, and I was polite but firm
+in the two first responses, please give me credit for when I smack
+somebody down. There may be a reason for it. The fact that the person
+deleted his messages (or github deleted them for him - I have no idea
+what their comment policy is) and you cannot see that context any more
+online should not make you think that I suddenly went crazy.
 
-------=_NextPart_000_002B_01CE82DC.B79B5730
-Content-Type: application/octet-stream;
-	name="patch2"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="patch2"
+Btw, since I get the github messages in email too, I have a copy.
+Joseph replied to those "polite but firm" messages where I explained
+exactly *why* I don't want to bother with github pull requests with
+this gem:
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c =
-b/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2013-05-07 19:12:12.000000000 =
-+0800=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2013-05-16 04:20:04.000000000 =
-+0800=0A=
-@@ -2461,12 +2461,12 @@ arcmsr_hbaC_postqueue_isr(struct Adapter=0A=
- 			? true : false;=0A=
- 		/* check if command done with no error */=0A=
- 		arcmsr_drain_donequeue(acb, ccb, error);=0A=
-+		throttling++;=0A=
- 		if (throttling =3D=3D ARCMSR_HBC_ISR_THROTTLING_LEVEL) {=0A=
- 			writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING,=0A=
- 				&phbcmu->inbound_doorbell);=0A=
--			continue;=0A=
-+			throttling =3D 0;=0A=
- 		}=0A=
--		throttling++;=0A=
- 	} while (readl(&phbcmu->host_int_status) &=0A=
- 	ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR);=0A=
- }=0A=
+   "I did not realizes that Linus' shit does not stink.  Thanks for
+clearing that up..."
 
-------=_NextPart_000_002B_01CE82DC.B79B5730--
+Quite frankly, I think I was quite polite enough. Exactly *because* I
+had been polite but firm before that injection.
 
+The fact is, I don't suffer fools nicely. I call it like I see it, and
+I called him a moron for entering the discussion with a totally
+content-free comment.
+
+Feel free to disagree. Maybe you see some value in the troll comment?
+
+And I somehow suspect that your message that I replied to back in 1999
+was somehow more relevant? Yes? No?
+
+                 Linus
