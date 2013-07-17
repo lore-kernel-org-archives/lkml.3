@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab3GQQ5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:57:51 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:34892 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab3GQQ5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:57:48 -0400
-Date: Wed, 17 Jul 2013 18:57:43 +0200
-From: Robert Richter <rric@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+	id S932680Ab3GQRBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:01:00 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:9275 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932466Ab3GQRA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 13:00:59 -0400
+X-IronPort-AV: E=Sophos;i="4.89,685,1367971200"; 
+   d="scan'208";a="35773419"
+Date: Wed, 17 Jul 2013 18:00:46 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, CAI Qian <caiqian@redhat.com>,
+        David Lang <david@lang.hm>,
+        <ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm, kbuild: make "make install" not depend on vmlinux
-Message-ID: <20130717165743.GK8731@rric.localhost>
-References: <20130710133742.GA29368@emu.suse.cz>
- <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
- <20130711135445.GA21500@sepie.suse.cz>
- <CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
- <20130712105721.GF8731@rric.localhost>
- <20130717160506.GI8731@rric.localhost>
- <CA+55aFx4G5gME3ByqE0Wr-_t2x_6WkP3Ta4k1z4jfW+PrcK0og@mail.gmail.com>
+        Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+In-Reply-To: <1374073771.6458.143.camel@gandalf.local.home>
+Message-ID: <alpine.DEB.2.02.1307171759100.8258@kaball.uk.xensource.com>
+References: <20130715204135.GH15531@xanatos> <20130716211235.GG4994@xanatos>  <20130716212704.GB9371@thunk.org> <20130716224357.GK4994@xanatos>  <1374015299.6458.76.camel@gandalf.local.home>  <20130716231217.GL4994@xanatos> <51E5D7C8.5000306@gmail.com> 
+ <1374018809.2249.29.camel@leira.trondhjem.org>  <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>  <20130717144849.GB16513@xanatos> <1374073771.6458.143.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx4G5gME3ByqE0Wr-_t2x_6WkP3Ta4k1z4jfW+PrcK0og@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.07.13 09:36:57, Linus Torvalds wrote:
-> On Wed, Jul 17, 2013 at 9:05 AM, Robert Richter <rric@kernel.org> wrote:
-> >
-> > I narrowed this down. The problem is that zinstall on ARCH=arm has a
-> > dependency to vmlinux which does a prepare/prepare3 and finally does a
-> > forced rebuild of kernel.release even if it exists already.
-> >
-> > Rebuilding it removes kernel.release first and then recreates it. This
-> > might race with another parallel make job running depmod.
-> >
-> > So on arm and maybe other archs we need the same as for x86:
-> >
-> >  1648e4f8 x86, kbuild: make "make install" not depend on vmlinux
-> >
-> > The patch below fixes this for arm. It is build-tested in my
-> > environment, but please test it in others too if possible.
-> 
-> Ack. This looks like the right thing to do.
+On Wed, 17 Jul 2013, Steven Rostedt wrote:
+> The last thing I want to do is to lower the quality of the kernel just
+> to get a wider range of developers.
 
-Thanks for looking at this.
+Can we stop bringing the quality of the code into the discussion?
 
-> That said, I think for clarity you might perhaps want to make the
-> unrelated change of adding double quotes around $(KERNELRELEASE) a
-> separate patch. Not a big deal, but it took me a moment to say "why
-> did he do that" (in fact, I'm not sure KERNEL_RELEASE can actually
-> validly have spaces in it, but quoting it is certainly not wrong
-> either - but it might be unnecessary.
-
-If kernel.release doen't exist KERNEL_RELEASE is empty, thus all args
-for install.sh shift one arg left. Putting it in quotes avoids this.
-Noticed this since the first verified file in install.sh ($2) should
-be the image file but was already System.map ($3).
-
-Will splitt the patches and resend.
-
--Robert
+I think it's pretty clear that one doesn't need to be verbally abusive
+in order to stop bad code from getting into the kernel.
