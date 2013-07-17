@@ -1,230 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab3GQJZt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 05:25:49 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:56204 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258Ab3GQJZq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 05:25:46 -0400
-From: Dragos Foianu <dragos.foianu@gmail.com>
-To: samuel@sortiz.org
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dragos Foianu <dragos.foianu@gmail.com>
-Subject: [PATCH] net/irda: fixed style issues in irttp
-Date: Wed, 17 Jul 2013 12:25:38 +0100
-Message-Id: <1374060338-5633-1-git-send-email-dragos.foianu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753395Ab3GQJ0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 05:26:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49558 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989Ab3GQJ0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 05:26:04 -0400
+X-IronPort-AV: E=Sophos;i="4.89,678,1367942400"; 
+   d="scan'208";a="7922690"
+Message-ID: <51E66256.9020203@cn.fujitsu.com>
+Date: Wed, 17 Jul 2013 17:22:30 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Benjamin LaHaise <bcrl@kvack.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, tangchen <tangchen@cn.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH V2 2/2] fs/aio: Add support to aio ring pages migration
+References: <51E518C0.2020908@cn.fujitsu.com> <20130716133450.GD5403@kvack.org>
+In-Reply-To: <20130716133450.GD5403@kvack.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/17 17:24:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/17 17:24:09,
+	Serialize complete at 2013/07/17 17:24:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied error fixes suggested by checpatch.pl
+As the aio job will pin the ring pages, that will lead to mem migrated
+failed. In order to fix this problem we use an anon inode to manage the aio ring
+pages, and  setup the migratepage callback in the anon inode's address space, so
+that when mem migrating the aio ring pages will be moved to other mem node safely.
 
-Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
+v1->v2:
+	Fix build failed issue if CONFIG_MIGRATION disabled.
+	Fix some minor issues under Benjamin's comments.
+
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 ---
- net/irda/irttp.c |   50 +++++++++++++++++++++++---------------------------
- 1 file changed, 23 insertions(+), 27 deletions(-)
+ fs/aio.c                |  116 +++++++++++++++++++++++++++++++++++++++++++----
+ include/linux/migrate.h |    9 ++++
+ mm/migrate.c            |    2 +-
+ 3 files changed, 116 insertions(+), 11 deletions(-)
 
-diff --git a/net/irda/irttp.c b/net/irda/irttp.c
-index ae43c62..85372cf 100644
---- a/net/irda/irttp.c
-+++ b/net/irda/irttp.c
-@@ -75,7 +75,7 @@ static pi_minor_info_t pi_minor_call_table[] = {
- 	{ NULL, 0 },                                             /* 0x00 */
- 	{ irttp_param_max_sdu_size, PV_INTEGER | PV_BIG_ENDIAN } /* 0x01 */
+diff --git a/fs/aio.c b/fs/aio.c
+index 2bbcacf..15e8a13 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -35,6 +35,9 @@
+ #include <linux/eventfd.h>
+ #include <linux/blkdev.h>
+ #include <linux/compat.h>
++#include <linux/anon_inodes.h>
++#include <linux/migrate.h>
++#include <linux/ramfs.h>
+ 
+ #include <asm/kmap_types.h>
+ #include <asm/uaccess.h>
+@@ -108,6 +111,7 @@ struct kioctx {
+ 	} ____cacheline_aligned_in_smp;
+ 
+ 	struct page		*internal_pages[AIO_RING_PAGES];
++	struct file		*aio_ring_file;
  };
--static pi_major_info_t pi_major_call_table[] = {{ pi_minor_call_table, 2 }};
-+static pi_major_info_t pi_major_call_table[] = { { pi_minor_call_table, 2 } };
- static pi_param_info_t param_info = { pi_major_call_table, 1, 0x0f, 4 };
  
- /************************ GLOBAL PROCEDURES ************************/
-@@ -205,7 +205,7 @@ static void irttp_todo_expired(unsigned long data)
-  */
- static void irttp_flush_queues(struct tsap_cb *self)
+ /*------ sysctl variables----*/
+@@ -136,15 +140,78 @@ __initcall(aio_setup);
+ 
+ static void aio_free_ring(struct kioctx *ctx)
  {
--	struct sk_buff* skb;
-+	struct sk_buff *skb;
+-	long i;
+-
+-	for (i = 0; i < ctx->nr_pages; i++)
++	int i;
++	struct file *aio_ring_file = ctx->aio_ring_file;
++	for (i = 0; i < ctx->nr_pages; i++) {
++		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
++				page_count(ctx->ring_pages[i]));
+ 		put_page(ctx->ring_pages[i]);
++	}
  
- 	IRDA_DEBUG(4, "%s()\n", __func__);
- 
-@@ -400,7 +400,7 @@ struct tsap_cb *irttp_open_tsap(__u8 stsap_sel, int credit, notify_t *notify)
- 	/* The IrLMP spec (IrLMP 1.1 p10) says that we have the right to
- 	 * use only 0x01-0x6F. Of course, we can use LSAP_ANY as well.
- 	 * JeanII */
--	if((stsap_sel != LSAP_ANY) &&
-+	if ((stsap_sel != LSAP_ANY) &&
- 	   ((stsap_sel < 0x01) || (stsap_sel >= 0x70))) {
- 		IRDA_DEBUG(0, "%s(), invalid tsap!\n", __func__);
- 		return NULL;
-@@ -427,7 +427,7 @@ struct tsap_cb *irttp_open_tsap(__u8 stsap_sel, int credit, notify_t *notify)
- 	ttp_notify.data_indication = irttp_data_indication;
- 	ttp_notify.udata_indication = irttp_udata_indication;
- 	ttp_notify.flow_indication = irttp_flow_indication;
--	if(notify->status_indication != NULL)
-+	if (notify->status_indication != NULL)
- 		ttp_notify.status_indication = irttp_status_indication;
- 	ttp_notify.instance = self;
- 	strncpy(ttp_notify.name, notify->name, NOTIFY_MAX_NAME);
-@@ -639,8 +639,7 @@ int irttp_data_request(struct tsap_cb *self, struct sk_buff *skb)
- 	 */
- 	if ((self->tx_max_sdu_size != 0) &&
- 	    (self->tx_max_sdu_size != TTP_SAR_UNBOUND) &&
--	    (skb->len > self->tx_max_sdu_size))
--	{
-+	    (skb->len > self->tx_max_sdu_size)) {
- 		IRDA_ERROR("%s: SAR enabled, but data is larger than TxMaxSduSize!\n",
- 			   __func__);
- 		ret = -EMSGSIZE;
-@@ -733,8 +732,7 @@ static void irttp_run_tx_queue(struct tsap_cb *self)
- 	 * poll us through irttp_flow_indication() - Jean II */
- 	while ((self->send_credit > 0) &&
- 	       (!irlmp_lap_tx_queue_full(self->lsap)) &&
--	       (skb = skb_dequeue(&self->tx_queue)))
--	{
-+	       (skb = skb_dequeue(&self->tx_queue))) {
- 		/*
- 		 *  Since we can transmit and receive frames concurrently,
- 		 *  the code below is a critical region and we must assure that
-@@ -798,8 +796,7 @@ static void irttp_run_tx_queue(struct tsap_cb *self)
- 	 * where we can spend a bit of time doing stuff. - Jean II */
- 	if ((self->tx_sdu_busy) &&
- 	    (skb_queue_len(&self->tx_queue) < TTP_TX_LOW_THRESHOLD) &&
--	    (!self->close_pend))
--	{
-+	    (!self->close_pend)) {
- 		if (self->notify.flow_indication)
- 			self->notify.flow_indication(self->notify.instance,
- 						     self, FLOW_START);
-@@ -892,7 +889,7 @@ static int irttp_udata_indication(void *instance, void *sap,
- 	/* Just pass data to layer above */
- 	if (self->notify.udata_indication) {
- 		err = self->notify.udata_indication(self->notify.instance,
--						    self,skb);
-+						    self, skb);
- 		/* Same comment as in irttp_do_data_indication() */
- 		if (!err)
- 			return 0;
-@@ -1057,7 +1054,7 @@ static void irttp_flow_indication(void *instance, void *sap, LOCAL_FLOW flow)
- 	 * to do that. Jean II */
- 
- 	/* If we need to send disconnect. try to do it now */
--	if(self->disconnect_pend)
-+	if (self->disconnect_pend)
- 		irttp_start_todo_timer(self, 0);
+ 	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages)
+ 		kfree(ctx->ring_pages);
++
++	if (aio_ring_file) {
++		truncate_setsize(aio_ring_file->f_inode, 0);
++		pr_debug("pid(%d) i_nlink=%u d_count=%d d_unhashed=%d i_count=%d\n",
++			current->pid, aio_ring_file->f_inode->i_nlink,
++			aio_ring_file->f_path.dentry->d_count,
++			d_unhashed(aio_ring_file->f_path.dentry),
++			atomic_read(&aio_ring_file->f_inode->i_count));
++		fput(aio_ring_file);
++		ctx->aio_ring_file = NULL;
++	}
++}
++
++static int aio_ring_mmap(struct file *file, struct vm_area_struct *vma)
++{
++	vma->vm_ops = &generic_file_vm_ops;
++	return 0;
++}
++
++static const struct file_operations aio_ring_fops = {
++	.mmap = aio_ring_mmap,
++};
++
++static int aio_set_page_dirty(struct page *page)
++{
++	return 0;
  }
  
-@@ -1116,7 +1113,7 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
- 	IRDA_ASSERT(self->magic == TTP_TSAP_MAGIC, return -EBADR;);
++static int aio_migratepage(struct address_space *mapping, struct page *new,
++			struct page *old, enum migrate_mode mode)
++{
++	struct kioctx *ctx = mapping->private_data;
++	unsigned long flags;
++	unsigned idx = old->index;
++	int rc;
++
++	/* Writeback must be complete */
++	BUG_ON(PageWriteback(old));
++
++	put_page(old);
++
++	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode);
++	if (rc != MIGRATEPAGE_SUCCESS) {
++		get_page(old);
++		return rc;
++	}
++
++	get_page(new);
++
++	spin_lock_irqsave(&ctx->completion_lock, flags);
++	migrate_page_copy(new, old);
++	ctx->ring_pages[idx] = new;
++	spin_unlock_irqrestore(&ctx->completion_lock, flags);
++
++	return rc;
++}
++
++static const struct address_space_operations aio_ctx_aops = {
++	.set_page_dirty = aio_set_page_dirty,
++	.migratepage	= aio_migratepage,
++};
++
+ static int aio_setup_ring(struct kioctx *ctx)
+ {
+ 	struct aio_ring *ring;
+@@ -152,18 +219,42 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long size, populate;
+ 	int nr_pages;
++	int i;
++	struct file *file;
  
- 	if (self->connected) {
--		if(userdata)
-+		if (userdata)
- 			dev_kfree_skb(userdata);
- 		return -EISCONN;
+ 	/* Compensate for the ring buffer's head/tail overlap entry */
+ 	nr_events += 2;	/* 1 is required, 2 for good luck */
+ 
+ 	size = sizeof(struct aio_ring);
+ 	size += sizeof(struct io_event) * nr_events;
+-	nr_pages = (size + PAGE_SIZE-1) >> PAGE_SHIFT;
++	nr_pages = PFN_UP(size);
+ 
+ 	if (nr_pages < 0)
+ 		return -EINVAL;
++	file = anon_inode_getfile_private("[aio]", &aio_ring_fops, ctx, O_RDWR);
++	if (IS_ERR(file)) {
++		ctx->aio_ring_file = NULL;
++		return -EAGAIN;
++	}
++	file->f_inode->i_mapping->a_ops = &aio_ctx_aops;
++	file->f_inode->i_mapping->private_data = ctx;
++	file->f_inode->i_size = PAGE_SIZE * (loff_t)nr_pages;
+ 
+-	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring)) / sizeof(struct io_event);
++	for (i = 0; i < nr_pages; i++) {
++		struct page *page;
++		page = find_or_create_page(file->f_inode->i_mapping,
++					   i, GFP_HIGHUSER | __GFP_ZERO);
++		if (!page)
++			break;
++		pr_debug("pid(%d) page[%d]->count=%d\n",
++			 current->pid, i, page_count(page));
++		SetPageUptodate(page);
++		SetPageDirty(page);
++		unlock_page(page);
++	}
++	ctx->aio_ring_file = file;
++	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring))
++			/ sizeof(struct io_event);
+ 
+ 	ctx->nr_events = 0;
+ 	ctx->ring_pages = ctx->internal_pages;
+@@ -177,20 +268,23 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	ctx->mmap_size = nr_pages * PAGE_SIZE;
+ 	pr_debug("attempting mmap of %lu bytes\n", ctx->mmap_size);
+ 	down_write(&mm->mmap_sem);
+-	ctx->mmap_base = do_mmap_pgoff(NULL, 0, ctx->mmap_size,
+-				       PROT_READ|PROT_WRITE,
+-				       MAP_ANONYMOUS|MAP_PRIVATE, 0, &populate);
++	ctx->mmap_base = do_mmap_pgoff(ctx->aio_ring_file, 0, ctx->mmap_size,
++				       PROT_READ | PROT_WRITE,
++				       MAP_SHARED | MAP_POPULATE, 0, &populate);
+ 	if (IS_ERR((void *)ctx->mmap_base)) {
+ 		up_write(&mm->mmap_sem);
+ 		ctx->mmap_size = 0;
+ 		aio_free_ring(ctx);
+ 		return -EAGAIN;
  	}
-@@ -1137,7 +1134,7 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
- 		 *  headers
- 		 */
- 		IRDA_ASSERT(skb_headroom(userdata) >= TTP_MAX_HEADER,
--			{ dev_kfree_skb(userdata); return -1; } );
-+			{ dev_kfree_skb(userdata); return -1; });
- 	}
++	up_write(&mm->mmap_sem);
++	mm_populate(ctx->mmap_base, populate);
  
- 	/* Initialize connection parameters */
-@@ -1157,7 +1154,7 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
- 	 *  Give away max 127 credits for now
- 	 */
- 	if (n > 127) {
--		self->avail_credit=n-127;
-+		self->avail_credit = n - 127;
- 		n = 127;
- 	}
+ 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
+ 	ctx->nr_pages = get_user_pages(current, mm, ctx->mmap_base, nr_pages,
+ 				       1, 0, ctx->ring_pages, NULL);
+-	up_write(&mm->mmap_sem);
++	for (i = 0; i < ctx->nr_pages; i++)
++		put_page(ctx->ring_pages[i]);
  
-@@ -1166,10 +1163,10 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
- 	/* SAR enabled? */
- 	if (max_sdu_size > 0) {
- 		IRDA_ASSERT(skb_headroom(tx_skb) >= (TTP_MAX_HEADER + TTP_SAR_HEADER),
--			{ dev_kfree_skb(tx_skb); return -1; } );
-+			{ dev_kfree_skb(tx_skb); return -1; });
+ 	if (unlikely(ctx->nr_pages != nr_pages)) {
+ 		aio_free_ring(ctx);
+@@ -397,6 +491,8 @@ out_cleanup:
+ 	err = -EAGAIN;
+ 	aio_free_ring(ctx);
+ out_freectx:
++	if (ctx->aio_ring_file)
++		fput(ctx->aio_ring_file);
+ 	kmem_cache_free(kioctx_cachep, ctx);
+ 	pr_debug("error allocating ioctx %d\n", err);
+ 	return ERR_PTR(err);
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index a405d3d..db67768 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -55,6 +55,9 @@ extern int migrate_vmas(struct mm_struct *mm,
+ extern void migrate_page_copy(struct page *newpage, struct page *page);
+ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
++extern int migrate_page_move_mapping(struct address_space *mapping,
++		struct page *newpage, struct page *page,
++		struct buffer_head *head, enum migrate_mode mode);
+ #else
  
- 		/* Insert SAR parameters */
--		frame = skb_push(tx_skb, TTP_HEADER+TTP_SAR_HEADER);
-+		frame = skb_push(tx_skb, TTP_HEADER + TTP_SAR_HEADER);
+ static inline void putback_lru_pages(struct list_head *l) {}
+@@ -84,6 +87,12 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
+ {
+ 	return -ENOSYS;
+ }
++static inline int migrate_page_move_mapping(struct address_space *mapping,
++		struct page *newpage, struct page *page,
++		struct buffer_head *head, enum migrate_mode mode)
++{
++	return -ENOSYS;
++}
  
- 		frame[0] = TTP_PARAMETERS | n;
- 		frame[1] = 0x04; /* Length */
-@@ -1386,7 +1383,7 @@ int irttp_connect_response(struct tsap_cb *self, __u32 max_sdu_size,
- 		 *  headers
- 		 */
- 		IRDA_ASSERT(skb_headroom(userdata) >= TTP_MAX_HEADER,
--			{ dev_kfree_skb(userdata); return -1; } );
-+			{ dev_kfree_skb(userdata); return -1; });
- 	}
- 
- 	self->avail_credit = 0;
-@@ -1409,10 +1406,10 @@ int irttp_connect_response(struct tsap_cb *self, __u32 max_sdu_size,
- 	/* SAR enabled? */
- 	if (max_sdu_size > 0) {
- 		IRDA_ASSERT(skb_headroom(tx_skb) >= (TTP_MAX_HEADER + TTP_SAR_HEADER),
--			{ dev_kfree_skb(tx_skb); return -1; } );
-+			{ dev_kfree_skb(tx_skb); return -1; });
- 
- 		/* Insert TTP header with SAR parameters */
--		frame = skb_push(tx_skb, TTP_HEADER+TTP_SAR_HEADER);
-+		frame = skb_push(tx_skb, TTP_HEADER + TTP_SAR_HEADER);
- 
- 		frame[0] = TTP_PARAMETERS | n;
- 		frame[1] = 0x04; /* Length */
-@@ -1522,7 +1519,7 @@ int irttp_disconnect_request(struct tsap_cb *self, struct sk_buff *userdata,
- 	 * function may be called from various context, like user, timer
- 	 * for following a disconnect_indication() (i.e. net_bh).
- 	 * Jean II */
--	if(test_and_set_bit(0, &self->disconnect_pend)) {
-+	if (test_and_set_bit(0, &self->disconnect_pend)) {
- 		IRDA_DEBUG(0, "%s(), disconnect already pending\n",
- 			   __func__);
- 		if (userdata)
-@@ -1627,7 +1624,7 @@ static void irttp_disconnect_indication(void *instance, void *sap,
- 	 * Jean II */
- 
- 	/* No need to notify the client if has already tried to disconnect */
--	if(self->notify.disconnect_indication)
-+	if (self->notify.disconnect_indication)
- 		self->notify.disconnect_indication(self->notify.instance, self,
- 						   reason, skb);
- 	else
-@@ -1738,8 +1735,7 @@ static void irttp_run_rx_queue(struct tsap_cb *self)
- 		 *  This is the last fragment, so time to reassemble!
- 		 */
- 		if ((self->rx_sdu_size <= self->rx_max_sdu_size) ||
--		    (self->rx_max_sdu_size == TTP_SAR_UNBOUND))
--		{
-+		    (self->rx_max_sdu_size == TTP_SAR_UNBOUND)) {
- 			/*
- 			 * A little optimizing. Only queue the fragment if
- 			 * there are other fragments. Since if this is the
-@@ -1860,7 +1856,7 @@ static int irttp_seq_show(struct seq_file *seq, void *v)
- 	seq_printf(seq, "dtsap_sel: %02x\n",
- 		   self->dtsap_sel);
- 	seq_printf(seq, "  connected: %s, ",
--		   self->connected? "TRUE":"FALSE");
-+		   self->connected ? "TRUE" : "FALSE");
- 	seq_printf(seq, "avail credit: %d, ",
- 		   self->avail_credit);
- 	seq_printf(seq, "remote credit: %d, ",
-@@ -1876,9 +1872,9 @@ static int irttp_seq_show(struct seq_file *seq, void *v)
- 	seq_printf(seq, "rx_queue len: %u\n",
- 		   skb_queue_len(&self->rx_queue));
- 	seq_printf(seq, "  tx_sdu_busy: %s, ",
--		   self->tx_sdu_busy? "TRUE":"FALSE");
-+		   self->tx_sdu_busy ? "TRUE" : "FALSE");
- 	seq_printf(seq, "rx_sdu_busy: %s\n",
--		   self->rx_sdu_busy? "TRUE":"FALSE");
-+		   self->rx_sdu_busy ? "TRUE" : "FALSE");
- 	seq_printf(seq, "  max_seg_size: %u, ",
- 		   self->max_seg_size);
- 	seq_printf(seq, "tx_max_sdu_size: %u, ",
+ /* Possible settings for the migrate_page() method in address_operations */
+ #define migrate_page NULL
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 6f0c244..1da0092 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -307,7 +307,7 @@ static inline bool buffer_migrate_lock_buffers(struct buffer_head *head,
+  * 2 for pages with a mapping
+  * 3 for pages with a mapping and PagePrivate/PagePrivate2 set.
+  */
+-static int migrate_page_move_mapping(struct address_space *mapping,
++int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+ 		struct buffer_head *head, enum migrate_mode mode)
+ {
 -- 
-1.7.10.4
+1.7.1
 
