@@ -1,170 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3GQNXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:23:40 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62330 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033Ab3GQNXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:23:39 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v3] clk: add MOXA ART SoCs clock driver
-Date: Wed, 17 Jul 2013 15:23:16 +0200
-Message-Id: <1374067396-30155-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
-References: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
+	id S1755314Ab3GQNZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:25:56 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:26964 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753939Ab3GQNZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 09:25:55 -0400
+X-IronPort-AV: E=Sophos;i="4.89,684,1367971200"; 
+   d="scan'208";a="37502964"
+Date: Wed, 17 Jul 2013 14:25:38 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Julien Grall <julien.grall@linaro.org>
+CC: <linux@arm.linux.org.uk>, <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <patches@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH] arm: choose debug/uncompress.h include when uncompress
+ debug is disabled
+In-Reply-To: <1373897706-15331-1-git-send-email-julien.grall@linaro.org>
+Message-ID: <alpine.DEB.2.02.1307171420350.8258@kaball.uk.xensource.com>
+References: <1373897706-15331-1-git-send-email-julien.grall@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MOXA ART SoCs clock driver support.
+On Mon, 15 Jul 2013, Julien Grall wrote:
+> Even if uncompress debug is disabled, some board will continue to print
+> information during uncompress step.
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+Are you talking about DEBUG_UNCOMPRESS?
+Should I read the sentence as "even if DEBUG_UNCOMPRESS is not selected,
+some board will continue to print information during the uncompress step"?
 
-Notes:
-    Changes since v2:
-    
-    1. add devicetree bindings document
-    
-    Applies to next-20130716
+Isn't this a bug in the platform specific code that should be fixed anyway?
 
- .../bindings/clock/moxa,moxart-core-clock.txt      | 19 +++++
- drivers/clk/Makefile                               |  1 +
- drivers/clk/clk-moxart.c                           | 82 ++++++++++++++++++++++
- 3 files changed, 102 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
- create mode 100644 drivers/clk/clk-moxart.c
 
-diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
-new file mode 100644
-index 0000000..cf69361
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
-@@ -0,0 +1,19 @@
-+Device Tree Clock bindings for arch-moxart
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+MOXA ART SoCs allow to determine core clock frequencies by reading
-+a register.
-+
-+Required properties:
-+- compatible : Should be "moxa,moxart-core-clock"
-+- reg : Should contain registers location and length
-+
-+For example:
-+
-+	clk: core-clock@98100000 {
-+		compatible = "moxa,moxart-core-clock";
-+		reg = <0x98100000 0x34>;
-+	};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 4038c2b..933622f 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- 
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
-+obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
- obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
-diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-new file mode 100644
-index 0000000..79c27f4
---- /dev/null
-+++ b/drivers/clk/clk-moxart.c
-@@ -0,0 +1,82 @@
-+/*
-+ * MOXA ART SoCs clock driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+
-+static const struct of_device_id moxart_apb_clock_match[] = {
-+	{ .compatible = "moxa,moxart-apb-clock" },
-+	{ }
-+};
-+
-+void __init moxart_of_clk_init(struct device_node *node)
-+{
-+	static void __iomem *base;
-+	struct device_node *clk_node;
-+	struct clk *clk;
-+	unsigned long rate;
-+	unsigned int mul, val, div;
-+
-+	base = of_iomap(node, 0);
-+	if (IS_ERR(base))
-+		panic("%s: of_iomap failed\n", node->full_name);
-+
-+	clk_node = of_find_matching_node(NULL, moxart_apb_clock_match);
-+	if (!clk_node)
-+		panic("%s: can't find clock DT node\n", node->full_name);
-+
-+	mul = (readl(base + 0x30) >> 3) & 0x1ff;
-+	val = (readl(base + 0x0c) >> 4) & 0x7;
-+
-+	switch (val) {
-+	case 1:
-+		div = 3;
-+		break;
-+	case 2:
-+		div = 4;
-+		break;
-+	case 3:
-+		div = 6;
-+		break;
-+	case 4:
-+		div = 8;
-+		break;
-+	default:
-+		div = 2;
-+		break;
-+	}
-+
-+	/*
-+	 * the rate calculation below is only tested and proven
-+	 * to be true for UC-7112-LX
-+	 *
-+	 * UC-7112-LX: mul=80 val=0
-+	 *
-+	 * to support other moxart SoC hardware, this may need
-+	 * a change, though it's possible it works there too
-+	 */
-+	rate = (mul * 1200000 / div);
-+
-+	clk = clk_register_fixed_rate(NULL, "clkapb", NULL, CLK_IS_ROOT, rate);
-+	clk_register_clkdev(clk, NULL, "clkapb");
-+	of_clk_add_provider(clk_node, of_clk_src_simple_get, clk);
-+
-+	iounmap(base);
-+}
-+CLK_OF_DECLARE(moxart_core_clock, "moxa,moxart-core-clock", moxart_of_clk_init);
--- 
-1.8.2.1
+> By using debug/uncompress.h include, all debug output will be disabled.
 
+I am not sure if this is the right solution to the problem.
+I think it might be better to add the appropriate ifdefs into the
+platform specific code.
+
+Arnd, what do you think?
+
+
+> This is usefull in Xen environment for DOM0 because the UART is stolen by
+> Xen.
+> 
+> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+>
+>  arch/arm/Kconfig.debug |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index 21cc8a7..86c023d 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -679,7 +679,7 @@ config DEBUG_UNCOMPRESS
+>  
+>  config UNCOMPRESS_INCLUDE
+>  	string
+> -	default "debug/uncompress.h" if ARCH_MULTIPLATFORM
+> +	default "debug/uncompress.h" if ARCH_MULTIPLATFORM || !DEBUG_UNCOMPRESS
+>  	default "mach/uncompress.h"
+>  
+>  config EARLY_PRINTK
+> -- 
+> 1.7.10.4
+> 
