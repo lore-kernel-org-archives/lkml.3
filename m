@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3GQOBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:01:08 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38555 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab3GQOBF (ORCPT
+	id S1754635Ab3GQODc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:03:32 -0400
+Received: from mail.windriver.com ([147.11.1.11]:65067 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab3GQODa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:01:05 -0400
+	Wed, 17 Jul 2013 10:03:30 -0400
+Message-ID: <51E6A39E.3020109@windriver.com>
+Date: Wed, 17 Jul 2013 10:01:02 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
-References: <20130715174659.GC15531@xanatos>
-	<CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	<20130715180403.GD15531@xanatos>
-	<CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	<20130715184642.GE15531@xanatos>
-	<CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	<20130715195316.GF15531@xanatos>
-	<20130715204135.GH15531@xanatos>
-	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	<1373926109.17876.221.camel@gandalf.local.home>
-	<20130715223615.GI15531@xanatos>
-	<1373932170.28142.24.camel@envy.home>
-	<864nbv9qcm.fsf@void.printf.net>
-	<1373944014.17876.255.camel@gandalf.local.home>
-	<51E4BFA9.1030600@zytor.com>
-	<alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-	<1373991399.6458.6.camel@gandalf.local.home>
-	<alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-	<51E59F79.1040903@zytor.com>
-	<alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
-Date: Wed, 17 Jul 2013 09:01:02 -0500
-Message-ID: <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
-Subject: Re: [ATTEND] How to act on LKML
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, David Lang <david@lang.hm>,
+        <ksummit-2013-discuss@lists.linuxfoundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset=UTF-8
+        Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+References: <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home> <20130715223615.GI15531@xanatos> <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz> <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com> <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org> <20130716224357.GK4994@xanatos> <1374015299.6458.76.camel@gandalf.local.home> <20130716231217.GL4994@xanatos> <1374017917.6458.103.camel@gandalf.local.home>
+In-Reply-To: <1374017917.6458.103.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 4:17 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
-> On Tue, 16 Jul 2013, H. Peter Anvin wrote:
+On 13-07-16 07:38 PM, Steven Rostedt wrote:
+> On Tue, 2013-07-16 at 16:12 -0700, Sarah Sharp wrote:
+> 
 
->> Linux took off in a way that the other OSS operating systems didn't, and
->> several of them had started earlier and with way more funding available.
+[...]
+
+> 
+>>   We need to define what behavior we want
+>> from both maintainers and patch submitters.  E.g. "No regressions" and
+>> "don't break userspace"
+> 
+> Yes, those do need to be documented.
+
+Actually, they are already documented. See "Regressions" section in the
+file Documentation/development-process/4.Coding
+
+Paul.
+--
+
+> 
+> 
+>>  and "no personal attacks".
+> 
+> I actually disagree with this. What I would say this instead: "try to
+> keep it technical and focus on the code. If you are upset at someone,
+> think twice before hitting send. But if you really think this is the
+> only way to deal with the situation, then that's your call, and you get
+> to deal with the consequences."
+> 
+> I don't think changing peoples behavior is going to work. It wont. You
+> don't want to change who you are, others don't want to change who they
+> are. Deal with it. But what we can do is just try to educate people on
+> what policies are needed to be a maintainer and code submitter (there is
+> documentation already on some of this), and then point it to people. If
+> people continue to ignore those after being shown, then yes, personal
+> attacks are then in order.
+> 
+> 
+>>   That needs to be
+>> written down somewhere, and it isn't.  If it's documented somewhere,
+>> point me to the file in Documentation.  Hint: it's not there.
+> 
+> Well, SubmittingPatches is there, but we should have a MaintainerRules
+> or something.
+> 
 >>
->> You really have to think about why we are not running Hurd, or any of
->> the various *BSDs, and instead Linus' "not big and professional like
->> GNU" hack.  In my opinion it was because the Linux community was in fact
->> the most open and welcoming of the Open Source communities around.
->
-> Then it's the time to ask ourselves: is it still like this?
-
-Yes it is. Linux is the only project I'm aware of where I know my
-patches will be accepted if they are technically good, despite any
-personal bullshit, not even Git allows this.
-
-The fact that one can be open and honest, and discussion is welcome
-(as long as it's constructive), in this list is one of the reasons why
-Linux is so successful.
-
-To me, Linux is an oasis among a desert of open source projects where
-technical merit is not as important as "being nice", and that's why
-those projects rot and eventually fork, and Linux would not.
-
-I know you think "being nice" is better, but do you actually have any
-evidence for this, or is it just wishful thinking? If you don't have
-hard evidence, then I'd say you have to admit it's simply your
-opinion, and I don't think the most successful software project in
-history should change one if it's core principles simply because *you*
-think it should.
-
-Cheers.
-
--- 
-Felipe Contreras
+>> That is the problem.
+> 
+> We can always use better documentation.
+> 
+> -- Steve
+> 
+> 
+> _______________________________________________
+> Ksummit-2013-discuss mailing list
+> Ksummit-2013-discuss@lists.linuxfoundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
+> 
+> 
