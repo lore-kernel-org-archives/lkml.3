@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751221Ab3GQB2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 21:28:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51849 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab3GQB2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 21:28:49 -0400
-X-IronPort-AV: E=Sophos;i="4.89,678,1367942400"; 
-   d="scan'208";a="7916263"
-Message-ID: <51E5F03A.4060508@cn.fujitsu.com>
-Date: Wed, 17 Jul 2013 09:15:38 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751231Ab3GQBbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 21:31:08 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:47845 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3GQBbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 21:31:06 -0400
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, tangchen <tangchen@cn.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH RESEND 1/2] fs/anon_inode: Introduce a new lib function
- anon_inode_getfile_private()
-References: <51E518BC.8040900@cn.fujitsu.com> <20130716131614.GC5403@kvack.org>
-In-Reply-To: <20130716131614.GC5403@kvack.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/17 09:17:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/17 09:17:41,
-	Serialize complete at 2013/07/17 09:17:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1373901620-2021-9-git-send-email-mgorman@suse.de>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+	<1373901620-2021-9-git-send-email-mgorman@suse.de>
+Date: Wed, 17 Jul 2013 09:31:05 +0800
+Message-ID: <CAJd=RBB8rzy8bZ1JWkkmGBX2ucZ0kr9aOsiiwgV2s0y9_0z6fw@mail.gmail.com>
+Subject: Re: [PATCH 08/18] sched: Reschedule task on preferred NUMA node once selected
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Mon, Jul 15, 2013 at 11:20 PM, Mel Gorman <mgorman@suse.de> wrote:
+> +static int
+> +find_idlest_cpu_node(int this_cpu, int nid)
+> +{
+> +       unsigned long load, min_load = ULONG_MAX;
+> +       int i, idlest_cpu = this_cpu;
+> +
+> +       BUG_ON(cpu_to_node(this_cpu) == nid);
+> +
+> +       rcu_read_lock();
+> +       for_each_cpu(i, cpumask_of_node(nid)) {
 
-On 07/16/2013 09:16 PM, Benjamin LaHaise wrote:
+Check allowed CPUs first if task is given?
 
-> On Tue, Jul 16, 2013 at 05:56:12PM +0800, Gu Zheng wrote:
->>
->> Introduce a new lib function anon_inode_getfile_private(), it creates a new file
->> instance by hooking it up to an anonymous inode, and a dentry that describe the
->> "class" of the file, similar to anon_inode_getfile(), but each file holds a
->> single inode. Furthermore, anyone who wants to create a private anon file will
->> benefit from this change.
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-> 
-> Please don't add my Signed-off-by when I have never even seen or reviewed 
-> a patch -- that is completely unacceptable.  
-
-Sorry for my reckless action, I'll remember your reminder.:)
-
-> Second, I don't think this 
-> patch is suitable for 3.11, as it has not seen much testing outside of one 
-> test program I had written.  It's a long standing bug, so it isn't urgent 
-> to get the fix into the tree.  That said, it did pass a few tests I ran 
-> last night, so it is probably suitable for the -next tree.
-
-Thanks for your test.:)
-
-Regards,
-Gu
-
-> 
-> As for patch 1, it looks okay to me, but will need Al Viro's signoff.
-> 
-> 		-ben
-
-
+> +               load = weighted_cpuload(i);
+> +
+> +               if (load < min_load) {
+> +                       min_load = load;
+> +                       idlest_cpu = i;
+> +               }
+> +       }
+> +       rcu_read_unlock();
+> +
+> +       return idlest_cpu;
+> +}
+> +
+[...]
+> +       /*
+> +        * Record the preferred node as the node with the most faults,
+> +        * requeue the task to be running on the idlest CPU on the
+> +        * preferred node and reset the scanning rate to recheck
+> +        * the working set placement.
+> +        */
+>         if (max_faults && max_nid != p->numa_preferred_nid) {
+> +               int preferred_cpu;
+> +
+> +               /*
+> +                * If the task is not on the preferred node then find the most
+> +                * idle CPU to migrate to.
+> +                */
+> +               preferred_cpu = task_cpu(p);
+> +               if (cpu_to_node(preferred_cpu) != max_nid) {
+> +                       preferred_cpu = find_idlest_cpu_node(preferred_cpu,
+> +                                                            max_nid);
+> +               }
+> +
+> +               /* Update the preferred nid and migrate task if possible */
+>                 p->numa_preferred_nid = max_nid;
+>                 p->numa_migrate_seq = 0;
+> +               migrate_task_to(p, preferred_cpu);
+>         }
