@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab3GQR1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:27:21 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:35395 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab3GQR1O (ORCPT
+	id S933342Ab3GQR3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:29:09 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:60848 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756845Ab3GQR1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:27:14 -0400
+	Wed, 17 Jul 2013 13:27:22 -0400
 From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 To: jic23@cam.ac.uk
 Cc: linux-iio@vger.kernel.org, gregkh@linuxfoundation.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net,
         zubair.lutfullah@gmail.com
-Subject: [PATCH 11/21] iio: ti_adc: Avoid double threshold event
-Date: Wed, 17 Jul 2013 18:26:40 +0100
-Message-Id: <1374082010-28095-12-git-send-email-zubair.lutfullah@gmail.com>
+Subject: [PATCH 15/21] IIO: ti_adc: Print error and handle short FIFO events
+Date: Wed, 17 Jul 2013 18:26:44 +0100
+Message-Id: <1374082010-28095-16-git-send-email-zubair.lutfullah@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
 References: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
@@ -22,59 +22,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The threshold event handler is being called before the FIFO has
+In the case that the FIFO threshold handler gets called when the
 
-actually reached the threshold.
+FIFO has not actually reached the threshold, the driver will pass
 
-The current code receives a FIFO threshold event, masks the interrupt,
+uninitialized memory to the IIO subsystem.
 
-clears the event, and schedules a workqueue. The workqueue is run, it
+In the past, this would occur due to bugs in the driver, those bugs
 
-empties the FIFO, and unmasks the interrupt.
+have been fixed. However, it is still a good idea to close this just
 
-In the above sequence, after the event is cleared, it immediately
-
-retriggers since the FIFO remains beyond the threshold. When the IRQ is
-
-unmasked, this triggered event generates another IRQ. However, as the
-
-FIFO has just been emptied, it is likely to not contain enough samples.
-
-The waits to clear the event until the FIFO has actually been emptied,
-
-in the workqueue. The unmasking and masking of the interrupt remains
-
-unchanged.
+in case additional bugs in hardware or software exist.
 
 Signed-off-by: Russ Dill <Russ.Dill@ti.com>
 Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 ---
- drivers/iio/adc/ti_am335x_adc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
 diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index e510da7..fcd414d 100644
+index 69abde0..c257169 100644
 --- a/drivers/iio/adc/ti_am335x_adc.c
 +++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -193,8 +193,7 @@ static irqreturn_t tiadc_irq(int irq, void *private)
-                 } else {
-                         wake_up_interruptible(&adc_dev->wq_data_avail);
-                 }
--                tiadc_writel(adc_dev, REG_IRQSTATUS,
--					IRQENB_FIFO1THRES);
+@@ -212,6 +212,13 @@ static void tiadc_poll_handler(struct work_struct *work_s)
+         u32 *iBuf;
+ 
+         fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
++        if (fifo1count * sizeof(u32) <
++                                buffer->access->get_bytes_per_datum(buffer)) {
++                dev_err(adc_dev->mfd_tscadc->dev, "%s: Short FIFO event\n",
++                                                                __func__);
++                goto out;
++        }
 +
-                 return IRQ_HANDLED;      
- 	} else {
-                 return IRQ_NONE;
-@@ -230,6 +229,8 @@ static void tiadc_poll_handler(struct work_struct *work_s)
-         }
- 
-         buffer->access->store_to(buffer, (u8 *) iBuf);
-+	tiadc_writel(adc_dev, REG_IRQSTATUS,
-+				IRQENB_FIFO1THRES);
-         tiadc_writel(adc_dev, REG_IRQENABLE, 
- 				IRQENB_FIFO1THRES);
- 
+         iBuf = kmalloc((fifo1count + 1) * sizeof(u32), GFP_KERNEL);
+         if (iBuf == NULL)
+                 goto out;
 -- 
 1.7.9.5
 
