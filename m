@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab3GQUes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 16:34:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55532 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab3GQUeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 16:34:46 -0400
-Message-ID: <51E6FFD2.7010505@canonical.com>
-Date: Wed, 17 Jul 2013 16:34:26 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755616Ab3GQUex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 16:34:53 -0400
+Received: from fieldses.org ([174.143.236.118]:54556 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166Ab3GQUev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 16:34:51 -0400
+Date: Wed, 17 Jul 2013 16:34:45 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: nfsd bugfixes for 3.11
+Message-ID: <20130717203445.GC11977@fieldses.org>
 MIME-Version: 1.0
-To: matthew.garrett@nebula.com
-CC: matt.fleming@intel.com, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com, x86@kernel.org,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Brad Figg <brad.figg@canonical.com>
-Subject: [RESEND][v3.8] [v3.9] [v3.10] [Regression]  efi: be more paranoid
- about available space when creating variables
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew,
+Please pull the following nfsd fixes from
 
-A bug was opened that reports a regression that prevents a system from
-booting[0].  After a kernel bisect, it was found that reverting the
-following commit resolved this bug:
+  git://linux-nfs.org/~bfields/linux.git for-3.11
 
-commit 68d929862e29a8b52a7f2f2f86a0600423b093cd
-Author: Matthew Garrett <matthew.garrett@nebula.com>
-Date:   Sat Mar 2 19:40:17 2013 -0500
+Just three minor bugfixes.
 
-    efi: be more paranoid about available space when creating variables
+--b.
 
+----------------------------------------------------------------
+Dan Carpenter (1):
+      svcrdma: underflow issue in decode_write_list()
 
-The regression was introduced as of v3.9-rc2, but it also made it's way
-into the stable trees(Commit 9f677cf in v3.8).
+David Jeffery (1):
+      lockd: protect nlm_blocked access in nlmsvc_retry_blocked
 
-I see the following commit was introduced to address this issue:
+J. Bruce Fields (1):
+      nfsd4: fix minorversion support interface
 
-commit 31ff2f20d9003e74991d135f56e503fe776c127c
-Author: Matthew Garrett <matthew.garrett@nebula.com>
-Date:   Mon Apr 15 13:09:47 2013 -0700
-
-    efi: Distinguish between "remaining space" and actually used space
-
-However, the issue still in 3.9.4, 3.10-rc3 and v3.8.13 after
-backporting 31ff2f2.
-
-I see that you are the author of this patch, so I wanted to run this by
-you and see if reverting commit 68d9298 is an option.  There are several
-folks reporting this, so it should be easy to collect any additional
-data/information or perform testing, if needed.
-
-
-Thanks,
-
-Joe
-
-[0] http://pad.lv/1173423
-
+ fs/lockd/svclock.c                     |    4 ++++
+ fs/nfsd/nfs4proc.c                     |    2 +-
+ fs/nfsd/nfsd.h                         |    1 -
+ fs/nfsd/nfssvc.c                       |   13 +++++++------
+ net/sunrpc/xprtrdma/svc_rdma_marshal.c |   20 ++++++++++++++------
+ 5 files changed, 26 insertions(+), 14 deletions(-)
