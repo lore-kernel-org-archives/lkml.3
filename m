@@ -1,361 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab3GQOxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:53:30 -0400
-Received: from 8.mo1.mail-out.ovh.net ([178.33.110.239]:45361 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755744Ab3GQOx3 (ORCPT
+	id S1755943Ab3GQOy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:54:26 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:49088 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755888Ab3GQOyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:53:29 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Andrew Victor <linux@maxim.org.za>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v2 20/42] ARM: at91: move at91sam9x5 SoCs to new at91 clk implem
-Date: Wed, 17 Jul 2013 16:53:20 +0200
-Message-Id: <1374072800-19856-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 12667218377149282412
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 17 Jul 2013 10:54:23 -0400
+Date: Wed, 17 Jul 2013 07:47:00 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        rockorequin@hotmail.com, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>, alexkaltsas@gmail.com,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH v2] drm/i915: fix long-standing SNB regression in power
+ consumption after resume
+Message-ID: <20130717074700.13d5152e@jbarnes-desktop>
+In-Reply-To: <20130717062258.5467.69414.stgit@zurg>
+References: <20130714163009.22374.22100.stgit@zurg>
+	<20130717062258.5467.69414.stgit@zurg>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes all references to the old at91 clks for at91sam9x5 SoCs.
-These SoCs only supports dt boards: we can remove register_clocks
-(all clocks are defined in dt).
+On Wed, 17 Jul 2013 10:22:58 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/at91sam9x5.c |  291 ---------------------------------------
- 1 file changed, 291 deletions(-)
+> This patch fixes regression in power consumtion of sandy bridge gpu, which
+> exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
+> it's extremely busy. After that it never reaches rc6 state.
+> 
+> Bug exists since kernel v3.6, commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
+> ("drm/i915: load boot context at driver init time").
+> 
+> For some reason RC6 is already enabled at the beginning of resuming process.
+> Following initliaztion breaks some internal state and confuses RPS engine.
+> This patch disables RC6 at the beginnig of resume and initialization.
+> 
+> I've rearranged initialization sequence, because intel_disable_gt_powersave()
+> needs initialized force_wake_get/put and some locks from the dev_priv.
+> 
+> References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=58971
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> ---
 
-diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-index 9fdea07..583a3d5 100644
---- a/arch/arm/mach-at91/at91sam9x5.c
-+++ b/arch/arm/mach-at91/at91sam9x5.c
-@@ -19,299 +19,9 @@
- #include "board.h"
- #include "soc.h"
- #include "generic.h"
--#include "clock.h"
- #include "sam9_smc.h"
- 
- /* --------------------------------------------------------------------
-- *  Clocks
-- * -------------------------------------------------------------------- */
--
--/*
-- * The peripheral clocks.
-- */
--static struct clk pioAB_clk = {
--	.name		= "pioAB_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_PIOAB,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk pioCD_clk = {
--	.name		= "pioCD_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_PIOCD,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk smd_clk = {
--	.name		= "smd_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_SMD,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart0_clk = {
--	.name		= "usart0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_USART0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart1_clk = {
--	.name		= "usart1_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_USART1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart2_clk = {
--	.name		= "usart2_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_USART2,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--/* USART3 clock - Only for sam9g25/sam9x25 */
--static struct clk usart3_clk = {
--	.name		= "usart3_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_USART3,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk twi0_clk = {
--	.name		= "twi0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk twi1_clk = {
--	.name		= "twi1_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk twi2_clk = {
--	.name		= "twi2_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI2,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk mmc0_clk = {
--	.name		= "mci0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_MCI0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk spi0_clk = {
--	.name		= "spi0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_SPI0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk spi1_clk = {
--	.name		= "spi1_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_SPI1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk uart0_clk = {
--	.name		= "uart0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_UART0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk uart1_clk = {
--	.name		= "uart1_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_UART1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tcb0_clk = {
--	.name		= "tcb0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_TCB,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk pwm_clk = {
--	.name		= "pwm_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_PWM,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk adc_clk = {
--	.name		= "adc_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_ADC,
--	.type	= CLK_TYPE_PERIPHERAL,
--};
--static struct clk adc_op_clk = {
--	.name		= "adc_op_clk",
--	.type		= CLK_TYPE_PERIPHERAL,
--	.rate_hz	= 5000000,
--};
--static struct clk dma0_clk = {
--	.name		= "dma0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_DMA0,
--	.type	= CLK_TYPE_PERIPHERAL,
--};
--static struct clk dma1_clk = {
--	.name		= "dma1_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_DMA1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk uhphs_clk = {
--	.name		= "uhphs",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_UHPHS,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk udphs_clk = {
--	.name		= "udphs_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_UDPHS,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--/* emac0 clock - Only for sam9g25/sam9x25/sam9g35/sam9x35 */
--static struct clk macb0_clk = {
--	.name		= "pclk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_EMAC0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--/* lcd clock - Only for sam9g15/sam9g35/sam9x35 */
--static struct clk lcdc_clk = {
--	.name		= "lcdc_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_LCDC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--/* isi clock - Only for sam9g25 */
--static struct clk isi_clk = {
--	.name		= "isi_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_ISI,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk mmc1_clk = {
--	.name		= "mci1_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_MCI1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--/* emac1 clock - Only for sam9x25 */
--static struct clk macb1_clk = {
--	.name		= "pclk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_EMAC1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk ssc_clk = {
--	.name		= "ssc_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_SSC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--/* can0 clock - Only for sam9x35 */
--static struct clk can0_clk = {
--	.name		= "can0_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_CAN0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--/* can1 clock - Only for sam9x35 */
--static struct clk can1_clk = {
--	.name		= "can1_clk",
--	.pmc_mask	= 1 << AT91SAM9X5_ID_CAN1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--
--static struct clk *periph_clocks[] __initdata = {
--	&pioAB_clk,
--	&pioCD_clk,
--	&smd_clk,
--	&usart0_clk,
--	&usart1_clk,
--	&usart2_clk,
--	&twi0_clk,
--	&twi1_clk,
--	&twi2_clk,
--	&mmc0_clk,
--	&spi0_clk,
--	&spi1_clk,
--	&uart0_clk,
--	&uart1_clk,
--	&tcb0_clk,
--	&pwm_clk,
--	&adc_clk,
--	&adc_op_clk,
--	&dma0_clk,
--	&dma1_clk,
--	&uhphs_clk,
--	&udphs_clk,
--	&mmc1_clk,
--	&ssc_clk,
--	// irq0
--};
--
--static struct clk_lookup periph_clocks_lookups[] = {
--	/* lookup table for DT entries */
--	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
--	CLKDEV_CON_DEV_ID("usart", "f801c000.serial", &usart0_clk),
--	CLKDEV_CON_DEV_ID("usart", "f8020000.serial", &usart1_clk),
--	CLKDEV_CON_DEV_ID("usart", "f8024000.serial", &usart2_clk),
--	CLKDEV_CON_DEV_ID("usart", "f8028000.serial", &usart3_clk),
--	CLKDEV_CON_DEV_ID("t0_clk", "f8008000.timer", &tcb0_clk),
--	CLKDEV_CON_DEV_ID("t0_clk", "f800c000.timer", &tcb0_clk),
--	CLKDEV_CON_DEV_ID("mci_clk", "f0008000.mmc", &mmc0_clk),
--	CLKDEV_CON_DEV_ID("mci_clk", "f000c000.mmc", &mmc1_clk),
--	CLKDEV_CON_DEV_ID("dma_clk", "ffffec00.dma-controller", &dma0_clk),
--	CLKDEV_CON_DEV_ID("dma_clk", "ffffee00.dma-controller", &dma1_clk),
--	CLKDEV_CON_DEV_ID("pclk", "f0010000.ssc", &ssc_clk),
--	CLKDEV_CON_DEV_ID(NULL, "f8010000.i2c", &twi0_clk),
--	CLKDEV_CON_DEV_ID(NULL, "f8014000.i2c", &twi1_clk),
--	CLKDEV_CON_DEV_ID(NULL, "f8018000.i2c", &twi2_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "f0000000.spi", &spi0_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "f0004000.spi", &spi1_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioAB_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioAB_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCD_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioCD_clk),
--	/* additional fake clock for macb_hclk */
--	CLKDEV_CON_DEV_ID("hclk", "f802c000.ethernet", &macb0_clk),
--	CLKDEV_CON_DEV_ID("hclk", "f8030000.ethernet", &macb1_clk),
--	CLKDEV_CON_DEV_ID("hclk", "600000.ohci", &uhphs_clk),
--	CLKDEV_CON_DEV_ID("ohci_clk", "600000.ohci", &uhphs_clk),
--	CLKDEV_CON_DEV_ID("ehci_clk", "700000.ehci", &uhphs_clk),
--	CLKDEV_CON_DEV_ID("hclk", "500000.gadget", &utmi_clk),
--	CLKDEV_CON_DEV_ID("pclk", "500000.gadget", &udphs_clk),
--};
--
--/*
-- * The two programmable clocks.
-- * You must configure pin multiplexing to bring these signals out.
-- */
--static struct clk pck0 = {
--	.name		= "pck0",
--	.pmc_mask	= AT91_PMC_PCK0,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 0,
--};
--static struct clk pck1 = {
--	.name		= "pck1",
--	.pmc_mask	= AT91_PMC_PCK1,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 1,
--};
--
--static void __init at91sam9x5_register_clocks(void)
--{
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(periph_clocks); i++)
--		clk_register(periph_clocks[i]);
--
--	clkdev_add_table(periph_clocks_lookups,
--			 ARRAY_SIZE(periph_clocks_lookups));
--
--	if (cpu_is_at91sam9g25()
--	|| cpu_is_at91sam9x25())
--		clk_register(&usart3_clk);
--
--	if (cpu_is_at91sam9g25()
--	|| cpu_is_at91sam9x25()
--	|| cpu_is_at91sam9g35()
--	|| cpu_is_at91sam9x35())
--		clk_register(&macb0_clk);
--
--	if (cpu_is_at91sam9g15()
--	|| cpu_is_at91sam9g35()
--	|| cpu_is_at91sam9x35())
--		clk_register(&lcdc_clk);
--
--	if (cpu_is_at91sam9g25())
--		clk_register(&isi_clk);
--
--	if (cpu_is_at91sam9x25())
--		clk_register(&macb1_clk);
--
--	if (cpu_is_at91sam9x25()
--	|| cpu_is_at91sam9x35()) {
--		clk_register(&can0_clk);
--		clk_register(&can1_clk);
--	}
--
--	clk_register(&pck0);
--	clk_register(&pck1);
--}
--
--/* --------------------------------------------------------------------
-  *  AT91SAM9x5 processor initialization
-  * -------------------------------------------------------------------- */
- 
-@@ -326,5 +36,4 @@ static void __init at91sam9x5_map_io(void)
- 
- AT91_SOC_START(at91sam9x5)
- 	.map_io = at91sam9x5_map_io,
--	.register_clocks = at91sam9x5_register_clocks,
- AT91_SOC_END
+My hero!
+
+So the later init change didn't work?
+
+Either way, great to have this fix in the tree... thanks again.
+
 -- 
-1.7.9.5
-
+Jesse Barnes, Intel Open Source Technology Center
