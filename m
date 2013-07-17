@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934732Ab3GQXBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:01:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56840 "EHLO
+	id S934713Ab3GQXBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:01:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56841 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757919Ab3GQW4q (ORCPT
+	with ESMTP id S1757924Ab3GQW4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Jul 2013 18:56:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jed Davis <jld@mozilla.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        John Youn <johnyoun@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 030/145] ARM: 7765/1: perf: Record the user-mode PC in the call chain.
-Date: Wed, 17 Jul 2013 15:46:02 -0700
-Message-Id: <1374101277-7915-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 026/145] xhci: check for failed dma pool allocation
+Date: Wed, 17 Jul 2013 15:45:58 -0700
+Message-Id: <1374101277-7915-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,37 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jed Davis <jld@mozilla.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit c5f927a6f62196226915f12194c9d0df4e2210d7 upstream.
+commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
 
-With this change, we no longer lose the innermost entry in the user-mode
-part of the call chain.  See also the x86 port, which includes the ip.
+Fail and free the container context in case dma_pool_alloc() can't allocate
+the raw context data part of it
 
-It's possible to partially work around this problem by post-processing
-the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
-wasn't in the kernel when the sample was taken.
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
+Support for 64-byte contexts".
 
-Signed-off-by: Jed Davis <jld@mozilla.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: John Youn <johnyoun@synopsys.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/perf_event.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/xhci-mem.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 23fa6a2..5da31bb 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -579,6 +579,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 		return;
- 	}
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 0618f25..1ffbbfb 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -369,6 +369,10 @@ static struct xhci_container_ctx *xhci_alloc_container_ctx(struct xhci_hcd *xhci
+ 		ctx->size += CTX_SIZE(xhci->hcc_params);
  
-+	perf_callchain_store(entry, regs->ARM_pc);
- 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
- 
- 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
+ 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
++	if (!ctx->bytes) {
++		kfree(ctx);
++		return NULL;
++	}
+ 	memset(ctx->bytes, 0, ctx->size);
+ 	return ctx;
+ }
 -- 
 1.8.1.2
 
