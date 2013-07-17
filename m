@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab3GQVVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 17:21:39 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55106 "EHLO
+	id S1757418Ab3GQVXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 17:23:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41122 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114Ab3GQVVi (ORCPT
+	with ESMTP id S1754126Ab3GQVXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 17:21:38 -0400
-Message-ID: <51E70ADF.8090805@wwwdotorg.org>
-Date: Wed, 17 Jul 2013 15:21:35 -0600
+	Wed, 17 Jul 2013 17:23:43 -0400
+Message-ID: <51E70B5D.6030802@wwwdotorg.org>
+Date: Wed, 17 Jul 2013 15:23:41 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: Tony Lindgren <tony@atomide.com>
-CC: linus.walleij@linaro.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] drivers: Add pinctrl handling for dynamic pin states
-References: <20130716090310.5541.36777.stgit@localhost> <20130716090539.5541.980.stgit@localhost>
-In-Reply-To: <20130716090539.5541.980.stgit@localhost>
+CC: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+References: <20130716090310.5541.36777.stgit@localhost> <20130716090536.5541.36289.stgit@localhost>
+In-Reply-To: <20130716090536.5541.36289.stgit@localhost>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -27,35 +26,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 07/16/2013 03:05 AM, Tony Lindgren wrote:
-> We want to have static pin states handled separately from
-> dynamic pin states, so let's add optional state_active.
+> To toggle dynamic states, let's add the optional active state in
+> addition to the static default state. Then if the optional active
+> state is defined, we can require that idle and sleep states cover
+> the same pingroups as the active state.
 > 
-> Then if state_active is defined, let's check and make sure
-> state_idle and state_sleep match state_active for the
-> pin groups to avoid checking them during runtime as the
-> active and idle pins may need to be toggled for many
-> devices every time we enter and exit idle.
+> Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
+> to use instead of pinctrl_select() to avoid breaking existing users.
+> 
+> With pinctrl_check_dynamic() we can check that idle and sleep states
+> match the active state for pingroups during init, and don't need to
+> do it during runtime.
+> 
+> Then with the states pre-validated, pinctrl_select_dynamic() can
+> just toggle between the dynamic states without extra checks.
+> 
+> Note that pinctr_select_state() still has valid use cases, such as
+> changing states when the pins can be shared between two drivers
+> and don't necessarily cover the same pingroups. For dynamic runtime
+> toggling of pin states, we should eventually always use just
+> pinctrl_select_dynamic().
 
-> +	 * Note that if active state is defined, sleep and idle states must
-> +	 * cover the same pin groups as active state.
->  	 */
->  	dev->pins->sleep_state = pinctrl_lookup_state(dev->pins->p,
->  					PINCTRL_STATE_SLEEP);
-> -	if (IS_ERR(dev->pins->sleep_state))
-> +	if (IS_ERR(dev->pins->sleep_state)) {
->  		/* Not supplying this state is perfectly legal */
->  		dev_dbg(dev, "no sleep pinctrl state\n");
-> +	} else if (!IS_ERR(dev->pins->active_state)) {
-> +		ret = pinctrl_check_dynamic(dev, dev->pins->active_state,
-> +					    dev->pins->sleep_state);
+Something in this series should edit Documentation/pinctrl.txt to
+explain the philosophy behind the static/dynamic state split. That
+philosophy and/or semantics are more important to review than the code...
 
-Oh, I see you're trying to check that the set of pins in the active,
-sleep, and idle states are identical.
-
-But I think that pinctrl_check_dynamic() only checks that one state is a
-subset of the other, not that the two states are equal. Instead, I think
-you want to comparison coded in pinctrl_check_dynamic() to be:
-
-gen_group_list_of_pinctrl_state(s1, array1);
-gen_group_list_of_pinctrl_state(s2, array2);
-mismatch = memcmp(array1, array2, length);
+Related to that, I'm worried that using pinctrl_select_state() and
+pinctrl_select_dynamic() appear to be mutually-exclusive options here.
+Why shouldn't e.g. a pinctrl-based I2C mux also be able to do runtime
+PM? Does the mux setting select which states are used for runtime PM, or
+does runtime PM override the basic mux setting, or must the pincrl-I2C
+mux manually implement custom runtime-PM/pinctrl interaction since
+there's no generic answer to those questions? How many more custom
+exceptions will there be?
