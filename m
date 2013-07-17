@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab3GQPaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:30:30 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:34553 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429Ab3GQPa3 (ORCPT
+	id S1756134Ab3GQPbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:31:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54098 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755429Ab3GQPbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:30:29 -0400
-Message-ID: <51E6B892.1090406@linaro.org>
-Date: Wed, 17 Jul 2013 17:30:26 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 17 Jul 2013 11:31:11 -0400
+Message-ID: <51E6B8B0.2080103@canonical.com>
+Date: Wed, 17 Jul 2013 11:30:56 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        joe@perches.com
-Subject: Re: [PATCH] MAINTAINERS: Add Daniel as maintainer for CLOCKSOURCE
- and CLOCKEVENT Drivers
-References: <1373485914-16398-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1373485914-16398-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Pravin Shelar <pshelar@nicira.com>
+CC: davem@davemloft.net, ben.howard@canonical.com, edumazet@google.com,
+        xiyou.wangcong@gmail.com, alexander.h.duyck@intel.com,
+        jiri@resnulli.us, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kys@microsoft.com,
+        haiyangz@microsoft.com
+Subject: Re: [Regression][v3.10][v3.11] net: Kill link between CSUM and SG
+ features.
+References: <51E58C45.1080708@canonical.com> <CALnjE+oCeo=T+F3BvTBtcV7oDMPLJAEz1p1sjRGxmE8Wq8gWAg@mail.gmail.com> <51E5A4CA.20902@canonical.com> <CALnjE+rhvmYPEXv=1F1HEe3VsgCNN1SKg5UwTuFatQUm9e9S2w@mail.gmail.com>
+In-Reply-To: <CALnjE+rhvmYPEXv=1F1HEe3VsgCNN1SKg5UwTuFatQUm9e9S2w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 09:51 PM, John Stultz wrote:
-> I've been doing a bad job at managing the drivers/clocksource directory,
-> so Daniel has been helping with review and patch queuing for the clocksource
-> and clockevent drivers, so add him formally to the MAINTAINERS list.
+On 07/16/2013 04:50 PM, Pravin Shelar wrote:
+> On Tue, Jul 16, 2013 at 12:53 PM, Joseph Salisbury
+> <joseph.salisbury@canonical.com> wrote:
+>> On 07/16/2013 02:29 PM, Pravin Shelar wrote:
+>>> On Tue, Jul 16, 2013 at 11:09 AM, Joseph Salisbury
+>>> <joseph.salisbury@canonical.com> wrote:
+>>>> Hi Pravin,
+>>>>
+>>>> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
+>>>> it was found that reverting the following commit resolved this bug:
+>>>>
+>>>> commit ec5f061564238892005257c83565a0b58ec79295
+>>>> Author: Pravin B Shelar <pshelar@nicira.com>
+>>>> Date:   Thu Mar 7 09:28:01 2013 +0000
+>>>>
+>>>>     net: Kill link between CSUM and SG features.
+>>>>
+>>>>
+>>>> The regression was introduced as of v3.10-rc1.
+>>>>
+>>>> I see that you are the author of this patch, so I wanted to run this by
+>>>> you.  I was thinking of requesting a revert for v3.11, but I wanted to
+>>>> get your feedback first.
+>>>>
+>>>>
+>>> This issue was reported before and turning off sg solves problem for
+>>> HyperV driver. Drivers (intel and bnx2x) that I tested works fine with
+>>> this patch. Have you seen the issue on any other NIC?
+>> Thanks for the feedback.  We have only seen it on Intel hardware.  Can
+>> you send a pointer to the patch? If so, we can provide some additional
+>> testing.  Do you plan on submitting the patch for inclusion in 3.11?
+>>
+>>
+> What I mean is I do not see any problem with the patch that you have
+> pointed out on ixgbe and bnx2x platforms. HyperV problem went away
+> with disabling sg by ethtool utility.
+Yes, we also see that the problem goes away when disabling sg with
+ethtool.  There was a significant improvement in throughput with sg
+enabled, so it's unfortunate it must be disabled. 
 
-Shall I add this patch in the next PR for clocksource I will send to
-Thomas ?
+>
+> Can you also give me more information about regression you are seeing
+> like driver name, features of the NIC set and features of device
+> without this patch. Does any other NIC than HyperV having this issue?
 
-Thanks
-  -- Daniel
+Some details info about the HyperV guest can be seen here:
+http://paste.ubuntu.com/5884549/
 
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  MAINTAINERS | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e626794..5964b68 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2090,6 +2090,13 @@ M:	Russell King <linux@arm.linux.org.uk>
->  S:	Maintained
->  F:	include/linux/clk.h
->  
-> +CLOCKSOURCE, CLOCKEVENT DRIVERS
-> +M:	Daniel Lezcano <daniel.lezcano@linaro.org>
-> +M:	Thomas Gleixner <tglx@linutronix.de>
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
-> +S:	Supported
-> +F:	drivers/clocksource
-> +
->  CISCO FCOE HBA DRIVER
->  M:	Hiral Patel <hiralpat@cisco.com>
->  M:	Suma Ramars <sramars@cisco.com>
-> @@ -7021,7 +7028,7 @@ S:	Maintained
->  F:	include/linux/mmc/dw_mmc.h
->  F:	drivers/mmc/host/dw_mmc*
->  
-> -TIMEKEEPING, NTP
-> +TIMEKEEPING, CLOCKSOURCE CORE, NTP
->  M:	John Stultz <john.stultz@linaro.org>
->  M:	Thomas Gleixner <tglx@linutronix.de>
->  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
-> @@ -7034,7 +7041,6 @@ F:	include/uapi/linux/timex.h
->  F:	kernel/time/clocksource.c
->  F:	kernel/time/time*.c
->  F:	kernel/time/ntp.c
-> -F:	drivers/clocksource
->  
->  TLG2300 VIDEO4LINUX-2 DRIVER
->  M:	Huang Shijie <shijie8@gmail.com>
-> 
+In that output, you will see that scatter-gather is off, which was done
+manually. 
 
+Only a HyperV NIC is having this issue.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+>
+> Thanks.
+>
+>>>
+>>>> Thanks,
+>>>>
+>>>> Joe
+>>>>
+>>>> [0] http://pad.lv/1200243
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
