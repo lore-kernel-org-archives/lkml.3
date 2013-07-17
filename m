@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934429Ab3GQXRp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:17:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56530 "EHLO
+	id S934425Ab3GQXSF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:18:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56519 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934393Ab3GQWy7 (ORCPT
+	with ESMTP id S934378Ab3GQWyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:54:59 -0400
+	Wed, 17 Jul 2013 18:54:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bryan Schumaker <bjschuma@netapp.com>, David Jeffery <djeffery@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 142/145] lockd: protect nlm_blocked access in nlmsvc_retry_blocked
-Date: Wed, 17 Jul 2013 15:47:54 -0700
-Message-Id: <1374101277-7915-143-git-send-email-kamal@canonical.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 061/145] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
+Date: Wed, 17 Jul 2013 15:46:33 -0700
+Message-Id: <1374101277-7915-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,63 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-commit 1c327d962fc420aea046c16215a552710bde8231 upstream.
+commit da331ba8e9c5de72a27e50f71105395bba6eebe0 upstream.
 
-In nlmsvc_retry_blocked, the check that the list is non-empty and acquiring
-the pointer of the first entry is unprotected by any lock.  This allows a rare
-race condition when there is only one entry on the list.  A function such as
-nlmsvc_grant_callback() can be called, which will temporarily remove the entry
-from the list.  Between the list_empty() and list_entry(),the list may become
-empty, causing an invalid pointer to be used as an nlm_block, leading to a
-possible crash.
+tasklet_kill() may sleep so call it before taking pch->lock.
 
-This patch adds the nlm_block_lock around these calls to prevent concurrent
-use of the nlm_blocked list.
+Fixes following lockup:
 
-This was a regression introduced by
-f904be9cc77f361d37d71468b13ff3d1a1823dea  "lockd: Mostly remove BKL from
-the server".
+  BUG: scheduling while atomic: cat/2383/0x00000002
+  Modules linked in:
+    unwind_backtrace+0x0/0xfc
+    __schedule_bug+0x4c/0x58
+    __schedule+0x690/0x6e0
+    sys_sched_yield+0x70/0x78
+    tasklet_kill+0x34/0x8c
+    pl330_free_chan_resources+0x24/0x88
+    dma_chan_put+0x4c/0x50
+  [...]
+  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
+   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
+    unwind_backtrace+0x0/0xfc
+    do_raw_spin_lock+0x194/0x204
+    _raw_spin_lock_irqsave+0x20/0x28
+    pl330_tasklet+0x2c/0x5a8
+    tasklet_action+0xfc/0x114
+    __do_softirq+0xe4/0x19c
+    irq_exit+0x98/0x9c
+    handle_IPI+0x124/0x16c
+    gic_handle_irq+0x64/0x68
+    __irq_svc+0x40/0x70
+    cpuidle_wrap_enter+0x4c/0xa0
+    cpuidle_enter_state+0x18/0x68
+    cpuidle_idle_call+0xac/0xe0
+    cpu_idle+0xac/0xf0
 
-Cc: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/lockd/svclock.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/dma/pl330.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index 8d80c99..57a3922 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -939,6 +939,7 @@ nlmsvc_retry_blocked(void)
- 	unsigned long	timeout = MAX_SCHEDULE_TIMEOUT;
- 	struct nlm_block *block;
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 80680ee..4bed3f1 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2459,10 +2459,10 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
+ 	unsigned long flags;
  
-+	spin_lock(&nlm_blocked_lock);
- 	while (!list_empty(&nlm_blocked) && !kthread_should_stop()) {
- 		block = list_entry(nlm_blocked.next, struct nlm_block, b_list);
+-	spin_lock_irqsave(&pch->lock, flags);
+-
+ 	tasklet_kill(&pch->task);
  
-@@ -948,6 +949,7 @@ nlmsvc_retry_blocked(void)
- 			timeout = block->b_when - jiffies;
- 			break;
- 		}
-+		spin_unlock(&nlm_blocked_lock);
++	spin_lock_irqsave(&pch->lock, flags);
++
+ 	pl330_release_channel(pch->pl330_chid);
+ 	pch->pl330_chid = NULL;
  
- 		dprintk("nlmsvc_retry_blocked(%p, when=%ld)\n",
- 			block, block->b_when);
-@@ -957,7 +959,9 @@ nlmsvc_retry_blocked(void)
- 			retry_deferred_block(block);
- 		} else
- 			nlmsvc_grant_blocked(block);
-+		spin_lock(&nlm_blocked_lock);
- 	}
-+	spin_unlock(&nlm_blocked_lock);
- 
- 	return timeout;
- }
 -- 
 1.8.1.2
 
