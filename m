@@ -1,137 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab3GQPUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:20:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51080 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756141Ab3GQPTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:19:08 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>
-CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [RESEND PATCH V1 3/9] thermal: thermal_core: allow binding with limits on bind_params
-Date: Wed, 17 Jul 2013 11:17:22 -0400
-Message-ID: <1374074248-31690-4-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
-References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
+	id S1756049Ab3GQP0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:26:39 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:59521 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454Ab3GQP0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 11:26:37 -0400
+Message-ID: <51E6B62D.50106@linux.vnet.ibm.com>
+Date: Wed, 17 Jul 2013 20:50:13 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        ouyang@cs.pitt.edu, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com> <51E66C71.6020605@linux.vnet.ibm.com> <20130717124511.GW11772@redhat.com> <51E69429.7040309@linux.vnet.ibm.com> <20130717132503.GA13732@redhat.com> <51E6A66D.7090407@linux.vnet.ibm.com> <20130717144409.GD13732@redhat.com> <51E6B057.5080905@linux.vnet.ibm.com>
+In-Reply-To: <51E6B057.5080905@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071715-7014-0000-0000-0000035569AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When registering a thermal zone device using platform information
-via bind_params, the thermal framework will always perform the
-cdev binding using the lowest and highest limits (THERMAL_NO_LIMIT).
+On 07/17/2013 08:25 PM, Raghavendra K T wrote:
+> On 07/17/2013 08:14 PM, Gleb Natapov wrote:
+>> On Wed, Jul 17, 2013 at 07:43:01PM +0530, Raghavendra K T wrote:
+>>> On 07/17/2013 06:55 PM, Gleb Natapov wrote:
+>>>> On Wed, Jul 17, 2013 at 06:25:05PM +0530, Raghavendra K T wrote:
+>>>>> On 07/17/2013 06:15 PM, Gleb Natapov wrote:
+>>>>>> On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
+>>>>>>>>> Instead of halt we started with a sleep hypercall in those
+>>>>>>>>>   versions. Changed to halt() once Avi suggested to reuse
+>>>>>>>>> existing sleep.
+>>>>>>>>>
+>>>>>>>>> If we use older hypercall with few changes like below:
+>>>>>>>>>
+>>>>>>>>> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
+>>>>>>>>> {
+>>>>>>>>>   // a0 reserved for flags
+>>>>>>>>> if (!w->lock)
+>>>>>>>>> return;
+>>>>>>>>> DEFINE_WAIT
+>>>>>>>>> ...
+>>>>>>>>> end_wait
+>>>>>>>>> }
+>>>>>>>>>
+>>>>>>>> How would this help if NMI takes lock in critical section. The
+>>>>>>>> thing
+>>>>>>>> that may happen is that lock_waiting->want may have NMI lock
+>>>>>>>> value, but
+>>>>>>>> lock_waiting->lock will point to non NMI lock. Setting of want
+>>>>>>>> and lock
+>>>>>>>> have to be atomic.
+>>>>>>>
+>>>>>>> True. so we are here
+>>>>>>>
+>>>>>>>          non NMI lock(a)
+>>>>>>>          w->lock = NULL;
+>>>>>>>          smp_wmb();
+>>>>>>>          w->want = want;
+>>>>>>>                                 NMI
+>>>>>>>                           <---------------------
+>>>>>>>                            NMI lock(b)
+>>>>>>>                            w->lock = NULL;
+>>>>>>>                            smp_wmb();
+>>>>>>>                            w->want = want;
+>>>>>>>                            smp_wmb();
+>>>>>>>                            w->lock = lock;
+>>>>>>>                           ---------------------->
+>>>>>>>          smp_wmb();
+>>>>>>>          w->lock = lock;
+>>>>>>>
+>>>>>>> so how about fixing like this?
+>>>>>>>
+>>>>>>> again:
+>>>>>>>          w->lock = NULL;
+>>>>>>>          smp_wmb();
+>>>>>>>          w->want = want;
+>>>>>>>          smp_wmb();
+>>>>>>>          w->lock = lock;
+>>>>>>>
+>>>>>>> if (!lock || w->want != want) goto again;
+>>>>>>>
+>>>>>> NMI can happen after the if() but before halt and the same situation
+>>>>>> we are trying to prevent with IRQs will occur.
+>>>>>
+>>>>> True, we can not fix that. I thought to fix the inconsistency of
+>>>>> lock,want pair.
+>>>>> But NMI could happen after the first OR condition also.
+>>>>> /me thinks again
+>>>>>
+>>>> lock_spinning() can check that it is called in nmi context and bail
+>>>> out.
+>>>
+>>> Good point.
+>>> I think we can check for even irq context and bailout so that in irq
+>>> context we continue spinning instead of slowpath. no ?
+>>>
+>> That will happen much more often and irq context is no a problem anyway.
+>>
+>
+> Yes. It is not a problem. But my idea was to not to enter slowpath lock
+> during irq processing. Do you think that is a good idea?
+>
+> I 'll now experiment how often we enter slowpath in irq context.
+>
 
-This patch changes the data structures so that it is possible
-to inform what are the desired limits for each trip point
-inside a bind_param. The way the binding is performed is also
-changed so that it uses the new data structure.
-
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- Documentation/thermal/sysfs-api.txt |  7 +++++++
- drivers/thermal/thermal_core.c      | 19 +++++++++++++++----
- include/linux/thermal.h             | 10 ++++++++++
- 3 files changed, 32 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-index a71bd5b..2ad50e7 100644
---- a/Documentation/thermal/sysfs-api.txt
-+++ b/Documentation/thermal/sysfs-api.txt
-@@ -134,6 +134,13 @@ temperature) and throttle appropriate devices.
-                this thermal zone and cdev, for a particular trip point.
-                If nth bit is set, then the cdev and thermal zone are bound
-                for trip point n.
-+    .limits: This is an array of cooling state limits. Must have exactly
-+         2 * thermal_zone.number_of_trip_points. It is an array consisting
-+         of tuples <lower-state upper-state> of state limits. Each trip
-+         will be associated with one state limit tuple when binding.
-+         A NULL pointer means <THERMAL_NO_LIMITS THERMAL_NO_LIMITS>
-+         on all trips. These limits are used when binding a cdev to a
-+         trip point.
-     .match: This call back returns success(0) if the 'tz and cdev' need to
- 	    be bound, as per platform data.
- 1.4.2 struct thermal_zone_params
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 247528b..096c8be 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -202,14 +202,23 @@ static void print_bind_err_msg(struct thermal_zone_device *tz,
- }
- 
- static void __bind(struct thermal_zone_device *tz, int mask,
--			struct thermal_cooling_device *cdev)
-+			struct thermal_cooling_device *cdev,
-+			unsigned long *limits)
- {
- 	int i, ret;
- 
- 	for (i = 0; i < tz->trips; i++) {
- 		if (mask & (1 << i)) {
-+			unsigned long upper, lower;
-+
-+			upper = THERMAL_NO_LIMIT;
-+			lower = THERMAL_NO_LIMIT;
-+			if (limits) {
-+				lower = limits[i * 2];
-+				upper = limits[i * 2 + 1];
-+			}
- 			ret = thermal_zone_bind_cooling_device(tz, i, cdev,
--					THERMAL_NO_LIMIT, THERMAL_NO_LIMIT);
-+							       upper, lower);
- 			if (ret)
- 				print_bind_err_msg(tz, cdev, ret);
- 		}
-@@ -254,7 +263,8 @@ static void bind_cdev(struct thermal_cooling_device *cdev)
- 			if (tzp->tbp[i].match(pos, cdev))
- 				continue;
- 			tzp->tbp[i].cdev = cdev;
--			__bind(pos, tzp->tbp[i].trip_mask, cdev);
-+			__bind(pos, tzp->tbp[i].trip_mask, cdev,
-+			       tzp->tbp[i].binding_limits);
- 		}
- 	}
- 
-@@ -292,7 +302,8 @@ static void bind_tz(struct thermal_zone_device *tz)
- 			if (tzp->tbp[i].match(tz, pos))
- 				continue;
- 			tzp->tbp[i].cdev = pos;
--			__bind(tz, tzp->tbp[i].trip_mask, pos);
-+			__bind(tz, tzp->tbp[i].trip_mask, pos,
-+			       tzp->tbp[i].binding_limits);
- 		}
- 	}
- exit:
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index a386a1c..39575eb 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -207,6 +207,16 @@ struct thermal_bind_params {
- 	 * See Documentation/thermal/sysfs-api.txt for more information.
- 	 */
- 	int trip_mask;
-+
-+	/*
-+	 * This is an array of cooling state limits. Must have exactly
-+	 * 2 * thermal_zone.number_of_trip_points. It is an array consisting
-+	 * of tuples <lower-state upper-state> of state limits. Each trip
-+	 * will be associated with one state limit tuple when binding.
-+	 * A NULL pointer means <THERMAL_NO_LIMITS THERMAL_NO_LIMITS>
-+	 * on all trips.
-+	 */
-+	unsigned long *binding_limits;
- 	int (*match) (struct thermal_zone_device *tz,
- 			struct thermal_cooling_device *cdev);
- };
--- 
-1.8.2.1.342.gfa7285d
+With dbench 1.5x run, on my 32cpu / 16core sandybridge, I saw
+around 10  spinlock slowpath  entered from the irq context.
 
