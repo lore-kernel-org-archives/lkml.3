@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934282Ab3GQWyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:54:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56437 "EHLO
+	id S934275Ab3GQWye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:54:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56459 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934259Ab3GQWyS (ORCPT
+	with ESMTP id S934276Ab3GQWyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:54:18 -0400
+	Wed, 17 Jul 2013 18:54:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 097/145] ath9k: Do not assign noise for NULL caldata
-Date: Wed, 17 Jul 2013 15:47:09 -0700
-Message-Id: <1374101277-7915-98-git-send-email-kamal@canonical.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 065/145] mm/memory-hotplug: fix lowmem count overflow when offline pages
+Date: Wed, 17 Jul 2013 15:46:37 -0700
+Message-Id: <1374101277-7915-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,35 +31,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit d3bcb7b24bbf09fde8405770e676fe0c11c79662 upstream.
+commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
 
-ah->noise is maintained globally and not per-channel. This
-is updated in the reset() routine after the NF history has been
-filled for the *current channel*, just before switching to
-the new channel. There is no need to do it inside getnf(), since
-ah->noise must contain a value for the new channel.
+The logic for the memory-remove code fails to correctly account the
+Total High Memory when a memory block which contains High Memory is
+offlined as shown in the example below.  The following patch fixes it.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Before logic memory remove:
+
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
+
+After logic memory remove:
+
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/calib.c | 1 -
- 1 file changed, 1 deletion(-)
+ mm/page_alloc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/calib.c b/drivers/net/wireless/ath/ath9k/calib.c
-index 1e85085..a393e87 100644
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -389,7 +389,6 @@ bool ath9k_hw_getnf(struct ath_hw *ah, struct ath9k_channel *chan)
- 
- 	if (!caldata) {
- 		chan->noisefloor = nf;
--		ah->noise = ath9k_hw_getchan_noise(ah, chan);
- 		return false;
- 	}
- 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7d77c57..7708f66 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6056,6 +6056,10 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
++#ifdef CONFIG_HIGHMEM
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
++#endif
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 -- 
 1.8.1.2
 
