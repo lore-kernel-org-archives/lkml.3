@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934343Ab3GQWyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:54:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56487 "EHLO
+	id S934357Ab3GQWyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:54:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56496 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934276Ab3GQWyg (ORCPT
+	with ESMTP id S934276Ab3GQWyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:54:36 -0400
+	Wed, 17 Jul 2013 18:54:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 059/145] HID: apple: Add support for the 2013 Macbook Air
-Date: Wed, 17 Jul 2013 15:46:31 -0700
-Message-Id: <1374101277-7915-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 071/145] netfilter: xt_TCPOPTSTRIP: fix possible mangling beyond packet boundary
+Date: Wed, 17 Jul 2013 15:46:43 -0700
+Message-Id: <1374101277-7915-72-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,81 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 9d9a04ee758b4c1fcc7586d065cdde7a7607e156 upstream.
+commit bc6bcb59dd7c184d229f9e86d08aa56059938a4c upstream.
 
-This patch adds keyboard support for MacbookAir6,2 as WELLSPRING8
-(0x0291, 0x0292, 0x0293). The touchpad is handled in a separate
-bcm5974 patch, as usual.
+This target assumes that tcph->doff is well-formed, that may be well
+not the case. Add extra sanity checkings to avoid possible crash due
+to read/write out of the real packet boundary. After this patch, the
+default action on malformed TCP packets is to drop them. Moreover,
+fragments are skipped.
 
-Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-[ luis: backported to 3.8: adjusted context ]
+Reported-by: Rafal Kupka <rkupka@telemetry.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-apple.c | 6 ++++++
- drivers/hid/hid-core.c  | 6 ++++++
- drivers/hid/hid-ids.h   | 3 +++
- 3 files changed, 15 insertions(+)
+ net/netfilter/xt_TCPOPTSTRIP.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
-index d0f7662..a6c4da3 100644
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -529,6 +529,12 @@ static const struct hid_device_id apple_devices[] = {
- 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
- 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
-+		.driver_data = APPLE_HAS_FN },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
-+		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
-+		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
- 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index ceb3040..08eb32a 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1562,6 +1562,9 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
-@@ -2172,6 +2175,9 @@ static const struct hid_device_id hid_mouse_ignore_list[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
- 	{ }
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 160a309..720c8c1 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -135,6 +135,9 @@
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI  0x0255
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
- #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
- #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
- #define USB_DEVICE_ID_APPLE_ATV_IRCONTROL	0x8241
+diff --git a/net/netfilter/xt_TCPOPTSTRIP.c b/net/netfilter/xt_TCPOPTSTRIP.c
+index 25fd1c4..1eb1a44 100644
+--- a/net/netfilter/xt_TCPOPTSTRIP.c
++++ b/net/netfilter/xt_TCPOPTSTRIP.c
+@@ -30,17 +30,28 @@ static inline unsigned int optlen(const u_int8_t *opt, unsigned int offset)
+ 
+ static unsigned int
+ tcpoptstrip_mangle_packet(struct sk_buff *skb,
+-			  const struct xt_tcpoptstrip_target_info *info,
++			  const struct xt_action_param *par,
+ 			  unsigned int tcphoff, unsigned int minlen)
+ {
++	const struct xt_tcpoptstrip_target_info *info = par->targinfo;
+ 	unsigned int optl, i, j;
+ 	struct tcphdr *tcph;
+ 	u_int16_t n, o;
+ 	u_int8_t *opt;
++	int len;
++
++	/* This is a fragment, no TCP header is available */
++	if (par->fragoff != 0)
++		return XT_CONTINUE;
+ 
+ 	if (!skb_make_writable(skb, skb->len))
+ 		return NF_DROP;
+ 
++	len = skb->len - tcphoff;
++	if (len < (int)sizeof(struct tcphdr) ||
++	    tcp_hdr(skb)->doff * 4 > len)
++		return NF_DROP;
++
+ 	tcph = (struct tcphdr *)(skb_network_header(skb) + tcphoff);
+ 	opt  = (u_int8_t *)tcph;
+ 
+@@ -76,7 +87,7 @@ tcpoptstrip_mangle_packet(struct sk_buff *skb,
+ static unsigned int
+ tcpoptstrip_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ {
+-	return tcpoptstrip_mangle_packet(skb, par->targinfo, ip_hdrlen(skb),
++	return tcpoptstrip_mangle_packet(skb, par, ip_hdrlen(skb),
+ 	       sizeof(struct iphdr) + sizeof(struct tcphdr));
+ }
+ 
+@@ -94,7 +105,7 @@ tcpoptstrip_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ 	if (tcphoff < 0)
+ 		return NF_DROP;
+ 
+-	return tcpoptstrip_mangle_packet(skb, par->targinfo, tcphoff,
++	return tcpoptstrip_mangle_packet(skb, par, tcphoff,
+ 	       sizeof(*ipv6h) + sizeof(struct tcphdr));
+ }
+ #endif
 -- 
 1.8.1.2
 
