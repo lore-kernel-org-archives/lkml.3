@@ -1,124 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964855Ab3GQRx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:53:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58307 "EHLO mx1.redhat.com"
+	id S964952Ab3GQRxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:53:40 -0400
+Received: from 1wt.eu ([62.212.114.60]:34845 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934010Ab3GQRvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:51:13 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 15/23] perf tools: Add perf data version 3 header read
-Date: Wed, 17 Jul 2013 19:49:55 +0200
-Message-Id: <1374083403-14591-16-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
-References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+	id S964857Ab3GQRx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 13:53:29 -0400
+Date: Wed, 17 Jul 2013 19:52:32 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, CAI Qian <caiqian@redhat.com>,
+        David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Message-ID: <20130717175232.GM24293@1wt.eu>
+References: <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org> <20130716224357.GK4994@xanatos> <1374015299.6458.76.camel@gandalf.local.home> <20130716231217.GL4994@xanatos> <51E5D7C8.5000306@gmail.com> <1374018809.2249.29.camel@leira.trondhjem.org> <1000066089.1803398.1374046596236.JavaMail.root@redhat.com> <20130717144849.GB16513@xanatos> <1374073771.6458.143.camel@gandalf.local.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374073771.6458.143.camel@gandalf.local.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding perf data version 3 header read code to load
-data for v3 format.
+On Wed, Jul 17, 2013 at 11:09:31AM -0400, Steven Rostedt wrote:
+> What we need are mentors, and educate people that Linux really isn't
+> that harsh, and that the new developers actually do have talent, and
+> shouldn't be afraid to post their code.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/header.c | 48 +++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 41 insertions(+), 7 deletions(-)
+Hey, this is exactly the goal that we seek at the Kernel Recipes
+conference in France [1] whose second edition happens in September
+this year, and we're still looking for a few speakers. If some
+developers want to explain how they were mentored or how they
+mentored others, they're welcome! Please contact me off-list.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 5df73da..50f0d9a 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1777,17 +1777,28 @@ process_event_desc(struct perf_file_section *section __maybe_unused,
- 	struct perf_session *session;
- 	struct perf_evlist *evlist;
- 	struct perf_evsel *evsel;
-+	struct perf_header *ph;
-+
-+	session = container_of(header, struct perf_session, header);
-+	if (session->evlist)
-+		return 0;
- 
- 	evlist = read_event_desc(header, fd);
- 	if (!evlist)
--		return 0;
-+		return -1;
- 
--	session = container_of(header, struct perf_session, header);
-+	ph = &session->header;
- 
--	list_for_each_entry(evsel, &evlist->entries, node)
--		perf_evlist__set_event_name(session->evlist, evsel);
-+	if (ph->version <= PERF_HEADER_VERSION_2) {
-+		list_for_each_entry(evsel, &evlist->entries, node)
-+			perf_evlist__set_event_name(session->evlist, evsel);
-+
-+		perf_evlist__delete(evlist);
-+	} else {
-+		session->evlist = evlist;
-+		symbol_conf.nr_events = evlist->nr_entries;
-+	}
- 
--	perf_evlist__delete(evlist);
- 	return 0;
- }
- 
-@@ -2854,15 +2865,38 @@ static int perf_session__read_header_v2(struct perf_session *session,
- 	return __perf_session__read_header_v2(session, header);
- }
- 
-+static int perf_session__read_header_v3(struct perf_session *session,
-+					struct perf_file_header *header)
-+{
-+	struct perf_header *ph = &session->header;
-+	struct perf_file_header_v3 *v3 = &header->v3;
-+
-+	memcpy(&ph->adds_features, &v3->adds_features,
-+	       sizeof(ph->adds_features));
-+
-+	ph->data_offset  = v3->data.offset;
-+	ph->data_size	 = v3->data.size;
-+	ph->feat_offset  = v3->features.offset;
-+
-+	perf_header__process_sections(ph, session->fd, &session->pevent,
-+				      perf_file_section__process);
-+
-+	return 0;
-+}
-+
- static int perf_header_read_file(struct perf_session *session)
- {
- 	struct perf_file_header header;
-+	struct perf_header *ph = &session->header;
- 
- 	if (perf_file_header__read(&header, &session->header, session->fd))
- 		return -1;
- 
--	/* read v2 specific data */
--	return perf_session__read_header_v2(session, &header);
-+	/* read version specific data */
-+	if (ph->version <= PERF_HEADER_VERSION_2)
-+		return perf_session__read_header_v2(session, &header);
-+
-+	return perf_session__read_header_v3(session, &header);
- }
- 
- int perf_session__read_header(struct perf_session *session)
--- 
-1.7.11.7
+Willy
+
+[1] https://kernel-recipes.org/
 
