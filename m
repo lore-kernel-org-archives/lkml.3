@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934481Ab3GQW4D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56676 "EHLO
+	id S934495Ab3GQW4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:56:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56699 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964991Ab3GQWzz (ORCPT
+	with ESMTP id S934483Ab3GQW4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:55:55 -0400
+	Wed, 17 Jul 2013 18:56:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Bacik <jbacik@fusionio.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 115/145] Btrfs: only do the tree_mod_log_free_eb if this is our last ref
-Date: Wed, 17 Jul 2013 15:47:27 -0700
-Message-Id: <1374101277-7915-116-git-send-email-kamal@canonical.com>
+Cc: Zhang Yi <zhang.yi20@zte.com.cn>,
+        "'Peter Zijlstra'" <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 039/145] futex: Take hugepages into account when generating futex_key
+Date: Wed, 17 Jul 2013 15:46:11 -0700
+Message-Id: <1374101277-7915-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -26,39 +29,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Zhang Yi <wetpzy@gmail.com>
 
-commit 7fb7d76f96bfcbea25007d190ba828b18e13d29d upstream.
+commit 13d60f4b6ab5b702dc8d2ee20999f98a93728aec upstream.
 
-There is another bug in the tree mod log stuff in that we're calling
-tree_mod_log_free_eb every single time a block is cow'ed.  The problem with this
-is that if this block is shared by multiple snapshots we will call this multiple
-times per block, so if we go to rewind the mod log for this block we'll BUG_ON()
-in __tree_mod_log_rewind because we try to rewind a free twice.  We only want to
-call tree_mod_log_free_eb if we are actually freeing the block.  With this patch
-I no longer hit the panic in __tree_mod_log_rewind.  Thanks,
+The futex_keys of process shared futexes are generated from the page
+offset, the mapping host and the mapping index of the futex user space
+address. This should result in an unique identifier for each futex.
 
-Reviewed-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Though this is not true when futexes are located in different subpages
+of an hugepage. The reason is, that the mapping index for all those
+futexes evaluates to the index of the base page of the hugetlbfs
+mapping. So a futex at offset 0 of the hugepage mapping and another
+one at offset PAGE_SIZE of the same hugepage mapping have identical
+futex_keys. This happens because the futex code blindly uses
+page->index.
+
+Steps to reproduce the bug:
+
+1. Map a file from hugetlbfs. Initialize pthread_mutex1 at offset 0
+   and pthread_mutex2 at offset PAGE_SIZE of the hugetlbfs
+   mapping.
+
+   The mutexes must be initialized as PTHREAD_PROCESS_SHARED because
+   PTHREAD_PROCESS_PRIVATE mutexes are not affected by this issue as
+   their keys solely depend on the user space address.
+
+2. Lock mutex1 and mutex2
+
+3. Create thread1 and in the thread function lock mutex1, which
+   results in thread1 blocking on the locked mutex1.
+
+4. Create thread2 and in the thread function lock mutex2, which
+   results in thread2 blocking on the locked mutex2.
+
+5. Unlock mutex2. Despite the fact that mutex2 got unlocked, thread2
+   still blocks on mutex2 because the futex_key points to mutex1.
+
+To solve this issue we need to take the normal page index of the page
+which contains the futex into account, if the futex is in an hugetlbfs
+mapping. In other words, we calculate the normal page mapping index of
+the subpage in the hugetlbfs mapping.
+
+Mappings which are not based on hugetlbfs are not affected and still
+use page->index.
+
+Thanks to Mel Gorman who provided a patch for adding proper evaluation
+functions to the hugetlbfs code to avoid exposing hugetlbfs specific
+details to the futex code.
+
+[ tglx: Massaged changelog ]
+
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
+Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
+Reviewed-by: 'Mel Gorman' <mgorman@suse.de>
+Acked-by: 'Darren Hart' <dvhart@linux.intel.com>
+Cc: 'Peter Zijlstra' <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/000101ce71a6%24a83c5880%24f8b50980%24@com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[ luis: backported to 3.8: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/ctree.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/hugetlb.h | 16 ++++++++++++++++
+ kernel/futex.c          |  3 ++-
+ mm/hugetlb.c            | 17 +++++++++++++++++
+ 3 files changed, 35 insertions(+), 1 deletion(-)
 
-diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
-index 7a11fb7..d24e546 100644
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -1049,7 +1049,8 @@ static noinline int __btrfs_cow_block(struct btrfs_trans_handle *trans,
- 		btrfs_set_node_ptr_generation(parent, parent_slot,
- 					      trans->transid);
- 		btrfs_mark_buffer_dirty(parent);
--		tree_mod_log_free_eb(root->fs_info, buf);
-+		if (last_ref)
-+			tree_mod_log_free_eb(root->fs_info, buf);
- 		btrfs_free_tree_block(trans, root, buf, parent_start,
- 				      last_ref);
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index db695d5..57e2b53 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -354,6 +354,17 @@ static inline int hstate_index(struct hstate *h)
+ 	return h - hstates;
+ }
+ 
++pgoff_t __basepage_index(struct page *page);
++
++/* Return page->index in PAGE_SIZE units */
++static inline pgoff_t basepage_index(struct page *page)
++{
++	if (!PageCompound(page))
++		return page->index;
++
++	return __basepage_index(page);
++}
++
+ #else	/* CONFIG_HUGETLB_PAGE */
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+@@ -374,6 +385,11 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ }
+ #define hstate_index_to_shift(index) 0
+ #define hstate_index(h) 0
++
++static inline pgoff_t basepage_index(struct page *page)
++{
++	return page->index;
++}
+ #endif	/* CONFIG_HUGETLB_PAGE */
+ 
+ #endif /* _LINUX_HUGETLB_H */
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 8879430..f0ee318 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -60,6 +60,7 @@
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
+ #include <linux/ptrace.h>
++#include <linux/hugetlb.h>
+ 
+ #include <asm/futex.h>
+ 
+@@ -363,7 +364,7 @@ again:
+ 	} else {
+ 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+ 		key->shared.inode = page_head->mapping->host;
+-		key->shared.pgoff = page_head->index;
++		key->shared.pgoff = basepage_index(page);
  	}
+ 
+ 	get_futex_key_refs(key);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index dc66048..430dca0 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -690,6 +690,23 @@ int PageHuge(struct page *page)
+ }
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
++pgoff_t __basepage_index(struct page *page)
++{
++	struct page *page_head = compound_head(page);
++	pgoff_t index = page_index(page_head);
++	unsigned long compound_idx;
++
++	if (!PageHuge(page_head))
++		return page_index(page);
++
++	if (compound_order(page_head) >= MAX_ORDER)
++		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
++	else
++		compound_idx = page - page_head;
++
++	return (index << compound_order(page_head)) + compound_idx;
++}
++
+ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
 -- 
 1.8.1.2
 
