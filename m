@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801Ab3GQWux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:50:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56300 "EHLO
+	id S1757733Ab3GQWuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:50:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56281 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757776Ab3GQWuv (ORCPT
+	with ESMTP id S1757668Ab3GQWul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:50:51 -0400
+	Wed, 17 Jul 2013 18:50:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        Alasdair G Kergon <agk@redhat.com>,
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Liu <r64343@freescale.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 131/145] dm verity: fix inability to use a few specific devices sizes
-Date: Wed, 17 Jul 2013 15:47:43 -0700
-Message-Id: <1374101277-7915-132-git-send-email-kamal@canonical.com>
+Subject: [PATCH 128/145] ARM: 7778/1: smp_twd: twd_update_frequency need be run on all online CPUs
+Date: Wed, 17 Jul 2013 15:47:40 -0700
+Message-Id: <1374101277-7915-129-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,64 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Jason Liu <r64343@freescale.com>
 
-commit b1bf2de07271932326af847a3c6a01fdfd29d4be upstream.
+commit cbbe6f82b489e7ceba4ad7c833bd3a76cd0084cb upstream.
 
-Fix a boundary condition that caused failure for certain device sizes.
+When the local timer freq changed, the twd_update_frequency function
+should be run all the CPUs include itself, otherwise, the twd freq will
+not get updated and the local timer will not run correcttly.
 
-The problem is reported at
-  http://code.google.com/p/cryptsetup/issues/detail?id=160
+smp_call_function will run functions on all other CPUs, but not include
+himself, this is not correct,use on_each_cpu instead to fix this issue.
 
-For certain device sizes the number of hashes at a specific level was
-calculated incorrectly.
-
-It happens for example for a device with data and metadata block size 4096
-that has 16385 blocks and algorithm sha256.
-
-The user can test if he is affected by this bug by running the
-"veritysetup verify" command and also by activating the dm-verity kernel
-driver and reading the whole block device. If it passes without an error,
-then the user is not affected.
-
-The condition for the bug is:
-
-Split the total number of data blocks (data_block_bits) into bit strings,
-each string has hash_per_block_bits bits. hash_per_block_bits is
-rounddown(log2(metadata_block_size/hash_digest_size)). Equivalently, you
-can say that you convert data_blocks_bits to 2^hash_per_block_bits base.
-
-If there some zero bit string below the most significant bit string and at
-least one bit below this zero bit string is set, then the bug happens.
-
-The same bug exists in the userspace veritysetup tool, so you must use
-fixed veritysetup too if you want to use devices that are affected by
-this boundary condition.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Milan Broz <gmazyland@gmail.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Jason Liu <r64343@freescale.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-verity.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/kernel/smp_twd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
-index a746f1d..4112d90 100644
---- a/drivers/md/dm-verity.c
-+++ b/drivers/md/dm-verity.c
-@@ -831,9 +831,8 @@ static int verity_ctr(struct dm_target *ti, unsigned argc, char **argv)
- 	for (i = v->levels - 1; i >= 0; i--) {
- 		sector_t s;
- 		v->hash_level_block[i] = hash_position;
--		s = verity_position_at_level(v, v->data_blocks, i);
--		s = (s >> v->hash_per_block_bits) +
--		    !!(s & ((1 << v->hash_per_block_bits) - 1));
-+		s = (v->data_blocks + ((sector_t)1 << ((i + 1) * v->hash_per_block_bits)) - 1)
-+					>> ((i + 1) * v->hash_per_block_bits);
- 		if (hash_position + s < hash_position) {
- 			ti->error = "Hash device offset overflow";
- 			r = -E2BIG;
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index 49f335d..64ac3f1 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -121,7 +121,7 @@ static int twd_rate_change(struct notifier_block *nb,
+ 	 * changing cpu.
+ 	 */
+ 	if (flags == POST_RATE_CHANGE)
+-		smp_call_function(twd_update_frequency,
++		on_each_cpu(twd_update_frequency,
+ 				  (void *)&cnd->new_rate, 1);
+ 
+ 	return NOTIFY_OK;
 -- 
 1.8.1.2
 
