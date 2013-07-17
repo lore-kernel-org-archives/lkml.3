@@ -1,113 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab3GQGmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 02:42:33 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38904 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab3GQGmb (ORCPT
+	id S1752349Ab3GQGoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 02:44:37 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:33190 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3GQGof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 02:42:31 -0400
-Message-ID: <51E63C02.2020609@linux.vnet.ibm.com>
-Date: Wed, 17 Jul 2013 12:08:58 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 17 Jul 2013 02:44:35 -0400
+Date: Wed, 17 Jul 2013 08:44:35 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        rockorequin@hotmail.com, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>, alexkaltsas@gmail.com,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH v2] drm/i915: fix long-standing SNB regression in power
+ consumption after resume
+Message-ID: <20130717064435.GA5784@phenom.ffwll.local>
+Mail-Followup-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	rockorequin@hotmail.com, Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Chris Wilson <chris@chris-wilson.co.uk>, alexkaltsas@gmail.com,
+	dri-devel@lists.freedesktop.org
+References: <20130714163009.22374.22100.stgit@zurg>
+ <20130717062258.5467.69414.stgit@zurg>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soeren.brinkmann@gmail.com>
-CC: Willy Tarreau <w@1wt.eu>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION 3.10.1] System does not wake up from suspend
-References: <20130715043625.GA2162@skorgonTP.att.net> <20130715045400.GU32054@1wt.eu> <51E39BAB.4060308@linux.vnet.ibm.com> <20130717025720.GA1267@skorgonTP.att.net> <51E6242B.2050101@linux.vnet.ibm.com> <20130717053820.GA1965@skorgonTP.att.net> <20130717060425.GA2063@skorgonTP.att.net>
-In-Reply-To: <20130717060425.GA2063@skorgonTP.att.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071706-5816-0000-0000-000008F3529D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717062258.5467.69414.stgit@zurg>
+X-Operating-System: Linux phenom 3.10.0-rc7+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 11:34 AM, Sören Brinkmann wrote:
-> On Tue, Jul 16, 2013 at 10:38:20PM -0700, Sören Brinkmann wrote:
->> On Wed, Jul 17, 2013 at 10:27:15AM +0530, Srivatsa S. Bhat wrote:
->>> On 07/17/2013 08:27 AM, Sören Brinkmann wrote:
->>>> On Mon, Jul 15, 2013 at 12:20:19PM +0530, Srivatsa S. Bhat wrote:
->>>>> On 07/15/2013 10:24 AM, Willy Tarreau wrote:
->>>>>> On Sun, Jul 14, 2013 at 09:36:25PM -0700, Sören Brinkmann wrote:
->>>>>>> Hi Greg,
->>>>>>>
->>>>>>> since upgrading to 3.10.1 I find my system not waking up from suspend
->>>>>>> from time to time. Unfortunately, I couldn't figure out how to reliably
->>>>>>> reproduce the issue. Sometimes it works just fine.
->>>>>>>
->>>>>>> All I know so far:
->>>>>>> On 3.10 I had my system completely freezing a few times. But that did
->>>>>>> not seem to be related to suspend/resume. I never experienced the
->>>>>>> behavior described below on 3.10.
->>>>>>>
->>>>>>> On 3.10.1 I hit this bug a few times, that my system did not wake up.
->>>>>>> I.e. the screen stayed black and the power LED kept flashing. But
->>>>>>> nothing brought the system back up and I had to longpress power to reset
->>>>>>> the system.
->>>>>>> I had none of the system freezes like the ones described above anymore.
->>>>>>
->>>>>> Fortunately, 3.10.1 is very small. The only patch it contains which is
->>>>>> related to suspend is 18/19 (cpufreq ondemand governor). Maybe you're
->>>>>> having a problem with cpufreq on this machine in fact.
->>>>>>
->>>>>> You may want to try to force it to performance mode or powersave mode
->>>>>> and try for a while, it is possible that both 3.10 and 3.10.1 will work
->>>>>> fine.
->>>>>>
->>>>>
->>>>> Or, you could try applying the patch shown below on top of 3.10.1 and
->>>>> see if it fixes the suspend/resume regression for you.
->>>>>
->>>>> https://lkml.org/lkml/2013/7/11/661
->>>>>
->>>>> (Just apply patch 1, not the entire patchset).
->>>> So, this didn't end well. With that patch applied I end up in a kernel
->>>> panic on suspend, reproducible - well two out of two is a small test set,
->>>> but anyway. Unfortunately too late to get any information about it
->>>> and my logs don't show anything either. But it's seems worse than the
->>>> rather occasional hangs on resume on the vanilla 3.10.1 kernel.
->>>>
->>>
->>> Kernel panic? Weird.. I suspect something _else_ is wrong. I suggest trying
->>> out the following:
->>>
->>> 1. My patches only touch cpufreq. So completely turn off cpufreq by setting
->>>    CONFIG_CPU_FREQ=n. Then try suspend/resume and see how it goes. If it
->>>    fails, that shows that something _else_ is wrong and you can try a git
->>>    bisect for that.
->> I changed my config like shown below. That one has a two out of two
->> success rate for suspend/resume so far.
->>
->>>
->>>    However, if suspend/resume succeeds with CONFIG_CPU_FREQ=n, then try out
->>>    step 2 below.
->>>
->>> 2. Apply patch 1 (not the entire patchset)
->>>    https://lkml.org/lkml/2013/7/11/661
->> That's the one I already have in my tree
->>
->>>
->>>    On top of that, apply this patch:
->>>    https://patchwork.kernel.org/patch/2827512/
->> This one does not apply. I'll see if I can make it apply.
-> Got it ported.
-> So, with that additional patch and going back to my original config
-> (with cpufreq included), I'm currently at 3 out of 3 successful
-> suspend/resume cycles.
+On Wed, Jul 17, 2013 at 10:22:58AM +0400, Konstantin Khlebnikov wrote:
+> This patch fixes regression in power consumtion of sandy bridge gpu, which
+> exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
+> it's extremely busy. After that it never reaches rc6 state.
+> 
+> Bug exists since kernel v3.6, commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
+> ("drm/i915: load boot context at driver init time").
+> 
+> For some reason RC6 is already enabled at the beginning of resuming process.
+> Following initliaztion breaks some internal state and confuses RPS engine.
+> This patch disables RC6 at the beginnig of resume and initialization.
+> 
+> I've rearranged initialization sequence, because intel_disable_gt_powersave()
+> needs initialized force_wake_get/put and some locks from the dev_priv.
+> 
+> References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=58971
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Great! :)
+lgtm, thanks a lot for digging through this giant mess and figuring out
+what's actually broken here. Patch is merged to my -fixes queue with a
+slightly pimped commit message and cc: stable added.
 
-> Unless the odds are playing an ill game with me, you should be close to
-> the actual culprit.
+Note that there's a small issue with the drps code on ilk, we now write a
+bogus fstart value as the requested frequency. I'll follow-up with a patch
+to fix this, but I've figured that merging this one here first for wider
+testing is more important.
+
+Cheers, Daniel
+
+> ---
+>  drivers/gpu/drm/i915/i915_dma.c |   16 ++++++++--------
+>  drivers/gpu/drm/i915/intel_pm.c |    5 +++--
+>  2 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> index 3b315ba..d1ee611 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1511,6 +1511,13 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>  	dev_priv->dev = dev;
+>  	dev_priv->info = info;
+>  
+> +	spin_lock_init(&dev_priv->irq_lock);
+> +	spin_lock_init(&dev_priv->gpu_error.lock);
+> +	spin_lock_init(&dev_priv->rps.lock);
+> +	mutex_init(&dev_priv->dpio_lock);
+> +	mutex_init(&dev_priv->rps.hw_lock);
+> +	mutex_init(&dev_priv->modeset_restore_lock);
+> +
+>  	i915_dump_device_info(dev_priv);
+>  
+>  	if (i915_get_bridge_dev(dev)) {
+> @@ -1602,6 +1609,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>  
+>  	intel_irq_init(dev);
+>  	intel_gt_init(dev);
+> +	intel_gt_reset(dev);
+>  
+>  	/* Try to make sure MCHBAR is enabled before poking at it */
+>  	intel_setup_mchbar(dev);
+> @@ -1626,14 +1634,6 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>  	if (!IS_I945G(dev) && !IS_I945GM(dev))
+>  		pci_enable_msi(dev->pdev);
+>  
+> -	spin_lock_init(&dev_priv->irq_lock);
+> -	spin_lock_init(&dev_priv->gpu_error.lock);
+> -	spin_lock_init(&dev_priv->rps.lock);
+> -	mutex_init(&dev_priv->dpio_lock);
+> -
+> -	mutex_init(&dev_priv->rps.hw_lock);
+> -	mutex_init(&dev_priv->modeset_restore_lock);
+> -
+>  	dev_priv->num_plane = 1;
+>  	if (IS_VALLEYVIEW(dev))
+>  		dev_priv->num_plane = 2;
+> diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
+> index aa01128..b86db1e 100644
+> --- a/drivers/gpu/drm/i915/intel_pm.c
+> +++ b/drivers/gpu/drm/i915/intel_pm.c
+> @@ -4497,6 +4497,9 @@ void intel_gt_reset(struct drm_device *dev)
+>  		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
+>  			__gen6_gt_force_wake_mt_reset(dev_priv);
+>  	}
+> +
+> +	/* BIOS often leaves RC6 enabled, but disable it for hw init */
+> +	intel_disable_gt_powersave(dev);
+>  }
+>  
+>  void intel_gt_init(struct drm_device *dev)
+> @@ -4505,8 +4508,6 @@ void intel_gt_init(struct drm_device *dev)
+>  
+>  	spin_lock_init(&dev_priv->gt_lock);
+>  
+> -	intel_gt_reset(dev);
+> -
+>  	if (IS_VALLEYVIEW(dev)) {
+>  		dev_priv->gt.force_wake_get = vlv_force_wake_get;
+>  		dev_priv->gt.force_wake_put = vlv_force_wake_put;
 > 
 
-Thanks for all your testing efforts!
-
-Regards,
-Srivatsa S. Bhat
-
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
