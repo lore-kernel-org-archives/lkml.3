@@ -1,212 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3GQQjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:39:37 -0400
-Received: from 3.mo1.mail-out.ovh.net ([46.105.60.232]:57738 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756475Ab3GQQjg (ORCPT
+	id S932584Ab3GQQkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:40:00 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22300 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756503Ab3GQQj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:39:36 -0400
-Message-ID: <51E6C8C1.4050401@overkiz.com>
-Date: Wed, 17 Jul 2013 18:39:29 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH v2 02/42] ARM: at91: add PMC main clock
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com> <1374068404-13654-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1374068404-13654-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 14458525128785295481
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -85
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -85
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
+	Wed, 17 Jul 2013 12:39:58 -0400
+X-AuditID: cbfec7f4-b7fd76d0000035e1-ed-51e6c8d94fbd
+Message-id: <51E6C8D8.4010303@samsung.com>
+Date: Wed, 17 Jul 2013 18:39:52 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3] media: i2c: tvp7002: add OF support
+References: <1374078016-17122-1-git-send-email-prabhakar.csengg@gmail.com>
+In-reply-to: <1374078016-17122-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t/xy7o3TzwLNNi7Vtfi3K0GVosDsx+y
+	WixsW8JicXnXHDaLng1bWS1e3l/B7MDmsXPWXXaPOdOaWDzOz1jI6PF5k1wASxSXTUpqTmZZ
+	apG+XQJXxt2T+5kKFghXvDh4jLmB8SZ/FyMnh4SAicSle5dYIGwxiQv31rN1MXJxCAksZZRY
+	2LMWyvnEKDF39lomkCpeAS2JZ8cXM4LYLAKqEo1HF4DZbAKGEr1H+8BsUYEAicVLzrFD1AtK
+	/Jh8D2yDiICexJIFx5hBbGaBY4wSO7dFgdjCAtYSTXcfsIHYQgJeEv2HnoHN4RTwlph38wIr
+	RL2OxP7WaWwQtrzE5jVvmScwCsxCsmIWkrJZSMoWMDKvYhRNLU0uKE5KzzXUK07MLS7NS9dL
+	zs/dxAgJ6S87GBcfszrEKMDBqMTDOzHsaaAQa2JZcWXuIUYJDmYlEd6DS54FCvGmJFZWpRbl
+	xxeV5qQWH2Jk4uCUamDcyDyLzzv9U5j78vUSrz94TxV9/FlBPHxFwc4dggyhJw9JpU+car9Z
+	SnJLnGl6Zifzu+i9QqdOzL6WEPrkhrXpr4Artn8mz7xjY7pLdsu3rOBvwod/hd++EDTxmtSW
+	Z5tmPXIUFOhxlXQ6Xz3786XXZuW91QIHZdf7fEp5/KtEubibedvBK1PWKbEUZyQaajEXFScC
+	AEAEUiZHAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/07/2013 15:40, Boris BREZILLON wrote:
-> This is the at91 main oscillator clock implementation using common
-> clk framework.
->
-> If rate is not provided during clock registraction it is computed using
-> the slow clock (main clk parent in this case) rate and the MCFR register.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+On 07/17/2013 06:20 PM, Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+> add OF support for the tvp7002 driver.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > ---
->   drivers/clk/at91/Makefile   |    5 ++
->   drivers/clk/at91/clk-main.c |  106 +++++++++++++++++++++++++++++++++++++++++++
->   include/linux/clk/at91.h    |   10 ++++
->   3 files changed, 121 insertions(+)
->   create mode 100644 drivers/clk/at91/Makefile
->   create mode 100644 drivers/clk/at91/clk-main.c
->
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+>  This patch depends on https://patchwork.kernel.org/patch/2828800/
+>  
+>  Changes for v3:
+>  1: Fixed review comments pointed by Sylwester.
+>  
+>  .../devicetree/bindings/media/i2c/tvp7002.txt      |   43 +++++++++++++
+>  drivers/media/i2c/tvp7002.c                        |   67 ++++++++++++++++++--
+>  2 files changed, 103 insertions(+), 7 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp7002.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/media/i2c/tvp7002.txt b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
 > new file mode 100644
-> index 0000000..42c084e
+> index 0000000..744125f
 > --- /dev/null
-> +++ b/drivers/clk/at91/Makefile
-> @@ -0,0 +1,5 @@
-> +#
-> +# Makefile for at91 specific clk
-> +#
+> +++ b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
+> @@ -0,0 +1,43 @@
+> +* Texas Instruments TV7002 video decoder
 > +
-> +obj-y += clk-main.o
-> diff --git a/drivers/clk/at91/clk-main.c b/drivers/clk/at91/clk-main.c
-> new file mode 100644
-> index 0000000..738fa39
-> --- /dev/null
-> +++ b/drivers/clk/at91/clk-main.c
-> @@ -0,0 +1,106 @@
-> +/*
-> + * drivers/clk/at91/clk-main.c
-> + *
-> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-> + *
-> + * This mainram is free software; you can redistribute it and/or modify
-                  ^program not mainram
+> +The TVP7002 device supports digitizing of video and graphics signal in RGB and
+> +YPbPr color space.
+> +
+> +Required Properties :
+> +- compatible : Must be "ti,tvp7002"
+> +
+> +- hsync-active: HSYNC Polarity configuration for endpoint.
+> +
+> +- vsync-active: VSYNC Polarity configuration for endpoint.
 
-This typo error is still present in pll, main and master clock 
-implementations.
-I will fix it for the next version.
+I woudn't refer to "endpoint" here, perhaps to the specific hardware
+bus instead ? So it is clear what part of the device it refers to ?
 
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk/at91.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/io.h>
-> +
-> +#define to_clk_main(hw) container_of(hw, struct clk_main, hw)
-> +struct clk_main {
-> +	struct clk_hw hw;
-> +	unsigned long rate;
-> +};
-> +
-> +static unsigned long clk_main_recalc_rate(struct clk_hw *hw,
-> +					  unsigned long parent_rate)
-> +{
-> +	u32 tmp;
-> +	struct clk_main *clkmain = to_clk_main(hw);
-> +	if (clkmain->rate)
-> +		return clkmain->rate;
-> +	while ((tmp = at91_pmc_read(AT91_CKGR_MCFR)) & AT91_PMC_MAINRDY)
-> +		;
-> +	tmp &= AT91_PMC_MAINF;
-> +	clkmain->rate = (tmp * parent_rate) / 16;
-> +	return clkmain->rate;
-> +}
-> +
-> +static const struct clk_ops main_ops = {
-> +	.recalc_rate = clk_main_recalc_rate,
-> +};
-> +
-> +struct clk * __init
-> +at91_clk_register_main(const char *name,
-> +		       const char *parent_name,
-> +		       unsigned long rate)
-> +{
-> +	struct clk_main *clkmain;
-> +	struct clk *clk = NULL;
-> +	struct clk_init_data init;
-> +
-> +	if (!rate && !parent_name)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	clkmain = kzalloc(sizeof(*clkmain), GFP_KERNEL);
-> +	if (!clkmain)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &main_ops;
-> +	init.parent_names = parent_name ? &parent_name : NULL;
-> +	init.num_parents = parent_name ? 1 : 0;
-> +	init.flags = parent_name ? 0 : CLK_IS_ROOT;
-> +
-> +	clkmain->hw.init = &init;
-> +	clkmain->rate = rate;
-> +
-> +	clk = clk_register(NULL, &clkmain->hw);
-> +
-> +	if (IS_ERR(clk))
-> +		kfree(clkmain);
-> +
-> +	return clk;
-> +}
-> +
-> +
-> +
-> +#if defined(CONFIG_OF)
-> +static void __init
-> +of_at91_clk_main_setup(struct device_node *np)
-> +{
-> +	struct clk *clk;
-> +	const char *parent_name;
-> +	const char *name = np->name;
-> +	u32 rate = 0;
-> +
-> +	parent_name = of_clk_get_parent_name(np, 0);
-> +	of_property_read_string(np, "clock-output-names", &name);
-> +	of_property_read_u32(np, "clock-frequency", &rate);
-> +
-> +	clk = at91_clk_register_main(name, parent_name, rate);
-> +
-> +	if (!IS_ERR(clk))
-> +		return;
-> +
-> +	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +}
-> +
-> +static void __init of_at91rm9200_clk_main_setup(struct device_node *np)
-> +{
-> +	of_at91_clk_main_setup(np);
-> +}
-> +CLK_OF_DECLARE(at91rm9200_clk_main, "atmel,at91rm9200-clk-main",
-> +	       of_at91rm9200_clk_main_setup);
-> +#endif
-> diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
-> index 0ce9586..8e83942 100644
-> --- a/include/linux/clk/at91.h
-> +++ b/include/linux/clk/at91.h
-> @@ -16,6 +16,8 @@
->   #ifndef AT91_PMC_H
->   #define AT91_PMC_H
->
-> +#include <linux/clk-provider.h>
-> +
->   #ifndef __ASSEMBLY__
->   extern void __iomem *at91_pmc_base;
->
-> @@ -187,4 +189,12 @@ extern void __iomem *at91_pmc_base;
->   #define			AT91_PMC_PCR_DIV8	0x3			/* Peripheral clock is MCK/8 */
->   #define		AT91_PMC_PCR_EN		(0x1  <<  28)		/* Enable */
->
-> +
-> +
-> +
-> +struct clk * __init
-> +at91_clk_register_main(const char *name,
-> +		       const char *parent_name,
-> +		       unsigned long rate);
-> +
->   #endif
+> +- pclk-sample: Clock polarity of the endpoint.
 
+This description is not very useful, my feeling is that this property
+is better described in video-interfaces.txt.
+
+> +- sync-on-green-active: Active state of Sync-on-green signal property of the
+> +  endpoint, 0/1 for normal/inverted operation respectively.
+> +
+> +- field-even-active: Active-high Field ID polarity of the endpoint.
+
+I find it hard to understand what this property is about exactly.
+Not sure if you need to repeat detailed description of the signal
+polarity properties. Perhaps its sufficient to list which properties
+are relevant for this device, but I'm not opposed to having
+supplementary description here. I would just make it more specific
+to the TVP7002 chip.
+Also please note that only 'compatible' property is required, all
+other are optional. And it probably makes sense to specify what are
+default values for each property when it is not specified.
+
+Otherwise the patch looks good.
+
+--
+Thanks,
+Sylwester
