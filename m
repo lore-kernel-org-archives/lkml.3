@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934113Ab3GQRzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:55:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61084 "EHLO mx1.redhat.com"
+	id S934060Ab3GQR4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:56:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17246 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933991Ab3GQRut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:50:49 -0400
+	id S933916Ab3GQRus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 13:50:48 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 01/23] perf tools: Use session->fd instead of passing fd as argument
-Date: Wed, 17 Jul 2013 19:49:41 +0200
-Message-Id: <1374083403-14591-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 09/23] perf tools: Introduce swap_features function
+Date: Wed, 17 Jul 2013 19:49:49 +0200
+Message-Id: <1374083403-14591-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
 References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using session->fd instead of passing fd as argument because it's
-always session->fd that's passed as fd argument.
+Introducing swap_features function to make the swapping
+code more clear and extensible.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,96 +37,96 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/header.c  | 11 +++++------
- tools/perf/util/header.h  |  2 +-
- tools/perf/util/session.c |  4 ++--
- 3 files changed, 8 insertions(+), 9 deletions(-)
+ tools/perf/util/header.c | 69 ++++++++++++++++++++++++------------------------
+ 1 file changed, 35 insertions(+), 34 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index b28a65e..b3f253f 100644
+index 4ebe4a1..4d82dac 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -2619,19 +2619,17 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
- 	return 0;
+@@ -2512,6 +2512,39 @@ do {								\
+ 	return -1;
  }
  
--static int perf_header__read_pipe(struct perf_session *session, int fd)
-+static int perf_header__read_pipe(struct perf_session *session)
++static void swap_features(unsigned long *adds_features)
++{
++	/*
++	 * feature bitmap is declared as an array of unsigned longs --
++	 * not good since its size can differ between the host that
++	 * generated the data file and the host analyzing the file.
++	 *
++	 * We need to handle endianness, but we don't know the size of
++	 * the unsigned long where the file was generated. Take a best
++	 * guess at determining it: try 64-bit swap first (ie., file
++	 * created on a 64-bit host), and check if the hostname feature
++	 * bit is set (this feature bit is forced on as of fbe96f2).
++	 * If the bit is not, undo the 64-bit swap and try a 32-bit
++	 * swap. If the hostname bit is still not set (e.g., older data
++	 * file), punt and fallback to the original behavior --
++	 * clearing all feature bits and setting buildid.
++	 */
++	mem_bswap_64(adds_features, BITS_TO_U64(HEADER_FEAT_BITS));
++
++	if (!test_bit(HEADER_HOSTNAME, adds_features)) {
++		/* unswap as u64 */
++		mem_bswap_64(adds_features, BITS_TO_U64(HEADER_FEAT_BITS));
++
++		/* unswap as u32 */
++		mem_bswap_32(adds_features, BITS_TO_U32(HEADER_FEAT_BITS));
++	}
++
++	if (!test_bit(HEADER_HOSTNAME, adds_features)) {
++		bitmap_zero(adds_features, HEADER_FEAT_BITS);
++		set_bit(HEADER_BUILD_ID, adds_features);
++	}
++}
++
+ int perf_file_header__read(struct perf_file_header *header,
+ 			   struct perf_header *ph, int fd)
  {
- 	struct perf_header *header = &session->header;
- 	struct perf_pipe_file_header f_header;
- 
--	if (perf_file_header__read_pipe(&f_header, header, fd,
-+	if (perf_file_header__read_pipe(&f_header, header, session->fd,
- 					session->repipe) < 0) {
- 		pr_debug("incompatible file format\n");
- 		return -EINVAL;
- 	}
- 
--	session->fd = fd;
+@@ -2540,40 +2573,8 @@ int perf_file_header__read(struct perf_file_header *header,
+ 			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
+ 		else
+ 			return -1;
+-	} else if (ph->needs_swap) {
+-		/*
+-		 * feature bitmap is declared as an array of unsigned longs --
+-		 * not good since its size can differ between the host that
+-		 * generated the data file and the host analyzing the file.
+-		 *
+-		 * We need to handle endianness, but we don't know the size of
+-		 * the unsigned long where the file was generated. Take a best
+-		 * guess at determining it: try 64-bit swap first (ie., file
+-		 * created on a 64-bit host), and check if the hostname feature
+-		 * bit is set (this feature bit is forced on as of fbe96f2).
+-		 * If the bit is not, undo the 64-bit swap and try a 32-bit
+-		 * swap. If the hostname bit is still not set (e.g., older data
+-		 * file), punt and fallback to the original behavior --
+-		 * clearing all feature bits and setting buildid.
+-		 */
+-		mem_bswap_64(&header->adds_features,
+-			    BITS_TO_U64(HEADER_FEAT_BITS));
 -
- 	return 0;
- }
+-		if (!test_bit(HEADER_HOSTNAME, header->adds_features)) {
+-			/* unswap as u64 */
+-			mem_bswap_64(&header->adds_features,
+-				    BITS_TO_U64(HEADER_FEAT_BITS));
+-
+-			/* unswap as u32 */
+-			mem_bswap_32(&header->adds_features,
+-				    BITS_TO_U32(HEADER_FEAT_BITS));
+-		}
+-
+-		if (!test_bit(HEADER_HOSTNAME, header->adds_features)) {
+-			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
+-			set_bit(HEADER_BUILD_ID, header->adds_features);
+-		}
+-	}
++	} else if (ph->needs_swap)
++		swap_features(header->adds_features);
  
-@@ -2725,20 +2723,21 @@ static int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
- 	return 0;
- }
- 
--int perf_session__read_header(struct perf_session *session, int fd)
-+int perf_session__read_header(struct perf_session *session)
- {
- 	struct perf_header *header = &session->header;
- 	struct perf_file_header	f_header;
- 	struct perf_file_attr	f_attr;
- 	u64			f_id;
- 	int nr_attrs, nr_ids, i, j;
-+	int fd = session->fd;
- 
- 	session->evlist = perf_evlist__new();
- 	if (session->evlist == NULL)
- 		return -ENOMEM;
- 
- 	if (session->fd_pipe)
--		return perf_header__read_pipe(session, fd);
-+		return perf_header__read_pipe(session);
- 
- 	if (perf_file_header__read(&f_header, header, fd) < 0)
- 		return -EINVAL;
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 669fda5..0bacb2d 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -96,7 +96,7 @@ struct perf_header {
- struct perf_evlist;
- struct perf_session;
- 
--int perf_session__read_header(struct perf_session *session, int fd);
-+int perf_session__read_header(struct perf_session *session);
- int perf_session__write_header(struct perf_session *session,
- 			       struct perf_evlist *evlist,
- 			       int fd, bool at_exit);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index d0d9f94..272c9cf 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -24,7 +24,7 @@ static int perf_session__open(struct perf_session *self, bool force)
- 		self->fd_pipe = true;
- 		self->fd = STDIN_FILENO;
- 
--		if (perf_session__read_header(self, self->fd) < 0)
-+		if (perf_session__read_header(self) < 0)
- 			pr_err("incompatible file format (rerun with -v to learn more)");
- 
- 		return 0;
-@@ -56,7 +56,7 @@ static int perf_session__open(struct perf_session *self, bool force)
- 		goto out_close;
- 	}
- 
--	if (perf_session__read_header(self, self->fd) < 0) {
-+	if (perf_session__read_header(self) < 0) {
- 		pr_err("incompatible file format (rerun with -v to learn more)");
- 		goto out_close;
- 	}
+ 	memcpy(&ph->adds_features, &header->adds_features,
+ 	       sizeof(ph->adds_features));
 -- 
 1.7.11.7
 
