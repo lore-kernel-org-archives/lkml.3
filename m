@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934694Ab3GQW5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:57:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56914 "EHLO
+	id S934725Ab3GQW5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:57:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56927 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934668Ab3GQW5M (ORCPT
+	with ESMTP id S934562Ab3GQW50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:57:12 -0400
+	Wed, 17 Jul 2013 18:57:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maarten ter Huurne <maarten@treewalker.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 053/145] ext4: fix corruption when online resizing a fs with 1K block size
-Date: Wed, 17 Jul 2013 15:46:25 -0700
-Message-Id: <1374101277-7915-54-git-send-email-kamal@canonical.com>
+Subject: [PATCH 050/145] UBIFS: fix a horrid bug
+Date: Wed, 17 Jul 2013 15:46:22 -0700
+Message-Id: <1374101277-7915-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,41 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten ter Huurne <maarten@treewalker.org>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 6ca792edc13c409e8d4eb9001e048264c6a2eb64 upstream.
+commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
 
-Subtracting the number of the first data block places the superblock
-backups one block too early, corrupting the file system. When the block
-size is larger than 1K, the first data block is 0, so the subtraction
-has no effect and no corruption occurs.
+Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
+mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
+in the middle of 'ubifs_readdir()'.
 
-Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
+it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
+but this may corrupt memory and lead to all kinds of problems like crashes an
+security holes.
+
+This patch fixes the problem by using the 'file->f_version' field, which
+'->llseek()' always unconditionally sets to zero. We set it to 1 in
+'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
+seek and it is time to clear the state saved in 'file->private_data'.
+
+I tested this patch by writing a user-space program which runds readdir and
+seek in parallell. I could easily crash the kernel without these patches, but
+could not crash it with these patches.
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/resize.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ fs/ubifs/dir.c | 30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 0cfa2f4..28d5f2c 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1654,12 +1654,10 @@ errout:
- 		err = err2;
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 62d0256..c90ea6f 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -365,6 +365,24 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 		 */
+ 		return 0;
  
- 	if (!err) {
--		ext4_fsblk_t first_block;
--		first_block = ext4_group_first_block_no(sb, 0);
- 		if (test_opt(sb, DEBUG))
- 			printk(KERN_DEBUG "EXT4-fs: extended group to %llu "
- 			       "blocks\n", ext4_blocks_count(es));
--		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr - first_block,
-+		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr,
- 			       (char *)es, sizeof(struct ext4_super_block), 0);
++	if (file->f_version == 0) {
++		/*
++		 * The file was seek'ed, which means that @file->private_data
++		 * is now invalid. This may also be just the first
++		 * 'ubifs_readdir()' invocation, in which case
++		 * @file->private_data is NULL, and the below code is
++		 * basically a no-op.
++		 */
++		kfree(file->private_data);
++		file->private_data = NULL;
++	}
++
++	/*
++	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
++	 * zero, and we use this for detecting whether the file was seek'ed.
++	 */
++	file->f_version = 1;
++
+ 	/* File positions 0 and 1 correspond to "." and ".." */
+ 	if (pos == 0) {
+ 		ubifs_assert(!file->private_data);
+@@ -438,6 +456,14 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
++
++		if (file->f_version == 0)
++			/*
++			 * The file was seek'ed meanwhile, lets return and start
++			 * reading direntries from the new position on the next
++			 * invocation.
++			 */
++			return 0;
  	}
- 	return err;
+ 
+ out:
+@@ -448,15 +474,13 @@ out:
+ 
+ 	kfree(file->private_data);
+ 	file->private_data = NULL;
++	/* 2 is a special value indicating that there are no more direntries */
+ 	file->f_pos = 2;
+ 	return 0;
+ }
+ 
+-/* If a directory is seeked, we have to free saved readdir() state */
+ static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int whence)
+ {
+-	kfree(file->private_data);
+-	file->private_data = NULL;
+ 	return generic_file_llseek(file, offset, whence);
+ }
+ 
 -- 
 1.8.1.2
 
