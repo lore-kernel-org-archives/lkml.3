@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab3GQS5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:57:15 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:41083 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756066Ab3GQS5N (ORCPT
+	id S1756903Ab3GQS5U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:57:20 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52392 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756878Ab3GQS5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:57:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <tip-4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7@git.kernel.org>
-References: <20130716183441.GA14232@www.outflux.net>
-	<tip-4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7@git.kernel.org>
-Date: Wed, 17 Jul 2013 11:57:13 -0700
-X-Google-Sender-Auth: zb0eHmArJ-SW5x3_THd3TnP7VGw
-Message-ID: <CAE9FiQV86WdgN3+3FOSSTUvNJ6TgH4zbYkWOS7EPPHwO2Rf2TQ@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86: Make sure IDT is page aligned
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, PaX Team <pageexec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 17 Jul 2013 14:57:18 -0400
+Date: Wed, 17 Jul 2013 11:57:15 -0700 (PDT)
+Message-Id: <20130717.115715.965921785189776151.davem@davemloft.net>
+To: kys@microsoft.com
+Cc: haiyangz@microsoft.com, netdev@vger.kernel.org, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH net] hyperv: Fix the NETIF_F_SG flag setting in netvsc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <8906250c5dfc4f7ab0d84019bf7b9a44@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1374040880-20468-1-git-send-email-haiyangz@microsoft.com>
+	<8906250c5dfc4f7ab0d84019bf7b9a44@SN2PR03MB061.namprd03.prod.outlook.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 17 Jul 2013 11:57:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 3:33 PM, tip-bot for Kees Cook <tipbot@zytor.com> wrote:
-> Commit-ID:  4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
-> Gitweb:     http://git.kernel.org/tip/4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
-> Author:     Kees Cook <keescook@chromium.org>
-> AuthorDate: Tue, 16 Jul 2013 11:34:41 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Tue, 16 Jul 2013 15:14:48 -0700
->
-> x86: Make sure IDT is page aligned
->
-> Since the IDT is referenced from a fixmap, make sure it is page aligned.
-> Merge with 32-bit one, since it was already aligned to deal with F00F
-> bug. Since bss is cleared before IDT setup, it can live there. This also
-> moves the other *_idt_table variables into common locations.
->
-> This avoids the risk of the IDT ever being moved in the bss and having
-> the mapping be offset, resulting in calling incorrect handlers. In the
-> current upstream kernel this is not a manifested bug, but heavily patched
-> kernels (such as those using the PaX patch series) did encounter this bug.
->
-> The tables other than idt_table technically do not need to be page
-> aligned, at least not at the current time, but using a common
-> declaration avoids mistakes.  On 64 bits the table is exactly one page
-> long, anyway.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Link: http://lkml.kernel.org/r/20130716183441.GA14232@www.outflux.net
-> Reported-by: PaX Team <pageexec@gmail.com>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+From: KY Srinivasan <kys@microsoft.com>
+Date: Wed, 17 Jul 2013 11:40:41 +0000
 
-Hi, Peter,
+> 
+> 
+>> -----Original Message-----
+>> From: Haiyang Zhang [mailto:haiyangz@microsoft.com]
+>> Sent: Wednesday, July 17, 2013 2:01 AM
+>> To: davem@davemloft.net; netdev@vger.kernel.org
+>> Cc: Haiyang Zhang; KY Srinivasan; olaf@aepfle.de; jasowang@redhat.com; linux-
+>> kernel@vger.kernel.org; devel@linuxdriverproject.org
+>> Subject: [PATCH net] hyperv: Fix the NETIF_F_SG flag setting in netvsc
+>> 
+>> SG mode is not currently supported by netvsc, so remove this flag for now.
+>> Otherwise, it will be unconditionally enabled by commit ec5f0615642
+>>     "Kill link between CSUM and SG features"
+>> Previously, the SG feature is disabled because CSUM is not set here.
+>> 
+>> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+>> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> We would need to apply this patch to 3.9 and 3.10 as well that are currently broken.
 
-Any reason for why following changelog get dropped?
-
----
-v5:
- - add comments to all IDTs about alignment reasoning, suggested by Linus
-v4:
- - rework using __page_aligned_bss, suggested by Yinghai LU
- - move all the other IDT variables as well, suggested by HPA
-v3:
- - merge 32-bit and 64-bit idt_table definition
-v2:
- - 32-bit was already aligned
----
-
-That at least would help us to check if you apply the right version.
-
-Yinghai
+I have already queued this patch up for -stable submission.
