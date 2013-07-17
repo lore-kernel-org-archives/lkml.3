@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3GQWb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:31:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52485 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756356Ab3GQWbZ (ORCPT
+	id S1757492Ab3GQWeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:34:15 -0400
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:41848 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757472Ab3GQWeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:31:25 -0400
-Date: Wed, 17 Jul 2013 15:31:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.11-rc1 PATCH 0/5] printk: Initial restructuring
-Message-Id: <20130717153124.29de2c562b3f4bdb3d1f464b@linux-foundation.org>
-In-Reply-To: <1374026199.1949.62.camel@joe-AO722>
-References: <cover.1373922863.git.joe@perches.com>
-	<CA+55aFwJh5yFeOmPrR=3VqY1StmqTn0sRzwtkCA5N8b=-==otQ@mail.gmail.com>
-	<1374026199.1949.62.camel@joe-AO722>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Jul 2013 18:34:14 -0400
+Date: Wed, 17 Jul 2013 18:34:11 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Javi Merino <javi.merino@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if UP
+ system
+In-Reply-To: <51E71249.4050200@codeaurora.org>
+Message-ID: <alpine.LFD.2.03.1307171830170.14924@syhkavp.arg>
+References: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org> <20130712111322.GC3213@e102654-lin.cambridge.arm.com> <20130712121023.GB27430@codeaurora.org> <51E71249.4050200@codeaurora.org>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013 18:56:39 -0700 Joe Perches <joe@perches.com> wrote:
+On Wed, 17 Jul 2013, Stephen Boyd wrote:
 
-> On Tue, 2013-07-16 at 18:48 -0700, Linus Torvalds wrote:
-> > On Mon, Jul 15, 2013 at 2:51 PM, Joe Perches <joe@perches.com> wrote:
-> > >
-> > > If this is acceptable, I'll post 5 or so patches at a time
-> > > after/if each block of patches is applied.
-> > 
-> > I didn't see anything objectionable, but I'm assuming this comes in
-> > through Andrew?
-> 
-> I'd rather you take it directly now.
-> 
-> > And hopefully gets comments from others too..
-> 
-> There were a few 9 months ago.
-> 
-> Mostly it was a timing issue as to who
-> takes it and when.
+> On 07/12/13 05:10, Stephen Boyd wrote:
+> > On 07/12, Javi Merino wrote:
+> >> I agree, we should drop the check.  It's annoying in uniprocessors and
+> >> unlikely to be found in the real world unless your gic entry in the dt
+> >> is wrong.
 
-Well it also broke the build a bit, iirc.
+And that's a likely outcome in the real world.
 
-I grabbed them and will give them a run in -next for a week or so.  If
-that's OK then I'll try to offload everything onto Linus rather than
-having to spend two months battling with linux-next monkeyscratchings.
+> >>
+> > Ok. How about this?
+> 
+> Any comments?
 
+What about this instead:
+
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 19ceaa60e0..86d21bc6cb 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -368,7 +368,7 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
+ 			break;
+ 	}
+ 
+-	if (!mask)
++	if (is_smp() && !mask)
+ 		pr_crit("GIC CPU mask not found - kernel will fail to boot.\n");
+ 
+ 	return mask;
+
+
+Nicolas
