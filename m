@@ -1,68 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab3GQNQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:16:10 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54280 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab3GQNQF (ORCPT
+	id S1755295Ab3GQNXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:23:40 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:62330 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab3GQNXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:16:05 -0400
-Message-ID: <51E69911.3000804@twiddle.net>
-Date: Wed, 17 Jul 2013 06:16:01 -0700
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Matt Turner <mattst88@gmail.com>
-CC: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru,
-        linux-alpha@vger.kernel.org
-Subject: Re: [RFC PATCH 05/10] alpha: Primitive support for CPU power down.
-References: <1373996058-13399-1-git-send-email-rth@twiddle.net> <1373996058-13399-6-git-send-email-rth@twiddle.net> <CAEdQ38FF32t+Ca0EsEk=uArhU28HKGf91=F1DzA+NE88WDVKtw@mail.gmail.com>
-In-Reply-To: <CAEdQ38FF32t+Ca0EsEk=uArhU28HKGf91=F1DzA+NE88WDVKtw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Jul 2013 09:23:39 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v3] clk: add MOXA ART SoCs clock driver
+Date: Wed, 17 Jul 2013 15:23:16 +0200
+Message-Id: <1374067396-30155-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
+References: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 10:17 PM, Matt Turner wrote:
-> On Tue, Jul 16, 2013 at 10:34 AM, Richard Henderson <rth@twiddle.net> wrote:
->> Use WTINT to wait for the next interrupt.  Squash the WTINT call
->> if the PALcode doesn't support it (e.g. MILO).  No attempt is yet
->> made to skip clock ticks during normal scheduling in order to stay
->> in power down mode longer.
-> 
-> The architecture reference manual says
-> 
->> The counter, PCC, may increment at a lower rate or may stop entirely
->> during wtint execution. This side effect is implementation dependent.
-> 
-> Is that anything to worry about?
+This patch adds MOXA ART SoCs clock driver support.
 
-Hmm, yes.  It means that we can't use both this and rpcc as a clocksource.
-Which we can't do while SMP either, so perhaps that's not so bad.  So, right
-now, with an SMP EV6 system we ought not worry.  Care to report whether that
-hypothesis is true?
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-It may well be a tradeoff we want to CONFIG though, since nothing in the EV5
-thru PCA56 can make use of the power down state, and were often uniprocessor
-systems...
+Notes:
+    Changes since v2:
+    
+    1. add devicetree bindings document
+    
+    Applies to next-20130716
 
->> @@ -243,6 +243,18 @@ do_entIF(unsigned long type, struct pt_regs *regs)
->>                                (const char *)(data[1] | (long)data[2] << 32),
->>                                data[0]);
->>                 }
->> +               if (type == 4) {
->> +                       /* If CALL_PAL WTINT is not supported by the PALcode,
->> +                          "emulate" it by overwriting the insn.  */
-> 
-> The pseudo-code for WTINT contains an IF(implemented) check, where the
-> ELSE case just does v0 <- 0. So is overwriting with nop just an
-> optimization to avoid the (expensive) PAL call? If it is, could we
-> clarify the comment?
+ .../bindings/clock/moxa,moxart-core-clock.txt      | 19 +++++
+ drivers/clk/Makefile                               |  1 +
+ drivers/clk/clk-moxart.c                           | 82 ++++++++++++++++++++++
+ 3 files changed, 102 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+ create mode 100644 drivers/clk/clk-moxart.c
 
-No, notice where this code is: entIF, aka SIGILL.  Looking at MILO sources
-I can tell you that WTINT isn't implemented at all.  Overwriting with the
-mov insn is what I call "emulating" the unimplemented PALcall.
+diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+new file mode 100644
+index 0000000..cf69361
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+@@ -0,0 +1,19 @@
++Device Tree Clock bindings for arch-moxart
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++MOXA ART SoCs allow to determine core clock frequencies by reading
++a register.
++
++Required properties:
++- compatible : Should be "moxa,moxart-core-clock"
++- reg : Should contain registers location and length
++
++For example:
++
++	clk: core-clock@98100000 {
++		compatible = "moxa,moxart-core-clock";
++		reg = <0x98100000 0x34>;
++	};
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 4038c2b..933622f 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+ 
+ # SoCs specific
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
++obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+ obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
+ obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
+diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
+new file mode 100644
+index 0000000..79c27f4
+--- /dev/null
++++ b/drivers/clk/clk-moxart.c
+@@ -0,0 +1,82 @@
++/*
++ * MOXA ART SoCs clock driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/of_address.h>
++#include <linux/clkdev.h>
++
++static const struct of_device_id moxart_apb_clock_match[] = {
++	{ .compatible = "moxa,moxart-apb-clock" },
++	{ }
++};
++
++void __init moxart_of_clk_init(struct device_node *node)
++{
++	static void __iomem *base;
++	struct device_node *clk_node;
++	struct clk *clk;
++	unsigned long rate;
++	unsigned int mul, val, div;
++
++	base = of_iomap(node, 0);
++	if (IS_ERR(base))
++		panic("%s: of_iomap failed\n", node->full_name);
++
++	clk_node = of_find_matching_node(NULL, moxart_apb_clock_match);
++	if (!clk_node)
++		panic("%s: can't find clock DT node\n", node->full_name);
++
++	mul = (readl(base + 0x30) >> 3) & 0x1ff;
++	val = (readl(base + 0x0c) >> 4) & 0x7;
++
++	switch (val) {
++	case 1:
++		div = 3;
++		break;
++	case 2:
++		div = 4;
++		break;
++	case 3:
++		div = 6;
++		break;
++	case 4:
++		div = 8;
++		break;
++	default:
++		div = 2;
++		break;
++	}
++
++	/*
++	 * the rate calculation below is only tested and proven
++	 * to be true for UC-7112-LX
++	 *
++	 * UC-7112-LX: mul=80 val=0
++	 *
++	 * to support other moxart SoC hardware, this may need
++	 * a change, though it's possible it works there too
++	 */
++	rate = (mul * 1200000 / div);
++
++	clk = clk_register_fixed_rate(NULL, "clkapb", NULL, CLK_IS_ROOT, rate);
++	clk_register_clkdev(clk, NULL, "clkapb");
++	of_clk_add_provider(clk_node, of_clk_src_simple_get, clk);
++
++	iounmap(base);
++}
++CLK_OF_DECLARE(moxart_core_clock, "moxa,moxart-core-clock", moxart_of_clk_init);
+-- 
+1.8.2.1
 
-
-r~
