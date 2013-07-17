@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750989Ab3GQBPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 21:15:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33299 "EHLO
+	id S1751083Ab3GQBS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 21:18:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33325 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab3GQBPt (ORCPT
+	with ESMTP id S1750899Ab3GQBSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 21:15:49 -0400
-Date: Tue, 16 Jul 2013 18:15:30 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org>
+	Tue, 16 Jul 2013 21:18:54 -0400
+Date: Tue, 16 Jul 2013 18:18:29 -0700
+From: tip-bot for Jiri Kosina <tipbot@zytor.com>
+Message-ID: <tip-fd4363fff3d96795d3feb1b3fb48ce590f186bdd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        james.t.kukunas@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+        jkosina@suse.cz, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, james.t.kukunas@intel.com, hpa@linux.intel.com
+        jkosina@suse.cz, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <alpine.LNX.2.00.1307121102440.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307121102440.29788@pobox.suse.cz>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86, bitops:
-  Change bitops to be native operand size
-Git-Commit-ID: 9b710506a03b01a9fdd83962912bc9d8237b82e8
+Subject: [tip:x86/jumplabel] x86: Introduce int3 (breakpoint)
+ -based instruction patching
+Git-Commit-ID: fd4363fff3d96795d3feb1b3fb48ce590f186bdd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -26,305 +30,213 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 16 Jul 2013 18:15:37 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 16 Jul 2013 18:18:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9b710506a03b01a9fdd83962912bc9d8237b82e8
-Gitweb:     http://git.kernel.org/tip/9b710506a03b01a9fdd83962912bc9d8237b82e8
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Tue, 16 Jul 2013 15:20:14 -0700
+Commit-ID:  fd4363fff3d96795d3feb1b3fb48ce590f186bdd
+Gitweb:     http://git.kernel.org/tip/fd4363fff3d96795d3feb1b3fb48ce590f186bdd
+Author:     Jiri Kosina <jkosina@suse.cz>
+AuthorDate: Fri, 12 Jul 2013 11:21:48 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 16 Jul 2013 15:24:04 -0700
+CommitDate: Tue, 16 Jul 2013 17:55:29 -0700
 
-x86, bitops: Change bitops to be native operand size
+x86: Introduce int3 (breakpoint)-based instruction patching
 
-Change the bitops operation to be naturally "long", i.e. 63 bits on
-the 64-bit kernel.  Additional bugs are likely to crop up in the
-future.
+Introduce a method for run-time instruction patching on a live SMP kernel
+based on int3 breakpoint, completely avoiding the need for stop_machine().
 
-We already have bugs which machines with > 16 TiB of memory in a
-single node, as can happen if memory is interleaved.  The x86 bitop
-operations take a signed index, so using an unsigned type is not an
-option.
+The way this is achieved:
 
-Jim Kukunas measured the effect of this patch on kernel size: it adds
-2779 bytes to the allyesconfig kernel.  Some of that probably could be
-elided by replacing the inline functions with macros which select the
-32-bit type if the index is a 32-bit value, something like:
+	- add a int3 trap to the address that will be patched
+	- sync cores
+	- update all but the first byte of the patched range
+	- sync cores
+	- replace the first byte (int3) by the first byte of
+	  replacing opcode
+	- sync cores
 
-In that case we could also use "Jr" constraints for the 64-bit
-version.
+According to
 
-However, this would more than double the amount of code for a
-relatively small gain.
+	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
 
-Note that we can't use ilog2() for _BITOPS_LONG_SHIFT, as that causes
-a recursive header inclusion problem.
+synchronization after replacing "all but first" instructions should not
+be necessary (on Intel hardware), as the syncing after the subsequent
+patching of the first byte provides enough safety.
+But there's not only Intel HW out there, and we'd rather be on a safe
+side.
 
-The change to constant_test_bit() should both generate better code and
-give correct result for negative bit indicies.  As previously written
-the compiler had to generate extra code to create the proper wrong
-result for negative values.
+If any CPU instruction execution would collide with the patching,
+it'd be trapped by the int3 breakpoint and redirected to the provided
+"handler" (which would typically mean just skipping over the patched
+region, acting as "nop" has been there, in case we are doing nop -> jump
+and jump -> nop transitions).
 
+Ftrace has been using this very technique since 08d636b ("ftrace/x86:
+Have arch x86_64 use breakpoints instead of stop machine") for ages
+already, and jump labels are another obvious potential user of this.
+
+Based on activities of Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+a few years ago.
+
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1307121102440.29788@pobox.suse.cz
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Jim Kukunas <james.t.kukunas@intel.com>
-Link: http://lkml.kernel.org/n/tip-z61ofiwe90xeyb461o72h8ya@git.kernel.org
 ---
- arch/x86/include/asm/bitops.h      | 46 ++++++++++++++++++++++----------------
- arch/x86/include/asm/sync_bitops.h | 24 ++++++++++----------
- 2 files changed, 39 insertions(+), 31 deletions(-)
+ arch/x86/include/asm/alternative.h |   1 +
+ arch/x86/kernel/alternative.c      | 106 +++++++++++++++++++++++++++++++++++++
+ kernel/kprobes.c                   |   2 +-
+ 3 files changed, 108 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 6dfd019..41639ce 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -15,6 +15,14 @@
- #include <linux/compiler.h>
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 58ed6d9..3abf8dd 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -233,6 +233,7 @@ struct text_poke_param {
+ };
+ 
+ extern void *text_poke(void *addr, const void *opcode, size_t len);
++extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
+ extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
+ extern void text_poke_smp_batch(struct text_poke_param *params, int n);
+ 
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index c15cf9a..0ab4936 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -11,6 +11,7 @@
+ #include <linux/memory.h>
+ #include <linux/stop_machine.h>
+ #include <linux/slab.h>
++#include <linux/kdebug.h>
  #include <asm/alternative.h>
+ #include <asm/sections.h>
+ #include <asm/pgtable.h>
+@@ -596,6 +597,111 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
+ 	return addr;
+ }
  
-+#if BITS_PER_LONG == 32
-+# define _BITOPS_LONG_SHIFT 5
-+#elif BITS_PER_LONG == 64
-+# define _BITOPS_LONG_SHIFT 6
-+#else
-+# error "Unexpected BITS_PER_LONG"
-+#endif
++static void do_sync_core(void *info)
++{
++	sync_core();
++}
 +
- #define BIT_64(n)			(U64_C(1) << (n))
- 
++static bool bp_patching_in_progress;
++static void *bp_int3_handler, *bp_int3_addr;
++
++static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
++{
++	struct die_args *args = data;
++
++	/* bp_patching_in_progress */
++	smp_rmb();
++
++	if (likely(!bp_patching_in_progress))
++		return NOTIFY_DONE;
++
++	/* we are not interested in non-int3 faults and ring > 0 faults */
++	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
++			    || args->regs->ip != (unsigned long)bp_int3_addr)
++		return NOTIFY_DONE;
++
++	/* set up the specified breakpoint handler */
++	args->regs->ip = (unsigned long) bp_int3_handler;
++
++	return NOTIFY_STOP;
++}
++/**
++ * text_poke_bp() -- update instructions on live kernel on SMP
++ * @addr:	address to patch
++ * @opcode:	opcode of new instruction
++ * @len:	length to copy
++ * @handler:	address to jump to when the temporary breakpoint is hit
++ *
++ * Modify multi-byte instruction by using int3 breakpoint on SMP.
++ * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
++ * and achieve the synchronization using int3 breakpoint.
++ *
++ * The way it is done:
++ *	- add a int3 trap to the address that will be patched
++ *	- sync cores
++ *	- update all but the first byte of the patched range
++ *	- sync cores
++ *	- replace the first byte (int3) by the first byte of
++ *	  replacing opcode
++ *	- sync cores
++ *
++ * Note: must be called under text_mutex.
++ */
++void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
++{
++	unsigned char int3 = 0xcc;
++
++	bp_int3_handler = handler;
++	bp_int3_addr = (u8 *)addr + sizeof(int3);
++	bp_patching_in_progress = true;
++	/*
++	 * Corresponding read barrier in int3 notifier for
++	 * making sure the in_progress flags is correctly ordered wrt.
++	 * patching
++	 */
++	smp_wmb();
++
++	text_poke(addr, &int3, sizeof(int3));
++
++	on_each_cpu(do_sync_core, NULL, 1);
++
++	if (len - sizeof(int3) > 0) {
++		/* patch all but the first byte */
++		text_poke((char *)addr + sizeof(int3),
++			  (const char *) opcode + sizeof(int3),
++			  len - sizeof(int3));
++		/*
++		 * According to Intel, this core syncing is very likely
++		 * not necessary and we'd be safe even without it. But
++		 * better safe than sorry (plus there's not only Intel).
++		 */
++		on_each_cpu(do_sync_core, NULL, 1);
++	}
++
++	/* patch the first byte */
++	text_poke(addr, opcode, sizeof(int3));
++
++	on_each_cpu(do_sync_core, NULL, 1);
++
++	bp_patching_in_progress = false;
++	smp_wmb();
++
++	return addr;
++}
++
++/* this one needs to run before anything else handles it as a
++ * regular exception */
++static struct notifier_block int3_nb = {
++	.priority = 0x7fffffff,
++	.notifier_call = int3_notify
++};
++
++static int __init int3_init(void)
++{
++	return register_die_notifier(&int3_nb);
++}
++
++arch_initcall(int3_init);
  /*
-@@ -59,7 +67,7 @@
-  * restricted to acting on a single-word quantity.
-  */
- static __always_inline void
--set_bit(unsigned int nr, volatile unsigned long *addr)
-+set_bit(long nr, volatile unsigned long *addr)
- {
- 	if (IS_IMMEDIATE(nr)) {
- 		asm volatile(LOCK_PREFIX "orb %1,%0"
-@@ -81,7 +89,7 @@ set_bit(unsigned int nr, volatile unsigned long *addr)
-  * If it's called on the same region of memory simultaneously, the effect
-  * may be that only one operation succeeds.
-  */
--static inline void __set_bit(int nr, volatile unsigned long *addr)
-+static inline void __set_bit(long nr, volatile unsigned long *addr)
- {
- 	asm volatile("bts %1,%0" : ADDR : "Ir" (nr) : "memory");
- }
-@@ -97,7 +105,7 @@ static inline void __set_bit(int nr, volatile unsigned long *addr)
-  * in order to ensure changes are visible on other processors.
-  */
- static __always_inline void
--clear_bit(int nr, volatile unsigned long *addr)
-+clear_bit(long nr, volatile unsigned long *addr)
- {
- 	if (IS_IMMEDIATE(nr)) {
- 		asm volatile(LOCK_PREFIX "andb %1,%0"
-@@ -118,13 +126,13 @@ clear_bit(int nr, volatile unsigned long *addr)
-  * clear_bit() is atomic and implies release semantics before the memory
-  * operation. It can be used for an unlock.
-  */
--static inline void clear_bit_unlock(unsigned nr, volatile unsigned long *addr)
-+static inline void clear_bit_unlock(long nr, volatile unsigned long *addr)
- {
- 	barrier();
- 	clear_bit(nr, addr);
- }
+  * Cross-modifying kernel text with stop_machine().
+  * This code originally comes from immediate value.
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 6e33498..b58b490 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
  
--static inline void __clear_bit(int nr, volatile unsigned long *addr)
-+static inline void __clear_bit(long nr, volatile unsigned long *addr)
- {
- 	asm volatile("btr %1,%0" : ADDR : "Ir" (nr));
- }
-@@ -141,7 +149,7 @@ static inline void __clear_bit(int nr, volatile unsigned long *addr)
-  * No memory barrier is required here, because x86 cannot reorder stores past
-  * older loads. Same principle as spin_unlock.
-  */
--static inline void __clear_bit_unlock(unsigned nr, volatile unsigned long *addr)
-+static inline void __clear_bit_unlock(long nr, volatile unsigned long *addr)
- {
- 	barrier();
- 	__clear_bit(nr, addr);
-@@ -159,7 +167,7 @@ static inline void __clear_bit_unlock(unsigned nr, volatile unsigned long *addr)
-  * If it's called on the same region of memory simultaneously, the effect
-  * may be that only one operation succeeds.
-  */
--static inline void __change_bit(int nr, volatile unsigned long *addr)
-+static inline void __change_bit(long nr, volatile unsigned long *addr)
- {
- 	asm volatile("btc %1,%0" : ADDR : "Ir" (nr));
- }
-@@ -173,7 +181,7 @@ static inline void __change_bit(int nr, volatile unsigned long *addr)
-  * Note that @nr may be almost arbitrarily large; this function is not
-  * restricted to acting on a single-word quantity.
-  */
--static inline void change_bit(int nr, volatile unsigned long *addr)
-+static inline void change_bit(long nr, volatile unsigned long *addr)
- {
- 	if (IS_IMMEDIATE(nr)) {
- 		asm volatile(LOCK_PREFIX "xorb %1,%0"
-@@ -194,7 +202,7 @@ static inline void change_bit(int nr, volatile unsigned long *addr)
-  * This operation is atomic and cannot be reordered.
-  * It also implies a memory barrier.
-  */
--static inline int test_and_set_bit(int nr, volatile unsigned long *addr)
-+static inline int test_and_set_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
+ static struct notifier_block kprobe_exceptions_nb = {
+ 	.notifier_call = kprobe_exceptions_notify,
+-	.priority = 0x7fffffff /* we need to be notified first */
++	.priority = 0x7ffffff0 /* High priority, but not first.  */
+ };
  
-@@ -212,7 +220,7 @@ static inline int test_and_set_bit(int nr, volatile unsigned long *addr)
-  * This is the same as test_and_set_bit on x86.
-  */
- static __always_inline int
--test_and_set_bit_lock(int nr, volatile unsigned long *addr)
-+test_and_set_bit_lock(long nr, volatile unsigned long *addr)
- {
- 	return test_and_set_bit(nr, addr);
- }
-@@ -226,7 +234,7 @@ test_and_set_bit_lock(int nr, volatile unsigned long *addr)
-  * If two examples of this operation race, one can appear to succeed
-  * but actually fail.  You must protect multiple accesses with a lock.
-  */
--static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
-+static inline int __test_and_set_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
-@@ -245,7 +253,7 @@ static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
-  * This operation is atomic and cannot be reordered.
-  * It also implies a memory barrier.
-  */
--static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
-+static inline int test_and_clear_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
-@@ -272,7 +280,7 @@ static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
-  * accessed from a hypervisor on the same CPU if running in a VM: don't change
-  * this without also updating arch/x86/kernel/kvm.c
-  */
--static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
-+static inline int __test_and_clear_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
-@@ -284,7 +292,7 @@ static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
- }
- 
- /* WARNING: non atomic and it can be reordered! */
--static inline int __test_and_change_bit(int nr, volatile unsigned long *addr)
-+static inline int __test_and_change_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
-@@ -304,7 +312,7 @@ static inline int __test_and_change_bit(int nr, volatile unsigned long *addr)
-  * This operation is atomic and cannot be reordered.
-  * It also implies a memory barrier.
-  */
--static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
-+static inline int test_and_change_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
-@@ -315,13 +323,13 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
- 	return oldbit;
- }
- 
--static __always_inline int constant_test_bit(unsigned int nr, const volatile unsigned long *addr)
-+static __always_inline int constant_test_bit(long nr, const volatile unsigned long *addr)
- {
--	return ((1UL << (nr % BITS_PER_LONG)) &
--		(addr[nr / BITS_PER_LONG])) != 0;
-+	return ((1UL << (nr & (BITS_PER_LONG-1))) &
-+		(addr[nr >> _BITOPS_LONG_SHIFT])) != 0;
- }
- 
--static inline int variable_test_bit(int nr, volatile const unsigned long *addr)
-+static inline int variable_test_bit(long nr, volatile const unsigned long *addr)
- {
- 	int oldbit;
- 
-diff --git a/arch/x86/include/asm/sync_bitops.h b/arch/x86/include/asm/sync_bitops.h
-index 9d09b40..05af3b3 100644
---- a/arch/x86/include/asm/sync_bitops.h
-+++ b/arch/x86/include/asm/sync_bitops.h
-@@ -26,9 +26,9 @@
-  * Note that @nr may be almost arbitrarily large; this function is not
-  * restricted to acting on a single-word quantity.
-  */
--static inline void sync_set_bit(int nr, volatile unsigned long *addr)
-+static inline void sync_set_bit(long nr, volatile unsigned long *addr)
- {
--	asm volatile("lock; btsl %1,%0"
-+	asm volatile("lock; bts %1,%0"
- 		     : "+m" (ADDR)
- 		     : "Ir" (nr)
- 		     : "memory");
-@@ -44,9 +44,9 @@ static inline void sync_set_bit(int nr, volatile unsigned long *addr)
-  * you should call smp_mb__before_clear_bit() and/or smp_mb__after_clear_bit()
-  * in order to ensure changes are visible on other processors.
-  */
--static inline void sync_clear_bit(int nr, volatile unsigned long *addr)
-+static inline void sync_clear_bit(long nr, volatile unsigned long *addr)
- {
--	asm volatile("lock; btrl %1,%0"
-+	asm volatile("lock; btr %1,%0"
- 		     : "+m" (ADDR)
- 		     : "Ir" (nr)
- 		     : "memory");
-@@ -61,9 +61,9 @@ static inline void sync_clear_bit(int nr, volatile unsigned long *addr)
-  * Note that @nr may be almost arbitrarily large; this function is not
-  * restricted to acting on a single-word quantity.
-  */
--static inline void sync_change_bit(int nr, volatile unsigned long *addr)
-+static inline void sync_change_bit(long nr, volatile unsigned long *addr)
- {
--	asm volatile("lock; btcl %1,%0"
-+	asm volatile("lock; btc %1,%0"
- 		     : "+m" (ADDR)
- 		     : "Ir" (nr)
- 		     : "memory");
-@@ -77,11 +77,11 @@ static inline void sync_change_bit(int nr, volatile unsigned long *addr)
-  * This operation is atomic and cannot be reordered.
-  * It also implies a memory barrier.
-  */
--static inline int sync_test_and_set_bit(int nr, volatile unsigned long *addr)
-+static inline int sync_test_and_set_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
--	asm volatile("lock; btsl %2,%1\n\tsbbl %0,%0"
-+	asm volatile("lock; bts %2,%1\n\tsbbl %0,%0"
- 		     : "=r" (oldbit), "+m" (ADDR)
- 		     : "Ir" (nr) : "memory");
- 	return oldbit;
-@@ -95,11 +95,11 @@ static inline int sync_test_and_set_bit(int nr, volatile unsigned long *addr)
-  * This operation is atomic and cannot be reordered.
-  * It also implies a memory barrier.
-  */
--static inline int sync_test_and_clear_bit(int nr, volatile unsigned long *addr)
-+static inline int sync_test_and_clear_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
--	asm volatile("lock; btrl %2,%1\n\tsbbl %0,%0"
-+	asm volatile("lock; btr %2,%1\n\tsbbl %0,%0"
- 		     : "=r" (oldbit), "+m" (ADDR)
- 		     : "Ir" (nr) : "memory");
- 	return oldbit;
-@@ -113,11 +113,11 @@ static inline int sync_test_and_clear_bit(int nr, volatile unsigned long *addr)
-  * This operation is atomic and cannot be reordered.
-  * It also implies a memory barrier.
-  */
--static inline int sync_test_and_change_bit(int nr, volatile unsigned long *addr)
-+static inline int sync_test_and_change_bit(long nr, volatile unsigned long *addr)
- {
- 	int oldbit;
- 
--	asm volatile("lock; btcl %2,%1\n\tsbbl %0,%0"
-+	asm volatile("lock; btc %2,%1\n\tsbbl %0,%0"
- 		     : "=r" (oldbit), "+m" (ADDR)
- 		     : "Ir" (nr) : "memory");
- 	return oldbit;
+ unsigned long __weak arch_deref_entry_point(void *entry)
