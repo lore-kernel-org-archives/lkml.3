@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3GQM1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 08:27:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754039Ab3GQM1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 08:27:05 -0400
-Date: Wed, 17 Jul 2013 14:29:45 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
-Cc: Arend van Spriel <arend@broadcom.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: [BUG] 3.10 regression: hang on suspend
-Message-ID: <20130717122944.GA25894@redhat.com>
-References: <51E4501D.3010001@odi.ch>
- <20130716065626.GA1587@redhat.com>
- <51E4F790.6090308@odi.ch>
- <51E51712.4020609@broadcom.com>
- <51E58FA5.4000804@odi.ch>
+	id S1754697Ab3GQMa0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 08:30:26 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:41353 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796Ab3GQMaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 08:30:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51E58FA5.4000804@odi.ch>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1374063678.6458.124.camel@gandalf.local.home>
+References: <20130715223615.GI15531@xanatos>
+	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+	<20130716211235.GG4994@xanatos>
+	<20130716212704.GB9371@thunk.org>
+	<20130716224357.GK4994@xanatos>
+	<1374015299.6458.76.camel@gandalf.local.home>
+	<20130716231217.GL4994@xanatos>
+	<51E5E609.1030202@oracle.com>
+	<1374022296.6458.118.camel@gandalf.local.home>
+	<20130717055139.GC21611@1wt.eu>
+	<1374063678.6458.124.camel@gandalf.local.home>
+Date: Wed, 17 Jul 2013 13:30:23 +0100
+Message-ID: <CACtES-ouVn+w8oJoe8+MLLEdnKA-XwBNhhuNQFGa84o9x=1yZA@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+From: Ricardo Ferreira <rikajff@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Willy Tarreau <w@1wt.eu>, Jeff Liu <jeff.liu@oracle.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 08:23:33PM +0200, Ortwin Glück wrote:
-> Without NetworkManager, no X, on console and with plain jane wpa_supplicant I do
-> echo mem > /sys/power state
-> 
-> After that, it still responds to keyboard events: I can switch VT
-> and type on the consoles, but I can not login on a different VT
-> (pressing Enter after the username doesn't return). So I guess tasks
-> have been frozen, but it hangs in stopping devices.
-> 
-> settings for pm_test:
-> devices: same behviour as above
-> freezer: works as expected (stops tasks; sleeps; resumes tasks)
-> 
-> Nothing in the logs. How can I enable more log?
+Slashdot is just a cesspool of trolls, not a good comparison.
 
-This looks like livelock, i.e. kernel wait for mutex to be released
-but that never happen , for example because of deadlock. Enabling 
-CONFIG_LOCKDEP=y could help to diagnose this. Other than that
-sysreq key w (show blocked task) could help, see
-Documentation/sysrq.txt for instructions how to use this key.
-Also please remember set no_console_suspend boot option to
-allow print messages on tty during suspend.
 
-Stanislaw
-
+On 17 July 2013 13:21, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> On Wed, 2013-07-17 at 07:51 +0200, Willy Tarreau wrote:
+>
+> > I don't believe this is that much practiced on LKML. I know at least
+> > one developer who does this, but he's probably the exception. I more
+> > often see counter proposals just as if two authors were fighting to
+> > get their patch merged.
+>
+> And getting cursed out on LKML is also the exception and not the rule.
+> But it's the bad apples that seem to stand out. People say how horrible
+> LKML is, but as mentioned in the thread, Slashdot is a much worse place
+> to post than LKML. The difference with LKML is that you may deserve the
+> cursing you get.
+>
+> -- Steve
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
