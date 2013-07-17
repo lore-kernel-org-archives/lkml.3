@@ -1,779 +1,840 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3GQKHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 06:07:24 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:42218 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598Ab3GQKHV (ORCPT
+	id S1754071Ab3GQKHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 06:07:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6245 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753598Ab3GQKHj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 06:07:21 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, vinod.koul@intel.com,
-        djbw@fb.com, arnd@arndb.de, linux@arm.linux.org.uk,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v3] dmaengine: Add MOXA ART DMA engine driver
-Date: Wed, 17 Jul 2013 12:06:24 +0200
-Message-Id: <1374055584-15746-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1373460239-20102-1-git-send-email-jonas.jensen@gmail.com>
-References: <1373460239-20102-1-git-send-email-jonas.jensen@gmail.com>
+	Wed, 17 Jul 2013 06:07:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,683,1367996400"; 
+   d="scan'208";a="332585900"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Wei Ni <wni@nvidia.com>, Eduardo Valentin <eduardo.valentin@ti.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "amit.daniel@samsung.com" <amit.daniel@samsung.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH 1/4] thermal: hwmon: move hwmon support to single
+ file
+Thread-Topic: [RFC PATCH 1/4] thermal: hwmon: move hwmon support to single
+ file
+Thread-Index: AQHOfKzMpj2C5NUvEkqWFfVaZDR2kplcgQIA//+zRYCADBwDgIAAYIlQ
+Date: Wed, 17 Jul 2013 10:07:26 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59CECEC8@BGSMSX101.gar.corp.intel.com>
+References: <1373378414-28086-1-git-send-email-eduardo.valentin@ti.com>
+ <1373378414-28086-2-git-send-email-eduardo.valentin@ti.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59CDAC3D@BGSMSX101.gar.corp.intel.com>
+ <51DC402B.2000602@ti.com> <51E668A5.4000909@nvidia.com>
+In-Reply-To: <51E668A5.4000909@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dmaengine driver for MOXA ART SoCs.
+Hi Wei,
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+> -----Original Message-----
+> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
+> owner@vger.kernel.org] On Behalf Of Wei Ni
+> Sent: Wednesday, July 17, 2013 3:19 PM
+> To: Eduardo Valentin
+> Cc: R, Durgadoss; linux-pm@vger.kernel.org; amit.daniel@samsung.com; Zhang,
+> Rui; linux-kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH 1/4] thermal: hwmon: move hwmon support to single
+> file
+> 
+> On 07/10/2013 12:54 AM, Eduardo Valentin wrote:
+> > * PGP Signed: 07/09/2013 at 09:54:04 AM
+> >
+> > On 09-07-2013 12:04, R, Durgadoss wrote:
+> >> Hi Eduardo,
+> >>
+> >>> -----Original Message-----
+> >>> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
+> >>> owner@vger.kernel.org] On Behalf Of Eduardo Valentin
+> >>> Sent: Tuesday, July 09, 2013 7:30 PM
+> >>> To: linux-pm@vger.kernel.org; R, Durgadoss; amit.daniel@samsung.com
+> >>> Cc: Zhang, Rui; Eduardo Valentin; linux-kernel@vger.kernel.org
+> >>> Subject: [RFC PATCH 1/4] thermal: hwmon: move hwmon support to single
+> file
+> >>>
+> >>> In order to improve code organization, this patch
+> >>> moves the hwmon sysfs support to a file named
+> >>> thermal_hwmon. This helps to add extra support
+> >>> for hwmon without scrambling the code.
+> >>
+> >> Nice clean up for thermal_core.c. +1 from me.
+> >>
+> >> I am inclined to even remove the hwmon related code completely.
+> >> AFAIK, there are not many users of this config option.
+> >>
+> >
+> > Hmm. OK. I thought of keeping it as I dont know if there are users.
+> > Besides, if new code comes out of the hwmon2thermalfw exercise, then it
+> > would be a good place to keep all the hwmon code.
+> >
+> >> However people are looking for the other option. If they have a
+> >> hwmon driver, how can it use the thermal framework with ease.
+> >> [like what you mentioned about this in 0/5]
+> 
+> Yes, I'm trying to add lm90 driver to the thermal framework, but this
+> driver already register as a hwmon device, so when register as thermal
+> zone device, the thermal framework will register another virtual hwmon
+> device, it mean we have duplicate hwmon devices, it will make confusion.
+> How about to add a flag in the thermal_zone_params, so when call
+> thermal_zone_device_register() to register, this flag can indicate if we
+> want to register the virtual hwmon device or not.
 
-Notes:
-    Changes since v2:
-    
-    1. add devicetree bindings document
-    2. remove DMA_VIRTUAL_CHANNELS and "default n" from Kconfig
-    
-    Applies to next-20130716
+I was following your threads in both lm-sensors and here.
+I tend to agree with adding this flag in tzp structure.
 
- .../devicetree/bindings/dma/moxa,moxart-dma.txt    |  19 +
- drivers/dma/Kconfig                                |   7 +
- drivers/dma/Makefile                               |   1 +
- drivers/dma/moxart-dma.c                           | 477 +++++++++++++++++++++
- drivers/dma/moxart-dma.h                           | 188 ++++++++
- 5 files changed, 692 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
- create mode 100644 drivers/dma/moxart-dma.c
- create mode 100644 drivers/dma/moxart-dma.h
+But, we don't have tzp defined for all thermal zones
+that are registering today. So, we need to define the default behavior.
+I suggest we set the default to 'No', meaning 'do not create hwmon
+devices when this zone is registered'.
 
-diff --git a/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt b/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
-new file mode 100644
-index 0000000..61a019d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/moxa,moxart-dma.txt
-@@ -0,0 +1,19 @@
-+MOXA ART DMA Controller
-+
-+See dma.txt first
-+
-+Required properties:
-+
-+- compatible : Should be "moxa,moxart-dma"
-+- reg : Should contain registers location and length
-+- interrupts : Should contain the interrupt number
-+- #dma-cells : see dma.txt, should be 1
-+
-+Example:
-+
-+	dma: dma@90500000 {
-+		compatible = "moxa,moxart-dma";
-+		reg = <0x90500000 0x1000>;
-+		interrupts = <24 0>;
-+		#dma-cells = <1>;
-+	};
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 6825957..56c3aaa 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -300,6 +300,13 @@ config DMA_JZ4740
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
- 
-+config MOXART_DMA
-+	tristate "MOXART DMA support"
-+	depends on ARCH_MOXART
-+	select DMA_ENGINE
-+	help
-+	  Enable support for the MOXA ART SoC DMA controller.
-+
- config DMA_ENGINE
- 	bool
- 
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index 5e0f2ef..470c11b 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -39,3 +39,4 @@ obj-$(CONFIG_MMP_TDMA) += mmp_tdma.o
- obj-$(CONFIG_DMA_OMAP) += omap-dma.o
- obj-$(CONFIG_MMP_PDMA) += mmp_pdma.o
- obj-$(CONFIG_DMA_JZ4740) += dma-jz4740.o
-+obj-$(CONFIG_MOXART_DMA) += moxart-dma.o
-diff --git a/drivers/dma/moxart-dma.c b/drivers/dma/moxart-dma.c
-new file mode 100644
-index 0000000..16fddf4
---- /dev/null
-+++ b/drivers/dma/moxart-dma.c
-@@ -0,0 +1,477 @@
-+/*
-+ * MOXA ART SoCs DMA Engine support.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/dmaengine.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/list.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/irq.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+#include <asm/cacheflush.h>
-+
-+#include "dmaengine.h"
-+#include "moxart-dma.h"
-+
-+static DEFINE_SPINLOCK(dma_lock);
-+
-+struct moxart_dma_chan {
-+	struct dma_chan			chan;
-+	int				ch_num;
-+	bool				allocated;
-+	int				error_flag;
-+	struct moxart_dma_reg		*reg;
-+	void				(*callback)(void *param);
-+	void				*callback_param;
-+	struct completion		dma_complete;
-+	struct dma_slave_config		cfg;
-+	struct dma_async_tx_descriptor	tx_desc;
-+};
-+
-+struct moxart_dma_container {
-+	int			ctlr;
-+	struct dma_device	dma_slave;
-+	struct moxart_dma_chan	slave_chans[APB_DMA_MAX_CHANNEL];
-+};
-+
-+struct moxart_dma_container *mdc;
-+
-+static struct device *chan2dev(struct dma_chan *chan)
-+{
-+	return &chan->dev->device;
-+}
-+
-+static inline struct moxart_dma_container
-+*to_moxart_dma_container(struct dma_device *d)
-+{
-+	return container_of(d, struct moxart_dma_container, dma_slave);
-+}
-+
-+static inline struct moxart_dma_chan *to_moxart_dma_chan(struct dma_chan *c)
-+{
-+	return container_of(c, struct moxart_dma_chan, chan);
-+}
-+
-+static int moxart_terminate_all(struct dma_chan *chan)
-+{
-+	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-+	union moxart_dma_reg_cfg mcfg;
-+	unsigned long flags;
-+
-+	dev_dbg(chan2dev(chan), "%s: mchan=%p\n", __func__, mchan);
-+
-+	spin_lock_irqsave(&dma_lock, flags);
-+
-+	mcfg.ul = readl(&mchan->reg->cfg.ul);
-+	mcfg.ul &= ~(APB_DMA_ENABLE | APB_DMA_FIN_INT_EN | APB_DMA_ERR_INT_EN);
-+	writel(mcfg.ul, &mchan->reg->cfg.ul);
-+
-+	spin_unlock_irqrestore(&dma_lock, flags);
-+
-+	return 0;
-+}
-+
-+static int moxart_slave_config(struct dma_chan *chan,
-+			       struct dma_slave_config *cfg)
-+{
-+	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-+	union moxart_dma_reg_cfg mcfg;
-+	unsigned long flags;
-+	unsigned int data_width, data_inc;
-+
-+	spin_lock_irqsave(&dma_lock, flags);
-+
-+	memcpy(&mchan->cfg, cfg, sizeof(mchan->cfg));
-+
-+	mcfg.ul = readl(&mchan->reg->cfg.ul);
-+	mcfg.bits.burst = APB_DMAB_BURST_MODE;
-+
-+	switch (mchan->cfg.src_addr_width) {
-+	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+		data_width = APB_DMAB_DATA_WIDTH_1;
-+		data_inc = APB_DMAB_DEST_INC_1_4;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+		data_width = APB_DMAB_DATA_WIDTH_2;
-+		data_inc = APB_DMAB_DEST_INC_2_8;
-+		break;
-+	default:
-+		data_width = APB_DMAB_DATA_WIDTH_4;
-+		data_inc = APB_DMAB_DEST_INC_4_16;
-+		break;
-+	}
-+
-+	if (mchan->cfg.direction == DMA_MEM_TO_DEV) {
-+		mcfg.bits.data_width = data_width;
-+		mcfg.bits.dest_sel = APB_DMAB_DEST_APB;
-+		mcfg.bits.dest_inc = APB_DMAB_DEST_INC_0;
-+		mcfg.bits.source_sel = APB_DMAB_SOURCE_AHB;
-+		mcfg.bits.source_inc = data_inc;
-+
-+		mcfg.bits.dest_req_no = mchan->cfg.slave_id;
-+		mcfg.bits.source_req_no = 0;
-+	} else {
-+		mcfg.bits.data_width = data_width;
-+		mcfg.bits.dest_sel = APB_DMAB_SOURCE_AHB;
-+		mcfg.bits.dest_inc = data_inc;
-+		mcfg.bits.source_sel = APB_DMAB_DEST_APB;
-+		mcfg.bits.source_inc = APB_DMAB_DEST_INC_0;
-+
-+		mcfg.bits.dest_req_no = 0;
-+		mcfg.bits.source_req_no = mchan->cfg.slave_id;
-+	}
-+
-+	writel(mcfg.ul, &mchan->reg->cfg.ul);
-+
-+	spin_unlock_irqrestore(&dma_lock, flags);
-+
-+	return 0;
-+}
-+
-+static int moxart_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-+			  unsigned long arg)
-+{
-+	int ret = 0;
-+	struct dma_slave_config *config;
-+
-+	switch (cmd) {
-+	case DMA_TERMINATE_ALL:
-+		moxart_terminate_all(chan);
-+		break;
-+	case DMA_SLAVE_CONFIG:
-+		config = (struct dma_slave_config *)arg;
-+		ret = moxart_slave_config(chan, config);
-+		break;
-+	default:
-+		ret = -ENOSYS;
-+	}
-+
-+	return ret;
-+}
-+
-+static dma_cookie_t moxart_tx_submit(struct dma_async_tx_descriptor *tx)
-+{
-+	struct moxart_dma_chan *mchan = to_moxart_dma_chan(tx->chan);
-+	dma_cookie_t cookie;
-+	union moxart_dma_reg_cfg mcfg;
-+	unsigned long flags;
-+
-+	mchan->callback = tx->callback;
-+	mchan->callback_param = tx->callback_param;
-+	mchan->error_flag = 0;
-+
-+	dev_dbg(chan2dev(tx->chan), "%s: mchan=%p mchan->ch_num=%d mchan->reg=%p\n",
-+		__func__, mchan, mchan->ch_num, mchan->reg);
-+
-+	spin_lock_irqsave(&dma_lock, flags);
-+
-+	cookie = dma_cookie_assign(tx);
-+
-+	mcfg.ul = readl(&mchan->reg->cfg.ul);
-+	mcfg.ul |= (APB_DMA_FIN_INT_EN | APB_DMA_ERR_INT_EN);
-+	writel(mcfg.ul, &mchan->reg->cfg.ul);
-+
-+	spin_unlock_irqrestore(&dma_lock, flags);
-+
-+	return cookie;
-+}
-+
-+static struct dma_async_tx_descriptor
-+*moxart_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
-+		      unsigned int sg_len,
-+		      enum dma_transfer_direction direction,
-+		      unsigned long tx_flags, void *context)
-+{
-+	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-+	unsigned long flags;
-+	union moxart_dma_reg_cfg mcfg;
-+	unsigned int size, adr_width;
-+
-+	spin_lock_irqsave(&dma_lock, flags);
-+
-+	if (direction == DMA_MEM_TO_DEV) {
-+		writel(virt_to_phys((void *)sg_dma_address(&sgl[0])),
-+		       &mchan->reg->source_addr);
-+		writel(mchan->cfg.dst_addr, &mchan->reg->dest_addr);
-+		adr_width = mchan->cfg.src_addr_width;
-+	} else {
-+		writel(mchan->cfg.src_addr, &mchan->reg->source_addr);
-+		writel(virt_to_phys((void *)sg_dma_address(&sgl[0])),
-+		       &mchan->reg->dest_addr);
-+		adr_width = mchan->cfg.dst_addr_width;
-+	}
-+
-+	size = sgl->length >> adr_width;
-+
-+	/*
-+	 * size is 4 on 64 bytes copied, i.e. once cycle copies 16 bytes
-+	 * ( when data_width == APB_DMAB_DATA_WIDTH_4 )
-+	 */
-+	writel(size, &mchan->reg->cycles);
-+
-+	dev_dbg(chan2dev(chan), "%s: set %d DMA cycles (sgl->length=%d adr_width=%d)\n",
-+		__func__, size, sgl->length, adr_width);
-+
-+	dev_dbg(chan2dev(chan), "%s: mcfg.ul=%x read from &mchan->reg->cfg.ul=%x\n",
-+		__func__, mcfg.ul, (unsigned int)&mchan->reg->cfg.ul);
-+
-+	dma_async_tx_descriptor_init(&mchan->tx_desc, chan);
-+	mchan->tx_desc.tx_submit = moxart_tx_submit;
-+
-+	spin_unlock_irqrestore(&dma_lock, flags);
-+
-+	return &mchan->tx_desc;
-+}
-+
-+static struct platform_driver moxart_driver;
-+
-+bool moxart_filter_fn(struct dma_chan *chan, void *param)
-+{
-+	if (chan->device->dev->driver == &moxart_driver.driver) {
-+		struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-+		unsigned int ch_req = *(unsigned int *)param;
-+		dev_dbg(chan2dev(chan), "%s: mchan=%p ch_req=%d mchan->ch_num=%d\n",
-+			__func__, mchan, ch_req, mchan->ch_num);
-+		return ch_req == mchan->ch_num;
-+	} else {
-+		dev_dbg(chan2dev(chan), "%s: device not registered to this DMA engine\n",
-+			__func__);
-+		return false;
-+	}
-+}
-+EXPORT_SYMBOL(moxart_filter_fn);
-+
-+static int moxart_alloc_chan_resources(struct dma_chan *chan)
-+{
-+	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-+	int i;
-+	bool found = false;
-+
-+	for (i = 0; i < APB_DMA_MAX_CHANNEL; i++) {
-+		if (i == mchan->ch_num
-+			&& !mchan->allocated) {
-+			dev_dbg(chan2dev(chan), "%s: allocating channel #%d\n",
-+				__func__, mchan->ch_num);
-+			mchan->allocated = true;
-+			found = true;
-+			break;
-+		}
-+	}
-+
-+	if (!found)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
-+static void moxart_free_chan_resources(struct dma_chan *chan)
-+{
-+	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-+
-+	mchan->allocated = false;
-+
-+	dev_dbg(chan2dev(chan), "%s: freeing channel #%u\n",
-+		__func__, mchan->ch_num);
-+}
-+
-+static void moxart_issue_pending(struct dma_chan *chan)
-+{
-+	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-+	union moxart_dma_reg_cfg mcfg;
-+	unsigned long flags;
-+
-+	dev_dbg(chan2dev(chan), "%s: mchan=%p\n", __func__, mchan);
-+
-+	spin_lock_irqsave(&dma_lock, flags);
-+
-+	mcfg.ul = readl(&mchan->reg->cfg.ul);
-+	mcfg.ul |= APB_DMA_ENABLE;
-+	writel(mcfg.ul, &mchan->reg->cfg.ul);
-+
-+	spin_unlock_irqrestore(&dma_lock, flags);
-+}
-+
-+static enum dma_status moxart_tx_status(struct dma_chan *chan,
-+					dma_cookie_t cookie,
-+					struct dma_tx_state *txstate)
-+{
-+	enum dma_status ret;
-+
-+	ret = dma_cookie_status(chan, cookie, txstate);
-+	if (ret == DMA_SUCCESS || !txstate)
-+		return ret;
-+
-+	return ret;
-+}
-+
-+static void moxart_dma_init(struct dma_device *dma, struct device *dev)
-+{
-+	dma->device_prep_slave_sg		= moxart_prep_slave_sg;
-+	dma->device_alloc_chan_resources	= moxart_alloc_chan_resources;
-+	dma->device_free_chan_resources		= moxart_free_chan_resources;
-+	dma->device_issue_pending		= moxart_issue_pending;
-+	dma->device_tx_status			= moxart_tx_status;
-+	dma->device_control			= moxart_control;
-+	dma->dev				= dev;
-+
-+	INIT_LIST_HEAD(&dma->channels);
-+}
-+
-+static irqreturn_t moxart_dma_interrupt(int irq, void *devid)
-+{
-+	struct device *dev = devid;
-+	struct moxart_dma_chan *mchan = &mdc->slave_chans[0];
-+	unsigned int i;
-+	union moxart_dma_reg_cfg mcfg;
-+
-+	dev_dbg(dev, "%s\n", __func__);
-+
-+	for (i = 0; i < APB_DMA_MAX_CHANNEL; i++, mchan++) {
-+		if (mchan->allocated) {
-+			mcfg.ul = readl(&mchan->reg->cfg.ul);
-+			if (mcfg.ul & APB_DMA_FIN_INT_STS) {
-+				mcfg.ul &= ~APB_DMA_FIN_INT_STS;
-+				dma_cookie_complete(&mchan->tx_desc);
-+			}
-+			if (mcfg.ul & APB_DMA_ERR_INT_STS) {
-+				mcfg.ul &= ~APB_DMA_ERR_INT_STS;
-+				mchan->error_flag = 1;
-+			}
-+			if (mchan->callback) {
-+				dev_dbg(dev, "%s: call callback for mchan=%p\n",
-+					__func__, mchan);
-+				mchan->callback(mchan->callback_param);
-+			}
-+			mchan->error_flag = 0;
-+			writel(mcfg.ul, &mchan->reg->cfg.ul);
-+		}
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct irqaction moxart_dma_irq = {
-+	.name       = "moxart-dma-engine",
-+	.flags      = IRQF_DISABLED,
-+	.handler    = moxart_dma_interrupt,
-+};
-+
-+static int moxart_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *node = dev->of_node;
-+	struct resource res_dma;
-+	static void __iomem *dma_base_addr;
-+	int ret, i;
-+	unsigned int irq;
-+	struct moxart_dma_chan *mchan;
-+
-+	mdc = devm_kzalloc(dev, sizeof(*mdc), GFP_KERNEL);
-+	if (!mdc) {
-+		dev_err(dev, "can't allocate DMA container\n");
-+		return -ENOMEM;
-+	}
-+
-+	ret = of_address_to_resource(node, 0, &res_dma);
-+	if (ret) {
-+		dev_err(dev, "can't get DMA base resource\n");
-+		return ret;
-+	}
-+
-+	irq = irq_of_parse_and_map(node, 0);
-+
-+	dma_base_addr = devm_ioremap_resource(dev, &res_dma);
-+	if (IS_ERR(dma_base_addr)) {
-+		dev_err(dev, "devm_ioremap_resource failed\n");
-+		return PTR_ERR(dma_base_addr);
-+	}
-+
-+	mdc->ctlr = pdev->id;
-+
-+	dma_cap_zero(mdc->dma_slave.cap_mask);
-+	dma_cap_set(DMA_SLAVE, mdc->dma_slave.cap_mask);
-+
-+	moxart_dma_init(&mdc->dma_slave, dev);
-+
-+	mchan = &mdc->slave_chans[0];
-+	for (i = 0; i < APB_DMA_MAX_CHANNEL; i++, mchan++) {
-+		mchan->ch_num = i;
-+		mchan->reg = (struct moxart_dma_reg *)(dma_base_addr + 0x80
-+			     + i * sizeof(struct moxart_dma_reg));
-+		mchan->callback = NULL;
-+		mchan->allocated = 0;
-+		mchan->callback_param = NULL;
-+
-+		dma_cookie_init(&mchan->chan);
-+		mchan->chan.device = &mdc->dma_slave;
-+		list_add_tail(&mchan->chan.device_node,
-+			      &mdc->dma_slave.channels);
-+
-+		dev_dbg(dev, "%s: mchans[%d]: mchan->ch_num=%d mchan->reg=%p\n",
-+			__func__, i, mchan->ch_num, mchan->reg);
-+	}
-+
-+	ret = dma_async_device_register(&mdc->dma_slave);
-+	platform_set_drvdata(pdev, mdc);
-+
-+	moxart_dma_irq.dev_id = dev;
-+	setup_irq(irq, &moxart_dma_irq);
-+
-+	dev_dbg(dev, "%s: IRQ=%d\n", __func__, irq);
-+
-+	return ret;
-+}
-+
-+static int moxart_remove(struct platform_device *pdev)
-+{
-+	struct moxart_dma_container *m = dev_get_drvdata(&pdev->dev);
-+	dma_async_device_unregister(&m->dma_slave);
-+	return 0;
-+}
-+
-+static const struct of_device_id moxart_dma_match[] = {
-+	{ .compatible = "moxa,moxart-dma" },
-+	{ }
-+};
-+
-+static struct platform_driver moxart_driver = {
-+	.probe	= moxart_probe,
-+	.remove	= moxart_remove,
-+	.driver = {
-+		.name		= "moxart-dma-engine",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= moxart_dma_match,
-+	},
-+};
-+
-+static int moxart_init(void)
-+{
-+	return platform_driver_register(&moxart_driver);
-+}
-+subsys_initcall(moxart_init);
-+
-+static void __exit moxart_exit(void)
-+{
-+	platform_driver_unregister(&moxart_driver);
-+}
-+module_exit(moxart_exit);
-+
-+MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
-+MODULE_DESCRIPTION("MOXART DMA engine driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/dma/moxart-dma.h b/drivers/dma/moxart-dma.h
-new file mode 100644
-index 0000000..358c006
---- /dev/null
-+++ b/drivers/dma/moxart-dma.h
-@@ -0,0 +1,188 @@
-+/*
-+ * MOXA ART SoCs DMA Engine support.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#ifndef __DMA_MOXART_H
-+#define __DMA_MOXART_H
-+
-+#define APB_DMA_MAX_CHANNEL			4
-+
-+union moxart_dma_reg_cfg {
-+
-+#define APB_DMA_ENABLE				(1<<0)
-+#define APB_DMA_FIN_INT_STS			(1<<1)
-+#define APB_DMA_FIN_INT_EN			(1<<2)
-+#define APB_DMA_BURST_MODE			(1<<3)
-+#define APB_DMA_ERR_INT_STS			(1<<4)
-+#define APB_DMA_ERR_INT_EN			(1<<5)
-+#define APB_DMA_SOURCE_AHB			(1<<6)
-+#define APB_DMA_SOURCE_APB			0
-+#define APB_DMA_DEST_AHB			(1<<7)
-+#define APB_DMA_DEST_APB			0
-+#define APB_DMA_SOURCE_INC_0			0
-+#define APB_DMA_SOURCE_INC_1_4			(1<<8)
-+#define APB_DMA_SOURCE_INC_2_8			(2<<8)
-+#define APB_DMA_SOURCE_INC_4_16			(3<<8)
-+#define APB_DMA_SOURCE_DEC_1_4			(5<<8)
-+#define APB_DMA_SOURCE_DEC_2_8			(6<<8)
-+#define APB_DMA_SOURCE_DEC_4_16			(7<<8)
-+#define APB_DMA_SOURCE_INC_MASK			(7<<8)
-+#define APB_DMA_DEST_INC_0			0
-+#define APB_DMA_DEST_INC_1_4			(1<<12)
-+#define APB_DMA_DEST_INC_2_8			(2<<12)
-+#define APB_DMA_DEST_INC_4_16			(3<<12)
-+#define APB_DMA_DEST_DEC_1_4			(5<<12)
-+#define APB_DMA_DEST_DEC_2_8			(6<<12)
-+#define APB_DMA_DEST_DEC_4_16			(7<<12)
-+#define APB_DMA_DEST_INC_MASK			(7<<12)
-+#define APB_DMA_DEST_REQ_NO_MASK		(15<<16)
-+#define APB_DMA_DATA_WIDTH_MASK			(3<<20)
-+#define APB_DMA_DATA_WIDTH_4			0
-+#define APB_DMA_DATA_WIDTH_2			(1<<20)
-+#define APB_DMA_DATA_WIDTH_1			(2<<20)
-+#define APB_DMA_SOURCE_REQ_NO_MASK		(15<<24)
-+	unsigned int ul;
-+
-+	struct {
-+
-+#define APB_DMAB_ENABLE				1
-+		/* enable DMA */
-+		unsigned int enable:1;
-+
-+#define APB_DMAB_FIN_INT_STS			1
-+		/* finished interrupt status */
-+		unsigned int fin_int_sts:1;
-+
-+#define APB_DMAB_FIN_INT_EN			1
-+		/* finished interrupt enable */
-+		unsigned int fin_int_en:1;
-+
-+#define APB_DMAB_BURST_MODE			1
-+		/* burst mode */
-+		unsigned int burst:1;
-+
-+#define APB_DMAB_ERR_INT_STS			1
-+		/* error interrupt status */
-+		unsigned int err_int_sts:1;
-+
-+#define APB_DMAB_ERR_INT_EN			1
-+		/* error interrupt enable */
-+		unsigned int err_int_en:1;
-+
-+#define APB_DMAB_SOURCE_AHB			1
-+#define APB_DMAB_SOURCE_APB			0
-+		/* 0:APB (device), 1:AHB (RAM) */
-+		unsigned int source_sel:1;
-+
-+#define APB_DMAB_DEST_AHB			1
-+#define APB_DMAB_DEST_APB			0
-+		/* 0:APB, 1:AHB */
-+		unsigned int dest_sel:1;
-+
-+#define APB_DMAB_SOURCE_INC_0			0
-+#define APB_DMAB_SOURCE_INC_1_4			1
-+#define APB_DMAB_SOURCE_INC_2_8			2
-+#define APB_DMAB_SOURCE_INC_4_16		3
-+#define APB_DMAB_SOURCE_DEC_1_4			5
-+#define APB_DMAB_SOURCE_DEC_2_8			6
-+#define APB_DMAB_SOURCE_DEC_4_16		7
-+#define APB_DMAB_SOURCE_INC_MASK		7
-+		/*
-+		 * 000: no increment
-+		 * 001: +1 (busrt=0), +4  (burst=1)
-+		 * 010: +2 (burst=0), +8  (burst=1)
-+		 * 011: +4 (burst=0), +16 (burst=1)
-+		 * 101: -1 (burst=0), -4  (burst=1)
-+		 * 110: -2 (burst=0), -8  (burst=1)
-+		 * 111: -4 (burst=0), -16 (burst=1)
-+		 */
-+		unsigned int source_inc:3;
-+
-+		unsigned int reserved1:1;
-+
-+#define APB_DMAB_DEST_INC_0			0
-+#define APB_DMAB_DEST_INC_1_4			1
-+#define APB_DMAB_DEST_INC_2_8			2
-+#define APB_DMAB_DEST_INC_4_16			3
-+#define APB_DMAB_DEST_DEC_1_4			5
-+#define APB_DMAB_DEST_DEC_2_8			6
-+#define APB_DMAB_DEST_DEC_4_16			7
-+#define APB_DMAB_DEST_INC_MASK			7
-+		/*
-+		 * 000: no increment
-+		 * 001: +1 (busrt=0), +4  (burst=1)
-+		 * 010: +2 (burst=0), +8  (burst=1)
-+		 * 011: +4 (burst=0), +16 (burst=1)
-+		 * 101: -1 (burst=0), -4  (burst=1)
-+		 * 110: -2 (burst=0), -8  (burst=1)
-+		 * 111: -4 (burst=0), -16 (burst=1)
-+		*/
-+		unsigned int dest_inc:3;
-+
-+		unsigned int reserved2:1;
-+
-+#define APB_DMAB_DEST_REQ_NO_MASK		15
-+		/*
-+		 * request signal select of destination
-+		 * address for DMA hardware handshake
-+		 *
-+		 * the request line number is a property of
-+		 * the DMA controller itself, e.g. MMC must
-+		 * always request channels where
-+		 * dma_slave_config->slave_id == 5
-+		 *
-+		 * 0:	 no request / grant signal
-+		 * 1-15: request / grant signal
-+		 */
-+		unsigned int dest_req_no:4;
-+
-+#define APB_DMAB_DATA_WIDTH_MASK		3
-+#define APB_DMAB_DATA_WIDTH_4			0
-+#define APB_DMAB_DATA_WIDTH_2			1
-+#define APB_DMAB_DATA_WIDTH_1			2
-+		/*
-+		 * data width of transfer
-+		 * 00: word
-+		 * 01: half
-+		 * 10: byte
-+		 */
-+		unsigned int data_width:2;
-+
-+		unsigned int reserved3:2;
-+
-+#define APB_DMAB_SOURCE_REQ_NO_MASK		15
-+		/*
-+		 * request signal select of source
-+		 * address for DMA hardware handshake
-+		 *
-+		 * the request line number is a property of
-+		 * the DMA controller itself, e.g. MMC must
-+		 * always request channels where
-+		 * dma_slave_config->slave_id == 5
-+		 *
-+		 * 0:	 no request / grant signal
-+		 * 1-15: request / grant signal
-+		 */
-+		unsigned int source_req_no:4;
-+
-+		unsigned int reserved4:4;
-+	} bits;
-+};
-+
-+struct moxart_dma_reg {
-+	unsigned int source_addr;
-+	unsigned int dest_addr;
-+#define APB_DMA_CYCLES_MASK			0x00ffffff
-+	unsigned int cycles;	/* depend on burst mode */
-+	union moxart_dma_reg_cfg cfg;
-+};
-+
-+#endif
--- 
-1.8.2.1
+Thanks,
+Durga
 
+> 
+> Thanks.
+> Wei.
+> 
+> >
+> > yes, problem is that hwmon does not have a standard way of representing
+> > the drivers. So, one cannot simply write a simple wrapper because hwmon
+> > drivers does not have a standard get_temperature operation, for instance.
+> >
+> > We could either propose a way to standardize then or implement the call
+> > to thermal fw driver by driver. Probably the later is desirable, if we
+> > implement it in a need basis.
+> >
+> >>
+> >> Thanks,
+> >> Durga
+> >>
+> >>>
+> >>> In order to do this move, the hwmon list head is now
+> >>> using its own locking. Before, the list used
+> >>> the global thermal locking.
+> >>>
+> >>> Cc: Zhang Rui <rui.zhang@intel.com>
+> >>> Cc: linux-pm@vger.kernel.org
+> >>> Cc: linux-kernel@vger.kernel.org
+> >>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> >>> ---
+> >>>  drivers/thermal/Kconfig         |   9 ++
+> >>>  drivers/thermal/Makefile        |   3 +
+> >>>  drivers/thermal/thermal_core.c  | 255 +-------------------------------------
+> >>>  drivers/thermal/thermal_hwmon.c | 268
+> >>> ++++++++++++++++++++++++++++++++++++++++
+> >>>  drivers/thermal/thermal_hwmon.h |  49 ++++++++
+> >>>  5 files changed, 330 insertions(+), 254 deletions(-)
+> >>>  create mode 100644 drivers/thermal/thermal_hwmon.c
+> >>>  create mode 100644 drivers/thermal/thermal_hwmon.h
+> >>>
+> >>> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> >>> index e988c81..7fb16bc 100644
+> >>> --- a/drivers/thermal/Kconfig
+> >>> +++ b/drivers/thermal/Kconfig
+> >>> @@ -17,8 +17,17 @@ if THERMAL
+> >>>
+> >>>  config THERMAL_HWMON
+> >>>      bool
+> >>> +    prompt "Expose thermal sensors as hwmon device"
+> >>>      depends on HWMON=y || HWMON=THERMAL
+> >>>      default y
+> >>> +    help
+> >>> +      In case a sensor is registered with the thermal
+> >>> +      framework, this option will also register it
+> >>> +      as a hwmon. The sensor will then have the common
+> >>> +      hwmon sysfs interface.
+> >>> +
+> >>> +      Say 'Y' here if you want all thermal sensors to
+> >>> +      have hwmon sysfs interface too.
+> >>>
+> >>>  choice
+> >>>      prompt "Default Thermal governor"
+> >>> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+> >>> index 67184a2..24cb894 100644
+> >>> --- a/drivers/thermal/Makefile
+> >>> +++ b/drivers/thermal/Makefile
+> >>> @@ -5,6 +5,9 @@
+> >>>  obj-$(CONFIG_THERMAL)               += thermal_sys.o
+> >>>  thermal_sys-y                       += thermal_core.o
+> >>>
+> >>> +# interface to/from other layers providing sensors
+> >>> +thermal_sys-$(CONFIG_THERMAL_HWMON)         += thermal_hwmon.o
+> >>> +
+> >>>  # governors
+> >>>  thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)        += fair_share.o
+> >>>  thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE) += step_wise.o
+> >>> diff --git a/drivers/thermal/thermal_core.c
+> b/drivers/thermal/thermal_core.c
+> >>> index 1f02e8e..247528b 100644
+> >>> --- a/drivers/thermal/thermal_core.c
+> >>> +++ b/drivers/thermal/thermal_core.c
+> >>> @@ -38,6 +38,7 @@
+> >>>  #include <net/genetlink.h>
+> >>>
+> >>>  #include "thermal_core.h"
+> >>> +#include "thermal_hwmon.h"
+> >>>
+> >>>  MODULE_AUTHOR("Zhang Rui");
+> >>>  MODULE_DESCRIPTION("Generic thermal management sysfs support");
+> >>> @@ -859,260 +860,6 @@ thermal_cooling_device_trip_point_show(struct
+> device
+> >>> *dev,
+> >>>
+> >>>  /* Device management */
+> >>>
+> >>> -#if defined(CONFIG_THERMAL_HWMON)
+> >>> -
+> >>> -/* hwmon sys I/F */
+> >>> -#include <linux/hwmon.h>
+> >>> -
+> >>> -/* thermal zone devices with the same type share one hwmon device */
+> >>> -struct thermal_hwmon_device {
+> >>> -    char type[THERMAL_NAME_LENGTH];
+> >>> -    struct device *device;
+> >>> -    int count;
+> >>> -    struct list_head tz_list;
+> >>> -    struct list_head node;
+> >>> -};
+> >>> -
+> >>> -struct thermal_hwmon_attr {
+> >>> -    struct device_attribute attr;
+> >>> -    char name[16];
+> >>> -};
+> >>> -
+> >>> -/* one temperature input for each thermal zone */
+> >>> -struct thermal_hwmon_temp {
+> >>> -    struct list_head hwmon_node;
+> >>> -    struct thermal_zone_device *tz;
+> >>> -    struct thermal_hwmon_attr temp_input;   /* hwmon sys attr */
+> >>> -    struct thermal_hwmon_attr temp_crit;    /* hwmon sys attr */
+> >>> -};
+> >>> -
+> >>> -static LIST_HEAD(thermal_hwmon_list);
+> >>> -
+> >>> -static ssize_t
+> >>> -name_show(struct device *dev, struct device_attribute *attr, char *buf)
+> >>> -{
+> >>> -    struct thermal_hwmon_device *hwmon = dev_get_drvdata(dev);
+> >>> -    return sprintf(buf, "%s\n", hwmon->type);
+> >>> -}
+> >>> -static DEVICE_ATTR(name, 0444, name_show, NULL);
+> >>> -
+> >>> -static ssize_t
+> >>> -temp_input_show(struct device *dev, struct device_attribute *attr, char
+> *buf)
+> >>> -{
+> >>> -    long temperature;
+> >>> -    int ret;
+> >>> -    struct thermal_hwmon_attr *hwmon_attr
+> >>> -                    = container_of(attr, struct thermal_hwmon_attr, attr);
+> >>> -    struct thermal_hwmon_temp *temp
+> >>> -                    = container_of(hwmon_attr, struct
+> >>> thermal_hwmon_temp,
+> >>> -                                   temp_input);
+> >>> -    struct thermal_zone_device *tz = temp->tz;
+> >>> -
+> >>> -    ret = thermal_zone_get_temp(tz, &temperature);
+> >>> -
+> >>> -    if (ret)
+> >>> -            return ret;
+> >>> -
+> >>> -    return sprintf(buf, "%ld\n", temperature);
+> >>> -}
+> >>> -
+> >>> -static ssize_t
+> >>> -temp_crit_show(struct device *dev, struct device_attribute *attr,
+> >>> -            char *buf)
+> >>> -{
+> >>> -    struct thermal_hwmon_attr *hwmon_attr
+> >>> -                    = container_of(attr, struct thermal_hwmon_attr, attr);
+> >>> -    struct thermal_hwmon_temp *temp
+> >>> -                    = container_of(hwmon_attr, struct
+> >>> thermal_hwmon_temp,
+> >>> -                                   temp_crit);
+> >>> -    struct thermal_zone_device *tz = temp->tz;
+> >>> -    long temperature;
+> >>> -    int ret;
+> >>> -
+> >>> -    ret = tz->ops->get_trip_temp(tz, 0, &temperature);
+> >>> -    if (ret)
+> >>> -            return ret;
+> >>> -
+> >>> -    return sprintf(buf, "%ld\n", temperature);
+> >>> -}
+> >>> -
+> >>> -
+> >>> -static struct thermal_hwmon_device *
+> >>> -thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
+> >>> -{
+> >>> -    struct thermal_hwmon_device *hwmon;
+> >>> -
+> >>> -    mutex_lock(&thermal_list_lock);
+> >>> -    list_for_each_entry(hwmon, &thermal_hwmon_list, node)
+> >>> -            if (!strcmp(hwmon->type, tz->type)) {
+> >>> -                    mutex_unlock(&thermal_list_lock);
+> >>> -                    return hwmon;
+> >>> -            }
+> >>> -    mutex_unlock(&thermal_list_lock);
+> >>> -
+> >>> -    return NULL;
+> >>> -}
+> >>> -
+> >>> -/* Find the temperature input matching a given thermal zone */
+> >>> -static struct thermal_hwmon_temp *
+> >>> -thermal_hwmon_lookup_temp(const struct thermal_hwmon_device
+> *hwmon,
+> >>> -                      const struct thermal_zone_device *tz)
+> >>> -{
+> >>> -    struct thermal_hwmon_temp *temp;
+> >>> -
+> >>> -    mutex_lock(&thermal_list_lock);
+> >>> -    list_for_each_entry(temp, &hwmon->tz_list, hwmon_node)
+> >>> -            if (temp->tz == tz) {
+> >>> -                    mutex_unlock(&thermal_list_lock);
+> >>> -                    return temp;
+> >>> -            }
+> >>> -    mutex_unlock(&thermal_list_lock);
+> >>> -
+> >>> -    return NULL;
+> >>> -}
+> >>> -
+> >>> -static int
+> >>> -thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> -{
+> >>> -    struct thermal_hwmon_device *hwmon;
+> >>> -    struct thermal_hwmon_temp *temp;
+> >>> -    int new_hwmon_device = 1;
+> >>> -    int result;
+> >>> -
+> >>> -    hwmon = thermal_hwmon_lookup_by_type(tz);
+> >>> -    if (hwmon) {
+> >>> -            new_hwmon_device = 0;
+> >>> -            goto register_sys_interface;
+> >>> -    }
+> >>> -
+> >>> -    hwmon = kzalloc(sizeof(struct thermal_hwmon_device), GFP_KERNEL);
+> >>> -    if (!hwmon)
+> >>> -            return -ENOMEM;
+> >>> -
+> >>> -    INIT_LIST_HEAD(&hwmon->tz_list);
+> >>> -    strlcpy(hwmon->type, tz->type, THERMAL_NAME_LENGTH);
+> >>> -    hwmon->device = hwmon_device_register(NULL);
+> >>> -    if (IS_ERR(hwmon->device)) {
+> >>> -            result = PTR_ERR(hwmon->device);
+> >>> -            goto free_mem;
+> >>> -    }
+> >>> -    dev_set_drvdata(hwmon->device, hwmon);
+> >>> -    result = device_create_file(hwmon->device, &dev_attr_name);
+> >>> -    if (result)
+> >>> -            goto free_mem;
+> >>> -
+> >>> - register_sys_interface:
+> >>> -    temp = kzalloc(sizeof(struct thermal_hwmon_temp), GFP_KERNEL);
+> >>> -    if (!temp) {
+> >>> -            result = -ENOMEM;
+> >>> -            goto unregister_name;
+> >>> -    }
+> >>> -
+> >>> -    temp->tz = tz;
+> >>> -    hwmon->count++;
+> >>> -
+> >>> -    snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
+> >>> -             "temp%d_input", hwmon->count);
+> >>> -    temp->temp_input.attr.attr.name = temp->temp_input.name;
+> >>> -    temp->temp_input.attr.attr.mode = 0444;
+> >>> -    temp->temp_input.attr.show = temp_input_show;
+> >>> -    sysfs_attr_init(&temp->temp_input.attr.attr);
+> >>> -    result = device_create_file(hwmon->device, &temp->temp_input.attr);
+> >>> -    if (result)
+> >>> -            goto free_temp_mem;
+> >>> -
+> >>> -    if (tz->ops->get_crit_temp) {
+> >>> -            unsigned long temperature;
+> >>> -            if (!tz->ops->get_crit_temp(tz, &temperature)) {
+> >>> -                    snprintf(temp->temp_crit.name,
+> >>> -                             sizeof(temp->temp_crit.name),
+> >>> -                            "temp%d_crit", hwmon->count);
+> >>> -                    temp->temp_crit.attr.attr.name = temp-
+> >>>> temp_crit.name;
+> >>> -                    temp->temp_crit.attr.attr.mode = 0444;
+> >>> -                    temp->temp_crit.attr.show = temp_crit_show;
+> >>> -                    sysfs_attr_init(&temp->temp_crit.attr.attr);
+> >>> -                    result = device_create_file(hwmon->device,
+> >>> -                                                &temp->temp_crit.attr);
+> >>> -                    if (result)
+> >>> -                            goto unregister_input;
+> >>> -            }
+> >>> -    }
+> >>> -
+> >>> -    mutex_lock(&thermal_list_lock);
+> >>> -    if (new_hwmon_device)
+> >>> -            list_add_tail(&hwmon->node, &thermal_hwmon_list);
+> >>> -    list_add_tail(&temp->hwmon_node, &hwmon->tz_list);
+> >>> -    mutex_unlock(&thermal_list_lock);
+> >>> -
+> >>> -    return 0;
+> >>> -
+> >>> - unregister_input:
+> >>> -    device_remove_file(hwmon->device, &temp->temp_input.attr);
+> >>> - free_temp_mem:
+> >>> -    kfree(temp);
+> >>> - unregister_name:
+> >>> -    if (new_hwmon_device) {
+> >>> -            device_remove_file(hwmon->device, &dev_attr_name);
+> >>> -            hwmon_device_unregister(hwmon->device);
+> >>> -    }
+> >>> - free_mem:
+> >>> -    if (new_hwmon_device)
+> >>> -            kfree(hwmon);
+> >>> -
+> >>> -    return result;
+> >>> -}
+> >>> -
+> >>> -static void
+> >>> -thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> -{
+> >>> -    struct thermal_hwmon_device *hwmon;
+> >>> -    struct thermal_hwmon_temp *temp;
+> >>> -
+> >>> -    hwmon = thermal_hwmon_lookup_by_type(tz);
+> >>> -    if (unlikely(!hwmon)) {
+> >>> -            /* Should never happen... */
+> >>> -            dev_dbg(&tz->device, "hwmon device lookup failed!\n");
+> >>> -            return;
+> >>> -    }
+> >>> -
+> >>> -    temp = thermal_hwmon_lookup_temp(hwmon, tz);
+> >>> -    if (unlikely(!temp)) {
+> >>> -            /* Should never happen... */
+> >>> -            dev_dbg(&tz->device, "temperature input lookup failed!\n");
+> >>> -            return;
+> >>> -    }
+> >>> -
+> >>> -    device_remove_file(hwmon->device, &temp->temp_input.attr);
+> >>> -    if (tz->ops->get_crit_temp)
+> >>> -            device_remove_file(hwmon->device, &temp->temp_crit.attr);
+> >>> -
+> >>> -    mutex_lock(&thermal_list_lock);
+> >>> -    list_del(&temp->hwmon_node);
+> >>> -    kfree(temp);
+> >>> -    if (!list_empty(&hwmon->tz_list)) {
+> >>> -            mutex_unlock(&thermal_list_lock);
+> >>> -            return;
+> >>> -    }
+> >>> -    list_del(&hwmon->node);
+> >>> -    mutex_unlock(&thermal_list_lock);
+> >>> -
+> >>> -    device_remove_file(hwmon->device, &dev_attr_name);
+> >>> -    hwmon_device_unregister(hwmon->device);
+> >>> -    kfree(hwmon);
+> >>> -}
+> >>> -#else
+> >>> -static int
+> >>> -thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> -{
+> >>> -    return 0;
+> >>> -}
+> >>> -
+> >>> -static void
+> >>> -thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> -{
+> >>> -}
+> >>> -#endif
+> >>> -
+> >>>  /**
+> >>>   * thermal_zone_bind_cooling_device() - bind a cooling device to a thermal
+> zone
+> >>>   * @tz:             pointer to struct thermal_zone_device
+> >>> diff --git a/drivers/thermal/thermal_hwmon.c
+> >>> b/drivers/thermal/thermal_hwmon.c
+> >>> new file mode 100644
+> >>> index 0000000..7c665c8
+> >>> --- /dev/null
+> >>> +++ b/drivers/thermal/thermal_hwmon.c
+> >>> @@ -0,0 +1,268 @@
+> >>> +/*
+> >>> + *  thermal_hwmon.c - Generic Thermal Management hwmon support.
+> >>> + *
+> >>> + *  Code based on Intel thermal_core.c. Copyrights of the original code:
+> >>> + *  Copyright (C) 2008 Intel Corp
+> >>> + *  Copyright (C) 2008 Zhang Rui <rui.zhang@intel.com>
+> >>> + *  Copyright (C) 2008 Sujith Thomas <sujith.thomas@intel.com>
+> >>> + *
+> >>> + *  Copyright (C) 2013 Texas Instruments
+> >>> + *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
+> >>> + *
+> >>>
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >>> ~~~~~~~~~~~~
+> >>> + *
+> >>> + *  This program is free software; you can redistribute it and/or modify
+> >>> + *  it under the terms of the GNU General Public License as published by
+> >>> + *  the Free Software Foundation; version 2 of the License.
+> >>> + *
+> >>> + *  This program is distributed in the hope that it will be useful, but
+> >>> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> >>> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> GNU
+> >>> + *  General Public License for more details.
+> >>> + *
+> >>> + *  You should have received a copy of the GNU General Public License
+> along
+> >>> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> >>> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> >>> + *
+> >>> + *
+> >>>
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >>> ~~~~~~~~~~~~
+> >>> + */
+> >>> +#include <linux/hwmon.h>
+> >>> +#include <linux/thermal.h>
+> >>> +#include <linux/slab.h>
+> >>> +#include <linux/err.h>
+> >>> +
+> >>> +/* hwmon sys I/F */
+> >>> +/* thermal zone devices with the same type share one hwmon device */
+> >>> +struct thermal_hwmon_device {
+> >>> +    char type[THERMAL_NAME_LENGTH];
+> >>> +    struct device *device;
+> >>> +    int count;
+> >>> +    struct list_head tz_list;
+> >>> +    struct list_head node;
+> >>> +};
+> >>> +
+> >>> +struct thermal_hwmon_attr {
+> >>> +    struct device_attribute attr;
+> >>> +    char name[16];
+> >>> +};
+> >>> +
+> >>> +/* one temperature input for each thermal zone */
+> >>> +struct thermal_hwmon_temp {
+> >>> +    struct list_head hwmon_node;
+> >>> +    struct thermal_zone_device *tz;
+> >>> +    struct thermal_hwmon_attr temp_input;   /* hwmon sys attr */
+> >>> +    struct thermal_hwmon_attr temp_crit;    /* hwmon sys attr */
+> >>> +};
+> >>> +
+> >>> +static LIST_HEAD(thermal_hwmon_list);
+> >>> +
+> >>> +static DEFINE_MUTEX(thermal_hwmon_list_lock);
+> >>> +
+> >>> +static ssize_t
+> >>> +name_show(struct device *dev, struct device_attribute *attr, char *buf)
+> >>> +{
+> >>> +    struct thermal_hwmon_device *hwmon = dev_get_drvdata(dev);
+> >>> +    return sprintf(buf, "%s\n", hwmon->type);
+> >>> +}
+> >>> +static DEVICE_ATTR(name, 0444, name_show, NULL);
+> >>> +
+> >>> +static ssize_t
+> >>> +temp_input_show(struct device *dev, struct device_attribute *attr, char
+> *buf)
+> >>> +{
+> >>> +    long temperature;
+> >>> +    int ret;
+> >>> +    struct thermal_hwmon_attr *hwmon_attr
+> >>> +                    = container_of(attr, struct thermal_hwmon_attr, attr);
+> >>> +    struct thermal_hwmon_temp *temp
+> >>> +                    = container_of(hwmon_attr, struct
+> >>> thermal_hwmon_temp,
+> >>> +                                   temp_input);
+> >>> +    struct thermal_zone_device *tz = temp->tz;
+> >>> +
+> >>> +    ret = thermal_zone_get_temp(tz, &temperature);
+> >>> +
+> >>> +    if (ret)
+> >>> +            return ret;
+> >>> +
+> >>> +    return sprintf(buf, "%ld\n", temperature);
+> >>> +}
+> >>> +
+> >>> +static ssize_t
+> >>> +temp_crit_show(struct device *dev, struct device_attribute *attr, char
+> *buf)
+> >>> +{
+> >>> +    struct thermal_hwmon_attr *hwmon_attr
+> >>> +                    = container_of(attr, struct thermal_hwmon_attr, attr);
+> >>> +    struct thermal_hwmon_temp *temp
+> >>> +                    = container_of(hwmon_attr, struct
+> >>> thermal_hwmon_temp,
+> >>> +                                   temp_crit);
+> >>> +    struct thermal_zone_device *tz = temp->tz;
+> >>> +    long temperature;
+> >>> +    int ret;
+> >>> +
+> >>> +    ret = tz->ops->get_trip_temp(tz, 0, &temperature);
+> >>> +    if (ret)
+> >>> +            return ret;
+> >>> +
+> >>> +    return sprintf(buf, "%ld\n", temperature);
+> >>> +}
+> >>> +
+> >>> +
+> >>> +static struct thermal_hwmon_device *
+> >>> +thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
+> >>> +{
+> >>> +    struct thermal_hwmon_device *hwmon;
+> >>> +
+> >>> +    mutex_lock(&thermal_hwmon_list_lock);
+> >>> +    list_for_each_entry(hwmon, &thermal_hwmon_list, node)
+> >>> +            if (!strcmp(hwmon->type, tz->type)) {
+> >>> +                    mutex_unlock(&thermal_hwmon_list_lock);
+> >>> +                    return hwmon;
+> >>> +            }
+> >>> +    mutex_unlock(&thermal_hwmon_list_lock);
+> >>> +
+> >>> +    return NULL;
+> >>> +}
+> >>> +
+> >>> +/* Find the temperature input matching a given thermal zone */
+> >>> +static struct thermal_hwmon_temp *
+> >>> +thermal_hwmon_lookup_temp(const struct thermal_hwmon_device
+> *hwmon,
+> >>> +                      const struct thermal_zone_device *tz)
+> >>> +{
+> >>> +    struct thermal_hwmon_temp *temp;
+> >>> +
+> >>> +    mutex_lock(&thermal_hwmon_list_lock);
+> >>> +    list_for_each_entry(temp, &hwmon->tz_list, hwmon_node)
+> >>> +            if (temp->tz == tz) {
+> >>> +                    mutex_unlock(&thermal_hwmon_list_lock);
+> >>> +                    return temp;
+> >>> +            }
+> >>> +    mutex_unlock(&thermal_hwmon_list_lock);
+> >>> +
+> >>> +    return NULL;
+> >>> +}
+> >>> +
+> >>> +int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> +{
+> >>> +    struct thermal_hwmon_device *hwmon;
+> >>> +    struct thermal_hwmon_temp *temp;
+> >>> +    int new_hwmon_device = 1;
+> >>> +    int result;
+> >>> +
+> >>> +    hwmon = thermal_hwmon_lookup_by_type(tz);
+> >>> +    if (hwmon) {
+> >>> +            new_hwmon_device = 0;
+> >>> +            goto register_sys_interface;
+> >>> +    }
+> >>> +
+> >>> +    hwmon = kzalloc(sizeof(struct thermal_hwmon_device), GFP_KERNEL);
+> >>> +    if (!hwmon)
+> >>> +            return -ENOMEM;
+> >>> +
+> >>> +    INIT_LIST_HEAD(&hwmon->tz_list);
+> >>> +    strlcpy(hwmon->type, tz->type, THERMAL_NAME_LENGTH);
+> >>> +    hwmon->device = hwmon_device_register(NULL);
+> >>> +    if (IS_ERR(hwmon->device)) {
+> >>> +            result = PTR_ERR(hwmon->device);
+> >>> +            goto free_mem;
+> >>> +    }
+> >>> +    dev_set_drvdata(hwmon->device, hwmon);
+> >>> +    result = device_create_file(hwmon->device, &dev_attr_name);
+> >>> +    if (result)
+> >>> +            goto free_mem;
+> >>> +
+> >>> + register_sys_interface:
+> >>> +    temp = kzalloc(sizeof(struct thermal_hwmon_temp), GFP_KERNEL);
+> >>> +    if (!temp) {
+> >>> +            result = -ENOMEM;
+> >>> +            goto unregister_name;
+> >>> +    }
+> >>> +
+> >>> +    temp->tz = tz;
+> >>> +    hwmon->count++;
+> >>> +
+> >>> +    snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
+> >>> +             "temp%d_input", hwmon->count);
+> >>> +    temp->temp_input.attr.attr.name = temp->temp_input.name;
+> >>> +    temp->temp_input.attr.attr.mode = 0444;
+> >>> +    temp->temp_input.attr.show = temp_input_show;
+> >>> +    sysfs_attr_init(&temp->temp_input.attr.attr);
+> >>> +    result = device_create_file(hwmon->device, &temp->temp_input.attr);
+> >>> +    if (result)
+> >>> +            goto free_temp_mem;
+> >>> +
+> >>> +    if (tz->ops->get_crit_temp) {
+> >>> +            unsigned long temperature;
+> >>> +            if (!tz->ops->get_crit_temp(tz, &temperature)) {
+> >>> +                    snprintf(temp->temp_crit.name,
+> >>> +                             sizeof(temp->temp_crit.name),
+> >>> +                            "temp%d_crit", hwmon->count);
+> >>> +                    temp->temp_crit.attr.attr.name = temp-
+> >>>> temp_crit.name;
+> >>> +                    temp->temp_crit.attr.attr.mode = 0444;
+> >>> +                    temp->temp_crit.attr.show = temp_crit_show;
+> >>> +                    sysfs_attr_init(&temp->temp_crit.attr.attr);
+> >>> +                    result = device_create_file(hwmon->device,
+> >>> +                                                &temp->temp_crit.attr);
+> >>> +                    if (result)
+> >>> +                            goto unregister_input;
+> >>> +            }
+> >>> +    }
+> >>> +
+> >>> +    mutex_lock(&thermal_hwmon_list_lock);
+> >>> +    if (new_hwmon_device)
+> >>> +            list_add_tail(&hwmon->node, &thermal_hwmon_list);
+> >>> +    list_add_tail(&temp->hwmon_node, &hwmon->tz_list);
+> >>> +    mutex_unlock(&thermal_hwmon_list_lock);
+> >>> +
+> >>> +    return 0;
+> >>> +
+> >>> + unregister_input:
+> >>> +    device_remove_file(hwmon->device, &temp->temp_input.attr);
+> >>> + free_temp_mem:
+> >>> +    kfree(temp);
+> >>> + unregister_name:
+> >>> +    if (new_hwmon_device) {
+> >>> +            device_remove_file(hwmon->device, &dev_attr_name);
+> >>> +            hwmon_device_unregister(hwmon->device);
+> >>> +    }
+> >>> + free_mem:
+> >>> +    if (new_hwmon_device)
+> >>> +            kfree(hwmon);
+> >>> +
+> >>> +    return result;
+> >>> +}
+> >>> +
+> >>> +void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> +{
+> >>> +    struct thermal_hwmon_device *hwmon;
+> >>> +    struct thermal_hwmon_temp *temp;
+> >>> +
+> >>> +    hwmon = thermal_hwmon_lookup_by_type(tz);
+> >>> +    if (unlikely(!hwmon)) {
+> >>> +            /* Should never happen... */
+> >>> +            dev_dbg(&tz->device, "hwmon device lookup failed!\n");
+> >>> +            return;
+> >>> +    }
+> >>> +
+> >>> +    temp = thermal_hwmon_lookup_temp(hwmon, tz);
+> >>> +    if (unlikely(!temp)) {
+> >>> +            /* Should never happen... */
+> >>> +            dev_dbg(&tz->device, "temperature input lookup failed!\n");
+> >>> +            return;
+> >>> +    }
+> >>> +
+> >>> +    device_remove_file(hwmon->device, &temp->temp_input.attr);
+> >>> +    if (tz->ops->get_crit_temp)
+> >>> +            device_remove_file(hwmon->device, &temp->temp_crit.attr);
+> >>> +
+> >>> +    mutex_lock(&thermal_hwmon_list_lock);
+> >>> +    list_del(&temp->hwmon_node);
+> >>> +    kfree(temp);
+> >>> +    if (!list_empty(&hwmon->tz_list)) {
+> >>> +            mutex_unlock(&thermal_hwmon_list_lock);
+> >>> +            return;
+> >>> +    }
+> >>> +    list_del(&hwmon->node);
+> >>> +    mutex_unlock(&thermal_hwmon_list_lock);
+> >>> +
+> >>> +    device_remove_file(hwmon->device, &dev_attr_name);
+> >>> +    hwmon_device_unregister(hwmon->device);
+> >>> +    kfree(hwmon);
+> >>> +}
+> >>> diff --git a/drivers/thermal/thermal_hwmon.h
+> >>> b/drivers/thermal/thermal_hwmon.h
+> >>> new file mode 100644
+> >>> index 0000000..c798fdb
+> >>> --- /dev/null
+> >>> +++ b/drivers/thermal/thermal_hwmon.h
+> >>> @@ -0,0 +1,49 @@
+> >>> +/*
+> >>> + *  thermal_hwmon.h - Generic Thermal Management hwmon support.
+> >>> + *
+> >>> + *  Code based on Intel thermal_core.c. Copyrights of the original code:
+> >>> + *  Copyright (C) 2008 Intel Corp
+> >>> + *  Copyright (C) 2008 Zhang Rui <rui.zhang@intel.com>
+> >>> + *  Copyright (C) 2008 Sujith Thomas <sujith.thomas@intel.com>
+> >>> + *
+> >>> + *  Copyright (C) 2013 Texas Instruments
+> >>> + *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
+> >>> + *
+> >>>
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >>> ~~~~~~~~~~~~
+> >>> + *
+> >>> + *  This program is free software; you can redistribute it and/or modify
+> >>> + *  it under the terms of the GNU General Public License as published by
+> >>> + *  the Free Software Foundation; version 2 of the License.
+> >>> + *
+> >>> + *  This program is distributed in the hope that it will be useful, but
+> >>> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> >>> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> GNU
+> >>> + *  General Public License for more details.
+> >>> + *
+> >>> + *  You should have received a copy of the GNU General Public License
+> along
+> >>> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> >>> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> >>> + *
+> >>> + *
+> >>>
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> >>> ~~~~~~~~~~~~
+> >>> + */
+> >>> +#ifndef __THERMAL_HWMON_H__
+> >>> +#define __THERMAL_HWMON_H__
+> >>> +
+> >>> +#include <linux/thermal.h>
+> >>> +
+> >>> +#ifdef CONFIG_THERMAL_HWMON
+> >>> +int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz);
+> >>> +void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz);
+> >>> +#else
+> >>> +static int
+> >>> +thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> +{
+> >>> +    return 0;
+> >>> +}
+> >>> +
+> >>> +static void
+> >>> +thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> >>> +{
+> >>> +}
+> >>> +#endif
+> >>> +
+> >>> +#endif /* __THERMAL_HWMON_H__ */
+> >>> --
+> >>> 1.8.2.1.342.gfa7285d
+> >>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> >>
+> >
+> >
+> > --
+> > You have got to be excited about what you are doing. (L. Lamport)
+> >
+> > Eduardo Valentin
+> >
+> >
+> > * Eduardo Valentin <eduardo.valentin@ti.com>
+> > * 0x75D0BCFD
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
