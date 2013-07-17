@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988Ab3GQWzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:55:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56632 "EHLO
+	id S965112Ab3GQXLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:11:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56671 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964930Ab3GQWzn (ORCPT
+	with ESMTP id S964981Ab3GQWzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:55:43 -0400
+	Wed, 17 Jul 2013 18:55:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 117/145] module: do percpu allocation after uniqueness check.  No, really!
-Date: Wed, 17 Jul 2013 15:47:29 -0700
-Message-Id: <1374101277-7915-118-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 123/145] [SCSI] megaraid_sas: fix memory leak if SGL has zero length entries
+Date: Wed, 17 Jul 2013 15:47:35 -0700
+Message-Id: <1374101277-7915-124-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,102 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 8d8022e8aba85192e937f1f0f7450e256d66ae5c upstream.
+commit 7a6a731bd00ca90d0e250867c3b9c05b5ff0fa49 upstream.
 
-v3.8-rc1-5-g1fb9341 was supposed to stop parallel kvm loads exhausting
-percpu memory on large machines:
+commit 98cb7e44 ([SCSI] megaraid_sas: Sanity check user
+supplied length before passing it to dma_alloc_coherent())
+introduced a memory leak.  Memory allocated for entries
+following zero length SGL entries will not be freed.
 
-    Now we have a new state MODULE_STATE_UNFORMED, we can insert the
-    module into the list (and thus guarantee its uniqueness) before we
-    allocate the per-cpu region.
+Reference: http://bugs.debian.org/688198
 
-In my defence, it didn't actually say the patch did this.  Just that
-we "can".
-
-This patch actually *does* it.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Tested-by: Jim Hull <jim.hull@hp.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Adam Radford <aradford@gmail.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/module.c | 34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index eab0827..af2c7e6 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2930,7 +2930,6 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
- {
- 	/* Module within temporary copy. */
- 	struct module *mod;
--	Elf_Shdr *pcpusec;
- 	int err;
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index 66a0fec..996a314 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4852,10 +4852,12 @@ megasas_mgmt_fw_ioctl(struct megasas_instance *instance,
+ 				    sense, sense_handle);
+ 	}
  
- 	mod = setup_load_info(info, flags);
-@@ -2945,17 +2944,10 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
- 	err = module_frob_arch_sections(info->hdr, info->sechdrs,
- 					info->secstrings, mod);
- 	if (err < 0)
--		goto out;
-+		return ERR_PTR(err);
+-	for (i = 0; i < ioc->sge_count && kbuff_arr[i]; i++) {
+-		dma_free_coherent(&instance->pdev->dev,
+-				    kern_sge32[i].length,
+-				    kbuff_arr[i], kern_sge32[i].phys_addr);
++	for (i = 0; i < ioc->sge_count; i++) {
++		if (kbuff_arr[i])
++			dma_free_coherent(&instance->pdev->dev,
++					  kern_sge32[i].length,
++					  kbuff_arr[i],
++					  kern_sge32[i].phys_addr);
+ 	}
  
--	pcpusec = &info->sechdrs[info->index.pcpu];
--	if (pcpusec->sh_size) {
--		/* We have a special allocation for this section. */
--		err = percpu_modalloc(mod,
--				      pcpusec->sh_size, pcpusec->sh_addralign);
--		if (err)
--			goto out;
--		pcpusec->sh_flags &= ~(unsigned long)SHF_ALLOC;
--	}
-+	/* We will do a special allocation for per-cpu sections later. */
-+	info->sechdrs[info->index.pcpu].sh_flags &= ~(unsigned long)SHF_ALLOC;
- 
- 	/* Determine total sizes, and put offsets in sh_entsize.  For now
- 	   this is done generically; there doesn't appear to be any
-@@ -2966,17 +2958,22 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
- 	/* Allocate and move to the final place */
- 	err = move_module(mod, info);
- 	if (err)
--		goto free_percpu;
-+		return ERR_PTR(err);
- 
- 	/* Module has been copied to its final place now: return it. */
- 	mod = (void *)info->sechdrs[info->index.mod].sh_addr;
- 	kmemleak_load_module(mod, info);
- 	return mod;
-+}
- 
--free_percpu:
--	percpu_modfree(mod);
--out:
--	return ERR_PTR(err);
-+static int alloc_module_percpu(struct module *mod, struct load_info *info)
-+{
-+	Elf_Shdr *pcpusec = &info->sechdrs[info->index.pcpu];
-+	if (!pcpusec->sh_size)
-+		return 0;
-+
-+	/* We have a special allocation for this section. */
-+	return percpu_modalloc(mod, pcpusec->sh_size, pcpusec->sh_addralign);
- }
- 
- /* mod is no longer valid after this! */
-@@ -3196,6 +3193,11 @@ again:
- 		add_taint_module(mod, TAINT_FORCED_MODULE);
- #endif
- 
-+	/* To avoid stressing percpu allocator, do this once we're unique. */
-+	err = alloc_module_percpu(mod, info);
-+	if (err)
-+		goto unlink_mod;
-+
- 	/* Now module is in final location, initialize linked lists, etc. */
- 	err = module_unload_init(mod);
- 	if (err)
+ 	megasas_return_cmd(instance, cmd);
 -- 
 1.8.1.2
 
