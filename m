@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934495Ab3GQW4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56699 "EHLO
+	id S934560Ab3GQW4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:56:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56744 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934483Ab3GQW4F (ORCPT
+	with ESMTP id S934522Ab3GQW41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:05 -0400
+	Wed, 17 Jul 2013 18:56:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhang Yi <zhang.yi20@zte.com.cn>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 039/145] futex: Take hugepages into account when generating futex_key
-Date: Wed, 17 Jul 2013 15:46:11 -0700
-Message-Id: <1374101277-7915-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 041/145] perf: Disable monitoring on setuid processes for regular users
+Date: Wed, 17 Jul 2013 15:46:13 -0700
+Message-Id: <1374101277-7915-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -29,156 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Yi <wetpzy@gmail.com>
+From: Stephane Eranian <eranian@google.com>
 
-commit 13d60f4b6ab5b702dc8d2ee20999f98a93728aec upstream.
+commit 2976b10f05bd7f6dab9f9e7524451ddfed656a89 upstream.
 
-The futex_keys of process shared futexes are generated from the page
-offset, the mapping host and the mapping index of the futex user space
-address. This should result in an unique identifier for each futex.
+There was a a bug in setup_new_exec(), whereby
+the test to disabled perf monitoring was not
+correct because the new credentials for the
+process were not yet committed and therefore
+the get_dumpable() test was never firing.
 
-Though this is not true when futexes are located in different subpages
-of an hugepage. The reason is, that the mapping index for all those
-futexes evaluates to the index of the base page of the hugetlbfs
-mapping. So a futex at offset 0 of the hugepage mapping and another
-one at offset PAGE_SIZE of the same hugepage mapping have identical
-futex_keys. This happens because the futex code blindly uses
-page->index.
+The patch fixes the problem by moving the
+perf_event test until after the credentials
+are committed.
 
-Steps to reproduce the bug:
-
-1. Map a file from hugetlbfs. Initialize pthread_mutex1 at offset 0
-   and pthread_mutex2 at offset PAGE_SIZE of the hugetlbfs
-   mapping.
-
-   The mutexes must be initialized as PTHREAD_PROCESS_SHARED because
-   PTHREAD_PROCESS_PRIVATE mutexes are not affected by this issue as
-   their keys solely depend on the user space address.
-
-2. Lock mutex1 and mutex2
-
-3. Create thread1 and in the thread function lock mutex1, which
-   results in thread1 blocking on the locked mutex1.
-
-4. Create thread2 and in the thread function lock mutex2, which
-   results in thread2 blocking on the locked mutex2.
-
-5. Unlock mutex2. Despite the fact that mutex2 got unlocked, thread2
-   still blocks on mutex2 because the futex_key points to mutex1.
-
-To solve this issue we need to take the normal page index of the page
-which contains the futex into account, if the futex is in an hugetlbfs
-mapping. In other words, we calculate the normal page mapping index of
-the subpage in the hugetlbfs mapping.
-
-Mappings which are not based on hugetlbfs are not affected and still
-use page->index.
-
-Thanks to Mel Gorman who provided a patch for adding proper evaluation
-functions to the hugetlbfs code to avoid exposing hugetlbfs specific
-details to the futex code.
-
-[ tglx: Massaged changelog ]
-
-Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
-Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
-Reviewed-by: 'Mel Gorman' <mgorman@suse.de>
-Acked-by: 'Darren Hart' <dvhart@linux.intel.com>
-Cc: 'Peter Zijlstra' <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/000101ce71a6%24a83c5880%24f8b50980%24@com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[ luis: backported to 3.8: adjusted context ]
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/hugetlb.h | 16 ++++++++++++++++
- kernel/futex.c          |  3 ++-
- mm/hugetlb.c            | 17 +++++++++++++++++
- 3 files changed, 35 insertions(+), 1 deletion(-)
+ fs/exec.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index db695d5..57e2b53 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -354,6 +354,17 @@ static inline int hstate_index(struct hstate *h)
- 	return h - hstates;
- }
- 
-+pgoff_t __basepage_index(struct page *page);
-+
-+/* Return page->index in PAGE_SIZE units */
-+static inline pgoff_t basepage_index(struct page *page)
-+{
-+	if (!PageCompound(page))
-+		return page->index;
-+
-+	return __basepage_index(page);
-+}
-+
- #else	/* CONFIG_HUGETLB_PAGE */
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -374,6 +385,11 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
- }
- #define hstate_index_to_shift(index) 0
- #define hstate_index(h) 0
-+
-+static inline pgoff_t basepage_index(struct page *page)
-+{
-+	return page->index;
-+}
- #endif	/* CONFIG_HUGETLB_PAGE */
- 
- #endif /* _LINUX_HUGETLB_H */
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 8879430..f0ee318 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -60,6 +60,7 @@
- #include <linux/pid.h>
- #include <linux/nsproxy.h>
- #include <linux/ptrace.h>
-+#include <linux/hugetlb.h>
- 
- #include <asm/futex.h>
- 
-@@ -363,7 +364,7 @@ again:
- 	} else {
- 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
- 		key->shared.inode = page_head->mapping->host;
--		key->shared.pgoff = page_head->index;
-+		key->shared.pgoff = basepage_index(page);
+diff --git a/fs/exec.c b/fs/exec.c
+index ac014f1..ea5dc8d 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1136,13 +1136,6 @@ void setup_new_exec(struct linux_binprm * bprm)
+ 			set_dumpable(current->mm, suid_dumpable);
  	}
  
- 	get_futex_key_refs(key);
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index dc66048..430dca0 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -690,6 +690,23 @@ int PageHuge(struct page *page)
- }
- EXPORT_SYMBOL_GPL(PageHuge);
+-	/*
+-	 * Flush performance counters when crossing a
+-	 * security domain:
+-	 */
+-	if (!get_dumpable(current->mm))
+-		perf_event_exit_task(current);
+-
+ 	/* An exec changes our domain. We are no longer part of the thread
+ 	   group */
  
-+pgoff_t __basepage_index(struct page *page)
-+{
-+	struct page *page_head = compound_head(page);
-+	pgoff_t index = page_index(page_head);
-+	unsigned long compound_idx;
+@@ -1206,6 +1199,15 @@ void install_exec_creds(struct linux_binprm *bprm)
+ 
+ 	commit_creds(bprm->cred);
+ 	bprm->cred = NULL;
 +
-+	if (!PageHuge(page_head))
-+		return page_index(page);
-+
-+	if (compound_order(page_head) >= MAX_ORDER)
-+		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
-+	else
-+		compound_idx = page - page_head;
-+
-+	return (index << compound_order(page_head)) + compound_idx;
-+}
-+
- static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
- {
- 	struct page *page;
++	/*
++	 * Disable monitoring for regular users
++	 * when executing setuid binaries. Must
++	 * wait until new credentials are committed
++	 * by commit_creds() above
++	 */
++	if (get_dumpable(current->mm) != SUID_DUMP_USER)
++		perf_event_exit_task(current);
+ 	/*
+ 	 * cred_guard_mutex must be held at least to this point to prevent
+ 	 * ptrace_attach() from altering our determination of the task's
 -- 
 1.8.1.2
 
