@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934549Ab3GQXeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:34:31 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47846 "EHLO hydra.sisk.pl"
+	id S934417Ab3GQXfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:35:32 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47839 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964885Ab3GQX1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:20 -0400
+	id S934241Ab3GQX1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:19 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -13,9 +13,9 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 21/30] ACPI / hotplug / PCI: Do not queue up event handling work items in vain
-Date: Thu, 18 Jul 2013 01:29:44 +0200
-Message-ID: <5427359.BFHA8nOGgM@vostro.rjw.lan>
+Subject: [PATCH 22/30] ACPI / hotplug / PCI: Do not exectute _PS0 and _PS3 directly
+Date: Thu, 18 Jul 2013 01:30:31 +0200
+Message-ID: <2147895.18KNAqILnt@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
 References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
@@ -28,115 +28,218 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Modify handle_hotplug_event() to avoid queing up the execution of
-handle_hotplug_event_work_fn() as a work item on kacpi_hotplug_wq
-for non-hotplug events, such as ACPI_NOTIFY_DEVICE_WAKE.  Move
-the code printing diagnostic messages for those events into
-handle_hotplug_event().
+The ACPI-based PCI hotplug (acpiphp) core code need not and really
+should not execute _PS0 and _PS3 directly for devices it handles.
 
-In addition to that, remove the bogus comment about how the core
-should distinguish between hotplug and non-hotplug events and
-queue them up on different workqueues.  The core clearly cannot
-know in advance what events will be interesting to the given
-caller of acpi_install_notify_handler().
+First of all, it is not necessary to put devices into D3 after
+acpi_bus_trim() has walked through them, because
+acpi_device_unregister() invoked by it puts each device into D3cold
+before returning.  Thus after disable_device() the slot should be
+powered down already.
+
+Second, calling _PS0 directly on ACPI device objects may not be
+appropriate, because it may require power resources to be set up in
+a specific way in advance and that must be taken care of by the ACPI
+core.  Thus modify acpiphp_bus_add() to power up the device using
+the appropriate interface after it has run acpi_bus_scan() on its
+handle.
+
+After that, the functions executing _PS0 and _PS3, power_on_slot()
+and power_off_slot(), are not necessary any more, so drop them
+and update the code calling them accordingly.  Also drop the
+function flags related to device power states, since they aren't
+useful any more too.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   64 ++++++++++++++++---------------------
- 1 file changed, 29 insertions(+), 35 deletions(-)
+ drivers/pci/hotplug/acpiphp.h      |    7 --
+ drivers/pci/hotplug/acpiphp_glue.c |  106 +++----------------------------------
+ 2 files changed, 10 insertions(+), 103 deletions(-)
 
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -920,36 +920,11 @@ static void hotplug_event(acpi_handle ha
+@@ -303,12 +303,6 @@ static acpi_status register_slot(acpi_ha
+ 	if (acpi_has_method(handle, "_STA"))
+ 		newfunc->flags |= FUNC_HAS_STA;
  
- 		break;
+-	if (acpi_has_method(handle, "_PS0"))
+-		newfunc->flags |= FUNC_HAS_PS0;
+-
+-	if (acpi_has_method(handle, "_PS3"))
+-		newfunc->flags |= FUNC_HAS_PS3;
+-
+ 	if (acpi_has_method(handle, "_DCK"))
+ 		newfunc->flags |= FUNC_HAS_DCK;
  
--	case ACPI_NOTIFY_DEVICE_WAKE:
--		/* wake event */
--		dbg("%s: Device wake notify on %s\n", __func__, objname);
--		break;
--
- 	case ACPI_NOTIFY_EJECT_REQUEST:
- 		/* request device eject */
- 		dbg("%s: Device eject notify on %s\n", __func__, objname);
- 		acpiphp_disable_and_eject_slot(func->slot);
- 		break;
--
--	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
--		printk(KERN_ERR "Device %s cannot be configured due"
--				" to a frequency mismatch\n", objname);
--		break;
--
--	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
--		printk(KERN_ERR "Device %s cannot be configured due"
--				" to a bus mode mismatch\n", objname);
--		break;
--
--	case ACPI_NOTIFY_POWER_FAULT:
--		printk(KERN_ERR "Device %s has suffered a power fault\n",
--				objname);
--		break;
--
--	default:
--		warn("notify_handler: unknown event type 0x%x for %s\n", type,
--		     objname);
--		break;
- 	}
+@@ -366,7 +360,7 @@ static acpi_status register_slot(acpi_ha
  
- 	if (bridge)
-@@ -984,23 +959,42 @@ static void handle_hotplug_event(acpi_ha
- {
- 	struct acpiphp_context *context;
+ 	if (pci_bus_read_dev_vendor_id(pbus, PCI_DEVFN(device, function),
+ 				       &val, 60*1000))
+-		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
++		slot->flags |= SLOT_ENABLED;
  
-+	switch (type) {
-+	case ACPI_NOTIFY_BUS_CHECK:
-+	case ACPI_NOTIFY_DEVICE_CHECK:
-+	case ACPI_NOTIFY_EJECT_REQUEST:
-+		break;
-+
-+	case ACPI_NOTIFY_DEVICE_WAKE:
-+		return;
-+
-+	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
-+		acpi_handle_err(handle, "Device cannot be configured due "
-+				"to a frequency mismatch\n");
-+		return;
-+
-+	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
-+		acpi_handle_err(handle, "Device cannot be configured due "
-+				"to a bus mode mismatch\n");
-+		return;
-+
-+	case ACPI_NOTIFY_POWER_FAULT:
-+		acpi_handle_err(handle, "Device has suffered a power fault\n");
-+		return;
-+
-+	default:
-+		acpi_handle_warn(handle, "Unsupported event type 0x%x\n", type);
-+		return;
-+	}
-+
- 	mutex_lock(&acpiphp_context_lock);
- 	context = acpiphp_get_context(handle);
- 	if (context) {
- 		get_bridge(context->func.parent);
- 		acpiphp_put_context(context);
-+		alloc_acpi_hp_work(handle, type, context, hotplug_event_work);
- 	}
- 	mutex_unlock(&acpiphp_context_lock);
--	/*
--	 * Currently the code adds all hotplug events to the kacpid_wq
--	 * queue when it should add hotplug events to the kacpi_hotplug_wq.
--	 * The proper way to fix this is to reorganize the code so that
--	 * drivers (dock, etc.) do not call acpi_os_execute(), etc.
--	 * For now just re-add this work to the kacpi_hotplug_wq so we
--	 * don't deadlock on hotplug actions.
--	 */
--	if (context)
--		alloc_acpi_hp_work(handle, type, context, hotplug_event_work);
+ 	if (is_dock_device(handle)) {
+ 		/* we don't want to call this device's _EJ0
+@@ -446,73 +440,6 @@ static void cleanup_bridge(struct acpiph
+ 	mutex_unlock(&bridge_mutex);
  }
  
- /*
+-static int power_on_slot(struct acpiphp_slot *slot)
+-{
+-	acpi_status status;
+-	struct acpiphp_func *func;
+-	int retval = 0;
+-
+-	/* if already enabled, just skip */
+-	if (slot->flags & SLOT_POWEREDON)
+-		goto err_exit;
+-
+-	list_for_each_entry(func, &slot->funcs, sibling) {
+-		if (func->flags & FUNC_HAS_PS0) {
+-			dbg("%s: executing _PS0\n", __func__);
+-			status = acpi_evaluate_object(func_to_handle(func),
+-						      "_PS0", NULL, NULL);
+-			if (ACPI_FAILURE(status)) {
+-				warn("%s: _PS0 failed\n", __func__);
+-				retval = -1;
+-				goto err_exit;
+-			} else
+-				break;
+-		}
+-	}
+-
+-	/* TBD: evaluate _STA to check if the slot is enabled */
+-
+-	slot->flags |= SLOT_POWEREDON;
+-
+- err_exit:
+-	return retval;
+-}
+-
+-
+-static int power_off_slot(struct acpiphp_slot *slot)
+-{
+-	acpi_status status;
+-	struct acpiphp_func *func;
+-
+-	int retval = 0;
+-
+-	/* if already disabled, just skip */
+-	if ((slot->flags & SLOT_POWEREDON) == 0)
+-		goto err_exit;
+-
+-	list_for_each_entry(func, &slot->funcs, sibling) {
+-		if (func->flags & FUNC_HAS_PS3) {
+-			status = acpi_evaluate_object(func_to_handle(func),
+-						      "_PS3", NULL, NULL);
+-			if (ACPI_FAILURE(status)) {
+-				warn("%s: _PS3 failed\n", __func__);
+-				retval = -1;
+-				goto err_exit;
+-			} else
+-				break;
+-		}
+-	}
+-
+-	/* TBD: evaluate _STA to check if the slot is disabled */
+-
+-	slot->flags &= (~SLOT_POWEREDON);
+-
+- err_exit:
+-	return retval;
+-}
+-
+-
+-
+ /**
+  * acpiphp_max_busnr - return the highest reserved bus number under the given bus.
+  * @bus: bus to start search with
+@@ -559,8 +486,13 @@ static void acpiphp_bus_trim(acpi_handle
+  */
+ static void acpiphp_bus_add(acpi_handle handle)
+ {
++	struct acpi_device *adev = NULL;
++
+ 	acpiphp_bus_trim(handle);
+ 	acpi_bus_scan(handle);
++	acpi_bus_get_device(handle, &adev);
++	if (adev)
++		acpi_device_set_power(adev, ACPI_STATE_D0);
+ }
+ 
+ static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
+@@ -1095,23 +1027,8 @@ int acpiphp_enable_slot(struct acpiphp_s
+ 	int retval;
+ 
+ 	mutex_lock(&slot->crit_sect);
+-
+-	/* wake up all functions */
+-	retval = power_on_slot(slot);
+-	if (retval)
+-		goto err_exit;
+-
+-	if (get_slot_status(slot) == ACPI_STA_ALL) {
+-		/* configure all functions */
+-		retval = enable_device(slot);
+-		if (retval)
+-			power_off_slot(slot);
+-	} else {
+-		dbg("%s: Slot status is not ACPI_STA_ALL\n", __func__);
+-		power_off_slot(slot);
+-	}
+-
+- err_exit:
++	/* configure all functions */
++	retval = enable_device(slot);
+ 	mutex_unlock(&slot->crit_sect);
+ 	return retval;
+ }
+@@ -1132,11 +1049,6 @@ int acpiphp_disable_and_eject_slot(struc
+ 	if (retval)
+ 		goto err_exit;
+ 
+-	/* power off all functions */
+-	retval = power_off_slot(slot);
+-	if (retval)
+-		goto err_exit;
+-
+ 	list_for_each_entry(func, &slot->funcs, sibling)
+ 		if (func->flags & FUNC_HAS_EJ0) {
+ 			acpi_handle handle = func_to_handle(func);
+@@ -1159,7 +1071,7 @@ int acpiphp_disable_and_eject_slot(struc
+  */
+ u8 acpiphp_get_power_status(struct acpiphp_slot *slot)
+ {
+-	return (slot->flags & SLOT_POWEREDON);
++	return (slot->flags & SLOT_ENABLED);
+ }
+ 
+ 
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -162,7 +162,6 @@ struct acpiphp_attention_info
+ 
+ /* slot flags */
+ 
+-#define SLOT_POWEREDON		(0x00000001)
+ #define SLOT_ENABLED		(0x00000002)
+ #define SLOT_MULTIFUNCTION	(0x00000004)
+ 
+@@ -170,11 +169,7 @@ struct acpiphp_attention_info
+ 
+ #define FUNC_HAS_STA		(0x00000001)
+ #define FUNC_HAS_EJ0		(0x00000002)
+-#define FUNC_HAS_PS0		(0x00000010)
+-#define FUNC_HAS_PS1		(0x00000020)
+-#define FUNC_HAS_PS2		(0x00000040)
+-#define FUNC_HAS_PS3		(0x00000080)
+-#define FUNC_HAS_DCK            (0x00000100)
++#define FUNC_HAS_DCK            (0x00000004)
+ 
+ /* function prototypes */
+ 
 
