@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933690Ab3GQWv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:51:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56325 "EHLO
+	id S934086Ab3GQWva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:51:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56336 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab3GQWvW (ORCPT
+	with ESMTP id S932490Ab3GQWv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:51:22 -0400
+	Wed, 17 Jul 2013 18:51:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+Cc: Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 127/145] parisc: Fix gcc miscompilation in pa_memcpy()
-Date: Wed, 17 Jul 2013 15:47:39 -0700
-Message-Id: <1374101277-7915-128-git-send-email-kamal@canonical.com>
+Subject: [PATCH 129/145] dm mpath: fix ioctl deadlock when no paths
+Date: Wed, 17 Jul 2013 15:47:41 -0700
+Message-Id: <1374101277-7915-130-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,231 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 5b879d78bc0818aa710f5d4d9abbfc2aca075cc3 upstream.
+commit 6c182cd88d179cbbd06f4f8a8a19b6977940753f upstream.
 
-When running the LTP testsuite one may hit this kernel BUG() with the
-write06 testcase:
+When multipath needs to retry an ioctl the reference to the
+current live table needs to be dropped. Otherwise a deadlock
+occurs when all paths are down:
+- dm_blk_ioctl takes a reference to the current table
+  and spins in multipath_ioctl().
+- A new table is being loaded, but upon resume the process
+  hangs in dm_table_destroy() waiting for references to
+  drop to zero.
 
-kernel BUG at mm/filemap.c:2023!
-CPU: 1 PID: 8614 Comm: writev01 Not tainted 3.10.0-rc7-64bit-c3000+ #6
-IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000401e6e84 00000000401e6e88
- IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000001fbe0380820
- CPU:        1   CR30: 00000000bef80000 CR31: ffffffffffffffff
- ORIG_R28: 00000000bdc192c0
- IAOQ[0]: iov_iter_advance+0x3c/0xc0
- IAOQ[1]: iov_iter_advance+0x40/0xc0
- RP(r2): generic_file_buffered_write+0x204/0x3f0
-Backtrace:
- [<00000000401e764c>] generic_file_buffered_write+0x204/0x3f0
- [<00000000401eab24>] __generic_file_aio_write+0x244/0x448
- [<00000000401eadc0>] generic_file_aio_write+0x98/0x150
- [<000000004024f460>] do_sync_readv_writev+0xc0/0x130
- [<000000004025037c>] compat_do_readv_writev+0x12c/0x340
- [<00000000402505f8>] compat_writev+0x68/0xa0
- [<0000000040251d88>] compat_SyS_writev+0x98/0xf8
+With this patch the reference to the old table is dropped
+prior to retry, thereby avoiding the deadlock.
 
-Reason for this crash is a gcc miscompilation in the fault handlers of
-pa_memcpy() which return the fault address instead of the copied bytes.
-Since this seems to be a generic problem with gcc-4.7.x (and below), it's
-better to simplify the fault handlers in pa_memcpy to avoid this problem.
-
-Here is a simple reproducer for the problem:
-
-int main(int argc, char **argv)
-{
-	int fd, nbytes;
-	struct iovec wr_iovec[] = {
-		{ "TEST STRING                     ",32},
-		{ (char*)0x40005000,32} }; // random memory.
-	fd = open(DATA_FILE, O_RDWR | O_CREAT, 0666);
-	nbytes = writev(fd, wr_iovec, 2);
-	printf("return value = %d, errno %d (%s)\n",
-		nbytes, errno, strerror(errno));
-	return 0;
-}
-
-In addition, John David Anglin wrote:
-There is no gcc PR as pa_memcpy is not legitimate C code. There is an
-implicit assumption that certain variables will contain correct values
-when an exception occurs and the code randomly jumps to one of the
-exception blocks.  There is no guarantee of this.  If a PR was filed, it
-would likely be marked as invalid.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Cc: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/parisc/lib/memcpy.c | 79 ++++++++++++++++++++++++++++++------------------
- 1 file changed, 50 insertions(+), 29 deletions(-)
+ drivers/md/dm-mpath.c | 8 ++------
+ drivers/md/dm.c       | 9 ++++++++-
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/arch/parisc/lib/memcpy.c b/arch/parisc/lib/memcpy.c
-index 1dbca5c..8d5c48b 100644
---- a/arch/parisc/lib/memcpy.c
-+++ b/arch/parisc/lib/memcpy.c
-@@ -2,6 +2,7 @@
-  *    Optimized memory copy routines.
-  *
-  *    Copyright (C) 2004 Randolph Chung <tausq@debian.org>
-+ *    Copyright (C) 2013 Helge Deller <deller@gmx.de>
-  *
-  *    This program is free software; you can redistribute it and/or modify
-  *    it under the terms of the GNU General Public License as published by
-@@ -153,17 +154,21 @@ static inline void prefetch_dst(const void *addr)
- #define prefetch_dst(addr) do { } while(0)
- #endif
+diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
+index d267bb5..9f330c1 100644
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -1560,7 +1560,6 @@ static int multipath_ioctl(struct dm_target *ti, unsigned int cmd,
+ 	unsigned long flags;
+ 	int r;
  
-+#define PA_MEMCPY_OK		0
-+#define PA_MEMCPY_LOAD_ERROR	1
-+#define PA_MEMCPY_STORE_ERROR	2
-+
- /* Copy from a not-aligned src to an aligned dst, using shifts. Handles 4 words
-  * per loop.  This code is derived from glibc. 
-  */
--static inline unsigned long copy_dstaligned(unsigned long dst, unsigned long src, unsigned long len, unsigned long o_dst, unsigned long o_src, unsigned long o_len)
-+static inline unsigned long copy_dstaligned(unsigned long dst,
-+					unsigned long src, unsigned long len)
- {
- 	/* gcc complains that a2 and a3 may be uninitialized, but actually
- 	 * they cannot be.  Initialize a2/a3 to shut gcc up.
- 	 */
- 	register unsigned int a0, a1, a2 = 0, a3 = 0;
- 	int sh_1, sh_2;
--	struct exception_data *d;
- 
- 	/* prefetch_src((const void *)src); */
- 
-@@ -197,7 +202,7 @@ static inline unsigned long copy_dstaligned(unsigned long dst, unsigned long src
- 			goto do2;
- 		case 0:
- 			if (len == 0)
--				return 0;
-+				return PA_MEMCPY_OK;
- 			/* a3 = ((unsigned int *) src)[0];
- 			   a0 = ((unsigned int *) src)[1]; */
- 			ldw(s_space, 0, src, a3, cda_ldw_exc);
-@@ -256,42 +261,35 @@ do0:
- 	preserve_branch(handle_load_error);
- 	preserve_branch(handle_store_error);
- 
--	return 0;
-+	return PA_MEMCPY_OK;
- 
- handle_load_error:
- 	__asm__ __volatile__ ("cda_ldw_exc:\n");
--	d = &__get_cpu_var(exception_data);
--	DPRINTF("cda_ldw_exc: o_len=%lu fault_addr=%lu o_src=%lu ret=%lu\n",
--		o_len, d->fault_addr, o_src, o_len - d->fault_addr + o_src);
--	return o_len * 4 - d->fault_addr + o_src;
-+	return PA_MEMCPY_LOAD_ERROR;
- 
- handle_store_error:
- 	__asm__ __volatile__ ("cda_stw_exc:\n");
--	d = &__get_cpu_var(exception_data);
--	DPRINTF("cda_stw_exc: o_len=%lu fault_addr=%lu o_dst=%lu ret=%lu\n",
--		o_len, d->fault_addr, o_dst, o_len - d->fault_addr + o_dst);
--	return o_len * 4 - d->fault_addr + o_dst;
-+	return PA_MEMCPY_STORE_ERROR;
- }
- 
- 
--/* Returns 0 for success, otherwise, returns number of bytes not transferred. */
--static unsigned long pa_memcpy(void *dstp, const void *srcp, unsigned long len)
-+/* Returns PA_MEMCPY_OK, PA_MEMCPY_LOAD_ERROR or PA_MEMCPY_STORE_ERROR.
-+ * In case of an access fault the faulty address can be read from the per_cpu
-+ * exception data struct. */
-+static unsigned long pa_memcpy_internal(void *dstp, const void *srcp,
-+					unsigned long len)
- {
- 	register unsigned long src, dst, t1, t2, t3;
- 	register unsigned char *pcs, *pcd;
- 	register unsigned int *pws, *pwd;
- 	register double *pds, *pdd;
--	unsigned long ret = 0;
--	unsigned long o_dst, o_src, o_len;
--	struct exception_data *d;
-+	unsigned long ret;
- 
- 	src = (unsigned long)srcp;
- 	dst = (unsigned long)dstp;
- 	pcs = (unsigned char *)srcp;
- 	pcd = (unsigned char *)dstp;
- 
--	o_dst = dst; o_src = src; o_len = len;
--
- 	/* prefetch_src((const void *)srcp); */
- 
- 	if (len < THRESHOLD)
-@@ -401,7 +399,7 @@ byte_copy:
- 		len--;
+-again:
+ 	bdev = NULL;
+ 	mode = 0;
+ 	r = 0;
+@@ -1578,7 +1577,7 @@ again:
  	}
  
--	return 0;
-+	return PA_MEMCPY_OK;
+ 	if ((pgpath && m->queue_io) || (!pgpath && m->queue_if_no_path))
+-		r = -EAGAIN;
++		r = -ENOTCONN;
+ 	else if (!bdev)
+ 		r = -EIO;
  
- unaligned_copy:
- 	/* possibly we are aligned on a word, but not on a double... */
-@@ -438,8 +436,7 @@ unaligned_copy:
- 		src = (unsigned long)pcs;
- 	}
+@@ -1590,11 +1589,8 @@ again:
+ 	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
+ 		r = scsi_verify_blk_ioctl(NULL, cmd);
  
--	ret = copy_dstaligned(dst, src, len / sizeof(unsigned int), 
--		o_dst, o_src, o_len);
-+	ret = copy_dstaligned(dst, src, len / sizeof(unsigned int));
- 	if (ret)
- 		return ret;
+-	if (r == -EAGAIN && !fatal_signal_pending(current)) {
++	if (r == -ENOTCONN && !fatal_signal_pending(current))
+ 		queue_work(kmultipathd, &m->process_queued_ios);
+-		msleep(10);
+-		goto again;
+-	}
  
-@@ -454,17 +451,41 @@ unaligned_copy:
+ 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
+ }
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 0d8f086..6a82721 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -404,10 +404,12 @@ static int dm_blk_ioctl(struct block_device *bdev, fmode_t mode,
+ 			unsigned int cmd, unsigned long arg)
+ {
+ 	struct mapped_device *md = bdev->bd_disk->private_data;
+-	struct dm_table *map = dm_get_live_table(md);
++	struct dm_table *map;
+ 	struct dm_target *tgt;
+ 	int r = -ENOTTY;
  
- handle_load_error:
- 	__asm__ __volatile__ ("pmc_load_exc:\n");
--	d = &__get_cpu_var(exception_data);
--	DPRINTF("pmc_load_exc: o_len=%lu fault_addr=%lu o_src=%lu ret=%lu\n",
--		o_len, d->fault_addr, o_src, o_len - d->fault_addr + o_src);
--	return o_len - d->fault_addr + o_src;
-+	return PA_MEMCPY_LOAD_ERROR;
++retry:
++	map = dm_get_live_table(md);
+ 	if (!map || !dm_table_get_size(map))
+ 		goto out;
  
- handle_store_error:
- 	__asm__ __volatile__ ("pmc_store_exc:\n");
-+	return PA_MEMCPY_STORE_ERROR;
-+}
+@@ -428,6 +430,11 @@ static int dm_blk_ioctl(struct block_device *bdev, fmode_t mode,
+ out:
+ 	dm_table_put(map);
+ 
++	if (r == -ENOTCONN) {
++		msleep(10);
++		goto retry;
++	}
 +
-+
-+/* Returns 0 for success, otherwise, returns number of bytes not transferred. */
-+static unsigned long pa_memcpy(void *dstp, const void *srcp, unsigned long len)
-+{
-+	unsigned long ret, fault_addr, reference;
-+	struct exception_data *d;
-+
-+	ret = pa_memcpy_internal(dstp, srcp, len);
-+	if (likely(ret == PA_MEMCPY_OK))
-+		return 0;
-+
-+	/* if a load or store fault occured we can get the faulty addr */
- 	d = &__get_cpu_var(exception_data);
--	DPRINTF("pmc_store_exc: o_len=%lu fault_addr=%lu o_dst=%lu ret=%lu\n",
--		o_len, d->fault_addr, o_dst, o_len - d->fault_addr + o_dst);
--	return o_len - d->fault_addr + o_dst;
-+	fault_addr = d->fault_addr;
-+
-+	/* error in load or store? */
-+	if (ret == PA_MEMCPY_LOAD_ERROR)
-+		reference = (unsigned long) srcp;
-+	else
-+		reference = (unsigned long) dstp;
-+
-+	DPRINTF("pa_memcpy: fault type = %lu, len=%lu fault_addr=%lu ref=%lu\n",
-+		ret, len, fault_addr, reference);
-+
-+	if (fault_addr >= reference)
-+		return len - (fault_addr - reference);
-+	else
-+		return len;
+ 	return r;
  }
  
- #ifdef __KERNEL__
 -- 
 1.8.1.2
 
