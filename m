@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965060Ab3GQXHu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:07:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56748 "EHLO
+	id S934515Ab3GQW40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:56:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56716 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934529Ab3GQW42 (ORCPT
+	with ESMTP id S933707Ab3GQW4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:28 -0400
+	Wed, 17 Jul 2013 18:56:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Jan Kara <jack@suse.cz>, Benjamin LaHaise <bcrl@kvack.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 084/145] tracing: Use current_uid() for critical time tracing
-Date: Wed, 17 Jul 2013 15:46:56 -0700
-Message-Id: <1374101277-7915-85-git-send-email-kamal@canonical.com>
+Subject: [PATCH 070/145] ext3: fix data=journal fast mount/umount hang
+Date: Wed, 17 Jul 2013 15:46:42 -0700
+Message-Id: <1374101277-7915-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,103 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Jan Kara <jack@suse.cz>
 
-commit f17a5194859a82afe4164e938b92035b86c55794 upstream.
+commit e643692138cfa33528f054b071ba2583509bb217 upstream.
 
-The irqsoff tracer records the max time that interrupts are disabled.
-There are hooks in the assembly code that calls back into the tracer when
-interrupts are disabled or enabled.
+In data=journal mode, if we unmount the file system before a
+transaction has a chance to complete, when the journal inode is being
+evicted, we can end up calling into log_wait_commit() for the
+last transaction, after the journalling machinery has been shut down.
+That triggers the WARN_ONCE in __log_start_commit().
 
-When they are enabled, the tracer checks if the amount of time they
-were disabled is larger than the previous recorded max interrupts off
-time. If it is, it creates a snapshot of the currently running trace
-to store where the last largest interrupts off time was held and how
-it happened.
+Arguably we should adjust ext3_should_journal_data() to return FALSE
+for the journal inode, but the only place it matters is
+ext3_evict_inode(), and so it's to save a bit of CPU time, and to make
+the patch much more obviously correct by inspection(tm), we'll fix it
+by explicitly not trying to waiting for a journal commit when we are
+evicting the journal inode, since it's guaranteed to never succeed in
+this case.
 
-During testing, this RCU lockdep dump appeared:
+This can be easily replicated via:
 
-[ 1257.829021] ===============================
-[ 1257.829021] [ INFO: suspicious RCU usage. ]
-[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
-[ 1257.829021] -------------------------------
-[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
-[ 1257.829021]
-[ 1257.829021] other info that might help us debug this:
-[ 1257.829021]
-[ 1257.829021]
-[ 1257.829021] RCU used illegally from idle CPU!
-[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
-[ 1257.829021] RCU used illegally from extended quiescent state!
-[ 1257.829021] 2 locks held by trace-cmd/4831:
-[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
-[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
-[ 1257.829021]
-[ 1257.829021] stack backtrace:
-[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
-[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
-[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
-[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
-[ 1257.829021] Call Trace:
-[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
-[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
-[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
-[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
-[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
-[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
-[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
-[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
+     mount -t ext3 -o data=journal /dev/vdb /vdb ; umount /vdb
 
-What happened was entering into the user code, the interrupts were enabled
-and a max interrupts off was recorded. The trace buffer was saved along with
-various information about the task: comm, pid, uid, priority, etc.
+This is a port of ext4 fix from Ted Ts'o.
 
-The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
-to retrieve the data, and this happened to happen where RCU is blind (user_enter).
-
-As only the preempt and irqs off tracers can have this happen, and they both
-only have the tsk == current, if tsk == current, use current_uid() instead of
-task_uid(), as current_uid() does not use RCU as only current can change its uid.
-
-This fixes the RCU suspicious splat.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/ext3/inode.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 55a9d05..98937b6 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -682,7 +682,15 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index b176d42..f790d6e 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -218,7 +218,8 @@ void ext3_evict_inode (struct inode *inode)
+ 	 */
+ 	if (inode->i_nlink && ext3_should_journal_data(inode) &&
+ 	    EXT3_SB(inode->i_sb)->s_journal &&
+-	    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode))) {
++	    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode)) &&
++	    inode->i_ino != EXT3_JOURNAL_INO) {
+ 		tid_t commit_tid = atomic_read(&ei->i_datasync_tid);
+ 		journal_t *journal = EXT3_SB(inode->i_sb)->s_journal;
  
- 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
- 	max_data->pid = tsk->pid;
--	max_data->uid = task_uid(tsk);
-+	/*
-+	 * If tsk == current, then use current_uid(), as that does not use
-+	 * RCU. The irq tracer can be called out of RCU scope.
-+	 */
-+	if (tsk == current)
-+		max_data->uid = current_uid();
-+	else
-+		max_data->uid = task_uid(tsk);
-+
- 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
- 	max_data->policy = tsk->policy;
- 	max_data->rt_priority = tsk->rt_priority;
 -- 
 1.8.1.2
 
