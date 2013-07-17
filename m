@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934395Ab3GQXSn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:18:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56502 "EHLO
+	id S934384Ab3GQXTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:19:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56492 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934348Ab3GQWyn (ORCPT
+	with ESMTP id S934335Ab3GQWyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:54:43 -0400
+	Wed, 17 Jul 2013 18:54:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+Cc: Paul Clements <paul.clements@steeleye.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 063/145] block: do not pass disk names as format strings
-Date: Wed, 17 Jul 2013 15:46:35 -0700
-Message-Id: <1374101277-7915-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 067/145] nbd: correct disconnect behavior
+Date: Wed, 17 Jul 2013 15:46:39 -0700
+Message-Id: <1374101277-7915-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -29,69 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Paul Clements <paul.clements@steeleye.com>
 
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
+commit c378f70adbc1bbecd9e6db145019f14b2f688c7c upstream.
 
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
+Currently, when a disconnect is requested by the user (via NBD_DISCONNECT
+ioctl) the return from NBD_DO_IT is undefined (it is usually one of
+several error codes).  This means that nbd-client does not know if a
+manual disconnect was performed or whether a network error occurred.
+Because of this, nbd-client's persist mode (which tries to reconnect after
+error, but not after manual disconnect) does not always work correctly.
 
-CVE-2013-2851
+This change fixes this by causing NBD_DO_IT to always return 0 if a user
+requests a disconnect.  This means that nbd-client can correctly either
+persist the connection (if an error occurred) or disconnect (if the user
+requested it).
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Acked-by: Rob Landley <rob@landley.net>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.8: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/genhd.c              | 2 +-
- drivers/block/nbd.c        | 3 ++-
- drivers/scsi/osd/osd_uld.c | 2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/block/nbd.c | 7 ++++++-
+ include/linux/nbd.h | 1 +
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 7dcfdd8..b596dfc 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -520,7 +520,7 @@ static void register_disk(struct gendisk *disk)
- 
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
 diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index eb591fb..0f9262e 100644
+index 0f9262e..e6ea105 100644
 --- a/drivers/block/nbd.c
 +++ b/drivers/block/nbd.c
-@@ -694,7 +694,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
- 				nbd->disk->queue);
+@@ -609,8 +609,10 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		if (!nbd->sock)
+ 			return -EINVAL;
  
--		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
-+		thread = kthread_create(nbd_thread, nbd, "%s",
-+					nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
- 			return PTR_ERR(thread);
-diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-index 4375417..599415e 100644
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -493,7 +493,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
++		nbd->disconnect = 1;
++
+ 		nbd_send_req(nbd, &sreq);
+-                return 0;
++		return 0;
+ 	}
+  
+ 	case NBD_CLEAR_SOCK: {
+@@ -640,6 +642,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 				nbd->sock = SOCKET_I(inode);
+ 				if (max_part > 0)
+ 					bdev->bd_invalidated = 1;
++				nbd->disconnect = 0; /* we're connected now */
+ 				return 0;
+ 			} else {
+ 				fput(file);
+@@ -721,6 +724,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		set_capacity(nbd->disk, 0);
+ 		if (max_part > 0)
+ 			ioctl_by_bdev(bdev, BLKRRPART, 0);
++		if (nbd->disconnect) /* user requested, ignore socket errors */
++			return 0;
+ 		return nbd->harderror;
+ 	}
+ 
+diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+index 4871170..ae4981e 100644
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -41,6 +41,7 @@ struct nbd_device {
+ 	u64 bytesize;
+ 	pid_t pid; /* pid of nbd-client, if attached */
+ 	int xmit_timeout;
++	int disconnect; /* a disconnect has been requested by user */
+ };
+ 
+ #endif
 -- 
 1.8.1.2
 
