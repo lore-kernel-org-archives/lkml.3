@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab3GQIFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 04:05:52 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18030 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab3GQIFh (ORCPT
+	id S1752240Ab3GQIIW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 04:08:22 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54221 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab3GQIIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 04:05:37 -0400
-Date: Wed, 17 Jul 2013 11:04:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>, stable <stable@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Message-ID: <20130717080447.GB5585@mwanda>
-References: <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
- <1373926109.17876.221.camel@gandalf.local.home>
- <20130715223615.GI15531@xanatos>
- <1373932170.28142.24.camel@envy.home>
- <864nbv9qcm.fsf@void.printf.net>
- <1373944014.17876.255.camel@gandalf.local.home>
- <51E4BFA9.1030600@zytor.com>
- <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 17 Jul 2013 04:08:19 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-d3-51e650f13c1e
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf symbol: Do not apply symfs for an absolute vmlinux path
+Date: Wed, 17 Jul 2013 17:08:15 +0900
+Message-Id: <1374048495-3643-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 04:49:27PM +0100, Stefano Stabellini wrote:
-> The etiquette on the lkml is by far the roughest of them all. It's the
-> "bad neighborhood with guns" of the Open Source world. You never know
-> when you are going to get a bullet, but sooner or later you'll get one.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Only Andrew Morton actually reads LKML.  These days kernel dev work
-takes place on subsystem lists.  I wonder if some mailing lists are
-worse than others?  From what I have seen people are mostly civil.
+If an user gives both of --symfs and --vmlinux option, the vmlinux
+will be searched under the symfs directory.  This is somewhat
+confusing since vmlinux often lives in kernel build directory or
+somewhere other than user space binaries.
 
-regards,
-dan carpenter
+So it'd be better not adding symfs prefix for a vmlinux if it has an
+absolute pathname.
+
+Reported-by: Kwanghyun Yoo <ykh815.yoo@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/symbol.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index d5528e1cc03a..02718e728d59 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -888,8 +888,11 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	char symfs_vmlinux[PATH_MAX];
+ 	enum dso_binary_type symtab_type;
+ 
+-	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
+-		 symbol_conf.symfs, vmlinux);
++	if (vmlinux[0] == '/')
++		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s", vmlinux);
++	else
++		snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
++			 symbol_conf.symfs, vmlinux);
+ 
+ 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+ 		symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
+-- 
+1.7.11.7
+
