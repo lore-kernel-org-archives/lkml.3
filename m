@@ -1,151 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab3GQUdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 16:33:01 -0400
-Received: from 18.mo1.mail-out.ovh.net ([46.105.35.72]:47538 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751371Ab3GQUc7 (ORCPT
+	id S1753883Ab3GQUes (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 16:34:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55532 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab3GQUeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 16:32:59 -0400
-X-Greylist: delayed 20571 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 16:32:59 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v2 42/42] ARM: at91/dt: move sama5d3 boards to new at91 clk implem
-Date: Wed, 17 Jul 2013 22:32:51 +0200
-Message-Id: <1374093171-22330-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 18400863653814761580
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 17 Jul 2013 16:34:46 -0400
+Message-ID: <51E6FFD2.7010505@canonical.com>
+Date: Wed, 17 Jul 2013 16:34:26 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: matthew.garrett@nebula.com
+CC: matt.fleming@intel.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com, x86@kernel.org,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Brad Figg <brad.figg@canonical.com>
+Subject: [RESEND][v3.8] [v3.9] [v3.10] [Regression]  efi: be more paranoid
+ about available space when creating variables
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define the main clock frequency in every sama5d3 boards.
-Remove the old main clock definition.
-Include the appropriate peripheral options according to peripherals
-availability.
+Hi Matthew,
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/boot/dts/sama5d31ek.dts  |    4 ++++
- arch/arm/boot/dts/sama5d33ek.dts  |    2 ++
- arch/arm/boot/dts/sama5d34ek.dts  |    4 ++++
- arch/arm/boot/dts/sama5d35ek.dts  |    6 ++++++
- arch/arm/boot/dts/sama5d3xcm.dtsi |   17 ++++++-----------
- 5 files changed, 22 insertions(+), 11 deletions(-)
+A bug was opened that reports a regression that prevents a system from
+booting[0].  After a kernel bisect, it was found that reverting the
+following commit resolved this bug:
 
-diff --git a/arch/arm/boot/dts/sama5d31ek.dts b/arch/arm/boot/dts/sama5d31ek.dts
-index 027bac7..4628533 100644
---- a/arch/arm/boot/dts/sama5d31ek.dts
-+++ b/arch/arm/boot/dts/sama5d31ek.dts
-@@ -9,6 +9,10 @@
- /dts-v1/;
- #include "sama5d3xmb.dtsi"
- #include "sama5d3xdm.dtsi"
-+#include "sama5d3_lcd.dtsi"
-+#include "sama5d3_emac.dtsi"
-+#include "sama5d3_mci2.dtsi"
-+#include "sama5d3_uart.dtsi"
- 
- / {
- 	model = "Atmel SAMA5D31-EK";
-diff --git a/arch/arm/boot/dts/sama5d33ek.dts b/arch/arm/boot/dts/sama5d33ek.dts
-index 99bd0c8..5aa32f5 100644
---- a/arch/arm/boot/dts/sama5d33ek.dts
-+++ b/arch/arm/boot/dts/sama5d33ek.dts
-@@ -9,6 +9,8 @@
- /dts-v1/;
- #include "sama5d3xmb.dtsi"
- #include "sama5d3xdm.dtsi"
-+#include "sama5d3_lcd.dtsi"
-+#include "sama5d3_gmac.dtsi"
- 
- / {
- 	model = "Atmel SAMA5D33-EK";
-diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
-index fb8ee11..272a611 100644
---- a/arch/arm/boot/dts/sama5d34ek.dts
-+++ b/arch/arm/boot/dts/sama5d34ek.dts
-@@ -9,6 +9,10 @@
- /dts-v1/;
- #include "sama5d3xmb.dtsi"
- #include "sama5d3xdm.dtsi"
-+#include "sama5d3_lcd.dtsi"
-+#include "sama5d3_gmac.dtsi"
-+#include "sama5d3_can.dtsi"
-+#include "sama5d3_mci2.dtsi"
- 
- / {
- 	model = "Atmel SAMA5D34-EK";
-diff --git a/arch/arm/boot/dts/sama5d35ek.dts b/arch/arm/boot/dts/sama5d35ek.dts
-index 509a53d..155bb9d 100644
---- a/arch/arm/boot/dts/sama5d35ek.dts
-+++ b/arch/arm/boot/dts/sama5d35ek.dts
-@@ -8,6 +8,12 @@
-  */
- /dts-v1/;
- #include "sama5d3xmb.dtsi"
-+#include "sama5d3_gmac.dtsi"
-+#include "sama5d3_emac.dtsi"
-+#include "sama5d3_can.dtsi"
-+#include "sama5d3_mci2.dtsi"
-+#include "sama5d3_uart.dtsi"
-+#include "sama5d3_tcb1.dtsi"
- 
- / {
- 	model = "Atmel SAMA5D35-EK";
-diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-index 1f80508..f58aa43 100644
---- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-@@ -19,17 +19,6 @@
- 		reg = <0x20000000 0x20000000>;
- 	};
- 
--	clocks {
--		#address-cells = <1>;
--		#size-cells = <1>;
--		ranges;
--
--		main_clock: clock@0 {
--			compatible = "atmel,osc", "fixed-clock";
--			clock-frequency = <12000000>;
--		};
--	};
--
- 	ahb {
- 		apb {
- 			spi0: spi@f0004000 {
-@@ -39,6 +28,12 @@
- 			macb0: ethernet@f0028000 {
- 				phy-mode = "rgmii";
- 			};
-+
-+			pmc: pmc@fffffc00 {
-+				main: mainck {
-+					clock-frequency = <12000000>;
-+				};
-+			};
- 		};
- 
- 		nand0: nand@60000000 {
--- 
-1.7.9.5
+commit 68d929862e29a8b52a7f2f2f86a0600423b093cd
+Author: Matthew Garrett <matthew.garrett@nebula.com>
+Date:   Sat Mar 2 19:40:17 2013 -0500
+
+    efi: be more paranoid about available space when creating variables
+
+
+The regression was introduced as of v3.9-rc2, but it also made it's way
+into the stable trees(Commit 9f677cf in v3.8).
+
+I see the following commit was introduced to address this issue:
+
+commit 31ff2f20d9003e74991d135f56e503fe776c127c
+Author: Matthew Garrett <matthew.garrett@nebula.com>
+Date:   Mon Apr 15 13:09:47 2013 -0700
+
+    efi: Distinguish between "remaining space" and actually used space
+
+However, the issue still in 3.9.4, 3.10-rc3 and v3.8.13 after
+backporting 31ff2f2.
+
+I see that you are the author of this patch, so I wanted to run this by
+you and see if reverting commit 68d9298 is an option.  There are several
+folks reporting this, so it should be easy to collect any additional
+data/information or perform testing, if needed.
+
+
+Thanks,
+
+Joe
+
+[0] http://pad.lv/1173423
 
