@@ -1,123 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab3GQQUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:20:43 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:50172 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab3GQQUl (ORCPT
+	id S1756519Ab3GQQVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:21:23 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42868 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052Ab3GQQVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:20:41 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-52-51e6c457df6c
-Message-id: <51E6C455.5080907@samsung.com>
-Date: Wed, 17 Jul 2013 18:20:37 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH RFC FINAL v5] media: OF: add "sync-on-green-active" property
-References: <1374076022-10960-1-git-send-email-prabhakar.csengg@gmail.com>
-In-reply-to: <1374076022-10960-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xy7rhR54FGrybxWJx7lYDq8WB2Q9Z
-	LRa2LWGxuLxrDptFz4atrBYv769gdmDz2DnrLrvHnGlNLB7nZyxk9Pi8SS6AJYrLJiU1J7Ms
-	tUjfLoEr48nP24wFnVIV+/ofMzUwzhHtYuTkkBAwkZi+cgcLhC0mceHeerYuRi4OIYGljBKH
-	W66wgSSEBD4xSuz8ogNi8wpoSdx5sp8VxGYRUJVYuq+XGcRmEzCU6D3axwhiiwoESCxeco4d
-	ol5Q4sfke2ALRAT0JJYsOAZWzyxwDGjmtigQWxiovnPhSUaIXV4S2y79A6vhFPCW+P+0hx2i
-	Xkdif+s0NghbXmLzmrfMExgFZiFZMQtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn
-	525ihAT0lx2Mi49ZHWIU4GBU4uGdGPY0UIg1say4MvcQowQHs5II78ElzwKFeFMSK6tSi/Lj
-	i0pzUosPMTJxcEo1MHJ7KXKsiHtjOI9/2USjhNrLp6xizq3cJWBl/WeznmKPRs2Ea75X7Zbv
-	FljA+sMj48+BaUWcmf1ss1Y0e3grbW7+ekN7gWTrwp0/70YmLgGGiFSnQOiLr7/a5kQtC3Wd
-	J/z7EwPHKr69uzSbZpTn3PRSbd3302luV64Q+/EzHhvXin8uuOO3U4mlOCPRUIu5qDgRAHsm
-	R2JGAgAA
+	Wed, 17 Jul 2013 12:21:21 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v3] media: i2c: tvp7002: add OF support
+Date: Wed, 17 Jul 2013 21:50:16 +0530
+Message-Id: <1374078016-17122-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 05:47 PM, Prabhakar Lad wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
-> This patch adds 'sync-on-green-active' property as part
-> of endpoint property.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Thanks Prabhakar, it looks good to me.
-Just a side note, the 'From' tag above isn't needed. It wasn't
-added automatically, was it ?
-Unless there are comments from others I think this patch should
-be merged together with the users of this new property.
+add OF support for the tvp7002 driver.
 
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ This patch depends on https://patchwork.kernel.org/patch/2828800/
+ 
+ Changes for v3:
+ 1: Fixed review comments pointed by Sylwester.
+ 
+ .../devicetree/bindings/media/i2c/tvp7002.txt      |   43 +++++++++++++
+ drivers/media/i2c/tvp7002.c                        |   67 ++++++++++++++++++--
+ 2 files changed, 103 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp7002.txt
 
-Regards,
-Sylwester
-> ---
->   Changes for v5:
->   1: Changed description for sync-on-green-active property in
->      documentation file as suggested by Sylwester.
->   
->   Changes for v4:
->   1: Fixed review comments pointed by Sylwester.
-> 
->   Changes for v3:
->   1: Fixed review comments pointed by Laurent and Sylwester.
-> 
->   RFC v2 https://patchwork.kernel.org/patch/2578091/
-> 
->   RFC V1 https://patchwork.kernel.org/patch/2572341/
-> 
->  .../devicetree/bindings/media/video-interfaces.txt |    2 ++
->  drivers/media/v4l2-core/v4l2-of.c                  |    4 ++++
->  include/media/v4l2-mediabus.h                      |    2 ++
->  3 files changed, 8 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> index e022d2d..ce719f8 100644
-> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
-> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> @@ -88,6 +88,8 @@ Optional endpoint properties
->  - field-even-active: field signal level during the even field data transmission.
->  - pclk-sample: sample data on rising (1) or falling (0) edge of the pixel clock
->    signal.
-> +- sync-on-green-active: active state of Sync-on-green (SoG) signal, 0/1 for
-> +  LOW/HIGH respectively.
->  - data-lanes: an array of physical data lane indexes. Position of an entry
->    determines the logical lane number, while the value of an entry indicates
->    physical lane, e.g. for 2-lane MIPI CSI-2 bus we could have
-> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-> index aa59639..5c4c9f0 100644
-> --- a/drivers/media/v4l2-core/v4l2-of.c
-> +++ b/drivers/media/v4l2-core/v4l2-of.c
-> @@ -100,6 +100,10 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
->  	if (!of_property_read_u32(node, "data-shift", &v))
->  		bus->data_shift = v;
->  
-> +	if (!of_property_read_u32(node, "sync-on-green-active", &v))
-> +		flags |= v ? V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH :
-> +			V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW;
-> +
->  	bus->flags = flags;
->  
->  }
-> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-> index 83ae07e..d47eb81 100644
-> --- a/include/media/v4l2-mediabus.h
-> +++ b/include/media/v4l2-mediabus.h
-> @@ -40,6 +40,8 @@
->  #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
->  /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
->  #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
-> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH	(1 << 12)
-> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW		(1 << 13)
->  
->  /* Serial flags */
->  /* How many lanes the client can use */
-> 
-
+diff --git a/Documentation/devicetree/bindings/media/i2c/tvp7002.txt b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
+new file mode 100644
+index 0000000..744125f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
+@@ -0,0 +1,43 @@
++* Texas Instruments TV7002 video decoder
++
++The TVP7002 device supports digitizing of video and graphics signal in RGB and
++YPbPr color space.
++
++Required Properties :
++- compatible : Must be "ti,tvp7002"
++
++- hsync-active: HSYNC Polarity configuration for endpoint.
++
++- vsync-active: VSYNC Polarity configuration for endpoint.
++
++- pclk-sample: Clock polarity of the endpoint.
++
++- sync-on-green-active: Active state of Sync-on-green signal property of the
++  endpoint, 0/1 for normal/inverted operation respectively.
++
++- field-even-active: Active-high Field ID polarity of the endpoint.
++
++For further reading of port node refer Documentation/devicetree/bindings/media/
++video-interfaces.txt.
++
++Example:
++
++	i2c0@1c22000 {
++		...
++		...
++		tvp7002@5c {
++			compatible = "ti,tvp7002";
++			reg = <0x5c>;
++
++			port {
++				tvp7002_1: endpoint {
++					hsync-active = <1>;
++					vsync-active = <1>;
++					pclk-sample = <0>;
++					sync-on-green-active = <1>;
++					field-even-active = <0>;
++				};
++			};
++		};
++		...
++	};
+diff --git a/drivers/media/i2c/tvp7002.c b/drivers/media/i2c/tvp7002.c
+index f6b1f3f..24a08fa 100644
+--- a/drivers/media/i2c/tvp7002.c
++++ b/drivers/media/i2c/tvp7002.c
+@@ -35,6 +35,8 @@
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-common.h>
+ #include <media/v4l2-ctrls.h>
++#include <media/v4l2-of.h>
++
+ #include "tvp7002_reg.h"
+ 
+ MODULE_DESCRIPTION("TI TVP7002 Video and Graphics Digitizer driver");
+@@ -943,6 +945,48 @@ static const struct v4l2_subdev_ops tvp7002_ops = {
+ 	.pad = &tvp7002_pad_ops,
+ };
+ 
++static struct tvp7002_config *
++tvp7002_get_pdata(struct i2c_client *client)
++{
++	struct v4l2_of_endpoint bus_cfg;
++	struct tvp7002_config *pdata;
++	struct device_node *endpoint;
++	unsigned int flags;
++
++	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
++		return client->dev.platform_data;
++
++	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
++	if (!endpoint)
++		return NULL;
++
++	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		goto done;
++
++	v4l2_of_parse_endpoint(endpoint, &bus_cfg);
++	flags = bus_cfg.bus.parallel.flags;
++
++	if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
++		pdata->hs_polarity = 1;
++
++	if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
++		pdata->vs_polarity = 1;
++
++	if (flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
++		pdata->clk_polarity = 1;
++
++	if (flags & V4L2_MBUS_FIELD_EVEN_HIGH)
++		pdata->fid_polarity = 1;
++
++	if (flags & V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH)
++		pdata->sog_polarity = 1;
++
++done:
++	of_node_put(endpoint);
++	return pdata;
++}
++
+ /*
+  * tvp7002_probe - Probe a TVP7002 device
+  * @c: ptr to i2c_client struct
+@@ -954,32 +998,32 @@ static const struct v4l2_subdev_ops tvp7002_ops = {
+  */
+ static int tvp7002_probe(struct i2c_client *c, const struct i2c_device_id *id)
+ {
++	struct tvp7002_config *pdata = tvp7002_get_pdata(c);
+ 	struct v4l2_subdev *sd;
+ 	struct tvp7002 *device;
+ 	struct v4l2_dv_timings timings;
+ 	int polarity_a;
+ 	int polarity_b;
+ 	u8 revision;
+-
+ 	int error;
+ 
++	if (pdata == NULL) {
++		dev_err(&c->dev, "No platform data\n");
++		return -EINVAL;
++	}
++
+ 	/* Check if the adapter supports the needed features */
+ 	if (!i2c_check_functionality(c->adapter,
+ 		I2C_FUNC_SMBUS_READ_BYTE | I2C_FUNC_SMBUS_WRITE_BYTE_DATA))
+ 		return -EIO;
+ 
+-	if (!c->dev.platform_data) {
+-		v4l_err(c, "No platform data!!\n");
+-		return -ENODEV;
+-	}
+-
+ 	device = devm_kzalloc(&c->dev, sizeof(struct tvp7002), GFP_KERNEL);
+ 
+ 	if (!device)
+ 		return -ENOMEM;
+ 
+ 	sd = &device->sd;
+-	device->pdata = c->dev.platform_data;
++	device->pdata = pdata;
+ 	device->current_timings = tvp7002_timings;
+ 
+ 	/* Tell v4l2 the device is ready */
+@@ -1084,9 +1128,18 @@ static const struct i2c_device_id tvp7002_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, tvp7002_id);
+ 
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id tvp7002_of_match[] = {
++	{ .compatible = "ti,tvp7002", },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(of, tvp7002_of_match);
++#endif
++
+ /* I2C driver data */
+ static struct i2c_driver tvp7002_driver = {
+ 	.driver = {
++		.of_match_table = of_match_ptr(tvp7002_of_match),
+ 		.owner = THIS_MODULE,
+ 		.name = TVP7002_MODULE_NAME,
+ 	},
 -- 
-Sylwester Nawrocki
-Samsung R&D Institute Poland
+1.7.9.5
+
