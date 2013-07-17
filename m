@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934174Ab3GQWxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:53:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56397 "EHLO
+	id S934197Ab3GQXYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:24:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56303 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933538Ab3GQWxv (ORCPT
+	with ESMTP id S1757783Ab3GQWuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:53:51 -0400
+	Wed, 17 Jul 2013 18:50:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 105/145] rtlwifi: rtl8723ae: Fix typo in firmware names
-Date: Wed, 17 Jul 2013 15:47:17 -0700
-Message-Id: <1374101277-7915-106-git-send-email-kamal@canonical.com>
+Cc: Tyler Hicks <tyhicks@canonical.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 118/145] libceph: Fix NULL pointer dereference in auth client code
+Date: Wed, 17 Jul 2013 15:47:30 -0700
+Message-Id: <1374101277-7915-119-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,45 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 73e088ed17c2880a963cc760a78af8a06d4a4d9d upstream.
+commit 2cb33cac622afde897aa02d3dcd9fbba8bae839e upstream.
 
-The driver loads its firmware from files rtlwifi/rtl8723fw*.bin, but the
-MODULE_FIRMWARE macros refer to rtlwifi/RTL8723aefw*.bin.
+A malicious monitor can craft an auth reply message that could cause a
+NULL function pointer dereference in the client's kernel.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Axel Köllhofer <AxelKoellhofer@web.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+To prevent this, the auth_none protocol handler needs an empty
+ceph_auth_client_ops->build_request() function.
+
+CVE-2013-1059
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Chanam Park <chanam.park@hkpco.kr>
+Reviewed-by: Seth Arnold <seth.arnold@canonical.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8723ae/sw.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/ceph/auth_none.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
-index bb7cc90..2b2a522 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
-@@ -251,7 +251,7 @@ static struct rtl_hal_cfg rtl8723ae_hal_cfg = {
- 	.bar_id = 2,
- 	.write_readback = true,
- 	.name = "rtl8723ae_pci",
--	.fw_name = "rtlwifi/rtl8723aefw.bin",
-+	.fw_name = "rtlwifi/rtl8723fw.bin",
- 	.ops = &rtl8723ae_hal_ops,
- 	.mod_params = &rtl8723ae_mod_params,
- 	.maps[SYS_ISO_CTRL] = REG_SYS_ISO_CTRL,
-@@ -353,8 +353,8 @@ MODULE_AUTHOR("Realtek WlanFAE	<wlanfae@realtek.com>");
- MODULE_AUTHOR("Larry Finger	<Larry.Finger@lwfinger.net>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Realtek 8723E 802.11n PCI wireless");
--MODULE_FIRMWARE("rtlwifi/rtl8723aefw.bin");
--MODULE_FIRMWARE("rtlwifi/rtl8723aefw_B.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8723fw.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8723fw_B.bin");
+diff --git a/net/ceph/auth_none.c b/net/ceph/auth_none.c
+index 925ca58..8c93fa8 100644
+--- a/net/ceph/auth_none.c
++++ b/net/ceph/auth_none.c
+@@ -39,6 +39,11 @@ static int should_authenticate(struct ceph_auth_client *ac)
+ 	return xi->starting;
+ }
  
- module_param_named(swenc, rtl8723ae_mod_params.sw_crypto, bool, 0444);
- module_param_named(debug, rtl8723ae_mod_params.debug, int, 0444);
++static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
++{
++	return 0;
++}
++
+ /*
+  * the generic auth code decode the global_id, and we carry no actual
+  * authenticate state, so nothing happens here.
+@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops ceph_auth_none_ops = {
+ 	.destroy = destroy,
+ 	.is_authenticated = is_authenticated,
+ 	.should_authenticate = should_authenticate,
++	.build_request = build_request,
+ 	.handle_reply = handle_reply,
+ 	.create_authorizer = ceph_auth_none_create_authorizer,
+ 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
 -- 
 1.8.1.2
 
