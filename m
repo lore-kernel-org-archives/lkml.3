@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab3GQHtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 03:49:11 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:63953 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab3GQHtJ (ORCPT
+	id S1752646Ab3GQHwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 03:52:23 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:40582 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab3GQHwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 03:49:09 -0400
-Message-ID: <51E64C6B.3080306@monstr.eu>
-Date: Wed, 17 Jul 2013 09:48:59 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 17 Jul 2013 03:52:21 -0400
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: scatterlist: sg_set_buf() argument must be in linear mapping (sha1:
- ac4e97abce9b80c020e7113325f49e58b7b15e3f)
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2SFUCEAMFCMUSUWMNKSVB"
+In-Reply-To: <20130717091706.69b77c2f@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+	<1372927830-2949-7-git-send-email-l.majewski@samsung.com>
+	<CAKohpokR=jrcLQQ7VAD+vr7GWgSFBfuqbOhWHwA3FCgk__EJ3Q@mail.gmail.com>
+	<20130716135022.64a102f8@amdc308.digital.local>
+	<CAKohpo=XbUtYBVQ_y4_R18wpag_HAVvXrxfSfmaNSqq=wLpciQ@mail.gmail.com>
+	<20130717091706.69b77c2f@amdc308.digital.local>
+Date: Wed, 17 Jul 2013 13:22:20 +0530
+Message-ID: <CAKohpona8E-JgLxyLnc_QuS9LAuJ7FBbsSGPZawQtOd8kRd4JA@mail.gmail.com>
+Subject: Re: [PATCH v5 6/7] cpufreq:boost:Kconfig: Enable software managed
+ BOOST support at Kconfig
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2SFUCEAMFCMUSUWMNKSVB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 17 July 2013 12:47, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Wed, 17 Jul 2013 10:54:55 +0530 Viresh Kumar viresh.kumar@linaro.org
+> wrote,
+>> On 16 July 2013 17:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>> > On Tue, 16 Jul 2013 15:28:40 +0530 Viresh Kumar
+>> > viresh.kumar@linaro.org wrote,
+>> >> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com>
+>> >> wrote:
+>> >> > diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+>> >>
+>> >> > +config CPU_FREQ_BOOST_SW
+>> >> > +       bool "CPU frequency overclocking (BOOST)"
+>> >>
+>> >> Name it "CPU Frequency Overclocking - Software"
+>> >
+>> > Thanks, I had a puzzle to came up with a good short name :-).
+>> >
+>> >>
+>> >> > +       depends on ARM_EXYNOS_CPUFREQ && EXYNOS_THERMAL
+>> >                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
+>> >>
+>> >> Remote Exynos from here. If you want to enable it for your
+>> >> platform by default, then select it from EXYNOS.
+>
+> I can change ARM_EXYNOS_CPUFREQ -> CPUFREQ at [*]
 
-Hi Rusty and Jens,
+We are in cpufreq Kconfig and so dependency is automatically
+there on cpufreq.
 
-I am getting problem with your patch which you have added to the kernel.
-The problem is with my arm zynq remoteproc driver where
-I use dma_declare_coherent_memory() to specify memory for remoteproc
-which is ioremap to the vmalloc area.
+>>
+>> I misread it a bit. I wanted to say make it dependent only on THERMAL
+>> and not on Exynos.
+>
+> The cpufreq boost feature is possible to be enabled only when those [*]
+> dependencies are met. Moreover, it is disabled by default.
+>
+> This means that not only THERMAL generic code must be supported, but
+> also EXYNOS specific one - like per SoC trip points [**].
+>
+> With thermal it is possible (and correct) to only define THERMAL, with
+> no platform (in this case Exynos) specific definitions. To force
+> potential user to define [**], I think, that EXYNOS_THERMAL is required.
+>
+>>
+>> > The purpose of the condition [*] here is to prevent from enabling
+>> > boost when thermal for Exynos is not supported.
+>>
+>> Why? Can't others use it? Its not exynos specific :)
+>
+> No it is not exynos specific.
+> For other platform one need to define:
+>
+> depends on CPUFREQ && (EXYNOS_THERMAL || <PLATFORM_SUPPORTED>_THERMAL)
 
-Based on that buf addr is not inside ram even this coherent memory is in =
-ram.
-That's why virt_addr_valid(buf) is failing.
+Exactly. I don't want this kind of mess to be present here.
 
-Thanks for you input,
-Michal
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+People selecting this feature must know what it does and
+dependency on a coolant is enough.
 
-
-
-------enig2SFUCEAMFCMUSUWMNKSVB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHmTGwACgkQykllyylKDCE7ZACfeMDPiVTaXHnq+0v+9qI1uyDm
-PsIAn2o9hABBcv+TCeAXkN76ZbBVefSe
-=MDUv
------END PGP SIGNATURE-----
-
-------enig2SFUCEAMFCMUSUWMNKSVB--
+For other drivers, selecting this doesn't matter as they don't
+support boost.
