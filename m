@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab3GQOti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:49:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20734 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755695Ab3GQOtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:49:36 -0400
-Date: Wed, 17 Jul 2013 16:43:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
+	id S1755887Ab3GQOuk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:50:40 -0400
+Received: from intma.in ([199.191.58.34]:29497 "HELO intma.in"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755773Ab3GQOuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 10:50:39 -0400
+Date: Wed, 17 Jul 2013 10:43:57 -0400
+From: Kurt H Maier <khm@sdf.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/4] tracing: fix open/delete fixes
-Message-ID: <20130717144357.GA7358@redhat.com>
-References: <20130716185658.GA21167@redhat.com> <51E6032B.7070907@hitachi.com>
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [ATTEND] How to act on LKML
+Message-ID: <20130717144357.GB72828@intma.in>
+References: <864nbv9qcm.fsf@void.printf.net>
+ <1373944014.17876.255.camel@gandalf.local.home>
+ <51E4BFA9.1030600@zytor.com>
+ <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+ <1373991399.6458.6.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+ <51E59F79.1040903@zytor.com>
+ <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+ <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+ <20130717144043.GA16513@xanatos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E6032B.7070907@hitachi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130717144043.GA16513@xanatos>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17, Masami Hiramatsu wrote:
->
-> At a glance, you're trying to change which operation will be
-> failed. Currently, user can not remove an event while someone
-> opens files which related to the event. And this approach
-> changes that the someone can remove the event even if the
-> files are opened (and read/write operation will be failed).
-> Am I understand correctly?
+On Wed, Jul 17, 2013 at 07:40:43AM -0700, Sarah Sharp wrote:
+> 
+> The result: 75% of their developers are women.  If you give a flying
+> fuck about diversity, and want to attract women to your open source
+> project, your developers need to be civil, and not verbally abuse each
+> other.
+> 
 
-Yes.
+I object to your sexist implicit assertion that women are incapable of
+dealing with differing approaches to interpersonal communication.  
 
-Once again, I am still not sure and I am asking for your review.
-
-But to me this looks much better. To simplify the discussion, lets
-consider ftrace_enable_fops in particular.
-
-	- Why should .open() block rmdir or unregister_uprobe_event?
-
-	- Why do we need .open() at all? Whatever it can do to
-	  validate file/call/etc, .read/write can do the same.
-
-	- If we kill .open/release, we do not need the nontrivial
-	  refcounting. Everything becomes simple, no need to keep
-	  the state "in between".
-
-	  We need event_mutex anyway (and note that other f_op's can
-	  also rely on other locks taken by trace_remove_event_call),
-	  the validation degrades to the trivial != NULL check.
-
-	- This also simplifies trace_remove_event_call() paths, we
-	  know that once it takes event_mutex nobody can play with
-	  ftrace_event_file/ftrace_event_call we are going to free.
-
-Oleg.
-
+khm
