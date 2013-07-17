@@ -1,81 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab3GQLBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:01:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60678 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab3GQLBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:01:08 -0400
-Date: Wed, 17 Jul 2013 13:00:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/18] mm: numa: Do not migrate or account for hinting
- faults on the zero page
-Message-ID: <20130717110053.GD17211@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <1373901620-2021-5-git-send-email-mgorman@suse.de>
+	id S1753674Ab3GQLFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:05:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751393Ab3GQLFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 07:05:41 -0400
+Date: Wed, 17 Jul 2013 14:06:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net 2/2] macvtap: do not zerocopy if iov needs more pages
+ than MAX_SKB_FRAGS
+Message-ID: <20130717110658.GA22599@redhat.com>
+References: <1374057131-39207-1-git-send-email-jasowang@redhat.com>
+ <1374057131-39207-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373901620-2021-5-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1374057131-39207-2-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 04:20:06PM +0100, Mel Gorman wrote:
-> The zero page is not replicated between nodes and is often shared
-> between processes. The data is read-only and likely to be cached in
-> local CPUs if heavily accessed meaning that the remote memory access
-> cost is less of a concern. This patch stops accounting for numa hinting
-> faults on the zero page in both terms of counting faults and scheduling
-> tasks on nodes.
+On Wed, Jul 17, 2013 at 06:32:11PM +0800, Jason Wang wrote:
+> We try to linearize part of the skb when the number of iov is greater than
+> MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
+> one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
+> network.
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Solve this problem by calculate the pages needed for iov before trying to do
+> zerocopy and switch to use copy instead of zerocopy if it needs more than
+> MAX_SKB_FRAGS.
+> 
+> This is done through introducing a new helper to count the pages for iov, and
+> call uarg->callback() manually when switching from zerocopy to copy to notify
+> vhost.
+> 
+> We can do further optimization on top.
+> 
+> This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
+> (macvtap: zerocopy: validate vectors before building skb).
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 > ---
->  mm/huge_memory.c | 9 +++++++++
->  mm/memory.c      | 7 ++++++-
->  2 files changed, 15 insertions(+), 1 deletion(-)
+>  drivers/net/macvtap.c |   58 +++++++++++++++++++++++++++++++-----------------
+>  1 files changed, 37 insertions(+), 21 deletions(-)
 > 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index e4a79fa..ec938ed 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1302,6 +1302,15 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index a7c5654..e200f11 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -698,6 +698,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+>  	return 0;
+>  }
 >  
->  	page = pmd_page(pmd);
->  	get_page(page);
+> +static unsigned long iov_pages(const struct iovec *iv, int offset,
+> +			       unsigned long nr_segs)
+> +{
+> +	unsigned long seg, base;
+> +	int pages = 0, len, size;
 > +
-> +	/*
-> +	 * Do not account for faults against the huge zero page. The read-only
-> +	 * data is likely to be read-cached on the local CPUs and it is less
-> +	 * useful to know about local versus remote hits on the zero page.
-> +	 */
-> +	if (is_huge_zero_pfn(page_to_pfn(page)))
-> +		goto clear_pmdnuma;
+> +	while (nr_segs && (offset >= iv->iov_len)) {
+> +		offset -= iv->iov_len;
+> +		++iv;
+> +		--nr_segs;
+> +	}
 > +
->  	src_nid = numa_node_id();
->  	count_vm_numa_event(NUMA_HINT_FAULTS);
->  	if (src_nid == page_to_nid(page))
+> +	for (seg = 0; seg < nr_segs; seg++) {
+> +		base = (unsigned long)iv[seg].iov_base + offset;
+> +		len = iv[seg].iov_len - offset;
+> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+> +		pages += size;
+> +		offset = 0;
+> +	}
+> +
+> +	return pages;
+> +}
+>  
+>  /* Get packet from user space buffer */
+>  static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+> @@ -744,31 +766,19 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+>  	if (unlikely(count > UIO_MAXIOV))
+>  		goto err;
+>  
+> -	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
+> -		zerocopy = true;
+> -
+> -	if (zerocopy) {
+> +	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
+>  		/* Userspace may produce vectors with count greater than
+>  		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+>  		 * to let the rest of data to be fit in the frags.
+>  		 */
 
-And because of:
+We don't linearize parts to make them fit, we simply
+fall back to data copy.
+So this comment no longer applies, right?
 
-  5918d10 thp: fix huge zero page logic for page with pfn == 0
-
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1308,7 +1308,7 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	 * data is likely to be read-cached on the local CPUs and it is less
- 	 * useful to know about local versus remote hits on the zero page.
- 	 */
--	if (is_huge_zero_pfn(page_to_pfn(page)))
-+	if (is_huge_zero_page(page))
- 		goto clear_pmdnuma;
- 
- 	src_nid = numa_node_id();
-
+> -		if (count > MAX_SKB_FRAGS) {
+> -			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
+> -			if (copylen < vnet_hdr_len)
+> -				copylen = 0;
+> -			else
+> -				copylen -= vnet_hdr_len;
+> -		}
+> -		/* There are 256 bytes to be copied in skb, so there is enough
+> -		 * room for skb expand head in case it is used.
+> -		 * The rest buffer is mapped from userspace.
+> -		 */
+> -		if (copylen < vnet_hdr.hdr_len)
+> -			copylen = vnet_hdr.hdr_len;
+> -		if (!copylen)
+> -			copylen = GOODCOPY_LEN;
+> +		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
+>  		linear = copylen;
+> -	} else {
+> +		if (iov_pages(iv, vnet_hdr_len + copylen, count)
+> +		    <= MAX_SKB_FRAGS)
+> +			zerocopy = true;
+> +	}
+> +
+> +	if (!zerocopy) {
+>  		copylen = len;
+>  		linear = vnet_hdr.hdr_len;
+>  	}
+> @@ -780,9 +790,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+>  
+>  	if (zerocopy)
+>  		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
+> -	else
+> +	else {
+>  		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
+>  						   len);
+> +		if (!err && m && m->msg_control) {
+> +			struct ubuf_info *uarg = m->msg_control;
+> +			uarg->callback(uarg, false);
+> +		}
+> +	}
+> +
+>  	if (err)
+>  		goto err_kfree;
+>  
+> -- 
+> 1.7.1
