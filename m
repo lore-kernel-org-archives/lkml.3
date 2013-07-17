@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab3GQQD5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:03:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29143 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab3GQQD4 (ORCPT
+	id S1756502Ab3GQQEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:04:09 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:62700 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756476Ab3GQQEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:03:56 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=sAMN5JoDUTkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=MM5Jvx6deYgA:10 a=1pz8ytP3etQxNUwT468A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374077030.6458.148.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH 0/4] tracing/kprobes/uprobes: Fix race between
- opening probe event files and deleting probe
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 17 Jul 2013 12:03:50 -0400
-In-Reply-To: <1374003524.6458.51.camel@gandalf.local.home>
-References: <20130704033347.807661713@goodmis.org>
-	 <20130715180149.GA15821@redhat.com> <20130716163804.GA30560@redhat.com>
-	 <1374001825.6458.44.camel@gandalf.local.home>
-	 <20130716192200.GA21716@redhat.com>
-	 <1374003524.6458.51.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Wed, 17 Jul 2013 12:04:05 -0400
+Message-ID: <51E6C072.3090400@linaro.org>
+Date: Wed, 17 Jul 2013 09:04:02 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        joe@perches.com
+Subject: Re: [PATCH] MAINTAINERS: Add Daniel as maintainer for CLOCKSOURCE
+ and CLOCKEVENT Drivers
+References: <1373485914-16398-1-git-send-email-john.stultz@linaro.org> <51E6B892.1090406@linaro.org>
+In-Reply-To: <51E6B892.1090406@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 15:38 -0400, Steven Rostedt wrote:
+On 07/17/2013 08:30 AM, Daniel Lezcano wrote:
+> On 07/10/2013 09:51 PM, John Stultz wrote:
+>> I've been doing a bad job at managing the drivers/clocksource directory,
+>> so Daniel has been helping with review and patch queuing for the clocksource
+>> and clockevent drivers, so add him formally to the MAINTAINERS list.
+> Shall I add this patch in the next PR for clocksource I will send to
+> Thomas ?
 
-> 
-> > Btw, Steven, what about other pending (and orthogonal changes) ?
-> > >From Jovi, from me. I see nothing new in linux-trace.git#for-next...
-> 
-> My INBOX is full with too much crap. I thought I grabbed the patches
-> from you and Jovi, but they may have been something else.
-> 
-> Can you just tell me what the subjects were. My INBOX currently has
-> >10,000 emails, and it's just getting worse.
+Sure.
 
-Ping?
-
--- Steve
-
+thanks
+-john
 
