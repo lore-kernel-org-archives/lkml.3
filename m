@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964834Ab3GQWz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:55:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56575 "EHLO
+	id S965003Ab3GQWz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:55:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56648 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934446Ab3GQWzQ (ORCPT
+	with ESMTP id S964892Ab3GQWzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:55:16 -0400
+	Wed, 17 Jul 2013 18:55:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Phil Oester <kernel@linuxace.com>, Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 082/145] netfilter: xt_TCPMSS: Fix IPv6 default MSS too
-Date: Wed, 17 Jul 2013 15:46:54 -0700
-Message-Id: <1374101277-7915-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 088/145] ext4: fix data offset overflow on 32-bit archs in ext4_inline_data_fiemap()
+Date: Wed, 17 Jul 2013 15:47:00 -0700
+Message-Id: <1374101277-7915-89-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,82 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Oester <kernel@linuxace.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 70d19f805f8c047fc0a28dec9306b3773971c8d9 upstream.
+commit eaf3793728d07d995f1e74250b2d0005f7ae98b5 upstream.
 
-As a followup to commit 409b545a ("netfilter: xt_TCPMSS: Fix violation
-of RFC879 in absence of MSS option"), John Heffner points out that IPv6
-has a higher MTU than IPv4, and thus a higher minimum MSS. Update TCPMSS
-target to account for this, and update RFC comment.
+On 32-bit archs when sector_t is defined as 32-bit the logic computing
+data offset in ext4_inline_data_fiemap(). Fix that by properly typing
+the shifted value.
 
-While at it, point to more recent reference RFC1122 instead of RFC879.
-
-Signed-off-by: Phil Oester <kernel@linuxace.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netfilter/xt_TCPMSS.c | 21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ fs/ext4/inline.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/netfilter/xt_TCPMSS.c b/net/netfilter/xt_TCPMSS.c
-index a77d786..cc2b572 100644
---- a/net/netfilter/xt_TCPMSS.c
-+++ b/net/netfilter/xt_TCPMSS.c
-@@ -44,11 +44,12 @@ optlen(const u_int8_t *opt, unsigned int offset)
+diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+index 93a3408..f33fcb6 100644
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -1702,7 +1702,7 @@ int ext4_inline_data_fiemap(struct inode *inode,
+ 	if (error)
+ 		goto out;
  
- static int
- tcpmss_mangle_packet(struct sk_buff *skb,
--		     const struct xt_tcpmss_info *info,
-+		     const struct xt_action_param *par,
- 		     unsigned int in_mtu,
- 		     unsigned int tcphoff,
- 		     unsigned int minlen)
- {
-+	const struct xt_tcpmss_info *info = par->targinfo;
- 	struct tcphdr *tcph;
- 	unsigned int tcplen, i;
- 	__be16 oldval;
-@@ -128,11 +129,17 @@ tcpmss_mangle_packet(struct sk_buff *skb,
- 
- 	skb_put(skb, TCPOLEN_MSS);
- 
--	/* RFC 879 states that the default MSS is 536 without specific
--	 * knowledge that the destination host is prepared to accept larger.
--	 * Since no MSS was provided, we MUST NOT set a value > 536.
-+	/*
-+	 * IPv4: RFC 1122 states "If an MSS option is not received at
-+	 * connection setup, TCP MUST assume a default send MSS of 536".
-+	 * IPv6: RFC 2460 states IPv6 has a minimum MTU of 1280 and a minimum
-+	 * length IPv6 header of 60, ergo the default MSS value is 1220
-+	 * Since no MSS was provided, we must use the default values
- 	 */
--	newmss = min(newmss, (u16)536);
-+	if (par->family == NFPROTO_IPV4)
-+		newmss = min(newmss, (u16)536);
-+	else
-+		newmss = min(newmss, (u16)1220);
- 
- 	opt = (u_int8_t *)tcph + sizeof(struct tcphdr);
- 	memmove(opt + TCPOLEN_MSS, opt, tcplen - sizeof(struct tcphdr));
-@@ -191,7 +198,7 @@ tcpmss_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- 	__be16 newlen;
- 	int ret;
- 
--	ret = tcpmss_mangle_packet(skb, par->targinfo,
-+	ret = tcpmss_mangle_packet(skb, par,
- 				   tcpmss_reverse_mtu(skb, PF_INET),
- 				   iph->ihl * 4,
- 				   sizeof(*iph) + sizeof(struct tcphdr));
-@@ -220,7 +227,7 @@ tcpmss_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- 	tcphoff = ipv6_skip_exthdr(skb, sizeof(*ipv6h), &nexthdr, &frag_off);
- 	if (tcphoff < 0)
- 		return NF_DROP;
--	ret = tcpmss_mangle_packet(skb, par->targinfo,
-+	ret = tcpmss_mangle_packet(skb, par,
- 				   tcpmss_reverse_mtu(skb, PF_INET6),
- 				   tcphoff,
- 				   sizeof(*ipv6h) + sizeof(struct tcphdr));
+-	physical = iloc.bh->b_blocknr << inode->i_sb->s_blocksize_bits;
++	physical = (__u64)iloc.bh->b_blocknr << inode->i_sb->s_blocksize_bits;
+ 	physical += (char *)ext4_raw_inode(&iloc) - iloc.bh->b_data;
+ 	physical += offsetof(struct ext4_inode, i_block);
+ 	length = i_size_read(inode);
 -- 
 1.8.1.2
 
