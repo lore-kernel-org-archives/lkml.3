@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab3GQVix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 17:38:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36287 "EHLO mx2.suse.de"
+	id S1757398Ab3GQVmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 17:42:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796Ab3GQViw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 17:38:52 -0400
-Date: Wed, 17 Jul 2013 23:38:50 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4_da_release_space:1333: ext4_da_release_space: ino 12,
- to_free 1 with only 0 reserved data  blocks
-Message-ID: <20130717213850.GA5025@quack.suse.cz>
-References: <20130716202533.GA16061@redhat.com>
- <20130717125322.GA29294@quack.suse.cz>
- <20130717145218.GA27731@redhat.com>
+	id S1755821Ab3GQVmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 17:42:40 -0400
+Date: Wed, 17 Jul 2013 17:42:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v7 0/5] kdump: Allow ELF header creation in new kernel
+Message-ID: <20130717214207.GB27633@redhat.com>
+References: <OF6010D9F0.5A45F2CF-ONC1257BAB.002B1F3E-C1257BAB.002B2812@de.ibm.com>
+ <20130717180049.3b9c6ec8@holzheu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130717145218.GA27731@redhat.com>
+In-Reply-To: <20130717180049.3b9c6ec8@holzheu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 17-07-13 10:52:18, Dave Jones wrote:
-> On Wed, Jul 17, 2013 at 02:53:22PM +0200, Jan Kara wrote:
->  > On Tue 16-07-13 16:25:33, Dave Jones wrote:
->  > > I've seen this happen a few times this week..
->  >   Thanks for report! Was this when fuzzing or just normal desktop load?
->  > What is inode with inode number 12 on your filesystem sdb1? What IO happens
->  > to it? Apparently some delalloc accounting went wrong somewhere and it's
->  > searching for a needle in a haystack unless we have more details...
+On Wed, Jul 17, 2013 at 06:00:49PM +0200, Michael Holzheu wrote:
+> > On Tue, Jul 16, 2013 at 06:18:10PM +0200, Michael Holzheu wrote:
+> > > Hello Andrew,
+> > >
+> > > Here a new kdump patch series that we have discussed with Vivek and
+> > > Hatayama during the last months.
+> > >
+> > > Besides of the feature described below, this patch series also fixes a
+> > > regression on s390 that was introduced with the mmap patches for
+> > > /proc/vmcore (git commit 83086978c63afd7c73e1c).
+> > >
+> > > See also:
+> > > http://lists.infradead.org/pipermail/kexec/2013-July/009287.html
+> > >
+> > > Is it somehow possible to integrate this patch series into 3.11?
+> > 
+> > Hi Andrew,
+> > 
+> > Now /proc/vmcore mmap() patches are in but looks like they will break
+> > s390 kdump. mmap() patches use vmalloc() to allocate memory for elf
+> > notes and then use read_from_oldmem() to copy notes data from old
+> > memory to this newly allocated buffer. read_from_oldmem() in turn
+> > uses arch dependent copy_from_oldmem() function.
+> > 
+> > Look like on s390, copy_from_oldmem() can not copy data to vmalloc()
+> > space as they drop to real mode.
+> > 
+> > As allocating elf notes code is common both for mmap() and read() path,
+> > it will break kdump on s390.
+> > 
+> > Michael has done some cleanups to cope with that but in the process
+> > he has also stuffed in the support for zfcpdump and how to deal with
+> > HSA region etc. (I am not very happy about it though now. s390 seems
+> > to be having so may special case modes and swap logic etc that it
+> > is becoming hard to keep track what they are doing. I wished s390
+> > first did some cleanup w.r.t swap logic and deal with mmap() in pure
+> > kdump mode and then worry about taking care of zfcpdump).
+> > 
+> > Is it possible to push this series in 3.11 now? I suspect it is late now.
+> > Otherwise we might have to revert mmap() patches as in current form
+> > they will break s390 kdump.
+> > 
+> > Michael, Hatayama, in case this series can't go in 3.11, do you have other
+> > ideas where a small hack fix will allow kdump to work on s390 and we
+> > don't have to revert the mmap() patches.
 > 
-> It was running this.. https://github.com/kernelslacker/io-tests/blob/master/setup.sh
-> in a loop. After about 6 hours, that fell out.  It made it all the way through
-> every test a few times, which is odd, as the test should be fairly deterministic.
-> Ah, I wasn't capturing the fsx seed. I'll do that on the next run.
-  So inode 12 was likely the file used by fsx. OK. Looking at the script
-link, fsx is run as:
-  /usr/local/bin/fsx -N 250000 -S0 foo &
-so the seed is always 0. So it is a deterministic test and there must be
-some race with writeback or something that is rarely triggered. Drat.
+> Sure, we can somehow change the copy_from_oldmem() function that it
+> can copy to virtual memory. We have already discussed some options
+> on how to do that. Not nice but probably doable.
+> 
+> And we could either disable mmap for s390 by removing mmap_vmcore()
+> from the proc_vmcore_operations or push the also already discussed
+> ELF header swap trick in 3.11.
+> 
+> But this is all additional effort now and would not be necessary if we
+> integrate this patch series in 3.11.
+> 
+> Perhaps we should let Andrew decide here.
 
-Umm, looking at the filesystems this tests, ext4 with 1 KB blocksize is
-likely the config which hits this (the accounting is more complex there) so
-it might be interesting to concentrace on this one.
+Hi Michael,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Given the fact that andrew too prefers a fix to get s390 working at this
+stage can we modify s390 copy_from_oldmem() to be able to copy to 
+vmalloc() memory area.
+
+For mmap(), let us disable it on s390. And rest of the cleanups w.r.t
+ELF header swap etc, let us now target that for 3.12.
+
+Sounds reasonable?
+
+Thanks
+Vivek
