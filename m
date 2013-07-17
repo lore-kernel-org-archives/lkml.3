@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab3GQWuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:50:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56244 "EHLO
+	id S1757637Ab3GQX0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:26:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56239 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932457Ab3GQWsq (ORCPT
+	with ESMTP id S932312Ab3GQWsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Jul 2013 18:48:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
+Cc: Steffen Maier <maier@linux.vnet.ibm.com>,
         James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 002/145] [SCSI] zfcp: fix adapter (re)open recovery while link to SAN is down
-Date: Wed, 17 Jul 2013 15:45:34 -0700
-Message-Id: <1374101277-7915-3-git-send-email-kamal@canonical.com>
+Subject: [PATCH 003/145] [SCSI] zfcp: block queue limits with data router
+Date: Wed, 17 Jul 2013 15:45:35 -0700
+Message-Id: <1374101277-7915-4-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -29,48 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit f76ccaac4f82c463a037aa4a1e4ccb85c7011814 upstream.
+commit 5fea4291deacd80188b996d2f555fc6a1940e5d4 upstream.
 
-FCP device remains in status ERP_FAILED when device is switched online
-or adapter recovery is triggered  while link to SAN is down.
+Commit 86a9668a8d29ea711613e1cb37efa68e7c4db564
+"[SCSI] zfcp: support for hardware data router"
+reduced the initial block queue limits in the scsi_host_template to the
+absolute minimum and adjusted them later on. However, the adjustment was
+too late for the BSG devices of Scsi_Host and fc_host.
 
-When Exchange Configuration Data command returns the FSF status
-FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE it aborts the exchange process.
-The only retries are done during the common error recovery procedure
-(i.e. max. 3 retries with 8sec sleep between) and remains in status
-ERP_FAILED with QDIO down.
+Therefore, ioctl(..., SG_IO, ...) with request or response size > 4kB to a
+BSG device of an fc_host or a Scsi_Host fails with EINVAL. As a result,
+users of such ioctl such as HBA_SendCTPassThru() in libzfcphbaapi return
+with error HBA_STATUS_ERROR.
 
-This commit reverts the commit 0df138476c8306478d6e726f044868b4bccf411c
-(zfcp: Fix adapter activation on link down).
-When FSF status FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE is received the
-adapter recovery will be finished without any retries. QDIO will be
-up now and status changes such as LINK UP will be received now.
+Initialize the block queue limits in zfcp_scsi_host_template to the
+greatest common denominator (GCD).
 
-Signed-off-by: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+While we cannot exploit the slightly enlarged maximum request size with
+data router, this should be neglectible. Doing so also avoids running into
+trouble after live guest relocation (LGR) / migration from a data router
+FCP device to an FCP device that does not support data router. In that
+case, zfcp would figure out the new limits on adapter recovery, but the
+fc_host and Scsi_Host (plus in fact all sdevs) still exist with the old and
+now too large queue limits.
+
+It should also OK, not to use half the size as in the DIX case, because
+fc_host and Scsi_Host do not transport FCP requests including SCSI commands
+using protection data.
+
 Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/s390/scsi/zfcp_fsf.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/s390/scsi/zfcp_scsi.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/s390/scsi/zfcp_fsf.c b/drivers/s390/scsi/zfcp_fsf.c
-index c96320d..ccff8b2 100644
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -563,6 +563,10 @@ static void zfcp_fsf_exchange_config_data_handler(struct zfcp_fsf_req *req)
- 		fc_host_port_type(shost) = FC_PORTTYPE_UNKNOWN;
- 		adapter->hydra_version = 0;
+diff --git a/drivers/s390/scsi/zfcp_scsi.c b/drivers/s390/scsi/zfcp_scsi.c
+index 7b31e3f..7b35364 100644
+--- a/drivers/s390/scsi/zfcp_scsi.c
++++ b/drivers/s390/scsi/zfcp_scsi.c
+@@ -3,7 +3,7 @@
+  *
+  * Interface to Linux SCSI midlayer.
+  *
+- * Copyright IBM Corp. 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
  
-+		/* avoids adapter shutdown to be able to recognize
-+		 * events such as LINK UP */
-+		atomic_set_mask(ZFCP_STATUS_ADAPTER_XCONFIG_OK,
-+				&adapter->status);
- 		zfcp_fsf_link_down_info_eval(req,
- 			&qtcb->header.fsf_status_qual.link_down_info);
- 		break;
+ #define KMSG_COMPONENT "zfcp"
+@@ -311,8 +311,12 @@ static struct scsi_host_template zfcp_scsi_host_template = {
+ 	.proc_name		 = "zfcp",
+ 	.can_queue		 = 4096,
+ 	.this_id		 = -1,
+-	.sg_tablesize		 = 1, /* adjusted later */
+-	.max_sectors		 = 8, /* adjusted later */
++	.sg_tablesize		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
++				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2),
++				   /* GCD, adjusted later */
++	.max_sectors		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
++				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2) * 8,
++				   /* GCD, adjusted later */
+ 	.dma_boundary		 = ZFCP_QDIO_SBALE_LEN - 1,
+ 	.cmd_per_lun		 = 1,
+ 	.use_clustering		 = 1,
 -- 
 1.8.1.2
 
