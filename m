@@ -1,113 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab3GQHRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 03:17:22 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57296 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab3GQHRU (ORCPT
+	id S1752443Ab3GQHVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 03:21:09 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:48224 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab3GQHVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 03:17:20 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-01-51e644f99ad3
-Date: Wed, 17 Jul 2013 09:17:06 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v5 6/7] cpufreq:boost:Kconfig: Enable software managed
- BOOST support at Kconfig
-Message-id: <20130717091706.69b77c2f@amdc308.digital.local>
-In-reply-to: <CAKohpo=XbUtYBVQ_y4_R18wpag_HAVvXrxfSfmaNSqq=wLpciQ@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-7-git-send-email-l.majewski@samsung.com>
- <CAKohpokR=jrcLQQ7VAD+vr7GWgSFBfuqbOhWHwA3FCgk__EJ3Q@mail.gmail.com>
- <20130716135022.64a102f8@amdc308.digital.local>
- <CAKohpo=XbUtYBVQ_y4_R18wpag_HAVvXrxfSfmaNSqq=wLpciQ@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+xgO5Pl2eBBpPvGlv8ebuc1eJp0w92
-	i3mfZS3W7P/JZNF59gmzRe+Cq2wWbx5xW1zeNYfN4nPvEUaL240r2Cz6F/YyWTx52MdmsfGr
-	hwOvx+I9L5k87lzbw+axbtpbZo++LasYPR4tbmH0OH5jO5PH501yAexRXDYpqTmZZalF+nYJ
-	XBkL7n9lKvjFX3F5fQdLA+M+ni5GTg4JAROJjtVnmSFsMYkL99azdTFycQgJLGKUWNZ1jQnC
-	aWeSWPKnjwWkikVAVWLHycVgHWwCehKf7z4FKuLgEBHQknh5MxWknlngI7PE3YO3weqFBVIl
-	Plz/xgpi8wpYS5zZ8wkszikQLLHn/lWoBX+ZJCb8nA+W4BeQlGj/9wPqJDuJc582sEM0C0r8
-	mHwPrIYZaNnmbU2sELa8xOY1b5knMArOQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX
-	5qXrJefnbmIEx9Iz6R2MqxosDjEKcDAq8fBOCHsaKMSaWFZcmXuIUYKDWUmEt1rjWaAQb0pi
-	ZVVqUX58UWlOavEhRmkOFiVx3oOt1oFCAumJJanZqakFqUUwWSYOTqkGRmbXiW9UMvT9PNM5
-	ynI+64RU7l6aIpsWsbbPZuZGtZinPA8YWb2sWnmEy9v79m3T+i/4YfaqfRzXt5ana0jJNyX+
-	+2uUb+lT2eqSlKn+6GDKq++n9T9nt7m4Jy5wmaUWKLV7cULdvJRPJiW/eM8ur1Pk+7MkXeac
-	oeWjuomCF/U7dvn3/HypxFKckWioxVxUnAgAO9PqFqECAAA=
+	Wed, 17 Jul 2013 03:21:07 -0400
+Date: Wed, 17 Jul 2013 09:21:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
+Message-ID: <20130717072100.GA14359@gmail.com>
+References: <20130716234438.C792C316@viggo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716234438.C792C316@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013 10:54:55 +0530 Viresh Kumar viresh.kumar@linaro.org
-wrote,
-> On 16 July 2013 17:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > On Tue, 16 Jul 2013 15:28:40 +0530 Viresh Kumar
-> > viresh.kumar@linaro.org wrote,
-> >> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com>
-> >> wrote:
-> >> > diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> >>
-> >> > +config CPU_FREQ_BOOST_SW
-> >> > +       bool "CPU frequency overclocking (BOOST)"
-> >>
-> >> Name it "CPU Frequency Overclocking - Software"
-> >
-> > Thanks, I had a puzzle to came up with a good short name :-).
-> >
-> >>
-> >> > +       depends on ARM_EXYNOS_CPUFREQ && EXYNOS_THERMAL
-> >                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
-> >>
-> >> Remote Exynos from here. If you want to enable it for your
-> >> platform by default, then select it from EXYNOS.
 
-I can change ARM_EXYNOS_CPUFREQ -> CPUFREQ at [*]
+* Dave Hansen <dave@sr71.net> wrote:
 
+> I was investigating some TLB flush scaling issues and realized
+> that we do not have any good methods for figuring out how many
+> TLB flushes we are doing.
 > 
-> I misread it a bit. I wanted to say make it dependent only on THERMAL
-> and not on Exynos.
-
-The cpufreq boost feature is possible to be enabled only when those [*]
-dependencies are met. Moreover, it is disabled by default. 
-
-This means that not only THERMAL generic code must be supported, but
-also EXYNOS specific one - like per SoC trip points [**].
-
-With thermal it is possible (and correct) to only define THERMAL, with
-no platform (in this case Exynos) specific definitions. To force
-potential user to define [**], I think, that EXYNOS_THERMAL is required.
-
+> It would be nice to be able to do these in generic code, but the
+> arch-independent calls don't explicitly specify whether we
+> actually need to do remote flushes or not.  In the end, we really
+> need to know if we actually _did_ global vs. local invalidations,
+> so that leaves us with few options other than to muck with the
+> counters from arch-specific code.
 > 
-> > The purpose of the condition [*] here is to prevent from enabling
-> > boost when thermal for Exynos is not supported.
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> ---
 > 
-> Why? Can't others use it? Its not exynos specific :)
+>  linux.git-davehans/arch/x86/mm/tlb.c             |   18 ++++++++++++++----
+>  linux.git-davehans/include/linux/vm_event_item.h |    5 +++++
+>  linux.git-davehans/mm/vmstat.c                   |    5 +++++
+>  3 files changed, 24 insertions(+), 4 deletions(-)
+> 
+> diff -puN arch/x86/mm/tlb.c~tlb-vmstats arch/x86/mm/tlb.c
+> --- linux.git/arch/x86/mm/tlb.c~tlb-vmstats	2013-07-16 16:41:56.476280350 -0700
+> +++ linux.git-davehans/arch/x86/mm/tlb.c	2013-07-16 16:41:56.483280658 -0700
+> @@ -103,6 +103,7 @@ static void flush_tlb_func(void *info)
+>  	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
+>  		return;
+>  
+> +	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+>  	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+>  		if (f->flush_end == TLB_FLUSH_ALL)
+>  			local_flush_tlb();
+> @@ -130,6 +131,7 @@ void native_flush_tlb_others(const struc
+>  	info.flush_start = start;
+>  	info.flush_end = end;
+>  
+> +	count_vm_event(NR_TLB_REMOTE_FLUSH);
+>  	if (is_uv_system()) {
+>  		unsigned int cpu;
+>  
+> @@ -149,6 +151,7 @@ void flush_tlb_current_task(void)
+>  
+>  	preempt_disable();
+>  
+> +	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
+>  	local_flush_tlb();
+>  	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+>  		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+> @@ -211,16 +214,19 @@ void flush_tlb_mm_range(struct mm_struct
+>  	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
+>  
+>  	/* tlb_flushall_shift is on balance point, details in commit log */
+> -	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
+> +	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
+> +		count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
+>  		local_flush_tlb();
+> -	else {
+> +	} else {
+>  		if (has_large_page(mm, start, end)) {
+>  			local_flush_tlb();
+>  			goto flush_all;
+>  		}
+>  		/* flush range by one by one 'invlpg' */
+> -		for (addr = start; addr < end;	addr += PAGE_SIZE)
+> +		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+> +			count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
+>  			__flush_tlb_single(addr);
+> +		}
+>  
+>  		if (cpumask_any_but(mm_cpumask(mm),
+>  				smp_processor_id()) < nr_cpu_ids)
+> @@ -256,6 +262,7 @@ void flush_tlb_page(struct vm_area_struc
+>  
+>  static void do_flush_tlb_all(void *info)
+>  {
+> +	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+>  	__flush_tlb_all();
+>  	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
+>  		leave_mm(smp_processor_id());
+> @@ -263,6 +270,7 @@ static void do_flush_tlb_all(void *info)
+>  
+>  void flush_tlb_all(void)
+>  {
+> +	count_vm_event(NR_TLB_REMOTE_FLUSH);
+>  	on_each_cpu(do_flush_tlb_all, NULL, 1);
+>  }
+>  
+> @@ -272,8 +280,10 @@ static void do_kernel_range_flush(void *
+>  	unsigned long addr;
+>  
+>  	/* flush range by one by one 'invlpg' */
+> -	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE)
+> +	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE) {
+> +		count_vm_event(NR_TLB_LOCAL_FLUSH_ONE_KERNEL);
+>  		__flush_tlb_single(addr);
+> +	}
+>  }
+>  
+>  void flush_tlb_kernel_range(unsigned long start, unsigned long end)
+> diff -puN include/linux/vm_event_item.h~tlb-vmstats include/linux/vm_event_item.h
+> --- linux.git/include/linux/vm_event_item.h~tlb-vmstats	2013-07-16 16:41:56.478280438 -0700
+> +++ linux.git-davehans/include/linux/vm_event_item.h	2013-07-16 16:41:56.483280658 -0700
+> @@ -70,6 +70,11 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
+>  		THP_ZERO_PAGE_ALLOC,
+>  		THP_ZERO_PAGE_ALLOC_FAILED,
+>  #endif
+>
+> +		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
+> +		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
+> +		NR_TLB_LOCAL_FLUSH_ALL,
+> +		NR_TLB_LOCAL_FLUSH_ONE,
+> +		NR_TLB_LOCAL_FLUSH_ONE_KERNEL,
 
-No it is not exynos specific.
-For other platform one need to define:
+Please fix the vertical alignment of comments.
 
-depends on CPUFREQ && (EXYNOS_THERMAL || <PLATFORM_SUPPORTED>_THERMAL)
+>  		NR_VM_EVENT_ITEMS
+>  };
+>  
+> diff -puN mm/vmstat.c~tlb-vmstats mm/vmstat.c
+> --- linux.git/mm/vmstat.c~tlb-vmstats	2013-07-16 16:41:56.480280525 -0700
+> +++ linux.git-davehans/mm/vmstat.c	2013-07-16 16:41:56.484280703 -0700
+> @@ -817,6 +817,11 @@ const char * const vmstat_text[] = {
+>  	"thp_zero_page_alloc",
+>  	"thp_zero_page_alloc_failed",
+>  #endif
+> +	"nr_tlb_remote_flush",
+> +	"nr_tlb_remote_flush_received",
+> +	"nr_tlb_local_flush_all",
+> +	"nr_tlb_local_flush_one",
+> +	"nr_tlb_local_flush_one_kernel",
 
-Such condition improves my confidence about proper boost usage.
+At first sight this seems pretty x86 specific. No range flush events, etc.
 
+But no strong objections from me, if Andrew likes it.
 
--- 
-Best regards,
+Thanks,
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+	Ingo
