@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab3GQD2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 23:28:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44830 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751443Ab3GQD2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 23:28:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,682,1367996400"; 
-   d="scan'208";a="371434161"
-Message-ID: <1374031686.12825.143.camel@envy.home>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Tue, 16 Jul 2013 20:28:06 -0700
-In-Reply-To: <CA+55aFw9E4mORqJaC+5n_dy8GgiQN6QRZh3-2GH99sedrYoEkA@mail.gmail.com>
-References: <20130715155202.GC29526@xanatos>
-	 <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
-	 <20130715174659.GC15531@xanatos>
-	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
-	 <20130715180403.GD15531@xanatos>
-	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	 <20130715184642.GE15531@xanatos> <20130715191727.GC10157@1wt.eu>
-	 <CA+55aFwHEn4ktPoM2dWkkx9VPg1HbjG4EYCRGfoLEKRSz_y8zw@mail.gmail.com>
-	 <8738rf14zl.fsf@rustcorp.com.au> <20130716210856.GF4994@xanatos>
-	 <878v16yp57.fsf@rustcorp.com.au>
-	 <CA+55aFw9E4mORqJaC+5n_dy8GgiQN6QRZh3-2GH99sedrYoEkA@mail.gmail.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+	id S1751107Ab3GQDlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 23:41:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36084 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab3GQDlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 23:41:36 -0400
+Date: Wed, 17 Jul 2013 13:41:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: linux-next: build failure after merge of the final tree (aio tree
+ related)
+Message-Id: <20130717134124.23192f8c9bcc29b07f57743f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__17_Jul_2013_13_41_24_+1000_yI+hclESUx2fwQl4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 18:37 -0700, Linus Torvalds wrote:
-> On Tue, Jul 16, 2013 at 6:02 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> >>
-> >> "Mauro, SHUT THE FUCK UP!"
-> >
-> > This one crosses the line.  There's no non-offensive way to tell a geek
-> > "you are wrong", but this isn't even trying.  Bad Linus!
-> 
-> You know what? Not my proudest moment. I was really upset.
+--Signature=_Wed__17_Jul_2013_13_41_24_+1000_yI+hclESUx2fwQl4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This goes a long way to resolving the stated issues in my opinion. Of
-the three issues raised, Linus has either adequately justified himself
-or conceded. This wasn't meant to be Linus on trial was it? :-)
+Hi all,
 
-I'm sure we could dig up a thousand more references of "bad" behavior
-from others on LKML. Before we do let's first make sure the recipient is
-not being "resistant to education" (a phrase I've picked up from Thomas
-Gleixner and like very much) or has somehow provoked things. Ted Ts'o
-will recall fondly all the pigs in guinea *smirk*.
+After merging the final tree, today's linux-next build (powerpc
+allnoconfig) failed like this:
 
-I enjoy a good rant as much as anyone, but I recognize personal attacks
-can be very harmful to the individual and possibly (difficult to prove)
-the quality of the project. This is especially true when coming from
-someone that is held in very high regard, such as Linus and the other
-maintainers.
+fs/aio.c: In function 'aio_migratepage':
+fs/aio.c:196:2: error: implicit declaration of function 'migrate_page_move_=
+mapping' [-Werror=3Dimplicit-function-declaration]
+  rc =3D migrate_page_move_mapping(mapping, new, old, NULL, mode);
+  ^
 
-I think the one tangible TODO that has come out of this is to DOCUMENT
-expectations. Paul Gortmaker has already submitted a netdev FAQ which I
-have reviewed and David Miller approved of. I have committed to review
-stable_kernel_rules. It appears there is also call to have Linus'
-expectations of the maintainers documented. This would also be good for
-everyone to read to better understand the responses they receive from
-maintainers and why things are the way they are.
+Caused by commit 36bc08cc0170 ("fs/aio: Add support to aio ring pages
+migration"). The declaration of migrate_page_move_mapping() in
+linux/migrate.h is protected by CONFIG_MIGRATION - its use in fs/aio.c is
+not.  So the usage needs to be protected, or there needs to be a dummy
+version in linux/migrate.h
 
-With that done, I think some tolerance in both directions would improve
-things here. And as a last resort, we speak up when someone is under
-attack.
+I have reverted that commit for today.
 
-"Whoa Nelly, calm down, don't forget your meds. Seriously though, that
-(is not acceptable code|violates a core policy), see the following
-documentation." This adds some burden on the broader audience to point
-people at the docs, because even RTFM has to get annoying to repeat too
-often.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-And with that, I'll sign out of this thread unless anyone wants to
-discuss documentation - but those should probably happen on LKML (or
-maybe KS as some have suggested).
+--Signature=_Wed__17_Jul_2013_13_41_24_+1000_yI+hclESUx2fwQl4
+Content-Type: application/pgp-signature
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJR5hJoAAoJEECxmPOUX5FE90MQAKTWH0JLN2puswvX2lrBsDFO
+rPbcYTpvVn4GejALMUP7OISLJzIY+NF8jVWcEIYlgbtCYdNi4aKsVrBYpAsuWiT5
+gPaPfFtKvTMbAlRWIZChwEXI4ZuwkH+hAa5G2z0a30+snUMxBuD/UCWRjrz/Twsj
+Iji6AoPMwNGRhGDmkm/nJyqagcnB2n5OhRnGVmvROwSViivaqZh1Nv/Kzeq29q8Z
+VhirrwQzY3PQich2IdxIhWL2agTCZxW/WP2q0WgZCXsxqoFLWDjjM5ZweNowZjuX
+i0U+c5Ibk+orJVnCZMYI5rba+u8kzcou7yZrt8Bw0UQP77l0Tu3DBDXkrn59HGqJ
+QjPNiRjQLN0JlZIlsO2DRq/PZQFKBz3I4CUAiplF/nDT9IL7FXUEfZGumbA8o6cF
+bOU4nyEsfTBNPpHEvNsHZDca7yK43/QAtwzgFz0EENh+xGq5nUy7RKDtfKcqfJ72
+tf44abx+MRnOEUld1CMIiwu/cJHu/tb5g7oVJ460e84a7CRrJUHpngBeMb+0+kWE
+PIJGAzIcG8lruqekFM2bxbVQjqr1wGwoIn/q4IfdE5e8CRveKEnXSMpKn2vAbygT
+k+khruvVh7H5YuWxerqHdUmcrbnFOYgQlQKnyz60gvdtQLqPB0EmehmnReZM773Z
+tYMpJkmi3VdQ9nTdLdPz
+=8k4B
+-----END PGP SIGNATURE-----
 
+--Signature=_Wed__17_Jul_2013_13_41_24_+1000_yI+hclESUx2fwQl4--
