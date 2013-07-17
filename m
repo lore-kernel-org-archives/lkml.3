@@ -1,119 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934410Ab3GQXdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:33:49 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47855 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964920Ab3GQX1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 18/30] ACPI / hotplug / PCI: Rework namespace scanning and trimming routines
-Date: Thu, 18 Jul 2013 01:27:19 +0200
-Message-ID: <2665100.NNuj40D6yN@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
+	id S934443Ab3GQXd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:33:59 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:59436 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934180Ab3GQXd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:33:56 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1374103783.24916.49.camel@misato.fc.hp.com>
+References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
+ <CAHGf_=pND-R=qMHg7b=Fi5SqS6ahXJCG865WsOS2eKWa6g3A7A@mail.gmail.com> <1374103783.24916.49.camel@misato.fc.hp.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 17 Jul 2013 19:33:35 -0400
+Message-ID: <CAHGf_=q-9C4JZgv9Xp1Z3_Ks1a7t_sOArD3e1myj1EdiH5GBHQ@mail.gmail.com>
+Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "vasilis.liaskovitis" <vasilis.liaskovitis@profitbricks.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, Jul 17, 2013 at 7:29 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Wed, 2013-07-17 at 19:22 -0400, KOSAKI Motohiro wrote:
+>> On Wed, Jul 17, 2013 at 5:45 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> > CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
+>> > interface, which allows a given memory address to be hot-added as
+>> > follows. (See Documentation/memory-hotplug.txt for more detail.)
+>> >
+>> > # echo start_address_of_new_memory > /sys/devices/system/memory/probe
+>> >
+>> > This probe interface is required on powerpc. On x86, however, ACPI
+>> > notifies a memory hotplug event to the kernel, which performs its
+>> > hotplug operation as the result. Therefore, users should not be
+>> > required to use this interface on x86. This probe interface is also
+>> > error-prone that the kernel blindly adds a given memory address
+>> > without checking if the memory is present on the system; no probing
+>> > is done despite of its name. The kernel crashes when a user requests
+>> > to online a memory block that is not present on the system.
+>> >
+>> > This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86,
+>> > and clarifies it in Documentation/memory-hotplug.txt.
+>>
+>> Why don't you completely remove it? Who should use this strange interface?
+>
+> According to the comment below, this probe interface is used on powerpc.
+> So, we cannot remove it, but to disable it on x86.
 
-The acpiphp_bus_trim() and acpiphp_bus_add() functions need not
-return error codes that are never checked, so redefine them and
-simplify them a bit.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/pci/hotplug/acpiphp_glue.c |   52 +++++++++----------------------------
- 1 file changed, 13 insertions(+), 39 deletions(-)
-
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -540,53 +540,27 @@ static unsigned char acpiphp_max_busnr(s
- 	return max;
- }
- 
--
- /**
-- * acpiphp_bus_add - add a new bus to acpi subsystem
-- * @func: acpiphp_func of the bridge
-+ * acpiphp_bus_trim - Trim device objects in an ACPI namespace subtree.
-+ * @handle: ACPI device object handle to start from.
-  */
--static int acpiphp_bus_add(struct acpiphp_func *func)
-+static void acpiphp_bus_trim(acpi_handle handle)
- {
--	acpi_handle handle = func_to_handle(func);
--	struct acpi_device *device;
--	int ret_val;
--
--	if (!acpi_bus_get_device(handle, &device)) {
--		dbg("bus exists... trim\n");
--		/* this shouldn't be in here, so remove
--		 * the bus then re-add it...
--		 */
--		acpi_bus_trim(device);
--	}
--
--	ret_val = acpi_bus_scan(handle);
--	if (!ret_val)
--		ret_val = acpi_bus_get_device(handle, &device);
--
--	if (ret_val)
--		dbg("error adding bus, %x\n", -ret_val);
-+	struct acpi_device *adev = NULL;
- 
--	return ret_val;
-+	acpi_bus_get_device(handle, &adev);
-+	if (adev)
-+		acpi_bus_trim(adev);
- }
- 
--
- /**
-- * acpiphp_bus_trim - trim a bus from acpi subsystem
-- * @handle: handle to acpi namespace
-+ * acpiphp_bus_add - Scan ACPI namespace subtree.
-+ * @handle: ACPI object handle to start the scan from.
-  */
--static int acpiphp_bus_trim(acpi_handle handle)
-+static void acpiphp_bus_add(acpi_handle handle)
- {
--	struct acpi_device *device;
--	int retval;
--
--	retval = acpi_bus_get_device(handle, &device);
--	if (retval) {
--		dbg("acpi_device not found\n");
--		return retval;
--	}
--
--	acpi_bus_trim(device);
--	return 0;
-+	acpiphp_bus_trim(handle);
-+	acpi_bus_scan(handle);
- }
- 
- static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
-@@ -649,7 +623,7 @@ static int __ref enable_device(struct ac
- 		goto err_exit;
- 
- 	list_for_each_entry(func, &slot->funcs, sibling)
--		acpiphp_bus_add(func);
-+		acpiphp_bus_add(func_to_handle(func));
- 
- 	num = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
- 	if (num == 0) {
-
+I meant x86. Why can't we completely remove ARCH_MEMORY_PROBE section
+from x86 Kconfig?
