@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3GQN0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:26:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50235 "EHLO mx1.redhat.com"
+	id S1755357Ab3GQN16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:27:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33759 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754502Ab3GQN0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:26:09 -0400
-Date: Wed, 17 Jul 2013 16:25:03 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        ouyang@cs.pitt.edu, agraf@suse.de, chegu_vinod@hp.com,
-        torvalds@linux-foundation.org, avi.kivity@gmail.com,
-        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-Message-ID: <20130717132503.GA13732@redhat.com>
-References: <20130714131241.GA11772@redhat.com>
- <51E3C5CE.7000009@linux.vnet.ibm.com>
- <20130715103648.GN11772@redhat.com>
- <51E4C011.4060803@linux.vnet.ibm.com>
- <20130716060215.GE11772@redhat.com>
- <51E5941B.3090300@linux.vnet.ibm.com>
- <20130717093420.GU11772@redhat.com>
- <51E66C71.6020605@linux.vnet.ibm.com>
- <20130717124511.GW11772@redhat.com>
- <51E69429.7040309@linux.vnet.ibm.com>
+	id S1754708Ab3GQN14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 09:27:56 -0400
+Date: Wed, 17 Jul 2013 16:27:36 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Rong Wang <wr011235813@gmail.com>
+CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Rong.Wang@csr.com>
+Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
+Message-ID: <20130717132736.GA7614@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
+ <20130715165209.GA6000@kroah.com>
+ <CA+k=oDzZ5sf_wFMUvE_vkkqRQaOV0P3vWP99tDpoZkrwMN7Q+A@mail.gmail.com>
+ <20130716063117.GA30320@kroah.com>
+ <20130717075706.GC5291@arwen.pp.htv.fi>
+ <CA+k=oDza-oN++KCYtVMD0V62xgkJ3ctUOmzNkaYYYhXuKtaWKQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
 Content-Disposition: inline
-In-Reply-To: <51E69429.7040309@linux.vnet.ibm.com>
+In-Reply-To: <CA+k=oDza-oN++KCYtVMD0V62xgkJ3ctUOmzNkaYYYhXuKtaWKQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 06:25:05PM +0530, Raghavendra K T wrote:
-> On 07/17/2013 06:15 PM, Gleb Natapov wrote:
-> >On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
-> >>>>Instead of halt we started with a sleep hypercall in those
-> >>>>  versions. Changed to halt() once Avi suggested to reuse existing sleep.
-> >>>>
-> >>>>If we use older hypercall with few changes like below:
-> >>>>
-> >>>>kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
-> >>>>{
-> >>>>  // a0 reserved for flags
-> >>>>if (!w->lock)
-> >>>>return;
-> >>>>DEFINE_WAIT
-> >>>>...
-> >>>>end_wait
-> >>>>}
-> >>>>
-> >>>How would this help if NMI takes lock in critical section. The thing
-> >>>that may happen is that lock_waiting->want may have NMI lock value, but
-> >>>lock_waiting->lock will point to non NMI lock. Setting of want and lock
-> >>>have to be atomic.
-> >>
-> >>True. so we are here
-> >>
-> >>         non NMI lock(a)
-> >>         w->lock = NULL;
-> >>         smp_wmb();
-> >>         w->want = want;
-> >>                                NMI
-> >>                          <---------------------
-> >>                           NMI lock(b)
-> >>                           w->lock = NULL;
-> >>                           smp_wmb();
-> >>                           w->want = want;
-> >>                           smp_wmb();
-> >>                           w->lock = lock;
-> >>                          ---------------------->
-> >>         smp_wmb();
-> >>         w->lock = lock;
-> >>
-> >>so how about fixing like this?
-> >>
-> >>again:
-> >>         w->lock = NULL;
-> >>         smp_wmb();
-> >>         w->want = want;
-> >>         smp_wmb();
-> >>         w->lock = lock;
-> >>
-> >>if (!lock || w->want != want) goto again;
-> >>
-> >NMI can happen after the if() but before halt and the same situation
-> >we are trying to prevent with IRQs will occur.
-> 
-> True, we can not fix that. I thought to fix the inconsistency of
-> lock,want pair.
-> But NMI could happen after the first OR condition also.
-> /me thinks again
-> 
-lock_spinning() can check that it is called in nmi context and bail out.
-How often this will happens anyway.
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
---
-			Gleb.
+On Wed, Jul 17, 2013 at 09:04:54PM +0800, Rong Wang wrote:
+> Hi Felipe,
+>=20
+> On Wed, Jul 17, 2013 at 3:57 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > Hi,
+> >
+> > On Mon, Jul 15, 2013 at 11:31:17PM -0700, Greg KH wrote:
+> >> > The question is since we default GADGET, so the g_mass_storage.ko is
+> >> > installed early but connecting to a host PC
+> >> > is randomly, But the udev has no idea when a host PC connects our de=
+vice.
+> >> >
+> >> > So we consider it's reasonable to let the udev know the GADGET devic=
+e state.
+> >> > Is there any alternative to our question?
+> >>
+> >> I thought we already export events for gadget device states, have you
+> >> looked for them?  I can't dig through the code at the moment, but this
+> >> seems like a pretty common issue...
+> >>
+> >> Felipe, any ideas?
+> >
+> > we already expose that in sysfs. IIRC udev can act on sysfs changes,
+> > no ?
+>=20
+> I do not know if udev can polling sysfs file content change. I'll study t=
+his.
+>=20
+> But the change is triggered by calling usb_gadget_set_state, and I find
+> composite framework do not call this. Then we should do this common work
+> in every udc driver?
+
+yes. Only the UDC driver knows when the controller is moving among those
+states.
+
+--=20
+balbi
+
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR5pvIAAoJEIaOsuA1yqREfLQP/2DmltfIrOsyyRcOpgAcGWMu
+A638TGxbU+oowzLe1ysq3joNDL0qB608EwHd3JiSaJgz4uszsflXeQmiGfGGA88K
+gTyIaeJMJDQihMRUOT7KdxXxfbOONYgu+wCtOHZt7nG2CuxnvmU+ECJJvZX38A5m
+cbZILCtYCvWlIGe/vK06dbWQ8zkcLcKD1wMlRRaH7xyanw8hPs8kJuYMVyjZK4Pm
+hwByW3x+BIohrIObtX9/BV2TOm0kT83GeMN6nA4UodcDwlX5mMSFMKk/r5OpT7pc
+qOjOt7iivEVaKXqIxc/sW1SJ3mbDYLjAW4056yP7360GdWI0sil2m/GK3jw+Gw8E
+ln+LMyYxpXtBLF6O2Wm4OttbsKsP4p9yUhGTtBCr+W60P2FQO4PIGoinUvX9/tIc
+cyhB3K1oyi4hsTvFd6qAnjiOFQOmSFMgZ8upaMb1ERkGOG5K2bpDnfvDJaUqO1MQ
+q3LE8/xZSEA2bePieYAEL8ZeeQMsUTg9hDSwDO/lDiXVZy1dgQTgPgnbdNNFL8/Z
+DBYfvDQ5jlg83aErqrwdMU8Csns9MBP9QLkTrTFYt1K0DYHRDREiRdefnwpqGd+4
+SLT3qmOC9y/ZL8ZUFYfzsSoFweFBFG6inbPAY3waFbIPByY2rmc1hAnQD5fLsex/
+Vl4uVPdDqQiLNBDXCbw6
+=pyud
+-----END PGP SIGNATURE-----
+
+--KsGdsel6WgEHnImy--
