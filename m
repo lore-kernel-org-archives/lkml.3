@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965045Ab3GQXME (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:12:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52905 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964981Ab3GQXMB (ORCPT
+	id S965104Ab3GQXMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:12:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56660 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964962Ab3GQWzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:12:01 -0400
-Date: Wed, 17 Jul 2013 16:12:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
-Message-Id: <20130717161200.40a97074623be2685beb8156@linux-foundation.org>
-In-Reply-To: <1373994390-5479-1-git-send-email-jack@suse.cz>
-References: <1373994390-5479-1-git-send-email-jack@suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Jul 2013 18:55:50 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 080/145] netfilter: xt_TCPOPTSTRIP: don't use tcp_hdr()
+Date: Wed, 17 Jul 2013 15:46:52 -0700
+Message-Id: <1374101277-7915-81-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Jul 2013 19:06:30 +0200 Jan Kara <jack@suse.cz> wrote:
+3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
 
-> With users of radix_tree_preload() run from interrupt (CFQ is one such
-> possible user), the following race can happen:
-> 
-> radix_tree_preload()
-> ...
-> radix_tree_insert()
->   radix_tree_node_alloc()
->     if (rtp->nr) {
->       ret = rtp->nodes[rtp->nr - 1];
-> <interrupt>
-> ...
-> radix_tree_preload()
-> ...
-> radix_tree_insert()
->   radix_tree_node_alloc()
->     if (rtp->nr) {
->       ret = rtp->nodes[rtp->nr - 1];
-> 
-> And we give out one radix tree node twice. That clearly results in radix
-> tree corruption with different results (usually OOPS) depending on which
-> two users of radix tree race.
-> 
-> Fix the problem by disabling interrupts when working with rtp variable.
-> In-interrupt user can still deplete our preloaded nodes but at least we
-> won't corrupt radix trees.
-> 
-> ...
->
->   There are some questions regarding this patch:
-> Do we really want to allow in-interrupt users of radix_tree_preload()?  CFQ
-> could certainly do this in older kernels but that particular call site where I
-> saw the bug hit isn't there anymore so I'm not sure this can really happen with
-> recent kernels.
+------------------
 
-Well, it was never anticipated that interrupt-time code would run
-radix_tree_preload().  The whole point in the preloading was to be able
-to perform GFP_KERNEL allocations before entering the spinlocked region
-which needs to allocate memory.
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-Doing all that from within an interrupt is daft, because the interrupt code
-can't use GFP_KERNEL anyway.
+commit ed82c437320c48a4032492f4a55a7e2c934158b6 upstream.
 
-> Also it is actually harmful to do preloading if you are in interrupt context
-> anyway. The disadvantage of disallowing radix_tree_preload() in interrupt is
-> that we would need to tweak radix_tree_node_alloc() to somehow recognize
-> whether the caller wants it to use preloaded nodes or not and that callers
-> would have to get it right (although maybe some magic in radix_tree_preload()
-> could handle that).
-> 
-> Opinions?
+In (bc6bcb5 netfilter: xt_TCPOPTSTRIP: fix possible mangling beyond
+packet boundary), the use of tcp_hdr was introduced. However, we
+cannot assume that skb->transport_header is set for non-local packets.
 
-BUG_ON(in_interrupt()) :)
+Cc: Florian Westphal <fw@strlen.de>
+Reported-by: Phil Oester <kernel@linuxace.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/netfilter/xt_TCPOPTSTRIP.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
+diff --git a/net/netfilter/xt_TCPOPTSTRIP.c b/net/netfilter/xt_TCPOPTSTRIP.c
+index 1eb1a44..b68fa19 100644
+--- a/net/netfilter/xt_TCPOPTSTRIP.c
++++ b/net/netfilter/xt_TCPOPTSTRIP.c
+@@ -48,11 +48,13 @@ tcpoptstrip_mangle_packet(struct sk_buff *skb,
+ 		return NF_DROP;
+ 
+ 	len = skb->len - tcphoff;
+-	if (len < (int)sizeof(struct tcphdr) ||
+-	    tcp_hdr(skb)->doff * 4 > len)
++	if (len < (int)sizeof(struct tcphdr))
+ 		return NF_DROP;
+ 
+ 	tcph = (struct tcphdr *)(skb_network_header(skb) + tcphoff);
++	if (tcph->doff * 4 > len)
++		return NF_DROP;
++
+ 	opt  = (u_int8_t *)tcph;
+ 
+ 	/*
+-- 
+1.8.1.2
 
