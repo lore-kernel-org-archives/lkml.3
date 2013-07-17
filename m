@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3GQMa0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 08:30:26 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:41353 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab3GQMaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 08:30:24 -0400
+	id S1754733Ab3GQMb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 08:31:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59500 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754152Ab3GQMb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 08:31:56 -0400
+Message-ID: <51E68E6C.60100@ti.com>
+Date: Wed, 17 Jul 2013 15:30:36 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1374063678.6458.124.camel@gandalf.local.home>
-References: <20130715223615.GI15531@xanatos>
-	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-	<20130716211235.GG4994@xanatos>
-	<20130716212704.GB9371@thunk.org>
-	<20130716224357.GK4994@xanatos>
-	<1374015299.6458.76.camel@gandalf.local.home>
-	<20130716231217.GL4994@xanatos>
-	<51E5E609.1030202@oracle.com>
-	<1374022296.6458.118.camel@gandalf.local.home>
-	<20130717055139.GC21611@1wt.eu>
-	<1374063678.6458.124.camel@gandalf.local.home>
-Date: Wed, 17 Jul 2013 13:30:23 +0100
-Message-ID: <CACtES-ouVn+w8oJoe8+MLLEdnKA-XwBNhhuNQFGa84o9x=1yZA@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-From: Ricardo Ferreira <rikajff@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Willy Tarreau <w@1wt.eu>, Jeff Liu <jeff.liu@oracle.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Roger Quadros <rogerq@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 0/3] ARM: OMAP2+: omap_device: add dynamic pinctrl handling
+References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com> <51E686C1.8020801@ti.com>
+In-Reply-To: <51E686C1.8020801@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Slashdot is just a cesspool of trolls, not a good comparison.
+On 07/17/2013 02:57 PM, Roger Quadros wrote:
+> Hi Grygorii,
+>
+> On 07/17/2013 02:41 PM, Grygorii Strashko wrote:
+>> Hi Tony, Kevin
+>>
+>> This patch series introduces dynamic pinctrl handling in OMAP device framework
+>> in the same way as it was before switching to DT.
+>> This allow OMAP devices driver's developers to simply add dynamic pinctrl
+>> handling for "default", "active", "idle", "sleep" PIN states in their drivers
+>> by modifying DT definitions only - no modifications in drivers code are not needed.
+>>
+>
+> Overall I like the idea but can we make a provision for device drivers to override
+> this default pin state handling?
+>
+> The OMAP EHCI driver is one such special case where the wakeup mechanism is tied to pinctrl states
+> as it uses IO daisy chaining to implement wakeup.
+> So depending on whether wakeup needs to be enabled or not I must be able to chose whether
+> I put the pin in just "sleep" state or "sleep with wakeup" state.
 
+I think, in this case you can't use default behavior and need to define
+custom pins states like "sleep_wakeup"/"sleep_no_wakeup" and do not
+define pins state with name "sleep', so Device core and OMAP device
+framework will not touch your pins.
 
-On 17 July 2013 13:21, Steven Rostedt <rostedt@goodmis.org> wrote:
 >
-> On Wed, 2013-07-17 at 07:51 +0200, Willy Tarreau wrote:
+> cheers,
+> -roger
 >
-> > I don't believe this is that much practiced on LKML. I know at least
-> > one developer who does this, but he's probably the exception. I more
-> > often see counter proposals just as if two authors were fighting to
-> > get their patch merged.
->
-> And getting cursed out on LKML is also the exception and not the rule.
-> But it's the bad apples that seem to stand out. People say how horrible
-> LKML is, but as mentioned in the thread, Slashdot is a much worse place
-> to post than LKML. The difference with LKML is that you may deserve the
-> cursing you get.
->
-> -- Steve
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+Regards,
+-grygorii
