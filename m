@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab3GQX13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:27:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47803 "EHLO hydra.sisk.pl"
+	id S965169Ab3GQX1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:27:42 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47898 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757605Ab3GQX1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:14 -0400
+	id S1757823Ab3GQX1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:36 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -13,12 +13,12 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 30/30] ACPI / hotplug / PCI: Get rid of check_sub_bridges()
-Date: Thu, 18 Jul 2013 01:36:56 +0200
-Message-ID: <2212556.JheKCNdYg0@vostro.rjw.lan>
+Subject: [PATCH 0/30] ACPI / hotplug / PCI: Major rework + Thunderbolt workarounds
+Date: Thu, 18 Jul 2013 01:05:53 +0200
+Message-ID: <2366394.4EoP1MXmG2@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
+In-Reply-To: <3718119.FLASu5DBx8@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,71 +26,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Hi All,
 
-Now that acpiphp_check_bridge() always enumerates devices behind the
-bridge, there is no need to do that for each sub-bridge anymore like
-it is done in the current ACPI-based PCI hotplug (ACPIPHP) code.
+Now the series has been rebased on top of current linux-pm.git/linux-next
+and tested on two systems with Thunderbolt.  Some changes have been made too. ->
 
-Given this we don't need check_sub_bridges() anymore, so drop that
-function completely.
+On Friday, July 12, 2013 01:34:20 AM Rafael J. Wysocki wrote:
+> Hi,
+> 
+> I've made some progress with my ACPIPHP rework since I posted the series last
+> time and here goes an update.
+> 
+> First off, the previous series was somewhat racy, which should be fixed now.
+> Apart from this there's quite some new material on top of the patches I posted
+> last time (or rather on top of their new versions) and I integrated the
+> Thunderbolt series from Mika with that.  As a result,
+> 
+> https://patchwork.kernel.org/patch/2817341/
+> 
+> is required to be applied.
+> 
+> Still untested, still based on 3.10 with ACPI+PM 3.11 material merged on top,
+> but this time I don't have any plans to add more patches to the series for the
+> time being.  Also 3.11-rc1 should be out in a couple of days, so I'll be able
+> to integrate this work with the previous cleanups series from Gerry and myself
+> on top of it.
+> 
+> I did my best not to change too much at a time and some steps add stuff that
+> is removed by the subsequent ones, so hopefully it is bisectable.
+> 
+> If anyone finds something questionable or outright bogus in these patches,
+> please let me know before it's too late. ;-)
+> 
+> [ 1/30] Make bus registration and unregistration symmetric.  [Resend]
+> [ 2/30] Consolidate acpiphp_enumerate_slots().  [Resend]
+> [ 3/30] Fix error code path in register_slot().  [Resend]
+> [ 4/30] Introduce hotplug context objects for ACPI device objects corresponding
+>         to PCI hotplug devices.  [Update]
+> [ 5/30] Unified notify handler for hotplug events.  [Update]
+> [ 6/30] Drop acpiphp_handle_to_bridge() and use context objects instead of it.  [Update]
+> [ 7/30] Pass entire hotplug context objects (instead of their fields
+>         individually) to event handling work functions.  [Update]
+> [ 8/30] Merge hotplug event handling functions.  [Update]
+> [ 9/30] Drop func field from struct acpiphp_bridge.
+> [10/30] Refactor slot allocation code in register_slot().
+> [11/30] Make acpiphp_enumerate_slots() to register all devices on the given bus
+>         and install the notification handler for all of them.
+> [12/30] Drop sun field from struct acpiphp_slot.
+> [13/30] Use common slot count variable in register_slot().
 
-This also simplifies the ACPIPHP code a bit.
+-> The one above has been dropped, because it might cause regressions to appear
+on some systems, but that's not a big deal.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/pci/hotplug/acpiphp_glue.c |   25 -------------------------
- 1 file changed, 25 deletions(-)
+The numbering of the patches below has changed as a result, so the next one is
+[13/30] now and so on.
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -788,25 +788,6 @@ static void acpiphp_sanitize_bus(struct
-  * ACPI event handlers
-  */
- 
--static acpi_status
--check_sub_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
--{
--	struct acpiphp_bridge *bridge;
--	char objname[64];
--	struct acpi_buffer buffer = { .length = sizeof(objname),
--				      .pointer = objname };
--
--	bridge = acpiphp_handle_to_bridge(handle);
--	if (bridge) {
--		acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
--		dbg("%s: re-enumerating slots under %s\n",
--			__func__, objname);
--		acpiphp_check_bridge(bridge);
--		put_bridge(bridge);
--	}
--	return AE_OK ;
--}
--
- void acpiphp_check_host_bridge(acpi_handle handle)
- {
- 	struct acpiphp_bridge *bridge;
-@@ -816,9 +797,6 @@ void acpiphp_check_host_bridge(acpi_hand
- 		acpiphp_check_bridge(bridge);
- 		put_bridge(bridge);
- 	}
--
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
--		ACPI_UINT32_MAX, check_sub_bridges, NULL, NULL, NULL);
- }
- 
- static void hotplug_event(acpi_handle handle, u32 type, void *data)
-@@ -846,9 +824,6 @@ static void hotplug_event(acpi_handle ha
- 		dbg("%s: re-enumerating slots under %s\n", __func__, objname);
- 		if (bridge) {
- 			acpiphp_check_bridge(bridge);
--			acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
--					    ACPI_UINT32_MAX, check_sub_bridges,
--					    NULL, NULL, NULL);
- 		} else {
- 			struct acpiphp_slot *slot = func->slot;
- 
+> [14/30] Drop flags field from struct acpiphp_bridge.
+> [15/30] Embed function structure into struct acpiphp_context.
+> [16/30] Drop handle field from struct acpiphp_func.
+> [17/30] Drop handle field from struct acpiphp_bridge.
+> [18/30] Store parent bridge pointer in function objects and bus pointer in slot
+>         objects.
+> [19/30] Rework ACPI namespace scanning and trimming routines.
+> [20/30] Drop redundant checks from check_hotplug_bridge().
+> [21/30] Consolidate slot disabling and ejecting
+> [22/30] Do not queue up event handling work items for non-hotplug events.
+> [23/30] Do not execute _PS0 and _PS3 directly.
 
+This one was fixed after Mika had reported a problem with it.
+
+> [24/30] Do not check SLOT_ENABLED in enable_device().  [Thunderbolt series]
+> [25/30] Allow slots without new devices to be rescanned.  [Thunderbolt series]
+> [26/30] Check for new devices on enabled slots.  [Thunderbolt series, TBD]
+
+This one was reworked to use acpi_bus_trim() on ACPI device objects
+corresponding to PCI devices being removed (it also uses _STA to check the
+status of those devices if available).
+
+> [27/30] Get rid of unused constands in acpiphp.h.  [Thunderbolt series]
+> [28/30] Sanitize acpiphp_get_(latch)|(adapter)_status().  [Thunderbolt series]
+> [29/30] Redefine enable_device() and disable_device() (rename and change to void).
+> [30/30] Clean up the usage of bridge_mutex.
+
+The one above is [29/30] now and we have added one more patch:
+
+[30/30] Drop check_sub_bridges() which isn't necessary any more.
+
+The updated patches follow.
+
+If you don't hate this stuff, I'll put it into linux-next over the weekend for
+further testing.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
