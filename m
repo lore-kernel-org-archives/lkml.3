@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab3GQPEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:04:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33563 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab3GQPEe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:04:34 -0400
+	id S1756008Ab3GQPEq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:04:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39177 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753695Ab3GQPEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 11:04:40 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>
 CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 1/8] thermal: thermal_core: allow binding with limits on bind_params
-Date: Wed, 17 Jul 2013 11:02:39 -0400
-Message-ID: <1374073374-30946-4-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 3/9] thermal: thermal_core: allow binding with limits on bind_params
+Date: Wed, 17 Jul 2013 11:02:43 -0400
+Message-ID: <1374073374-30946-8-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
 References: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
@@ -63,7 +62,7 @@ index a71bd5b..2ad50e7 100644
  	    be bound, as per platform data.
  1.4.2 struct thermal_zone_params
 diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 247528b..eadb901 100644
+index 247528b..096c8be 100644
 --- a/drivers/thermal/thermal_core.c
 +++ b/drivers/thermal/thermal_core.c
 @@ -202,14 +202,23 @@ static void print_bind_err_msg(struct thermal_zone_device *tz,
@@ -88,7 +87,7 @@ index 247528b..eadb901 100644
 +			}
  			ret = thermal_zone_bind_cooling_device(tz, i, cdev,
 -					THERMAL_NO_LIMIT, THERMAL_NO_LIMIT);
-+							       lower, upper);
++							       upper, lower);
  			if (ret)
  				print_bind_err_msg(tz, cdev, ret);
  		}
