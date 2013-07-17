@@ -1,272 +1,752 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab3GQQ3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:29:23 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:65392 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab3GQQ3U (ORCPT
+	id S1756572Ab3GQQ3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:29:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:21981 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755658Ab3GQQ3r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:29:20 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, rob@landley.net, linux-doc@vger.kernel.org
-Cc: trivial@kernel.org, rdunlap@xenotime.net,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] doc: Fix typo in doucmentations
-Date: Thu, 18 Jul 2013 01:29:12 +0900
-Message-Id: <1374078552-10528-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.3.3.754.g9c3c367
+	Wed, 17 Jul 2013 12:29:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,685,1367996400"; 
+   d="scan'208";a="371766823"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+CC: "wni@nvidia.com" <wni@nvidia.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        "l.stach@pengutronix.de" <l.stach@pengutronix.de>
+Subject: RE: [lm-sensors] [RESEND PATCH V1 2/9] thermal: hwmon: move hwmon
+	support to single file
+Thread-Topic: [lm-sensors] [RESEND PATCH V1 2/9] thermal: hwmon: move hwmon
+	support to single file
+Thread-Index: AQHOgwFWN7f3r+mZp0awxYyZ3W6JkJlpDxTw
+Date: Wed, 17 Jul 2013 16:29:22 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59CED450@BGSMSX101.gar.corp.intel.com>
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
+ <1374074248-31690-3-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1374074248-31690-3-git-send-email-eduardo.valentin@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct typo (double words) in documentations.
+> -----Original Message-----
+> From: lm-sensors-bounces@lm-sensors.org [mailto:lm-sensors-bounces@lm-
+> sensors.org] On Behalf Of Eduardo Valentin
+> Sent: Wednesday, July 17, 2013 8:47 PM
+> To: devicetree-discuss@lists.ozlabs.org
+> Cc: wni@nvidia.com; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> lm-sensors@lm-sensors.org; Eduardo Valentin; Zhang, Rui;
+> l.stach@pengutronix.de
+> Subject: [lm-sensors] [RESEND PATCH V1 2/9] thermal: hwmon: move hwmon
+> support to single file
+> 
+> In order to improve code organization, this patch
+> moves the hwmon sysfs support to a file named
+> thermal_hwmon. This helps to add extra support
+> for hwmon without scrambling the code.
+> 
+> In order to do this move, the hwmon list head is now
+> using its own locking. Before, the list used
+> the global thermal locking. Also, some minor changes
+> in the code were required, as recommended by checkpatch.pl.
+> 
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- Documentation/arm/OMAP/omap_pm                                   | 2 +-
- Documentation/block/cfq-iosched.txt                              | 2 +-
- Documentation/devicetree/bindings/arm/vexpress-sysreg.txt        | 4 ++--
- Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt | 2 +-
- Documentation/dma-buf-sharing.txt                                | 2 +-
- Documentation/fb/fbcon.txt                                       | 2 +-
- Documentation/fb/viafb.txt                                       | 2 +-
- Documentation/filesystems/ext4.txt                               | 2 +-
- Documentation/filesystems/nfs/pnfs.txt                           | 2 +-
- Documentation/filesystems/relay.txt                              | 2 +-
- Documentation/filesystems/sysfs-tagging.txt                      | 2 +-
- Documentation/i2c/upgrading-clients                              | 4 ++--
- Documentation/rapidio/rapidio.txt                                | 2 +-
- Documentation/sound/alsa/compress_offload.txt                    | 2 +-
- Documentation/sysfs-rules.txt                                    | 2 +-
- Documentation/virtual/kvm/api.txt                                | 2 +-
- Documentation/x86/boot.txt                                       | 2 +-
- 17 files changed, 19 insertions(+), 19 deletions(-)
+Went through the patch, looks fine. Nice clean up Eduardo!!
 
-diff --git a/Documentation/arm/OMAP/omap_pm b/Documentation/arm/OMAP/omap_pm
-index 9012bb0..4ae915a 100644
---- a/Documentation/arm/OMAP/omap_pm
-+++ b/Documentation/arm/OMAP/omap_pm
-@@ -78,7 +78,7 @@ to NULL.  Drivers should use the following idiom:
- The most common usage of these functions will probably be to specify
- the maximum time from when an interrupt occurs, to when the device
- becomes accessible.  To accomplish this, driver writers should use the
--set_max_mpu_wakeup_lat() function to to constrain the MPU wakeup
-+set_max_mpu_wakeup_lat() function to constrain the MPU wakeup
- latency, and the set_max_dev_wakeup_lat() function to constrain the
- device wakeup latency (from clk_enable() to accessibility).  For
- example,
-diff --git a/Documentation/block/cfq-iosched.txt b/Documentation/block/cfq-iosched.txt
-index 9887f04..f3bc729 100644
---- a/Documentation/block/cfq-iosched.txt
-+++ b/Documentation/block/cfq-iosched.txt
-@@ -69,7 +69,7 @@ one, this value should be decreased relative to fifo_expire_async.
- group_idle
- -----------
- This parameter forces idling at the CFQ group level instead of CFQ
--queue level. This was introduced after after a bottleneck was observed
-+queue level. This was introduced after a bottleneck was observed
- in higher end storage due to idle on sequential queue and allow dispatch
- from a single queue. The idea with this parameter is that it can be run with
- slice_idle=0 and group_idle=8, so that idling does not happen on individual
-diff --git a/Documentation/devicetree/bindings/arm/vexpress-sysreg.txt b/Documentation/devicetree/bindings/arm/vexpress-sysreg.txt
-index 9cf3f25..5580e9c 100644
---- a/Documentation/devicetree/bindings/arm/vexpress-sysreg.txt
-+++ b/Documentation/devicetree/bindings/arm/vexpress-sysreg.txt
-@@ -32,8 +32,8 @@ numbers - see motherboard's TRM for more details.
- The node describing a config device must refer to the sysreg node via
- "arm,vexpress,config-bridge" phandle (can be also defined in the node's
- parent) and relies on the board topology properties - see main vexpress
--node documentation for more details. It must must also define the
--following property:
-+node documentation for more details. It must also define the following
-+property:
- - arm,vexpress-sysreg,func : must contain two cells:
-   - first cell defines function number (eg. 1 for clock generator,
-     2 for voltage regulators etc.)
-diff --git a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-index 648d60e..7ccae49 100644
---- a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-@@ -37,7 +37,7 @@ Bank: 3 (A, B and C)
-   0xffffffff 0x7fff3ccf  /* pioB */
-   0xffffffff 0x007fffff  /* pioC */
- 
--For each peripheral/bank we will descibe in a u32 if a pin can can be
-+For each peripheral/bank we will descibe in a u32 if a pin can be
- configured in it by putting 1 to the pin bit (1 << pin)
- 
- Let's take the pioA on peripheral B
-diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-index 0b23261..e31a2a9 100644
---- a/Documentation/dma-buf-sharing.txt
-+++ b/Documentation/dma-buf-sharing.txt
-@@ -321,7 +321,7 @@ Access to a dma_buf from the kernel context involves three steps:
- 
-    When the importer is done accessing the range specified in begin_cpu_access,
-    it needs to announce this to the exporter (to facilitate cache flushing and
--   unpinning of any pinned resources). The result of of any dma_buf kmap calls
-+   unpinning of any pinned resources). The result of any dma_buf kmap calls
-    after end_cpu_access is undefined.
- 
-    Interface:
-diff --git a/Documentation/fb/fbcon.txt b/Documentation/fb/fbcon.txt
-index 99ea58e..4a9739a 100644
---- a/Documentation/fb/fbcon.txt
-+++ b/Documentation/fb/fbcon.txt
-@@ -150,7 +150,7 @@ C. Boot options
- 
- C. Attaching, Detaching and Unloading
- 
--Before going on on how to attach, detach and unload the framebuffer console, an
-+Before going on how to attach, detach and unload the framebuffer console, an
- illustration of the dependencies may help.
- 
- The console layer, as with most subsystems, needs a driver that interfaces with
-diff --git a/Documentation/fb/viafb.txt b/Documentation/fb/viafb.txt
-index 444e34b..1cb2462 100644
---- a/Documentation/fb/viafb.txt
-+++ b/Documentation/fb/viafb.txt
-@@ -32,7 +32,7 @@
-     Start viafb with default settings:
-         #modprobe viafb
- 
--    Start viafb with with user options:
-+    Start viafb with user options:
-         #modprobe viafb viafb_mode=800x600 viafb_bpp=16 viafb_refresh=60
-                   viafb_active_dev=CRT+DVI viafb_dvi_port=DVP1
-                   viafb_mode1=1024x768 viafb_bpp=16 viafb_refresh1=60
-diff --git a/Documentation/filesystems/ext4.txt b/Documentation/filesystems/ext4.txt
-index f7cbf57..a92c5aa 100644
---- a/Documentation/filesystems/ext4.txt
-+++ b/Documentation/filesystems/ext4.txt
-@@ -2,7 +2,7 @@
- Ext4 Filesystem
- ===============
- 
--Ext4 is an an advanced level of the ext3 filesystem which incorporates
-+Ext4 is an advanced level of the ext3 filesystem which incorporates
- scalability and reliability enhancements for supporting large filesystems
- (64 bit) in keeping with increasing disk capacities and state-of-the-art
- feature requirements.
-diff --git a/Documentation/filesystems/nfs/pnfs.txt b/Documentation/filesystems/nfs/pnfs.txt
-index 52ae07f..adc81a3 100644
---- a/Documentation/filesystems/nfs/pnfs.txt
-+++ b/Documentation/filesystems/nfs/pnfs.txt
-@@ -12,7 +12,7 @@ struct pnfs_layout_hdr
- ----------------------
- The on-the-wire command LAYOUTGET corresponds to struct
- pnfs_layout_segment, usually referred to by the variable name lseg.
--Each nfs_inode may hold a pointer to a cache of of these layout
-+Each nfs_inode may hold a pointer to a cache of these layout
- segments in nfsi->layout, of type struct pnfs_layout_hdr.
- 
- We reference the header for the inode pointing to it, across each
-diff --git a/Documentation/filesystems/relay.txt b/Documentation/filesystems/relay.txt
-index 510b722..33e2f36 100644
---- a/Documentation/filesystems/relay.txt
-+++ b/Documentation/filesystems/relay.txt
-@@ -31,7 +31,7 @@ Semantics
- 
- Each relay channel has one buffer per CPU, each buffer has one or more
- sub-buffers.  Messages are written to the first sub-buffer until it is
--too full to contain a new message, in which case it it is written to
-+too full to contain a new message, in which case it is written to
- the next (if available).  Messages are never split across sub-buffers.
- At this point, userspace can be notified so it empties the first
- sub-buffer, while the kernel continues writing to the next.
-diff --git a/Documentation/filesystems/sysfs-tagging.txt b/Documentation/filesystems/sysfs-tagging.txt
-index caaaf12..eb843e4 100644
---- a/Documentation/filesystems/sysfs-tagging.txt
-+++ b/Documentation/filesystems/sysfs-tagging.txt
-@@ -24,7 +24,7 @@ flag between KOBJ_NS_TYPE_NONE and KOBJ_NS_TYPES, and s_ns will
- point to the namespace to which it belongs.
- 
- Each sysfs superblock's sysfs_super_info contains an array void
--*ns[KOBJ_NS_TYPES].  When a a task in a tagging namespace
-+*ns[KOBJ_NS_TYPES].  When a task in a tagging namespace
- kobj_nstype first mounts sysfs, a new superblock is created.  It
- will be differentiated from other sysfs mounts by having its
- s_fs_info->ns[kobj_nstype] set to the new namespace.  Note that
-diff --git a/Documentation/i2c/upgrading-clients b/Documentation/i2c/upgrading-clients
-index d699162..8e5fbd8 100644
---- a/Documentation/i2c/upgrading-clients
-+++ b/Documentation/i2c/upgrading-clients
-@@ -196,8 +196,8 @@ static int example_probe(struct i2c_client *i2c_client,
- 
- Update the detach method, by changing the name to _remove and
- to delete the i2c_detach_client call. It is possible that you
--can also remove the ret variable as it is not not needed for
--any of the core functions.
-+can also remove the ret variable as it is not needed for any
-+of the core functions.
- 
- - static int example_detach(struct i2c_client *client)
- + static int example_remove(struct i2c_client *client)
-diff --git a/Documentation/rapidio/rapidio.txt b/Documentation/rapidio/rapidio.txt
-index 717f5aa..28fbd87 100644
---- a/Documentation/rapidio/rapidio.txt
-+++ b/Documentation/rapidio/rapidio.txt
-@@ -300,7 +300,7 @@ initialization.
- -------------------------------------------
- 
- RapidIO subsystem code organization allows addition of new enumeration/discovery
--methods as new configuration options without significant impact to to the core
-+methods as new configuration options without significant impact to the core
- RapidIO code.
- 
- A new enumeration/discovery method has to be attached to one or more mport
-diff --git a/Documentation/sound/alsa/compress_offload.txt b/Documentation/sound/alsa/compress_offload.txt
-index 0bcc551..ac8d20b 100644
---- a/Documentation/sound/alsa/compress_offload.txt
-+++ b/Documentation/sound/alsa/compress_offload.txt
-@@ -73,7 +73,7 @@ The main requirements are:
- 
- Design
- 
--The new API shares a number of concepts with with the PCM API for flow
-+The new API shares a number of concepts with the PCM API for flow
- control. Start, pause, resume, drain and stop commands have the same
- semantics no matter what the content is.
- 
-diff --git a/Documentation/sysfs-rules.txt b/Documentation/sysfs-rules.txt
-index c1a1fd6..a5f985e 100644
---- a/Documentation/sysfs-rules.txt
-+++ b/Documentation/sysfs-rules.txt
-@@ -47,7 +47,7 @@ versions of the sysfs interface.
-         at device creation and removal
-       - the unique key to the device at that point in time
-       - the kernel's path to the device directory without the leading
--        /sys, and always starting with with a slash
-+        /sys, and always starting with a slash
-       - all elements of a devpath must be real directories. Symlinks
-         pointing to /sys/devices must always be resolved to their real
-         target and the target path must be used to access the device.
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index ef925ea..858aecf 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -53,7 +53,7 @@ incompatible change are allowed.  However, there is an extension
- facility that allows backward-compatible extensions to the API to be
- queried and used.
- 
--The extension mechanism is not based on on the Linux version number.
-+The extension mechanism is not based on the Linux version number.
- Instead, kvm defines extension identifiers and a facility to query
- whether a particular extension identifier is available.  If it is, a
- set of ioctls is available for application use.
-diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
-index fc66d42..f4f268c 100644
---- a/Documentation/x86/boot.txt
-+++ b/Documentation/x86/boot.txt
-@@ -58,7 +58,7 @@ Protocol 2.11:	(Kernel 3.6) Added a field for offset of EFI handover
- 		protocol entry point.
- 
- Protocol 2.12:	(Kernel 3.8) Added the xloadflags field and extension fields
--	 	to struct boot_params for for loading bzImage and ramdisk
-+	 	to struct boot_params for loading bzImage and ramdisk
- 		above 4G in 64bit.
- 
- **** MEMORY LAYOUT
--- 
-1.8.3.3.754.g9c3c367
+Acked-by: Durgadoss R <durgadoss.r@intel.com>
 
+Thanks,
+Durga
+
+> ---
+>  drivers/thermal/Kconfig         |   9 ++
+>  drivers/thermal/Makefile        |   3 +
+>  drivers/thermal/thermal_core.c  | 255 +------------------------------------
+>  drivers/thermal/thermal_hwmon.c | 269
+> ++++++++++++++++++++++++++++++++++++++++
+>  drivers/thermal/thermal_hwmon.h |  49 ++++++++
+>  5 files changed, 331 insertions(+), 254 deletions(-)
+>  create mode 100644 drivers/thermal/thermal_hwmon.c
+>  create mode 100644 drivers/thermal/thermal_hwmon.h
+> 
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index e988c81..7fb16bc 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -17,8 +17,17 @@ if THERMAL
+> 
+>  config THERMAL_HWMON
+>  	bool
+> +	prompt "Expose thermal sensors as hwmon device"
+>  	depends on HWMON=y || HWMON=THERMAL
+>  	default y
+> +	help
+> +	  In case a sensor is registered with the thermal
+> +	  framework, this option will also register it
+> +	  as a hwmon. The sensor will then have the common
+> +	  hwmon sysfs interface.
+> +
+> +	  Say 'Y' here if you want all thermal sensors to
+> +	  have hwmon sysfs interface too.
+> 
+>  choice
+>  	prompt "Default Thermal governor"
+> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+> index 67184a2..24cb894 100644
+> --- a/drivers/thermal/Makefile
+> +++ b/drivers/thermal/Makefile
+> @@ -5,6 +5,9 @@
+>  obj-$(CONFIG_THERMAL)		+= thermal_sys.o
+>  thermal_sys-y			+= thermal_core.o
+> 
+> +# interface to/from other layers providing sensors
+> +thermal_sys-$(CONFIG_THERMAL_HWMON)		+= thermal_hwmon.o
+> +
+>  # governors
+>  thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
+>  thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
+> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+> index 1f02e8e..247528b 100644
+> --- a/drivers/thermal/thermal_core.c
+> +++ b/drivers/thermal/thermal_core.c
+> @@ -38,6 +38,7 @@
+>  #include <net/genetlink.h>
+> 
+>  #include "thermal_core.h"
+> +#include "thermal_hwmon.h"
+> 
+>  MODULE_AUTHOR("Zhang Rui");
+>  MODULE_DESCRIPTION("Generic thermal management sysfs support");
+> @@ -859,260 +860,6 @@ thermal_cooling_device_trip_point_show(struct device
+> *dev,
+> 
+>  /* Device management */
+> 
+> -#if defined(CONFIG_THERMAL_HWMON)
+> -
+> -/* hwmon sys I/F */
+> -#include <linux/hwmon.h>
+> -
+> -/* thermal zone devices with the same type share one hwmon device */
+> -struct thermal_hwmon_device {
+> -	char type[THERMAL_NAME_LENGTH];
+> -	struct device *device;
+> -	int count;
+> -	struct list_head tz_list;
+> -	struct list_head node;
+> -};
+> -
+> -struct thermal_hwmon_attr {
+> -	struct device_attribute attr;
+> -	char name[16];
+> -};
+> -
+> -/* one temperature input for each thermal zone */
+> -struct thermal_hwmon_temp {
+> -	struct list_head hwmon_node;
+> -	struct thermal_zone_device *tz;
+> -	struct thermal_hwmon_attr temp_input;	/* hwmon sys attr */
+> -	struct thermal_hwmon_attr temp_crit;	/* hwmon sys attr */
+> -};
+> -
+> -static LIST_HEAD(thermal_hwmon_list);
+> -
+> -static ssize_t
+> -name_show(struct device *dev, struct device_attribute *attr, char *buf)
+> -{
+> -	struct thermal_hwmon_device *hwmon = dev_get_drvdata(dev);
+> -	return sprintf(buf, "%s\n", hwmon->type);
+> -}
+> -static DEVICE_ATTR(name, 0444, name_show, NULL);
+> -
+> -static ssize_t
+> -temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
+> -{
+> -	long temperature;
+> -	int ret;
+> -	struct thermal_hwmon_attr *hwmon_attr
+> -			= container_of(attr, struct thermal_hwmon_attr, attr);
+> -	struct thermal_hwmon_temp *temp
+> -			= container_of(hwmon_attr, struct
+> thermal_hwmon_temp,
+> -				       temp_input);
+> -	struct thermal_zone_device *tz = temp->tz;
+> -
+> -	ret = thermal_zone_get_temp(tz, &temperature);
+> -
+> -	if (ret)
+> -		return ret;
+> -
+> -	return sprintf(buf, "%ld\n", temperature);
+> -}
+> -
+> -static ssize_t
+> -temp_crit_show(struct device *dev, struct device_attribute *attr,
+> -		char *buf)
+> -{
+> -	struct thermal_hwmon_attr *hwmon_attr
+> -			= container_of(attr, struct thermal_hwmon_attr, attr);
+> -	struct thermal_hwmon_temp *temp
+> -			= container_of(hwmon_attr, struct
+> thermal_hwmon_temp,
+> -				       temp_crit);
+> -	struct thermal_zone_device *tz = temp->tz;
+> -	long temperature;
+> -	int ret;
+> -
+> -	ret = tz->ops->get_trip_temp(tz, 0, &temperature);
+> -	if (ret)
+> -		return ret;
+> -
+> -	return sprintf(buf, "%ld\n", temperature);
+> -}
+> -
+> -
+> -static struct thermal_hwmon_device *
+> -thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
+> -{
+> -	struct thermal_hwmon_device *hwmon;
+> -
+> -	mutex_lock(&thermal_list_lock);
+> -	list_for_each_entry(hwmon, &thermal_hwmon_list, node)
+> -		if (!strcmp(hwmon->type, tz->type)) {
+> -			mutex_unlock(&thermal_list_lock);
+> -			return hwmon;
+> -		}
+> -	mutex_unlock(&thermal_list_lock);
+> -
+> -	return NULL;
+> -}
+> -
+> -/* Find the temperature input matching a given thermal zone */
+> -static struct thermal_hwmon_temp *
+> -thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
+> -			  const struct thermal_zone_device *tz)
+> -{
+> -	struct thermal_hwmon_temp *temp;
+> -
+> -	mutex_lock(&thermal_list_lock);
+> -	list_for_each_entry(temp, &hwmon->tz_list, hwmon_node)
+> -		if (temp->tz == tz) {
+> -			mutex_unlock(&thermal_list_lock);
+> -			return temp;
+> -		}
+> -	mutex_unlock(&thermal_list_lock);
+> -
+> -	return NULL;
+> -}
+> -
+> -static int
+> -thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> -{
+> -	struct thermal_hwmon_device *hwmon;
+> -	struct thermal_hwmon_temp *temp;
+> -	int new_hwmon_device = 1;
+> -	int result;
+> -
+> -	hwmon = thermal_hwmon_lookup_by_type(tz);
+> -	if (hwmon) {
+> -		new_hwmon_device = 0;
+> -		goto register_sys_interface;
+> -	}
+> -
+> -	hwmon = kzalloc(sizeof(struct thermal_hwmon_device), GFP_KERNEL);
+> -	if (!hwmon)
+> -		return -ENOMEM;
+> -
+> -	INIT_LIST_HEAD(&hwmon->tz_list);
+> -	strlcpy(hwmon->type, tz->type, THERMAL_NAME_LENGTH);
+> -	hwmon->device = hwmon_device_register(NULL);
+> -	if (IS_ERR(hwmon->device)) {
+> -		result = PTR_ERR(hwmon->device);
+> -		goto free_mem;
+> -	}
+> -	dev_set_drvdata(hwmon->device, hwmon);
+> -	result = device_create_file(hwmon->device, &dev_attr_name);
+> -	if (result)
+> -		goto free_mem;
+> -
+> - register_sys_interface:
+> -	temp = kzalloc(sizeof(struct thermal_hwmon_temp), GFP_KERNEL);
+> -	if (!temp) {
+> -		result = -ENOMEM;
+> -		goto unregister_name;
+> -	}
+> -
+> -	temp->tz = tz;
+> -	hwmon->count++;
+> -
+> -	snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
+> -		 "temp%d_input", hwmon->count);
+> -	temp->temp_input.attr.attr.name = temp->temp_input.name;
+> -	temp->temp_input.attr.attr.mode = 0444;
+> -	temp->temp_input.attr.show = temp_input_show;
+> -	sysfs_attr_init(&temp->temp_input.attr.attr);
+> -	result = device_create_file(hwmon->device, &temp->temp_input.attr);
+> -	if (result)
+> -		goto free_temp_mem;
+> -
+> -	if (tz->ops->get_crit_temp) {
+> -		unsigned long temperature;
+> -		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+> -			snprintf(temp->temp_crit.name,
+> -				 sizeof(temp->temp_crit.name),
+> -				"temp%d_crit", hwmon->count);
+> -			temp->temp_crit.attr.attr.name = temp-
+> >temp_crit.name;
+> -			temp->temp_crit.attr.attr.mode = 0444;
+> -			temp->temp_crit.attr.show = temp_crit_show;
+> -			sysfs_attr_init(&temp->temp_crit.attr.attr);
+> -			result = device_create_file(hwmon->device,
+> -						    &temp->temp_crit.attr);
+> -			if (result)
+> -				goto unregister_input;
+> -		}
+> -	}
+> -
+> -	mutex_lock(&thermal_list_lock);
+> -	if (new_hwmon_device)
+> -		list_add_tail(&hwmon->node, &thermal_hwmon_list);
+> -	list_add_tail(&temp->hwmon_node, &hwmon->tz_list);
+> -	mutex_unlock(&thermal_list_lock);
+> -
+> -	return 0;
+> -
+> - unregister_input:
+> -	device_remove_file(hwmon->device, &temp->temp_input.attr);
+> - free_temp_mem:
+> -	kfree(temp);
+> - unregister_name:
+> -	if (new_hwmon_device) {
+> -		device_remove_file(hwmon->device, &dev_attr_name);
+> -		hwmon_device_unregister(hwmon->device);
+> -	}
+> - free_mem:
+> -	if (new_hwmon_device)
+> -		kfree(hwmon);
+> -
+> -	return result;
+> -}
+> -
+> -static void
+> -thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> -{
+> -	struct thermal_hwmon_device *hwmon;
+> -	struct thermal_hwmon_temp *temp;
+> -
+> -	hwmon = thermal_hwmon_lookup_by_type(tz);
+> -	if (unlikely(!hwmon)) {
+> -		/* Should never happen... */
+> -		dev_dbg(&tz->device, "hwmon device lookup failed!\n");
+> -		return;
+> -	}
+> -
+> -	temp = thermal_hwmon_lookup_temp(hwmon, tz);
+> -	if (unlikely(!temp)) {
+> -		/* Should never happen... */
+> -		dev_dbg(&tz->device, "temperature input lookup failed!\n");
+> -		return;
+> -	}
+> -
+> -	device_remove_file(hwmon->device, &temp->temp_input.attr);
+> -	if (tz->ops->get_crit_temp)
+> -		device_remove_file(hwmon->device, &temp->temp_crit.attr);
+> -
+> -	mutex_lock(&thermal_list_lock);
+> -	list_del(&temp->hwmon_node);
+> -	kfree(temp);
+> -	if (!list_empty(&hwmon->tz_list)) {
+> -		mutex_unlock(&thermal_list_lock);
+> -		return;
+> -	}
+> -	list_del(&hwmon->node);
+> -	mutex_unlock(&thermal_list_lock);
+> -
+> -	device_remove_file(hwmon->device, &dev_attr_name);
+> -	hwmon_device_unregister(hwmon->device);
+> -	kfree(hwmon);
+> -}
+> -#else
+> -static int
+> -thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> -{
+> -	return 0;
+> -}
+> -
+> -static void
+> -thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> -{
+> -}
+> -#endif
+> -
+>  /**
+>   * thermal_zone_bind_cooling_device() - bind a cooling device to a thermal zone
+>   * @tz:		pointer to struct thermal_zone_device
+> diff --git a/drivers/thermal/thermal_hwmon.c
+> b/drivers/thermal/thermal_hwmon.c
+> new file mode 100644
+> index 0000000..ab52a96
+> --- /dev/null
+> +++ b/drivers/thermal/thermal_hwmon.c
+> @@ -0,0 +1,269 @@
+> +/*
+> + *  thermal_hwmon.c - Generic Thermal Management hwmon support.
+> + *
+> + *  Code based on Intel thermal_core.c. Copyrights of the original code:
+> + *  Copyright (C) 2008 Intel Corp
+> + *  Copyright (C) 2008 Zhang Rui <rui.zhang@intel.com>
+> + *  Copyright (C) 2008 Sujith Thomas <sujith.thomas@intel.com>
+> + *
+> + *  Copyright (C) 2013 Texas Instruments
+> + *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
+> + *
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; version 2 of the License.
+> + *
+> + *  This program is distributed in the hope that it will be useful, but
+> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + *  General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License along
+> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + *
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~
+> + */
+> +#include <linux/hwmon.h>
+> +#include <linux/thermal.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include "thermal_hwmon.h"
+> +
+> +/* hwmon sys I/F */
+> +/* thermal zone devices with the same type share one hwmon device */
+> +struct thermal_hwmon_device {
+> +	char type[THERMAL_NAME_LENGTH];
+> +	struct device *device;
+> +	int count;
+> +	struct list_head tz_list;
+> +	struct list_head node;
+> +};
+> +
+> +struct thermal_hwmon_attr {
+> +	struct device_attribute attr;
+> +	char name[16];
+> +};
+> +
+> +/* one temperature input for each thermal zone */
+> +struct thermal_hwmon_temp {
+> +	struct list_head hwmon_node;
+> +	struct thermal_zone_device *tz;
+> +	struct thermal_hwmon_attr temp_input;	/* hwmon sys attr */
+> +	struct thermal_hwmon_attr temp_crit;	/* hwmon sys attr */
+> +};
+> +
+> +static LIST_HEAD(thermal_hwmon_list);
+> +
+> +static DEFINE_MUTEX(thermal_hwmon_list_lock);
+> +
+> +static ssize_t
+> +name_show(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	struct thermal_hwmon_device *hwmon = dev_get_drvdata(dev);
+> +	return sprintf(buf, "%s\n", hwmon->type);
+> +}
+> +static DEVICE_ATTR(name, 0444, name_show, NULL);
+> +
+> +static ssize_t
+> +temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	long temperature;
+> +	int ret;
+> +	struct thermal_hwmon_attr *hwmon_attr
+> +			= container_of(attr, struct thermal_hwmon_attr, attr);
+> +	struct thermal_hwmon_temp *temp
+> +			= container_of(hwmon_attr, struct
+> thermal_hwmon_temp,
+> +				       temp_input);
+> +	struct thermal_zone_device *tz = temp->tz;
+> +
+> +	ret = thermal_zone_get_temp(tz, &temperature);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%ld\n", temperature);
+> +}
+> +
+> +static ssize_t
+> +temp_crit_show(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	struct thermal_hwmon_attr *hwmon_attr
+> +			= container_of(attr, struct thermal_hwmon_attr, attr);
+> +	struct thermal_hwmon_temp *temp
+> +			= container_of(hwmon_attr, struct
+> thermal_hwmon_temp,
+> +				       temp_crit);
+> +	struct thermal_zone_device *tz = temp->tz;
+> +	long temperature;
+> +	int ret;
+> +
+> +	ret = tz->ops->get_trip_temp(tz, 0, &temperature);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%ld\n", temperature);
+> +}
+> +
+> +
+> +static struct thermal_hwmon_device *
+> +thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
+> +{
+> +	struct thermal_hwmon_device *hwmon;
+> +
+> +	mutex_lock(&thermal_hwmon_list_lock);
+> +	list_for_each_entry(hwmon, &thermal_hwmon_list, node)
+> +		if (!strcmp(hwmon->type, tz->type)) {
+> +			mutex_unlock(&thermal_hwmon_list_lock);
+> +			return hwmon;
+> +		}
+> +	mutex_unlock(&thermal_hwmon_list_lock);
+> +
+> +	return NULL;
+> +}
+> +
+> +/* Find the temperature input matching a given thermal zone */
+> +static struct thermal_hwmon_temp *
+> +thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
+> +			  const struct thermal_zone_device *tz)
+> +{
+> +	struct thermal_hwmon_temp *temp;
+> +
+> +	mutex_lock(&thermal_hwmon_list_lock);
+> +	list_for_each_entry(temp, &hwmon->tz_list, hwmon_node)
+> +		if (temp->tz == tz) {
+> +			mutex_unlock(&thermal_hwmon_list_lock);
+> +			return temp;
+> +		}
+> +	mutex_unlock(&thermal_hwmon_list_lock);
+> +
+> +	return NULL;
+> +}
+> +
+> +int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> +{
+> +	struct thermal_hwmon_device *hwmon;
+> +	struct thermal_hwmon_temp *temp;
+> +	int new_hwmon_device = 1;
+> +	int result;
+> +
+> +	hwmon = thermal_hwmon_lookup_by_type(tz);
+> +	if (hwmon) {
+> +		new_hwmon_device = 0;
+> +		goto register_sys_interface;
+> +	}
+> +
+> +	hwmon = kzalloc(sizeof(*hwmon), GFP_KERNEL);
+> +	if (!hwmon)
+> +		return -ENOMEM;
+> +
+> +	INIT_LIST_HEAD(&hwmon->tz_list);
+> +	strlcpy(hwmon->type, tz->type, THERMAL_NAME_LENGTH);
+> +	hwmon->device = hwmon_device_register(NULL);
+> +	if (IS_ERR(hwmon->device)) {
+> +		result = PTR_ERR(hwmon->device);
+> +		goto free_mem;
+> +	}
+> +	dev_set_drvdata(hwmon->device, hwmon);
+> +	result = device_create_file(hwmon->device, &dev_attr_name);
+> +	if (result)
+> +		goto free_mem;
+> +
+> + register_sys_interface:
+> +	temp = kzalloc(sizeof(*hwmon), GFP_KERNEL);
+> +	if (!temp) {
+> +		result = -ENOMEM;
+> +		goto unregister_name;
+> +	}
+> +
+> +	temp->tz = tz;
+> +	hwmon->count++;
+> +
+> +	snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
+> +		 "temp%d_input", hwmon->count);
+> +	temp->temp_input.attr.attr.name = temp->temp_input.name;
+> +	temp->temp_input.attr.attr.mode = 0444;
+> +	temp->temp_input.attr.show = temp_input_show;
+> +	sysfs_attr_init(&temp->temp_input.attr.attr);
+> +	result = device_create_file(hwmon->device, &temp->temp_input.attr);
+> +	if (result)
+> +		goto free_temp_mem;
+> +
+> +	if (tz->ops->get_crit_temp) {
+> +		unsigned long temperature;
+> +		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+> +			snprintf(temp->temp_crit.name,
+> +				 sizeof(temp->temp_crit.name),
+> +				"temp%d_crit", hwmon->count);
+> +			temp->temp_crit.attr.attr.name = temp-
+> >temp_crit.name;
+> +			temp->temp_crit.attr.attr.mode = 0444;
+> +			temp->temp_crit.attr.show = temp_crit_show;
+> +			sysfs_attr_init(&temp->temp_crit.attr.attr);
+> +			result = device_create_file(hwmon->device,
+> +						    &temp->temp_crit.attr);
+> +			if (result)
+> +				goto unregister_input;
+> +		}
+> +	}
+> +
+> +	mutex_lock(&thermal_hwmon_list_lock);
+> +	if (new_hwmon_device)
+> +		list_add_tail(&hwmon->node, &thermal_hwmon_list);
+> +	list_add_tail(&temp->hwmon_node, &hwmon->tz_list);
+> +	mutex_unlock(&thermal_hwmon_list_lock);
+> +
+> +	return 0;
+> +
+> + unregister_input:
+> +	device_remove_file(hwmon->device, &temp->temp_input.attr);
+> + free_temp_mem:
+> +	kfree(temp);
+> + unregister_name:
+> +	if (new_hwmon_device) {
+> +		device_remove_file(hwmon->device, &dev_attr_name);
+> +		hwmon_device_unregister(hwmon->device);
+> +	}
+> + free_mem:
+> +	if (new_hwmon_device)
+> +		kfree(hwmon);
+> +
+> +	return result;
+> +}
+> +
+> +void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> +{
+> +	struct thermal_hwmon_device *hwmon;
+> +	struct thermal_hwmon_temp *temp;
+> +
+> +	hwmon = thermal_hwmon_lookup_by_type(tz);
+> +	if (unlikely(!hwmon)) {
+> +		/* Should never happen... */
+> +		dev_dbg(&tz->device, "hwmon device lookup failed!\n");
+> +		return;
+> +	}
+> +
+> +	temp = thermal_hwmon_lookup_temp(hwmon, tz);
+> +	if (unlikely(!temp)) {
+> +		/* Should never happen... */
+> +		dev_dbg(&tz->device, "temperature input lookup failed!\n");
+> +		return;
+> +	}
+> +
+> +	device_remove_file(hwmon->device, &temp->temp_input.attr);
+> +	if (tz->ops->get_crit_temp)
+> +		device_remove_file(hwmon->device, &temp->temp_crit.attr);
+> +
+> +	mutex_lock(&thermal_hwmon_list_lock);
+> +	list_del(&temp->hwmon_node);
+> +	kfree(temp);
+> +	if (!list_empty(&hwmon->tz_list)) {
+> +		mutex_unlock(&thermal_hwmon_list_lock);
+> +		return;
+> +	}
+> +	list_del(&hwmon->node);
+> +	mutex_unlock(&thermal_hwmon_list_lock);
+> +
+> +	device_remove_file(hwmon->device, &dev_attr_name);
+> +	hwmon_device_unregister(hwmon->device);
+> +	kfree(hwmon);
+> +}
+> diff --git a/drivers/thermal/thermal_hwmon.h
+> b/drivers/thermal/thermal_hwmon.h
+> new file mode 100644
+> index 0000000..c798fdb
+> --- /dev/null
+> +++ b/drivers/thermal/thermal_hwmon.h
+> @@ -0,0 +1,49 @@
+> +/*
+> + *  thermal_hwmon.h - Generic Thermal Management hwmon support.
+> + *
+> + *  Code based on Intel thermal_core.c. Copyrights of the original code:
+> + *  Copyright (C) 2008 Intel Corp
+> + *  Copyright (C) 2008 Zhang Rui <rui.zhang@intel.com>
+> + *  Copyright (C) 2008 Sujith Thomas <sujith.thomas@intel.com>
+> + *
+> + *  Copyright (C) 2013 Texas Instruments
+> + *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
+> + *
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; version 2 of the License.
+> + *
+> + *  This program is distributed in the hope that it will be useful, but
+> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + *  General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License along
+> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + *
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~
+> + */
+> +#ifndef __THERMAL_HWMON_H__
+> +#define __THERMAL_HWMON_H__
+> +
+> +#include <linux/thermal.h>
+> +
+> +#ifdef CONFIG_THERMAL_HWMON
+> +int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz);
+> +void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz);
+> +#else
+> +static int
+> +thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> +{
+> +	return 0;
+> +}
+> +
+> +static void
+> +thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> +{
+> +}
+> +#endif
+> +
+> +#endif /* __THERMAL_HWMON_H__ */
+> --
+> 1.8.2.1.342.gfa7285d
+> 
+> 
+> _______________________________________________
+> lm-sensors mailing list
+> lm-sensors@lm-sensors.org
+> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
