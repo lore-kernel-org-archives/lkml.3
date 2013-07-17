@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934357Ab3GQWyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:54:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56496 "EHLO
+	id S934388Ab3GQWyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:54:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56511 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934276Ab3GQWyk (ORCPT
+	with ESMTP id S934276Ab3GQWyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:54:40 -0400
+	Wed, 17 Jul 2013 18:54:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, Mark Fasheh <mfasheh@suse.com>,
+        Sunil Mushran <sunil.mushran@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 071/145] netfilter: xt_TCPOPTSTRIP: fix possible mangling beyond packet boundary
-Date: Wed, 17 Jul 2013 15:46:43 -0700
-Message-Id: <1374101277-7915-72-git-send-email-kamal@canonical.com>
+Subject: [PATCH 062/145] ocfs2: xattr: fix inlined xattr reflink
+Date: Wed, 17 Jul 2013 15:46:34 -0700
+Message-Id: <1374101277-7915-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,75 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit bc6bcb59dd7c184d229f9e86d08aa56059938a4c upstream.
+commit ef962df057aaafd714f5c22ba3de1be459571fdf upstream.
 
-This target assumes that tcph->doff is well-formed, that may be well
-not the case. Add extra sanity checkings to avoid possible crash due
-to read/write out of the real packet boundary. After this patch, the
-default action on malformed TCP packets is to drop them. Moreover,
-fragments are skipped.
+Inlined xattr shared free space of inode block with inlined data or data
+extent record, so the size of the later two should be adjusted when
+inlined xattr is enabled.  See ocfs2_xattr_ibody_init().  But this isn't
+done well when reflink.  For inode with inlined data, its max inlined
+data size is adjusted in ocfs2_duplicate_inline_data(), no problem.  But
+for inode with data extent record, its record count isn't adjusted.  Fix
+it, or data extent record and inlined xattr may overwrite each other,
+then cause data corruption or xattr failure.
 
-Reported-by: Rafal Kupka <rkupka@telemetry.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+One panic caused by this bug in our test environment is the following:
+
+  kernel BUG at fs/ocfs2/xattr.c:1435!
+  invalid opcode: 0000 [#1] SMP
+  Pid: 10871, comm: multi_reflink_t Not tainted 2.6.39-300.17.1.el5uek #1
+  RIP: ocfs2_xa_offset_pointer+0x17/0x20 [ocfs2]
+  RSP: e02b:ffff88007a587948  EFLAGS: 00010283
+  RAX: 0000000000000000 RBX: 0000000000000010 RCX: 00000000000051e4
+  RDX: ffff880057092060 RSI: 0000000000000f80 RDI: ffff88007a587a68
+  RBP: ffff88007a587948 R08: 00000000000062f4 R09: 0000000000000000
+  R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000010
+  R13: ffff88007a587a68 R14: 0000000000000001 R15: ffff88007a587c68
+  FS:  00007fccff7f06e0(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 00000000015cf000 CR3: 000000007aa76000 CR4: 0000000000000660
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process multi_reflink_t
+  Call Trace:
+    ocfs2_xa_reuse_entry+0x60/0x280 [ocfs2]
+    ocfs2_xa_prepare_entry+0x17e/0x2a0 [ocfs2]
+    ocfs2_xa_set+0xcc/0x250 [ocfs2]
+    ocfs2_xattr_ibody_set+0x98/0x230 [ocfs2]
+    __ocfs2_xattr_set_handle+0x4f/0x700 [ocfs2]
+    ocfs2_xattr_set+0x6c6/0x890 [ocfs2]
+    ocfs2_xattr_user_set+0x46/0x50 [ocfs2]
+    generic_setxattr+0x70/0x90
+    __vfs_setxattr_noperm+0x80/0x1a0
+    vfs_setxattr+0xa9/0xb0
+    setxattr+0xc3/0x120
+    sys_fsetxattr+0xa8/0xd0
+    system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netfilter/xt_TCPOPTSTRIP.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ fs/ocfs2/xattr.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/net/netfilter/xt_TCPOPTSTRIP.c b/net/netfilter/xt_TCPOPTSTRIP.c
-index 25fd1c4..1eb1a44 100644
---- a/net/netfilter/xt_TCPOPTSTRIP.c
-+++ b/net/netfilter/xt_TCPOPTSTRIP.c
-@@ -30,17 +30,28 @@ static inline unsigned int optlen(const u_int8_t *opt, unsigned int offset)
+diff --git a/fs/ocfs2/xattr.c b/fs/ocfs2/xattr.c
+index 2e3ea30..5b8d944 100644
+--- a/fs/ocfs2/xattr.c
++++ b/fs/ocfs2/xattr.c
+@@ -6499,6 +6499,16 @@ static int ocfs2_reflink_xattr_inline(struct ocfs2_xattr_reflink *args)
+ 	}
  
- static unsigned int
- tcpoptstrip_mangle_packet(struct sk_buff *skb,
--			  const struct xt_tcpoptstrip_target_info *info,
-+			  const struct xt_action_param *par,
- 			  unsigned int tcphoff, unsigned int minlen)
- {
-+	const struct xt_tcpoptstrip_target_info *info = par->targinfo;
- 	unsigned int optl, i, j;
- 	struct tcphdr *tcph;
- 	u_int16_t n, o;
- 	u_int8_t *opt;
-+	int len;
-+
-+	/* This is a fragment, no TCP header is available */
-+	if (par->fragoff != 0)
-+		return XT_CONTINUE;
- 
- 	if (!skb_make_writable(skb, skb->len))
- 		return NF_DROP;
- 
-+	len = skb->len - tcphoff;
-+	if (len < (int)sizeof(struct tcphdr) ||
-+	    tcp_hdr(skb)->doff * 4 > len)
-+		return NF_DROP;
-+
- 	tcph = (struct tcphdr *)(skb_network_header(skb) + tcphoff);
- 	opt  = (u_int8_t *)tcph;
- 
-@@ -76,7 +87,7 @@ tcpoptstrip_mangle_packet(struct sk_buff *skb,
- static unsigned int
- tcpoptstrip_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- {
--	return tcpoptstrip_mangle_packet(skb, par->targinfo, ip_hdrlen(skb),
-+	return tcpoptstrip_mangle_packet(skb, par, ip_hdrlen(skb),
- 	       sizeof(struct iphdr) + sizeof(struct tcphdr));
- }
- 
-@@ -94,7 +105,7 @@ tcpoptstrip_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- 	if (tcphoff < 0)
- 		return NF_DROP;
- 
--	return tcpoptstrip_mangle_packet(skb, par->targinfo, tcphoff,
-+	return tcpoptstrip_mangle_packet(skb, par, tcphoff,
- 	       sizeof(*ipv6h) + sizeof(struct tcphdr));
- }
- #endif
+ 	new_oi = OCFS2_I(args->new_inode);
++	/*
++	 * Adjust extent record count to reserve space for extended attribute.
++	 * Inline data count had been adjusted in ocfs2_duplicate_inline_data().
++	 */
++	if (!(new_oi->ip_dyn_features & OCFS2_INLINE_DATA_FL) &&
++	    !(ocfs2_inode_is_fast_symlink(args->new_inode))) {
++		struct ocfs2_extent_list *el = &new_di->id2.i_list;
++		le16_add_cpu(&el->l_count, -(inline_size /
++					sizeof(struct ocfs2_extent_rec)));
++	}
+ 	spin_lock(&new_oi->ip_lock);
+ 	new_oi->ip_dyn_features |= OCFS2_HAS_XATTR_FL | OCFS2_INLINE_XATTR_FL;
+ 	new_di->i_dyn_features = cpu_to_le16(new_oi->ip_dyn_features);
 -- 
 1.8.1.2
 
