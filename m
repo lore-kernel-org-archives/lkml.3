@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab3GQEwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 00:52:42 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:39936 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3GQEwi convert rfc822-to-8bit (ORCPT
+	id S1751565Ab3GQEyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 00:54:12 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:41210 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab3GQEyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 00:52:38 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Jens Axboe <axboe@kernel.dk>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Hannes Reinecke <hare@suse.de>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        James Smart <James.Smart@Emulex.Com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kmo@daterainc.com" <kmo@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Thread-Topic: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Thread-Index: AQHOgqlyjpwMoCXftEyMj3Ut8LMdtQ==
-Date: Wed, 17 Jul 2013 04:52:32 +0000
-Message-ID: <1374036751.2045.20.camel@dabdike>
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
-	 <20130712010223.GA15673@kroah.com>
-	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
-	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
-	 <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
-	 <20130716211529.GQ22392@kernel.dk>
-In-Reply-To: <20130716211529.GQ22392@kernel.dk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [83.149.9.174]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <D48F40C483B0A344BB598243A23AA10F@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Wed, 17 Jul 2013 00:54:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130717040616.GI11674@dastard>
+References: <20130716015305.GB30569@redhat.com>
+	<CA+55aFyLbqJp0-=7=HOF9sKGOHwsa7A7-V76b8tbsnra8Z2=-w@mail.gmail.com>
+	<20130716023847.GA31481@redhat.com>
+	<CA+55aFxiGXht8+Dox=C2ezYYf1yMaLAzMYr40j=+peP8j5Ha6w@mail.gmail.com>
+	<20130716060351.GE11674@dastard>
+	<20130716193332.GB3572@sgi.com>
+	<CA+55aFzTBUKStdZu1GhKoiYc2knybhiaUFr2By98QYew_STE=A@mail.gmail.com>
+	<20130716204335.GH11674@dastard>
+	<CA+55aFwHMQd-VDeTDh-gm3jyj+5+FSoAHOeU47mwU-mKtEj9RQ@mail.gmail.com>
+	<20130717040616.GI11674@dastard>
+Date: Tue, 16 Jul 2013 21:54:09 -0700
+X-Google-Sender-Auth: t3GI8daNOQqHK_Dq80lmOy-IHLA
+Message-ID: <CA+55aFz5xw9Qi9Q6mwoCSud5eQh5u-QZ-xrY+TqgZPoKOgn6ew@mail.gmail.com>
+Subject: Re: splice vs execve lockdep trace.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Ben Myers <bpm@sgi.com>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, xfs@oss.sgi.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 15:15 -0600, Jens Axboe wrote:
-> On Tue, Jul 16 2013, Nicholas A. Bellinger wrote:
-> > On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
-> > > On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
-> > > > On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
-> > > > > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
-> > > > >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
-> > > > >>> Drilling down the work items ahead of a real mainline push is high on
-> > > > >>> priority list for discussion.
-> > > > >>>
-> > > > >>> The parties to be included in such a discussion are:
-> > > > >>>
-> > > > >>>   - Jens Axboe (blk-mq author)
-> > > > >>>   - James Bottomley (scsi maintainer)
-> > > > >>>   - Christoph Hellwig (scsi)
-> > > > >>>   - Martin Petersen (scsi)
-> > > > >>>   - Tejun Heo (block + libata)
-> > > > >>>   - Hannes Reinecke (scsi error recovery)
-> > > > >>>   - Kent Overstreet (block, per-cpu ida)
-> > > > >>>   - Stephen Cameron (scsi-over-pcie driver)
-> > > > >>>   - Andrew Vasquez (qla2xxx LLD)
-> > > > >>>   - James Smart (lpfc LLD)
-> > > > >>
-> > > > >> Isn't this something that should have been discussed at the storage
-> > > > >> mini-summit a few months ago?
-> > > > > 
-> > > > > The scsi-mq prototype, along with blk-mq (in it's current form) did not
-> > > > > exist a few short months ago.  ;)
-> > > > > 
-> > > > >>  It seems very specific to one subsystem to be a kernel summit topic,
-> > > > >> don't you think?
-> > > > > 
-> > > > > It's no more subsystem specific than half of the other proposals so far,
-> > > > > and given it's reach across multiple subsystems (block, scsi, target),
-> > > > > and the amount of off-list interest on the topic, I think it would make
-> > > > > a good candidate for discussion.
-> > > > > 
-> > > > And it'll open up new approaches which previously were dismissed,
-> > > > like re-implementing multipathing on top of scsi-mq, giving us the
-> > > > single scsi device like other UNIX systems.
-> > > > 
-> > > > Also I do think there's quite some synergy to be had, as with blk-mq
-> > > > we could nail each queue to a processor, which would eliminate the
-> > > > need for locking.
-> > > > Which could be useful for other subsystems, too.
-> > > 
-> > > Lets start with discussing this on the list, please, and then see where
-> > > we go from there ...
-> > > 
-> > 
-> > Yes, the discussion is beginning to make it's way to the list.  I've
-> > mostly been waiting for blk-mq to get a wider review before taking the
-> > early scsi-mq prototype driver to a larger public audience.
-> > 
-> > Primarily, I'm now reaching out to the people most effected by existing
-> > scsi_request_fn() based performance limitations.  Most of them have
-> > abandoned existing scsi_request_fn() based logic in favor of raw block
-> > make_request() based drivers, and are now estimating the amount of
-> > effort to move to an scsi-mq based approach.
-> > 
-> > Regardless, as the prototype progresses over the next months, having a
-> > face-to-face discussion with the key parties in the room would be very
-> > helpful given the large amount of effort involved to actually make this
-> > type of generational shift in SCSI actually happen.
-> 
-> There's a certain amount of overlap with the aio/O_DIRECT work as well.
-> But if it's not a general session, could always be a BOF or something.
-> 
-> I'll second the argument that most technical topics probably DO belong
-> in a topic related workshop. But that leaves us with basically only
-> process related topics at KS, I don't think it hurts to have a bit of
-> tech meat on the bone too. At least I personally miss that part of KS
-> from years gone by.
+On Tue, Jul 16, 2013 at 9:06 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> Right, and that's one of the biggest problems page based IO has - we
+> can't serialise it against other IO and other page cache
+> manipulation functions like hole punching. What happens when a
+> splice read or mmap page fault races with a hole punch? You get
+> stale data being left in the page cache because we can't serialise
+> the page read with the page cache invalidation and underlying extent
+> removal.
 
-Heh well, given that most of the block mq discussions at LSF have been
-you saying you really should get around to cleaning up and posting the
-code, you'll understand my wanting to see that happen first ...
+But Dave, that's *good*.
 
-I suppose we could try to run a storage workshop within KS, but I think
-most of the mini summit slots have already gone.  There's also plumbers
-if all slots are gone (I would say that, being biased and on the
-programme committee) Ric is running the storage and Filesystems MC
+You call it "stale data".
 
-http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/tracks/159
+I call it "the data was valid at some point".
 
-James
+This is what "splice()" is fundamentally all about.
 
+Think of it this way: even if you are 100% serialized during the
+"splice()" operation, what do you think happens afterwards?
+
+Seriously, think it through.
+
+That data is in a kernel buffer - the pipe. The fact that it was
+serialized at the time of the original splice() doesn't make _one_
+whit of a difference, because after the splice is over, the data still
+sits around in that pipe buffer, and you're no longer serializing it.
+Somebody else truncating the file or punching a hole in the file DOES
+NOT MATTER. It's too late.
+
+In other words, trying to "protect" against that kind of race is stupid.
+
+You're missing the big picture because you're concentrating on the
+details. Look beyond what happens inside XFS, and think about the
+higher-level meaning of splice() itself.
+
+So the only guarantee splice *should* give is entirely per-page. If
+you think it gives any other serialization, you're fundamentally
+wrong, because it *cannot*. See?
+
+                     Linus
