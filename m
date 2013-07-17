@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393Ab3GQE02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 00:26:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39281 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751092Ab3GQE0K (ORCPT
+	id S1751520Ab3GQE0c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 00:26:32 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46079 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab3GQE02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 00:26:10 -0400
-X-Sasl-enc: fsuNHvo3JeOkxxV7btX8zYfwPsh+uDzg9431TMxL8z7n 1374035168
-Date: Tue, 16 Jul 2013 21:24:31 -0700
-From: Greg KH <greg@kroah.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-Message-ID: <20130717042431.GC20312@kroah.com>
-References: <1373916476.2748.69.camel@dabdike>
- <20130715214422.GA2478@kroah.com>
- <1373941801.31067.113.camel@deadeye.wl.decadent.org.uk>
- <20130716061324.GA19052@kroah.com>
- <alpine.LNX.2.00.1307161109480.29788@pobox.suse.cz>
- <20130716163615.GB17231@kroah.com>
- <1374033238.2537.98.camel@deadeye.wl.decadent.org.uk>
+	Wed, 17 Jul 2013 00:26:28 -0400
+Date: Wed, 17 Jul 2013 06:26:20 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Wei Ni <wni@nvidia.com>, Guenter Roeck <linux@roeck-us.net>,
+        rui.zhang@intel.com, lm-sensors@lm-sensors.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] hwmon: (lm90) split set&show temp as common codes
+Message-ID: <20130717042618.GA11359@mithrandir>
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
+ <1373615287-18502-2-git-send-email-wni@nvidia.com>
+ <20130712152615.23464a6b@endymion.delvare>
+ <20130712135000.GA3386@roeck-us.net>
+ <20130712163034.1fc1cd66@endymion.delvare>
+ <20130712144011.GC3629@roeck-us.net>
+ <51E395D9.6070000@nvidia.com>
+ <20130715092415.6d082aa2@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+HP7ph2BbKc20aGI"
 Content-Disposition: inline
-In-Reply-To: <1374033238.2537.98.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <20130715092415.6d082aa2@endymion.delvare>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 04:53:58AM +0100, Ben Hutchings wrote:
-> On Tue, 2013-07-16 at 09:36 -0700, Greg KH wrote:
-> > On Tue, Jul 16, 2013 at 11:11:24AM +0200, Jiri Kosina wrote:
-> > > On Mon, 15 Jul 2013, Greg KH wrote:
-> > > 
-> > > > > Anything that's being reviewed on the stable list is public.  I know
-> > > > > this is an old argument, but if you point out a fix you *know* has a
-> > > > > security impact then you'll help general distribution maintainers and
-> > > > > users a lot more than you help the black-hats who are quite capable of
-> > > > > recognising such a fix (if they haven't already spotted and exploited
-> > > > > the bug).
-> > > > 
-> > > > I'm sorry, but you know I will not do that, so asking about it isn't
-> > > > going to change this behavior.
-> > > 
-> > > I just followed up in the other thread, where Ted was explaining why the 
-> > > huge /dev/random rework was a -stable material.
-> > > 
-> > > Why specifically would it be wrong to be open about this being security 
-> > > related, and providing the necessary data (i.e. at least reference to 
-> > > http://factorable.net/) publically?
-> > > 
-> > > I fail to see what the point behind hiding this would be.
-> > 
-> > I'm not "hiding" anything, all I'm doing is using the exact same
-> > changelog comments that are in Linus's tree, and nothing else.
-> 
-> Right, and I wouldn't expect you to edit commit messages.  But if a fix
-> was privately proposed to you for stable on the grounds that the bug is
-> found to be exploitable, maybe you could include that information in the
-> cover message for the review.
 
-Sorry, my position on that has not changed, I will not do that for the
-obvious reasons discussed many times in the past.
+--+HP7ph2BbKc20aGI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-greg k-h
+On Mon, Jul 15, 2013 at 09:24:15AM +0200, Jean Delvare wrote:
+> On Mon, 15 Jul 2013 14:25:29 +0800, Wei Ni wrote:
+> > On 07/12/2013 10:40 PM, Guenter Roeck wrote:
+> > > On Fri, Jul 12, 2013 at 04:30:34PM +0200, Jean Delvare wrote:
+> > >> If that means that for example the ACPI thermal zone is no longer
+> > >> displayed by "sensors", then I strongly object - unless it is
+> > >> explicitly registered as a separate hwmon device from now on, of cou=
+rse.
+> > >
+> > > If I recall correctly that was the idea. Of course, in practice that =
+will mean
+> > > that devices will _not_ get exposed as hwmon devices, as implementers=
+ won't
+> > > bother doing both.
+> > >=20
+> > >> My idea was to make the bridge optional - you decide when you regist=
+er
+> > >> a thermal device if it should be exposed as hwmon or not.
+> > >
+> > > Yes, that would be a much better solution.
+> >=20
+> > I think we can decide it in the DT, we can add a dt property in the lm90
+> > device node, such as:
+> > sys-interface =3D SYS_HWMON;
+> > or
+> > sys-interface =3D SYS_THERMAL;
+> > So we register it as the hwmon or thermal device
+>=20
+> This is an option, but please keep in mind that DT is not the only way
+> to instantiate LM90-like devices, and we should not expose duplicate
+> inputs by default. It is fine with me if the default is to create only a
+> HWMON device (as the lm90 driver was doing so far), and only
+> DT-instantiated devices have the choice.
+
+I don't think this information belongs in the device tree. Whether the
+device is exposed as hwmon or thermal device (or both) is entirely a
+software issue whereas DT is a means to describe the hardware.
+
+It seems to me that the earlier proposal of communicating to the bridge
+whether or not a device should be exposed as hwmon device is the right
+thing to do here.
+
+Thierry
+
+--+HP7ph2BbKc20aGI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR5hzqAAoJEN0jrNd/PrOhQXgP/jYIUYFfrCEVA0amd99jVdp9
+Tas04q9u/pBOoGmse32QaSrmNmxRkbCEzyGT+HWaij8+LYnd5NUPj1B9Z7pnd/hh
+DikqXGgoogJQksVpLNTdYfkMcxCwtI/L0P2pm7yx/YCSRYJhGwfOqXHEy9XLpoey
+/6MlXVWsA1iOvAvXynCjapk+feklF16gmGK3Wbc3bBavTGHZ8DvxlFs6WbVF2Eem
+Wyc/kYVYnsRPy0xoSEyjycLnpyR/x3NuaIhxJs45fdinKoPzWtjStr+iE+6/R3Mo
+dfQ2BIjIOtMDBmOQYS/dLAWraPKwfZItBte/mIxDkEUq0vVvF5IvvI/VZNtv4P6p
+2nzFGf80h6G7UKrxQ7+8XCnuWH52hZz5UsrDlAOkcOPKobVRCcDMcfWbiydn9D6I
+y5gugQ41RgnYZrt4/HZLU8xzbwcxviqrwxH2K0C5wzGmAwDCSEw+V1o6KZ4zD7sf
+K00c9CwsaXi3+Hv6kgiKDe74gNb8nbSQFppp9zvYGOkLXRamwzTiJixnUu6nJ2+B
+FyOBAp2YtM9XBm65K541blJXJhTVb9MaGgN2Sdlflo9QSJ9CZWHM0nowHfug1jYC
+hMsbhaq1Rm4d/hR2TaZhj12gDdB9gPC/6jjk67LMoZ9pq9O5u/o7oGcVeXhSD7vM
+TBSBiKomeTIEIVoz4gDs
+=69qf
+-----END PGP SIGNATURE-----
+
+--+HP7ph2BbKc20aGI--
