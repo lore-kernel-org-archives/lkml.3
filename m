@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965195Ab3GQX3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:29:55 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47883 "EHLO hydra.sisk.pl"
+	id S965179Ab3GQX3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:29:53 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47890 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757747Ab3GQX1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:31 -0400
+	id S1757703Ab3GQX1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:32 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -13,9 +13,9 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 7/30] ACPI / hotplug / PCI: Pass hotplug context objects to event handlers
-Date: Thu, 18 Jul 2013 01:19:59 +0200
-Message-ID: <12177707.iMaENA9NZf@vostro.rjw.lan>
+Subject: [PATCH 6/30] ACPI / hotplug / PCI: Rework acpiphp_handle_to_bridge()
+Date: Thu, 18 Jul 2013 01:19:17 +0200
+Message-ID: <1809031.kCVl1K84Fl@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
 References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
@@ -28,81 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Modify handle_hotplug_event() to pass the entire context object
-(instead of its fields individually) to work functions started by it.
-
-This change makes the subsequent consolidation of the event handling
-work functions a bit more straightforward.
+Using the hotplug context objects introduced previously rework the
+ACPI-based PCI hotplug (ACPIPHP) core code to get to acpiphp_bridge
+objects associated with hotplug bridges from those context objects
+rather than from the global list of hotplug bridges.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -989,6 +989,7 @@ void acpiphp_check_host_bridge(acpi_hand
+@@ -454,18 +454,20 @@ static int detect_ejectable_slots(acpi_h
  
- static void _handle_hotplug_event_bridge(struct work_struct *work)
+ static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle)
  {
+-	struct acpiphp_bridge *bridge;
 +	struct acpiphp_context *context;
- 	struct acpiphp_bridge *bridge;
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
-@@ -1000,7 +1001,8 @@ static void _handle_hotplug_event_bridge
- 	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
--	bridge = (struct acpiphp_bridge *)hp_work->context;
-+	context = hp_work->context;
-+	bridge = context->bridge;
++	struct acpiphp_bridge *bridge = NULL;
  
- 	acpi_scan_lock_acquire();
+-	mutex_lock(&bridge_mutex);
+-	list_for_each_entry(bridge, &bridge_list, list)
+-		if (bridge->handle == handle) {
++	mutex_lock(&acpiphp_context_lock);
++	context = acpiphp_get_context(handle);
++	if (context) {
++		bridge = context->bridge;
++		if (bridge)
+ 			get_bridge(bridge);
+-			mutex_unlock(&bridge_mutex);
+-			return bridge;
+-		}
+-	mutex_unlock(&bridge_mutex);
  
-@@ -1105,18 +1107,18 @@ static void hotplug_event_func(acpi_hand
- 
- static void _handle_hotplug_event_func(struct work_struct *work)
- {
-+	struct acpiphp_context *context;
- 	struct acpi_hp_work *hp_work;
--	struct acpiphp_func *func;
- 
- 	hp_work = container_of(work, struct acpi_hp_work, work);
--	func = hp_work->context;
-+	context = hp_work->context;
- 	acpi_scan_lock_acquire();
- 
--	hotplug_event_func(hp_work->handle, hp_work->type, func);
-+	hotplug_event_func(hp_work->handle, hp_work->type, context->func);
- 
- 	acpi_scan_lock_release();
- 	kfree(hp_work); /* allocated in handle_hotplug_event_func */
--	put_bridge(func->slot->bridge);
-+	put_bridge(context->func->slot->bridge);
+-	return NULL;
++		acpiphp_put_context(context);
++	}
++	mutex_unlock(&acpiphp_context_lock);
++	return bridge;
  }
  
- /**
-@@ -1137,11 +1139,9 @@ static void handle_hotplug_event(acpi_ha
- 	if (context) {
- 		if (context->bridge) {
- 			get_bridge(context->bridge);
--			data = context->bridge;
- 			work_func = _handle_hotplug_event_bridge;
- 		} else if (context->func) {
- 			get_bridge(context->func->slot->bridge);
--			data = context->func;
- 			work_func = _handle_hotplug_event_func;
- 		}
- 		acpiphp_put_context(context);
-@@ -1157,7 +1157,7 @@ static void handle_hotplug_event(acpi_ha
- 	 * don't deadlock on hotplug actions.
- 	 */
- 	if (work_func)
--		alloc_acpi_hp_work(handle, type, data, work_func);
-+		alloc_acpi_hp_work(handle, type, context, work_func);
- }
- 
- /*
+ static void cleanup_bridge(struct acpiphp_bridge *bridge)
 
