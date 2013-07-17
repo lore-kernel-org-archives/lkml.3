@@ -1,166 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab3GQHVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 03:21:09 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:48224 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab3GQHVH (ORCPT
+	id S1752487Ab3GQHZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 03:25:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56295 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab3GQHZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 03:21:07 -0400
-Date: Wed, 17 Jul 2013 09:21:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
+	Wed, 17 Jul 2013 03:25:27 -0400
+Date: Wed, 17 Jul 2013 09:25:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
-Message-ID: <20130717072100.GA14359@gmail.com>
-References: <20130716234438.C792C316@viggo.jf.intel.com>
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
+ frequently
+Message-ID: <20130717072504.GY17211@twins.programming.kicks-ass.net>
+References: <1374002463.3944.11.camel@j-VirtualBox>
+ <20130716202015.GX17211@twins.programming.kicks-ass.net>
+ <1374014881.2332.21.camel@j-VirtualBox>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130716234438.C792C316@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374014881.2332.21.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Dave Hansen <dave@sr71.net> wrote:
-
-> I was investigating some TLB flush scaling issues and realized
-> that we do not have any good methods for figuring out how many
-> TLB flushes we are doing.
+On Tue, Jul 16, 2013 at 03:48:01PM -0700, Jason Low wrote:
+> On Tue, 2013-07-16 at 22:20 +0200, Peter Zijlstra wrote:
+> > On Tue, Jul 16, 2013 at 12:21:03PM -0700, Jason Low wrote:
+> > > When running benchmarks on an 8 socket 80 core machine with a 3.10 kernel,
+> > > there can be a lot of contention in idle_balance() and related functions.
+> > > On many AIM7 workloads in which CPUs go idle very often and idle balance
+> > > gets called a lot, it is actually lowering performance.
+> > > 
+> > > Since idle balance often helps performance (when it is not overused), I
+> > > looked into trying to avoid attempting idle balance only when it is
+> > > occurring too frequently.
+> > > 
+> > > This RFC patch attempts to keep track of the approximate "average" time between
+> > > idle balance attempts per CPU. Each time the idle_balance() function is
+> > > invoked, it will compute the duration since the last idle_balance() for
+> > > the current CPU. The avg time between idle balance attempts is then updated
+> > > using a very similar method as how rq->avg_idle is computed. 
+> > > 
+> > > Once the average time between idle balance attempts drops below a certain
+> > > value (which in this patch is sysctl_sched_idle_balance_limit), idle_balance
+> > > for that CPU will be skipped. The average time between idle balances will
+> > > continue to be updated, even if it ends up getting skipped. The
+> > > initial/maximum average is set a lot higher though to make sure that the
+> > > avg doesn't fall below the threshold until the sample size is large and to
+> > > prevent the avg from being overestimated.
+> > 
+> > One of the things I've been talking about for a while now is how I'd
+> > like to use the idle guestimator used for cpuidle for newidle balance.
+> > 
+> > Basically based on the estimated idle time limit how far/wide you'll
+> > search for tasks to run.
+> > 
+> > You can remove the sysctl and auto-tune by measuring how long it takes
+> > on avg to do a newidle balance.
 > 
-> It would be nice to be able to do these in generic code, but the
-> arch-independent calls don't explicitly specify whether we
-> actually need to do remote flushes or not.  In the end, we really
-> need to know if we actually _did_ global vs. local invalidations,
-> so that leaves us with few options other than to muck with the
-> counters from arch-specific code.
+> Hi Peter,
 > 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> ---
-> 
->  linux.git-davehans/arch/x86/mm/tlb.c             |   18 ++++++++++++++----
->  linux.git-davehans/include/linux/vm_event_item.h |    5 +++++
->  linux.git-davehans/mm/vmstat.c                   |    5 +++++
->  3 files changed, 24 insertions(+), 4 deletions(-)
-> 
-> diff -puN arch/x86/mm/tlb.c~tlb-vmstats arch/x86/mm/tlb.c
-> --- linux.git/arch/x86/mm/tlb.c~tlb-vmstats	2013-07-16 16:41:56.476280350 -0700
-> +++ linux.git-davehans/arch/x86/mm/tlb.c	2013-07-16 16:41:56.483280658 -0700
-> @@ -103,6 +103,7 @@ static void flush_tlb_func(void *info)
->  	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
->  		return;
->  
-> +	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
->  	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
->  		if (f->flush_end == TLB_FLUSH_ALL)
->  			local_flush_tlb();
-> @@ -130,6 +131,7 @@ void native_flush_tlb_others(const struc
->  	info.flush_start = start;
->  	info.flush_end = end;
->  
-> +	count_vm_event(NR_TLB_REMOTE_FLUSH);
->  	if (is_uv_system()) {
->  		unsigned int cpu;
->  
-> @@ -149,6 +151,7 @@ void flush_tlb_current_task(void)
->  
->  	preempt_disable();
->  
-> +	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
->  	local_flush_tlb();
->  	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
->  		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
-> @@ -211,16 +214,19 @@ void flush_tlb_mm_range(struct mm_struct
->  	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
->  
->  	/* tlb_flushall_shift is on balance point, details in commit log */
-> -	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
-> +	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
-> +		count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
->  		local_flush_tlb();
-> -	else {
-> +	} else {
->  		if (has_large_page(mm, start, end)) {
->  			local_flush_tlb();
->  			goto flush_all;
->  		}
->  		/* flush range by one by one 'invlpg' */
-> -		for (addr = start; addr < end;	addr += PAGE_SIZE)
-> +		for (addr = start; addr < end;	addr += PAGE_SIZE) {
-> +			count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
->  			__flush_tlb_single(addr);
-> +		}
->  
->  		if (cpumask_any_but(mm_cpumask(mm),
->  				smp_processor_id()) < nr_cpu_ids)
-> @@ -256,6 +262,7 @@ void flush_tlb_page(struct vm_area_struc
->  
->  static void do_flush_tlb_all(void *info)
->  {
-> +	count_vm_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
->  	__flush_tlb_all();
->  	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
->  		leave_mm(smp_processor_id());
-> @@ -263,6 +270,7 @@ static void do_flush_tlb_all(void *info)
->  
->  void flush_tlb_all(void)
->  {
-> +	count_vm_event(NR_TLB_REMOTE_FLUSH);
->  	on_each_cpu(do_flush_tlb_all, NULL, 1);
->  }
->  
-> @@ -272,8 +280,10 @@ static void do_kernel_range_flush(void *
->  	unsigned long addr;
->  
->  	/* flush range by one by one 'invlpg' */
-> -	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE)
-> +	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE) {
-> +		count_vm_event(NR_TLB_LOCAL_FLUSH_ONE_KERNEL);
->  		__flush_tlb_single(addr);
-> +	}
->  }
->  
->  void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-> diff -puN include/linux/vm_event_item.h~tlb-vmstats include/linux/vm_event_item.h
-> --- linux.git/include/linux/vm_event_item.h~tlb-vmstats	2013-07-16 16:41:56.478280438 -0700
-> +++ linux.git-davehans/include/linux/vm_event_item.h	2013-07-16 16:41:56.483280658 -0700
-> @@ -70,6 +70,11 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
->  		THP_ZERO_PAGE_ALLOC,
->  		THP_ZERO_PAGE_ALLOC_FAILED,
->  #endif
->
-> +		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
-> +		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
-> +		NR_TLB_LOCAL_FLUSH_ALL,
-> +		NR_TLB_LOCAL_FLUSH_ONE,
-> +		NR_TLB_LOCAL_FLUSH_ONE_KERNEL,
+> When you say how long it takes on avg to do a newidle balance, are you
+> referring to the avg time it takes for each call to CPU_NEWLY_IDLE
+> load_balance() to complete, or the avg time it takes for newidle balance
+> attempts within a domain to eventually successfully pull/move a task(s)?
 
-Please fix the vertical alignment of comments.
+Both :-), being as the completion time would be roughly equivalent for the
+top domain and the entire call.
 
->  		NR_VM_EVENT_ITEMS
->  };
->  
-> diff -puN mm/vmstat.c~tlb-vmstats mm/vmstat.c
-> --- linux.git/mm/vmstat.c~tlb-vmstats	2013-07-16 16:41:56.480280525 -0700
-> +++ linux.git-davehans/mm/vmstat.c	2013-07-16 16:41:56.484280703 -0700
-> @@ -817,6 +817,11 @@ const char * const vmstat_text[] = {
->  	"thp_zero_page_alloc",
->  	"thp_zero_page_alloc_failed",
->  #endif
-> +	"nr_tlb_remote_flush",
-> +	"nr_tlb_remote_flush_received",
-> +	"nr_tlb_local_flush_all",
-> +	"nr_tlb_local_flush_one",
-> +	"nr_tlb_local_flush_one_kernel",
+So I suppose I was somewhat unclear :-) I initially started out with a
+simpler model, where you measure the avg time of the entire
+idle_balance() call and measure the avg idle time and compare the two.
 
-At first sight this seems pretty x86 specific. No range flush events, etc.
+Then I progressed to the more complex model where you measure the
+completion time of each domain in the for_each_domain() iteration of
+idle_balance() and compare that against the estimated idle time, bailing
+out of the domain iteration when the avg completion time exceeds the
+expected idle time.
 
-But no strong objections from me, if Andrew likes it.
-
-Thanks,
-
-	Ingo
+One thing that I thought of since is that we need to consider what
+happens for people with a low resolution sched_clock. IIRC there are
+still platforms that are jiffy based.
