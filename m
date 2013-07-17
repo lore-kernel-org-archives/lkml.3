@@ -1,190 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934691Ab3GQXDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:03:30 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:42347 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756462Ab3GQXD1 (ORCPT
+	id S934597Ab3GQW4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:56:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56778 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934485Ab3GQW4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:03:27 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, gregkh@linuxfoundation.org,
-        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paul.gortmaker@windriver.com, joe@perches.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: [PATCH v3] power: new trace event to print device suspend and resume time
-Date: Wed, 17 Jul 2013 17:03:21 -0600
-Message-Id: <1374102201-2937-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 17 Jul 2013 18:56:35 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 078/145] netfilter: nfnetlink_acct: fix incomplete dumping of objects
+Date: Wed, 17 Jul 2013 15:46:50 -0700
+Message-Id: <1374101277-7915-79-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new trace event is added to pm events to print time it takes to suspend and
-resume a device. It generates trace message that includes device, driver,
-parent information in addition to the type of pm ops invoked as well as the
-pm event and error status from the pm ops. Example trace below:
+3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
 
-bash-2239  [000] ....   290.883035: device_pm_report_time: backlight
- acpi_video0 parent=0000:00:02.0 state=freeze ops=class nsecs=332 err=0
-bash-2239  [000] ....   290.883041: device_pm_report_time: rfkill rf
-kill3 parent=phy0 state=freeze ops=legacy class nsecs=216 err=0
-bash-2239  [001] ....   290.973892: device_pm_report_time: ieee80211
- phy0 parent=0000:01:00.0 state=freeze ops=legacy class nsecs=90846477 err=0
+------------------
 
-bash-2239  [001] ....   293.660129: device_pm_report_time: ieee80211 phy0 parent=0000:01:00.0 state=restore ops=legacy class nsecs=101295162 err=0
-bash-2239  [001] ....   293.660147: device_pm_report_time: rfkill rfkill3 parent=phy0 state=restore ops=legacy class nsecs=1804 err=0
-bash-2239  [001] ....   293.660157: device_pm_report_time: backlight acpi_video0 parent=0000:00:02.0 state=restore ops=class nsecs=757 err=0
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+commit 991a6b735ff47710769545b11e481bb140b2e6f7 upstream.
+
+Fix broken incomplete object dumping if the list of objects does not
+fit into one single netlink message.
+
+Reported-by: Gabriel Lazar <Gabriel.Lazar@com.utcluj.ro>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/base/power/main.c    |   29 +++++++++++++++++++++--------
- include/trace/events/power.h |   35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 56 insertions(+), 8 deletions(-)
+ net/netfilter/nfnetlink_acct.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 5a9b656..63c58d7 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -28,6 +28,7 @@
- #include <linux/sched.h>
- #include <linux/async.h>
- #include <linux/suspend.h>
-+#include <trace/events/power.h>
- #include <linux/cpuidle.h>
- #include "../base.h"
- #include "power.h"
-@@ -56,6 +57,8 @@ static pm_message_t pm_transition;
+diff --git a/net/netfilter/nfnetlink_acct.c b/net/netfilter/nfnetlink_acct.c
+index 589d686..125bd35 100644
+--- a/net/netfilter/nfnetlink_acct.c
++++ b/net/netfilter/nfnetlink_acct.c
+@@ -147,9 +147,12 @@ nfnl_acct_dump(struct sk_buff *skb, struct netlink_callback *cb)
  
- static int async_error;
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(cur, &nfnl_acct_list, head) {
+-		if (last && cur != last)
+-			continue;
++		if (last) {
++			if (cur != last)
++				continue;
  
-+static char *pm_verb(int);
-+
- /**
-  * device_pm_sleep_init - Initialize system suspend-related device fields.
-  * @dev: Device object being initialized.
-@@ -172,16 +175,23 @@ static ktime_t initcall_debug_start(struct device *dev)
- }
- 
- static void initcall_debug_report(struct device *dev, ktime_t calltime,
--				  int error)
-+				  int error, pm_message_t state, char *info)
- {
- 	ktime_t delta, rettime;
- 
-+	rettime = ktime_get();
-+	delta = ktime_sub(rettime, calltime);
-+
- 	if (pm_print_times_enabled) {
--		rettime = ktime_get();
--		delta = ktime_sub(rettime, calltime);
- 		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
- 			error, (unsigned long long)ktime_to_ns(delta) >> 10);
- 	}
-+
-+	trace_device_pm_report_time(dev_name(dev), dev_driver_string(dev),
-+				dev->parent ? dev_name(dev->parent) : "none",
-+				info ? info : "none ",
-+				(s64) ktime_to_ns(delta), pm_verb(state.event),
-+				error);
- }
- 
- /**
-@@ -379,7 +389,7 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
- 	error = cb(dev);
- 	suspend_report_result(cb, error);
- 
--	initcall_debug_report(dev, calltime, error);
-+	initcall_debug_report(dev, calltime, error, state, info);
- 
- 	return error;
- }
-@@ -1027,7 +1037,8 @@ EXPORT_SYMBOL_GPL(dpm_suspend_end);
-  * @cb: Suspend callback to execute.
-  */
- static int legacy_suspend(struct device *dev, pm_message_t state,
--			  int (*cb)(struct device *dev, pm_message_t state))
-+			  int (*cb)(struct device *dev, pm_message_t state),
-+			  char *info)
- {
- 	int error;
- 	ktime_t calltime;
-@@ -1037,7 +1048,7 @@ static int legacy_suspend(struct device *dev, pm_message_t state,
- 	error = cb(dev, state);
- 	suspend_report_result(cb, error);
- 
--	initcall_debug_report(dev, calltime, error);
-+	initcall_debug_report(dev, calltime, error, state, info);
- 
- 	return error;
- }
-@@ -1097,7 +1108,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 			goto Run;
- 		} else if (dev->class->suspend) {
- 			pm_dev_dbg(dev, state, "legacy class ");
--			error = legacy_suspend(dev, state, dev->class->suspend);
-+			error = legacy_suspend(dev, state, dev->class->suspend,
-+						"legacy class ");
- 			goto End;
- 		}
- 	}
-@@ -1108,7 +1120,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 			callback = pm_op(dev->bus->pm, state);
- 		} else if (dev->bus->suspend) {
- 			pm_dev_dbg(dev, state, "legacy bus ");
--			error = legacy_suspend(dev, state, dev->bus->suspend);
-+			error = legacy_suspend(dev, state, dev->bus->suspend,
-+						"legacy bus ");
- 			goto End;
- 		}
- 	}
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index 8e42410..24afd22 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -66,6 +66,41 @@ TRACE_EVENT(machine_suspend,
- 	TP_printk("state=%lu", (unsigned long)__entry->state)
- );
- 
-+TRACE_EVENT(device_pm_report_time,
-+
-+	TP_PROTO(const char *device, const char *driver, const char *parent,
-+		 const char *pm_ops, s64 ops_time, char *pm_event_str,
-+		 int error),
-+
-+	TP_ARGS(device, driver, parent, pm_ops, ops_time, pm_event_str, error),
-+
-+	TP_STRUCT__entry(
-+		__string(device, device)
-+		__string(driver, driver)
-+		__string(parent, parent)
-+		__string(pm_ops, pm_ops)
-+		__string(pm_event_str, pm_event_str)
-+		__field(s64, ops_time)
-+		__field(int, error)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(device, device);
-+		__assign_str(driver, driver);
-+		__assign_str(parent, parent);
-+		__assign_str(pm_ops, pm_ops);
-+		__assign_str(pm_event_str, pm_event_str);
-+		__entry->ops_time = ops_time;
-+		__entry->error = error;
-+	),
-+
-+	/* ops_str has an extra space at the end */
-+	TP_printk("%s %s parent=%s state=%s ops=%snsecs=%lld err=%d",
-+		__get_str(driver), __get_str(device), __get_str(parent),
-+		__get_str(pm_event_str), __get_str(pm_ops),
-+		__entry->ops_time, __entry->error)
-+);
-+
- DECLARE_EVENT_CLASS(wakeup_source,
- 
- 	TP_PROTO(const char *name, unsigned int state),
++			last = NULL;
++		}
+ 		if (nfnl_acct_fill_info(skb, NETLINK_CB(cb->skb).portid,
+ 				       cb->nlh->nlmsg_seq,
+ 				       NFNL_MSG_TYPE(cb->nlh->nlmsg_type),
 -- 
-1.7.10.4
+1.8.1.2
 
