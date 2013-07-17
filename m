@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab3GRAb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 20:31:28 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:16018 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527Ab3GRAb1 (ORCPT
+	id S1757891Ab3GRAhO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 20:37:14 -0400
+Received: from microbel.pvv.ntnu.no ([129.241.210.179]:42578 "EHLO
+	microbel.pvv.ntnu.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755164Ab3GRAhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 20:31:27 -0400
-Message-ID: <1374107437.24916.64.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-From: Toshi Kani <toshi.kani@hp.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "vasilis.liaskovitis" <vasilis.liaskovitis@profitbricks.com>
-Date: Wed, 17 Jul 2013 18:30:37 -0600
-In-Reply-To: <CAHGf_=qkYHDuCTP0cg-ZpnHAgaYf=CgngR=6Fh7x0fQhym58BQ@mail.gmail.com>
-References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
-	 <CAHGf_=pND-R=qMHg7b=Fi5SqS6ahXJCG865WsOS2eKWa6g3A7A@mail.gmail.com>
-	 <1374103783.24916.49.camel@misato.fc.hp.com>
-	 <CAHGf_=q-9C4JZgv9Xp1Z3_Ks1a7t_sOArD3e1myj1EdiH5GBHQ@mail.gmail.com>
-	 <1374105078.24916.62.camel@misato.fc.hp.com>
-	 <CAHGf_=qkYHDuCTP0cg-ZpnHAgaYf=CgngR=6Fh7x0fQhym58BQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Jul 2013 20:37:12 -0400
+X-Greylist: delayed 2617 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 20:37:12 EDT
+Date: Thu, 18 Jul 2013 01:53:23 +0200
+From: Torstein Hegge <hegge@resisty.net>
+To: Chris J Arges <christopherarges@gmail.com>
+Cc: alsa-devel@alsa-project.org, martin@meltin.net,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Eldad Zack <eldad@fogrefinery.com>, Trulan Martin <trulanm@gmail.com>,
+        Damien Zammit <damien@zamaudio.com>, Mark Hills <mark@xwax.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ALSA: usb-audio: Add quirk for Focusrite Scarlett 18i8
+Message-ID: <20130717235323.GA21885@pvv.ntnu.no>
+References: <1374095558-9949-1-git-send-email-christopherarges@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1374095558-9949-1-git-send-email-christopherarges@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-17 at 20:24 -0400, KOSAKI Motohiro wrote:
-> On Wed, Jul 17, 2013 at 7:51 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> > On Wed, 2013-07-17 at 19:33 -0400, KOSAKI Motohiro wrote:
-> >> On Wed, Jul 17, 2013 at 7:29 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> >> > On Wed, 2013-07-17 at 19:22 -0400, KOSAKI Motohiro wrote:
-> >> >> On Wed, Jul 17, 2013 at 5:45 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> >> >> > CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
-> >> >> > interface, which allows a given memory address to be hot-added as
-> >> >> > follows. (See Documentation/memory-hotplug.txt for more detail.)
-> >> >> >
-> >> >> > # echo start_address_of_new_memory > /sys/devices/system/memory/probe
-> >> >> >
-> >> >> > This probe interface is required on powerpc. On x86, however, ACPI
-> >> >> > notifies a memory hotplug event to the kernel, which performs its
-> >> >> > hotplug operation as the result. Therefore, users should not be
-> >> >> > required to use this interface on x86. This probe interface is also
-> >> >> > error-prone that the kernel blindly adds a given memory address
-> >> >> > without checking if the memory is present on the system; no probing
-> >> >> > is done despite of its name. The kernel crashes when a user requests
-> >> >> > to online a memory block that is not present on the system.
-> >> >> >
-> >> >> > This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86,
-> >> >> > and clarifies it in Documentation/memory-hotplug.txt.
-> >> >>
-> >> >> Why don't you completely remove it? Who should use this strange interface?
-> >> >
-> >> > According to the comment below, this probe interface is used on powerpc.
-> >> > So, we cannot remove it, but to disable it on x86.
-> >>
-> >> I meant x86. Why can't we completely remove ARCH_MEMORY_PROBE section
-> >> from x86 Kconfig?
-> >
-> > Oh, I see what you meant.  I do not expect any need for end-users, but I
-> > was not sure if someone working on the memory hotplug development might
-> > use it for fake hot-add testing.  Yes, if you folks do not see any need,
-> > I will remove it from x86 Kconfig.
+On Wed, Jul 17, 2013 at 16:12:12 -0500, Chris J Arges wrote:
+> This patch is similar to commit 1762a59d8e8b5e99f6f4a0f292b40f3cacb108ba.
+> The same non-standard interface descriptor causes snd_usb_create_mixer()
+> to fail for the Focusrite Scarlett 18i8 as well.
+
+Did you test this on a recent kernel? I don't think this quirk or the quirk
+introduced by 1762a59d "ALSA: usb-audio: Add quirk for Focusrite Scarlett
+18i6" is necessary since kernel 3.9, as it includes:
+
+4d7b86c98 "ALSA: snd-usb: mixer: propagate errors up the call chain"
+83ea5d18d "ALSA: snd-usb: mixer: ignore -EINVAL in snd_usb_mixer_controls()"
+61ac51301 "ALSA: usb: Parse UAC2 extension unit like for UAC1"
+
+Those were tested on a Focusrite Scarlett 8i6, but the lsusb output
+from 18i6 and 8i6 looks similar,
+http://www.mail-archive.com/alsa-user@lists.sourceforge.net/msg29426.html
+http://www.mail-archive.com/alsa-user@lists.sourceforge.net/msg27776.html
+I'm guessing the 18i8 isn't that different.
+
+
+Torstein
+
+> ---
+>  sound/usb/quirks-table.h |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 46 insertions(+)
 > 
-> Then it's ok to submit your patch now.
-
-Great!  I will submit an updated patch tomorrow.
-
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-Thanks!
--Toshi
-
-
-
+> diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+> index 7f1585b..b954ec5 100644
+> --- a/sound/usb/quirks-table.h
+> +++ b/sound/usb/quirks-table.h
+> @@ -3232,6 +3232,52 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+>  		}
+>  	}
+>  },
+> +{
+> +	/*
+> +	 * Focusrite Scarlett 18i8
+> +	 *
+> +	 * Avoid mixer creation similar to the Scarlett 18i6 interface.
+> +	 */
+> +	USB_DEVICE(0x1235, 0x8014),
+> +	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+> +		.vendor_name = "Focusrite",
+> +		.product_name = "Scarlett 18i8",
+> +		.ifnum = QUIRK_ANY_INTERFACE,
+> +		.type = QUIRK_COMPOSITE,
+> +		.data = & (const struct snd_usb_audio_quirk[]) {
+> +			{
+> +				/* InterfaceSubClass 1 (Control Device) */
+> +				.ifnum = 0,
+> +				.type = QUIRK_IGNORE_INTERFACE
+> +			},
+> +			{
+> +				.ifnum = 1,
+> +				.type = QUIRK_AUDIO_STANDARD_INTERFACE
+> +			},
+> +			{
+> +				.ifnum = 2,
+> +				.type = QUIRK_AUDIO_STANDARD_INTERFACE
+> +			},
+> +			{
+> +				/* InterfaceSubClass 1 (Control Device) */
+> +				.ifnum = 3,
+> +				.type = QUIRK_IGNORE_INTERFACE
+> +			},
+> +			{
+> +				.ifnum = 4,
+> +				.type = QUIRK_MIDI_STANDARD_INTERFACE
+> +			},
+> +			{
+> +				/* InterfaceSubClass 1 (Device Firmware Update) */
+> +				.ifnum = 5,
+> +				.type = QUIRK_IGNORE_INTERFACE
+> +			},
+> +			{
+> +				.ifnum = -1
+> +			}
+> +		}
+> +	}
+> +},
+>  
+>  {
+>  	/*
+> -- 
+> 1.7.9.5
