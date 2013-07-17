@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934585Ab3GQXhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:37:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56212 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757545Ab3GQWso (ORCPT
+	id S934756Ab3GQXih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:38:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46800 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab3GQXie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:48:44 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Shane Huang <shane.huang@amd.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 005/145] ahci: Add AMD CZ SATA device ID
-Date: Wed, 17 Jul 2013 15:45:37 -0700
-Message-Id: <1374101277-7915-6-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
-References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Wed, 17 Jul 2013 19:38:34 -0400
+Date: Thu, 18 Jul 2013 09:38:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jul 17
+Message-Id: <20130718093824.d449a17a810f8898f815c199@canb.auug.org.au>
+In-Reply-To: <20130717083134.GB22506@sirena.org.uk>
+References: <20130717141335.02a3ad620bdb473935d05aa3@canb.auug.org.au>
+	<20130717083134.GB22506@sirena.org.uk>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__18_Jul_2013_09_38_24_+1000_oQG.TdiODLshLYXk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Thu__18_Jul_2013_09_38_24_+1000_oQG.TdiODLshLYXk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Mark,
 
-From: Shane Huang <shane.huang@amd.com>
+[Sorry for the delay, I had to go into work to find the logs of
+yesterday's builds.]
 
-commit fafe5c3d82a470d73de53e6b08eb4e28d974d895 upstream.
+On Wed, 17 Jul 2013 09:31:34 +0100 Mark Brown <broonie@kernel.org> wrote:
+>
+> On Wed, Jul 17, 2013 at 02:13:35PM +1000, Stephen Rothwell wrote:
+>=20
+> > The sound-asoc tree still has its build failure so I used the version f=
+rom
+> > next-20130715.
+>=20
+> I'd have expected both of those to have been fixed.  Are you sure you're
+> seeing the same issue?
 
-To add AMD CZ SATA controller device ID of IDE mode.
+So these are the errors I got yesterday:
 
-[bhelgaas: drop pci_ids.h update]
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/ata/ahci.c   | 1 +
- drivers/pci/quirks.c | 2 ++
- 2 files changed, 3 insertions(+)
+sound/soc/fsl/imx-mc13783.c:23:28: fatal error: asm/mach-types.h: No such f=
+ile or directory
+ #include <asm/mach-types.h>
+                            ^
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 72e3e12..c8a38ce 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -308,6 +308,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 
- 	/* AMD */
- 	{ PCI_VDEVICE(AMD, 0x7800), board_ahci }, /* AMD Hudson-2 */
-+	{ PCI_VDEVICE(AMD, 0x7900), board_ahci }, /* AMD CZ */
- 	/* AMD is using RAID class only for ahci controllers */
- 	{ PCI_VENDOR_ID_AMD, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_RAID << 8, 0xffffff, board_ahci },
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 0369fb6..8b51656 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1062,6 +1062,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP700_SATA, quirk
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP700_SATA, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
- 
- /*
-  *	Serverworks CSB5 IDE does not fully support native mode
--- 
-1.8.1.2
+I didn't look closely enough, because this is the same error that I got
+the previous day, but in a different file.
 
+sound/soc/omap/omap-pcm.c: In function 'omap_pcm_preallocate_dma_buffer':
+sound/soc/omap/omap-pcm.c:171:2: error: implicit declaration of function 'd=
+ma_alloc_writecombine' [-Werror=3Dimplicit-function-declaration]
+  buf->area =3D dma_alloc_writecombine(pcm->card->dev, size,
+  ^
+sound/soc/omap/omap-pcm.c:171:12: warning: assignment makes pointer from in=
+teger without a cast [enabled by default]
+  buf->area =3D dma_alloc_writecombine(pcm->card->dev, size,
+            ^
+sound/soc/omap/omap-pcm.c: In function 'omap_pcm_free_dma_buffers':
+sound/soc/omap/omap-pcm.c:195:3: error: implicit declaration of function 'd=
+ma_free_writecombine' [-Werror=3Dimplicit-function-declaration]
+   dma_free_writecombine(pcm->card->dev, buf->bytes,
+   ^
+
+These are the same as the day before.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__18_Jul_2013_09_38_24_+1000_oQG.TdiODLshLYXk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR5yr0AAoJEECxmPOUX5FER+0P/iojiheklwrgThvNnSosMT8U
+nlhW/CFsgItQ2Swgel8CCx4rreUCyayHtPZlZyzSQ/wmws4+EjEXrI0snnf33syf
+eAzJkyjcU2zk6pIc8YZVHa9ddqIBd6f+fc0+FW7WaCMjgDwXlDpNJ4Z8WPWQ/KuS
+TUYApAN7YD3Qj62alXzfwz9GDdqRhdPWEMQ2ZfsC8ZZsECDqO5xq/p2Mo1rTVyJy
+RWJkYk4sq8leAZPIzqO/AXKjNiZePQEoIaGRxL6KbvIupYy0B9GA6xW5Tr1HnyFo
+xQ60sBGk4j4NYs0nrtyntHNNZW+Rm3q5INYpeF/lJTvwqfdFfoqcG8KeoWegZf8M
+QvcjwDjZtBEetbqQVWfY8rYh3OG4NNprmCETCZxcZcVaAJvuOfBOwMfVMorcnExX
+AEJjxLXLnIVNLK+4Fl8OseeZ6DVN+JGGneC8tM3//9GevfaE+WVitcU0D72Vn13O
+S5T+FlD1hoXhEth3i0b0E4vIsE5ANfO77CtsclBxP2qFTnTmovEDKuTyE26Mc7iI
+7DkLygYe6fIpvyZzVGiyxUQiK5FxO5uFDFQpDtG8uGCPv5VSFF0a3/fInwMVi0cY
+isa7HakdYE90UrGFjJY9C1/qNhrixuB3i7QR/h+6zAHJFT/w6bsAOr2XXThWCYWs
+CQWrgXHqex/C2oCmWEGS
+=oFtH
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__18_Jul_2013_09_38_24_+1000_oQG.TdiODLshLYXk--
