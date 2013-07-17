@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab3GQMb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 08:31:58 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59500 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab3GQMb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 08:31:56 -0400
-Message-ID: <51E68E6C.60100@ti.com>
-Date: Wed, 17 Jul 2013 15:30:36 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754752Ab3GQMdI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 08:33:08 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:34704 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502Ab3GQMdG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 08:33:06 -0400
+Date: Wed, 17 Jul 2013 08:33:02 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Olof Johansson <olof@lixom.net>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Subject: Re: [RFC PATCH v5 0/1] drivers: mfd: Versatile Express SPC support
+In-Reply-To: <1374052705.3146.86.camel@hornet>
+Message-ID: <alpine.LFD.2.03.1307170825240.14924@syhkavp.arg>
+References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com> <1374052705.3146.86.camel@hornet>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 0/3] ARM: OMAP2+: omap_device: add dynamic pinctrl handling
-References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com> <51E686C1.8020801@ti.com>
-In-Reply-To: <51E686C1.8020801@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 02:57 PM, Roger Quadros wrote:
-> Hi Grygorii,
->
-> On 07/17/2013 02:41 PM, Grygorii Strashko wrote:
->> Hi Tony, Kevin
->>
->> This patch series introduces dynamic pinctrl handling in OMAP device framework
->> in the same way as it was before switching to DT.
->> This allow OMAP devices driver's developers to simply add dynamic pinctrl
->> handling for "default", "active", "idle", "sleep" PIN states in their drivers
->> by modifying DT definitions only - no modifications in drivers code are not needed.
->>
->
-> Overall I like the idea but can we make a provision for device drivers to override
-> this default pin state handling?
->
-> The OMAP EHCI driver is one such special case where the wakeup mechanism is tied to pinctrl states
-> as it uses IO daisy chaining to implement wakeup.
-> So depending on whether wakeup needs to be enabled or not I must be able to chose whether
-> I put the pin in just "sleep" state or "sleep with wakeup" state.
+On Wed, 17 Jul 2013, Pawel Moll wrote:
 
-I think, in this case you can't use default behavior and need to define
-custom pins states like "sleep_wakeup"/"sleep_no_wakeup" and do not
-define pins state with name "sleep', so Device core and OMAP device
-framework will not touch your pins.
+> On Tue, 2013-07-16 at 17:05 +0100, Lorenzo Pieralisi wrote:
+> > /drivers/mfd is probably not the right place for this code as it stands (but
+> > probably will be when the entire driver, with DVFS and config interface, is
+> > complete).
+> 
+> Not that it really matters now, but my vexpress-sysreg rework will -
+> most likely - leave only skeleton in the MFD (registering mfd_cells) and
+> other stuff is going to be spread all around. Then I'm planning to move
+> the remaining of the vexpress-specific initialization to
+> drivers/platform/arm/vexpress.c, so maybe sticking vexpress-spc.c to
+> this (non-existing yet) directory would be the right thing to do?
 
->
-> cheers,
-> -roger
->
+I don't like this idea.  We worked hard to shrink platform specific 
+directories such as arch/arm/mach-*/ as much as possible.  Simply moving 
+stuff to drivers/platform/arm/* doesn't make the situation any much 
+better.
 
-Regards,
--grygorii
+If this is really miscelaneous code that really doesn't fit 
+anywhere else, it should rather go into drivers/misc/ as a last resort.
+
+
+Nicolas
