@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab3GQLw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:52:56 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:41552 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab3GQLwz (ORCPT
+	id S1754601Ab3GQL4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:56:20 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:62976 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754321Ab3GQL4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:52:55 -0400
-Date: Wed, 17 Jul 2013 12:52:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH 1/2] mfd: wm8994: Remove duplicate check for active
- JACKDET
-Message-ID: <20130717115249.GE3336@laptop>
-References: <1374060037-18527-1-git-send-email-broonie@kernel.org>
+	Wed, 17 Jul 2013 07:56:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374060037-18527-1-git-send-email-broonie@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130717035010.GC4541@S2101-09.ap.freescale.net>
+References: <1373979376-31583-1-git-send-email-otavio@ossystems.com.br>
+	<20130717035010.GC4541@S2101-09.ap.freescale.net>
+Date: Wed, 17 Jul 2013 08:56:18 -0300
+X-Google-Sender-Auth: xywXmCfELsossYUPsZtDdeBZcNc
+Message-ID: <CAP9ODKruGc+mOs3uvNzfCgPqnXgxqTJbaPXVRDFt9TwtnwumYQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] ARM: dts: imx23-evk: enable USB PHY and controller
+From: Otavio Salvador <otavio@ossystems.com.br>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013, Mark Brown wrote:
+On Wed, Jul 17, 2013 at 12:50 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
+> On Tue, Jul 16, 2013 at 09:56:12AM -0300, Otavio Salvador wrote:
+>> The i.MX23EVK board provides a USB port so the USB PHY and controller
+>> need to be enabled for it to be usable.
+>>
+>> Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
+>
+> There is a typo i.XM23 in commit log of patch #2 and #3.  I fixed them
+> up and applied all 3.
 
-> From: Mark Brown <broonie@linaro.org>
-> 
-> Probably the result of a mismerge or rebase failing to notice that the
-> hunk had already been applied.
-> 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/mfd/wm8994-core.c | 14 --------------
->  1 file changed, 14 deletions(-)
-> 
-> diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-> index 781115e..e8ecb8e 100644
-> --- a/drivers/mfd/wm8994-core.c
-> +++ b/drivers/mfd/wm8994-core.c
-> @@ -245,20 +245,6 @@ static int wm8994_suspend(struct device *dev)
->  		break;
->  	}
->  
-> -	switch (wm8994->type) {
-> -	case WM1811:
-> -		ret = wm8994_reg_read(wm8994, WM8994_ANTIPOP_2);
-> -		if (ret < 0) {
-> -			dev_err(dev, "Failed to read jackdet: %d\n", ret);
-> -		} else if (ret & WM1811_JACKDET_MODE_MASK) {
-> -			dev_dbg(dev, "CODEC still active, ignoring suspend\n");
-> -			return 0;
-> -		}
-> -		break;
-> -	default:
-> -		break;
-> -	}
-> -
->  	/* Disable LDO pulldowns while the device is suspended if we
->  	 * don't know that something will be driving them. */
->  	if (!wm8994->ldo_ena_always_driven)
+Thanks Shawn :)
 
-I don't see the duplicate?
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--
+Otavio Salvador                             O.S. Systems
+http://www.ossystems.com.br        http://projetos.ossystems.com.br
+Mobile: +55 (53) 9981-7854            Mobile: +1 (347) 903-9750
