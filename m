@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934489Ab3GQXQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:16:08 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:42271 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934462Ab3GQXQF (ORCPT
+	id S934462Ab3GQXQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:16:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56560 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934422Ab3GQWzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:16:05 -0400
-Message-ID: <51E725B2.7090003@gmail.com>
-Date: Wed, 17 Jul 2013 16:16:02 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
-References: <1373994390-5479-1-git-send-email-jack@suse.cz> <20130717161200.40a97074623be2685beb8156@linux-foundation.org>
-In-Reply-To: <20130717161200.40a97074623be2685beb8156@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Jul 2013 18:55:11 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hauke Mehrtens <hauke@hauke-m.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 095/145] b43: ensue that BCMA is "y" when B43 is "y"
+Date: Wed, 17 Jul 2013 15:47:07 -0700
+Message-Id: <1374101277-7915-96-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 04:12 PM, Andrew Morton wrote:
-> On Tue, 16 Jul 2013 19:06:30 +0200 Jan Kara <jack@suse.cz> wrote:
->
->> With users of radix_tree_preload() run from interrupt (CFQ is one such
->> possible user), the following race can happen:
->>
->> radix_tree_preload()
->> ...
->> radix_tree_insert()
->>    radix_tree_node_alloc()
->>      if (rtp->nr) {
->>        ret = rtp->nodes[rtp->nr - 1];
->> <interrupt>
->> ...
->> radix_tree_preload()
->> ...
->> radix_tree_insert()
->>    radix_tree_node_alloc()
->>      if (rtp->nr) {
->>        ret = rtp->nodes[rtp->nr - 1];
->>
->> And we give out one radix tree node twice. That clearly results in radix
->> tree corruption with different results (usually OOPS) depending on which
->> two users of radix tree race.
->>
->> Fix the problem by disabling interrupts when working with rtp variable.
->> In-interrupt user can still deplete our preloaded nodes but at least we
->> won't corrupt radix trees.
->>
->> ...
->>
->>    There are some questions regarding this patch:
->> Do we really want to allow in-interrupt users of radix_tree_preload()?  CFQ
->> could certainly do this in older kernels but that particular call site where I
->> saw the bug hit isn't there anymore so I'm not sure this can really happen with
->> recent kernels.
->
-> Well, it was never anticipated that interrupt-time code would run
-> radix_tree_preload().  The whole point in the preloading was to be able
-> to perform GFP_KERNEL allocations before entering the spinlocked region
-> which needs to allocate memory.
->
-> Doing all that from within an interrupt is daft, because the interrupt code
-> can't use GFP_KERNEL anyway.
->
->> Also it is actually harmful to do preloading if you are in interrupt context
->> anyway. The disadvantage of disallowing radix_tree_preload() in interrupt is
->> that we would need to tweak radix_tree_node_alloc() to somehow recognize
->> whether the caller wants it to use preloaded nodes or not and that callers
->> would have to get it right (although maybe some magic in radix_tree_preload()
->> could handle that).
->>
->> Opinions?
->
-> BUG_ON(in_interrupt()) :)
+3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
 
-Is is really that severe?  How about...
+------------------
 
-WARN_ON() instead?
+From: Hauke Mehrtens <hauke@hauke-m.de>
 
-David Daney
+commit 693026ef2e751fd94d2e6c71028e68343cc875d5 upstream.
 
+When b43 gets build into the kernel and it should use bcma we have to
+ensure that bcma was also build into the kernel and not as a module.
+In this patch this is also done for SSB, although you can not
+build b43 without ssb support for now.
+
+This fixes a build problem reported by Randy Dunlap in
+5187EB95.2060605@infradead.org
+
+Reported-By: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/wireless/b43/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/b43/Kconfig b/drivers/net/wireless/b43/Kconfig
+index 7a28d21..9c927be 100644
+--- a/drivers/net/wireless/b43/Kconfig
++++ b/drivers/net/wireless/b43/Kconfig
+@@ -28,7 +28,7 @@ config B43
+ 
+ config B43_BCMA
+ 	bool "Support for BCMA bus"
+-	depends on B43 && BCMA
++	depends on B43 && (BCMA = y || BCMA = B43)
+ 	default y
+ 
+ config B43_BCMA_EXTRA
+@@ -39,7 +39,7 @@ config B43_BCMA_EXTRA
+ 
+ config B43_SSB
+ 	bool
+-	depends on B43 && SSB
++	depends on B43 && (SSB = y || SSB = B43)
+ 	default y
+ 
+ # Auto-select SSB PCI-HOST support, if possible
+-- 
+1.8.1.2
 
