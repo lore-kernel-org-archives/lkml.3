@@ -1,80 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3GQFng (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 01:43:36 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:47149 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab3GQFne (ORCPT
+	id S1751992Ab3GQFvB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 01:51:01 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:53609 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3GQFu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 01:43:34 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org
-References: <20130716192920.GA8980@sergelap>
-	<20130716193826.GP4165@ZenIV.linux.org.uk>
-	<20130716195002.GA23370@mail.hallyn.com> <51E5BC0D.3090303@mit.edu>
-	<20130716213748.GA24076@mail.hallyn.com>
-	<CALCETrV8QFZU947=OjL-abxAmHiLso-uhbmoJt45kfmtaw26Tg@mail.gmail.com>
-	<20130716220301.GA24223@mail.hallyn.com>
-	<CALCETrXgU560Vk382xsPJD+uE7EQzqkbCobV8BXwVXrK8EryNw@mail.gmail.com>
-	<20130716222308.GA24408@mail.hallyn.com>
-Date: Tue, 16 Jul 2013 22:43:17 -0700
-In-Reply-To: <20130716222308.GA24408@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Tue, 16 Jul 2013 22:23:08 +0000")
-Message-ID: <87d2qh91xm.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 17 Jul 2013 01:50:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18VBhhi2ifoShP0WXwhTDTC0wQdbq6HCZw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa08 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa08 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH RFC] allow some kernel filesystems to be mounted in a user namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <20130716063117.GA30320@kroah.com>
+References: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
+	<20130715165209.GA6000@kroah.com>
+	<CA+k=oDzZ5sf_wFMUvE_vkkqRQaOV0P3vWP99tDpoZkrwMN7Q+A@mail.gmail.com>
+	<20130716063117.GA30320@kroah.com>
+Date: Wed, 17 Jul 2013 13:50:58 +0800
+Message-ID: <CA+k=oDzCUyG-pe9wntV0N3Yp80+=_OikzM9N3dHwETE2VSXsow@mail.gmail.com>
+Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
+From: Rong Wang <wr011235813@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: balbi@ti.com, Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rong.Wang@csr.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+Hi Greg,
 
-> I'm not "relying on LSM" to make these safe.  I'm relying on the
-> uid mappings to make these safe.
+On Tue, Jul 16, 2013 at 2:31 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Jul 16, 2013 at 11:49:07AM +0800, Rong Wang wrote:
+>> Hi Greg,
+>>
+>> The USB on our platform can change roles between HOST and GADGET, but
+>> it is not capable of OTG.
 >
-> Nevertheless I at least have hope of working around the others (in a
-> distro-acceptable way), so if the others are too scary I'll pursue
-> the workaround for the others and see where I get.  But I really feel
-> the securityfs one is the best solution.
+> That kind of sounds like the definition of OTG :)
 
-Personally I don't trust debugfs enough to compile it into my kernel.
+Yes. But it just initiates its role according to the ID pin status.
 
-fuse simply isn't ready to be have fresh mounts usefully created inside
-a user namespace.
+>
+>> When the USB changes between roles the udev will run some scripts
+>> automatically according to the udev rules.
+>
+> What exactly does udev/userspace see when the roles change?
+>
 
-Fundamentally with debugfs and securityfs you run into the issue we saw
-with sysfs and proc where at some level it is the system administrators
-perogative if those filesystems should be mounted.
+Take HOST -> GADGET for example, the driver removes the USB hcd first,
 
-The rule with filesystems like that is mounting them needs to be no more
-dangerous than bind mounting them.  At the point in the cycle you are
-talking about mounting them you presumably have already thrown away
-their original mounts making it impossible to tell if it would have been
-safe to mount them or not.  Making your patch completely inappropriate.
+ACTION=remove
+DEVPATH=/devices/axi.0/uus-iobg.13/b8010000.usbcontroller/ci_hdrc.0/usb1/1-0:1.0
+SUBSYSTEM=usb
+DEVTYPE=usb_interface
+PRODUCT=1d6b/2/310
+TYPE=9/0/1
+INTERFACE=9/0/0
+MODALIAS=usb:v1D6Bp0002d0310dc09dsc00dp01ic09isc00ip00in00
+SEQNUM=1843
 
-What you need to do is at container setup time to bind mount those
-filesystems if they are already mounted and you want them in the
-container.  If you are just shuffling around something you can already
-see there are no security issues.
+Then it initiates the GADGET role which will call usb_add_gadget_udc
 
-Eric
+ACTION=add
+DEVPATH=/devices/axi.0/uus-iobg.13/b8010000.usbcontroller/ci_hdrc.0/udc/ci_hdrc.0
+SUBSYSTEM=udc
+USB_UDC_NAME=ci13xxx_sirf
+SEQNUM=1845
+
+At this time, the udev finds this matches the rule and it will install
+g_mass_storage.ko. But we are actually not connecting to a PC now, so
+we do not umount the back-end file storage on our device.
+
+Currently the udc framework introduces an API usb_gadget_set_state
+to report to user-space the USB device state. But it's not compatible with
+udev. It needs user-space utility polling the "status" file under /sys.
+And it cannot be called in interrupt context but drivers do the state change
+in interrupt service routine.
+
+What's more, I grep the USB driver and find few driver apply this API except
+the udc core. But it just initiated its state as "NOT ATTACHED" when registering
+a new udc.
+
+In my opinion, the USB device state change is a common operation and it
+should be implemented by driver framework. The best place to do this is
+when composite framework handling standard USB requests. But it's not
+implemented yet.
+
+So we are not informed the USB state until the role changes again.
+We do not know when to secure the back-end file between our device and the
+host PC.
+
+> And what can trigger the change in roles?
+
+The role changes according to the ID pin status.
+When we plug in a mini-A (ID pin connects to ground) it will cause a
+ID pin interrupt
+and we will change to HOST role.
+If the ID pin connects to nothing we will act as GADGET.
+
+In a sum, role change takes place when we plug in different USB connectors.
+
+>
+>> The default role is GADGET, and we bind the g_mass_storage to the USB
+>> GADGET role.
+>>
+>> We should secure the back end file storage between the device and the
+>> host PC connecting to our device.
+>> We need to know when the GADGET is really connect to a host PC, then
+>> we can umount the file on the device
+>> and export it to the g_mass_storage.
+>
+> I thought you already get an event for this, otherwise no one would be
+> able to properly deal with this.
+
+Yes. We install file storage module on this event but we do not get
+further notice
+as mentioned above.
+
+>
+>> The question is since we default GADGET, so the g_mass_storage.ko is
+>> installed early but connecting to a host PC
+>> is randomly, But the udev has no idea when a host PC connects our device.
+>>
+>> So we consider it's reasonable to let the udev know the GADGET device state.
+>> Is there any alternative to our question?
+>
+> I thought we already export events for gadget device states, have you
+> looked for them?  I can't dig through the code at the moment, but this
+> seems like a pretty common issue...
+>
+> Felipe, any ideas?
+>
+> greg k-h
