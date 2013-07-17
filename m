@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3GQUoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 16:44:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45110 "EHLO mx1.redhat.com"
+	id S1757354Ab3GQUod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 16:44:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43820 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab3GQUoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 16:44:19 -0400
+	id S1751371Ab3GQUo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 16:44:28 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 07/10] KEYS: Search for auth-key by name rather than targt
- key ID
+Subject: [PATCH 08/10] KEYS: Define a __key_get() wrapper to use rather than
+ atomic_inc()
 To: keyrings@linux-nfs.org
 From: David Howells <dhowells@redhat.com>
 Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 17 Jul 2013 21:44:15 +0100
-Message-ID: <20130717204415.8591.41028.stgit@warthog.procyon.org.uk>
+Date: Wed, 17 Jul 2013 21:44:24 +0100
+Message-ID: <20130717204424.8591.33724.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130717204314.8591.52892.stgit@warthog.procyon.org.uk>
 References: <20130717204314.8591.52892.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -28,66 +28,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Search for auth-key by name rather than by target key ID as, in a future
-patch, we'll by searching directly by index key in preference to iteration
-over all keys.
+Define a __key_get() wrapper to use rather than atomic_inc() on the key usage
+count as this makes it easier to hook in refcount error debugging.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/request_key_auth.c |   21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+ Documentation/security/keys.txt |   13 ++++++++-----
+ include/linux/key.h             |   10 +++++++---
+ security/keys/key.c             |    2 +-
+ security/keys/keyring.c         |    6 +++---
+ security/keys/process_keys.c    |   16 ++++++++--------
+ 5 files changed, 27 insertions(+), 20 deletions(-)
 
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index 8d09852..7495a93 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -18,6 +18,7 @@
- #include <linux/slab.h>
- #include <asm/uaccess.h>
- #include "internal.h"
-+#include <keys/user-type.h>
+diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+index 9ede670..a4c33f1 100644
+--- a/Documentation/security/keys.txt
++++ b/Documentation/security/keys.txt
+@@ -960,14 +960,17 @@ payload contents" for more information.
+     the argument will not be parsed.
  
- static int request_key_auth_instantiate(struct key *,
- 					struct key_preparsed_payload *);
-@@ -222,33 +223,25 @@ error_alloc:
+ 
+-(*) Extra references can be made to a key by calling the following function:
++(*) Extra references can be made to a key by calling one of the following
++    functions:
+ 
++	struct key *__key_get(struct key *key);
+ 	struct key *key_get(struct key *key);
+ 
+-    These need to be disposed of by calling key_put() when they've been
+-    finished with. The key pointer passed in will be returned. If the pointer
+-    is NULL or CONFIG_KEYS is not set then the key will not be dereferenced and
+-    no increment will take place.
++    Keys so references will need to be disposed of by calling key_put() when
++    they've been finished with.  The key pointer passed in will be returned.
++
++    In the case of key_get(), if the pointer is NULL or CONFIG_KEYS is not set
++    then the key will not be dereferenced and no increment will take place.
+ 
+ 
+ (*) A key's serial number can be obtained by calling:
+diff --git a/include/linux/key.h b/include/linux/key.h
+index d573e82..ef596c7 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -219,13 +219,17 @@ extern void key_revoke(struct key *key);
+ extern void key_invalidate(struct key *key);
+ extern void key_put(struct key *key);
+ 
+-static inline struct key *key_get(struct key *key)
++static inline struct key *__key_get(struct key *key)
+ {
+-	if (key)
+-		atomic_inc(&key->usage);
++	atomic_inc(&key->usage);
+ 	return key;
  }
  
- /*
-- * See if an authorisation key is associated with a particular key.
-- */
--static int key_get_instantiation_authkey_match(const struct key *key,
--					       const void *_id)
--{
--	struct request_key_auth *rka = key->payload.data;
--	key_serial_t id = (key_serial_t)(unsigned long) _id;
--
--	return rka->target_key->serial == id;
--}
--
--/*
-  * Search the current process's keyrings for the authorisation key for
-  * instantiation of a key.
-  */
- struct key *key_get_instantiation_authkey(key_serial_t target_id)
- {
-+	char description[16];
- 	struct keyring_search_context ctx = {
- 		.index_key.type		= &key_type_request_key_auth,
-+		.index_key.description	= description,
- 		.cred			= current_cred(),
--		.match			= key_get_instantiation_authkey_match,
--		.match_data		= (void *)(unsigned long)target_id,
-+		.match			= user_match,
-+		.match_data		= description,
- 		.flags			= KEYRING_SEARCH_LOOKUP_DIRECT,
- 	};
- 	struct key *authkey;
- 	key_ref_t authkey_ref;
- 
-+	sprintf(description, "%x", target_id);
++static inline struct key *key_get(struct key *key)
++{
++	return key ? __key_get(key) : key;
++}
 +
- 	authkey_ref = search_process_keyrings(&ctx);
+ static inline void key_ref_put(key_ref_t key_ref)
+ {
+ 	key_put(key_ref_to_ptr(key_ref));
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 7e6bc39..1e23cc2 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -644,7 +644,7 @@ found:
+ 	/* this races with key_put(), but that doesn't matter since key_put()
+ 	 * doesn't actually change the key
+ 	 */
+-	atomic_inc(&key->usage);
++	__key_get(key);
  
- 	if (IS_ERR(authkey_ref)) {
+ error:
+ 	spin_unlock(&key_serial_lock);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index 7d5b676..35e21d9 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -479,7 +479,7 @@ not_this_keyring:
+ 
+ 	/* we found a viable match */
+ found:
+-	atomic_inc(&key->usage);
++	__key_get(key);
+ 	key->last_used_at = ctx->now.tv_sec;
+ 	keyring->last_used_at = ctx->now.tv_sec;
+ 	while (sp > 0)
+@@ -573,7 +573,7 @@ key_ref_t __keyring_search_one(key_ref_t keyring_ref,
+ 	return ERR_PTR(-ENOKEY);
+ 
+ found:
+-	atomic_inc(&key->usage);
++	__key_get(key);
+ 	keyring->last_used_at = key->last_used_at =
+ 		current_kernel_time().tv_sec;
+ 	rcu_read_unlock();
+@@ -909,7 +909,7 @@ void __key_link(struct key *keyring, struct key *key,
+ 
+ 	klist = rcu_dereference_locked_keyring(keyring);
+ 
+-	atomic_inc(&key->usage);
++	__key_get(key);
+ 	keyring->last_used_at = key->last_used_at =
+ 		current_kernel_time().tv_sec;
+ 
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index e68a3e0..68548ea 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -235,7 +235,7 @@ int install_session_keyring_to_cred(struct cred *cred, struct key *keyring)
+ 		if (IS_ERR(keyring))
+ 			return PTR_ERR(keyring);
+ 	} else {
+-		atomic_inc(&keyring->usage);
++		__key_get(keyring);
+ 	}
+ 
+ 	/* install the keyring */
+@@ -544,7 +544,7 @@ try_again:
+ 		}
+ 
+ 		key = ctx.cred->thread_keyring;
+-		atomic_inc(&key->usage);
++		__key_get(key);
+ 		key_ref = make_key_ref(key, 1);
+ 		break;
+ 
+@@ -562,7 +562,7 @@ try_again:
+ 		}
+ 
+ 		key = ctx.cred->process_keyring;
+-		atomic_inc(&key->usage);
++		__key_get(key);
+ 		key_ref = make_key_ref(key, 1);
+ 		break;
+ 
+@@ -593,7 +593,7 @@ try_again:
+ 
+ 		rcu_read_lock();
+ 		key = rcu_dereference(ctx.cred->session_keyring);
+-		atomic_inc(&key->usage);
++		__key_get(key);
+ 		rcu_read_unlock();
+ 		key_ref = make_key_ref(key, 1);
+ 		break;
+@@ -606,7 +606,7 @@ try_again:
+ 		}
+ 
+ 		key = ctx.cred->user->uid_keyring;
+-		atomic_inc(&key->usage);
++		__key_get(key);
+ 		key_ref = make_key_ref(key, 1);
+ 		break;
+ 
+@@ -618,7 +618,7 @@ try_again:
+ 		}
+ 
+ 		key = ctx.cred->user->session_keyring;
+-		atomic_inc(&key->usage);
++		__key_get(key);
+ 		key_ref = make_key_ref(key, 1);
+ 		break;
+ 
+@@ -632,7 +632,7 @@ try_again:
+ 		if (!key)
+ 			goto error;
+ 
+-		atomic_inc(&key->usage);
++		__key_get(key);
+ 		key_ref = make_key_ref(key, 1);
+ 		break;
+ 
+@@ -648,7 +648,7 @@ try_again:
+ 		} else {
+ 			rka = ctx.cred->request_key_auth->payload.data;
+ 			key = rka->dest_keyring;
+-			atomic_inc(&key->usage);
++			__key_get(key);
+ 		}
+ 		up_read(&ctx.cred->request_key_auth->sem);
+ 		if (!key)
 
