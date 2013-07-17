@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371Ab3GQCJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 22:09:14 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:65203 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab3GQCJM (ORCPT
+	id S1751412Ab3GQCLI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 22:11:08 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51300 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3GQCLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 22:09:12 -0400
+	Tue, 16 Jul 2013 22:11:06 -0400
+Message-ID: <51E5FD33.4040604@hitachi.com>
+Date: Wed, 17 Jul 2013 11:10:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Date: Wed, 17 Jul 2013 10:09:10 +0800
-Message-ID: <CAPgLHd8upcmfnQqHAWnqP7YBVYDVyoYKQ3WCh3c5+uY-EKr1jg@mail.gmail.com>
-Subject: [PATCH -next] mtd: orion_nand: convert to use devm_* APIs
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: dwmw2@infradead.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        artem.bityutskiy@linux.intel.com, jg1.han@samsung.com, andrew@lunn.ch,
-        wfp5p@virginia.edu
-Cc: yongjun_wei@trendmicro.com.cn, linux-mtd@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
+        Jiri Olsa <jolsa@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing event_file/call
+ in inode->i_private
+References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com>
+In-Reply-To: <20130715181659.GA18505@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+(2013/07/16 3:16), Oleg Nesterov wrote:
+> On 07/09, Masami Hiramatsu wrote:
+>>
+>> To avoid this, when opening events/*/*/enable, we have to ensure
+>> the dentry of the file is not unlinked yet, under event_mutex
+>> is locked.
+> 
+> Probably this can work, but I am starting to think that this ref
+> count becomes toooooo complex....
 
-Convert to use devm_* APIs to avoid resources leak on error handling case.
+Oleg, I agree that is a bit complex way to fix but it can fix.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/mtd/nand/orion_nand.c | 29 +++++++++--------------------
- 1 file changed, 9 insertions(+), 20 deletions(-)
+However, I think we should fix bugs first, because there are bugs.
+I don't like to leave a bug in the kernel as it is, while we re-
+start discussing new approach...
 
-diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
-index 46f308d..ce711b4 100644
---- a/drivers/mtd/nand/orion_nand.c
-+++ b/drivers/mtd/nand/orion_nand.c
-@@ -85,25 +85,23 @@ static int __init orion_nand_probe(struct platform_device *pdev)
- 	int ret = 0;
- 	u32 val = 0;
- 
--	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
-+	nc = devm_kzalloc(&pdev->dev,
-+			  sizeof(struct nand_chip) + sizeof(struct mtd_info),
-+			  GFP_KERNEL);
- 	if (!nc) {
- 		printk(KERN_ERR "orion_nand: failed to allocate device structure.\n");
--		ret = -ENOMEM;
--		goto no_res;
-+		return -ENOMEM;
- 	}
- 	mtd = (struct mtd_info *)(nc + 1);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		ret = -ENODEV;
--		goto no_res;
--	}
-+	if (!res)
-+		return -ENODEV;
- 
--	io_base = ioremap(res->start, resource_size(res));
-+	io_base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
- 	if (!io_base) {
- 		printk(KERN_ERR "orion_nand: ioremap failed\n");
--		ret = -EIO;
--		goto no_res;
-+		return -EIO;
- 	}
- 
- 	if (pdev->dev.of_node) {
-@@ -111,8 +109,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
- 					GFP_KERNEL);
- 		if (!board) {
- 			printk(KERN_ERR "orion_nand: failed to allocate board structure.\n");
--			ret = -ENOMEM;
--			goto no_res;
-+			return -ENOMEM;
- 		}
- 		if (!of_property_read_u32(pdev->dev.of_node, "cle", &val))
- 			board->cle = (u8)val;
-@@ -186,10 +183,6 @@ no_dev:
- 		clk_disable_unprepare(clk);
- 		clk_put(clk);
- 	}
--	iounmap(io_base);
--no_res:
--	kfree(nc);
--
- 	return ret;
- }
- 
-@@ -201,10 +194,6 @@ static int orion_nand_remove(struct platform_device *pdev)
- 
- 	nand_release(mtd);
- 
--	iounmap(nc->IO_ADDR_W);
--
--	kfree(nc);
--
- 	clk = clk_get(&pdev->dev, NULL);
- 	if (!IS_ERR(clk)) {
- 		clk_disable_unprepare(clk);
+> Could you please look at the draft patch I sent in another email?
+
+I'm happy to see the series, and I guess it will take a long
+discussion and review time again.
+
+So, I'd like to suggest you getting these fixes into ftrace as
+first-aid treatment, and discuss your new series.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
