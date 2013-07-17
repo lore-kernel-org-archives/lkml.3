@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934663Ab3GQW5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:57:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56904 "EHLO
+	id S934707Ab3GQW5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:57:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56919 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934649Ab3GQW5D (ORCPT
+	with ESMTP id S934562Ab3GQW5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:57:03 -0400
+	Wed, 17 Jul 2013 18:57:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+Cc: Laszlo Ersek <lersek@redhat.com>, John Haxby <john.haxby@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 049/145] UBIFS: prepare to fix a horrid bug
-Date: Wed, 17 Jul 2013 15:46:21 -0700
-Message-Id: <1374101277-7915-50-git-send-email-kamal@canonical.com>
+Subject: [PATCH 048/145] xen/time: remove blocked time accounting from xen "clockchip"
+Date: Wed, 17 Jul 2013 15:46:20 -0700
+Message-Id: <1374101277-7915-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,128 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Laszlo Ersek <lersek@redhat.com>
 
-commit 33f1a63ae84dfd9ad298cf275b8f1887043ced36 upstream.
+commit 0b0c002c340e78173789f8afaa508070d838cf3d upstream.
 
-Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
-mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
-in the middle of 'ubifs_readdir()'.
+... because the "clock_event_device framework" already accounts for idle
+time through the "event_handler" function pointer in
+xen_timer_interrupt().
 
-First of all, this means that 'file->private_data' can be freed while
-'ubifs_readdir()' uses it.  But this particular patch does not fix the problem.
-This patch is only a preparation, and the fix will follow next.
+The patch is intended as the completion of [1]. It should fix the double
+idle times seen in PV guests' /proc/stat [2]. It should be orthogonal to
+stolen time accounting (the removed code seems to be isolated).
 
-In this patch we make 'ubifs_readdir()' stop using 'file->f_pos' directly,
-because 'file->f_pos' can be changed by '->llseek()' at any point. This may
-lead 'ubifs_readdir()' to returning inconsistent data: directory entry names
-may correspond to incorrect file positions.
+The approach may be completely misguided.
 
-So here we introduce a local variable 'pos', read 'file->f_pose' once at very
-the beginning, and then stick to 'pos'. The result of this is that when
-'ubifs_dir_llseek()' changes 'file->f_pos' while we are in the middle of
-'ubifs_readdir()', the latter "wins".
+[1] https://lkml.org/lkml/2011/10/6/10
+[2] http://lists.xensource.com/archives/html/xen-devel/2010-08/msg01068.html
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[ luis: backported to 3.8: adjusted context ]
+John took the time to retest this patch on top of v3.10 and reported:
+"idle time is correctly incremented for pv and hvm for the normal
+case, nohz=off and nohz=idle." so lets put this patch in.
+
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Signed-off-by: John Haxby <john.haxby@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ubifs/dir.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ arch/x86/xen/time.c | 17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
 
-diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index 8a57477..62d0256 100644
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -349,15 +349,16 @@ static unsigned int vfs_dent_type(uint8_t type)
- static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 054cc01..d50a821 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+ /* snapshots of runstate info */
+ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+ 
+-/* unused ns of stolen and blocked time */
++/* unused ns of stolen time */
+ static DEFINE_PER_CPU(u64, xen_residual_stolen);
+-static DEFINE_PER_CPU(u64, xen_residual_blocked);
+ 
+ /* return an consistent snapshot of 64-bit time/counter value */
+ static u64 get64(const u64 *p)
+@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
  {
- 	int err, over = 0;
-+	loff_t pos = file->f_pos;
- 	struct qstr nm;
- 	union ubifs_key key;
- 	struct ubifs_dent_node *dent;
- 	struct inode *dir = file->f_path.dentry->d_inode;
- 	struct ubifs_info *c = dir->i_sb->s_fs_info;
+ 	struct vcpu_runstate_info state;
+ 	struct vcpu_runstate_info *snap;
+-	s64 blocked, runnable, offline, stolen;
++	s64 runnable, offline, stolen;
+ 	cputime_t ticks;
  
--	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, file->f_pos);
-+	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, pos);
+ 	get_runstate_snapshot(&state);
+@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
+ 	snap = &__get_cpu_var(xen_runstate_snapshot);
  
--	if (file->f_pos > UBIFS_S_KEY_HASH_MASK || file->f_pos == 2)
-+	if (pos > UBIFS_S_KEY_HASH_MASK || pos == 2)
- 		/*
- 		 * The directory was seek'ed to a senseless position or there
- 		 * are no more entries.
-@@ -365,15 +366,15 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 		return 0;
+ 	/* work out how much time the VCPU has not been runn*ing*  */
+-	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
+ 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
+ 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
  
- 	/* File positions 0 and 1 correspond to "." and ".." */
--	if (file->f_pos == 0) {
-+	if (pos == 0) {
- 		ubifs_assert(!file->private_data);
- 		over = filldir(dirent, ".", 1, 0, dir->i_ino, DT_DIR);
- 		if (over)
- 			return 0;
--		file->f_pos = 1;
-+		file->f_pos = pos = 1;
- 	}
+@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
+ 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
+ 	__this_cpu_write(xen_residual_stolen, stolen);
+ 	account_steal_ticks(ticks);
+-
+-	/* Add the appropriate number of ticks of blocked time,
+-	   including any left-overs from last time. */
+-	blocked += __this_cpu_read(xen_residual_blocked);
+-
+-	if (blocked < 0)
+-		blocked = 0;
+-
+-	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
+-	__this_cpu_write(xen_residual_blocked, blocked);
+-	account_idle_ticks(ticks);
+ }
  
--	if (file->f_pos == 1) {
-+	if (pos == 1) {
- 		ubifs_assert(!file->private_data);
- 		over = filldir(dirent, "..", 2, 1,
- 			       parent_ino(file->f_path.dentry), DT_DIR);
-@@ -389,7 +390,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 			goto out;
- 		}
- 
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 	}
- 
-@@ -397,17 +398,16 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 	if (!dent) {
- 		/*
- 		 * The directory was seek'ed to and is now readdir'ed.
--		 * Find the entry corresponding to @file->f_pos or the
--		 * closest one.
-+		 * Find the entry corresponding to @pos or the closest one.
- 		 */
--		dent_key_init_hash(c, &key, dir->i_ino, file->f_pos);
-+		dent_key_init_hash(c, &key, dir->i_ino, pos);
- 		nm.name = NULL;
- 		dent = ubifs_tnc_next_ent(c, &key, &nm);
- 		if (IS_ERR(dent)) {
- 			err = PTR_ERR(dent);
- 			goto out;
- 		}
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 	}
- 
-@@ -419,7 +419,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 			     ubifs_inode(dir)->creat_sqnum);
- 
- 		nm.len = le16_to_cpu(dent->nlen);
--		over = filldir(dirent, dent->name, nm.len, file->f_pos,
-+		over = filldir(dirent, dent->name, nm.len, pos,
- 			       le64_to_cpu(dent->inum),
- 			       vfs_dent_type(dent->type));
- 		if (over)
-@@ -435,7 +435,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 		}
- 
- 		kfree(file->private_data);
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
- 	}
+ /* Get the TSC speed from Xen */
 -- 
 1.8.1.2
 
