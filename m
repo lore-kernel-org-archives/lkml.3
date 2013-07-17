@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab3GQR1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:27:08 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:55989 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755900Ab3GQR1F (ORCPT
+	id S933479Ab3GQRbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:31:48 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:64873 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab3GQR1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:27:05 -0400
+	Wed, 17 Jul 2013 13:27:07 -0400
 From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 To: jic23@cam.ac.uk
 Cc: linux-iio@vger.kernel.org, gregkh@linuxfoundation.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net,
         zubair.lutfullah@gmail.com
-Subject: [PATCH 06/21] MFD: ti_tscadc: ADC Clock check not required
-Date: Wed, 17 Jul 2013 18:26:35 +0100
-Message-Id: <1374082010-28095-7-git-send-email-zubair.lutfullah@gmail.com>
+Subject: [PATCH 07/21] iio: TI-am335x-adc: Cleanup
+Date: Wed, 17 Jul 2013 18:26:36 +0100
+Message-Id: <1374082010-28095-8-git-send-email-zubair.lutfullah@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
 References: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
@@ -22,54 +22,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ADC is ideally expected to work at a frequency of 3MHz.
+Cleaned up the code a bit. Some formatting.
+Some error handling paths corrected
 
-The present code had a check, which returned error if the frequency
+This patch is based on work in the 3.2 tree by TI
+Original Author is Patil Rachna
 
-went below the threshold  value. But since AM335x supports various
-
-working frequencies, this check is not required.
-
-Now the code just uses the internal ADC clock divider to set the ADC
-
-frequency w.r.t the sys clock.
-
-Signed-off-by: Patil, Rachna <rachna@ti.com>
 Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 ---
- drivers/mfd/ti_am335x_tscadc.c       |    6 +-----
- include/linux/mfd/ti_am335x_tscadc.h |    1 -
- 2 files changed, 1 insertion(+), 6 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c |   33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index fdbd0d5..e7314e4 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -197,11 +197,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	clock_rate = clk_get_rate(clk);
- 	clk_put(clk);
- 	clk_value = clock_rate / ADC_CLK;
--	if (clk_value < MAX_CLK_DIV) {
--		dev_err(&pdev->dev, "clock input less than min clock requirement\n");
--		err = -EINVAL;
--		goto err_disable_clk;
--	}
-+
- 	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
- 	clk_value = clk_value - 1;
- 	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index f436918..1516dc8 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -127,7 +127,6 @@
- #define SEQ_STATUS BIT(5)
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 1f6e800..31665fa 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -311,13 +311,11 @@ static const struct iio_buffer_setup_ops tiadc_buffer_setup_ops = {
+ static int tiadc_config_sw_ring(struct iio_dev *idev)
+ {
+         struct tiadc_device *adc_dev = iio_priv(idev);
+-      //int ret;
  
- #define ADC_CLK			3000000
--#define	MAX_CLK_DIV		7
- #define TOTAL_STEPS		16
- #define TOTAL_CHANNELS		8
- #define FIFO1_THRESHOLD                        19
+         idev->buffer = iio_kfifo_allocate(idev);
+         if (!idev->buffer)
+                 return(-ENOMEM);
+ 
+- //     idev->buffer->access = &ring_sw_access_funcs;
+         idev->setup_ops = &tiadc_buffer_setup_ops;
+ 
+         INIT_WORK(&adc_dev->poll_work, &tiadc_poll_handler);
+@@ -506,21 +504,22 @@ static int tiadc_probe(struct platform_device *pdev)
+ 	err = tiadc_channel_init(indio_dev, adc_dev->channels);
+ 	if (err < 0)
+ 		goto err_free_device;
+-    init_waitqueue_head(&adc_dev->wq_data_avail);
+ 
+-    err = request_irq(adc_dev->irq, tiadc_irq, IRQF_SHARED,
+-            indio_dev->name, indio_dev);
+-    if (err)
+-            goto err_free_irq;
++	init_waitqueue_head(&adc_dev->wq_data_avail);
+ 
+-    err = tiadc_config_sw_ring(indio_dev);
+-    if (err < 0)
+-            goto err_unregister;
++	err = request_irq(adc_dev->irq, tiadc_irq, IRQF_SHARED,
++		indio_dev->name, indio_dev);
++	if (err)
++		goto err_free_irq;
++
++	err = tiadc_config_sw_ring(indio_dev);
++	if (err < 0)
++		goto err_unregister;
+  
+-    err = iio_buffer_register(indio_dev,
+-                    indio_dev->channels, indio_dev->num_channels);
+-    if (err < 0)
+-            goto err_unregister;
++	err = iio_buffer_register(indio_dev,
++		indio_dev->channels, indio_dev->num_channels);
++	if (err < 0)
++		goto err_unregister;
+ 
+ 	err = iio_device_register(indio_dev);
+ 	if (err)
+@@ -531,9 +530,9 @@ static int tiadc_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_unregister:
+-
++	iio_buffer_unregister(indio_dev);
+ err_free_irq:
+-   free_irq(adc_dev->irq, indio_dev);
++	free_irq(adc_dev->irq, indio_dev);
+ err_free_channels:
+ 	tiadc_channels_remove(indio_dev);
+ err_free_device:
+@@ -548,7 +547,9 @@ static int tiadc_remove(struct platform_device *pdev)
+ 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
+ 	u32 step_en;
+ 
++	free_irq(adc_dev->irq, indio_dev);
+ 	iio_device_unregister(indio_dev);
++	iio_buffer_unregister(indio_dev);
+ 	tiadc_channels_remove(indio_dev);
+ 
+ 	step_en = get_adc_step_mask(adc_dev);
 -- 
 1.7.9.5
 
