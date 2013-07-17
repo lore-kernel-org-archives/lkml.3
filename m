@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab3GQFjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 01:39:39 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:47948 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751385Ab3GQFji (ORCPT
+	id S1751974Ab3GQFng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 01:43:36 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47149 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab3GQFne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 01:39:38 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 7
-X-BigFish: VS7(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz8275bhz2ei87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23hff4m129fi1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Steven Miao <realmz6@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <buildroot-devel@blackfin.uclinux.org>,
-        <adi-buildroot-devel@lists.sourceforge.net>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH] pinctrl: pinmux: Don't free pins requested by other devices
-Date: Wed, 17 Jul 2013 13:31:45 +0800
-Message-ID: <1374039105-17777-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
+	Wed, 17 Jul 2013 01:43:34 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org
+References: <20130716192920.GA8980@sergelap>
+	<20130716193826.GP4165@ZenIV.linux.org.uk>
+	<20130716195002.GA23370@mail.hallyn.com> <51E5BC0D.3090303@mit.edu>
+	<20130716213748.GA24076@mail.hallyn.com>
+	<CALCETrV8QFZU947=OjL-abxAmHiLso-uhbmoJt45kfmtaw26Tg@mail.gmail.com>
+	<20130716220301.GA24223@mail.hallyn.com>
+	<CALCETrXgU560Vk382xsPJD+uE7EQzqkbCobV8BXwVXrK8EryNw@mail.gmail.com>
+	<20130716222308.GA24408@mail.hallyn.com>
+Date: Tue, 16 Jul 2013 22:43:17 -0700
+In-Reply-To: <20130716222308.GA24408@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Tue, 16 Jul 2013 22:23:08 +0000")
+Message-ID: <87d2qh91xm.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18VBhhi2ifoShP0WXwhTDTC0wQdbq6HCZw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa08 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa08 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH RFC] allow some kernel filesystems to be mounted in a user namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-in pinmux_disable_setting after current device fails to request
-the same pins.
+> I'm not "relying on LSM" to make these safe.  I'm relying on the
+> uid mappings to make these safe.
+>
+> Nevertheless I at least have hope of working around the others (in a
+> distro-acceptable way), so if the others are too scary I'll pursue
+> the workaround for the others and see where I get.  But I really feel
+> the securityfs one is the best solution.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/pinctrl/pinmux.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+Personally I don't trust debugfs enough to compile it into my kernel.
 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 88cc509..9ebcf3b 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -482,13 +482,14 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- 				 pins[i]);
- 			continue;
- 		}
-+		/* And release the pins */
-+		if (desc->mux_usecount &&
-+			!strcmp(desc->mux_owner, setting->dev_name))
-+			pin_free(pctldev, pins[i], NULL);
-+
- 		desc->mux_setting = NULL;
- 	}
- 
--	/* And release the pins */
--	for (i = 0; i < num_pins; i++)
--		pin_free(pctldev, pins[i], NULL);
--
- 	if (ops->disable)
- 		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
- }
--- 
-1.8.2.3
+fuse simply isn't ready to be have fresh mounts usefully created inside
+a user namespace.
 
+Fundamentally with debugfs and securityfs you run into the issue we saw
+with sysfs and proc where at some level it is the system administrators
+perogative if those filesystems should be mounted.
 
+The rule with filesystems like that is mounting them needs to be no more
+dangerous than bind mounting them.  At the point in the cycle you are
+talking about mounting them you presumably have already thrown away
+their original mounts making it impossible to tell if it would have been
+safe to mount them or not.  Making your patch completely inappropriate.
+
+What you need to do is at container setup time to bind mount those
+filesystems if they are already mounted and you want them in the
+container.  If you are just shuffling around something you can already
+see there are no security issues.
+
+Eric
