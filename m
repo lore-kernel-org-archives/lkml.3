@@ -1,59 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366Ab3GQB4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 21:56:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40873 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751179Ab3GQB4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 21:56:41 -0400
-Message-ID: <1374026199.1949.62.camel@joe-AO722>
-Subject: Re: [v3.11-rc1 PATCH 0/5] printk: Initial restructuring
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 16 Jul 2013 18:56:39 -0700
-In-Reply-To: <CA+55aFwJh5yFeOmPrR=3VqY1StmqTn0sRzwtkCA5N8b=-==otQ@mail.gmail.com>
-References: <cover.1373922863.git.joe@perches.com>
-	 <CA+55aFwJh5yFeOmPrR=3VqY1StmqTn0sRzwtkCA5N8b=-==otQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751396Ab3GQB5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 21:57:55 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:43817 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab3GQB5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 21:57:53 -0400
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 16 Jul 2013 18:57:32 -0700
+Message-ID: <CALCETrUKK2j17LP+dVe61UCj05w914RRgyGXhorP1nfS7=rKnA@mail.gmail.com>
+Subject: What endianness is word in i2c_smbus_data?
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-16 at 18:48 -0700, Linus Torvalds wrote:
-> On Mon, Jul 15, 2013 at 2:51 PM, Joe Perches <joe@perches.com> wrote:
-> >
-> > If this is acceptable, I'll post 5 or so patches at a time
-> > after/if each block of patches is applied.
-> 
-> I didn't see anything objectionable, but I'm assuming this comes in
-> through Andrew?
+I'm rather confused here.  In SMBUS, the "read word" operation returns
+two bytes.  Just to be confusing, the SMBUS spec calls the first byte
+"Data Byte Low" and the second byte "Data Byte High".  But they really
+are the first and second bytes -- Read Word will return whatever Read
+Byte would have as its first byte.  Let's call these bytes B1 and B2
+for first and second.
 
-I'd rather you take it directly now.
+The eeprom and at24 drivers expect data->word to be (B2 << 8) | B1.
+That is, data->word is the cpu representation of the value on the bus
+if that value is treated as little-endian.  Is that indeed the correct
+interpretation?  If so, should it be documented somewhere?
 
-> And hopefully gets comments from others too..
+--Andy
 
-There were a few 9 months ago.
-
-Mostly it was a timing issue as to who
-takes it and when.
-
-printk still moves around quite a bit
-and Andrew suggested shortly after
-an -rc1 was likely the best timing.
-
-http://lkml.indiana.edu/hypermail/linux/kernel/1212.0/02931.html
-
-As far as I'm concerned, the biggest
-deal is starting this refactoring.
-
-It doesn't have to be an big blast
-like what was submitted last year,
-but it should be started sooner
-rather never.
-
-
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
