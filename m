@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965092Ab3GQXKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:10:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56690 "EHLO
+	id S965096Ab3GQXLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:11:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56681 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964892Ab3GQWz6 (ORCPT
+	with ESMTP id S964994Ab3GQWzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:55:58 -0400
+	Wed, 17 Jul 2013 18:55:55 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 121/145] drm/nva3/disp: Fix HDMI audio regression
-Date: Wed, 17 Jul 2013 15:47:33 -0700
-Message-Id: <1374101277-7915-122-git-send-email-kamal@canonical.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 087/145] ext4: fix overflows in SEEK_HOLE, SEEK_DATA implementations
+Date: Wed, 17 Jul 2013 15:46:59 -0700
+Message-Id: <1374101277-7915-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,38 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Jan Kara <jack@suse.cz>
 
-commit bf03d1b293cc556df53545e318110505014d805e upstream.
+commit e7293fd146846e2a44d29e0477e0860c60fb856b upstream.
 
-This is the nva3 counterpart to commit beba44b17 (drm/nv84/disp: Fix
-HDMI audio regression). The regression happened as a result of
-refactoring in commit 8e9e3d2de (drm/nv84/disp: move hdmi control into
-core).
+ext4_lblk_t is just u32 so multiplying it by blocksize can easily
+overflow for files larger than 4 GB. Fix that by properly typing the
+block offsets before shifting.
 
-Reported-and-tested-by: Max Baldwin <archerseven@gmail.com>
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+[ luis: backported to 3.8: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ fs/ext4/file.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c b/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c
-index f065fc2..db8c6fd 100644
---- a/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/hdminva3.c
-@@ -55,6 +55,10 @@ nva3_hdmi_ctrl(struct nv50_disp_priv *priv, int head, int or, u32 data)
- 	nv_wr32(priv, 0x61c510 + soff, 0x00000000);
- 	nv_mask(priv, 0x61c500 + soff, 0x00000001, 0x00000001);
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 405565a..216a633 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -311,7 +311,7 @@ static int ext4_find_unwritten_pgoff(struct inode *inode,
+ 	blkbits = inode->i_sb->s_blocksize_bits;
+ 	startoff = *offset;
+ 	lastoff = startoff;
+-	endoff = (map->m_lblk + map->m_len) << blkbits;
++	endoff = (loff_t)(map->m_lblk + map->m_len) << blkbits;
  
-+	nv_mask(priv, 0x61c5d0 + soff, 0x00070001, 0x00010001); /* SPARE, HW_CTS */
-+	nv_mask(priv, 0x61c568 + soff, 0x00010101, 0x00000000); /* ACR_CTRL, ?? */
-+	nv_mask(priv, 0x61c578 + soff, 0x80000000, 0x80000000); /* ACR_0441_ENABLE */
-+
- 	/* ??? */
- 	nv_mask(priv, 0x61733c, 0x00100000, 0x00100000); /* RESETF */
- 	nv_mask(priv, 0x61733c, 0x10000000, 0x10000000); /* LOOKUP_EN */
+ 	index = startoff >> PAGE_CACHE_SHIFT;
+ 	end = endoff >> PAGE_CACHE_SHIFT;
+@@ -456,7 +456,7 @@ static loff_t ext4_seek_data(struct file *file, loff_t offset, loff_t maxsize)
+ 		ret = ext4_map_blocks(NULL, inode, &map, 0);
+ 		if (ret > 0 && !(map.m_flags & EXT4_MAP_UNWRITTEN)) {
+ 			if (last != start)
+-				dataoff = last << blkbits;
++				dataoff = (loff_t)last << blkbits;
+ 			break;
+ 		}
+ 
+@@ -469,7 +469,7 @@ static loff_t ext4_seek_data(struct file *file, loff_t offset, loff_t maxsize)
+ 		if (last >= es.start &&
+ 		    last < es.start + es.len) {
+ 			if (last != start)
+-				dataoff = last << blkbits;
++				dataoff = (loff_t)last << blkbits;
+ 			break;
+ 		}
+ 
+@@ -487,7 +487,7 @@ static loff_t ext4_seek_data(struct file *file, loff_t offset, loff_t maxsize)
+ 		}
+ 
+ 		last++;
+-		dataoff = last << blkbits;
++		dataoff = (loff_t)last << blkbits;
+ 	} while (last <= end);
+ 
+ 	mutex_unlock(&inode->i_mutex);
+@@ -541,7 +541,7 @@ static loff_t ext4_seek_hole(struct file *file, loff_t offset, loff_t maxsize)
+ 		ret = ext4_map_blocks(NULL, inode, &map, 0);
+ 		if (ret > 0 && !(map.m_flags & EXT4_MAP_UNWRITTEN)) {
+ 			last += ret;
+-			holeoff = last << blkbits;
++			holeoff = (loff_t)last << blkbits;
+ 			continue;
+ 		}
+ 
+@@ -554,7 +554,7 @@ static loff_t ext4_seek_hole(struct file *file, loff_t offset, loff_t maxsize)
+ 		if (last >= es.start &&
+ 		    last < es.start + es.len) {
+ 			last = es.start + es.len;
+-			holeoff = last << blkbits;
++			holeoff = (loff_t)last << blkbits;
+ 			continue;
+ 		}
+ 
+@@ -569,7 +569,7 @@ static loff_t ext4_seek_hole(struct file *file, loff_t offset, loff_t maxsize)
+ 							      &map, &holeoff);
+ 			if (!unwritten) {
+ 				last += ret;
+-				holeoff = last << blkbits;
++				holeoff = (loff_t)last << blkbits;
+ 				continue;
+ 			}
+ 		}
 -- 
 1.8.1.2
 
