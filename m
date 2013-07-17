@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab3GQTM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 15:12:29 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:44519 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944Ab3GQTM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 15:12:27 -0400
-Date: Wed, 17 Jul 2013 22:12:22 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+	id S1756883Ab3GQTSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 15:18:34 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34282 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755932Ab3GQTSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 15:18:33 -0400
+Message-ID: <1374088711.1949.107.camel@joe-AO722>
 Subject: Re: [PATCH] MAINTAINERS: add the generic sched_clock under
  timekeeping
-Message-ID: <20130717191222.GW6950@tarshish>
+From: Joe Perches <joe@perches.com>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Date: Wed, 17 Jul 2013 12:18:31 -0700
+In-Reply-To: <20130717191222.GW6950@tarshish>
 References: <a38977cc6608170b69b21b8a5ee985685c7e8a0d.1374055149.git.baruch@tkos.co.il>
- <51E6E91C.1090700@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E6E91C.1090700@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <51E6E91C.1090700@linaro.org> <20130717191222.GW6950@tarshish>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
-
-On Wed, Jul 17, 2013 at 11:57:32AM -0700, John Stultz wrote:
-> On 07/17/2013 03:05 AM, Baruch Siach wrote:
-> >Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> >---
-> >  MAINTAINERS | 2 ++
-> >  1 file changed, 2 insertions(+)
-> >
-> >diff --git a/MAINTAINERS b/MAINTAINERS
-> >index bf61e04..bd9616a 100644
-> >--- a/MAINTAINERS
-> >+++ b/MAINTAINERS
-> >@@ -7129,6 +7129,7 @@ M:	Thomas Gleixner <tglx@linutronix.de>
-> >  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
-> >  S:	Supported
-> >  F:	include/linux/clocksource.h
-> >+F:	include/linux/sched_clock.h
-> >  F:	include/linux/time.h
-> >  F:	include/linux/timex.h
-> >  F:	include/uapi/linux/time.h
-> >@@ -7136,6 +7137,7 @@ F:	include/uapi/linux/timex.h
-> >  F:	kernel/time/clocksource.c
-> >  F:	kernel/time/time*.c
-> >  F:	kernel/time/ntp.c
-> >+F:	kernel/time/sched_clock.c
+On Wed, 2013-07-17 at 22:12 +0300, Baruch Siach wrote:
+[]
+> > >diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> > >@@ -7129,6 +7129,7 @@ M:	Thomas Gleixner <tglx@linutronix.de>
+[]
+> > >+F:	include/linux/sched_clock.h
+[]
+> > >+F:	kernel/time/sched_clock.c
+> > 
+> > It seems like we could probably simplify this bit to kernel/time/*, no?
 > 
-> It seems like we could probably simplify this bit to kernel/time/*, no?
+> This would add jiffies.c and all the tick-* files that are currently covered 
+> by the "HIGH-RESOLUTION TIMERS, CLOCKEVENTS, DYNTICKS" section.
 
-This would add jiffies.c and all the tick-* files that are currently covered 
-by the "HIGH-RESOLUTION TIMERS, CLOCKEVENTS, DYNTICKS" section.
+Another option would be to move files into
+a separate directory, but I think it's not
+a big deal either way.
 
-baruch
-
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
