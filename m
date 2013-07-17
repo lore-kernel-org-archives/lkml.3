@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab3GQPGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:06:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50438 "EHLO bear.ext.ti.com"
+	id S932297Ab3GQPGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:06:48 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39360 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932297Ab3GQPGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:06:33 -0400
+	id S932456Ab3GQPGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 11:06:36 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>
 CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 7/9] arm: dts: add omap4430 thermal data
-Date: Wed, 17 Jul 2013 11:02:50 -0400
-Message-ID: <1374073374-30946-15-git-send-email-eduardo.valentin@ti.com>
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 9/9] hwmon: tmp102: expose to thermal fw via DT nodes
+Date: Wed, 17 Jul 2013 11:02:54 -0400
+Message-ID: <1374073374-30946-19-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
 References: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the dtsi entry on omap4430 to contain
-the thermal data. This data will enable the passive
-cooling with CPUfreq cooling device at 100C and the
-system will do a thermal shutdown at 125C.
+This patch adds to tmp102 temperature sensor the possibility
+to expose itself as thermal zone device, registered on the
+thermal framework.
 
-Cc: "Benoît Cousson" <b-cousson@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org
+The thermal zone is built only if a device tree node
+describing a thermal zone for this sensor is present
+inside the tmp102 DT node. Otherwise, the driver behavior
+will be the same.
+
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
+Cc: lm-sensors@lm-sensors.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/omap443x.dtsi | 31 +++++++++++++++++++++++++++++--
- 1 file changed, 29 insertions(+), 2 deletions(-)
+ drivers/hwmon/tmp102.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-index 4a4dcc3..27f0e0f 100644
---- a/arch/arm/boot/dts/omap443x.dtsi
-+++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -8,6 +8,7 @@
-  * kind, whether express or implied.
-  */
+diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+index d7b47ab..621093b 100644
+--- a/drivers/hwmon/tmp102.c
++++ b/drivers/hwmon/tmp102.c
+@@ -27,6 +27,8 @@
+ #include <linux/mutex.h>
+ #include <linux/device.h>
+ #include <linux/jiffies.h>
++#include <linux/thermal.h>
++#include <linux/of.h>
  
-+#include <dt-bindings/thermal/thermal.h>
- #include "omap4.dtsi"
+ #define	DRIVER_NAME "tmp102"
  
- / {
-@@ -27,8 +28,34 @@
- 	};
+@@ -50,6 +52,7 @@
  
- 	bandgap {
--		reg = <0x4a002260 0x4
--		       0x4a00232C 0x4>;
-+		reg = <0x4a002260 0x4 0x4a00232C 0x4>;
- 		compatible = "ti,omap4430-bandgap";
-+		thermal_zone {
-+			type = "CPU";
-+			mask = <0x03>; /* trips writability */
-+			passive_delay = <250>; /* milliseconds */
-+			polling_delay = <1000>; /* milliseconds */
-+			governor = "step_wise";
-+			trips {
-+				alert@100000{
-+					temperature = <100000>; /* milliCelsius */
-+					hysteresis = <2000>; /* milliCelsius */
-+					type = <THERMAL_TRIP_PASSIVE>;
-+				};
-+				crit@125000{
-+					temperature = <125000>; /* milliCelsius */
-+					hysteresis = <2000>; /* milliCelsius */
-+					type = <THERMAL_TRIP_CRITICAL>;
-+				};
-+			};
-+			bind_params {
-+				action@0{
-+					cooling_device = "thermal-cpufreq";
-+					weight = <100>; /* percentage */
-+					mask = <0x01>;
-+					/* no limits, using defaults */
-+				};
-+			};
-+		};
- 	};
- };
+ struct tmp102 {
+ 	struct device *hwmon_dev;
++	struct thermal_zone_device *tz;
+ 	struct mutex lock;
+ 	u16 config_orig;
+ 	unsigned long last_update;
+@@ -93,6 +96,15 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
+ 	return tmp102;
+ }
+ 
++static int tmp102_read_temp(void *dev, unsigned long *temp)
++{
++	struct tmp102 *tmp102 = tmp102_update_device(to_i2c_client(dev));
++
++	*temp = tmp102->temp[0];
++
++	return 0;
++}
++
+ static ssize_t tmp102_show_temp(struct device *dev,
+ 				struct device_attribute *attr,
+ 				char *buf)
+@@ -204,10 +216,22 @@ static int tmp102_probe(struct i2c_client *client,
+ 		goto fail_remove_sysfs;
+ 	}
+ 
++	if (of_find_node_by_name(client->dev.of_node, "thermal_zone")) {
++		tmp102->tz = thermal_zone_of_device_register(&client->dev,
++							     &client->dev,
++							     tmp102_read_temp);
++		if (IS_ERR(tmp102->tz)) {
++			status = PTR_ERR(tmp102->tz);
++			goto exit_hwmon;
++		}
++	}
++
+ 	dev_info(&client->dev, "initialized\n");
+ 
+ 	return 0;
+ 
++exit_hwmon:
++	hwmon_device_unregister(tmp102->hwmon_dev);
+ fail_remove_sysfs:
+ 	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
+ fail_restore_config:
+@@ -220,6 +244,7 @@ static int tmp102_remove(struct i2c_client *client)
+ {
+ 	struct tmp102 *tmp102 = i2c_get_clientdata(client);
+ 
++	thermal_zone_device_unregister(tmp102->tz);
+ 	hwmon_device_unregister(tmp102->hwmon_dev);
+ 	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
+ 
 -- 
 1.8.2.1.342.gfa7285d
 
