@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab3GQNmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:42:39 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:43857 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab3GQNmh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:42:37 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-70-51e69f4b7ed1
-Message-id: <51E69F49.10500@samsung.com>
-Date: Wed, 17 Jul 2013 15:42:33 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
-References: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
- <51E65577.7010403@samsung.com>
- <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
-In-reply-to: <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xa7re858FGtxezWtxtukNu8XlXXPY
-	LHo2bGW12HP0MLvFlLc/2S26uucxObB57Jx1l93j8a+XbB7v911l8+jbsorR4/MmuQDWKC6b
-	lNSczLLUIn27BK6MW4umshXM5Ky4//ceewPjNvYuRk4OCQETia1r17BC2GISF+6tZwOxhQSW
-	MkocvSrZxcgFZDczSdz8eQqsgVdAQ2IV0BoQm0VAVeLevkWMIDabgKFE19susLioQKjEtCUL
-	GCHqBSV+TL7HAmKLCJhLXP7QCVbDLHCUUaJpKthiYQEviRdzfjNDLNvAKPF45iemLkYODk6B
-	YIlVz5Qg6s0kHrWsY4aw5SU2r3nLPIFRYBaSFbOQlM1CUraAkXkVo2hqaXJBcVJ6rqFecWJu
-	cWleul5yfu4mRkhof9nBuPiY1SFGAQ5GJR7eiWFPA4VYE8uKK3MPMUpwMCuJ8F5rfhYoxJuS
-	WFmVWpQfX1Sak1p8iJGJg1OqgXHzM7+6n+mrxWdMmu6jz1914+1yyWgta+7V31fnzi25oBT6
-	+4HUhIYdt7JZBSIiLU5um/WbI45vwdId+ySKGDTEmNofRWgkXXleIzpZw/xX9+SWz62WN5m0
-	vtftlU86sJPn/kYfJb1YiUX10jmLNx+e+d/1sKLI7XUfVee3K+0x/FUQ8WJ2ubMSS3FGoqEW
-	c1FxIgBws2KoSwIAAA==
+	id S1755462Ab3GQNoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:44:32 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:34183 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754804Ab3GQNoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 09:44:30 -0400
+Date: Wed, 17 Jul 2013 09:44:28 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, tangchen <tangchen@cn.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-aio@kvack.org
+Subject: Re: [PATCH V2 2/2] fs/aio: Add support to aio ring pages migration
+Message-ID: <20130717134428.GB19643@kvack.org>
+References: <51E518C0.2020908@cn.fujitsu.com> <20130716133450.GD5403@kvack.org> <51E66256.9020203@cn.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E66256.9020203@cn.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jul 17, 2013 at 05:22:30PM +0800, Gu Zheng wrote:
+> As the aio job will pin the ring pages, that will lead to mem migrated
+> failed. In order to fix this problem we use an anon inode to manage the aio ring
+> pages, and  setup the migratepage callback in the anon inode's address space, so
+> that when mem migrating the aio ring pages will be moved to other mem node safely.
+> 
+> v1->v2:
+> 	Fix build failed issue if CONFIG_MIGRATION disabled.
+> 	Fix some minor issues under Benjamin's comments.
 
-On 7/17/2013 11:43 AM, Ricardo Ribalda Delgado wrote:
-> Hi Marek
->
->   alloc_pages_exact returns pages of order 0, every single page is
-> filled into buf->pages, that then is used by vb2_dma_sg_mmap(), that
-> also expects order 0 pages (its loops increments in PAGE_SIZE). The
-> code has been tested on real HW.
->
-> Your concern is that that alloc_pages_exact splits the higher order pages?
->
-> Do you want that videobuf2-dma-sg to have support for higher order pages?
+I don't know what you did with this patch, but it doesn't apply to any of 
+the trees I can find, and interdiff isn't able to compare it against your 
+original patch.  Since the first version of the patch was already applied 
+it is generally more appropriate to provide an incremental fix.  I've 
+added the following to my tree (git://git.kvack.org/~bcrl/aio-next.git/) 
+to fix the build issue.  I've tested this with CONFIG_MIGRATION enabled 
+and disabled on x86.
 
-Ah... My fault. I didn't notice that you recalculate req_pages at the
-begginning of each loop iteration, so the code is correct, buf->pages is
-filled correctly with order 0 pages.
-
-So now the only issue I see is the oversized sglist allocation (the size
-of sg list is computed for worst case, 0 order pages) and lack of the max
-segment size support. Sadly there are devices which can handle single sg
-chunk up to some predefined size (see dma_get_max_seg_size() function).
-
-For some reference code, please check __iommu_map_sg() and maybe
-__iommu_alloc_buffer() functions in arch/arm/mm/dma-mapping.c
-
-Best regards
+		-ben
 -- 
-Marek Szyprowski
-Samsung R&D Institute Poland
+"Thought is the essence of where you are now."
 
+
+>From 0c45355fc7c48c82db151bf0e7ca305d513e639e Mon Sep 17 00:00:00 2001
+From: Benjamin LaHaise <bcrl@kvack.org>
+Date: Wed, 17 Jul 2013 09:34:24 -0400
+Subject: [PATCH] aio: fix build when migration is disabled
+
+When "fs/aio: Add support to aio ring pages migration" was applied, it
+broke the build when CONFIG_MIGRATION was disabled.  Wrap the migration
+code with a test for CONFIG_MIGRATION to fix this and save a few bytes
+when migration is disabled.
+
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+---
+ fs/aio.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index cbd0afe..dedeea0 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -181,6 +181,7 @@ static int aio_set_page_dirty(struct page *page)
+ 	return 0;
+ }
+ 
++#if IS_ENABLED(CONFIG_MIGRATION)
+ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 			struct page *old, enum migrate_mode mode)
+ {
+@@ -208,10 +209,13 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 
+ 	return rc;
+ }
++#endif
+ 
+ static const struct address_space_operations aio_ctx_aops = {
+ 	.set_page_dirty = aio_set_page_dirty,
++#if IS_ENABLED(CONFIG_MIGRATION)
+ 	.migratepage	= aio_migratepage,
++#endif
+ };
+ 
+ static int aio_setup_ring(struct kioctx *ctx)
+-- 
+1.8.2.1
 
