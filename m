@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849Ab3GQQvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:51:38 -0400
-Received: from mail-wi0-f194.google.com ([209.85.212.194]:53645 "EHLO
-	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab3GQQo4 (ORCPT
+	id S933071Ab3GQQv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:51:58 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:53987 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932674Ab3GQQox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:44:56 -0400
+	Wed, 17 Jul 2013 12:44:53 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 09/18] context_tracking: Optimize main APIs off case with static key
-Date: Wed, 17 Jul 2013 18:44:22 +0200
-Message-Id: <1374079471-3129-10-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 07/18] nohz: Selectively enable context tracking on full dynticks CPUs
+Date: Wed, 17 Jul 2013 18:44:20 +0200
+Message-Id: <1374079471-3129-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
 References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
@@ -26,15 +26,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Optimize user, exception and guest entry/exit APIs with static
-keys. This minimize the overhead for those who enable
-CONFIG_NO_HZ_FULL without always using it. Having no range
-passed to nohz_full= should result in the probes to be nopped
-(at least we hope so...).
+The code is ready to do so in the context tracking subsystem, now
+we just need to pass our cpu range selection to it from the
+full dynticks subsystem.
 
-If this proves not be enough in the long term, we'll need
-to bring an exception slow path by re-routing the exception
-handlers.
+This way we can spare the overhead of RCU user extended quiescent
+state and vtime maintainance on these CPUs. Just keep in mind the
+context tracking itself is still necessary everywhere.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -47,178 +45,96 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/context_tracking.h |   46 ++++++++++++++++++++++++++++++++-----
- kernel/context_tracking.c        |   33 +++++----------------------
- kernel/sched/cputime.c           |    2 +
- 3 files changed, 47 insertions(+), 34 deletions(-)
+ include/linux/context_tracking.h |    2 ++
+ init/Kconfig                     |    2 +-
+ kernel/context_tracking.c        |    5 +++++
+ kernel/time/Kconfig              |    1 -
+ kernel/time/tick-sched.c         |    6 ++++++
+ 5 files changed, 14 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index 0007ab4..8eba58c 100644
+index 12045ce..2c2b73aa 100644
 --- a/include/linux/context_tracking.h
 +++ b/include/linux/context_tracking.h
-@@ -38,23 +38,40 @@ static inline bool context_tracking_active(void)
- 
- extern void context_tracking_cpu_set(int cpu);
- 
--extern void user_enter(void);
--extern void user_exit(void);
-+extern void context_tracking_user_enter(void);
-+extern void context_tracking_user_exit(void);
-+
-+static inline void user_enter(void)
-+{
-+	if (static_key_false(&context_tracking_enabled))
-+		context_tracking_user_enter();
-+
-+}
-+static inline void user_exit(void)
-+{
-+	if (static_key_false(&context_tracking_enabled))
-+		context_tracking_user_exit();
-+}
- 
- static inline enum ctx_state exception_enter(void)
- {
- 	enum ctx_state prev_ctx;
- 
-+	if (!static_key_false(&context_tracking_enabled))
-+		return 0;
-+
- 	prev_ctx = this_cpu_read(context_tracking.state);
--	user_exit();
-+	context_tracking_user_exit();
- 
- 	return prev_ctx;
+@@ -34,6 +34,8 @@ static inline bool context_tracking_active(void)
+ 	return __this_cpu_read(context_tracking.active);
  }
  
- static inline void exception_exit(enum ctx_state prev_ctx)
- {
--	if (prev_ctx == IN_USER)
--		user_enter();
-+	if (static_key_false(&context_tracking_enabled)) {
-+		if (prev_ctx == IN_USER)
-+			context_tracking_user_enter();
-+	}
- }
- 
- extern void context_tracking_task_switch(struct task_struct *prev,
-@@ -70,8 +87,23 @@ static inline void context_tracking_task_switch(struct task_struct *prev,
- #endif /* !CONFIG_CONTEXT_TRACKING */
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
--extern void guest_enter(void);
--extern void guest_exit(void);
-+static inline void guest_enter(void)
-+{
-+	if (static_key_false(&context_tracking_enabled) &&
-+	    vtime_accounting_enabled())
-+		vtime_guest_enter(current);
-+	else
-+		current->flags |= PF_VCPU;
-+}
++extern void context_tracking_cpu_set(int cpu);
 +
-+static inline void guest_exit(void)
-+{
-+	if (static_key_false(&context_tracking_enabled) &&
-+	    vtime_accounting_enabled())
-+		vtime_guest_exit(current);
-+	else
-+		current->flags &= ~PF_VCPU;
-+}
- #else
- static inline void guest_enter(void)
- {
+ extern void user_enter(void);
+ extern void user_exit(void);
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 247084b..914da3f 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -527,7 +527,7 @@ config RCU_USER_QS
+ config CONTEXT_TRACKING_FORCE
+ 	bool "Force context tracking"
+ 	depends on CONTEXT_TRACKING
+-	default CONTEXT_TRACKING
++	default y if !NO_HZ_FULL
+ 	help
+ 	  Probe on user/kernel boundaries by default in order to
+ 	  test the features that rely on it such as userspace RCU extended
 diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index f07505c..7b0a22d 100644
+index 7b095de..72bcb25 100644
 --- a/kernel/context_tracking.c
 +++ b/kernel/context_tracking.c
-@@ -33,15 +33,15 @@ void context_tracking_cpu_set(int cpu)
- }
+@@ -26,6 +26,11 @@ DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
+ #endif
+ };
  
++void context_tracking_cpu_set(int cpu)
++{
++	per_cpu(context_tracking.active, cpu) = true;
++}
++
  /**
-- * user_enter - Inform the context tracking that the CPU is going to
-- *              enter userspace mode.
-+ * context_tracking_user_enter - Inform the context tracking that the CPU is going to
-+ *                               enter userspace mode.
-  *
-  * This function must be called right before we switch from the kernel
-  * to userspace, when it's guaranteed the remaining kernel instructions
-  * to execute won't use any RCU read side critical section because this
-  * function sets RCU in extended quiescent state.
-  */
--void user_enter(void)
-+void context_tracking_user_enter(void)
+  * user_enter - Inform the context tracking that the CPU is going to
+  *              enter userspace mode.
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 70f27e8..747bbc7 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -105,7 +105,6 @@ config NO_HZ_FULL
+ 	select RCU_USER_QS
+ 	select RCU_NOCB_CPU
+ 	select VIRT_CPU_ACCOUNTING_GEN
+-	select CONTEXT_TRACKING_FORCE
+ 	select IRQ_WORK
+ 	help
+ 	 Adaptively try to shutdown the tick whenever possible, even when
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 088c411..062759e 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -23,6 +23,7 @@
+ #include <linux/irq_work.h>
+ #include <linux/posix-timers.h>
+ #include <linux/perf_event.h>
++#include <linux/context_tracking.h>
+ 
+ #include <asm/irq_regs.h>
+ 
+@@ -344,11 +345,16 @@ static int tick_nohz_init_all(void)
+ 
+ void __init tick_nohz_init(void)
  {
- 	unsigned long flags;
++	int cpu;
++
+ 	if (!have_nohz_full_mask) {
+ 		if (tick_nohz_init_all() < 0)
+ 			return;
+ 	}
  
-@@ -131,8 +131,8 @@ EXPORT_SYMBOL_GPL(preempt_schedule_context);
- #endif /* CONFIG_PREEMPT */
- 
- /**
-- * user_exit - Inform the context tracking that the CPU is
-- *             exiting userspace mode and entering the kernel.
-+ * context_tracking_user_exit - Inform the context tracking that the CPU is
-+ *                              exiting userspace mode and entering the kernel.
-  *
-  * This function must be called after we entered the kernel from userspace
-  * before any use of RCU read side critical section. This potentially include
-@@ -141,7 +141,7 @@ EXPORT_SYMBOL_GPL(preempt_schedule_context);
-  * This call supports re-entrancy. This way it can be called from any exception
-  * handler without needing to know if we came from userspace or not.
-  */
--void user_exit(void)
-+void context_tracking_user_exit(void)
- {
- 	unsigned long flags;
- 
-@@ -163,27 +163,6 @@ void user_exit(void)
- 	local_irq_restore(flags);
- }
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
--void guest_enter(void)
--{
--	if (vtime_accounting_enabled())
--		vtime_guest_enter(current);
--	else
--		current->flags |= PF_VCPU;
--}
--EXPORT_SYMBOL_GPL(guest_enter);
--
--void guest_exit(void)
--{
--	if (vtime_accounting_enabled())
--		vtime_guest_exit(current);
--	else
--		current->flags &= ~PF_VCPU;
--}
--EXPORT_SYMBOL_GPL(guest_exit);
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
--
--
- /**
-  * context_tracking_task_switch - context switch the syscall callbacks
-  * @prev: the task that is being switched out
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 223a35e..bb6b29a 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -724,6 +724,7 @@ void vtime_guest_enter(struct task_struct *tsk)
- 	current->flags |= PF_VCPU;
- 	write_sequnlock(&tsk->vtime_seqlock);
- }
-+EXPORT_SYMBOL_GPL(vtime_guest_enter);
- 
- void vtime_guest_exit(struct task_struct *tsk)
- {
-@@ -732,6 +733,7 @@ void vtime_guest_exit(struct task_struct *tsk)
- 	current->flags &= ~PF_VCPU;
- 	write_sequnlock(&tsk->vtime_seqlock);
- }
-+EXPORT_SYMBOL_GPL(vtime_guest_exit);
- 
- void vtime_account_idle(struct task_struct *tsk)
- {
++	for_each_cpu(cpu, nohz_full_mask)
++		context_tracking_cpu_set(cpu);
++
+ 	cpu_notifier(tick_nohz_cpu_down_callback, 0);
+ 	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), nohz_full_mask);
+ 	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
 -- 
 1.7.5.4
 
