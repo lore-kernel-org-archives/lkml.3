@@ -1,141 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab3GQR1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:27:00 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:60070 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab3GQR06 (ORCPT
+	id S933692Ab3GQRep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:34:45 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:33510 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932919Ab3GQReo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:26:58 -0400
-From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-To: jic23@cam.ac.uk
-Cc: linux-iio@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net,
-        zubair.lutfullah@gmail.com
-Subject: [PATCH 02/21] IIO: ADC: ti_adc: Fix 1st sample read
-Date: Wed, 17 Jul 2013 18:26:31 +0100
-Message-Id: <1374082010-28095-3-git-send-email-zubair.lutfullah@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
-References: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
+	Wed, 17 Jul 2013 13:34:44 -0400
+Date: Wed, 17 Jul 2013 19:34:42 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: commit f8f559422b (KVM: MMU: fast invalidate all mmio sptes)
+ causes hang
+Message-ID: <20130717173442.GA359@x4>
+References: <20130717163215.GA359@x4>
+ <20130717164232.GI13732@redhat.com>
+ <20130717165743.GA357@x4>
+ <A242AFC1-86E6-4716-8DF7-6FD169DB6EC8@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A242AFC1-86E6-4716-8DF7-6FD169DB6EC8@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously we tried to read data form ADC even before ADC sequencer
+On 2013.07.18 at 01:25 +0800, Xiao Guangrong wrote:
+> Hi Markus,
+> 
+> Thanks for your report! I am downloading the ubuntu iso and will try to reproducible it.
 
-finished sampling. This led to wrong samples.
+Please note that the exact guest doesn't matter. I first noticed the
+hang when I tried to install Fedora 19 today.
 
-We now wait on ADC status register idle bit to be set.
+> Could you please enable these tracepoints:
+> kvmmmu/check_mmio_spte
+> kvmmmu/handle_mmio_page_fault
+> kvmmmu/kvm_mmu_invalidate_zap_all_pages
+> kvmmmu/mark_mmio_spte
+> kvm/kvm_mmio
+> kvm/vcpu_match_mmio
+> 
+> and post the output?
 
-This patch is based on work in the 3.2 tree by TI
-Original Author is Patil Rachna
+I will run this later.
 
-Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
----
- drivers/iio/adc/ti_am335x_adc.c      |   30 ++++++++++++++++++++++--------
- include/linux/mfd/ti_am335x_tscadc.h |   16 ++++++++++++++++
- 2 files changed, 38 insertions(+), 8 deletions(-)
+> Just check, your host is 64-bit or 32 bit? 
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 4427e8e..1f83cf7 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -60,7 +60,6 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
- {
- 	unsigned int stepconfig;
- 	int i, steps;
--	u32 step_en;
- 
- 	/*
- 	 * There are 16 configurable steps and 8 analog input
-@@ -86,8 +85,7 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
- 		adc_dev->channel_step[i] = steps;
- 		steps++;
- 	}
--	step_en = get_adc_step_mask(adc_dev);
--	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
-+
- }
- 
- static const char * const chan_name_ain[] = {
-@@ -142,10 +140,22 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 		int *val, int *val2, long mask)
- {
- 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
--	int i;
--	unsigned int fifo1count, read;
-+	int i, map_val;
-+	unsigned int fifo1count, read, stepid;
- 	u32 step = UINT_MAX;
- 	bool found = false;
-+	u32 step_en;
-+	unsigned long timeout = jiffies + usecs_to_jiffies
-+				(IDLE_TIMEOUT * adc_dev->channels);
-+	step_en = get_adc_step_mask(adc_dev);
-+	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
-+ 
-+	/* Wait for ADC sequencer to complete sampling */
-+	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
-+		if (time_after(jiffies, timeout))
-+			return -EAGAIN;
-+		}
-+	map_val = chan->channel + TOTAL_CHANNELS;
- 
- 	/*
- 	 * When the sub-system is first enabled,
-@@ -170,12 +180,16 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
- 	for (i = 0; i < fifo1count; i++) {
- 		read = tiadc_readl(adc_dev, REG_FIFO1);
--		if (read >> 16 == step) {
--			*val = read & 0xfff;
-+		stepid = read & FIFOREAD_CHNLID_MASK;
-+		stepid = stepid >> 0x10;
-+
-+		if (stepid == map_val) {
-+			read = read & FIFOREAD_DATA_MASK;
- 			found = true;
-+			*val = read;
- 		}
- 	}
--	am335x_tsc_se_update(adc_dev->mfd_tscadc);
-+
- 	if (found == false)
- 		return -EBUSY;
- 	return IIO_VAL_INT;
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index 8d73fe2..db1791b 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -113,11 +113,27 @@
- #define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
- #define CNTRLREG_TSCENB		BIT(7)
- 
-+/* FIFO READ Register */
-+#define FIFOREAD_DATA_MASK (0xfff << 0)
-+#define FIFOREAD_CHNLID_MASK (0xf << 16)
-+
-+/* Sequencer Status */
-+#define SEQ_STATUS BIT(5)
-+
- #define ADC_CLK			3000000
- #define	MAX_CLK_DIV		7
- #define TOTAL_STEPS		16
- #define TOTAL_CHANNELS		8
- 
-+/*
-+* ADC runs at 3MHz, and it takes
-+* 15 cycles to latch one data output.
-+* Hence the idle time for ADC to
-+* process one sample data would be
-+* around 5 micro seconds.
-+*/
-+#define IDLE_TIMEOUT 5 /* microsec */
-+
- #define TSCADC_CELLS		2
- 
- struct ti_tscadc_dev {
+Both guest and host are 64-bit.
+
 -- 
-1.7.9.5
-
+Markus
