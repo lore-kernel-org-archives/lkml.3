@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934656Ab3GQXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:00:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56863 "EHLO
+	id S934711Ab3GQXBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:01:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56847 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757953Ab3GQW4u (ORCPT
+	with ESMTP id S1757936Ab3GQW4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:50 -0400
+	Wed, 17 Jul 2013 18:56:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chen Gang <gang.chen@asianux.com>,
+Cc: Steve Best <sbest@us.ibm.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 052/145] powerpc/smp: Section mismatch from smp_release_cpus to __initdata spinning_secondaries
-Date: Wed, 17 Jul 2013 15:46:24 -0700
-Message-Id: <1374101277-7915-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 027/145] powerpc/eeh: Fix fetching bus for single-dev-PE
+Date: Wed, 17 Jul 2013 15:45:59 -0700
+Message-Id: <1374101277-7915-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,53 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 8246aca7058f3f2c2ae503081777965cd8df7b90 upstream.
+commit 5fb621698e94e3af8b413d9439041fde48e2784d upstream.
 
-the smp_release_cpus is a normal funciton and called in normal environments,
-  but it calls the __initdata spinning_secondaries.
-  need modify spinning_secondaries to match smp_release_cpus.
+While running Linux as guest on top of phyp, we possiblly have
+PE that includes single PCI device. However, we didn't return
+its PCI bus correctly and it leads to failure on recovery from
+EEH errors for single-dev-PE. The patch fixes the issue.
 
-the related warning:
-  (the linker report boot_paca.33377, but it should be spinning_secondaries)
-
------------------------------------------------------------------------------
-
-WARNING: arch/powerpc/kernel/built-in.o(.text+0x23176): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
-The function .smp_release_cpus() references
-the variable __initdata boot_paca.33377.
-This is often because .smp_release_cpus lacks a __initdata
-annotation or the annotation of boot_paca.33377 is wrong.
-
-WARNING: arch/powerpc/kernel/built-in.o(.text+0x231fe): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
-The function .smp_release_cpus() references
-the variable __initdata boot_paca.33377.
-This is often because .smp_release_cpus lacks a __initdata
-annotation or the annotation of boot_paca.33377 is wrong.
-
------------------------------------------------------------------------------
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Cc: Steve Best <sbest@us.ibm.com>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/setup_64.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/pseries/eeh_pe.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
-index 8d97eb4..7960d9c 100644
---- a/arch/powerpc/kernel/setup_64.c
-+++ b/arch/powerpc/kernel/setup_64.c
-@@ -76,7 +76,7 @@
- #endif
+diff --git a/arch/powerpc/platforms/pseries/eeh_pe.c b/arch/powerpc/platforms/pseries/eeh_pe.c
+index fe43d1a..9d4a9e8 100644
+--- a/arch/powerpc/platforms/pseries/eeh_pe.c
++++ b/arch/powerpc/platforms/pseries/eeh_pe.c
+@@ -639,7 +639,8 @@ struct pci_bus *eeh_pe_bus_get(struct eeh_pe *pe)
  
- int boot_cpuid = 0;
--int __initdata spinning_secondaries;
-+int spinning_secondaries;
- u64 ppc64_pft_size;
- 
- /* Pick defaults since we might want to patch instructions
+ 	if (pe->type & EEH_PE_PHB) {
+ 		bus = pe->phb->bus;
+-	} else if (pe->type & EEH_PE_BUS) {
++	} else if (pe->type & EEH_PE_BUS ||
++		   pe->type & EEH_PE_DEVICE) {
+ 		edev = list_first_entry(&pe->edevs, struct eeh_dev, list);
+ 		pdev = eeh_dev_to_pci_dev(edev);
+ 		if (pdev)
 -- 
 1.8.1.2
 
