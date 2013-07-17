@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab3GQISL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 04:18:11 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11967 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab3GQISI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 04:18:08 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 17 Jul 2013 01:17:02 -0700
-Message-ID: <51E65309.6000101@nvidia.com>
-Date: Wed, 17 Jul 2013 16:17:13 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1752687Ab3GQIT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 04:19:27 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:35964 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751597Ab3GQITY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 04:19:24 -0400
+X-Greylist: delayed 1917 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 04:19:24 EDT
+Date: Wed, 17 Jul 2013 09:45:33 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: dwmw2@infradead.org, grant.likely@linaro.org, rob.herring@calxeda.com,
+        artem.bityutskiy@linux.intel.com, jg1.han@samsung.com, andrew@lunn.ch,
+        wfp5p@virginia.edu, yongjun_wei@trendmicro.com.cn,
+        linux-mtd@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] mtd: orion_nand: convert to use devm_* APIs
+Message-ID: <20130717074533.GA1026@lunn.ch>
+References: <CAPgLHd8upcmfnQqHAWnqP7YBVYDVyoYKQ3WCh3c5+uY-EKr1jg@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] Enable lm90 in Tegra30 and Tegra114.
-References: <1373615364-18559-1-git-send-email-wni@nvidia.com> <51E427F1.9010106@wwwdotorg.org> <51E42DB0.8090006@wwwdotorg.org> <51E52B28.9090708@nvidia.com>
-In-Reply-To: <51E52B28.9090708@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd8upcmfnQqHAWnqP7YBVYDVyoYKQ3WCh3c5+uY-EKr1jg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 07:14 PM, Wei Ni wrote:
-> On 07/16/2013 01:13 AM, Stephen Warren wrote:
->> On 07/15/2013 10:48 AM, Stephen Warren wrote:
->>> On 07/12/2013 01:49 AM, Wei Ni wrote:
->>>> Enable thermal sensor lm90 for Tegra30 Cardhu and Tegra114 Dalmore.
->>>
->>> I have applied the series to Tegra's for-3.12/dt branch.
->>
->> Actually, I see the following on Dalmore (although Cardhu works):
->>
->> [   29.448539] lm90 0-004c: Register 0x4 read failed (-121)
->> [   29.453930] lm90 0-004c: Failed to read convrate register!
->> [   29.460034] lm90 0-004c: Register 0x3 read failed (-121)
->> [   29.465408] lm90 0-004c: Initialization failed!
->>
->> So, there's something wrong here, and I've dropped the patch for
->> Dalmore. Does this patch actually work for you?
->>
-> I test it with the Chrome u-boot, the lm90 works fine.
-> But today, if I tried to use the uboot from
-> git://git.denx.de/u-boot-tegra.git, I can repo your errors, it seems the
-> i2c can't work, the lm90 driver read register failed.
-> I traced it, but can't find the root cause yet.
-
-Hi, Stephen
-I found the root cause.
-In the Chrome u-boot, it will turn on the regulator for the lm90, but in
-the upstream u-boot, it didn't do it.
-I think this regulator should be handled in the kernel driver, but it
-seems the regulator palmas tps65913 didn't be supported on the dalmore yet.
-So may be we have to wait the palmas ready on dalmore.
-
-Do you have any suggestions?
-
-Thanks.
-Wei.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Wed, Jul 17, 2013 at 10:09:10AM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
+> Convert to use devm_* APIs to avoid resources leak on error handling case.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/mtd/nand/orion_nand.c | 29 +++++++++--------------------
+>  1 file changed, 9 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+> index 46f308d..ce711b4 100644
+> --- a/drivers/mtd/nand/orion_nand.c
+> +++ b/drivers/mtd/nand/orion_nand.c
+> @@ -85,25 +85,23 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+>  	int ret = 0;
+>  	u32 val = 0;
+>  
+> -	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
+> +	nc = devm_kzalloc(&pdev->dev,
+> +			  sizeof(struct nand_chip) + sizeof(struct mtd_info),
+> +			  GFP_KERNEL);
+>  	if (!nc) {
+>  		printk(KERN_ERR "orion_nand: failed to allocate device structure.\n");
+> -		ret = -ENOMEM;
+> -		goto no_res;
+> +		return -ENOMEM;
+>  	}
+>  	mtd = (struct mtd_info *)(nc + 1);
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		ret = -ENODEV;
+> -		goto no_res;
+> -	}
+> +	if (!res)
+> +		return -ENODEV;
+>  
+> -	io_base = ioremap(res->start, resource_size(res));
+> +	io_base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+>  	if (!io_base) {
+>  		printk(KERN_ERR "orion_nand: ioremap failed\n");
+> -		ret = -EIO;
+> -		goto no_res;
+> +		return -EIO;
 
+Hi Wei
+
+Thanks for working on this.
+
+The above code can be further simplified:
+
+        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+        io_base = devm_ioremap_resource(&pdev->dev, res);
+        if (IS_ERR(io_base))
+                return PTR_ERR(io_base); 
+
+
+While you are editing this file, it would be nice to replace all the
+printk() statements with dev_err(), dev_info() etc. Please do that as
+a separate patch.
+
+Thanks
+	Andrew
