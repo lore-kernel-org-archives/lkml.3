@@ -1,201 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab3GQKME (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 06:12:04 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34051 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab3GQKMB (ORCPT
+	id S1753227Ab3GQK04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 06:26:56 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49057 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab3GQK0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 06:12:01 -0400
-Message-ID: <51E66C71.6020605@linux.vnet.ibm.com>
-Date: Wed, 17 Jul 2013 15:35:37 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Wed, 17 Jul 2013 06:26:55 -0400
+Date: Wed, 17 Jul 2013 11:26:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130717102631.GO22506@sirena.org.uk>
+References: <1373941094.13228.4.camel@phoenix>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, agraf@suse.de,
-        chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130624124014.27508.8906.sendpatchset@codeblue.in.ibm.com> <20130624124342.27508.44656.sendpatchset@codeblue.in.ibm.com> <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com>
-In-Reply-To: <20130717093420.GU11772@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071710-8256-0000-0000-00000860CC0B
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CMebLzmeJATad/OR"
+Content-Disposition: inline
+In-Reply-To: <1373941094.13228.4.camel@phoenix>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RFT] regulator: da903x: Convert da9034 ldo12 to use
+ linear ranges
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 03:04 PM, Gleb Natapov wrote:
-> On Wed, Jul 17, 2013 at 12:12:35AM +0530, Raghavendra K T wrote:
->>> I do not think it is very rare to get interrupt between
->>> local_irq_restore() and halt() under load since any interrupt that
->>> occurs between local_irq_save() and local_irq_restore() will be
->>> delivered
->>> immediately after local_irq_restore(). Of course the chance of no
->>> other
->>> random interrupt waking lock waiter is very low, but waiter can sleep
->>> for much longer then needed and this will be noticeable in
->>> performance.
->>
->> Yes, I meant the entire thing. I did infact turned WARN on
->> w->lock==null before halt() [ though we can potentially have irq right
->> after that ], but did not hit so far.
-> Depends on your workload of course. To hit that you not only need to get
-> interrupt in there, but the interrupt handler needs to take contended
-> spinlock.
->
 
-Yes. Agree.
+--CMebLzmeJATad/OR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>
->>> BTW can NMI handler take spinlocks? If it can what happens if NMI is
->>> delivered in a section protected by local_irq_save()/local_irq_restore()?
->>>
->>
->> Had another idea if NMI, halts are causing problem until I saw
->> PeterZ's reply similar to V2 of pvspinlock posted  here:
->>
->>   https://lkml.org/lkml/2011/10/23/211
->>
->> Instead of halt we started with a sleep hypercall in those
->>   versions. Changed to halt() once Avi suggested to reuse existing sleep.
->>
->> If we use older hypercall with few changes like below:
->>
->> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
->> {
->>   // a0 reserved for flags
->> if (!w->lock)
->> return;
->> DEFINE_WAIT
->> ...
->> end_wait
->> }
->>
-> How would this help if NMI takes lock in critical section. The thing
-> that may happen is that lock_waiting->want may have NMI lock value, but
-> lock_waiting->lock will point to non NMI lock. Setting of want and lock
-> have to be atomic.
+On Tue, Jul 16, 2013 at 10:18:14AM +0800, Axel Lin wrote:
+> The voltage table of da9034 LDO12 is:
+> 1700000, 1750000, 1800000, 1850000, 1900000, 1950000, 2000000, 2050000
+> 2700000, 2750000, 2800000, 2850000, 2900000, 2950000, 3000000, 3050000
 
-True. so we are here
+Applied, thanks.
 
-         non NMI lock(a)
-         w->lock = NULL;
-         smp_wmb();
-         w->want = want;
-                                NMI
-                          <---------------------
-                           NMI lock(b)
-                           w->lock = NULL;
-                           smp_wmb();
-                           w->want = want;
-                           smp_wmb();
-                           w->lock = lock;
-                          ---------------------->
-         smp_wmb();
-         w->lock = lock;
+--CMebLzmeJATad/OR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-so how about fixing like this?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-again:
-         w->lock = NULL;
-         smp_wmb();
-         w->want = want;
-         smp_wmb();
-         w->lock = lock;
+iQIcBAEBAgAGBQJR5nFTAAoJELSic+t+oim93rkP/A2GtxAHnRj64qMOTISv4AQT
+HZS/+6AUio9QZTPl+lnxeQrwyOAgWXl7XYFt/d1hhqTHQ/nUBhL+MdvQa96VDO2N
+jQ7Y11j3sONeAGj1OQ9Jl6bbJOnFKnnZfyT/4ashdGslUXhQ2XT1sZqqDkACBO9A
+290LWRUsQOh6Vs35BGNzdYt9YWXJBAjpEARDR6eRx012k30awplYd3Gxm5Jcjtel
+mUAl2eJnaYhcCBGorT+gIkheRcsMXn5lIS+SJHNu54/Juw2tpwYKpVWJjSKCdvCS
+WAFtNF+MA7QeYCKQGVQq5TK6/q0HGkRxXLFkUo0iwGwU1X1HlizYc3jQmXWsioGb
+ITfPMBjOzkkx9dfxIaDFkhebkjVKOdxGiIba/o+BFS5U+YJZvUPWW0ojD/4NCnS3
+H9wxHARfDtxTzMVYI1ubuJbU550g/9yr5bmfpQNwMqUZQfLbJngH/ya72cix/BKQ
+T/CyXbokd/0Tnj4KWYLNdiGna78V/sINhnPAChlTA9jIuo/VlQ8xwQZxHAivkD5/
+Lnq+EemjxAhHzAVpDuhCdRcZI69WvIOKURxQPyinIfbDMsVU/9BsSsgJYxw02uUC
+Q9inY6uSFxMZDgo3UqWONd7Xn504BdY7qmbQpUV4pjilPuqf4YptqLjMxPQPgKMf
+cy5T9/U7m5qgtlgjXdEo
+=YWUh
+-----END PGP SIGNATURE-----
 
-if (!lock || w->want != want) goto again;
-
->
-> kvm_pv_wait_for_kick_op() is incorrect in other ways. It will spuriously
-> return to a guest since not all events that wake up vcpu thread
-> correspond to work for guest to do.
->
-
-Okay. agree.
-
->> Only question is how to retry immediately with lock_spinning in
->> w->lock=null cases.
->>
->> /me need to experiment that again perhaps to see if we get some benefit.
->>
->>>>
->>>> So I am,
->>>> 1. trying to artificially reproduce this.
->>>>
->>>> 2. I replaced the halt with below code,
->>>>         if (arch_irqs_disabled())
->>>>                  halt();
->>>>
->>>> and ran benchmarks.
->>>> But this results in degradation because, it means we again go back
->>>> and spin in irq enabled case.
->>>>
->>> Yes, this is not what I proposed.
->>
->> True.
->>
->>>
->>>> 3. Now I am analyzing the performance overhead of safe_halt in irq
->>>> enabled case.
->>>>        if (arch_irqs_disabled())
->>>>                 halt();
->>>>        else
->>>>                 safe_halt();
->>> Use of arch_irqs_disabled() is incorrect here.
->>
->> Oops! sill me.
->>
->> If you are doing it before
->>> local_irq_restore() it will always be false since you disabled interrupt
->>> yourself,
->>
->> This was not the case. but latter is the one I missed.
->>
->>   if you do it after then it is to late since interrupt can come
->>> between local_irq_restore() and halt() so enabling interrupt and halt
->>> are still not atomic.  You should drop local_irq_restore() and do
->>>
->>>    if (arch_irqs_disabled_flags(flags))
->>> 	halt();
->>>    else
->>> 	safe_halt();
->>>
->>> instead.
->>>
->>
->> Yes, I tested with below as suggested:
->>
->> //local_irq_restore(flags);
->>
->>          /* halt until it's our turn and kicked. */
->>          if (arch_irqs_disabled_flags(flags))
->>                  halt();
->>          else
->>                  safe_halt();
->>
->>   //local_irq_save(flags);
->> I am seeing only a slight overhead, but want to give a full run to
->> check the performance.
-> Without compiling and checking myself the different between previous
-> code and this one should be a couple asm instruction. I would be
-> surprised if you can measure it especially as vcpu is going to halt
-> (and do expensive vmexit in the process) anyway.
->
-
-Yes, right.
-
+--CMebLzmeJATad/OR--
