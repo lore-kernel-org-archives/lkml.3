@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab3GQJRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 05:17:35 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35180 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab3GQJRd (ORCPT
+	id S1753284Ab3GQJRm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 05:17:42 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:55755 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab3GQJRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 05:17:33 -0400
-Message-ID: <51E660C6.1020409@oracle.com>
-Date: Wed, 17 Jul 2013 17:15:50 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Wed, 17 Jul 2013 05:17:38 -0400
+X-IronPort-AV: E=Sophos;i="4.89,683,1367971200"; 
+   d="scan'208";a="35657655"
+Date: Wed, 17 Jul 2013 10:17:25 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Chris Ball <cjb@laptop.org>,
         Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-References: <20130715204135.GH15531@xanatos>  <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>  <1373926109.17876.221.camel@gandalf.local.home>  <20130715223615.GI15531@xanatos>  <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>  <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>  <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org>  <20130716224357.GK4994@xanatos>  <1374015299.6458.76.camel@gandalf.local.home>  <20130716231217.GL4994@xanatos> <51E5E609.1030202@oracle.com> <1374022296.6458.118.camel@gandalf.local.home>
-In-Reply-To: <1374022296.6458.118.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        <ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [ATTEND] How to act on LKML
+In-Reply-To: <51E59F79.1040903@zytor.com>
+Message-ID: <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+References: <20130715174659.GC15531@xanatos>   <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>   <20130715180403.GD15531@xanatos>   <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>   <20130715184642.GE15531@xanatos>
+   <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>   <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>   <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>   <1373926109.17876.221.camel@gandalf.local.home>
+   <20130715223615.GI15531@xanatos> <1373932170.28142.24.camel@envy.home>   <864nbv9qcm.fsf@void.printf.net>  <1373944014.17876.255.camel@gandalf.local.home>  <51E4BFA9.1030600@zytor.com>  <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+ <1373991399.6458.6.camel@gandalf.local.home> <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com> <51E59F79.1040903@zytor.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 08:51 AM, Steven Rostedt wrote:
-
-> On Wed, 2013-07-17 at 08:32 +0800, Jeff Liu wrote:
+On Tue, 16 Jul 2013, H. Peter Anvin wrote:
+> On 07/16/2013 09:58 AM, Stefano Stabellini wrote:
+> > 
+> > Because Linux is the most widely used kernel, it's everywhere from
+> > embedded devices to supercomputers.
+> > Many different companies make a business on Linux and pay people to work
+> > on it (not FreeBSD or NetBSD). But that's different from what I was
+> > saying below. Also not all the sub-groups within the kernel development
+> > circles work this way.
+> > 
 > 
->> Another thing might deviated from the main theme, but I'd like to raise it
->> here because I would like to see what's the proper way for that.
->>
->> For instance, people A posted a patch set to the mailing list at first,
->> people B think that there are some issues in A's implementation, and he
->> happened to play around the same stuff recently, so he submitted another
->> patch series.  Finally, people B made it.
->> (In that period, people A kept silent, maybe because he/she was unhappy) 
->>
->> This is a actual occurrence I once observed from a subsystem list(my
->> apologies, I just want to talk this case rather than against somebody),
->> it seems people A is a new comer(because I can not searched any past
->> commits of him/her from the git log), people B is definitely a senior guy.
->>
->> So that's my question, is that a proper collaboration form in kernel
->> community?  Does it better if people B could give some suggestions to
->> help A to improve the code, especially if those help would help A stepping
->> into the kernel development -- maybe it's depend largely on one's opinion. :(
+> I think you have an inverse causal relationship here.
 > 
-> This is a completely different issue from the one in this thread, but it
-> is also a legitimate issue and honestly, a bigger one than perceived
-> insults.
+> Linux took off in a way that the other OSS operating systems didn't, and
+> several of them had started earlier and with way more funding available.
 > 
-> Is it proper collaboration? Absolutely not. Something that I try to be
-> sensitive to as it's something I can do as well. There's been things on
-> my todo list, where someone would send me patches that do it. I would be
-> thinking "darn it, I wanted to do it" and even worse, the patches that
-> were sent wouldn't be of the way I wanted them. But I've tried to be
-> good, and instead of just going about and implementing it myself, I
-> would try to help the person massage the patches into what I wanted.
+> You really have to think about why we are not running Hurd, or any of
+> the various *BSDs, and instead Linus' "not big and professional like
+> GNU" hack.  In my opinion it was because the Linux community was in fact
+> the most open and welcoming of the Open Source communities around.
 
-It's kind of you. Generally, most forks are nice enough in helping others.
-Actually, I only noticed once of something like that the year before.
-Well, I just received an offline email from my college a fews hours ago as
-she checked this topic and unfortunately, she has experienced the same thing
-a few days ago.
+Then it's the time to ask ourselves: is it still like this?
 
-> That takes a lot of effort and discipline, and honestly, helping someone
-> else do the work you wanted is much harder than just doing it yourself. 
 
-Exactly, so I always appreciate the patch reviewers.
-
-Thanks,
--Jeff
-
+> > When HPA wrote "I find it utterly impossible to be offended by it", that
+> > might be true for Linus' rants and I also find them humorous sometimes.
+> > But unfortunately this kind of behavior is by no means limited to Linus
+> > and it's easy to misunderstand, especially when you don't know the
+> > person.
 > 
-> Sometimes the maintainer just takes the easier route, and does the work
-> themselves (because it's also more fun too). But that's really a slap in
-> the face of the person that submitted the work in the first place. If
-> anything hurts the community, it's this behavior. Not Linus giving
-> someone an ass wipe.
-> 
-> -- Steve
->  
-> 
+> There seem to be a fair number of people who think they can imitate
+> Linus' style but do so without understanding the subtle aspects about
+> how to apply it.
 
-
+Right, this is actually the main point I wanted to make.
+Linus' outbursts are not the problem per se because Linus tends to
+attack the code rather than the people and does so when he has a point,
+without straying from the conversation.
+However they set up an example that others try to imitate, without the
+same thoughtfulness.
+I guess this is the price to pay for being a role model ;-)
