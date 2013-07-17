@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3GQNet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:34:49 -0400
-Received: from mail.windriver.com ([147.11.1.11]:57418 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab3GQNer (ORCPT
+	id S1755414Ab3GQNhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:37:38 -0400
+Received: from transistor.pcserviceselectronics.co.uk ([87.127.8.169]:40306
+	"EHLO pcserviceselectronics.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754896Ab3GQNhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:34:47 -0400
-Message-ID: <51E69D50.10000@windriver.com>
-Date: Wed, 17 Jul 2013 09:34:08 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 17 Jul 2013 09:37:36 -0400
+X-Greylist: delayed 1910 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 09:37:36 EDT
+Message-ID: <51E696B0.3050808@pcserviceselectronics.co.uk>
+Date: Wed, 17 Jul 2013 14:05:52 +0100
+From: Paul Carpenter <paul@pcserviceselectronics.co.uk>
+Organization: PC Services (Reading)
+User-Agent: Thunderbird 2.0.0.22 (Windows/20090605)
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] Documentation: update references to v2.6.x in development-process
-References: <1373931284-26333-1-git-send-email-paul.gortmaker@windriver.com> <20130716113349.274da843@lwn.net>
-In-Reply-To: <20130716113349.274da843@lwn.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andy Lutomirski <luto@amacapital.net>
+CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: What endianness is word in i2c_smbus_data?
+References: <CALCETrUKK2j17LP+dVe61UCj05w914RRgyGXhorP1nfS7=rKnA@mail.gmail.com>
+In-Reply-To: <CALCETrUKK2j17LP+dVe61UCj05w914RRgyGXhorP1nfS7=rKnA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-07-16 01:33 PM, Jonathan Corbet wrote:
-> On Mon, 15 Jul 2013 19:34:44 -0400
-> Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> 
->> The last mainline release of a v2.6.x kernel was back in May 2011.
->> Here we update references to be 3.x based, which also means updating
->> some dates and statistics.
-> 
-> Ccing the author of the document never hurts :)
+Andy Lutomirski wrote:
+> I'm rather confused here.  In SMBUS, the "read word" operation returns
+> two bytes.  Just to be confusing, the SMBUS spec calls the first byte
+> "Data Byte Low" and the second byte "Data Byte High".  But they really
+> are the first and second bytes -- Read Word will return whatever Read
+> Byte would have as its first byte.  Let's call these bytes B1 and B2
+> for first and second.
 
-It might be worth sticking an entry in MAINTAINERS for that dir.
-If one had asked me who wrote it, I probably would have recalled that
-info, but instead I just out of habit ran get_maintainers...
+No that tells you WHATEVER the HOST endianness the bus transfer is
+always treated the same, so when two bytes are combined (into a word,
+the first will be the low byte for the HOST and the second will be the
+high byte for the HOST. These may actually be different for the SLAVE
+device.
 
-> 
-> I actually went through this exercise a while back, but somehow never got
-> around to sending the changes out into the world.  Easily distracted, I
-> guess.  Anyway, you can put my Acked-by on your changes if you like.
+> The eeprom and at24 drivers expect data->word to be (B2 << 8) | B1.
+> That is, data->word is the cpu representation of the value on the bus
+> if that value is treated as little-endian.  Is that indeed the correct
+> interpretation?  If so, should it be documented somewhere?
 
-Thanks.
+Several I2C devices eg PCF8575 and MCP23017 often give 16 bit results as
+2 byte transfers, knowing which byte order from device to bus to host
+needs matching.
 
-> 
->> On a similar note, I was thinking about the recent thread on linux-next
->> where we were indicating that people shouldn't rebase linux-next content
->> on a whim, and that new devel (vs. bugfix) content shouldn't appear in
->> the linux-next content during the merge window.  There is no question
->> that the linux-next process is integral to the main flow of patches to
->> mainline, so I think Documentation/development-process/2.Process (the
->> same file) should also capture those points in the linux-next section.
->> Do you have some pre-canned text we can insert there, or should I draft
->> something up for you to review?
-> 
-> Seems useful, I could also try to help with this if you run out of steam.
-> I'd be more inclined to put it into section 7, though, since it's the sort
-> of thing early-stage developers don't normally need to worry about.
+So knowing that a word is made up of bytes transmitted or received in a
+particular order is important as some devices do transmit high byte
+first.
 
-I'd agree with that; a pointer in section two where linux-next is 1st
-mentioned can point to section7 where the advanced info is given.  
+> --Andy
+> 
 
-Paul.
---
 
-> 
-> Thanks,
-> 
-> jon
-> 
+-- 
+Paul Carpenter          | paul@pcserviceselectronics.co.uk
+<http://www.pcserviceselectronics.co.uk/>    PC Services
+<http://www.pcserviceselectronics.co.uk/pi/>  Raspberry Pi Add-ons
+<http://www.pcserviceselectronics.co.uk/fonts/> Timing Diagram Font
+<http://www.gnuh8.org.uk/>  GNU H8 - compiler & Renesas H8/H8S/H8 Tiny
+<http://www.badweb.org.uk/> For those web sites you hate
