@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab3GQWss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:48:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56191 "EHLO
+	id S1757592Ab3GQWtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:49:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56250 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757469Ab3GQWso (ORCPT
+	with ESMTP id S932544Ab3GQWsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:48:44 -0400
+	Wed, 17 Jul 2013 18:48:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 009/145] zram: avoid invalid memory access in zram_exit()
-Date: Wed, 17 Jul 2013 15:45:41 -0700
-Message-Id: <1374101277-7915-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 017/145] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
+Date: Wed, 17 Jul 2013 15:45:49 -0700
+Message-Id: <1374101277-7915-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,45 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
 
-commit 6030ea9b35971a4200062f010341ab832e878ac9 upstream.
+commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
 
-Memory for zram->disk object may have already been freed after returning
-from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
-to access zram->disk again.
+Without this memory barrier, the file-storage thread may fail to
+escape from the following while loop, because it may observe new
+common->thread_wakeup_needed and old bh->state which are updated by
+the callback functions.
 
-We can't solve this bug by flipping the order of destroy_device(zram)
-and zram_reset_device(zram), that will cause deadlock issues to the
-zram sysfs handler.
+	/* Wait for the CBW to arrive */
+	while (bh->state != BUF_STATE_FULL) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
 
-So fix it by holding an extra reference to zram->disk before calling
-destroy_device(zram).
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.8: adjusted context ]
+Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_drv.c | 2 ++
+ drivers/usb/gadget/f_mass_storage.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 071e058..c9c1e0e 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -764,9 +764,11 @@ static void __exit zram_exit(void)
- 	for (i = 0; i < num_devices; i++) {
- 		zram = &zram_devices[i];
- 
-+		get_disk(zram->disk);
- 		destroy_device(zram);
- 		if (zram->init_done)
- 			zram_reset_device(zram);
-+		put_disk(zram->disk);
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 5d027b3..452e4f6 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -427,6 +427,7 @@ static int fsg_set_halt(struct fsg_dev *fsg, struct usb_ep *ep)
+ /* Caller must hold fsg->lock */
+ static void wakeup_thread(struct fsg_common *common)
+ {
++	smp_wmb();	/* ensure the write of bh->state is complete */
+ 	/* Tell the main thread that something has happened */
+ 	common->thread_wakeup_needed = 1;
+ 	if (common->thread_task)
+@@ -646,6 +647,7 @@ static int sleep_thread(struct fsg_common *common)
  	}
+ 	__set_current_state(TASK_RUNNING);
+ 	common->thread_wakeup_needed = 0;
++	smp_rmb();	/* ensure the latest bh->state is visible */
+ 	return rc;
+ }
  
- 	unregister_blkdev(zram_major, "zram");
 -- 
 1.8.1.2
 
