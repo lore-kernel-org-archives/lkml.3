@@ -1,114 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3GQC6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 22:58:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43903 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751533Ab3GQC6V (ORCPT
+	id S1751825Ab3GQC7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 22:59:09 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:40798 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab3GQC7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 22:58:21 -0400
-Message-ID: <1374029882.2537.74.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Lang <david@lang.hm>,
-        "ksummit-2013-discuss@lists.linux-foundation.org" 
-	<ksummit-2013-discuss@lists.linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 17 Jul 2013 03:58:02 +0100
-In-Reply-To: <20130716201041.GC20721@1wt.eu>
-References: <20130712005023.GB31005@thunk.org>
-	 <20130712051451.GC25815@1wt.eu>
-	 <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz>
-	 <s5hwqoqv4oo.wl%tiwai@suse.de> <20130716165933.GU22506@sirena.org.uk>
-	 <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com>
-	 <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
-	 <1374000084.6458.36.camel@gandalf.local.home>
-	 <20130716191147.GA1680@kroah.com>
-	 <1374003789.6458.55.camel@gandalf.local.home>
-	 <20130716201041.GC20721@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-8sIWsnkmxR8DCU1q+CBr"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 16 Jul 2013 22:59:04 -0400
+Message-ID: <B8F447E4405F4B7B9B9723556DB3B008@chingDT>
+Reply-To: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
+From: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
+To: "linux-scsi" <linux-scsi@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3] arcmsr: Fix command throttling for ARC188x series adapters
+Date: Wed, 17 Jul 2013 10:59:32 +0800
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_002B_01CE82DC.B79B5730"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+X-Antivirus: avast! (VPS 130716-1, 2013/07/17), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
 
---=-8sIWsnkmxR8DCU1q+CBr
-Content-Type: text/plain; charset="UTF-8"
+------=_NextPart_000_002B_01CE82DC.B79B5730
+Content-Type: text/plain;
+	format=flowed;
+	charset="big5";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+
+From: Chingching2048@areca.com.tw
+
+Fix command throttling for ARC188x series adapters.
+Signed-off-by: Chingching2048@areca.com.tw
+---
+
+------=_NextPart_000_002B_01CE82DC.B79B5730
+Content-Type: application/octet-stream;
+	name="patch2"
 Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+	filename="patch2"
 
-On Tue, 2013-07-16 at 22:10 +0200, Willy Tarreau wrote:
-> On Tue, Jul 16, 2013 at 03:43:09PM -0400, Steven Rostedt wrote:
-> > On Tue, 2013-07-16 at 12:11 -0700, Greg Kroah-Hartman wrote:
-> >=20
-> > > People mark stable patches that way already today with a:
-> > > 	Cc: stable <stable@vger.kernel.org> # delay for 3.12-rc4
-> > > or some such wording.  I take those and don't apply them until the no=
-ted
-> > > release happens, so you can do this if needed.
-> >=20
-> > I guess the thing is, are stable patches prone to regressions. Do we
-> > just do that for patches that we think are too complex and may cause
-> > some harm. Of course, there's the question about having a clue about
-> > what patches might cause harm or not.
->=20
-> We'd probably better switch the tag to be "# now" to imply that we don't
-> want to delay them, and that by default those merged prior to rc4 are all
-> postponed.
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c =
+b/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2013-05-07 19:12:12.000000000 =
++0800=0A=
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2013-05-16 04:20:04.000000000 =
++0800=0A=
+@@ -2461,12 +2461,12 @@ arcmsr_hbaC_postqueue_isr(struct Adapter=0A=
+ 			? true : false;=0A=
+ 		/* check if command done with no error */=0A=
+ 		arcmsr_drain_donequeue(acb, ccb, error);=0A=
++		throttling++;=0A=
+ 		if (throttling =3D=3D ARCMSR_HBC_ISR_THROTTLING_LEVEL) {=0A=
+ 			writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING,=0A=
+ 				&phbcmu->inbound_doorbell);=0A=
+-			continue;=0A=
++			throttling =3D 0;=0A=
+ 		}=0A=
+-		throttling++;=0A=
+ 	} while (readl(&phbcmu->host_int_status) &=0A=
+ 	ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR);=0A=
+ }=0A=
 
-I think this might work.  I definitely agree that most fixes aren't
-worth the risk of allowing into a stable release that quickly, so it's
-the right default.
+------=_NextPart_000_002B_01CE82DC.B79B5730--
 
-> I suspect that the switching could be mostly automated this way,
-> avoiding to add burden to Greg :
->=20
->   - if commit ID >=3D -rc4
->     move to immediate queue, it's a "critical" fix as per Linus' rules
->=20
->   - if Cc: stable line has "now" at the end, move to immediate queue as
->     the maintainer takes this reponsibility ;
->=20
->   - otherwise move to the next .2 queue.
-
-I can't speak for Greg, but that seems reasonably easy to implement.
-(Which I would have to do, as I was unable to reuse Greg's scripts.)
-
-Ben.
-
---=20
-Ben Hutchings
-Humans are not rational beings; they are rationalising beings.
-
---=-8sIWsnkmxR8DCU1q+CBr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUeYIOue/yOyVhhEJAQqTJQ//UoR0fe5UnGpiQSc5mrzJ9uU1558rS3y7
-/ZSdEsbiYJS70GIQLgoZNkslCsU5WBIE72XTHNb6dWu/Y2/KpLiuoxAn3iaCJwZN
-hUpMs0y9X5oano2mItbh4HHHq+3wBpwdCXmQ91OB8hA7U4r7hiB0JTFub5/jLFZC
-z+xH5Ce5jHIrNvmsWeU0KhCZzCEAnYVMzS5poAJbueg9xRxZtF37zXGPP5SrZROK
-noBCGUJv+/LFgyO3zCRL86YUwnICM61C40HykEV6CjJFxl748D9dBwb+Oqr1Tt49
-GEY+EPE3RRb7/JU836YsYE6PnhU3mdT3eKMAEWN+UVe1XvmOKH1eUgXmSWxcRRzy
-0R5FTzSu9YGA9uIPY6JO7c7LAfg6b4ETcxg1WgNL68QOPofoxiAP8btsg/qPbgEf
-GfyrG/+XYgkwVYzSPFAtUodJz6CoxTeBIwZm8LgqUe8ePGq99SD3YB+UJOOCJE2/
-kQoiSODJZYqvlWmJLdHWc/BJRzruF6LxeTqQ4i9YEQczMPtbi+clHYBCtngqmOS2
-6KKbHlgntbrm1rwfJ+7bYpm2smyfqttN0E2plMIx6gzVqM29tP1trwbtgqnwfSxn
-I20z1qCYz/syfnjF36Rx+PUpHnMfx80TQQm4BxiTk1dJsl08SwRFSKp80u+nwdFW
-C+w+WlmUK9E=
-=mnA1
------END PGP SIGNATURE-----
-
---=-8sIWsnkmxR8DCU1q+CBr--
