@@ -1,113 +1,1001 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab3GQILu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 04:11:50 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:7181 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab3GQILq (ORCPT
+	id S1752841Ab3GQIL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 04:11:28 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57850 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab3GQIKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 04:11:46 -0400
-Message-ID: <1374048701.6000.21.camel@j-VirtualBox>
-Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
- frequently
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Wed, 17 Jul 2013 01:11:41 -0700
-In-Reply-To: <20130717072504.GY17211@twins.programming.kicks-ass.net>
-References: <1374002463.3944.11.camel@j-VirtualBox>
-	 <20130716202015.GX17211@twins.programming.kicks-ass.net>
-	 <1374014881.2332.21.camel@j-VirtualBox>
-	 <20130717072504.GY17211@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 17 Jul 2013 04:10:12 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6H8A0Gm029349, This message is accepted by code: ctloc85258
+From: <wei_wang@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v2 1/5] mfd:rtsx: Read vendor setting from config space
+Date: Wed, 17 Jul 2013 16:09:51 +0800
+Message-ID: <8f0f23e3076558f517aea7851500ca5112f9050d.1373953200.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1373953200.git.wei_wang@realsil.com.cn>
+References: <cover.1373953200.git.wei_wang@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-17 at 09:25 +0200, Peter Zijlstra wrote:
-> On Tue, Jul 16, 2013 at 03:48:01PM -0700, Jason Low wrote:
-> > On Tue, 2013-07-16 at 22:20 +0200, Peter Zijlstra wrote:
-> > > On Tue, Jul 16, 2013 at 12:21:03PM -0700, Jason Low wrote:
-> > > > When running benchmarks on an 8 socket 80 core machine with a 3.10 kernel,
-> > > > there can be a lot of contention in idle_balance() and related functions.
-> > > > On many AIM7 workloads in which CPUs go idle very often and idle balance
-> > > > gets called a lot, it is actually lowering performance.
-> > > > 
-> > > > Since idle balance often helps performance (when it is not overused), I
-> > > > looked into trying to avoid attempting idle balance only when it is
-> > > > occurring too frequently.
-> > > > 
-> > > > This RFC patch attempts to keep track of the approximate "average" time between
-> > > > idle balance attempts per CPU. Each time the idle_balance() function is
-> > > > invoked, it will compute the duration since the last idle_balance() for
-> > > > the current CPU. The avg time between idle balance attempts is then updated
-> > > > using a very similar method as how rq->avg_idle is computed. 
-> > > > 
-> > > > Once the average time between idle balance attempts drops below a certain
-> > > > value (which in this patch is sysctl_sched_idle_balance_limit), idle_balance
-> > > > for that CPU will be skipped. The average time between idle balances will
-> > > > continue to be updated, even if it ends up getting skipped. The
-> > > > initial/maximum average is set a lot higher though to make sure that the
-> > > > avg doesn't fall below the threshold until the sample size is large and to
-> > > > prevent the avg from being overestimated.
-> > > 
-> > > One of the things I've been talking about for a while now is how I'd
-> > > like to use the idle guestimator used for cpuidle for newidle balance.
-> > > 
-> > > Basically based on the estimated idle time limit how far/wide you'll
-> > > search for tasks to run.
-> > > 
-> > > You can remove the sysctl and auto-tune by measuring how long it takes
-> > > on avg to do a newidle balance.
-> > 
-> > Hi Peter,
-> > 
-> > When you say how long it takes on avg to do a newidle balance, are you
-> > referring to the avg time it takes for each call to CPU_NEWLY_IDLE
-> > load_balance() to complete, or the avg time it takes for newidle balance
-> > attempts within a domain to eventually successfully pull/move a task(s)?
-> 
-> Both :-), being as the completion time would be roughly equivalent for the
-> top domain and the entire call.
-> 
-> So I suppose I was somewhat unclear :-) I initially started out with a
-> simpler model, where you measure the avg time of the entire
-> idle_balance() call and measure the avg idle time and compare the two.
-> 
-> Then I progressed to the more complex model where you measure the
-> completion time of each domain in the for_each_domain() iteration of
-> idle_balance() and compare that against the estimated idle time, bailing
-> out of the domain iteration when the avg completion time exceeds the
-> expected idle time.
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-Hi Peter,
+Normally OEMs will set vendor setting to the config space of Realtek
+card reader in BIOS stage. This patch reads the setting at the first,
+and configure the internal registers according to it, to improve card
+reader's compatibility condition.
 
-For the more complex model, are you suggesting that each completion time
-is the time it takes to complete 1 iteration of the for_each_domain()
-loop? 
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ drivers/mfd/rtl8411.c           |   81 ++++++++++++++++++++++++++++----
+ drivers/mfd/rts5209.c           |   51 +++++++++++++-------
+ drivers/mfd/rts5227.c           |   98 +++++++++++++++++++++++++++++----------
+ drivers/mfd/rts5229.c           |   41 ++++++++++++++--
+ drivers/mfd/rts5249.c           |   93 ++++++++++++++++++++++++++++---------
+ drivers/mfd/rtsx_pcr.c          |   29 ++++++++++--
+ drivers/mfd/rtsx_pcr.h          |   32 ++++++++++++-
+ include/linux/mfd/rtsx_common.h |    3 +-
+ include/linux/mfd/rtsx_pci.h    |   21 +++++++--
+ 9 files changed, 362 insertions(+), 87 deletions(-)
 
-Based on some of the data I collected, a single iteration of the
-for_each_domain() loop is almost always significantly lower than the
-approximate CPU idle time, even in workloads where idle_balance is
-lowering performance. The bigger issue is that it takes so many of these
-attempts before idle_balance actually "worked" and pulls a tasks.
-
-I initially was thinking about each "completion time" of an idle balance
-as the sum total of the times of all iterations to complete until a task
-is successfully pulled within each domain.
-
-Jason
+diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+index c436bf2..1fbb978 100644
+--- a/drivers/mfd/rtl8411.c
++++ b/drivers/mfd/rtl8411.c
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek PCI-Express card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,7 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
++ *   Roger Tseng <rogerable@realtek.com>
+  */
+ 
+ #include <linux/module.h>
+@@ -47,19 +47,70 @@ static int rtl8411b_is_qfn48(struct rtsx_pcr *pcr)
+ 		return 0;
+ }
+ 
++static void rtl8411_init_settings(struct rtsx_pcr *pcr)
++{
++	u32 reg1;
++	u8 reg3;
++
++	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &reg1);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, reg1);
++
++	if (rtsx_vendor_setting_valid(reg1)) {
++		pcr->aspm_en = rtsx_reg_to_aspm(reg1);
++		pcr->sd30_drive_sel_1v8 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_1v8(reg1));
++		pcr->card_drive_sel &= 0x3F;
++		pcr->card_drive_sel |= rtsx_reg_to_card_drive_sel(reg1);
++
++		rtsx_pci_read_config_byte(pcr, PCR_SETTING_REG3, &reg3);
++		dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n",
++				PCR_SETTING_REG3, reg3);
++		pcr->sd30_drive_sel_3v3 =
++			rtl8411_reg_to_sd30_drive_sel_3v3(reg3);
++	}
++}
++
++static void rtl8411b_init_settings(struct rtsx_pcr *pcr)
++{
++	u32 reg;
++
++	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &reg);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, reg);
++
++	if (rtsx_vendor_setting_valid(reg)) {
++		pcr->aspm_en = rtsx_reg_to_aspm(reg);
++		pcr->sd30_drive_sel_1v8 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_1v8(reg));
++		pcr->sd30_drive_sel_3v3 =
++			map_sd_drive(rtl8411b_reg_to_sd30_drive_sel_3v3(reg));
++	}
++}
++
+ static int rtl8411_extra_init_hw(struct rtsx_pcr *pcr)
+ {
+-	return rtsx_pci_write_register(pcr, CD_PAD_CTL,
++	rtsx_pci_init_cmd(pcr);
++
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DRIVE_SEL,
++			0xFF, pcr->sd30_drive_sel_3v3);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CD_PAD_CTL,
+ 			CD_DISABLE_MASK | CD_AUTO_DISABLE, CD_ENABLE);
++
++	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
+ static int rtl8411b_extra_init_hw(struct rtsx_pcr *pcr)
+ {
+-	if (rtl8411b_is_qfn48(pcr))
+-		rtsx_pci_write_register(pcr, CARD_PULL_CTL3, 0xFF, 0xF5);
++	rtsx_pci_init_cmd(pcr);
+ 
+-	return rtsx_pci_write_register(pcr, CD_PAD_CTL,
++	if (rtl8411b_is_qfn48(pcr))
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++				CARD_PULL_CTL3, 0xFF, 0xF5);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DRIVE_SEL,
++			0xFF, pcr->sd30_drive_sel_3v3);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CD_PAD_CTL,
+ 			CD_DISABLE_MASK | CD_AUTO_DISABLE, CD_ENABLE);
++
++	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
+ static int rtl8411_turn_on_led(struct rtsx_pcr *pcr)
+@@ -141,13 +192,13 @@ static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_MASK;
+ 	if (voltage == OUTPUT_3V3) {
+ 		err = rtsx_pci_write_register(pcr,
+-				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_D);
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
+ 		if (err < 0)
+ 			return err;
+ 		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_3V3;
+ 	} else if (voltage == OUTPUT_1V8) {
+ 		err = rtsx_pci_write_register(pcr,
+-				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_B);
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
+ 		if (err < 0)
+ 			return err;
+ 		val = (BPP_ASIC_1V8 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_1V8;
+@@ -222,6 +273,7 @@ static int rtl8411_conv_clk_and_div_n(int input, int dir)
+ }
+ 
+ static const struct pcr_ops rtl8411_pcr_ops = {
++	.init_settings = rtl8411_init_settings,
+ 	.extra_init_hw = rtl8411_extra_init_hw,
+ 	.optimize_phy = NULL,
+ 	.turn_on_led = rtl8411_turn_on_led,
+@@ -236,6 +288,7 @@ static const struct pcr_ops rtl8411_pcr_ops = {
+ };
+ 
+ static const struct pcr_ops rtl8411b_pcr_ops = {
++	.init_settings = rtl8411b_init_settings,
+ 	.extra_init_hw = rtl8411b_extra_init_hw,
+ 	.optimize_phy = NULL,
+ 	.turn_on_led = rtl8411_turn_on_led,
+@@ -385,6 +438,12 @@ void rtl8411_init_params(struct rtsx_pcr *pcr)
+ 	pcr->num_slots = 2;
+ 	pcr->ops = &rtl8411_pcr_ops;
+ 
++	pcr->flags = 0;
++	pcr->card_drive_sel = 0x55;
++	pcr->sd30_drive_sel_1v8 = 0x03;
++	pcr->sd30_drive_sel_3v3 = 0x01;
++	pcr->aspm_en = 0x02;
++
+ 	pcr->ic_version = rtl8411_get_ic_version(pcr);
+ 	pcr->sd_pull_ctl_enable_tbl = rtl8411_sd_pull_ctl_enable_tbl;
+ 	pcr->sd_pull_ctl_disable_tbl = rtl8411_sd_pull_ctl_disable_tbl;
+@@ -398,6 +457,12 @@ void rtl8411b_init_params(struct rtsx_pcr *pcr)
+ 	pcr->num_slots = 2;
+ 	pcr->ops = &rtl8411b_pcr_ops;
+ 
++	pcr->flags = 0;
++	pcr->card_drive_sel = 0x55;
++	pcr->sd30_drive_sel_1v8 = 0x03;
++	pcr->sd30_drive_sel_3v3 = 0x01;
++	pcr->aspm_en = 0x02;
++
+ 	pcr->ic_version = rtl8411_get_ic_version(pcr);
+ 
+ 	if (rtl8411b_is_qfn48(pcr)) {
+diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
+index ec78d9f..99e0ee2 100644
+--- a/drivers/mfd/rts5209.c
++++ b/drivers/mfd/rts5209.c
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek PCI-Express card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #include <linux/module.h>
+@@ -34,18 +33,28 @@ static u8 rts5209_get_ic_version(struct rtsx_pcr *pcr)
+ 	return val & 0x0F;
+ }
+ 
+-static void rts5209_init_vendor_cfg(struct rtsx_pcr *pcr)
++static void rts5209_init_settings(struct rtsx_pcr *pcr)
+ {
+-	u32 val;
++	u32 reg;
+ 
+-	rtsx_pci_read_config_dword(pcr, 0x724, &val);
+-	dev_dbg(&(pcr->pci->dev), "Cfg 0x724: 0x%x\n", val);
++	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &reg);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, reg);
+ 
+-	if (!(val & 0x80)) {
+-		if (val & 0x08)
+-			pcr->ms_pmos = false;
+-		else
+-			pcr->ms_pmos = true;
++	if (rts5209_vendor_setting1_valid(reg)) {
++		if (rts5209_reg_check_ms_pmos(reg))
++			pcr->flags |= PCR_MS_PMOS;
++		pcr->aspm_en = rts5209_reg_to_aspm(reg);
++	}
++
++	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG2, &reg);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG2, reg);
++
++	if (rts5209_vendor_setting2_valid(reg)) {
++		pcr->sd30_drive_sel_1v8 =
++			rts5209_reg_to_sd30_drive_sel_1v8(reg);
++		pcr->sd30_drive_sel_3v3 =
++			rts5209_reg_to_sd30_drive_sel_3v3(reg);
++		pcr->card_drive_sel = rts5209_reg_to_card_drive_sel(reg);
+ 	}
+ }
+ 
+@@ -57,6 +66,9 @@ static int rts5209_extra_init_hw(struct rtsx_pcr *pcr)
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO, 0xFF, 0x03);
+ 	/* Configure GPIO as output */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO_DIR, 0xFF, 0x03);
++	/* Configure driving */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DRIVE_SEL,
++			0xFF, pcr->sd30_drive_sel_3v3);
+ 
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+@@ -95,7 +107,7 @@ static int rts5209_card_power_on(struct rtsx_pcr *pcr, int card)
+ 	partial_pwr_on = SD_PARTIAL_POWER_ON;
+ 	pwr_on = SD_POWER_ON;
+ 
+-	if (pcr->ms_pmos && (card == RTSX_MS_CARD)) {
++	if ((pcr->flags & PCR_MS_PMOS) && (card == RTSX_MS_CARD)) {
+ 		pwr_mask = MS_POWER_MASK;
+ 		partial_pwr_on = MS_PARTIAL_POWER_ON;
+ 		pwr_on = MS_POWER_ON;
+@@ -131,7 +143,7 @@ static int rts5209_card_power_off(struct rtsx_pcr *pcr, int card)
+ 	pwr_mask = SD_POWER_MASK;
+ 	pwr_off = SD_POWER_OFF;
+ 
+-	if (pcr->ms_pmos && (card == RTSX_MS_CARD)) {
++	if ((pcr->flags & PCR_MS_PMOS) && (card == RTSX_MS_CARD)) {
+ 		pwr_mask = MS_POWER_MASK;
+ 		pwr_off = MS_POWER_OFF;
+ 	}
+@@ -140,7 +152,7 @@ static int rts5209_card_power_off(struct rtsx_pcr *pcr, int card)
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
+ 			pwr_mask | PMOS_STRG_MASK, pwr_off | PMOS_STRG_400mA);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
+-			LDO3318_PWR_MASK, 0X06);
++			LDO3318_PWR_MASK, 0x06);
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
+@@ -150,7 +162,7 @@ static int rts5209_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 
+ 	if (voltage == OUTPUT_3V3) {
+ 		err = rtsx_pci_write_register(pcr,
+-				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_D);
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
+ 		if (err < 0)
+ 			return err;
+ 		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
+@@ -158,7 +170,7 @@ static int rts5209_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 			return err;
+ 	} else if (voltage == OUTPUT_1V8) {
+ 		err = rtsx_pci_write_register(pcr,
+-				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_B);
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
+ 		if (err < 0)
+ 			return err;
+ 		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
+@@ -172,6 +184,7 @@ static int rts5209_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ }
+ 
+ static const struct pcr_ops rts5209_pcr_ops = {
++	.init_settings = rts5209_init_settings,
+ 	.extra_init_hw = rts5209_extra_init_hw,
+ 	.optimize_phy = rts5209_optimize_phy,
+ 	.turn_on_led = rts5209_turn_on_led,
+@@ -242,7 +255,11 @@ void rts5209_init_params(struct rtsx_pcr *pcr)
+ 	pcr->num_slots = 2;
+ 	pcr->ops = &rts5209_pcr_ops;
+ 
+-	rts5209_init_vendor_cfg(pcr);
++	pcr->flags = 0;
++	pcr->card_drive_sel = 0x55;
++	pcr->sd30_drive_sel_1v8 = 0x03;
++	pcr->sd30_drive_sel_3v3 = 0x01;
++	pcr->aspm_en = 0x02;
+ 
+ 	pcr->ic_version = rts5209_get_ic_version(pcr);
+ 	pcr->sd_pull_ctl_enable_tbl = rts5209_sd_pull_ctl_enable_tbl;
+diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+index fc831dc..6159f7a 100644
+--- a/drivers/mfd/rts5227.c
++++ b/drivers/mfd/rts5227.c
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek PCI-Express card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,10 +17,7 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+- *
+  *   Roger Tseng <rogerable@realtek.com>
+- *   No. 2, Innovation Road II, Hsinchu Science Park, Hsinchu 300, Taiwan
+  */
+ 
+ #include <linux/module.h>
+@@ -29,6 +26,62 @@
+ 
+ #include "rtsx_pcr.h"
+ 
++static void rts5227_fill_driving(struct rtsx_pcr *pcr, u8 voltage)
++{
++	u8 driving_3v3[4][3] = {
++		{0x13, 0x13, 0x13},
++		{0x96, 0x96, 0x96},
++		{0x7F, 0x7F, 0x7F},
++		{0x96, 0x96, 0x96},
++	};
++	u8 driving_1v8[4][3] = {
++		{0x99, 0x99, 0x99},
++		{0xAA, 0xAA, 0xAA},
++		{0xFE, 0xFE, 0xFE},
++		{0xB3, 0xB3, 0xB3},
++	};
++	u8 (*driving)[3], drive_sel;
++
++	if (voltage == OUTPUT_3V3) {
++		driving = driving_3v3;
++		drive_sel = pcr->sd30_drive_sel_3v3;
++	} else {
++		driving = driving_1v8;
++		drive_sel = pcr->sd30_drive_sel_1v8;
++	}
++
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CLK_DRIVE_SEL,
++			0xFF, driving[drive_sel][0]);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CMD_DRIVE_SEL,
++			0xFF, driving[drive_sel][1]);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DAT_DRIVE_SEL,
++			0xFF, driving[drive_sel][2]);
++}
++
++static void rts5227_init_settings(struct rtsx_pcr *pcr)
++{
++	u32 reg;
++
++	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &reg);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, reg);
++
++	if (rtsx_vendor_setting_valid(reg)) {
++		pcr->aspm_en = rtsx_reg_to_aspm(reg);
++		pcr->sd30_drive_sel_1v8 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_1v8(reg));
++		pcr->card_drive_sel &= 0x3F;
++		pcr->card_drive_sel |= rtsx_reg_to_card_drive_sel(reg);
++
++		rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG2, &reg);
++		dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n",
++				PCR_SETTING_REG2, reg);
++		pcr->sd30_drive_sel_3v3 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_3v3(reg));
++		if (rtsx_reg_check_reverse_socket(reg))
++			pcr->flags |= PCR_REVERSE_SOCKET;
++	}
++}
++
+ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+ {
+ 	u16 cap;
+@@ -48,17 +101,15 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+ 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LTR_CTL, 0xFF, 0xA3);
+ 	/* Configure OBFF */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, OBFF_CFG, 0x03, 0x03);
+-	/* Configure force_clock_req
+-	 * Maybe We should define 0xFF03 as some name
+-	 */
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, 0xFF03, 0x08, 0x08);
+-	/* Correct driving */
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+-			SD30_CLK_DRIVE_SEL, 0xFF, 0x96);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+-			SD30_CMD_DRIVE_SEL, 0xFF, 0x96);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+-			SD30_DAT_DRIVE_SEL, 0xFF, 0x96);
++	/* Configure driving */
++	rts5227_fill_driving(pcr, OUTPUT_3V3);
++	/* Configure force_clock_req */
++	if (pcr->flags & PCR_REVERSE_SOCKET)
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++				AUTOLOAD_CFG_BASE + 3, 0xB8, 0xB8);
++	else
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++				AUTOLOAD_CFG_BASE + 3, 0xB8, 0x88);
+ 
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+@@ -131,13 +182,11 @@ static int rts5227_card_power_off(struct rtsx_pcr *pcr, int card)
+ static int rts5227_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ {
+ 	int err;
+-	u8 drive_sel;
+ 
+ 	if (voltage == OUTPUT_3V3) {
+ 		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
+ 		if (err < 0)
+ 			return err;
+-		drive_sel = 0x96;
+ 	} else if (voltage == OUTPUT_1V8) {
+ 		err = rtsx_pci_write_phy_register(pcr, 0x11, 0x3C02);
+ 		if (err < 0)
+@@ -145,23 +194,18 @@ static int rts5227_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C80 | 0x24);
+ 		if (err < 0)
+ 			return err;
+-		drive_sel = 0xB3;
+ 	} else {
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* set pad drive */
+ 	rtsx_pci_init_cmd(pcr);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CLK_DRIVE_SEL,
+-			0xFF, drive_sel);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CMD_DRIVE_SEL,
+-			0xFF, drive_sel);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DAT_DRIVE_SEL,
+-			0xFF, drive_sel);
++	rts5227_fill_driving(pcr, voltage);
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
+ static const struct pcr_ops rts5227_pcr_ops = {
++	.init_settings = rts5227_init_settings,
+ 	.extra_init_hw = rts5227_extra_init_hw,
+ 	.optimize_phy = rts5227_optimize_phy,
+ 	.turn_on_led = rts5227_turn_on_led,
+@@ -227,6 +271,12 @@ void rts5227_init_params(struct rtsx_pcr *pcr)
+ 	pcr->num_slots = 2;
+ 	pcr->ops = &rts5227_pcr_ops;
+ 
++	pcr->flags = 0;
++	pcr->card_drive_sel = 0x41;
++	pcr->sd30_drive_sel_1v8 = 3;
++	pcr->sd30_drive_sel_3v3 = 3;
++	pcr->aspm_en = 0x02;
++
+ 	pcr->sd_pull_ctl_enable_tbl = rts5227_sd_pull_ctl_enable_tbl;
+ 	pcr->sd_pull_ctl_disable_tbl = rts5227_sd_pull_ctl_disable_tbl;
+ 	pcr->ms_pull_ctl_enable_tbl = rts5227_ms_pull_ctl_enable_tbl;
+diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
+index 58af4db..9a3edfd 100644
+--- a/drivers/mfd/rts5229.c
++++ b/drivers/mfd/rts5229.c
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek PCI-Express card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #include <linux/module.h>
+@@ -34,6 +33,28 @@ static u8 rts5229_get_ic_version(struct rtsx_pcr *pcr)
+ 	return val & 0x0F;
+ }
+ 
++static void rts5229_init_settings(struct rtsx_pcr *pcr)
++{
++	u32 reg;
++
++	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &reg);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, reg);
++
++	if (rtsx_vendor_setting_valid(reg)) {
++		pcr->aspm_en = rtsx_reg_to_aspm(reg);
++		pcr->sd30_drive_sel_1v8 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_1v8(reg));
++		pcr->card_drive_sel &= 0x3F;
++		pcr->card_drive_sel |= rtsx_reg_to_card_drive_sel(reg);
++
++		rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG2, &reg);
++		dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n",
++				PCR_SETTING_REG2, reg);
++		pcr->sd30_drive_sel_3v3 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_3v3(reg));
++	}
++}
++
+ static int rts5229_extra_init_hw(struct rtsx_pcr *pcr)
+ {
+ 	rtsx_pci_init_cmd(pcr);
+@@ -45,6 +66,9 @@ static int rts5229_extra_init_hw(struct rtsx_pcr *pcr)
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+ 	/* LED shine disabled, set initial shine cycle period */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, OLT_LED_CTL, 0x0F, 0x02);
++	/* Configure driving */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DRIVE_SEL,
++			0xFF, pcr->sd30_drive_sel_3v3);
+ 
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+@@ -110,7 +134,7 @@ static int rts5229_card_power_off(struct rtsx_pcr *pcr, int card)
+ 			SD_POWER_MASK | PMOS_STRG_MASK,
+ 			SD_POWER_OFF | PMOS_STRG_400mA);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
+-			LDO3318_PWR_MASK, 0X00);
++			LDO3318_PWR_MASK, 0x00);
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
+@@ -120,7 +144,7 @@ static int rts5229_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 
+ 	if (voltage == OUTPUT_3V3) {
+ 		err = rtsx_pci_write_register(pcr,
+-				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_D);
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_3v3);
+ 		if (err < 0)
+ 			return err;
+ 		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
+@@ -128,7 +152,7 @@ static int rts5229_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 			return err;
+ 	} else if (voltage == OUTPUT_1V8) {
+ 		err = rtsx_pci_write_register(pcr,
+-				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_B);
++				SD30_DRIVE_SEL, 0x07, pcr->sd30_drive_sel_1v8);
+ 		if (err < 0)
+ 			return err;
+ 		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
+@@ -142,6 +166,7 @@ static int rts5229_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ }
+ 
+ static const struct pcr_ops rts5229_pcr_ops = {
++	.init_settings = rts5229_init_settings,
+ 	.extra_init_hw = rts5229_extra_init_hw,
+ 	.optimize_phy = rts5229_optimize_phy,
+ 	.turn_on_led = rts5229_turn_on_led,
+@@ -221,6 +246,12 @@ void rts5229_init_params(struct rtsx_pcr *pcr)
+ 	pcr->num_slots = 2;
+ 	pcr->ops = &rts5229_pcr_ops;
+ 
++	pcr->flags = 0;
++	pcr->card_drive_sel = 0x41;
++	pcr->sd30_drive_sel_1v8 = 0x03;
++	pcr->sd30_drive_sel_3v3 = 0x01;
++	pcr->aspm_en = 0x02;
++
+ 	pcr->ic_version = rts5229_get_ic_version(pcr);
+ 	if (pcr->ic_version == IC_VER_C) {
+ 		pcr->sd_pull_ctl_enable_tbl = rts5229_sd_pull_ctl_enable_tbl2;
+diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+index 15dc848..277b2dd 100644
+--- a/drivers/mfd/rts5249.c
++++ b/drivers/mfd/rts5249.c
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 128, West Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #include <linux/module.h>
+@@ -34,6 +33,62 @@ static u8 rts5249_get_ic_version(struct rtsx_pcr *pcr)
+ 	return val & 0x0F;
+ }
+ 
++static void rts5249_fill_driving(struct rtsx_pcr *pcr, u8 voltage)
++{
++	u8 driving_3v3[4][3] = {
++		{0x11, 0x11, 0x11},
++		{0x55, 0x55, 0x5C},
++		{0x99, 0x99, 0x92},
++		{0x99, 0x99, 0x92},
++	};
++	u8 driving_1v8[4][3] = {
++		{0x3C, 0x3C, 0x3C},
++		{0xB3, 0xB3, 0xB3},
++		{0xFE, 0xFE, 0xFE},
++		{0xC4, 0xC4, 0xC4},
++	};
++	u8 (*driving)[3], drive_sel;
++
++	if (voltage == OUTPUT_3V3) {
++		driving = driving_3v3;
++		drive_sel = pcr->sd30_drive_sel_3v3;
++	} else {
++		driving = driving_1v8;
++		drive_sel = pcr->sd30_drive_sel_1v8;
++	}
++
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CLK_DRIVE_SEL,
++			0xFF, driving[drive_sel][0]);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CMD_DRIVE_SEL,
++			0xFF, driving[drive_sel][1]);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DAT_DRIVE_SEL,
++			0xFF, driving[drive_sel][2]);
++}
++
++static void rts5249_init_settings(struct rtsx_pcr *pcr)
++{
++	u32 reg;
++
++	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &reg);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, reg);
++
++	if (rtsx_vendor_setting_valid(reg)) {
++		pcr->aspm_en = rtsx_reg_to_aspm(reg);
++		pcr->sd30_drive_sel_1v8 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_1v8(reg));
++		pcr->card_drive_sel &= 0x3F;
++		pcr->card_drive_sel |= rtsx_reg_to_card_drive_sel(reg);
++
++		rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG2, &reg);
++		dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n",
++				PCR_SETTING_REG2, reg);
++		pcr->sd30_drive_sel_3v3 =
++			map_sd_drive(rtsx_reg_to_sd30_drive_sel_3v3(reg));
++		if (rtsx_reg_check_reverse_socket(reg))
++			pcr->flags |= PCR_REVERSE_SOCKET;
++	}
++}
++
+ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+ {
+ 	rtsx_pci_init_cmd(pcr);
+@@ -45,13 +100,14 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+ 	/* LED shine disabled, set initial shine cycle period */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, OLT_LED_CTL, 0x0F, 0x02);
+-	/* Correct driving */
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+-			SD30_CLK_DRIVE_SEL, 0xFF, 0x99);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+-			SD30_CMD_DRIVE_SEL, 0xFF, 0x99);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+-			SD30_DAT_DRIVE_SEL, 0xFF, 0x92);
++	/* Configure driving */
++	rts5249_fill_driving(pcr, OUTPUT_3V3);
++	if (pcr->flags & PCR_REVERSE_SOCKET)
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++				AUTOLOAD_CFG_BASE + 3, 0xB0, 0xB0);
++	else
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++				AUTOLOAD_CFG_BASE + 3, 0xB0, 0x80);
+ 
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+@@ -129,15 +185,11 @@ static int rts5249_card_power_off(struct rtsx_pcr *pcr, int card)
+ static int rts5249_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ {
+ 	int err;
+-	u8 clk_drive, cmd_drive, dat_drive;
+ 
+ 	if (voltage == OUTPUT_3V3) {
+ 		err = rtsx_pci_write_phy_register(pcr, PHY_TUNE, 0x4FC0 | 0x24);
+ 		if (err < 0)
+ 			return err;
+-		clk_drive = 0x99;
+-		cmd_drive = 0x99;
+-		dat_drive = 0x92;
+ 	} else if (voltage == OUTPUT_1V8) {
+ 		err = rtsx_pci_write_phy_register(pcr, PHY_BACR, 0x3C02);
+ 		if (err < 0)
+@@ -145,25 +197,18 @@ static int rts5249_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
+ 		err = rtsx_pci_write_phy_register(pcr, PHY_TUNE, 0x4C40 | 0x24);
+ 		if (err < 0)
+ 			return err;
+-		clk_drive = 0xb3;
+-		cmd_drive = 0xb3;
+-		dat_drive = 0xb3;
+ 	} else {
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* set pad drive */
+ 	rtsx_pci_init_cmd(pcr);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CLK_DRIVE_SEL,
+-			0xFF, clk_drive);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_CMD_DRIVE_SEL,
+-			0xFF, cmd_drive);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DAT_DRIVE_SEL,
+-			0xFF, dat_drive);
++	rts5249_fill_driving(pcr, voltage);
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
+ static const struct pcr_ops rts5249_pcr_ops = {
++	.init_settings = rts5249_init_settings,
+ 	.extra_init_hw = rts5249_extra_init_hw,
+ 	.optimize_phy = rts5249_optimize_phy,
+ 	.turn_on_led = rts5249_turn_on_led,
+@@ -233,6 +278,12 @@ void rts5249_init_params(struct rtsx_pcr *pcr)
+ 	pcr->num_slots = 2;
+ 	pcr->ops = &rts5249_pcr_ops;
+ 
++	pcr->flags = 0;
++	pcr->card_drive_sel = 0x41;
++	pcr->sd30_drive_sel_1v8 = 1;
++	pcr->sd30_drive_sel_3v3 = 3;
++	pcr->aspm_en = 0x02;
++
+ 	pcr->ic_version = rts5249_get_ic_version(pcr);
+ 	pcr->sd_pull_ctl_enable_tbl = rts5249_sd_pull_ctl_enable_tbl;
+ 	pcr->sd_pull_ctl_disable_tbl = rts5249_sd_pull_ctl_disable_tbl;
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index dd186c4..e81d6cf 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek PCI-Express card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #include <linux/pci.h>
+@@ -73,6 +72,9 @@ void rtsx_pci_start_run(struct rtsx_pcr *pcr)
+ 		pcr->state = PDEV_STAT_RUN;
+ 		if (pcr->ops->enable_auto_blink)
+ 			pcr->ops->enable_auto_blink(pcr);
++
++		if (pcr->aspm_en)
++			rtsx_pci_write_config_byte(pcr, LCTLR, 0);
+ 	}
+ 
+ 	mod_delayed_work(system_wq, &pcr->idle_work, msecs_to_jiffies(200));
+@@ -717,7 +719,7 @@ int rtsx_pci_card_exclusive_check(struct rtsx_pcr *pcr, int card)
+ 		[RTSX_MS_CARD] = MS_EXIST
+ 	};
+ 
+-	if (!pcr->ms_pmos) {
++	if (!(pcr->flags & PCR_MS_PMOS)) {
+ 		/* When using single PMOS, accessing card is not permitted
+ 		 * if the existing card is not the designated one.
+ 		 */
+@@ -918,6 +920,9 @@ static void rtsx_pci_idle_work(struct work_struct *work)
+ 	if (pcr->ops->turn_off_led)
+ 		pcr->ops->turn_off_led(pcr);
+ 
++	if (pcr->aspm_en)
++		rtsx_pci_write_config_byte(pcr, LCTLR, pcr->aspm_en);
++
+ 	mutex_unlock(&pcr->pcr_mutex);
+ }
+ 
+@@ -956,8 +961,8 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+ 	/* Reset delink mode */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CHANGE_LINK_STATE, 0x0A, 0);
+ 	/* Card driving select */
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DRIVE_SEL,
+-			0x07, DRIVER_TYPE_D);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_DRIVE_SEL,
++			0xFF, pcr->card_drive_sel);
+ 	/* Enable SSC Clock */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL1,
+ 			0xFF, SSC_8X_EN | SSC_SEL_4M);
+@@ -989,6 +994,8 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+ 	if (err < 0)
+ 		return err;
+ 
++	rtsx_pci_write_config_byte(pcr, LCTLR, 0);
++
+ 	/* Enable clk_request_n to enable clock power management */
+ 	rtsx_pci_write_config_byte(pcr, 0x81, 1);
+ 	/* Enter L1 when host tx idle */
+@@ -1053,6 +1060,18 @@ static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
+ 	if (!pcr->slots)
+ 		return -ENOMEM;
+ 
++	if (pcr->ops->init_settings)
++		pcr->ops->init_settings(pcr);
++
++	dev_dbg(&(pcr->pci->dev), "pcr->aspm_en = 0x%x\n", pcr->aspm_en);
++	dev_dbg(&(pcr->pci->dev), "pcr->sd30_drive_sel_1v8 = 0x%x\n",
++			pcr->sd30_drive_sel_1v8);
++	dev_dbg(&(pcr->pci->dev), "pcr->sd30_drive_sel_3v3 = 0x%x\n",
++			pcr->sd30_drive_sel_3v3);
++	dev_dbg(&(pcr->pci->dev), "pcr->card_drive_sel = 0x%x\n",
++			pcr->card_drive_sel);
++	dev_dbg(&(pcr->pci->dev), "pcr->flags = 0x%x\n", pcr->flags);
++
+ 	pcr->state = PDEV_STAT_IDLE;
+ 	err = rtsx_pci_init_hw(pcr);
+ 	if (err < 0) {
+diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+index c0cac7e..947e79b 100644
+--- a/drivers/mfd/rtsx_pcr.h
++++ b/drivers/mfd/rtsx_pcr.h
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek PCI-Express card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #ifndef __RTSX_PCR_H
+@@ -35,4 +34,33 @@ void rts5227_init_params(struct rtsx_pcr *pcr);
+ void rts5249_init_params(struct rtsx_pcr *pcr);
+ void rtl8411b_init_params(struct rtsx_pcr *pcr);
+ 
++static inline u8 map_sd_drive(int idx)
++{
++	u8 sd_drive[4] = {
++		0x01,	/* Type D */
++		0x02,	/* Type C */
++		0x05,	/* Type A */
++		0x03	/* Type B */
++	};
++
++	return sd_drive[idx];
++}
++
++#define rtsx_vendor_setting_valid(reg)		(!((reg) & 0x1000000))
++#define rts5209_vendor_setting1_valid(reg)	(!((reg) & 0x80))
++#define rts5209_vendor_setting2_valid(reg)	((reg) & 0x80)
++
++#define rtsx_reg_to_aspm(reg)			(((reg) >> 28) & 0x03)
++#define rtsx_reg_to_sd30_drive_sel_1v8(reg)	(((reg) >> 26) & 0x03)
++#define rtsx_reg_to_sd30_drive_sel_3v3(reg)	(((reg) >> 5) & 0x03)
++#define rtsx_reg_to_card_drive_sel(reg)		((((reg) >> 25) & 0x01) << 6)
++#define rtsx_reg_check_reverse_socket(reg)	((reg) & 0x4000)
++#define rts5209_reg_to_aspm(reg)		(((reg) >> 5) & 0x03)
++#define rts5209_reg_check_ms_pmos(reg)		(!((reg) & 0x08))
++#define rts5209_reg_to_sd30_drive_sel_1v8(reg)	(((reg) >> 3) & 0x07)
++#define rts5209_reg_to_sd30_drive_sel_3v3(reg)	((reg) & 0x07)
++#define rts5209_reg_to_card_drive_sel(reg)	((reg) >> 8)
++#define rtl8411_reg_to_sd30_drive_sel_3v3(reg)	(((reg) >> 5) & 0x07)
++#define rtl8411b_reg_to_sd30_drive_sel_3v3(reg)	((reg) & 0x03)
++
+ #endif
+diff --git a/include/linux/mfd/rtsx_common.h b/include/linux/mfd/rtsx_common.h
+index 2b13970..443176e 100644
+--- a/include/linux/mfd/rtsx_common.h
++++ b/include/linux/mfd/rtsx_common.h
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek driver-based card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #ifndef __RTSX_COMMON_H
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 7a9f708..9101c5f 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -1,6 +1,6 @@
+ /* Driver for Realtek PCI-Express card reader
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #ifndef __RTSX_PCI_H
+@@ -684,6 +683,8 @@
+ 
+ #define DUMMY_REG_RESET_0		0xFE90
+ 
++#define AUTOLOAD_CFG_BASE		0xFF00
++
+ /* Memory mapping */
+ #define SRAM_BASE			0xE600
+ #define RBUF_BASE			0xF400
+@@ -726,6 +727,11 @@
+ #define PHY_FLD4			0x1E
+ #define PHY_DUM_REG			0x1F
+ 
++#define LCTLR				0x80
++#define PCR_SETTING_REG1		0x724
++#define PCR_SETTING_REG2		0x814
++#define PCR_SETTING_REG3		0x747
++
+ #define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
+ 
+ struct rtsx_pcr;
+@@ -747,6 +753,7 @@ struct pcr_ops {
+ 						u8 voltage);
+ 	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
+ 	int		(*conv_clk_and_div_n)(int clk, int dir);
++	void		(*init_settings)(struct rtsx_pcr *pcr);
+ };
+ 
+ enum PDEV_STAT  {PDEV_STAT_IDLE, PDEV_STAT_RUN};
+@@ -788,7 +795,6 @@ struct rtsx_pcr {
+ 	struct completion		*finish_me;
+ 
+ 	unsigned int			cur_clock;
+-	bool				ms_pmos;
+ 	bool				remove_pci;
+ 	bool				msi_en;
+ 
+@@ -806,6 +812,15 @@ struct rtsx_pcr {
+ #define IC_VER_D			3
+ 	u8				ic_version;
+ 
++	u8				sd30_drive_sel_1v8;
++	u8				sd30_drive_sel_3v3;
++	u8				card_drive_sel;
++	u8				aspm_en;
++
++#define PCR_MS_PMOS			(1 << 0)
++#define PCR_REVERSE_SOCKET		(1 << 1)
++	u32				flags;
++
+ 	const u32			*sd_pull_ctl_enable_tbl;
+ 	const u32			*sd_pull_ctl_disable_tbl;
+ 	const u32			*ms_pull_ctl_enable_tbl;
+-- 
+1.7.9.5
 
