@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3GQL6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:58:53 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:53016 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab3GQL6w (ORCPT
+	id S1754653Ab3GQL7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:59:31 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:47490 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251Ab3GQL7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:58:52 -0400
-Date: Wed, 17 Jul 2013 12:58:46 +0100
+	Wed, 17 Jul 2013 07:59:30 -0400
+Date: Wed, 17 Jul 2013 12:59:24 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Mark Brown <broonie@kernel.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH 2/2] mfd: wm8994: Remove check for active audio in
- runtime suspend
-Message-ID: <20130717115846.GF3336@laptop>
-References: <1374060037-18527-1-git-send-email-broonie@kernel.org>
- <1374060037-18527-2-git-send-email-broonie@kernel.org>
+Subject: Re: [PATCH] mfd: wm8997: Make Kconfig prompt for WM8997 more
+ consistent
+Message-ID: <20130717115924.GG3336@laptop>
+References: <1374060069-18589-1-git-send-email-broonie@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374060037-18527-2-git-send-email-broonie@kernel.org>
+In-Reply-To: <1374060069-18589-1-git-send-email-broonie@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,24 +30,19 @@ On Wed, 17 Jul 2013, Mark Brown wrote:
 
 > From: Mark Brown <broonie@linaro.org>
 > 
-> Since enabling VMID takes a runtime PM reference there is no need to
-> suppress suspend when doing a runtime suspend. Similarly the digital
-> inputs and outputs are DAPM widgets and therefore the ASoC core will
-> be holding a reference for them.
-> 
-> This used to be required when integration with system suspend was being
-> bodged.
+> The Kconfig prompt for WM8997 says "Support for..." while the other MFD
+> Kconfigs (including the adjacent ones for other Arizona devices) just
+> list the device name which sticks out like a sore thumb when doing
+> configuration.
 > 
 > Signed-off-by: Mark Brown <broonie@linaro.org>
 > ---
->  drivers/mfd/wm8994-core.c | 30 +-----------------------------
->  1 file changed, 1 insertion(+), 29 deletions(-)
+>  drivers/mfd/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
 
-Happy with this. Will apply when I fully understand 1/2.
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Applied, thanks.
 
 -- 
 Lee Jones
