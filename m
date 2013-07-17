@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965116Ab3GQXb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:31:28 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:49019 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965166Ab3GQXbZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:31:25 -0400
-Date: Thu, 18 Jul 2013 01:31:21 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 6/7] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130717233119.GA2801@somewhere>
-References: <20130709012934.GA26058@linux.vnet.ibm.com>
- <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1373333406-26979-6-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S965217Ab3GQXbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:31:42 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47877 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757563Ab3GQX12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 9/30] ACPI / hotplug / PCI: Drop func field from struct acpiphp_bridge
+Date: Thu, 18 Jul 2013 01:21:29 +0200
+Message-ID: <14183515.KN6khfkHh2@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373333406-26979-6-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 06:30:05PM -0700, Paul E. McKenney wrote:
->  }
->  
->  /*
-> + * Unconditionally force exit from full system-idle state.  This is
-> + * invoked when a normal CPU exits idle, but must be called separately
-> + * for the timekeeping CPU (tick_do_timer_cpu).  The reason for this
-> + * is that the timekeeping CPU is permitted to take scheduling-clock
-> + * interrupts while the system is in system-idle state, and of course
-> + * rcu_sysidle_exit() has no way of distinguishing a scheduling-clock
-> + * interrupt from any other type of interrupt.
-> + */
-> +void rcu_sysidle_force_exit(void)
-> +{
-> +	int oldstate = ACCESS_ONCE(full_sysidle_state);
-> +	int newoldstate;
-> +
-> +	/*
-> +	 * Each pass through the following loop attempts to exit full
-> +	 * system-idle state.  If contention proves to be a problem,
-> +	 * a trylock-based contention tree could be used here.
-> +	 */
-> +	while (oldstate > RCU_SYSIDLE_SHORT) {
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I'm missing a key here.
+Since the func pointer in struct acpiphp_context can always be used
+instead of the func pointer in struct acpiphp_bridge, drop the
+latter.
 
-Let's imagine that the timekeeper has finally set full_sysidle_state = RCU_SYSIDLE_FULL_NOTED
-with cmpxchg, what guarantees that this CPU is not seeing a stale RCU_SYSIDLE_SHORT value
-for example?
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/hotplug/acpiphp.h      |    2 --
+ drivers/pci/hotplug/acpiphp_glue.c |    3 +--
+ 2 files changed, 1 insertion(+), 4 deletions(-)
+
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -79,8 +79,6 @@ struct acpiphp_bridge {
+ 	acpi_handle handle;
+ 
+ 	struct acpiphp_context *context;
+-	/* Ejectable PCI-to-PCI bridge (PCI bridge and PCI function) */
+-	struct acpiphp_func *func;
+ 
+ 	int nr_slots;
+ 
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -181,7 +181,7 @@ static void free_bridge(struct kref *kre
+ 	context = bridge->context;
+ 	/* Release the reference acquired by acpiphp_enumerate_slots(). */
+ 	if (context->handler_for_func)
+-		put_bridge(bridge->func->slot->bridge);
++		put_bridge(context->func->slot->bridge);
+ 
+ 	put_device(&bridge->pci_bus->dev);
+ 	pci_dev_put(bridge->pci_dev);
+@@ -1212,7 +1212,6 @@ void acpiphp_enumerate_slots(struct pci_
+ 	}
+ 	if (context->handler_for_func) {
+ 		/* Notify handler already installed. */
+-		bridge->func = context->func;
+ 		get_bridge(context->func->slot->bridge);
+ 		return;
+ 	}
+
