@@ -1,108 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab3GQTtm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 15:49:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52918 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757146Ab3GQTtk (ORCPT
+	id S1757202Ab3GQTuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 15:50:32 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:34543 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab3GQTua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 15:49:40 -0400
-Message-ID: <51E6F532.1030004@dawncrow.de>
-Date: Wed, 17 Jul 2013 21:49:06 +0200
-From: =?UTF-8?B?QW5kcsOpIEhlbnRzY2hlbA==?= <nerv@dawncrow.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Jonathan Austin <jonathan.austin@arm.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: arm: Only load TLS values when needed
-References: <51E42E11.1010903@dawncrow.de> <51E5836B.1010904@arm.com> <51E59E8F.1060501@dawncrow.de> <51E67B98.9040101@arm.com>
-In-Reply-To: <51E67B98.9040101@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:NOU7cv7HZTvAz279MOidca0QGUKV50YbwYqp0Fkx6wC
- mGbtC5gKAIoHqQsDuqZ8B9wDijSennZm1GWRR0/wGwqgBzrcAX
- aRhYu3kKcTL+wC5LPh6yp5AIHL6Xm2tR0KzKu9sSjAOgvxN4/W
- lElYcWAWyuHLzEAcgYsvCWlD9uDSSKULGywQ2aRZ5YQnsan+Qz
- 1WONScfbrPWd18UAyBXaXlLE4x8LHiXzEbc/yY0TkyKwlYz2cQ
- MTOHvC3sZCaqr131l7DcBBSh96UD62Qi9T5CTx2mTyANkb4giN
- 32QamkhI0/7ywstUnXMcpfp5KMDyRXrZjnDMKWv6KuzA7hEiQx
- 24ogwtC/wExjERhsZeCM=
+	Wed, 17 Jul 2013 15:50:30 -0400
+Message-ID: <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH] hugepage: allow parallelization of the hugepage fault path
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
+        Anton Blanchard <anton@samba.org>
+Date: Wed, 17 Jul 2013 12:50:25 -0700
+In-Reply-To: <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+	 <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+	 <20130715072432.GA28053@voom.fritz.box>
+	 <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.07.2013 13:10, schrieb Jonathan Austin:
-> Hi André,
-> 
-> On 16/07/13 20:27, André Hentschel wrote:
->> Hi Jonathan, First, thank you for your review.
->>
->> Am 16.07.2013 19:31, schrieb Jonathan Austin:
->>> Hi André,
->>>
->>> On 15/07/13 18:14, André Hentschel wrote:
->>>> From: André Hentschel <nerv@dawncrow.de>
->>>>
->>>> This patch intents to reduce loading instructions when the
->>>> resulting value is not used. It's a follow up on
->>>> a4780adeefd042482f624f5e0d577bf9cdcbb760
->>>>
->>>
->>> Have you done any benchmarking to see that this has any real
->>> impact? Or tested on a !Vv6k system? It looks possible that the
->>> only case where this will perform better is where we're using
->>> switch_tls_none or switch_tls_software (both rare cases, I think)
->>> and there's some change it will make things worse in other cases?
->>
->> I have to admit that i only tested it on v6k and did no benchmark.
->>
-> Do you have access to anything v6-NOT-k-ish? If not I can try and test this on something appropriate. How does your test-case access tpidrurw? If it uses inline asm then it won't work on v6-not-k, as those instructions aren't defined...
+From: David Gibson <david@gibson.dropbear.id.au>
 
-I don't, so it'd be nice if you could do that. I could imagine you have a good choice of devices at ARM :)
+At present, the page fault path for hugepages is serialized by a
+single mutex. This is used to avoid spurious out-of-memory conditions
+when the hugepage pool is fully utilized (two processes or threads can
+race to instantiate the same mapping with the last hugepage from the
+pool, the race loser returning VM_FAULT_OOM).  This problem is
+specific to hugepages, because it is normal to want to use every
+single hugepage in the system - with normal pages we simply assume
+there will always be a few spare pages which can be used temporarily
+until the race is resolved.
 
-In my crappy test application i do it similar to Wine:
-https://github.com/AndreRH/tpidrurw-test/blob/master/main.c#L29
+Unfortunately this serialization also means that clearing of hugepages
+cannot be parallelized across multiple CPUs, which can lead to very
+long process startup times when using large numbers of hugepages.
 
-but Wine code won't work out of the box on v6:
-http://source.winehq.org/git/wine.git/blob/HEAD:/dlls/ntdll/signal_arm.c#l851
+This patch improves the situation by replacing the single mutex with a
+table of mutexes, selected based on a hash, which allows us to know
+which page in the file we're instantiating. For shared mappings, the
+hash key is selected based on the address space and file offset being faulted.
+Similarly, for private mappings, the mm and virtual address are used.
 
->>> One of the reasons for Russell's suggestion of placing the ldrd
->>> (which became the two ldr instructions you've removed from
->>> __switch_to, in order to maintain building for older cores) where
->>> it is was in order to reduce the chance of pipeline stalls.
->>>
->>> As I've pointed out below, there is some risk that changing that
->>> has implications for the v6 only case below (and the v6k case is
->>> now more prone to stalls with !CONFIG_CPU_USE_DOMAINS, but newer
->>> cores should have more advanced scheduling to avoid such issues
->>> anyway...)
->>
->> I'm not sure how this could make things worse on v6k, could you
->> elaborate please? Besides of the ldr and str being too close to each
->> other
-> 
-> Yea, that's the only issue, and in the !CONFIG_CPU_USE_DOMAINS case things are slightly worse than they were before
-> 
->> i thought this patch is a good idea, because it removes two ldr
->> which are always executed. (Continuing below...)
-> 
-> Indeed, as long as it doesn't cause pipeline stalls then that's a gain for some cases :)
-> 
-> [...]
->>> Now we've only got one instruction between the store and the load
->>> and risk stalling the pipeline...
->>>
->>> Dave M cautiously says "The ancient advice was that one instruction
->>> was enough" but this is very core dependent... I wonder if anyone
->>> has a good idea about whether this is an issue here...?
->>
->> We could use a ldrd at the top, that'd be nearly what we have right
->> now, don't we?
-> 
-> Yea, that'd be good - as far as I can see from an 1136 TRM, the ldrd *may* be two cycles (depending on alignment of the words) but the ldr and ldrne will always be two cycles. Ahhh, the joys of modifying the fast path ;)
+From: Anton Blanchard <anton@samba.org>
+[https://lkml.org/lkml/2011/7/15/31]
+Forward ported and made a few changes:
+
+- Use the Jenkins hash to scatter the hash, better than using just the
+  low bits.
+
+- Always round num_fault_mutexes to a power of two to avoid an
+  expensive modulus in the hash calculation.
+
+I also tested this patch on a large POWER7 box using a simple parallel
+fault testcase:
+
+http://ozlabs.org/~anton/junkcode/parallel_fault.c
+
+Command line options:
+
+parallel_fault <nr_threads> <size in kB> <skip in kB>
+
+First the time taken to fault 128GB of 16MB hugepages:
+
+40.68 seconds
+
+Now the same test with 64 concurrent threads:
+39.34 seconds
+
+Hardly any speedup. Finally the 64 concurrent threads test with
+this patch applied:
+0.85 seconds
+
+We go from 40.68 seconds to 0.85 seconds, an improvement of 47.9x
+
+This was tested with the libhugetlbfs test suite, and the PASS/FAIL
+count was the same before and after this patch.
+
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+
+- Cleaned up and forward ported to Linus' latest.
+- Cache aligned mutexes.
+- Keep non SMP systems using a single mutex.
+
+It was found that this mutex can become quite contended
+during the early phases of large databases which make use of huge pages - for instance
+startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
+reports that this mutex can be one of the top 5 most contended locks in the kernel during
+the first few minutes:
+
+    	     hugetlb_instantiation_mutex:   10678     10678
+             ---------------------------
+             hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+             ---------------------------
+             hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+
+contentions:          10678
+acquisitions:         99476
+waittime-total: 76888911.01 us
+
+With this patch we see a much less contention and wait time:
+
+              &htlb_fault_mutex_table[i]:   383
+              --------------------------
+              &htlb_fault_mutex_table[i]    383   [<ffffffff8115e27b>] hugetlb_fault+0x1eb/0x440
+              --------------------------
+              &htlb_fault_mutex_table[i]    383   [<ffffffff8115e27b>] hugetlb_fault+0x1eb/0x440
+
+contentions:        383
+acquisitions:    120546
+waittime-total: 1381.72 us
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Tested-by: Eric B Munson <emunson@mgebm.net>
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ mm/hugetlb.c | 87 ++++++++++++++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 73 insertions(+), 14 deletions(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 83aff0a..1f6e564 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -21,6 +21,7 @@
+ #include <linux/rmap.h>
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
++#include <linux/jhash.h>
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+@@ -52,6 +53,13 @@ static unsigned long __initdata default_hstate_size;
+  */
+ DEFINE_SPINLOCK(hugetlb_lock);
+ 
++/*
++ * Serializes faults on the same logical page.  This is used to
++ * prevent spurious OOMs when the hugepage pool is fully utilized.
++ */
++static int num_fault_mutexes;
++static struct mutex *htlb_fault_mutex_table ____cacheline_aligned_in_smp;
++
+ static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
+ {
+ 	bool free = (spool->count == 0) && (spool->used_hpages == 0);
+@@ -1896,13 +1904,15 @@ static void __exit hugetlb_exit(void)
+ 	for_each_hstate(h) {
+ 		kobject_put(hstate_kobjs[hstate_index(h)]);
+ 	}
+-
++	kfree(htlb_fault_mutex_table);
+ 	kobject_put(hugepages_kobj);
+ }
+ module_exit(hugetlb_exit);
+ 
+ static int __init hugetlb_init(void)
+ {
++	int i;
++
+ 	/* Some platform decide whether they support huge pages at boot
+ 	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
+ 	 * there is no such support
+@@ -1927,6 +1937,19 @@ static int __init hugetlb_init(void)
+ 	hugetlb_register_all_nodes();
+ 	hugetlb_cgroup_file_init();
+ 
++#ifdef CONFIG_SMP
++	num_fault_mutexes = roundup_pow_of_two(2 * num_possible_cpus());
++#else
++	num_fault_mutexes = 1;
++#endif
++	htlb_fault_mutex_table =
++		kmalloc(sizeof(struct mutex) * num_fault_mutexes, GFP_KERNEL);
++	if (!htlb_fault_mutex_table)
++		return -ENOMEM;
++
++	for (i = 0; i < num_fault_mutexes; i++)
++		mutex_init(&htlb_fault_mutex_table[i]);
++
+ 	return 0;
+ }
+ module_init(hugetlb_init);
+@@ -2709,15 +2732,14 @@ static bool hugetlbfs_pagecache_present(struct hstate *h,
+ }
+ 
+ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+-			unsigned long address, pte_t *ptep, unsigned int flags)
++			   struct address_space *mapping, pgoff_t idx,
++			   unsigned long address, pte_t *ptep, unsigned int flags)
+ {
+ 	struct hstate *h = hstate_vma(vma);
+ 	int ret = VM_FAULT_SIGBUS;
+ 	int anon_rmap = 0;
+-	pgoff_t idx;
+ 	unsigned long size;
+ 	struct page *page;
+-	struct address_space *mapping;
+ 	pte_t new_pte;
+ 
+ 	/*
+@@ -2731,9 +2753,6 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return ret;
+ 	}
+ 
+-	mapping = vma->vm_file->f_mapping;
+-	idx = vma_hugecache_offset(h, vma, address);
+-
+ 	/*
+ 	 * Use page lock to guard against racing truncation
+ 	 * before we get page_table_lock.
+@@ -2839,15 +2858,51 @@ backout_unlocked:
+ 	goto out;
+ }
+ 
++#ifdef CONFIG_SMP
++static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
++			    struct vm_area_struct *vma,
++			    struct address_space *mapping,
++			    pgoff_t idx, unsigned long address)
++{
++	unsigned long key[2];
++	u32 hash;
++
++	if (vma->vm_flags & VM_SHARED) {
++		key[0] = (unsigned long)mapping;
++		key[1] = idx;
++	} else {
++		key[0] = (unsigned long)mm;
++		key[1] = address >> huge_page_shift(h);
++	}
++
++	hash = jhash2((u32 *)&key, sizeof(key)/sizeof(u32), 0);
++
++	return hash & (num_fault_mutexes - 1);
++}
++#else
++/*
++ * For uniprocesor systems we always use a single mutex, so just
++ * return 0 and avoid the hashing overhead.
++ */
++static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
++			    struct vm_area_struct *vma,
++			    struct address_space *mapping,
++			    pgoff_t idx, unsigned long address)
++{
++	return 0;
++}
++#endif
++
+ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, unsigned int flags)
+ {
+-	pte_t *ptep;
+-	pte_t entry;
++	pgoff_t idx;
+ 	int ret;
++	u32 hash;
++	pte_t *ptep, entry;
+ 	struct page *page = NULL;
++	struct address_space *mapping;
+ 	struct page *pagecache_page = NULL;
+-	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+ 	struct hstate *h = hstate_vma(vma);
+ 
+ 	address &= huge_page_mask(h);
+@@ -2867,15 +2922,20 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (!ptep)
+ 		return VM_FAULT_OOM;
+ 
++	mapping = vma->vm_file->f_mapping;
++	idx = vma_hugecache_offset(h, vma, address);
++
+ 	/*
+ 	 * Serialize hugepage allocation and instantiation, so that we don't
+ 	 * get spurious allocation failures if two CPUs race to instantiate
+ 	 * the same page in the page cache.
+ 	 */
+-	mutex_lock(&hugetlb_instantiation_mutex);
++	hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
++	mutex_lock(&htlb_fault_mutex_table[hash]);
++
+ 	entry = huge_ptep_get(ptep);
+ 	if (huge_pte_none(entry)) {
+-		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
++		ret = hugetlb_no_page(mm, vma, mapping, idx, address, ptep, flags);
+ 		goto out_mutex;
+ 	}
+ 
+@@ -2943,8 +3003,7 @@ out_page_table_lock:
+ 	put_page(page);
+ 
+ out_mutex:
+-	mutex_unlock(&hugetlb_instantiation_mutex);
+-
++	mutex_unlock(&htlb_fault_mutex_table[hash]);
+ 	return ret;
+ }
+ 
+-- 
+1.7.11.7
+
+
 
