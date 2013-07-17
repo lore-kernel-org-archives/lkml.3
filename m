@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab3GQMZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 08:25:12 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:33023 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab3GQMZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 08:25:10 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "David S. Miller" <davem@davemloft.net>, Sam Creasey <sammy@sammy.net>
-Cc: netdev@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] net/sun3_82586: Kill array subscript above array bounds warning
-Date: Wed, 17 Jul 2013 14:25:05 +0200
-Message-Id: <1374063905-4050-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754644Ab3GQM1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 08:27:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1467 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754039Ab3GQM1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 08:27:05 -0400
+Date: Wed, 17 Jul 2013 14:29:45 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
+Cc: Arend van Spriel <arend@broadcom.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: [BUG] 3.10 regression: hang on suspend
+Message-ID: <20130717122944.GA25894@redhat.com>
+References: <51E4501D.3010001@odi.ch>
+ <20130716065626.GA1587@redhat.com>
+ <51E4F790.6090308@odi.ch>
+ <51E51712.4020609@broadcom.com>
+ <51E58FA5.4000804@odi.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51E58FA5.4000804@odi.ch>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/net/ethernet/i825xx/sun3_82586.c: In function 'sun3_82586_timeout':
-drivers/net/ethernet/i825xx/sun3_82586.c:993:89: warning: array subscript is above array bounds [-Warray-bounds]
+On Tue, Jul 16, 2013 at 08:23:33PM +0200, Ortwin Glück wrote:
+> Without NetworkManager, no X, on console and with plain jane wpa_supplicant I do
+> echo mem > /sys/power state
+> 
+> After that, it still responds to keyboard events: I can switch VT
+> and type on the consoles, but I can not login on a different VT
+> (pressing Enter after the username doesn't return). So I guess tasks
+> have been frozen, but it hangs in stopping devices.
+> 
+> settings for pm_test:
+> devices: same behviour as above
+> freezer: works as expected (stops tasks; sleeps; resumes tasks)
+> 
+> Nothing in the logs. How can I enable more log?
 
-Using the default NUM_XMIT_BUFFS = 1, there's only one transmit buffer.
-Hence accessing the second buffer is an out-of-bounds access.
-Print the command status of the first NOP buffer instead.
+This looks like livelock, i.e. kernel wait for mutex to be released
+but that never happen , for example because of deadlock. Enabling 
+CONFIG_LOCKDEP=y could help to diagnose this. Other than that
+sysreq key w (show blocked task) could help, see
+Documentation/sysrq.txt for instructions how to use this key.
+Also please remember set no_console_suspend boot option to
+allow print messages on tty during suspend.
 
-Fortunately this actually worked fine, as the layout of transmit and NOP
-buffers is sufficiently similar.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-  - Untested due to lack of hardware
-  - Note that the driver never compiled with the non-default NUM_XMIT_BUFFS > 1
-
- drivers/net/ethernet/i825xx/sun3_82586.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/i825xx/sun3_82586.c b/drivers/net/ethernet/i825xx/sun3_82586.c
-index 353f57f6..d283d2e 100644
---- a/drivers/net/ethernet/i825xx/sun3_82586.c
-+++ b/drivers/net/ethernet/i825xx/sun3_82586.c
-@@ -990,7 +990,14 @@ static void sun3_82586_timeout(struct net_device *dev)
- 	{
- #ifdef DEBUG
- 		printk("%s: xmitter timed out, try to restart! stat: %02x\n",dev->name,p->scb->cus);
--		printk("%s: command-stats: %04x %04x\n",dev->name,swab16(p->xmit_cmds[0]->cmd_status),swab16(p->xmit_cmds[1]->cmd_status));
-+		printk("%s: command-stats: %04x %04x\n", dev->name,
-+		       swab16(p->xmit_cmds[0]->cmd_status),
-+#if (NUM_XMIT_BUFFS > 1)
-+		       swab16(p->xmit_cmds[1]->cmd_status)
-+#else
-+		       swab16(p->nop_cmds[0]->cmd_status)
-+#endif
-+		);
- 		printk("%s: check, whether you set the right interrupt number!\n",dev->name);
- #endif
- 		sun3_82586_close(dev);
--- 
-1.7.9.5
+Stanislaw
 
