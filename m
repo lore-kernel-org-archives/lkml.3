@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934725Ab3GQW5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:57:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56927 "EHLO
+	id S934740Ab3GQW5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:57:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56945 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934562Ab3GQW50 (ORCPT
+	with ESMTP id S934722Ab3GQW5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:57:26 -0400
+	Wed, 17 Jul 2013 18:57:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+Cc: Darren Hart <dvhart@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 050/145] UBIFS: fix a horrid bug
-Date: Wed, 17 Jul 2013 15:46:22 -0700
-Message-Id: <1374101277-7915-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 040/145] pch_uart: Add uart_clk selection for the MinnowBoard
+Date: Wed, 17 Jul 2013 15:46:12 -0700
+Message-Id: <1374101277-7915-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,96 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
+commit 29692d05647cb7ecea56242241f77291d5624b95 upstream.
 
-Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
-mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
-in the middle of 'ubifs_readdir()'.
+Use DMI_BOARD_NAME to determine if we are running on a MinnowBoard and
+set the uart clock to 50MHz if so. This removes the need to pass the
+user_uartclk to the kernel at boot time.
 
-This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
-it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
-but this may corrupt memory and lead to all kinds of problems like crashes an
-security holes.
-
-This patch fixes the problem by using the 'file->f_version' field, which
-'->llseek()' always unconditionally sets to zero. We set it to 1 in
-'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
-seek and it is time to clear the state saved in 'file->private_data'.
-
-I tested this patch by writing a user-space program which runds readdir and
-seek in parallell. I could easily crash the kernel without these patches, but
-could not crash it with these patches.
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ubifs/dir.c | 30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+ drivers/tty/serial/pch_uart.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index 62d0256..c90ea6f 100644
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -365,6 +365,24 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 		 */
- 		return 0;
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 8318925..a9e4be7 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -214,6 +214,7 @@ enum {
+ #define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
+ #define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
+ #define NTC1_UARTCLK     64000000 /*  64.0000 MHz */
++#define MINNOW_UARTCLK   50000000 /*  50.0000 MHz */
  
-+	if (file->f_version == 0) {
-+		/*
-+		 * The file was seek'ed, which means that @file->private_data
-+		 * is now invalid. This may also be just the first
-+		 * 'ubifs_readdir()' invocation, in which case
-+		 * @file->private_data is NULL, and the below code is
-+		 * basically a no-op.
-+		 */
-+		kfree(file->private_data);
-+		file->private_data = NULL;
-+	}
+ struct pch_uart_buffer {
+ 	unsigned char *buf;
+@@ -395,6 +396,10 @@ static int pch_uart_get_uartclk(void)
+ 		    strstr(cmp, "nanoETXexpress-TT")))
+ 		return NTC1_UARTCLK;
+ 
++	cmp = dmi_get_system_info(DMI_BOARD_NAME);
++	if (cmp && strstr(cmp, "MinnowBoard"))
++		return MINNOW_UARTCLK;
 +
-+	/*
-+	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
-+	 * zero, and we use this for detecting whether the file was seek'ed.
-+	 */
-+	file->f_version = 1;
-+
- 	/* File positions 0 and 1 correspond to "." and ".." */
- 	if (pos == 0) {
- 		ubifs_assert(!file->private_data);
-@@ -438,6 +456,14 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
-+
-+		if (file->f_version == 0)
-+			/*
-+			 * The file was seek'ed meanwhile, lets return and start
-+			 * reading direntries from the new position on the next
-+			 * invocation.
-+			 */
-+			return 0;
- 	}
- 
- out:
-@@ -448,15 +474,13 @@ out:
- 
- 	kfree(file->private_data);
- 	file->private_data = NULL;
-+	/* 2 is a special value indicating that there are no more direntries */
- 	file->f_pos = 2;
- 	return 0;
- }
- 
--/* If a directory is seeked, we have to free saved readdir() state */
- static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int whence)
- {
--	kfree(file->private_data);
--	file->private_data = NULL;
- 	return generic_file_llseek(file, offset, whence);
+ 	return DEFAULT_UARTCLK;
  }
  
 -- 
