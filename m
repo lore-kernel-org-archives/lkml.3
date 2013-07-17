@@ -1,60 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3GQOeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:34:00 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:53765 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3GQOd5 (ORCPT
+	id S1755183Ab3GQOfk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:35:40 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:57890 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab3GQOfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:33:57 -0400
-Message-ID: <51E6AB54.103@cogentembedded.com>
-Date: Wed, 17 Jul 2013 18:33:56 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 17 Jul 2013 10:35:38 -0400
+Message-ID: <51E6A6CB.1090101@linux.vnet.ibm.com>
+Date: Wed, 17 Jul 2013 19:44:35 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-CC: tony@atomide.com, benoit.cousson@linaro.org, rnayak@ti.com,
-        peter.ujfalusi@ti.com, kishon@ti.com, jic23@cam.ac.uk,
-        grant.likely@linaro.org, rob.herring@calxeda.com, lars@metafoo.de,
-        sameo@linux.intel.com, ch.naveen@samsung.com, poeschel@lemonage.de,
-        milo.kim@ti.com, balajitk@ti.com, gg@slimlogic.co.uk,
-        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 1/2] ARM: dts: twl: Add GPADC data to device tree
-References: <1374059564-6872-1-git-send-email-oleksandr.kozaruk@ti.com> <1374059564-6872-2-git-send-email-oleksandr.kozaruk@ti.com>
-In-Reply-To: <1374059564-6872-2-git-send-email-oleksandr.kozaruk@ti.com>
+To: Gleb Natapov <gleb@redhat.com>, peterz@infradead.org
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
+        andi@firstfloor.org, ouyang@cs.pitt.edu, agraf@suse.de,
+        chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130714131241.GA11772@redhat.com> <51E3C5CE.7000009@linux.vnet.ibm.com> <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com> <51E66C71.6020605@linux.vnet.ibm.com> <20130717124511.GW11772@redhat.com> <51E69429.7040309@linux.vnet.ibm.com> <20130717132503.GA13732@redhat.com> <51E6A66D.7090407@linux.vnet.ibm.com>
+In-Reply-To: <51E6A66D.7090407@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071714-5816-0000-0000-000008F56441
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 07/17/2013 07:43 PM, Raghavendra K T wrote:
+> On 07/17/2013 06:55 PM, Gleb Natapov wrote:
+>> On Wed, Jul 17, 2013 at 06:25:05PM +0530, Raghavendra K T wrote:
+>>> On 07/17/2013 06:15 PM, Gleb Natapov wrote:
+>>>> On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
+>>>>>>> Instead of halt we started with a sleep hypercall in those
+>>>>>>>   versions. Changed to halt() once Avi suggested to reuse
+>>>>>>> existing sleep.
+>>>>>>>
+>>>>>>> If we use older hypercall with few changes like below:
+>>>>>>>
+>>>>>>> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
+>>>>>>> {
+>>>>>>>   // a0 reserved for flags
+>>>>>>> if (!w->lock)
+>>>>>>> return;
+>>>>>>> DEFINE_WAIT
+>>>>>>> ...
+>>>>>>> end_wait
+>>>>>>> }
+>>>>>>>
+>>>>>> How would this help if NMI takes lock in critical section. The thing
+>>>>>> that may happen is that lock_waiting->want may have NMI lock
+>>>>>> value, but
+>>>>>> lock_waiting->lock will point to non NMI lock. Setting of want and
+>>>>>> lock
+>>>>>> have to be atomic.
+>>>>>
+>>>>> True. so we are here
+>>>>>
+>>>>>          non NMI lock(a)
+>>>>>          w->lock = NULL;
+>>>>>          smp_wmb();
+>>>>>          w->want = want;
+>>>>>                                 NMI
+>>>>>                           <---------------------
+>>>>>                            NMI lock(b)
+>>>>>                            w->lock = NULL;
+>>>>>                            smp_wmb();
+>>>>>                            w->want = want;
+>>>>>                            smp_wmb();
+>>>>>                            w->lock = lock;
+>>>>>                           ---------------------->
+>>>>>          smp_wmb();
+>>>>>          w->lock = lock;
+>>>>>
+>>>>> so how about fixing like this?
+>>>>>
+>>>>> again:
+>>>>>          w->lock = NULL;
+>>>>>          smp_wmb();
+>>>>>          w->want = want;
+>>>>>          smp_wmb();
+>>>>>          w->lock = lock;
+>>>>>
+>>>>> if (!lock || w->want != want) goto again;
+>>>>>
+>>>> NMI can happen after the if() but before halt and the same situation
+>>>> we are trying to prevent with IRQs will occur.
+>>>
+>>> True, we can not fix that. I thought to fix the inconsistency of
+>>> lock,want pair.
+>>> But NMI could happen after the first OR condition also.
+>>> /me thinks again
+>>>
+>> lock_spinning() can check that it is called in nmi context and bail out.
+>
+> Good point.
+> I think we can check for even irq context and bailout so that in irq
+> context we continue spinning instead of slowpath. no ?
+>
+>> How often this will happens anyway.
+>>
+>
+> I know NMIs occur frequently with watchdogs. or used by sysrq-trigger
+> etc.. But I am not an expert how frequent it is otherwise.
 
-On 17-07-2013 15:12, Oleksandr Kozaruk wrote:
+Forgot to ask if Peter has any points on NMI frequency.
 
-> GPADC is the general purpose ADC present on twl6030.
-> The dt data is interrupt used to trigger end of ADC
-> conversion.
-
-> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-> ---
->   arch/arm/boot/dts/twl6030.dtsi | 6 ++++++
->   1 file changed, 6 insertions(+)
-
-> diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
-> index 2e3bd31..322aa8e 100644
-> --- a/arch/arm/boot/dts/twl6030.dtsi
-> +++ b/arch/arm/boot/dts/twl6030.dtsi
-> @@ -103,4 +103,10 @@
->   		compatible = "ti,twl6030-pwmled";
->   		#pwm-cells = <2>;
->   	};
-> +
-> +	adc: twl6030_gpadc {
-
-    I was talking about the device name, not label. The "twl6030_gpadc" part.
-
-WBR, Sergei
+But even
+> then if they do not use spinlock, we have no problem as already pointed.
+>
+> I can measure with debugfs counter how often it happens.
 
