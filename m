@@ -1,145 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab3GQMkU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 08:40:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6461 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab3GQMg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 08:36:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,684,1367996400"; 
-   d="scan'208";a="371625841"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V7 03/14] perf tools: add pid to struct thread
-Date: Wed, 17 Jul 2013 15:43:03 +0300
-Message-Id: <1374064994-17810-4-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1374064994-17810-1-git-send-email-adrian.hunter@intel.com>
-References: <1374064994-17810-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1755154Ab3GQMk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 08:40:28 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50082 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab3GQMkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 08:40:22 -0400
+Date: Wed, 17 Jul 2013 13:39:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [ATTEND] How to act on LKML
+Message-ID: <20130717123953.GQ4165@ZenIV.linux.org.uk>
+References: <20130715223615.GI15531@xanatos>
+ <1373932170.28142.24.camel@envy.home>
+ <864nbv9qcm.fsf@void.printf.net>
+ <1373944014.17876.255.camel@gandalf.local.home>
+ <51E4BFA9.1030600@zytor.com>
+ <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+ <1373991399.6458.6.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+ <alpine.LRH.2.00.1307170038390.20418@twin.jikos.cz>
+ <alpine.DEB.2.02.1307171017580.8258@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1307171017580.8258@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record pid on struct thread.  The member is named 'pid_'
-to avoid confusion with the 'tid' member which was previously
-named 'pid'.
+On Wed, Jul 17, 2013 at 10:38:55AM +0100, Stefano Stabellini wrote:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/machine.c | 16 +++++++++++-----
- tools/perf/util/thread.c  |  3 ++-
- tools/perf/util/thread.h  |  3 ++-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+> There is a very fine line between cursing and what people might perceive
+> as a personal attack.
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f9f9d63..67ba572 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -233,7 +233,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
- 	return;
- }
- 
--static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
-+static struct thread *__machine__findnew_thread(struct machine *machine,
-+						pid_t pid, pid_t tid,
- 						bool create)
- {
- 	struct rb_node **p = &machine->threads.rb_node;
-@@ -245,8 +246,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	 * so most of the time we dont have to look up
- 	 * the full rbtree:
- 	 */
--	if (machine->last_match && machine->last_match->tid == tid)
-+	if (machine->last_match && machine->last_match->tid == tid) {
-+		if (pid && pid != machine->last_match->pid_)
-+			machine->last_match->pid_ = pid;
- 		return machine->last_match;
-+	}
- 
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -254,6 +258,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- 		if (th->tid == tid) {
- 			machine->last_match = th;
-+			if (pid && pid != th->pid_)
-+				th->pid_ = pid;
- 			return th;
- 		}
- 
-@@ -266,7 +272,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	if (!create)
- 		return NULL;
- 
--	th = thread__new(tid);
-+	th = thread__new(pid, tid);
- 	if (th != NULL) {
- 		rb_link_node(&th->rb_node, parent, p);
- 		rb_insert_color(&th->rb_node, &machine->threads);
-@@ -278,12 +284,12 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, true);
-+	return __machine__findnew_thread(machine, 0, tid, true);
- }
- 
- struct thread *machine__find_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, false);
-+	return __machine__findnew_thread(machine, 0, tid, false);
- }
- 
- int machine__process_comm_event(struct machine *machine, union perf_event *event)
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 6feeb88..e3d4a55 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,12 +7,13 @@
- #include "util.h"
- #include "debug.h"
- 
--struct thread *thread__new(pid_t tid)
-+struct thread *thread__new(pid_t pid, pid_t tid)
- {
- 	struct thread *self = zalloc(sizeof(*self));
- 
- 	if (self != NULL) {
- 		map_groups__init(&self->mg);
-+		self->pid_ = pid;
- 		self->tid = tid;
- 		self->ppid = -1;
- 		self->comm = malloc(32);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 0fe1f9c..fc464bc 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -12,6 +12,7 @@ struct thread {
- 		struct list_head node;
- 	};
- 	struct map_groups	mg;
-+	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
- 	char			shortname[3];
-@@ -24,7 +25,7 @@ struct thread {
- 
- struct machine;
- 
--struct thread *thread__new(pid_t tid);
-+struct thread *thread__new(pid_t pid, pid_t tid);
- void thread__delete(struct thread *self);
- 
- int thread__set_comm(struct thread *self, const char *comm);
--- 
-1.7.11.7
+I wanted to stay out of that thread, but that argument really goes over
+the top.  Look, ANYTHING might be perceived as a personal attack by
+somebody.  I have seen a turd that really perceived a girl solving a math
+problem faster than he managed to do that as a severe personal attack.
+How about "student so-and-so is getting consistently better grades"?
+Treated as a personal attack.  Rationale: "spoils the grades for the
+rest of the group".  Or "professor so-and-so goes into hard stuff; sure,
+it might make the course more interesting for some weirdos, but what of
+those who don't need all that shit and simply want their B?"
 
+What, you don't consider those "people"?  How exclusionary of you....
+Sorry, they *are* members of our species.  And not particulary rare,
+at that.
