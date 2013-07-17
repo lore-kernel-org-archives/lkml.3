@@ -1,156 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab3GQI1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 04:27:44 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:55484 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab3GQI1m (ORCPT
+	id S1753013Ab3GQI2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 04:28:20 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43260 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768Ab3GQI2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 04:27:42 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-aa-51e6557b2774
-Message-id: <51E65577.7010403@samsung.com>
-Date: Wed, 17 Jul 2013 10:27:35 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
-References: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
-In-reply-to: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xy7rVoc8CDe4u07A42/SG3eLyrjls
-	Fj0btrJa7Dl6mN1iytuf7BZd3fOYHNg8ds66y+7x+NdLNo/3+66yefRtWcXo8XmTXABrFJdN
-	SmpOZllqkb5dAlfGsoMtbAVXZCu2HN7K1sC4RbyLkYNDQsBEYvfqqi5GTiBTTOLCvfVsXYxc
-	HEICSxkl5h7sYYRwmpkkDp7pZQSp4hXQkthxdxWYzSKgKjHv3x8WEJtNwFCi620XG4gtKhAq
-	MW3JAqh6QYkfk++B1YgImEtc/tAJVsMscJRRomkqK4gtLOAl8WLOb2YQW0jAQ6J32UQwm1PA
-	U2Lr+ZnsEPVmEo9a1jFD2PISm9e8ZZ7AKDALyYpZSMpmISlbwMi8ilE0tTS5oDgpPddQrzgx
-	t7g0L10vOT93EyMktL/sYFx8zOoQowAHoxIP78Swp4FCrIllxZW5hxglOJiVRHirNZ4FCvGm
-	JFZWpRblxxeV5qQWH2Jk4uCUamCsmdvx7Cnr0xO//z/rP/LJs8ZlkXh59e5Hjj+YDtx5uGfp
-	lBjbzcsnSPWscI48d7T+8nEV51N73b6/mGp569O8jzbNLhpXY5b9CVXqEsrg6+G4dOPa8+M7
-	Y/qrlc9EffHLnvXY5835B4x2WftDXnB9D1eef/7QxMncH27LMk6/dvXTPyU3/QcLHimxFGck
-	GmoxFxUnAgAkxlc8SwIAAA==
+	Wed, 17 Jul 2013 04:28:18 -0400
+Date: Wed, 17 Jul 2013 10:28:03 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, thierry.reding@gmail.com,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status
+ bit
+Message-ID: <20130717102803.6ee36313@endymion.delvare>
+In-Reply-To: <51E641C7.4000107@nvidia.com>
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
+	<1373615287-18502-3-git-send-email-wni@nvidia.com>
+	<20130715185727.4ebde8c4@endymion.delvare>
+	<51E641C7.4000107@nvidia.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Wei,
 
-On 7/15/2013 11:34 AM, Ricardo Ribalda Delgado wrote:
-> Most DMA engines have limitations regarding the number of DMA segments
-> (sg-buffers) that they can handle. Videobuffers can easily spread through
-> houndreds of pages.
->
-> In the previous aproach, the pages were allocated individually, this
-> could led to the creation houndreds of dma segments (sg-buffers) that
-> could not be handled by some DMA engines.
->
-> This patch tries to minimize the number of DMA segments by using
-> alloc_pages_exact. In the worst case it will behave as before, but most
-> of the times it will reduce the number fo dma segments
->
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+On Wed, 17 Jul 2013 15:03:35 +0800, Wei Ni wrote:
+> On 07/16/2013 12:57 AM, Jean Delvare wrote:
+> > On Fri, 12 Jul 2013 15:48:05 +0800, Wei Ni wrote:
+> >> Add bit defines for the status register.
+> > 
+> > Regarding the subject: for me these are constants, not macros. AFAIK
+> > the term "macro" refers to defines with parameters only.
+> 
+> How about "Introduce status bits"
 
-I like the idea, but the code doesn't seem to be correct. buf->pages 
-array is
-needed for vb2_dma_sg_mmap() function to map pages to userspace. However 
-in your
-code I don't see any place where you fill it with the pages of order higher
-than 0. AFAIR vm_insert_page() can handle compound pages, but 
-alloc_pages_exact()
-splits such pages into a set of pages of order 0, so you need to change 
-your code
-to correctly fill buf->pages array.
+I'd say "Define status bits" as this is exactly what you're doing ;-)
+That being said, your patch actually does more than this, as you are
+moving code around and to a separate function. The patch description
+should say that and explain why.
 
-> ---
->   drivers/media/v4l2-core/videobuf2-dma-sg.c |   49 +++++++++++++++++++++-------
->   1 file changed, 38 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c b/drivers/media/v4l2-core/videobuf2-dma-sg.c
-> index 16ae3dc..67a94ab 100644
-> --- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
-> +++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
-> @@ -42,10 +42,44 @@ struct vb2_dma_sg_buf {
->   
->   static void vb2_dma_sg_put(void *buf_priv);
->   
-> +static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
-> +		gfp_t gfp_flags)
-> +{
-> +	unsigned int last_page = 0;
-> +	void *vaddr = NULL;
-> +	unsigned int req_pages;
-> +
-> +	while (last_page < buf->sg_desc.num_pages) {
-> +		req_pages = buf->sg_desc.num_pages-last_page;
-> +		while (req_pages >= 1) {
-> +			vaddr = alloc_pages_exact(req_pages*PAGE_SIZE,
-> +				GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN);
-> +			if (vaddr)
-> +				break;
-> +			req_pages >>= 1;
-> +		}
-> +		if (!vaddr) {
-> +			while (--last_page >= 0)
-> +				__free_page(buf->pages[last_page]);
-> +			return -ENOMEM;
-> +		}
-> +		while (req_pages) {
-> +			buf->pages[last_page] = virt_to_page(vaddr);
-> +			sg_set_page(&buf->sg_desc.sglist[last_page],
-> +					buf->pages[last_page], PAGE_SIZE, 0);
-> +			vaddr += PAGE_SIZE;
-> +			last_page++;
-> +			req_pages--;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->   static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_flags)
->   {
->   	struct vb2_dma_sg_buf *buf;
-> -	int i;
-> +	int ret;
->   
->   	buf = kzalloc(sizeof *buf, GFP_KERNEL);
->   	if (!buf)
-> @@ -69,14 +103,9 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fla
->   	if (!buf->pages)
->   		goto fail_pages_array_alloc;
->   
-> -	for (i = 0; i < buf->sg_desc.num_pages; ++i) {
-> -		buf->pages[i] = alloc_page(GFP_KERNEL | __GFP_ZERO |
-> -					   __GFP_NOWARN | gfp_flags);
-> -		if (NULL == buf->pages[i])
-> -			goto fail_pages_alloc;
-> -		sg_set_page(&buf->sg_desc.sglist[i],
-> -			    buf->pages[i], PAGE_SIZE, 0);
-> -	}
-> +	ret = vb2_dma_sg_alloc_compacted(buf, gfp_flags);
-> +	if (ret)
-> +		goto fail_pages_alloc;
->   
->   	buf->handler.refcount = &buf->refcount;
->   	buf->handler.put = vb2_dma_sg_put;
-> @@ -89,8 +118,6 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fla
->   	return buf;
->   
->   fail_pages_alloc:
-> -	while (--i >= 0)
-> -		__free_page(buf->pages[i]);
->   	kfree(buf->pages);
->   
->   fail_pages_array_alloc:
+> >> (...)
+> >> +	if ((status & 0x7f) == 0 && (status2 & 0xfe) == 0)
+> >> +		return false;
+> > 
+> > It's a bit disappointing to not use the freshly introduced constants.
+> > That being said I agree it would make the code hard to read, so you can
+> > leave it as is.
+> 
+> Sorry, I forgot it.
+> How about to define:
+> #define LM90_STATUS_MASK 0x7f
+> #define MAX6696_STATUS2_MASK 0xfe
 
-Best regards
+I wouldn't bother. I suspect that this code will have to be reworked
+soon anyway and these constants may no longer be needed then.
+
+> Or since Guenter is for vacation, I can just leave it as is, and wait
+> him back to talk about below issue.
+
+I do maintain the lm90 driver, so the decision is up to me. Guenter did
+a preliminary review of your patches and I am grateful for that, but I
+do not intend to wait for his return to continue with your patches.
+Otherwise he will have to do the same when he returns and I am gone,
+and this may end up delaying your patches by one kernel version.
+
+> >> (...)
+> >> +		struct lm90_data *data = i2c_get_clientdata(client);
+> >> +		u8 config, alarms;
+> >> +
+> >> +		lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
+> > 
+> > You end up reading LM90_REG_R_STATUS, which is not OK. This register
+> > contains self-clearing bits, so there is no guarantee that the second
+> > read will return the same value as the first read. You'll have to come
+> > up with a different approach that reads LM90_REG_R_STATUS only once.
+> 
+> Oh, yes, this is a problem, I didn't noticed it.
+> How about to use this:
+> bool lm90_alarms_tripped(*client, *status);
+> bool lm90_alarms2_tripped(*client, *status2);
+> So we can read the status only once and pass it.
+
+This is a good idea but you only need status, not status2, so it can be
+made simpler:
+bool lm90_is_tripped(*client, *status);
+(handling both status and status 2 as you already do.)
+
 -- 
-Marek Szyprowski
-Samsung R&D Institute Poland
-
-
+Jean Delvare
