@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab3GQR0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:26:17 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:46858 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab3GQR0P convert rfc822-to-8bit (ORCPT
+	id S1756710Ab3GQR04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:26:56 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:49963 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab3GQR0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:26:15 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: commit f8f559422b (KVM: MMU: fast invalidate all mmio sptes) causes hang
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-In-Reply-To: <20130717165743.GA357@x4>
-Date: Thu, 18 Jul 2013 01:25:11 +0800
-Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A242AFC1-86E6-4716-8DF7-6FD169DB6EC8@gmail.com>
-References: <20130717163215.GA359@x4> <20130717164232.GI13732@redhat.com> <20130717165743.GA357@x4>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-X-Mailer: Apple Mail (2.1508)
+	Wed, 17 Jul 2013 13:26:54 -0400
+From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+To: jic23@cam.ac.uk
+Cc: linux-iio@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net,
+        zubair.lutfullah@gmail.com
+Subject: [PATCH 00/21] iio: TI-am335x-adc continuous mode
+Date: Wed, 17 Jul 2013 18:26:29 +0100
+Message-Id: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Markus,
+A series of patches that add continuous sampling support
+for the adc drivers for the am335x.
 
-Thanks for your report! I am downloading the ubuntu iso and will try to reproducible it.
+Most of the work is done by Rachil Patna and Russ Dill from TI.
 
-Could you please enable these tracepoints:
-kvmmmu/check_mmio_spte
-kvmmmu/handle_mmio_page_fault
-kvmmmu/kvm_mmu_invalidate_zap_all_pages
-kvmmmu/mark_mmio_spte
-kvm/kvm_mmio
-kvm/vcpu_match_mmio
+TI maintains a 3.2 based kernel tree.
+I forward ported these patches from those.
 
-and post the output?
+One of the significant changes I made to their patches
+was to the ring_sw buffer as that support has been removed from iio.
 
-Just check, your host is 64-bit or 32 bit? 
+I also merged some of their bug fixes in the same large patch which
+adds the main support (patch 5 with the subject "Add continuous mode to adc")
 
-On Jul 18, 2013, at 12:57 AM, Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+MFD and Input changes are little. I will cc them once IIO has acked
+this patchset. No need to clutter their lists with a dozen iio patches.
 
-> On 2013.07.17 at 19:42 +0300, Gleb Natapov wrote:
->> On Wed, Jul 17, 2013 at 06:32:15PM +0200, Markus Trippelsdorf wrote:
->>> The following commit:
->>> commit f8f559422b6c6a05469dfde614b67789b6142cb5
->>> Author: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>> Date:   Fri Jun 7 16:51:26 2013 +0800
->>> 
->>>    KVM: MMU: fast invalidate all mmio sptes
->>> 
->>> causes my kvm qemu qcow2 images to hang when they switch from the boot
->>> console to the desktop. For example:
->>> qemu-system-x86_64 -enable-kvm -net nic,vlan=0,model=virtio -net user -drive file=ubuntu,if=virtio,cache=unsafe -smp 2 -m 1024
->>> boots normally at first, but then hangs as soon as Xorg gets started.`
->>> 
->> Which guest is is exactly and how reproducible is this?
-> 
-> Ubuntu 12.04.
-> It's 100% reproducible or else it wouldn't have been so easily
-> bisectable.
-> 
->>> Perf top shows:
->>> 20.99%  [kernel]                                  [k] svm_vcpu_run
->>> 17.24%  [kernel]                                  [k] handle_mmio_page_fault_common
->>> 15.61%  [kernel]                                  [k] kvm_arch_vcpu_ioctl_run
->>> 12.49%  [kernel]                                  [k] fast_page_fault.part.78
->>> 
->>> I'm running:
->>> QEMU emulator version 1.4.2 
->>> on an AMD PhenomII X4 CPU.
->>> 
->> What is the output of "cat /proc/cpuinfo"?
-> 
-> 
-> processor	: 0
-> vendor_id	: AuthenticAMD
-> cpu family	: 16
-> model		: 4
-> model name	: AMD Phenom(tm) II X4 955 Processor
-> stepping	: 2
-> microcode	: 0x10000db
-> cpu MHz		: 800.000
-> cache size	: 512 KB
-> physical id	: 0
-> siblings	: 4
-> core id		: 0
-> cpu cores	: 4
-> apicid		: 0
-> initial apicid	: 0
-> fpu		: yes
-> fpu_exception	: yes
-> cpuid level	: 5
-> wp		: yes
-> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm 3dnowext 3dnow constant_tsc rep_good nopl nonstop_tsc extd_apicid pni monitor cx16 popcnt lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt hw_pstate npt lbrv svm_lock nrip_save
-> bogomips	: 6424.73
-> TLB size	: 1024 4K pages
-> clflush size	: 64
-> cache_alignment	: 64
-> address sizes	: 48 bits physical, 48 bits virtual
-> power management: ts ttp tm stc 100mhzsteps hwpstate
-> ...
-> *4
-> 
-> -- 
-> Markus
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+These apply on top of mfd-next after the recent set of patches
+on this driver by Sebastian Andrzej Siewior.
+
+Tested on the Beaglebone Black running 3.11
+
+Check_patch.pl issues are resolved in the last three patches separately.
+
+*** BLURB HERE ***
+
+Zubair Lutfullah (21):
+  MFD: ti_tscadc: disable TSC control
+  IIO: ADC: ti_adc: Fix 1st sample read
+  iio: ti_am335x_adc: Added iio_voltageX_scale
+  input: ti_tsc: Enable shared IRQ for TSC
+  iio: input: am335x_adc: Add continuous mode to adc
+  MFD: ti_tscadc: ADC Clock check not required
+  iio: TI-am335x-adc: Cleanup
+  IIO: ti_adc: Handle set to clear IRQENABLE register properly.
+  IIO: ti_adc: Handle set to clear IRQSTATUS register properly
+  IIO: ti_adc: Handle overrun before threshold event
+  iio: ti_adc: Avoid double threshold event
+  IIO: ti_adc: Also clear threshold event when clearing overrun event
+  IO: ti_adc: Reset and clear overrun status before capture.
+  IIO: ti_adc: Properly handle out of memory situation.
+  IIO: ti_adc: Print error and handle short FIFO events
+  IIO: ti_adc: Fix allocation count of FIFO buffer.
+  Revert "IIO: ti_adc: Correct wrong samples received on 1st read in
+    continuous mode"
+  IIO: ti_adc: Fix capture operation during resume
+  iio: ti_amss5x adc Fix check_patch.pl issues
+  input: ti_am335x_tsc.c fix checkpatch.pl issues
+  mfd: ti_am335x_tscadc.c fix checkpatch.pl issues
+
+ drivers/iio/adc/ti_am335x_adc.c           |  388 ++++++++++++++++++++++++++---
+ drivers/input/touchscreen/ti_am335x_tsc.c |   17 +-
+ drivers/mfd/ti_am335x_tscadc.c            |   30 +--
+ include/linux/mfd/ti_am335x_tscadc.h      |   29 ++-
+ 4 files changed, 403 insertions(+), 61 deletions(-)
+
+-- 
+1.7.9.5
 
