@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965056Ab3GQXGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:06:14 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:48551 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965040Ab3GQXGK (ORCPT
+	id S965067Ab3GQXGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:06:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52784 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964991Ab3GQXGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:06:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130717185138.GC17906@xanatos>
-References: <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org>
- <20130716224357.GK4994@xanatos> <1374015299.6458.76.camel@gandalf.local.home>
- <20130716231217.GL4994@xanatos> <51E5D7C8.5000306@gmail.com>
- <1374018809.2249.29.camel@leira.trondhjem.org> <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>
- <20130717144849.GB16513@xanatos> <1374073771.6458.143.camel@gandalf.local.home>
- <20130717185138.GC17906@xanatos>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Thu, 18 Jul 2013 04:35:29 +0530
-Message-ID: <CALkWK0n3TGnrpjWmr63zxqrM4ARma8KvDXObnLGm5WvZ2JmXiw@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, CAI Qian <caiqian@redhat.com>,
-        David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
+	Wed, 17 Jul 2013 19:06:04 -0400
+Date: Wed, 17 Jul 2013 16:06:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rob Landley <rob@landley.net>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Hugh Dickins <hughd@google.com>, Jeff Layton <jlayton@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Jim Cromie <jim.cromie@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 0/5] initmpfs v2: use tmpfs instead of ramfs for rootfs
+Message-Id: <20130717160602.4b225ac80b1cb6121cbb489c@linux-foundation.org>
+In-Reply-To: <20130715140135.0f896a584fec9f7861049b64@linux-foundation.org>
+References: <20130715140135.0f896a584fec9f7861049b64@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sarah Sharp wrote:
-> https://picasaweb.google.com/116960357493251979546/Trolls#5901298464591248626
-> https://picasaweb.google.com/116960357493251979546/Trolls#5901288095984358098
->
-> On my blog, here's some choice comments, mostly asking me to quit kernel
-> development, along with more than a few misogynist comments:
+On Tue, 16 Jul 2013 08:31:13 -0700 (PDT) Rob Landley <rob@landley.net> wrote:
 
-So it's a publicity stunt then.  That is the only rational
-explanation, because the alternative explanation is that you're trying
-to tame the internet ;)
+> Use tmpfs for rootfs when CONFIG_TMPFS=y and there's no root=.
+> Specify rootfstype=ramfs to get the old initramfs behavior.
+> 
+> The previous initramfs code provided a fairly crappy root filesystem:
+> didn't let you --bind mount directories out of it, reported zero
+> size/usage so it didn't show up in "df" and couldn't run things like
+> rpm that query available space before proceeding, would fill up all
+> available memory and panic the system if you wrote too much to it...
 
-Another flash in the pan: this whole event (and you) will be erased
-from everyone's memories in a few weeks.  Okay, maybe a few months if
-you get fired from SendGrid.
+The df problem and the mount --bind thing are ramfs issues, are they
+not?  Can we fix them?  If so, that's a less intrusive change, and we
+also get a fixed ramfs.
 
-You're better than that.  Think calmly, and focus your attention on
-making a long-term impact.  Hint: it's not going to happen by arguing
-endlessly about the same thing.
+> Using tmpfs instead provides a much better root filesystem.
+> 
+> Changes from last time: use test_and_set_bit() for "once" logic.
