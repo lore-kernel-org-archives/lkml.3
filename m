@@ -1,93 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3GQODc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:03:32 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65067 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab3GQODa (ORCPT
+	id S1755260Ab3GQOFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:05:52 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:56673 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322Ab3GQOFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:03:30 -0400
-Message-ID: <51E6A39E.3020109@windriver.com>
-Date: Wed, 17 Jul 2013 10:01:02 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 17 Jul 2013 10:05:50 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, David Lang <david@lang.hm>,
-        <ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-References: <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home> <20130715223615.GI15531@xanatos> <alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz> <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com> <20130716211235.GG4994@xanatos> <20130716212704.GB9371@thunk.org> <20130716224357.GK4994@xanatos> <1374015299.6458.76.camel@gandalf.local.home> <20130716231217.GL4994@xanatos> <1374017917.6458.103.camel@gandalf.local.home>
-In-Reply-To: <1374017917.6458.103.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+In-Reply-To: <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
+References: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
+ <51E65577.7010403@samsung.com> <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Wed, 17 Jul 2013 16:05:29 +0200
+Message-ID: <CAPybu_226ZWwEW-1AyaccMthLtmdWOjRts116RqMEk91o12TrQ@mail.gmail.com>
+Subject: Re: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-07-16 07:38 PM, Steven Rostedt wrote:
-> On Tue, 2013-07-16 at 16:12 -0700, Sarah Sharp wrote:
-> 
+Hello again
 
-[...]
+I have made some experiments and have replaced alloc_pages_exact with
+alloc_pages of order N. Unfortunatelly vm_insert_page and vm_map_ram
+does not work as expected.
 
-> 
->>   We need to define what behavior we want
->> from both maintainers and patch submitters.  E.g. "No regressions" and
->> "don't break userspace"
-> 
-> Yes, those do need to be documented.
+vm_insert_page, only insert the PAGE_SIZE bytes of the higher order
+page, if I try to add the other pages manually, the function returns
+-22 due to count=0.
+vm_map_ram is designed to work with exactly order 0 pages.
 
-Actually, they are already documented. See "Regressions" section in the
-file Documentation/development-process/4.Coding
+it works fine if I manually split the page, but the header file
+suggest that function should not be called by the drivers... (although
+this is not a device driver).
 
-Paul.
+Here you can see my experiment in case you want to replicate it.
+
+
+---
+ drivers/media/v4l2-core/videobuf2-dma-sg.c |   89 ++++++++++++++++++++++------
+ 1 file changed, 72 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c
+b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+index 16ae3dc..bbb3680 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+@@ -24,6 +24,8 @@
+ static int debug;
+ module_param(debug, int, 0644);
+
++#define PAGE_SPLIT
++
+ #define dprintk(level, fmt, arg...) \
+  do { \
+  if (debug >= level) \
+@@ -42,10 +44,69 @@ struct vb2_dma_sg_buf {
+
+ static void vb2_dma_sg_put(void *buf_priv);
+
++static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
++ gfp_t gfp_flags)
++{
++ unsigned int last_page = 0;
++ int size = buf->sg_desc.size;
++
++ while (size > 0) {
++ struct page *pages;
++ int order;
++#ifdef PAGE_SPLIT
++ int i;
++#endif
++
++ order = get_order(size);
++ /* Dont over allocate*/
++ if ((PAGE_SIZE << order) > size)
++ order--;
++
++ pages = NULL;
++ while (!pages) {
++ pages = alloc_pages(GFP_KERNEL | __GFP_ZERO |
++ __GFP_NOWARN | gfp_flags, order);
++ if (pages)
++ break;
++
++
++ if (order == 0)
++ while (--last_page >= 0) {
++ __free_pages(
++ buf->pages[last_page],
++ get_order(sg_dma_len
++ (&buf->sg_desc.sglist[last_page])));
++ return -ENOMEM;
++ }
++ order--;
++ }
++
++#ifdef PAGE_SPLIT
++ split_page(pages, order);
++ for (i = 0; i < (1<<order); i++) {
++ buf->pages[last_page] = pages + i;
++ sg_set_page(&buf->sg_desc.sglist[last_page],
++ buf->pages[last_page], PAGE_SIZE, 0);
++ last_page++;
++ }
++#else
++ buf->pages[last_page] = pages;
++ sg_set_page(&buf->sg_desc.sglist[last_page],
++ buf->pages[last_page], PAGE_SIZE << order, 0);
++ last_page++;
++#endif
++ size -= PAGE_SIZE << order;
++ }
++
++ buf->sg_desc.num_pages = last_page;
++
++ return 0;
++}
++
+ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size,
+gfp_t gfp_flags)
+ {
+  struct vb2_dma_sg_buf *buf;
+- int i;
++ int ret;
+
+  buf = kzalloc(sizeof *buf, GFP_KERNEL);
+  if (!buf)
+@@ -69,14 +130,9 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx,
+unsigned long size, gfp_t gfp_fla
+  if (!buf->pages)
+  goto fail_pages_array_alloc;
+
+- for (i = 0; i < buf->sg_desc.num_pages; ++i) {
+- buf->pages[i] = alloc_page(GFP_KERNEL | __GFP_ZERO |
+-   __GFP_NOWARN | gfp_flags);
+- if (NULL == buf->pages[i])
+- goto fail_pages_alloc;
+- sg_set_page(&buf->sg_desc.sglist[i],
+-    buf->pages[i], PAGE_SIZE, 0);
+- }
++ ret = vb2_dma_sg_alloc_compacted(buf, gfp_flags);
++ if (ret)
++ goto fail_pages_alloc;
+
+  buf->handler.refcount = &buf->refcount;
+  buf->handler.put = vb2_dma_sg_put;
+@@ -89,8 +145,6 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx,
+unsigned long size, gfp_t gfp_fla
+  return buf;
+
+ fail_pages_alloc:
+- while (--i >= 0)
+- __free_page(buf->pages[i]);
+  kfree(buf->pages);
+
+ fail_pages_array_alloc:
+@@ -111,9 +165,10 @@ static void vb2_dma_sg_put(void *buf_priv)
+  buf->sg_desc.num_pages);
+  if (buf->vaddr)
+  vm_unmap_ram(buf->vaddr, buf->sg_desc.num_pages);
+- vfree(buf->sg_desc.sglist);
+  while (--i >= 0)
+- __free_page(buf->pages[i]);
++ __free_pages(buf->pages[i], get_order(
++ sg_dma_len(&buf->sg_desc.sglist[i])));
++ vfree(buf->sg_desc.sglist);
+  kfree(buf->pages);
+  kfree(buf);
+  }
+@@ -248,14 +303,14 @@ static int vb2_dma_sg_mmap(void *buf_priv,
+struct vm_area_struct *vma)
+  do {
+  int ret;
+
+- ret = vm_insert_page(vma, uaddr, buf->pages[i++]);
++ ret = vm_insert_page(vma, uaddr, buf->pages[i]);
+  if (ret) {
+  printk(KERN_ERR "Remapping memory, error: %d\n", ret);
+  return ret;
+  }
+-
+- uaddr += PAGE_SIZE;
+- usize -= PAGE_SIZE;
++ uaddr += sg_dma_len(&buf->sg_desc.sglist[i]);
++ usize -= sg_dma_len(&buf->sg_desc.sglist[i]);
++ i++;
+  } while (usize > 0);
+
+
 --
+1.7.10.4
 
-> 
-> 
->>  and "no personal attacks".
-> 
-> I actually disagree with this. What I would say this instead: "try to
-> keep it technical and focus on the code. If you are upset at someone,
-> think twice before hitting send. But if you really think this is the
-> only way to deal with the situation, then that's your call, and you get
-> to deal with the consequences."
-> 
-> I don't think changing peoples behavior is going to work. It wont. You
-> don't want to change who you are, others don't want to change who they
-> are. Deal with it. But what we can do is just try to educate people on
-> what policies are needed to be a maintainer and code submitter (there is
-> documentation already on some of this), and then point it to people. If
-> people continue to ignore those after being shown, then yes, personal
-> attacks are then in order.
-> 
-> 
->>   That needs to be
->> written down somewhere, and it isn't.  If it's documented somewhere,
->> point me to the file in Documentation.  Hint: it's not there.
-> 
-> Well, SubmittingPatches is there, but we should have a MaintainerRules
-> or something.
-> 
+
+
+On Wed, Jul 17, 2013 at 11:43 AM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> Hi Marek
+>
+>  alloc_pages_exact returns pages of order 0, every single page is
+> filled into buf->pages, that then is used by vb2_dma_sg_mmap(), that
+> also expects order 0 pages (its loops increments in PAGE_SIZE). The
+> code has been tested on real HW.
+>
+> Your concern is that that alloc_pages_exact splits the higher order pages?
+>
+> Do you want that videobuf2-dma-sg to have support for higher order pages?
+>
+>
+> Best regards
+>
+> PS: sorry for the duplicated post, previous one contained html parts
+> and was rejected by the list
+>
+> On Wed, Jul 17, 2013 at 10:27 AM, Marek Szyprowski
+> <m.szyprowski@samsung.com> wrote:
+>> Hello,
 >>
->> That is the problem.
-> 
-> We can always use better documentation.
-> 
-> -- Steve
-> 
-> 
-> _______________________________________________
-> Ksummit-2013-discuss mailing list
-> Ksummit-2013-discuss@lists.linuxfoundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
-> 
-> 
+>>
+>> On 7/15/2013 11:34 AM, Ricardo Ribalda Delgado wrote:
+>>>
+>>> Most DMA engines have limitations regarding the number of DMA segments
+>>> (sg-buffers) that they can handle. Videobuffers can easily spread through
+>>> houndreds of pages.
+>>>
+>>> In the previous aproach, the pages were allocated individually, this
+>>> could led to the creation houndreds of dma segments (sg-buffers) that
+>>> could not be handled by some DMA engines.
+>>>
+>>> This patch tries to minimize the number of DMA segments by using
+>>> alloc_pages_exact. In the worst case it will behave as before, but most
+>>> of the times it will reduce the number fo dma segments
+>>>
+>>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>>
+>>
+>> I like the idea, but the code doesn't seem to be correct. buf->pages array
+>> is
+>> needed for vb2_dma_sg_mmap() function to map pages to userspace. However in
+>> your
+>> code I don't see any place where you fill it with the pages of order higher
+>> than 0. AFAIR vm_insert_page() can handle compound pages, but
+>> alloc_pages_exact()
+>> splits such pages into a set of pages of order 0, so you need to change your
+>> code
+>> to correctly fill buf->pages array.
+>>
+>>
+>>> ---
+>>>   drivers/media/v4l2-core/videobuf2-dma-sg.c |   49
+>>> +++++++++++++++++++++-------
+>>>   1 file changed, 38 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>>> b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>>> index 16ae3dc..67a94ab 100644
+>>> --- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>>> +++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+>>> @@ -42,10 +42,44 @@ struct vb2_dma_sg_buf {
+>>>     static void vb2_dma_sg_put(void *buf_priv);
+>>>   +static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
+>>> +               gfp_t gfp_flags)
+>>> +{
+>>> +       unsigned int last_page = 0;
+>>> +       void *vaddr = NULL;
+>>> +       unsigned int req_pages;
+>>> +
+>>> +       while (last_page < buf->sg_desc.num_pages) {
+>>> +               req_pages = buf->sg_desc.num_pages-last_page;
+>>> +               while (req_pages >= 1) {
+>>> +                       vaddr = alloc_pages_exact(req_pages*PAGE_SIZE,
+>>> +                               GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN);
+>>> +                       if (vaddr)
+>>> +                               break;
+>>> +                       req_pages >>= 1;
+>>> +               }
+>>> +               if (!vaddr) {
+>>> +                       while (--last_page >= 0)
+>>> +                               __free_page(buf->pages[last_page]);
+>>> +                       return -ENOMEM;
+>>> +               }
+>>> +               while (req_pages) {
+>>> +                       buf->pages[last_page] = virt_to_page(vaddr);
+>>> +                       sg_set_page(&buf->sg_desc.sglist[last_page],
+>>> +                                       buf->pages[last_page], PAGE_SIZE,
+>>> 0);
+>>> +                       vaddr += PAGE_SIZE;
+>>> +                       last_page++;
+>>> +                       req_pages--;
+>>> +               }
+>>> +       }
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>>   static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t
+>>> gfp_flags)
+>>>   {
+>>>         struct vb2_dma_sg_buf *buf;
+>>> -       int i;
+>>> +       int ret;
+>>>         buf = kzalloc(sizeof *buf, GFP_KERNEL);
+>>>         if (!buf)
+>>> @@ -69,14 +103,9 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx,
+>>> unsigned long size, gfp_t gfp_fla
+>>>         if (!buf->pages)
+>>>                 goto fail_pages_array_alloc;
+>>>   -     for (i = 0; i < buf->sg_desc.num_pages; ++i) {
+>>> -               buf->pages[i] = alloc_page(GFP_KERNEL | __GFP_ZERO |
+>>> -                                          __GFP_NOWARN | gfp_flags);
+>>> -               if (NULL == buf->pages[i])
+>>> -                       goto fail_pages_alloc;
+>>> -               sg_set_page(&buf->sg_desc.sglist[i],
+>>> -                           buf->pages[i], PAGE_SIZE, 0);
+>>> -       }
+>>> +       ret = vb2_dma_sg_alloc_compacted(buf, gfp_flags);
+>>> +       if (ret)
+>>> +               goto fail_pages_alloc;
+>>>         buf->handler.refcount = &buf->refcount;
+>>>         buf->handler.put = vb2_dma_sg_put;
+>>> @@ -89,8 +118,6 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned
+>>> long size, gfp_t gfp_fla
+>>>         return buf;
+>>>     fail_pages_alloc:
+>>> -       while (--i >= 0)
+>>> -               __free_page(buf->pages[i]);
+>>>         kfree(buf->pages);
+>>>     fail_pages_array_alloc:
+>>
+>>
+>> Best regards
+>> --
+>> Marek Szyprowski
+>> Samsung R&D Institute Poland
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+> --
+> Ricardo Ribalda
+
+
+
+-- 
+Ricardo Ribalda
