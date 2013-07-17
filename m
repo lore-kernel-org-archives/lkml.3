@@ -1,133 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab3GQPC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:02:56 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60910 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab3GQPCw (ORCPT
+	id S1754523Ab3GQPEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:04:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33551 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab3GQPEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:02:52 -0400
-Message-ID: <51E6B057.5080905@linux.vnet.ibm.com>
-Date: Wed, 17 Jul 2013 20:25:19 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Wed, 17 Jul 2013 11:04:23 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>
+CC: <wni@nvidia.com>, <l.stach@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 0/9] thermal: introduce DT thermal zone build
+Date: Wed, 17 Jul 2013 11:02:36 -0400
+Message-ID: <1374073374-30946-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        ouyang@cs.pitt.edu, agraf@suse.de, chegu_vinod@hp.com,
-        torvalds@linux-foundation.org, avi.kivity@gmail.com,
-        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V10 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130715103648.GN11772@redhat.com> <51E4C011.4060803@linux.vnet.ibm.com> <20130716060215.GE11772@redhat.com> <51E5941B.3090300@linux.vnet.ibm.com> <20130717093420.GU11772@redhat.com> <51E66C71.6020605@linux.vnet.ibm.com> <20130717124511.GW11772@redhat.com> <51E69429.7040309@linux.vnet.ibm.com> <20130717132503.GA13732@redhat.com> <51E6A66D.7090407@linux.vnet.ibm.com> <20130717144409.GD13732@redhat.com>
-In-Reply-To: <20130717144409.GD13732@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071714-3864-0000-0000-0000092014B1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 08:14 PM, Gleb Natapov wrote:
-> On Wed, Jul 17, 2013 at 07:43:01PM +0530, Raghavendra K T wrote:
->> On 07/17/2013 06:55 PM, Gleb Natapov wrote:
->>> On Wed, Jul 17, 2013 at 06:25:05PM +0530, Raghavendra K T wrote:
->>>> On 07/17/2013 06:15 PM, Gleb Natapov wrote:
->>>>> On Wed, Jul 17, 2013 at 03:35:37PM +0530, Raghavendra K T wrote:
->>>>>>>> Instead of halt we started with a sleep hypercall in those
->>>>>>>>   versions. Changed to halt() once Avi suggested to reuse existing sleep.
->>>>>>>>
->>>>>>>> If we use older hypercall with few changes like below:
->>>>>>>>
->>>>>>>> kvm_pv_wait_for_kick_op(flags, vcpu, w->lock )
->>>>>>>> {
->>>>>>>>   // a0 reserved for flags
->>>>>>>> if (!w->lock)
->>>>>>>> return;
->>>>>>>> DEFINE_WAIT
->>>>>>>> ...
->>>>>>>> end_wait
->>>>>>>> }
->>>>>>>>
->>>>>>> How would this help if NMI takes lock in critical section. The thing
->>>>>>> that may happen is that lock_waiting->want may have NMI lock value, but
->>>>>>> lock_waiting->lock will point to non NMI lock. Setting of want and lock
->>>>>>> have to be atomic.
->>>>>>
->>>>>> True. so we are here
->>>>>>
->>>>>>          non NMI lock(a)
->>>>>>          w->lock = NULL;
->>>>>>          smp_wmb();
->>>>>>          w->want = want;
->>>>>>                                 NMI
->>>>>>                           <---------------------
->>>>>>                            NMI lock(b)
->>>>>>                            w->lock = NULL;
->>>>>>                            smp_wmb();
->>>>>>                            w->want = want;
->>>>>>                            smp_wmb();
->>>>>>                            w->lock = lock;
->>>>>>                           ---------------------->
->>>>>>          smp_wmb();
->>>>>>          w->lock = lock;
->>>>>>
->>>>>> so how about fixing like this?
->>>>>>
->>>>>> again:
->>>>>>          w->lock = NULL;
->>>>>>          smp_wmb();
->>>>>>          w->want = want;
->>>>>>          smp_wmb();
->>>>>>          w->lock = lock;
->>>>>>
->>>>>> if (!lock || w->want != want) goto again;
->>>>>>
->>>>> NMI can happen after the if() but before halt and the same situation
->>>>> we are trying to prevent with IRQs will occur.
->>>>
->>>> True, we can not fix that. I thought to fix the inconsistency of
->>>> lock,want pair.
->>>> But NMI could happen after the first OR condition also.
->>>> /me thinks again
->>>>
->>> lock_spinning() can check that it is called in nmi context and bail out.
->>
->> Good point.
->> I think we can check for even irq context and bailout so that in irq
->> context we continue spinning instead of slowpath. no ?
->>
-> That will happen much more often and irq context is no a problem anyway.
->
+Hello all,
 
-Yes. It is not a problem. But my idea was to not to enter slowpath lock
-during irq processing. Do you think that is a good idea?
+As you noticed, I am working in a way to represent thermal data
+using device tree [1]. Essentially, this should be a way to say
+what to do with a sensor and how to associate (cooling) actions
+with it.
 
-I 'll now experiment how often we enter slowpath in irq context.
+The motivation to create such infrastructure is:
+(i) - to reuse the existing temperature sensor code base;
+(ii) - have a way to easily describe thermal data across different
+boards for the same sensor. Say you have an i2c temp sensor,
+which is placed close to your battery on board A but on
+board B, another instance of this same senor is placed
+close to your display, for instance.
 
->>> How often this will happens anyway.
->>>
->>
->> I know NMIs occur frequently with watchdogs. or used by sysrq-trigger
->> etc.. But I am not an expert how frequent it is otherwise. But even
->> then if they do not use spinlock, we have no problem as already pointed.
->>
->> I can measure with debugfs counter how often it happens.
->>
-> When you run perf you will see a lot of NMIs, but those should not take
-> any locks.
+This series introduces then a DT parser. The data expected in
+DT must contain the needed properties to build a thermal zone
+out of the desired sensor. All properties are documented and
+they are derived from the existing requirements of current
+thermal API.
 
-Yes. I just verified that with benchmark runs, and with perf running,
-there was not even a single nmi hitting the lock_spinning.
+In order to perform a binding with cooling devices,
+the new thermal zone built using DT nodes will use
+the existing thermal API that uses binding parameters. This is
+the current proposed way to register thermal zones with platform
+information, written by Durga.
 
+There are some virtual concepts that are pushed to device tree,
+I know. But I believe using device tree to do this makes sense
+because we are still describing the HW and how they are related
+to each other. Things like cooling devices are not represented
+in device tree though, as I believe that will cause a lot of
+confusion with real devices (as already does).
+
+So the series is short but I think it makes sense to describe
+how it is organized, as it touches several places. First four
+patches are a preparation for this parser. There is a change
+on cpufreq-cpu0, so that it knows now how to load its
+corresponding cooling device. There is a change on thermal_core
+to split its hwmon code, because I think we may need to improve
+this code base when we start to integrate better with hwmon
+temperature sensors. Then, another needed preparation is to
+improve the bind_params, so that we are able to bind with
+upper and lower limits. The remaining patches are the changes
+with the proposed DT parser. A part from the DT thermal zone
+builder itself (patch 05), I also changed the ti-soc-thermal
+driver to use this new API and the omap4430 bandgap DT node,
+as an example (this has been tested on panda omap4430); and also changed
+the hwmon drivers lm75 and tmp102 to have the option to build
+a thermal zone using DT. I haven't touched any dts file using
+lm75 or tmp102 because this should come on a need basis.
+
+I believe this code is pretty usable the way it is, but might
+need to be revisited, in case the enhancement proposed by Durga
+get in. This is because representing virtual thermal zones
+built out of several sensors may need a different representation
+in DT.
+
+[1] - RFC of this work:
+http://comments.gmane.org/gmane.linux.power-management.general/35874
+
+Changes from RFC:
+- Added a way to load cpufreq cooling device out of DT
+- Added a way to bind with upper and lower limits using bind_params
+- Added a way to specify upper and lower binding limits on DT
+- Added DT thermal builder support to lm75 and tmp102 hwmon drivers
+- Changed ERANGE to EDOM
+- Added thermal constants for zone type and bind limit, so that
+  dts file could be more readable
+
+Tested on panda omap4430 (3.11-rc1 with minor changes for getting cpufreq working)
+
+BR,
+
+Eduardo Valentin (9):
+  cpufreq: cpufreq-cpu0: add dt node parsing for 'needs-cooling'
+  thermal: hwmon: move hwmon support to single file
+  thermal: thermal_core: allow binding with limits on bind_params
+  arm: dts: flag omap4430 with needs-cooling for cpu node
+  thermal: introduce device tree parser
+  thermal: ti-soc-thermal: use thermal DT infrastructure
+  arm: dts: add omap4430 thermal data
+  hwmon: lm75: expose to thermal fw via DT nodes
+  hwmon: tmp102: expose to thermal fw via DT nodes
+
+ .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   3 +
+ .../devicetree/bindings/thermal/thermal.txt        | 133 ++++++
+ Documentation/thermal/sysfs-api.txt                |   7 +
+ arch/arm/boot/dts/omap443x.dtsi                    |  32 +-
+ drivers/cpufreq/cpufreq-cpu0.c                     |   8 +
+ drivers/hwmon/lm75.c                               |  29 ++
+ drivers/hwmon/tmp102.c                             |  25 ++
+ drivers/thermal/Kconfig                            |  22 +
+ drivers/thermal/Makefile                           |   4 +
+ drivers/thermal/thermal_core.c                     | 274 +-----------
+ drivers/thermal/thermal_dt.c                       | 458 +++++++++++++++++++++
+ drivers/thermal/thermal_hwmon.c                    | 269 ++++++++++++
+ drivers/thermal/thermal_hwmon.h                    |  49 +++
+ drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  46 ++-
+ include/dt-bindings/thermal/thermal.h              |  27 ++
+ include/linux/thermal.h                            |  13 +
+ 16 files changed, 1129 insertions(+), 270 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/thermal/thermal.txt
+ create mode 100644 drivers/thermal/thermal_dt.c
+ create mode 100644 drivers/thermal/thermal_hwmon.c
+ create mode 100644 drivers/thermal/thermal_hwmon.h
+ create mode 100644 include/dt-bindings/thermal/thermal.h
+
+-- 
+1.8.2.1.342.gfa7285d
 
