@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab3GQVxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 17:53:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5602 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756263Ab3GQVxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 17:53:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,687,1367996400"; 
-   d="scan'208";a="372075202"
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure
- duetomoduledependency.
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-In-Reply-To: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>
-References: <20130716115527.GA1034@gondor.apana.org.au>
-	 <201307162249.JEA41532.FFOLHVQJFtOOMS@I-love.SAKURA.ne.jp>
-	 <1373991828.22432.274.camel@schen9-DESK>
-	 <201307172052.EJE32506.OFMSFJQOFHtVOL@I-love.SAKURA.ne.jp>
-	 <1374079597.22432.314.camel@schen9-DESK>
-	 <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Jul 2013 14:53:21 -0700
-Message-ID: <1374098001.22432.317.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1757441Ab3GQVzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 17:55:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52202 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab3GQVzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 17:55:39 -0400
+Date: Wed, 17 Jul 2013 14:55:44 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Brunner <mibru@gmx.de>
+Subject: Re: [PATCH 1/3] pch_uart: Use DMI interface for board detection
+Message-ID: <20130717215544.GA15000@kroah.com>
+References: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
+ <ce5dd365d05f8747d269aa74e0bb929935d9cdee.1373676797.git.dvhart@linux.intel.com>
+ <1374092140.7622.36.camel@envy.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374092140.7622.36.camel@envy.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 05:50 +0900, Tetsuo Handa wrote:
-> Tim Chen wrote:
-> > > Therefore, I think possible solutions are either
-> > > 
-> > >   (a) built-in the dependent modules
-> > > 
-> > >       # grep crc /lib/modules/3.11.0-rc1+/modules.dep
-> > >       kernel/drivers/scsi/sd_mod.ko: kernel/lib/crc-t10dif.ko
-> > >       kernel/lib/crc-t10dif.ko:
-> > 
-> > This approach will increase kernel size for those who are not using
-> > t10dif so some people may object.  
-> > BTW, The PCLMULQDQ version does not need to be build in.
+On Wed, Jul 17, 2013 at 01:15:40PM -0700, Darren Hart wrote:
+> On Fri, 2013-07-12 at 17:58 -0700, Darren Hart wrote:
+> > Use the DMI interface rather than manually matching DMI strings.
 > 
-> sd_mod.ko must choose one from versions available as of loading sd_mod.ko.
-> Although it is not needed to built-in the PCLMULQDQ version for fixing the boot
-> failure, it is needed to built-in the PCLMULQDQ version for getting performance
-> improvement when PCLMULQDQ is supported.
+> Greg,
 > 
-> > Your approach is quite complicated.  I think something simpler like the
-> > following will work:
-> 
-> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
+> The rest of this series is either being dropped or has moved on to
+> netdev. This patch however remains unchanged. Would you like me to
+> resend individually or can you pull in this one?
 
+No need, it's still in my "todo" queue.  I'm trying to get the 3.11
+patches merged first, before the 3.12 stuff hits my trees.  I only have
+1549 more patches to get through...
 
-The following code in crct10dif-pclmul_glue.c
-
-static const struct x86_cpu_id crct10dif_cpu_id[] = {
-        X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
-        {}
-};
-MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
-
-will put the module in the device table and get the module
-loaded, as long as the cpu support PCLMULQDQ. So we should be able
-to benefit.
-
-Tim
-
+greg k-h
