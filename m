@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab3GQVhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 17:37:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52036 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3GQVhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 17:37:11 -0400
-Date: Wed, 17 Jul 2013 14:37:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        hector.palacios@digi.com, Thomas Petazzoni <thomas@free-electrons.com>,
-        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 0/3] Few ignored framebuffer fixes/additions
-Message-Id: <20130717143709.f8879fb7f0a5d55859e96838@linux-foundation.org>
-In-Reply-To: <1373902022-20439-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1373902022-20439-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932395Ab3GQVix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 17:38:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36287 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755796Ab3GQViw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 17:38:52 -0400
+Date: Wed, 17 Jul 2013 23:38:50 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Jones <davej@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4_da_release_space:1333: ext4_da_release_space: ino 12,
+ to_free 1 with only 0 reserved data  blocks
+Message-ID: <20130717213850.GA5025@quack.suse.cz>
+References: <20130716202533.GA16061@redhat.com>
+ <20130717125322.GA29294@quack.suse.cz>
+ <20130717145218.GA27731@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717145218.GA27731@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Jul 2013 17:26:59 +0200 Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+On Wed 17-07-13 10:52:18, Dave Jones wrote:
+> On Wed, Jul 17, 2013 at 02:53:22PM +0200, Jan Kara wrote:
+>  > On Tue 16-07-13 16:25:33, Dave Jones wrote:
+>  > > I've seen this happen a few times this week..
+>  >   Thanks for report! Was this when fuzzing or just normal desktop load?
+>  > What is inode with inode number 12 on your filesystem sdb1? What IO happens
+>  > to it? Apparently some delalloc accounting went wrong somewhere and it's
+>  > searching for a needle in a haystack unless we have more details...
+> 
+> It was running this.. https://github.com/kernelslacker/io-tests/blob/master/setup.sh
+> in a loop. After about 6 hours, that fell out.  It made it all the way through
+> every test a few times, which is odd, as the test should be fairly deterministic.
+> Ah, I wasn't capturing the fsx seed. I'll do that on the next run.
+  So inode 12 was likely the file used by fsx. OK. Looking at the script
+link, fsx is run as:
+  /usr/local/bin/fsx -N 250000 -S0 foo &
+so the seed is always 0. So it is a deterministic test and there must be
+some race with writeback or something that is rarely triggered. Drat.
 
-> Sorry to bother you again with the framebuffer stuff but the new
-> maintainer doesn't appear to be responsive either.
+Umm, looking at the filesystems this tests, ext4 with 1 KB blocksize is
+likely the config which hits this (the accounting is more complex there) so
+it might be interesting to concentrace on this one.
 
-Jean-Christophe is doing things - on 11 July he sent out a call for
-late patches to linux-fbdev@vger.kernel.org.
-
-So hopefully the resend of this patch series will be handled
-appropriately?
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
