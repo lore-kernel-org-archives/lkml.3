@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab3GQR5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:57:46 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50409 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab3GQR5o (ORCPT
+	id S1756793Ab3GQR55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:57:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21318 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756693Ab3GQR5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:57:44 -0400
-Date: Wed, 17 Jul 2013 18:57:21 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        CAI Qian <caiqian@redhat.com>, David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Message-ID: <20130717175721.GT4165@ZenIV.linux.org.uk>
-References: <20130716212704.GB9371@thunk.org>
- <20130716224357.GK4994@xanatos>
- <1374015299.6458.76.camel@gandalf.local.home>
- <20130716231217.GL4994@xanatos>
- <51E5D7C8.5000306@gmail.com>
- <1374018809.2249.29.camel@leira.trondhjem.org>
- <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>
- <20130717144849.GB16513@xanatos>
- <1374073771.6458.143.camel@gandalf.local.home>
- <alpine.DEB.2.02.1307171759100.8258@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307171759100.8258@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Jul 2013 13:57:54 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=7xwofrrtwS4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zDptr_D0OFsA:10 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=KKAkSRfTAAAA:8 a=P_-x9VVyirrVWYDCu1UA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=Zh68SRI7RUMA:10 a=3Rfx1nUSh_UA:10 a=1JvJEtVdGvUA:10 a=_RhRFcbxBZMA:10 a=WwgC8nHKvroA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374083871.6458.166.camel@gandalf.local.home>
+Subject: Re: [PATCH 05/18] vtime: Update a few comments
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Date: Wed, 17 Jul 2013 13:57:51 -0400
+In-Reply-To: <1374079471-3129-6-git-send-email-fweisbec@gmail.com>
+References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
+	 <1374079471-3129-6-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 06:00:46PM +0100, Stefano Stabellini wrote:
-> On Wed, 17 Jul 2013, Steven Rostedt wrote:
-> > The last thing I want to do is to lower the quality of the kernel just
-> > to get a wider range of developers.
+On Wed, 2013-07-17 at 18:44 +0200, Frederic Weisbecker wrote:
+> Update a stale comment from the old vtime era and document some
+> locking that might be non obvious.
 > 
-> Can we stop bringing the quality of the code into the discussion?
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> ---
+>  include/linux/context_tracking.h |    8 ++------
+>  kernel/sched/cputime.c           |    7 +++++++
+>  2 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+> index 5984f25..12045ce 100644
+> --- a/include/linux/context_tracking.h
+> +++ b/include/linux/context_tracking.h
+> @@ -72,8 +72,8 @@ extern void guest_exit(void);
+>  static inline void guest_enter(void)
+>  {
+>  	/*
+> -	 * This is running in ioctl context so we can avoid
+> -	 * the call to vtime_account() with its unnecessary idle check.
+> +	 * This is running in ioctl context so its safe
+> +	 * to assume the pending cputime to flush is stime.
 
-No.
+The above is worded funny. What about:
 
-> I think it's pretty clear that one doesn't need to be verbally abusive
-> in order to stop bad code from getting into the kernel.
+"This is running in ioctl context so its safe to assume that its the
+stime pending cputime to flush"
 
-At the risk of sounding pedantic...  The above is true *and* irrelevant
-as stated, and any attempts to read it in less irrelevant way result
-in statements that are absolutely non-obvious and very likely false.
-	* some amount of bad code will be getting into the kernel, in
-any scenario short of complete cessation of development
-	* there certainly are ways to prevent any given bad code from
-getting into the kernel, once you have identified it.  Even leaving
-aside completely ridiculous ones ("after WW3 nobody will push that into
-the tree", etc.), one can always watch all trees for specific code and
-refuse to pull if it has slipped in.
-	* "once you have identified it" part of the above is essential
-and does not scale.
-In other words, it's not "can we stop it from happening", it's "how
-much will be slippling in with given setup".  And _this_ is where your
-position becomes completely unfounded.  It's not at all clear that
-vague alternatives being proposed will *not* result in more crap getting
-in.
+I don't know. But "is stime" is what made me have to read that three
+times to figure out what you meant.
+
+
+>  	 */
+>  	vtime_account_system(current);
+>  	current->flags |= PF_VCPU;
+> @@ -81,10 +81,6 @@ static inline void guest_enter(void)
+>  
+>  static inline void guest_exit(void)
+>  {
+> -	/*
+> -	 * This is running in ioctl context so we can avoid
+> -	 * the call to vtime_account() with its unnecessary idle check.
+> -	 */
+
+Should we copy the comment here too?
+
+-- Steve
+
+>  	vtime_account_system(current);
+>  	current->flags &= ~PF_VCPU;
+>  }
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index a7959e0..223a35e 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -712,6 +712,13 @@ void vtime_user_enter(struct task_struct *tsk)
+>  
+>  void vtime_guest_enter(struct task_struct *tsk)
+>  {
+> +	/*
+> +	 * The flags must be updated under the lock with
+> +	 * the vtime_snap flush and update.
+> +	 * That enforces a right ordering and update sequence
+> +	 * synchronization against the reader (task_gtime())
+> +	 * that can thus safely catch up with a tickless delta.
+> +	 */
+>  	write_seqlock(&tsk->vtime_seqlock);
+>  	__vtime_account_system(tsk);
+>  	current->flags |= PF_VCPU;
+
+
