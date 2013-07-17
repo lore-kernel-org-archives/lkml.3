@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab3GQQK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:10:58 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:43960 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901Ab3GQQK4 (ORCPT
+	id S932500Ab3GQQR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:17:26 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42308 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932120Ab3GQQRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:10:56 -0400
-Date: Wed, 17 Jul 2013 18:10:51 +0200
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, jolsa@redhat.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix 'make tools/perf'
-Message-ID: <20130717161051.GJ8731@rric.localhost>
-References: <1370964158-4135-1-git-send-email-rric@kernel.org>
- <tip-107de3724eff5a6fa6474a4d2aa5460b63749ebf@git.kernel.org>
- <20130712093909.GD8731@rric.localhost>
- <20130716145036.GH8731@rric.localhost>
- <20130717153118.GC2071@ghostprotocols.net>
- <20130717154001.GA4454@pd.tnic>
+	Wed, 17 Jul 2013 12:17:25 -0400
+Date: Wed, 17 Jul 2013 12:17:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: boris brezillon <b.brezillon@overkiz.com>
+cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 6/7] USB: ohci-at91: add usb_clk for transition to
+ common clk framework
+In-Reply-To: <51E6BC23.6020700@overkiz.com>
+Message-ID: <Pine.LNX.4.44L0.1307171215000.1555-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130717154001.GA4454@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.07.13 17:40:01, Borislav Petkov wrote:
-> On Wed, Jul 17, 2013 at 12:31:18PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Humm, probably it will look at the top level 'install' target? There
-> > was some discussion about this, right? Can you refresh my mind?
+On Wed, 17 Jul 2013, boris brezillon wrote:
 
-Yeah, this
+> On 17/07/2013 17:33, Alan Stern wrote:
+> > On Tue, 16 Jul 2013, Boris BREZILLON wrote:
+> >
+> >> The AT91 PMC (Power Management Controller) provides an USB clock used by
+> >> USB Full Speed host (ohci) and USB Full Speed device (udc).
+> >> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
+> >> This configuration was formely done in mach-at91/clock.c, but this
+> >> implementation will be removed when moving to common clk framework.
+> >>
+> >> This patch add support for usb clock retrieval and configuration, and is
+> >> backward compatible with the current at91 clk implementation (if usb clk
+> >> is not found, it does not configure/enable the usb clk).
+> > This does not take into account any of the changes you discussed with
+> > Russell King and me -- it is exactly the same as the previous version.
+> Sorry, I don't understand. I didn't send any new version since yesterday.
 
- make tools/perf install
+Oh.  Never mind.  That message was the _same_ one that I replied to
+yesterday.  I got two copies of it, because you sent it both to me
+directly and to linux-usb.  For some reason one of the copies was
+delayed for many hours, so I thought it was a new message.
 
-does 2 different things and not what you want.
+Alan Stern
 
-> 
-> that's
-> 
-> make tools/perf_install.
-> 
-> which goes to the target in tools/Makefile as the rest of the tools
-> there.
-
-But Boris' one should work.
-
-Thanks,
-
--Robert
