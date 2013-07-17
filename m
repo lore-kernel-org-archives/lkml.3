@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab3GQX1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:27:31 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47822 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757703Ab3GQX1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:27:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 26/30] ACPI / hotplug / PCI: Get rid of unused constants in acpiphp.h
-Date: Thu, 18 Jul 2013 01:33:35 +0200
-Message-ID: <1974915.VDAFJRxMt9@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S965189Ab3GQXaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:30:39 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:8755 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934028Ab3GQXaf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:30:35 -0400
+Message-ID: <1374103783.24916.49.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+From: Toshi Kani <toshi.kani@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        vasilis.liaskovitis@profitbricks.com
+Date: Wed, 17 Jul 2013 17:29:43 -0600
+In-Reply-To: <CAHGf_=pND-R=qMHg7b=Fi5SqS6ahXJCG865WsOS2eKWa6g3A7A@mail.gmail.com>
+References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
+	 <CAHGf_=pND-R=qMHg7b=Fi5SqS6ahXJCG865WsOS2eKWa6g3A7A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+On Wed, 2013-07-17 at 19:22 -0400, KOSAKI Motohiro wrote:
+> On Wed, Jul 17, 2013 at 5:45 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
+> > interface, which allows a given memory address to be hot-added as
+> > follows. (See Documentation/memory-hotplug.txt for more detail.)
+> >
+> > # echo start_address_of_new_memory > /sys/devices/system/memory/probe
+> >
+> > This probe interface is required on powerpc. On x86, however, ACPI
+> > notifies a memory hotplug event to the kernel, which performs its
+> > hotplug operation as the result. Therefore, users should not be
+> > required to use this interface on x86. This probe interface is also
+> > error-prone that the kernel blindly adds a given memory address
+> > without checking if the memory is present on the system; no probing
+> > is done despite of its name. The kernel crashes when a user requests
+> > to online a memory block that is not present on the system.
+> >
+> > This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86,
+> > and clarifies it in Documentation/memory-hotplug.txt.
+> 
+> Why don't you completely remove it? Who should use this strange interface?
 
-Drop some unused symbols from acpiphp.h and redefine SLOT_ENABLED
-(which is the only slot flag now) as 1.
+According to the comment below, this probe interface is used on powerpc.
+So, we cannot remove it, but to disable it on x86.
 
-[rjw: Redefinition of SLOT_ENABLED, changelog]
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-drivers/pci/hotplug/acpiphp.h | 4 ----
- drivers/pci/hotplug/acpiphp.h |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+/*
+ * Some architectures will have custom drivers to do this, and
+ * will not need to do it from userspace.  The fake hot-add code
+ * as well as ppc64 will do all of their discovery in userspace
+ * and will require this interface.
+ */
+#ifdef CONFIG_ARCH_MEMORY_PROBE
+static ssize_t
+memory_probe_store(struct device *dev, struct device_attribute *attr,
+                   const char *buf, size_t count)
+{
+	:
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -154,16 +154,12 @@ struct acpiphp_attention_info
- 	struct module *owner;
- };
- 
--/* PCI bus bridge HID */
--#define ACPI_PCI_HOST_HID		"PNP0A03"
--
- /* ACPI _STA method value (ignore bit 4; battery present) */
- #define ACPI_STA_ALL			(0x0000000f)
- 
- /* slot flags */
- 
--#define SLOT_ENABLED		(0x00000002)
--#define SLOT_MULTIFUNCTION	(0x00000004)
-+#define SLOT_ENABLED		(0x00000001)
- 
- /* function flags */
- 
+Thanks,
+-Toshi
 
