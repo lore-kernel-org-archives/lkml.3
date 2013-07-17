@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3GQIbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 04:31:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45428 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab3GQIbi (ORCPT
+	id S1752977Ab3GQIfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 04:35:42 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49712 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab3GQIfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 04:31:38 -0400
-Date: Wed, 17 Jul 2013 09:31:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130717083134.GB22506@sirena.org.uk>
-References: <20130717141335.02a3ad620bdb473935d05aa3@canb.auug.org.au>
+	Wed, 17 Jul 2013 04:35:39 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qtzb1h6tVL0ohdDu"
-Content-Disposition: inline
-In-Reply-To: <20130717141335.02a3ad620bdb473935d05aa3@canb.auug.org.au>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: Tree for Jul 17
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <51E5AF35.2080301@gmail.com>
+References: <1373995163-9412-1-git-send-email-prabhakar.csengg@gmail.com> <51E5AF35.2080301@gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 17 Jul 2013 14:05:18 +0530
+Message-ID: <CA+V-a8tq6CtsOOo1OsajoVp8eJYnWCqc+wysVoj2nMinoP=63g@mail.gmail.com>
+Subject: Re: [PATCH RFC v4] media: OF: add "sync-on-green-active" property
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sylwester,
 
---Qtzb1h6tVL0ohdDu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for the review.
 
-On Wed, Jul 17, 2013 at 02:13:35PM +1000, Stephen Rothwell wrote:
+On Wed, Jul 17, 2013 at 2:08 AM, Sylwester Nawrocki
+<sylvester.nawrocki@gmail.com> wrote:
+> Hi Prabhakar,
+>
+>
+[snip]
+>> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt
+>> b/Documentation/devicetree/bindings/media/video-interfaces.txt
+>> index e022d2d..5186c7e 100644
+>> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
+>> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
+>> @@ -101,6 +101,9 @@ Optional endpoint properties
+>>     array contains only one entry.
+>>   - clock-noncontinuous: a boolean property to allow MIPI CSI-2
+>> non-continuous
+>>     clock mode.
+>> +- sync-on-green-active: polarity field when video synchronization is
+>> +  Sync-On-Green. When set the driver determines whether it's a normal
+>> operation
+>> +  or inverted operation.
+>
+>
+> Would you mind adding this entry after pclk-sample property description ?
 
-> The sound-asoc tree still has its build failure so I used the version from
-> next-20130715.
+OK.
 
-I'd have expected both of those to have been fixed.  Are you sure you're
-seeing the same issue?
+> And how about describing it a bit more precisely and similarly to
+> VSYNC/HSYNC,
+> e.g.
+>
+> - sync-on-green-active: active state of Sync-on-green (SoG) signal,
+>   0/1 for LOW/HIGH respectively.
+>
+OK I'll paste the above one itself :-)
 
---Qtzb1h6tVL0ohdDu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5lZjAAoJELSic+t+oim9YfsP/RWHRZdEaN6cc//S/npWIuc3
-FsxF0boNhuCk66JPJOvYdF9bQleOIxQeCHgRGq1m6TMeDoe0hJE9IlGpJfZIYVb9
-dRCQ+RKePm8sv+m7MTCjci2YAvJsJ+ydNjC8VlQRMKRytRSU9AHjJ966GdASzdHW
-xekwS5hcM88nJEf9HMjvm/rMCW4g32nrZ/Me+DkxBDpGs6iBbFkN1RYtTdhg5jJK
-ddWJt+QY6bXK0TNee33AHgPEcqaW+R/oOHzBZxf2f7evbu+PNDxDVhQRBRpzUK7t
-gG+E6pL+T6NPD47sg0CUkjLJeVEj9xnzLdB4lJPXle025QUF1t31oTIezwhzFU5N
-L30D3c8R3BbO5TxLM/dG2d6N0+r5SQk54sHYmJoiol+jMOvqJUa4HCfTmN7dgm0a
-CR7esyI/pUHIa3jd/wYHJuqVa6933NPjpJ8IBRm2uz0YpTzQ0+ujWhvES2xT0yu2
-pZpMRInBqbd0sa6ps6LtDDEXVEzxyRbS0AzqTSoMQ9/omU3dl5zm6JMvdhmIuttx
-2wtPRHVC6HA6aDQzI5Y91PtEAiLL3KmmPT5/FHInCMzCoNfVpIV0GGfpmskFyzdC
-brhhfNkscvYv2WoWXvhxtAMAyJQ7YGxPvZ+D2FHei2GvfQh2j5xL0jGit8qimSYy
-v8D+3lnAKcyMqvysHyC3
-=JC4P
------END PGP SIGNATURE-----
-
---Qtzb1h6tVL0ohdDu--
+--
+Regards,
+Prabhakar Lad
