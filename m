@@ -1,91 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab3GQFQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 01:16:46 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:48186 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab3GQFQo (ORCPT
+	id S1751852Ab3GQFSD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 01:18:03 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:47874 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3GQFSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 01:16:44 -0400
-Message-ID: <1374038198.1884.1.camel@ThinkPad-X230.localdomain>
-Subject: Re: [Update][PATCH] ACPI / video / i915: Remove ACPI backlight if
- firmware expects Windows 8
-From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Aaron Lu <aaron.lwe@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
-        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Date: Wed, 17 Jul 2013 09:16:38 +0400
-In-Reply-To: <2132122.eIEvjmIrrj@vostro.rjw.lan>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-	 <1373981554.1956.5.camel@ThinkPad-X230.localdomain>
-	 <1373994495.9314.1.camel@x230> <2132122.eIEvjmIrrj@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 17 Jul 2013 01:18:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1373996058-13399-6-git-send-email-rth@twiddle.net>
+References: <1373996058-13399-1-git-send-email-rth@twiddle.net> <1373996058-13399-6-git-send-email-rth@twiddle.net>
+From: Matt Turner <mattst88@gmail.com>
+Date: Tue, 16 Jul 2013 22:17:39 -0700
+Message-ID: <CAEdQ38FF32t+Ca0EsEk=uArhU28HKGf91=F1DzA+NE88WDVKtw@mail.gmail.com>
+Subject: Re: [RFC PATCH 05/10] alpha: Primitive support for CPU power down.
+To: Richard Henderson <rth@twiddle.net>
+Cc: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru,
+        linux-alpha@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-17 at 00:01 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, July 16, 2013 05:08:16 PM Matthew Garrett wrote:
-> > On Tue, 2013-07-16 at 17:32 +0400, Igor Gnatenko wrote:
-> > > Hmm. I found regression in user-space. In GNOME (maybe and other DEs) we no longer see switch status of backlight.
-> > 
-> > Yeah, I can duplicate that. Rafael, we have to call
-> > acpi_video_init_brightness() even if we're not going to initialise the
-> > backlight - Thinkpads seem to use this as the trigger for enabling ACPI
-> > notifications rather than handling it in firmware. This seems to do the
-> > job:
-> 
-> Igor, does this additional patch from Matthew help?
-Yes. With this patch I have backlight switch indicator on my ThinkPad X230.
-> 
-> Rafael
-> 
-> 
-Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> > index 01b1a25..71865f7 100644
-> > --- a/drivers/acpi/video.c
-> > +++ b/drivers/acpi/video.c
-> > @@ -900,6 +900,9 @@ static void acpi_video_device_find_cap(struct
-> > acpi_video_device *device)
-> >  		device->cap._DDC = 1;
-> >  	}
-> >  
-> > +	if (acpi_video_init_brightness(device))
-> > +		return;
-> > +
-> >  	if (acpi_video_verify_backlight_support()) {
-> >  		struct backlight_properties props;
-> >  		struct pci_dev *pdev;
-> > @@ -909,9 +912,6 @@ static void acpi_video_device_find_cap(struct
-> > acpi_video_device *device)
-> >  		static int count = 0;
-> >  		char *name;
-> >  
-> > -		result = acpi_video_init_brightness(device);
-> > -		if (result)
-> > -			return;
-> >  		name = kasprintf(GFP_KERNEL, "acpi_video%d", count);
-> >  		if (!name)
-> >  			return;
-> > 
-> > 
-> > -- 
-> > Matthew Garrett | mjg59@srcf.ucam.org
-> > 
--- 
-Igor Gnatenko
-Fedora release 19 (Schrödinger’s Cat)
-Linux 3.11.0-0.rc0.git7.1.fc20.x86_64
+On Tue, Jul 16, 2013 at 10:34 AM, Richard Henderson <rth@twiddle.net> wrote:
+> Use WTINT to wait for the next interrupt.  Squash the WTINT call
+> if the PALcode doesn't support it (e.g. MILO).  No attempt is yet
+> made to skip clock ticks during normal scheduling in order to stay
+> in power down mode longer.
 
+The architecture reference manual says
+
+> The counter, PCC, may increment at a lower rate or may stop entirely
+> during wtint execution. This side effect is implementation dependent.
+
+Is that anything to worry about?
+
+>
+> Signed-off-by: Richard Henderson <rth@twiddle.net>
+> ---
+>  arch/alpha/include/asm/pal.h      |  1 +
+>  arch/alpha/include/uapi/asm/pal.h |  1 +
+>  arch/alpha/kernel/process.c       | 15 +++++++++++++++
+>  arch/alpha/kernel/traps.c         | 12 ++++++++++++
+>  4 files changed, 29 insertions(+)
+>
+> diff --git a/arch/alpha/include/asm/pal.h b/arch/alpha/include/asm/pal.h
+> index 6fcd2b5..e78ec9b 100644
+> --- a/arch/alpha/include/asm/pal.h
+> +++ b/arch/alpha/include/asm/pal.h
+> @@ -89,6 +89,7 @@ __CALL_PAL_W1(wrmces, unsigned long);
+>  __CALL_PAL_RW2(wrperfmon, unsigned long, unsigned long, unsigned long);
+>  __CALL_PAL_W1(wrusp, unsigned long);
+>  __CALL_PAL_W1(wrvptptr, unsigned long);
+> +__CALL_PAL_RW1(wtint, unsigned long, unsigned long);
+>
+>  /*
+>   * TB routines..
+> diff --git a/arch/alpha/include/uapi/asm/pal.h b/arch/alpha/include/uapi/asm/pal.h
+> index 3c0ce08..dfc8140 100644
+> --- a/arch/alpha/include/uapi/asm/pal.h
+> +++ b/arch/alpha/include/uapi/asm/pal.h
+> @@ -46,6 +46,7 @@
+>  #define PAL_rdusp      58
+>  #define PAL_whami      60
+>  #define PAL_retsys     61
+> +#define PAL_wtint      62
+>  #define PAL_rti                63
+>
+>
+> diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
+> index f2360a7..3130f13 100644
+> --- a/arch/alpha/kernel/process.c
+> +++ b/arch/alpha/kernel/process.c
+> @@ -46,6 +46,21 @@
+>  void (*pm_power_off)(void) = machine_power_off;
+>  EXPORT_SYMBOL(pm_power_off);
+>
+> +/*
+> + * Sleep the CPU.
+> + * EV6, LCA45 and QEMU know how to power down, skipping N timer interrupts.
+> + */
+> +void arch_cpu_idle(void)
+> +{
+> +       wtint(0);
+> +       local_irq_enable();
+> +}
+> +
+> +void arch_cpu_idle_dead(void)
+> +{
+> +       wtint(INT_MAX);
+> +}
+> +
+>  struct halt_info {
+>         int mode;
+>         char *restart_cmd;
+> diff --git a/arch/alpha/kernel/traps.c b/arch/alpha/kernel/traps.c
+> index affccb9..991f6c3 100644
+> --- a/arch/alpha/kernel/traps.c
+> +++ b/arch/alpha/kernel/traps.c
+> @@ -243,6 +243,18 @@ do_entIF(unsigned long type, struct pt_regs *regs)
+>                                (const char *)(data[1] | (long)data[2] << 32),
+>                                data[0]);
+>                 }
+> +               if (type == 4) {
+> +                       /* If CALL_PAL WTINT is not supported by the PALcode,
+> +                          "emulate" it by overwriting the insn.  */
+
+The pseudo-code for WTINT contains an IF(implemented) check, where the
+ELSE case just does v0 <- 0. So is overwriting with nop just an
+optimization to avoid the (expensive) PAL call? If it is, could we
+clarify the comment?
+
+> +                       unsigned int *pinsn
+> +                         = (unsigned int *) regs->pc - 1;
+> +                       if (*pinsn == PAL_wtint) {
+> +                               *pinsn = 0x47e01400; /* mov 0,$0 */
+> +                               imb();
+> +                               regs->r0 = 0;
+> +                               return;
+> +                       }
+> +               }
+>                 die_if_kernel((type == 1 ? "Kernel Bug" : "Instruction fault"),
+>                               regs, type, NULL);
+>         }
+> --
+> 1.8.1.4
+>
