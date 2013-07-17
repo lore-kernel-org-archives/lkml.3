@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab3GQWjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:39:20 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:34357 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757027Ab3GQWjR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:39:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <1371465315.26299.17.camel@x61.thuisdomein>
-References: <1371465315.26299.17.camel@x61.thuisdomein>
-Date: Wed, 17 Jul 2013 15:39:15 -0700
-X-Google-Sender-Auth: uUbJ-fdAUqHgSjuJ2fotBQSss3k
-Message-ID: <CAA9_cmc9XWCvU=d2qu6rMaV+_sxBeMgrreZWU5ofzAd3dANT9w@mail.gmail.com>
-Subject: Re: [PATCH] ioatdma: silence GCC warnings
-From: Dan Williams <djbw@fb.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dave.jiang" <dave.jiang@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1757521Ab3GQWmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 18:42:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51534 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756427Ab3GQWmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 18:42:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,687,1367996400"; 
+   d="scan'208";a="347379562"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130717140953.7560e88e607f8f5df1b1fdd8@linux-foundation.org>
+References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1373885274-25249-6-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130717140953.7560e88e607f8f5df1b1fdd8@linux-foundation.org>
+Subject: Re: [PATCH 5/8] thp, mm: locking tail page is a bug
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130717224518.6DDAAE0090@blue.fi.intel.com>
+Date: Thu, 18 Jul 2013 01:45:18 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 3:35 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Building dma_v3.o triggers two GCC warnings:
->     drivers/dma/ioat/dma_v3.c: In function ‘__ioat3_prep_pq16_lock’:
->     drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
->     drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
->
-> These warnings are caused by pq16_set_src(). It uses "int idx" as an
-> index to an eight element array. Changing "idx" to unsigned int silences
-> these warnings. Apparently GCC can then determine that "idx" will never
-> be negative.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
+Andrew Morton wrote:
+> On Mon, 15 Jul 2013 13:47:51 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > Locking head page means locking entire compound page.
+> > If we try to lock tail page, something went wrong.
+> > 
+> > ..
+> >
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -639,6 +639,7 @@ void __lock_page(struct page *page)
+> >  {
+> >  	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
+> >  
+> > +	VM_BUG_ON(PageTail(page));
+> >  	__wait_on_bit_lock(page_waitqueue(page), &wait, sleep_on_page,
+> >  							TASK_UNINTERRUPTIBLE);
+> >  }
+> > @@ -648,6 +649,7 @@ int __lock_page_killable(struct page *page)
+> >  {
+> >  	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
+> >  
+> > +	VM_BUG_ON(PageTail(page));
+> >  	return __wait_on_bit_lock(page_waitqueue(page), &wait,
+> >  					sleep_on_page_killable, TASK_KILLABLE);
+> >  }
+> 
+> lock_page() is a pretty commonly called function, and I assume quite a
+> lot of people run with CONFIG_DEBUG_VM=y.
+> 
+> Is the overhead added by this patch really worthwhile?
 
-Seems this is fixed in gcc as of 4.7.2, but we can make things quieter
-for build testers on older compilers.
+I found it useful, especially, when I was starting experiments with THP
+for pagecache. But feel free to drop it if think that it adds to much
+overhead.
 
-> 0) Compile tested only.
->
-> 1) These warning were introduced in v3.10-rc1. That must have been
-> through commit 7727eaa449 ("ioatdma: Adding support for 16 src PQ ops
-> and super extended descriptors").
->
->  drivers/dma/ioat/dma_v3.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-> index ca6ea9b..b5102da 100644
-> --- a/drivers/dma/ioat/dma_v3.c
-> +++ b/drivers/dma/ioat/dma_v3.c
-> @@ -251,7 +251,7 @@ static bool is_bwd_noraid(struct pci_dev *pdev)
->  }
->
->  static void pq16_set_src(struct ioat_raw_descriptor *desc[3],
-> -                       dma_addr_t addr, u32 offset, u8 coef, int idx)
-> +                       dma_addr_t addr, u32 offset, u8 coef, unsigned int idx)
+> I'm thinking I might leave it in -mm indefinitely but not send it
+> upstream.
 
-"unsigned int" --> "unsigned"
+Works for me too.
 
->  {
->         struct ioat_pq_descriptor *pq = (struct ioat_pq_descriptor *)desc[0];
->         struct ioat_pq16a_descriptor *pq16 =
-
-Just do this hunk as the minimal one line change.
+-- 
+ Kirill A. Shutemov
