@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983Ab3GQTVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 15:21:16 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47856 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836Ab3GQTVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 15:21:15 -0400
-Message-ID: <51E6EEA8.7040504@linaro.org>
-Date: Wed, 17 Jul 2013 12:21:12 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756990Ab3GQTYa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 15:24:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754967Ab3GQTY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 15:24:29 -0400
+Date: Wed, 17 Jul 2013 21:19:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 3/4] tracing: Kill tracing_open/release_generic_file
+Message-ID: <20130717191917.GA14137@redhat.com>
+References: <20130716185726.GA21200@redhat.com> <1374004295.6458.59.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: add the generic sched_clock under timekeeping
-References: <a38977cc6608170b69b21b8a5ee985685c7e8a0d.1374055149.git.baruch@tkos.co.il> <51E6E91C.1090700@linaro.org> <20130717191222.GW6950@tarshish>
-In-Reply-To: <20130717191222.GW6950@tarshish>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374004295.6458.59.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 12:12 PM, Baruch Siach wrote:
-> Hi John,
+On 07/16, Steven Rostedt wrote:
 >
-> On Wed, Jul 17, 2013 at 11:57:32AM -0700, John Stultz wrote:
->> On 07/17/2013 03:05 AM, Baruch Siach wrote:
->>> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
->>> ---
->>>   MAINTAINERS | 2 ++
->>>   1 file changed, 2 insertions(+)
->>>
->>> diff --git a/MAINTAINERS b/MAINTAINERS
->>> index bf61e04..bd9616a 100644
->>> --- a/MAINTAINERS
->>> +++ b/MAINTAINERS
->>> @@ -7129,6 +7129,7 @@ M:	Thomas Gleixner <tglx@linutronix.de>
->>>   T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
->>>   S:	Supported
->>>   F:	include/linux/clocksource.h
->>> +F:	include/linux/sched_clock.h
->>>   F:	include/linux/time.h
->>>   F:	include/linux/timex.h
->>>   F:	include/uapi/linux/time.h
->>> @@ -7136,6 +7137,7 @@ F:	include/uapi/linux/timex.h
->>>   F:	kernel/time/clocksource.c
->>>   F:	kernel/time/time*.c
->>>   F:	kernel/time/ntp.c
->>> +F:	kernel/time/sched_clock.c
->> It seems like we could probably simplify this bit to kernel/time/*, no?
-> This would add jiffies.c and all the tick-* files that are currently covered
-> by the "HIGH-RESOLUTION TIMERS, CLOCKEVENTS, DYNTICKS" section.
+> On Tue, 2013-07-16 at 20:57 +0200, Oleg Nesterov wrote:
+> > trace_array_get() goes away. NOTE! this is actually wrong until we
+> > change instance_delete() path to nullify ->i_private.
+>
+> I think this needs to be done first.
 
-Ok, fair enough. My thought was it all goes through Thomas anyway, but 
-for those sections there are different combinations of folks who 
-co-maintain.
+Do you mean "change instance_delete() path to nullify ->i_private" ?
 
-thanks
--john
+Yes. Well yes and no, afaics, but please ignore. Of course, I won't
+send the patches with the holes which I knew about.
+
+Once again, this is just RFC to know your and Masami's opinion. If
+you think this can work, I'll try to resend this series with the
+additional bits to cover instance_delete() too. _Afaics_ this needs
+some temporary uglifications "in between".
+
+So far I am sending 5/4 and 6/4 which changes ftrace_event_format_fops,
+in reply to 0/4. The only problem with this file is that f_start/next
+imho asks for cleanup which comes as 5/4.
+
+Ignoring instance_delete(), I think this is all we need to make
+event/* safe.
+
+So please tell me what do you think.
+
+Oleg.
 
