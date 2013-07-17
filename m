@@ -1,152 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab3GQCwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 22:52:32 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:51385 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab3GQCwb (ORCPT
+	id S1751671Ab3GQC50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 22:57:26 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41524 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab3GQC5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 22:52:31 -0400
-Message-ID: <1068BE1DEB04498495FD7913A7B2CA53@chingDT>
-Reply-To: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-From: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-To: "linux-scsi" <linux-scsi@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-Cc: <ching2048@gmai.com>
-Subject: [PATCH 1/3] arcmsr: Modify maxium outstanding command
-Date: Wed, 17 Jul 2013 10:52:55 +0800
+	Tue, 16 Jul 2013 22:57:24 -0400
+Date: Tue, 16 Jul 2013 19:57:20 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soeren.brinkmann@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Willy Tarreau <w@1wt.eu>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION 3.10.1] System does not wake up from suspend
+Message-ID: <20130717025720.GA1267@skorgonTP.att.net>
+References: <20130715043625.GA2162@skorgonTP.att.net>
+ <20130715045400.GU32054@1wt.eu>
+ <51E39BAB.4060308@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0010_01CE82DB.CAE224F0"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-X-Antivirus: avast! (VPS 130716-1, 2013/07/17), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <51E39BAB.4060308@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
 
-------=_NextPart_000_0010_01CE82DB.CAE224F0
-Content-Type: text/plain;
-	format=flowed;
-	charset="big5";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-
-From: Ching<ching2048@areca.com.tw>
-
-Modify maximum outstanding command number, notify command complete with auto 
-request sense, reassign ARC12x4 series to SATA type adapter
-Signed-off-by: Chingching2048@areca.com.tw
---- 
-
-------=_NextPart_000_0010_01CE82DB.CAE224F0
-Content-Type: application/octet-stream;
-	name="patch1"
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="patch1"
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h=0A=
---- a/drivers/scsi/arcmsr/arcmsr.h	2012-11-17 02:02:18.000000000 +0800=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2013-05-07 01:49:08.000000000 +0800=0A=
-@@ -51,7 +51,7 @@ struct device_attribute;=0A=
- #else=0A=
- 	#define ARCMSR_MAX_FREECCB_NUM	320=0A=
- #endif=0A=
--#define ARCMSR_DRIVER_VERSION		"Driver Version 1.20.00.15 2012/09/30"=0A=
-+#define ARCMSR_DRIVER_VERSION		"Driver Version 1.20.00.15 2013/05/06"=0A=
- #define ARCMSR_SCSI_INITIATOR_ID		255=0A=
- #define ARCMSR_MAX_XFER_SECTORS		512=0A=
- #define ARCMSR_MAX_XFER_SECTORS_B		4096=0A=
-@@ -705,6 +705,7 @@ struct AdapterControlBlock=0A=
- 	#define FW_DEADLOCK	0x0010=0A=
- 	atomic_t rq_map_token;=0A=
- 	atomic_t ante_token_value;=0A=
-+	uint32_t maxOutstanding;=0A=
- };/* HW_DEVICE_EXTENSION */=0A=
- /*=0A=
- =
-*************************************************************************=
-******=0A=
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c =
-b/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2012-12-19 02:02:36.000000000 =
-+0800=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2013-05-07 19:12:12.000000000 =
-+0800=0A=
-@@ -2,7 +2,7 @@=0A=
- =
-*************************************************************************=
-******=0A=
- **        O.S   : Linux=0A=
- **   FILE NAME  : arcmsr_hba.c=0A=
--**        BY    : Nick Cheng=0A=
-+**        BY    : Nick Cheng, C.L. Huang=0A=
- **   Description: SCSI RAID Device Driver for=0A=
- **                ARECA RAID Host adapter=0A=
- =
-*************************************************************************=
-******=0A=
-@@ -71,7 +71,7 @@=0A=
- #include <scsi/scsicam.h>=0A=
- #include "arcmsr.h"=0A=
- MODULE_AUTHOR("Nick Cheng <support@areca.com.tw>");=0A=
--MODULE_DESCRIPTION("Areca SAS RAID Controller Driver");=0A=
-+MODULE_DESCRIPTION("Areca SAS,SATA RAID Controller Driver");=0A=
- MODULE_LICENSE("Dual BSD/GPL");=0A=
- MODULE_VERSION(ARCMSR_DRIVER_VERSION);=0A=
- =0A=
-@@ -1329,7 +1329,8 @@ arcmsr_report_sense_info(struct CommandC=0A=
- 	struct scsi_cmnd *pcmd =3D ccb->pcmd;=0A=
- 	struct SENSE_DATA *sensebuffer =3D=0A=
- 		(struct SENSE_DATA *)pcmd->sense_buffer;=0A=
--	pcmd->result =3D DID_OK << 16;=0A=
-+	pcmd->result =3D (DID_OK << 16) | (CHECK_CONDITION << 1)=0A=
-+		| (DRIVER_SENSE << 24);=0A=
- 	if (sensebuffer) {=0A=
- 		int sense_data_length =3D=0A=
- 			sizeof(struct SENSE_DATA) < SCSI_SENSE_BUFFERSIZE=0A=
-@@ -3313,7 +3314,7 @@ arcmsr_queue_command_lck(struct scsi_cmn=0A=
- 		return 0;=0A=
- 	}=0A=
- 	if (atomic_read(&acb->ccboutstandingcount) >=3D=0A=
--	ARCMSR_MAX_OUTSTANDING_CMD)=0A=
-+	acb->maxOutstanding)=0A=
- 		return SCSI_MLQUEUE_HOST_BUSY;=0A=
- 	ccb =3D arcmsr_get_freeccb(acb);=0A=
- 	if (!ccb)=0A=
-@@ -3710,6 +3711,10 @@ arcmsr_get_firmware_spec(struct AdapterC=0A=
- 	default:=0A=
- 		break;=0A=
- 	}=0A=
-+	if(acb->firm_numbers_queue > ARCMSR_MAX_FREECCB_NUM)=0A=
-+		acb->maxOutstanding =3D ARCMSR_MAX_FREECCB_NUM-1;=0A=
-+	else=0A=
-+		acb->maxOutstanding =3D acb->firm_numbers_queue - 1;=0A=
- 	return rtn;=0A=
- }=0A=
- =0A=
-@@ -4882,6 +4887,7 @@ static const char=0A=
- 	case PCI_DEVICE_ID_ARECA_1160:=0A=
- 	case PCI_DEVICE_ID_ARECA_1170:=0A=
- 	case PCI_DEVICE_ID_ARECA_1201:=0A=
-+	case PCI_DEVICE_ID_ARECA_1214:=0A=
- 	case PCI_DEVICE_ID_ARECA_1220:=0A=
- 	case PCI_DEVICE_ID_ARECA_1230:=0A=
- 	case PCI_DEVICE_ID_ARECA_1260:=0A=
-@@ -4889,7 +4895,6 @@ static const char=0A=
- 	case PCI_DEVICE_ID_ARECA_1280:=0A=
- 		type =3D "SATA";=0A=
- 		break;=0A=
--	case PCI_DEVICE_ID_ARECA_1214:=0A=
- 	case PCI_DEVICE_ID_ARECA_1680:=0A=
- 	case PCI_DEVICE_ID_ARECA_1681:=0A=
- 	case PCI_DEVICE_ID_ARECA_1880:=0A=
+On Mon, Jul 15, 2013 at 12:20:19PM +0530, Srivatsa S. Bhat wrote:
+> On 07/15/2013 10:24 AM, Willy Tarreau wrote:
+> > On Sun, Jul 14, 2013 at 09:36:25PM -0700, S=C3=B6ren Brinkmann wrote:
+> >> Hi Greg,
+> >>
+> >> since upgrading to 3.10.1 I find my system not waking up from suspend
+> >> from time to time. Unfortunately, I couldn't figure out how to reliably
+> >> reproduce the issue. Sometimes it works just fine.
+> >>
+> >> All I know so far:
+> >> On 3.10 I had my system completely freezing a few times. But that did
+> >> not seem to be related to suspend/resume. I never experienced the
+> >> behavior described below on 3.10.
+> >>
+> >> On 3.10.1 I hit this bug a few times, that my system did not wake up.
+> >> I.e. the screen stayed black and the power LED kept flashing. But
+> >> nothing brought the system back up and I had to longpress power to res=
+et
+> >> the system.
+> >> I had none of the system freezes like the ones described above anymore.
+> >=20
+> > Fortunately, 3.10.1 is very small. The only patch it contains which is
+> > related to suspend is 18/19 (cpufreq ondemand governor). Maybe you're
+> > having a problem with cpufreq on this machine in fact.
+> >=20
+> > You may want to try to force it to performance mode or powersave mode
+> > and try for a while, it is possible that both 3.10 and 3.10.1 will work
+> > fine.
+> >=20
+>=20
+> Or, you could try applying the patch shown below on top of 3.10.1 and
+> see if it fixes the suspend/resume regression for you.
+>=20
+> https://lkml.org/lkml/2013/7/11/661
+>=20
+> (Just apply patch 1, not the entire patchset).
+So, this didn't end well. With that patch applied I end up in a kernel
+panic on suspend, reproducible - well two out of two is a small test set,
+but anyway. Unfortunately too late to get any information about it
+and my logs don't show anything either. But it's seems worse than the
+rather occasional hangs on resume on the vanilla 3.10.1 kernel.
 
-------=_NextPart_000_0010_01CE82DB.CAE224F0--
+	S=C3=B6ren
 
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAEBAgAGBQJR5ggQAAoJEE3EUu+tZnRfH6wH/0B/IHzGyYe5wQ5G2BD+ePY0
+4JVhGPX2GgtWkgXvj8P59GMm74cBuHJwj/CPpf19otBtUQlnOeh6QlKQzrP0KkG/
+8+yQSjFJZJJ20dTbrLRpF7kGQPgyU5gFDHAFhHhuwelSX/p4si0Ru4nAOKQBIr0c
+m+8Zm9hLRIOlpsMCAhpI/+JoGn9uBWBYIIzV3DKI3rCTIiTMzRBBllz0bVhd70Si
+R9aNLwrb/AQHwFhrVi3D5sY6Q6GAUa+L9gma0Rv6Yw/qapfYwG9k1dCT0f37wma6
+q27X53jKQ3TRo5QDIp3X1mXnmHMBqqwgibMIjhRAUm6mtH/Rfe8pKdgIE7rZ+GM=
+=CCL/
+-----END PGP SIGNATURE-----
+
+--tKW2IUtsqtDRztdT--
