@@ -1,81 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab3GQKhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 06:37:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33277 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab3GQKhL (ORCPT
+	id S1753604Ab3GQKmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 06:42:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49667 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab3GQKma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 06:37:11 -0400
-Date: Wed, 17 Jul 2013 11:36:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kiran.padwal" <kiran.padwal@kpitcummins.com>
-Message-ID: <20130717103651.GP22506@sirena.org.uk>
-References: <1373024862.3233.63.camel@matrix>
- <20130705114456.GV27646@sirena.org.uk>
- <1373031306.3233.131.camel@matrix>
- <20130705133752.GX27646@sirena.org.uk>
- <1373270091.11222.12.camel@matrix>
- <20130708112613.GQ27646@sirena.org.uk>
- <1373542576.9286.101.camel@matrix>
+	Wed, 17 Jul 2013 06:42:30 -0400
+Message-ID: <51E6750A.9060900@oracle.com>
+Date: Wed, 17 Jul 2013 18:42:18 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="N709L9vpgywc1qLv"
-Content-Disposition: inline
-In-Reply-To: <1373542576.9286.101.camel@matrix>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Update driver name to
- fix breakage due to pmic driver with same name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Martin Steigerwald <Martin@lichtvoll.de>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: zswap: How to determine whether it is compressing swap pages?
+References: <1674223.HVFdAhB7u5@merkaba>
+In-Reply-To: <1674223.HVFdAhB7u5@merkaba>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Martin,
 
---N709L9vpgywc1qLv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 07/17/2013 06:04 PM, Martin Steigerwald wrote:
+> Hi Seth, hi everyone,
+>
+> Yesterday I build 3.11-rc1 with CONFIG_ZSWAP and wanted to test it.
+>
+> I added zswap.enabled=1 and get:
+>
+> martin@merkaba:~> dmesg | grep zswap
+> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
+> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
+> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
+> [    0.000000] Kernel command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
+> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
+> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
+> [    1.452443] zswap: loading zswap
+> [    1.452465] zswap: using lzo compressor
+>
+>
+> I did a stress -m 1 --vm-keep --vm-bytes 4G on this 8 GB ThinkPad T520 in
+> order to allocate some swap.
+>
 
-On Thu, Jul 11, 2013 at 05:06:16PM +0530, Ashish Chavan wrote:
+Thank you for your testing.
+I'm glad to see there is new people interested with memory compression.
 
-> accommodate this level of change. Is it possible that in first go we
-> just fix the breakage due to name collision so that both drivers remain
-> usable. And in second iteration, we restructure both of them as you
-> suggested?
+> Still I think zswap didn´t do anything:
+>
+> merkaba:/sys/kernel/debug/zswap> grep . *
+> duplicate_entry:0
+> pool_limit_hit:0
+> pool_pages:0
+> reject_alloc_fail:0
+> reject_compress_poor:0
+> reject_kmemcache_fail:0
+> reject_reclaim_fail:0
+> stored_pages:0
+> written_back_pages:0
+>
+>
+> However:
+>
+> merkaba:/sys/kernel/slab/zswap_entry> grep . *
+> aliases:9
+> align:8
+> grep: alloc_calls: Die angeforderte Funktion ist nicht implementiert
+> cache_dma:0
+> cpu_partial:0
+> cpu_slabs:4 N0=4
+> destroy_by_rcu:0
+> grep: free_calls: Die angeforderte Funktion ist nicht implementiert
+> hwcache_align:0
+> min_partial:5
+> objects:2550 N0=2550
+> object_size:48
+> objects_partial:0
+> objs_per_slab:85
+> order:0
+> partial:0
+> poison:0
+> reclaim_account:0
+> red_zone:0
+> remote_node_defrag_ratio:100
+> reserved:0
+> sanity_checks:0
+> slabs:30 N0=30
+> slabs_cpu_partial:0(0)
+> slab_size:48
+> store_user:0
+> total_objects:2550 N0=2550
+> trace:0
+>
+> It has some objects it seems.
+>
+>
+> How do I know whether zswap actually does something?
+>
+> Will zswap work even with zcache enabled? As I understand zcache compresses
+> swap device pages on the block device level in addition to compressing read
+> cache pages of usual filesystems. Which one takes precedence, zcache or zswap?
+> Can I disable zcache for swap device?
+>
 
-To be honest I'm really not terribly happy about this - I don't have all
-that much confidence that the second step will happen, the fact that
-this has been broken for a considerable time isn't inspiring here.
-However I guess...
+Please disable zcache and try again.
 
---N709L9vpgywc1qLv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>
+>
+> Here is dmesg for zcache:
+>
+> martin@merkaba:~> dmesg | grep zcache
+> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
+> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
+> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
+> [    0.000000] Kernel command line: BOOT_IMAGE=/vmlinuz-3.11.0-rc1-tp520+
+> root=/dev/mapper/merkaba-debian ro rootflags=subvol=root init=/bin/systemd
+> cgroup_enable=memory threadirqs i915.i915_enable_rc6=7 zcache zswap.enabled=1
+> [    1.453531] zcache: using lzo compressor
+> [    1.453634] zcache: cleancache enabled using kernel transcendent memory and
+> compression buddies
+> [    1.453679] zcache: frontswap enabled using kernel transcendent memory and
+> compression buddies
+> [    1.453722] zcache: frontswap_ops overridden
+> [    5.358288] zcache: created ephemeral local tmem pool, id=0
+> [    8.155684] zcache: created persistent local tmem pool, id=1
+> [    8.331680] zcache: created ephemeral local tmem pool, id=2
+> [    8.593235] zcache: created ephemeral local tmem pool, id=3
+> [    8.743330] zcache: created ephemeral local tmem pool, id=4
+>
+>
+> Thanks,
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5nPAAAoJELSic+t+oim90+EP/1ARV4T5aPfB98kWihLAKs4s
-OYVCuerUjkXFtmhps/tYsKggB3BL2XdIue8/a/6lYIFBHwziRy2rEXlXN8Xb0Isz
-V9J+pzxt0kisFD58tkmdp3mXDeLxp4clBdXKg+YEquyxGmItoJyPSujXL0CjCnCh
-1Dp1QulmEpxNUyBX5Zce8a7hp49XJNg75wSQ/rVnebg2wW01h6TfddfiZI+TZeus
-azlS7o58wixSRWcBE6EDCDFtN9n6CsiWx/70AtBLc4Kj1CRufoa5sxjZkwbCqTHo
-zbvl9tX/qCTm8N2PXzIB4VIR7ETVsTJogQUNptAUJvtD3ySH35YbLKSYJUHdSY4x
-hboKhO388o6I/kCVtw2OVFONGkS3iJffECZkVBg/TabFrmb3QHaNtHCdDBlZx3ee
-LZ+3ScF6Clb8UshBx1E6f9Piii7425QTer/7DLQSZfJvpabTKipGyYQgfF0Y0opX
-V/mGlxP3p3J0o01hdPFocLMfi4nHMX3BmXLtKEBGlwY73U3j/GYaadinMn3CrqIV
-Vi/odibXNDaYBxE5jsej/qSqqcrp0wB9q9cwtoe7oCW9onaVv34dsw5+ZPAqf8E0
-pAugVEyjmLX4NMBQX067XWGNW2yW2QR0XJtQvSbXyBkDXEajApL6rsStm+jm22lq
-cJUxvPVr7jKM6ERlFO4t
-=wUT7
------END PGP SIGNATURE-----
-
---N709L9vpgywc1qLv--
+-- 
+Regards,
+-Bob
