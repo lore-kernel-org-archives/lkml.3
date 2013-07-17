@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab3GQQoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:44:54 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35141 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab3GQQow (ORCPT
+	id S932837Ab3GQQpC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:45:02 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:40902 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932701Ab3GQQo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:44:52 -0400
+	Wed, 17 Jul 2013 12:44:59 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 06/18] context_tracking: Fix runtime CPU off-case
-Date: Wed, 17 Jul 2013 18:44:19 +0200
-Message-Id: <1374079471-3129-7-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 11/18] context_tracking: User/kernel broundary cross trace events
+Date: Wed, 17 Jul 2013 18:44:24 +0200
+Message-Id: <1374079471-3129-12-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
 References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
@@ -26,36 +26,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As long as the context tracking is enabled on any CPU, even
-a single one, all other CPUs need to keep track of their
-user <-> kernel boundaries cross as well.
-
-This is because a task can sleep while servicing an exception
-that happened in the kernel or in userspace. Then when the task
-eventually wakes up and return from the exception, the CPU needs
-to know if we resume in userspace or in the kernel. exception_exit()
-get this information from exception_enter() that saved the previous
-state.
-
-If the CPU where the exception happened didn't keep track of
-these informations, exception_exit() doesn't know which state
-tracking to restore on the CPU where the task got migrated
-and we may return to userspace with the context tracking
-subsystem thinking that we are in kernel mode.
-
-This can be fixed in the long term if we move our context tracking
-probes on very low level arch fast path user <-> kernel boundary,
-although even that is worrisome as an exception can still happen
-in the few instructions between the probe and the actual iret.
-
-Also we are not yet ready to set these probes in the fast path given
-the potential overhead problem it induces.
-
-So let's fix this by always enable context tracking even on CPUs
-that are not in the full dynticks range. OTOH we can spare the
-rcu_user_*() and vtime_user_*() calls there because the tick runs
-on these CPUs and we can handle RCU state machine and cputime
-accounting through it.
+This can be useful to track all kernel/user round trips.
+And it's also helpful to debug the context tracking subsystem.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -68,86 +40,105 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- kernel/context_tracking.c |   52 ++++++++++++++++++++++++++++----------------
- 1 files changed, 33 insertions(+), 19 deletions(-)
+ include/trace/events/context_tracking.h |   58 +++++++++++++++++++++++++++++++
+ kernel/context_tracking.c               |    5 +++
+ 2 files changed, 63 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/context_tracking.h
 
+diff --git a/include/trace/events/context_tracking.h b/include/trace/events/context_tracking.h
+new file mode 100644
+index 0000000..ce8007c
+--- /dev/null
++++ b/include/trace/events/context_tracking.h
+@@ -0,0 +1,58 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM context_tracking
++
++#if !defined(_TRACE_CONTEXT_TRACKING_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_CONTEXT_TRACKING_H
++
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(context_tracking_user,
++
++	TP_PROTO(int dummy),
++
++	TP_ARGS(dummy),
++
++	TP_STRUCT__entry(
++		__field( int,	dummy	)
++	),
++
++	TP_fast_assign(
++		__entry->dummy		= dummy;
++	),
++
++	TP_printk("%s", "")
++);
++
++/**
++ * user_enter - called when the kernel resumes to userspace
++ * @dummy:	dummy arg to make trace event macro happy
++ *
++ * This event occurs when the kernel resumes to userspace  after
++ * an exception or a syscall.
++ */
++DEFINE_EVENT(context_tracking_user, user_enter,
++
++	TP_PROTO(int dummy),
++
++	TP_ARGS(dummy)
++);
++
++/**
++ * user_exit - called when userspace enters the kernel
++ * @dummy:	dummy arg to make trace event macro happy
++ *
++ * This event occurs when userspace enters the kernel through
++ * an exception or a syscall.
++ */
++DEFINE_EVENT(context_tracking_user, user_exit,
++
++	TP_PROTO(int dummy),
++
++	TP_ARGS(dummy)
++);
++
++
++#endif /*  _TRACE_CONTEXT_TRACKING_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 1f47119..7b095de 100644
+index 5323a5c..64195f2 100644
 --- a/kernel/context_tracking.c
 +++ b/kernel/context_tracking.c
-@@ -54,17 +54,31 @@ void user_enter(void)
- 	WARN_ON_ONCE(!current->mm);
+@@ -20,6 +20,9 @@
+ #include <linux/hardirq.h>
+ #include <linux/export.h>
  
- 	local_irq_save(flags);
--	if (__this_cpu_read(context_tracking.active) &&
--	    __this_cpu_read(context_tracking.state) != IN_USER) {
-+	if ( __this_cpu_read(context_tracking.state) != IN_USER) {
-+		if (__this_cpu_read(context_tracking.active)) {
-+			/*
-+			 * At this stage, only low level arch entry code remains and
-+			 * then we'll run in userspace. We can assume there won't be
-+			 * any RCU read-side critical section until the next call to
-+			 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
-+			 * on the tick.
-+			 */
-+			vtime_user_enter(current);
-+			rcu_user_enter();
-+		}
- 		/*
--		 * At this stage, only low level arch entry code remains and
--		 * then we'll run in userspace. We can assume there won't be
--		 * any RCU read-side critical section until the next call to
--		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
--		 * on the tick.
-+		 * Even if context tracking is disabled on this CPU, because it's outside
-+		 * the full dynticks mask for example, we still have to keep track of the
-+		 * context transitions and states to prevent inconsistency on those of
-+		 * other CPUs.
-+		 * If a task triggers an exception in userspace, sleep on the exception
-+		 * handler and then migrate to another CPU, that new CPU must know where
-+		 * the exception returns by the time we call exception_exit().
-+		 * This information can only be provided by the previous CPU when it called
-+		 * exception_enter().
-+		 * OTOH we can spare the calls to vtime and RCU when context_tracking.active
-+		 * is false because we know that CPU is not tickless.
- 		 */
--		vtime_user_enter(current);
--		rcu_user_enter();
- 		__this_cpu_write(context_tracking.state, IN_USER);
- 	}
- 	local_irq_restore(flags);
-@@ -130,12 +144,14 @@ void user_exit(void)
++#define CREATE_TRACE_POINTS
++#include <trace/events/context_tracking.h>
++
+ struct static_key context_tracking_enabled = STATIC_KEY_INIT_FALSE;
  
+ DEFINE_PER_CPU(struct context_tracking, context_tracking);
+@@ -62,6 +65,7 @@ void context_tracking_user_enter(void)
  	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
--		/*
--		 * We are going to run code that may use RCU. Inform
--		 * RCU core about that (ie: we may need the tick again).
--		 */
--		rcu_user_exit();
--		vtime_user_exit(current);
-+		if (__this_cpu_read(context_tracking.active)) {
-+			/*
-+			 * We are going to run code that may use RCU. Inform
-+			 * RCU core about that (ie: we may need the tick again).
-+			 */
-+			rcu_user_exit();
-+			vtime_user_exit(current);
-+		}
+ 	if ( __this_cpu_read(context_tracking.state) != IN_USER) {
+ 		if (__this_cpu_read(context_tracking.active)) {
++			trace_user_enter(0);
+ 			/*
+ 			 * At this stage, only low level arch entry code remains and
+ 			 * then we'll run in userspace. We can assume there won't be
+@@ -157,6 +161,7 @@ void context_tracking_user_exit(void)
+ 			 */
+ 			rcu_user_exit();
+ 			vtime_user_exit(current);
++			trace_user_exit(0);
+ 		}
  		__this_cpu_write(context_tracking.state, IN_KERNEL);
  	}
- 	local_irq_restore(flags);
-@@ -178,8 +194,6 @@ EXPORT_SYMBOL_GPL(guest_exit);
- void context_tracking_task_switch(struct task_struct *prev,
- 			     struct task_struct *next)
- {
--	if (__this_cpu_read(context_tracking.active)) {
--		clear_tsk_thread_flag(prev, TIF_NOHZ);
--		set_tsk_thread_flag(next, TIF_NOHZ);
--	}
-+	clear_tsk_thread_flag(prev, TIF_NOHZ);
-+	set_tsk_thread_flag(next, TIF_NOHZ);
- }
 -- 
 1.7.5.4
 
