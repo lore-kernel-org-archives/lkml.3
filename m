@@ -1,182 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3GQILW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 04:11:22 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:57854 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3GQIKO (ORCPT
+	id S1752780Ab3GQIN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 04:13:28 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:57910 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab3GQINX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 04:10:14 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6H8A5e0029573, This message is accepted by code: ctloc85258
-From: <wei_wang@realsil.com.cn>
-To: <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v2 5/5] mfd:rtsx: Configure to enter a deeper power-saving mode in S3
-Date: Wed, 17 Jul 2013 16:09:55 +0800
-Message-ID: <fddad89c1f95f7f0cf872d2850c59277ef870268.1373953200.git.wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1373953200.git.wei_wang@realsil.com.cn>
-References: <cover.1373953200.git.wei_wang@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.8]
+	Wed, 17 Jul 2013 04:13:23 -0400
+X-AuditID: cbfee61a-b7f196d000007dfa-0a-51e652213188
+Date: Wed, 17 Jul 2013 10:12:51 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v5 6/7] cpufreq:boost:Kconfig: Enable software managed
+ BOOST support at Kconfig
+Message-id: <20130717101251.164fbad8@amdc308.digital.local>
+In-reply-to: <CAKohpona8E-JgLxyLnc_QuS9LAuJ7FBbsSGPZawQtOd8kRd4JA@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-7-git-send-email-l.majewski@samsung.com>
+ <CAKohpokR=jrcLQQ7VAD+vr7GWgSFBfuqbOhWHwA3FCgk__EJ3Q@mail.gmail.com>
+ <20130716135022.64a102f8@amdc308.digital.local>
+ <CAKohpo=XbUtYBVQ_y4_R18wpag_HAVvXrxfSfmaNSqq=wLpciQ@mail.gmail.com>
+ <20130717091706.69b77c2f@amdc308.digital.local>
+ <CAKohpona8E-JgLxyLnc_QuS9LAuJ7FBbsSGPZawQtOd8kRd4JA@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42I5/e+xgK5i0LNAgw0z+Cz+vF3OavG06Qe7
+	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4LS7vmsNm8bn3CKPF7cYVbBb9C3uZLJ487GOz2PjV
+	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
+	rozXv7wKfotW3O5sZ29g/CrQxcjJISFgIrHg5Q1mCFtM4sK99WwgtpDAIkaJj29kuxi5gOx2
+	JonlLc9ZQRIsAqoS83qbwYrYBPQkPt99ytTFyMEhIqAl8fJmKkg9s8BHZom7B2+zgNQIC6RK
+	fLj+DayXV8BaYsbbG6wg9ZwCwRKfH9dCzP/GLDGr7yXYTH4BSYn2fz+gDrKTOPdpAztEr6DE
+	j8n3wGYyA+3avK2JFcKWl9i85i3zBEbBWUjKZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi
+	0rx0veT83E2M4Ch6JrWDcWWDxSFGAQ5GJR7eCWFPA4VYE8uKK3MPMUpwMCuJ8FZrPAsU4k1J
+	rKxKLcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwDhN5tEFk8O7V5uo
+	xCjFL3l1Kie18/8X65ZPT1UnW7RIWHgfeXj3+LnNlxMDbi9rlbypkbAicLk574XbZ9prjs37
+	93qZ1nWJe475dbcM1oZ/nK0e2/ePYbmFdoVM19F0QYNvrL73/iZExLbkz7/Oe0212MRr5flg
+	Q/YJhjwih1ONdaalOD+7cU+JpTgj0VCLuag4EQAUZvHhngIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+On Wed, 17 Jul 2013 13:22:20 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 17 July 2013 12:47, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > On Wed, 17 Jul 2013 10:54:55 +0530 Viresh Kumar
+> > viresh.kumar@linaro.org wrote,
+> >> On 16 July 2013 17:20, Lukasz Majewski <l.majewski@samsung.com>
+> >> wrote:
+> >> > On Tue, 16 Jul 2013 15:28:40 +0530 Viresh Kumar
+> >> > viresh.kumar@linaro.org wrote,
+> >> >> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com>
+> >> >> wrote:
+> >> >> > diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+> >> >>
+> >> >> > +config CPU_FREQ_BOOST_SW
+> >> >> > +       bool "CPU frequency overclocking (BOOST)"
+> >> >>
+> >> >> Name it "CPU Frequency Overclocking - Software"
+> >> >
+> >> > Thanks, I had a puzzle to came up with a good short name :-).
+> >> >
+> >> >>
+> >> >> > +       depends on ARM_EXYNOS_CPUFREQ && EXYNOS_THERMAL
+> >> >                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
+> >> >>
+> >> >> Remote Exynos from here. If you want to enable it for your
+> >> >> platform by default, then select it from EXYNOS.
+> >
+> > I can change ARM_EXYNOS_CPUFREQ -> CPUFREQ at [*]
+> 
+> We are in cpufreq Kconfig and so dependency is automatically
+> there on cpufreq.
 
-Set a bit to enable rts5227 and rts5249 to enter a deeper internal
-power-saving mode in S3, and recover it after resuming.
+So then, it can be removed.
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- drivers/mfd/rtl8411.c        |    2 +-
- drivers/mfd/rts5209.c        |    2 +-
- drivers/mfd/rts5227.c        |    6 +++++-
- drivers/mfd/rts5229.c        |    2 +-
- drivers/mfd/rts5249.c        |    6 +++++-
- drivers/mfd/rtsx_pcr.c       |    2 +-
- include/linux/mfd/rtsx_pci.h |    5 ++---
- 7 files changed, 16 insertions(+), 9 deletions(-)
+> 
+> >>
+> >> I misread it a bit. I wanted to say make it dependent only on
+> >> THERMAL and not on Exynos.
+> >
+> > The cpufreq boost feature is possible to be enabled only when those
+> > [*] dependencies are met. Moreover, it is disabled by default.
+> >
+> > This means that not only THERMAL generic code must be supported, but
+> > also EXYNOS specific one - like per SoC trip points [**].
+> >
+> > With thermal it is possible (and correct) to only define THERMAL,
+> > with no platform (in this case Exynos) specific definitions. To
+> > force potential user to define [**], I think, that EXYNOS_THERMAL
+> > is required.
+> >
+> >>
+> >> > The purpose of the condition [*] here is to prevent from enabling
+> >> > boost when thermal for Exynos is not supported.
+> >>
+> >> Why? Can't others use it? Its not exynos specific :)
+> >
+> > No it is not exynos specific.
+> > For other platform one need to define:
+> >
+> > depends on CPUFREQ && (EXYNOS_THERMAL ||
+> > <PLATFORM_SUPPORTED>_THERMAL)
+> 
+> Exactly. I don't want this kind of mess to be present here.
+> 
+> People selecting this feature must know what it does and
+> dependency on a coolant is enough.
+> 
+> For other drivers, selecting this doesn't matter as they don't
+> support boost.
 
-diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
-index 2bff119..bfe65f6 100644
---- a/drivers/mfd/rtl8411.c
-+++ b/drivers/mfd/rtl8411.c
-@@ -86,7 +86,7 @@ static void rtl8411b_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rtl8411_force_power_down(struct rtsx_pcr *pcr)
-+static void rtl8411_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x07, 0x07);
- }
-diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
-index e2ee30e..a5261f9 100644
---- a/drivers/mfd/rts5209.c
-+++ b/drivers/mfd/rts5209.c
-@@ -58,7 +58,7 @@ static void rts5209_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5209_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5209_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x07, 0x07);
- }
-diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-index c931018..4c7309c 100644
---- a/drivers/mfd/rts5227.c
-+++ b/drivers/mfd/rts5227.c
-@@ -82,13 +82,16 @@ static void rts5227_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5227_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5227_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	/* Set relink_time to 0 */
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 1, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 2, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 3, 0x01, 0);
- 
-+	if (pm_state == HOST_ENTER_S3)
-+		rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x10);
-+
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
- }
- 
-@@ -122,6 +125,7 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
- 	else
- 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
- 				AUTOLOAD_CFG_BASE + 3, 0xB8, 0x88);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
- 
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
-diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
-index a91462d..e8e34de 100644
---- a/drivers/mfd/rts5229.c
-+++ b/drivers/mfd/rts5229.c
-@@ -55,7 +55,7 @@ static void rts5229_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5229_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5229_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
- }
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index f18bb27..205344d 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -89,13 +89,16 @@ static void rts5249_init_settings(struct rtsx_pcr *pcr)
- 	}
- }
- 
--static void rts5249_force_power_down(struct rtsx_pcr *pcr)
-+static void rts5249_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
- {
- 	/* Set relink_time to 0 */
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 1, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 2, 0xFF, 0);
- 	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 3, 0x01, 0);
- 
-+	if (pm_state == HOST_ENTER_S3)
-+		rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x10);
-+
- 	rtsx_pci_write_register(pcr, FPDCTL, 0x03, 0x03);
- }
- 
-@@ -120,6 +123,7 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
- 	else
- 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
- 				AUTOLOAD_CFG_BASE + 3, 0xB0, 0x80);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
- 
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 13e1c24..1d7cc2e 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -938,7 +938,7 @@ static void rtsx_pci_power_off(struct rtsx_pcr *pcr, u8 pm_state)
- 	rtsx_pci_write_register(pcr, HOST_SLEEP_STATE, 0x03, pm_state);
- 
- 	if (pcr->ops->force_power_down)
--		pcr->ops->force_power_down(pcr);
-+		pcr->ops->force_power_down(pcr, pm_state);
- }
- 
- static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index 9763859..8deabc8 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -24,8 +24,7 @@
- 
- #include <linux/sched.h>
- #include <linux/pci.h>
--
--#include "rtsx_common.h"
-+#include <linux/mfd/rtsx_common.h>
- 
- #define MAX_RW_REG_CNT			1024
- 
-@@ -764,7 +763,7 @@ struct pcr_ops {
- 	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
- 	int		(*conv_clk_and_div_n)(int clk, int dir);
- 	void		(*init_settings)(struct rtsx_pcr *pcr);
--	void		(*force_power_down)(struct rtsx_pcr *pcr);
-+	void		(*force_power_down)(struct rtsx_pcr *pcr, u8 pm_state);
- };
- 
- enum PDEV_STAT  {PDEV_STAT_IDLE, PDEV_STAT_RUN};
+Then it should be enough to only write:
+
+depends on THERMAL
+
+(since CPUFREQ is already enabled for entering this menu).
+
+
+
+
 -- 
-1.7.9.5
+Best regards,
 
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
