@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab3GQG3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 02:29:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42835 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3GQG3l (ORCPT
+	id S1752231Ab3GQGbA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 02:31:00 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60053 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752096Ab3GQGa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 02:29:41 -0400
-Date: Tue, 16 Jul 2013 23:29:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: grant.likely@linaro.org, tony@atomide.com, balbi@ti.com, arnd@arndb.de,
-        swarren@nvidia.com, sylvester.nawrocki@gmail.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        akpm@linux-foundation.org, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, benoit.cousson@linaro.org, mchehab@redhat.com,
-        cesarb@cesarb.net, davem@davemloft.net, rnayak@ti.com,
-        shawn.guo@linaro.org, santosh.shilimkar@ti.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        nsekhar@ti.com, balajitk@ti.com, george.cherian@ti.com
-Subject: Re: [PATCH v9 1/8] drivers: phy: add generic PHY framework
-Message-ID: <20130717062944.GA24968@kroah.com>
-References: <1372247257-30186-1-git-send-email-kishon@ti.com>
- <1372247257-30186-2-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372247257-30186-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Jul 2013 02:30:59 -0400
+Message-ID: <1374042658.26384.31.camel@x61.thuisdomein>
+Subject: Re: [kconfig] results of some syntactical checks
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Martin Walch <walch.martin@web.de>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 17 Jul 2013 08:30:58 +0200
+In-Reply-To: <1374016680.26384.22.camel@x61.thuisdomein>
+References: <7121962.G9xfZAqBSy@tacticalops>
+	 <1374016680.26384.22.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Jul 2013 06:30:58.0270 (UTC) FILETIME=[32C4AFE0:01CE82B7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 05:17:29PM +0530, Kishon Vijay Abraham I wrote:
-> +menuconfig GENERIC_PHY
-> +	tristate "PHY Subsystem"
-> +	help
-> +	  Generic PHY support.
-> +
-> +	  This framework is designed to provide a generic interface for PHY
-> +	  devices present in the kernel. This layer will have the generic
-> +	  API by which phy drivers can create PHY using the phy framework and
-> +	  phy users can obtain reference to the PHY.
+On Wed, 2013-07-17 at 01:18 +0200, Paul Bolle wrote:
+> On Wed, 2013-07-17 at 00:34 +0200, Martin Walch wrote:
+> >   Symbol: M at
+> >     drivers/usb/host/Kconfig:568:0
+> >     drivers/usb/misc/Kconfig:130:0
+> 
+> This looks odd. I think your checker doesn't like an uppercase M after
+> default. There are exactly two of those in the tree.
 
-Shouldn't this be something that other drivers select?  How will anyone
-know if they need this or not?
+After posting this I actually looked into this and even tested it a bit.
+It turns out an uppercase 'M' isn't a valid alias for the magic 'm'
+value. Your checker is right about warning for this.
 
-> --- /dev/null
-> +++ b/drivers/phy/phy-core.c
-> @@ -0,0 +1,544 @@
-> +/*
-> + * phy-core.c  --  Generic Phy framework.
-> + *
-> + * Copyright (C) 2013 Texas Instruments
-> + *
-> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
+> >   Symbol: N at
+> >     drivers/usb/core/Kconfig:12:0
+> >     drivers/usb/host/Kconfig:336:0
+> >     drivers/usb/host/Kconfig:348:0
+> >     drivers/staging/usbip/Kconfig:3:0
+> >     drivers/staging/usbip/Kconfig:20:0
+> >     drivers/staging/usbip/Kconfig:31:0
+> >     drivers/staging/usbip/Kconfig:42:0
+> >     drivers/staging/asus_oled/Kconfig:3:0
+> >     drivers/staging/rtl8187se/Kconfig:8:0
+> >     drivers/staging/rtl8192u/Kconfig:7:0
+> >     drivers/staging/rtl8192e/rtl8192e/Kconfig:7:0
+> >     drivers/staging/rtl8712/Kconfig:6:0
+> >     drivers/staging/rtl8712/Kconfig:14:0
+> >     drivers/staging/frontier/Kconfig:3:0
+> >     drivers/staging/bcm/Kconfig:3:0
+> >     drivers/staging/media/go7007/Kconfig:15:0
+> >     drivers/staging/media/go7007/Kconfig:26:0
+> >     drivers/staging/media/go7007/Kconfig:48:0
+> >     drivers/staging/android/Kconfig:4:0
+> >     drivers/staging/android/Kconfig:61:0
+> >     arch/cris/arch-v32/drivers/Kconfig:13:0
+> >     arch/cris/arch-v32/drivers/Kconfig:413:0
+> >     arch/arc/Kconfig:357:0
+> 
+> Ditto (but I haven't actually counted the occurrences of "default N").
 
-You really mean "any later version" (I have to ask)?
+Lowercase 'n' is the correct magic value. But using uppercase 'N'
+doesn't matter. Since there's no Kconfig symbol "N", both evaluate to
+"not set" and you'll end up with the same .config file.
 
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> My script currently finds 28 undefined symbols. That equals this result
+> (given you have 2 false positive and 1 undefined choice default.)
 
-Are these two paragraphs needed?  This isn't a "program", and they got a
-copy of the GPL already with the kernel.
+So those 2 were actually correct positives.
 
-> +static struct class *phy_class;
 
-Why do you need a class?
+Paul Bolle
 
-When modifying/adding new sysfs stuff, you need a Documentation/ABI/
-entry as well.
-
-thanks,
-
-greg k-h
