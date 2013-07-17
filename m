@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3GQLVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:21:07 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50422 "EHLO
+	id S1754143Ab3GQLVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:21:37 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50455 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab3GQLVF (ORCPT
+	with ESMTP id S1753701Ab3GQLVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:21:05 -0400
+	Wed, 17 Jul 2013 07:21:36 -0400
 From: Mark Brown <broonie@kernel.org>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@linaro.org>
-Date: Wed, 17 Jul 2013 12:20:36 +0100
-Message-Id: <1374060037-18527-1-git-send-email-broonie@kernel.org>
+Date: Wed, 17 Jul 2013 12:21:09 +0100
+Message-Id: <1374060069-18589-1-git-send-email-broonie@kernel.org>
 X-Mailer: git-send-email 1.8.3.2
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 1/2] mfd: wm8994: Remove duplicate check for active JACKDET
+Subject: [PATCH] mfd: wm8997: Make Kconfig prompt for WM8997 more consistent
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,39 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Brown <broonie@linaro.org>
 
-Probably the result of a mismerge or rebase failing to notice that the
-hunk had already been applied.
+The Kconfig prompt for WM8997 says "Support for..." while the other MFD
+Kconfigs (including the adjacent ones for other Arizona devices) just
+list the device name which sticks out like a sore thumb when doing
+configuration.
 
 Signed-off-by: Mark Brown <broonie@linaro.org>
 ---
- drivers/mfd/wm8994-core.c | 14 --------------
- 1 file changed, 14 deletions(-)
+ drivers/mfd/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 781115e..e8ecb8e 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -245,20 +245,6 @@ static int wm8994_suspend(struct device *dev)
- 		break;
- 	}
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index aecd6dd..633ee43 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -1070,7 +1070,7 @@ config MFD_WM5110
+ 	  Support for Wolfson Microelectronics WM5110 low power audio SoC
  
--	switch (wm8994->type) {
--	case WM1811:
--		ret = wm8994_reg_read(wm8994, WM8994_ANTIPOP_2);
--		if (ret < 0) {
--			dev_err(dev, "Failed to read jackdet: %d\n", ret);
--		} else if (ret & WM1811_JACKDET_MODE_MASK) {
--			dev_dbg(dev, "CODEC still active, ignoring suspend\n");
--			return 0;
--		}
--		break;
--	default:
--		break;
--	}
--
- 	/* Disable LDO pulldowns while the device is suspended if we
- 	 * don't know that something will be driving them. */
- 	if (!wm8994->ldo_ena_always_driven)
+ config MFD_WM8997
+-	bool "Support Wolfson Microelectronics WM8997"
++	bool "Wolfson Microelectronics WM8997"
+ 	depends on MFD_ARIZONA
+ 	help
+ 	  Support for Wolfson Microelectronics WM8997 low power audio SoC
 -- 
 1.8.3.2
 
