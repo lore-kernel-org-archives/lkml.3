@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab3GQFFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 01:05:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44170 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab3GQFFa (ORCPT
+	id S1751637Ab3GQFGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 01:06:54 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:60455 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab3GQFGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 01:05:30 -0400
-Date: Tue, 16 Jul 2013 22:05:29 -0700 (PDT)
-Message-Id: <20130716.220529.49723311269417873.davem@davemloft.net>
-To: mst@redhat.com
-Cc: rusty@rustcorp.com.au, netdev@vger.kernel.org, jasowang@redhat.com,
-        amwang@redhat.com, akong@redhat.com, davej@redhat.com,
-        virtualization@lists.linux-foundation.org,
+	Wed, 17 Jul 2013 01:06:52 -0400
+Message-ID: <51E6258A.3050105@linux.vnet.ibm.com>
+Date: Wed, 17 Jul 2013 10:33:06 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, viresh.kumar@linaro.org,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
+        stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-net: put virtio net header inline with data
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130717050032.GB10482@redhat.com>
-References: <8761wc38ea.fsf@rustcorp.com.au>
-	<20130716.123326.798365002638711260.davem@davemloft.net>
-	<20130717050032.GB10482@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 16 Jul 2013 22:05:30 -0700 (PDT)
+Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <51DF307B.7060307@linux.vnet.ibm.com> <51E56382.3020609@gmx.de> <2829832.mz5UcF7ZkY@vostro.rjw.lan>
+In-Reply-To: <2829832.mz5UcF7ZkY@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071704-5490-0000-0000-000003D5B7FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Wed, 17 Jul 2013 08:00:32 +0300
-
-> On Tue, Jul 16, 2013 at 12:33:26PM -0700, David Miller wrote:
->> From: Rusty Russell <rusty@rustcorp.com.au>
->> Date: Mon, 15 Jul 2013 11:13:25 +0930
->> 
->> > From: Michael S. Tsirkin <mst@redhat.com>
->> > 
->> > For small packets we can simplify xmit processing
->> > by linearizing buffers with the header:
->> > most packets seem to have enough head room
->> > we can use for this purpose.
->> > Since existing hypervisors require that header
->> > is the first s/g element, we need a feature bit
->> > for this.
->> > 
->> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->> 
->> I really think this has to wait until the next merge window, sorry.
->> 
->> Please resubmit this when I open net-next back up, thanks.
+On 07/17/2013 03:02 AM, Rafael J. Wysocki wrote:
+> On Tuesday, July 16, 2013 05:15:14 PM Toralf Förster wrote:
+>> On 07/12/2013 12:23 AM, Srivatsa S. Bhat wrote:
+>>> On 07/12/2013 04:03 AM, Rafael J. Wysocki wrote:
+>>>> On Friday, July 12, 2013 03:45:17 AM Srivatsa S. Bhat wrote:
+>>>>>
+>>>>> Hi,
+>>>>
+>>>> Hi,
+>>>>
+>>>>> Commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume) caused
+>>>>> some subtle regressions in the cpufreq subsystem during suspend/resume.
+>>>>> This patchset is aimed at rectifying those problems, by fixing the regression
+>>>>> as well as achieving the original goal of that commit in a proper way.
+>>>>>
+>>>>> Patch 1 reverts the above commit, and is CC'ed to stable.
+>>>>>
+>>>>> Patches 2 - 5 reorganize the code and have no functional impact, and can go
+>>>>> in as general cleanups as well. This reorganization builds a base that the
+>>>>> rest of the patches will make use of.
+>>>>>
+>>>>> Patch 6 and 7 add a mechanism to perform light-weight init/tear-down of CPUs
+>>>>> in the cpufreq subsystem and finally patch 8 uses it to preserve sysfs files
+>>>>> across suspend/resume.
+>>>>>
+>>>>> All the patches apply on current mainline.
+>>>>>
+>>>>>
+>>>>> Robert, Durgadoss, it would be great if you could try it out and see if it works
+>>>>> well for your usecase. I tested it locally and cpufreq related files did retain
+>>>>> their permissions across suspend/resume. Let me know if it works fine in your
+>>>>> setup too.
+>>>>>
+>>>>> And I'd of course appreciate to hear from Dirk, Tianyu and Toralf to know
+>>>>> whether their systems work fine after:
+>>>>> a. applying only the first commit (this is what gets backported to stable)
+>>>>> b. applying all the commits
+>>>>>
+>>>>> (Note: I had to use Michael's fix[1] to avoid CPU hotplug deadlock while
+>>>>> testing this patchset. Though that patch also touches cpufreq subsystem, it
+>>>>> doesn't affect this patchset in any way and there is absolutely no dependency
+>>>>> between the two in terms of code. That fix just makes basic CPU hotplug work
+>>>>> without locking up on current mainline).
+>>>>>
+>>>>> [1]. https://lkml.org/lkml/2013/7/10/611
+>>>>>
+>>>>>
+>>>>> Thank you very much!
+>>>>
+>>>> Thanks Srivatsa!
+>>>>
+>>>> I'm going to take [1/8] for 3.11 and queue up the rest for 3.12 if people don't
+>>>> hate them.  This way we'll have some more testing coverage before they reach
+>>>> the mainline hopefully.
+>>>>
+>>
+>> On 07/16/2013 01:25 AM, Rafael J. Wysocki wrote:> On Monday, July 15, 2013 07:38:02 PM Toralf Förster wrote:
+>>> Sorry, I have no idea what 1#8 means.
+>>
+>> sry - here again with full quote of the email :
+>>
+>> I applied patch [1/8] on top of v3.11-rc1-8-g47188d3 passes two s2ram/wakeup
+>> cycles fine and crashed the system at the 3rd attempt / one times just at
+>> the 4th (blinking power led, no sysrq, ...).
+>>
+>> Applying patch 1-8 on top of that tree differs in that way that it
+>> crashes now the system even at the 1st attempt or at least at the 2nd
+>>
+>> My hardware is a ThinkPad T420 with latest BIOS and a 32 bit stable
+>> Gentoo Linux - FWIW .config attached.
 > 
-> I assumed since -rc1 is out net-next is already open?
+> I think you'll need the fixes first, basically [1/8] from this series and
+> this: https://patchwork.kernel.org/patch/2827512/ .
+> 
+> Please try to run with these two things applied only and see how that goes.
+> 
 
--rc1 being released never makes net-next open.  Instead, I explicitly
-open it up at some point in time after -rc1 when I feel that things
-have settled down enough.
+In addition to what Rafael suggested above, also try running your kernel
+with cpufreq completely turned off (CONFIG_CPU_FREQ=n). My patches touch only
+cpufreq, so this experiment will tell us if your suspend/resume issues are
+really related to cpufreq or not. If turning off cpufreq also breaks your
+suspend/resume, then a fresh git-bisect might be the only way to go.
+ 
+Regards,
+Srivatsa S. Bhat
 
-And when that happens, I announce so here.
-
-So you have to follow my announcements here on netdev to know
-when net-next is actually open.
