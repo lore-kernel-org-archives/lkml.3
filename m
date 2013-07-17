@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab3GQTEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 15:04:16 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:36171 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab3GQTEP (ORCPT
+	id S1756897Ab3GQTFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 15:05:54 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52448 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325Ab3GQTFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 15:04:15 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <51E668B4.1010000@ti.com>
-References: <1373974023-23521-1-git-send-email-oleksandr.kozaruk@ti.com> <1373974023-23521-3-git-send-email-oleksandr.kozaruk@ti.com> <c8f86766-822b-4fe3-ae2a-e0b12412ef39@email.android.com> <51E668B4.1010000@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Wed, 17 Jul 2013 20:04:02 +0100
-To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-CC: tony@atomide.com, benoit.cousson@linaro.org, rnayak@ti.com,
-        peter.ujfalusi@ti.com, kishon@ti.com, jic23@cam.ac.uk,
-        grant.likely@linaro.org, rob.herring@calxeda.com, lars@metafoo.de,
-        sameo@linux.intel.com, ch.naveen@samsung.com, poeschel@lemonage.de,
-        milo.kim@ti.com, balajitk@ti.com, gg@slimlogic.co.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org
-Message-ID: <7725cc73-4cab-49f5-9c33-ef3b24a7ee57@email.android.com>
+	Wed, 17 Jul 2013 15:05:53 -0400
+Date: Wed, 17 Jul 2013 12:05:51 -0700 (PDT)
+Message-Id: <20130717.120551.732242899865009660.davem@davemloft.net>
+To: sarah.a.sharp@linux.intel.com
+Cc: felipe.contreras@gmail.com, stefano.stabellini@eu.citrix.com,
+        hpa@zytor.com, rostedt@goodmis.org, cjb@laptop.org,
+        dvhart@linux.intel.com, torvalds@linux-foundation.org,
+        mingo@kernel.org, linux@roeck-us.net, gregkh@linuxfoundation.org,
+        davej@redhat.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        ksummit-2013-discuss@lists.linuxfoundation.org, w@1wt.eu
+Subject: Re: [ATTEND] How to act on LKML
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130717144043.GA16513@xanatos>
+References: <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+	<CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+	<20130717144043.GA16513@xanatos>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 17 Jul 2013 12:05:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Date: Wed, 17 Jul 2013 07:40:43 -0700
 
+> If you give a flying fuck about diversity
+...
 
-Oleksandr Kozaruk <oleksandr.kozaruk@ti.com> wrote:
->Hello Jonathan,
->
-> >Two very quick comments based on quick glance as it may be a while 
->before I can do a full review.
->
-> >We still have channels that are only usable for temperature being 
->output to user space as voltage channels? Is the conversion so very
->hard?
->
->Can you please clarify what should return temperature channel for 
->in_tempX_input (processed)? Is it voltage or Celsius degree?
-Milli degrees centigrade.
+Pot, meet kettle.
 
->in_tempX_raw should return ADC code? Right?
-Yes
-
-See Documentation/ABI/testing/sysfs-bus-iio
->
->Regards,
->OK.
-
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
