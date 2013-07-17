@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001Ab3GQSW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:22:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54960 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689Ab3GQSW6 (ORCPT
+	id S934026Ab3GQSYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:24:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50065 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932198Ab3GQSYI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:22:58 -0400
-Message-ID: <51E6E0EF.1070309@canonical.com>
-Date: Wed, 17 Jul 2013 14:22:39 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 17 Jul 2013 14:24:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,686,1367996400"; 
+   d="scan'208";a="366799227"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "Olivier Galibert" <galibert@pobox.com>,
+        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: RE: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Thread-Topic: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Thread-Index: AQHOgolY07hmiG1600ewQhox5c/nnplpY++A///KGfA=
+Date: Wed, 17 Jul 2013 18:24:07 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31C8FE9D@ORSMSX106.amr.corp.intel.com>
+References: <20130715204135.GH15531@xanatos>
+	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	<1373926109.17876.221.camel@gandalf.local.home>
+	<20130715223615.GI15531@xanatos>
+	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+	<20130716211235.GG4994@xanatos> <20130716221821.GB21611@1wt.eu>
+	<20130716223957.GJ4994@xanatos> <51E5DB59.2050209@schaufler-ca.com>
+	<20130717010244.GM4994@xanatos>
+ <CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
+In-Reply-To: <CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Haiyang Zhang <haiyangz@microsoft.com>
-CC: Pravin Shelar <pshelar@nicira.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "ben.howard@canonical.com" <ben.howard@canonical.com>,
-        "edumazet@google.com" <edumazet@google.com>,
-        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
-        "alexander.h.duyck@intel.com" <alexander.h.duyck@intel.com>,
-        "jiri@resnulli.us" <jiri@resnulli.us>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, KY Srinivasan <kys@microsoft.com>
-Subject: Re: [Regression][v3.10][v3.11] net: Kill link between CSUM and SG
- features.
-References: <51E58C45.1080708@canonical.com> <CALnjE+oCeo=T+F3BvTBtcV7oDMPLJAEz1p1sjRGxmE8Wq8gWAg@mail.gmail.com> <51E5A4CA.20902@canonical.com> <CALnjE+rhvmYPEXv=1F1HEe3VsgCNN1SKg5UwTuFatQUm9e9S2w@mail.gmail.com> <51E6B8B0.2080103@canonical.com> <9d96a2fb07b9474b927f6f4538a0845e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-In-Reply-To: <9d96a2fb07b9474b927f6f4538a0845e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 01:45 PM, Haiyang Zhang wrote:
->
->> -----Original Message-----
->> From: Joseph Salisbury [mailto:joseph.salisbury@canonical.com]
->> Sent: Wednesday, July 17, 2013 8:31 AM
->> To: Pravin Shelar
->> Cc: davem@davemloft.net; ben.howard@canonical.com;
->> edumazet@google.com; xiyou.wangcong@gmail.com;
->> alexander.h.duyck@intel.com; jiri@resnulli.us; netdev@vger.kernel.org;
->> LKML; KY Srinivasan; Haiyang Zhang
->> Subject: Re: [Regression][v3.10][v3.11] net: Kill link between CSUM and SG
->> features.
->>
->> On 07/16/2013 04:50 PM, Pravin Shelar wrote:
->>> On Tue, Jul 16, 2013 at 12:53 PM, Joseph Salisbury
->>> <joseph.salisbury@canonical.com> wrote:
->>>> On 07/16/2013 02:29 PM, Pravin Shelar wrote:
->>>>> On Tue, Jul 16, 2013 at 11:09 AM, Joseph Salisbury
->>>>> <joseph.salisbury@canonical.com> wrote:
->>>>>> Hi Pravin,
->>>>>>
->>>>>> A bug was opened against the Ubuntu kernel[0].  After a kernel
->>>>>> bisect, it was found that reverting the following commit resolved this
->> bug:
->>>>>> commit ec5f061564238892005257c83565a0b58ec79295
->>>>>> Author: Pravin B Shelar <pshelar@nicira.com>
->>>>>> Date:   Thu Mar 7 09:28:01 2013 +0000
->>>>>>
->>>>>>     net: Kill link between CSUM and SG features.
->>>>>>
->>>>>>
->>>>>> The regression was introduced as of v3.10-rc1.
->>>>>>
->>>>>> I see that you are the author of this patch, so I wanted to run
->>>>>> this by you.  I was thinking of requesting a revert for v3.11, but
->>>>>> I wanted to get your feedback first.
->>>>>>
->>>>>>
->>>>> This issue was reported before and turning off sg solves problem for
->>>>> HyperV driver. Drivers (intel and bnx2x) that I tested works fine
->>>>> with this patch. Have you seen the issue on any other NIC?
->>>> Thanks for the feedback.  We have only seen it on Intel hardware.
->>>> Can you send a pointer to the patch? If so, we can provide some
->>>> additional testing.  Do you plan on submitting the patch for inclusion in
->> 3.11?
->>>>
->>> What I mean is I do not see any problem with the patch that you have
->>> pointed out on ixgbe and bnx2x platforms. HyperV problem went away
->>> with disabling sg by ethtool utility.
->> Yes, we also see that the problem goes away when disabling sg with ethtool.
->> There was a significant improvement in throughput with sg enabled, so it's
->> unfortunate it must be disabled.
->>
->>> Can you also give me more information about regression you are seeing
->>> like driver name, features of the NIC set and features of device
->>> without this patch. Does any other NIC than HyperV having this issue?
->> Some details info about the HyperV guest can be seen here:
->> http://paste.ubuntu.com/5884549/
->>
->> In that output, you will see that scatter-gather is off, which was done
->> manually.
->>
->> Only a HyperV NIC is having this issue.
-> I have submitted a patch which has been accepted, and queued for -stable branch
-> as well: http://patchwork.ozlabs.org/patch/259596/
-> It removes the NETIF_F_SG flag from the hv_netvsc driver, which doesn't currently
-> support SG mode.
->
-> Thanks,
-> - Haiyang
->
-That's great.  Thanks, Haiyang!
+> Those are just stories; things that happened. What you need to provide
+> is *evidence* that if the community changes, things will be better,
+> and unless you have a study of series of collaborative groups like the
+> Linux kernel, that demonstrates that suppressing swearing has a
+> positive effect in the community, I'd say all you have is an
+> *opinion*.
+
+1) There isn't going to be any hard evidence - this isn't a physics problem,
+or even an engineering problem. It's a social problem.  There are no other
+collaborative groups sufficiently similar to the Linux kernel community, so there
+are no studies that would be relevant. Asking for the impossible is just a
+lame delaying tactic.
+
+2) Sarah hasn't even asked to cut down on the swearing - so why mention
+it at all? Did you even read the thread?
+
+So I shall (for comedic effect) indulge in my own (uncharacteristic) bit
+of name calling and dub thee a troll (and every other bad thing that anyone
+is ever alleged of calling another on LKML, just to be sure).
+
+-Tony
