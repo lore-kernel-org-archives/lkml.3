@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab3GQF2n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 01:28:43 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:65449 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3GQF2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 01:28:40 -0400
+	id S1751929Ab3GQFcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 01:32:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58757 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520Ab3GQFcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 01:32:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,682,1367996400"; 
+   d="scan'208";a="332485197"
+Date: Tue, 16 Jul 2013 22:32:14 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, "Theodore Ts'o" <tytso@mit.edu>,
+        David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Olivier Galibert <galibert@pobox.com>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [
+ 00/19] 3.10.1-stable review)
+Message-ID: <20130717053214.GC14392@xanatos>
+References: <CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+ <20130716211235.GG4994@xanatos>
+ <20130716212704.GB9371@thunk.org>
+ <20130716224357.GK4994@xanatos>
+ <20130716235008.GC9371@thunk.org>
+ <1374027494.2537.47.camel@deadeye.wl.decadent.org.uk>
+ <CA+55aFyaNLt3HBO7a9NLbm9j-ppw1bhda+3rDtHbr48FJpiB_g@mail.gmail.com>
+ <1374031004.2537.84.camel@deadeye.wl.decadent.org.uk>
+ <CA+55aFyE0c6DQVn9Unbjriya27W-8nJQcZwUM7vc_1Hk0n38WQ@mail.gmail.com>
+ <1374038558.7622.7.camel@envy.home>
 MIME-Version: 1.0
-In-Reply-To: <20130716140632.70fb2838@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-1-git-send-email-l.majewski@samsung.com>
-	<1372927830-2949-3-git-send-email-l.majewski@samsung.com>
-	<CAKohpomfWKiRjznXeYsg32xAAWPTBQ4Gd0D_pftbA5=zMDiH4Q@mail.gmail.com>
-	<20130716140632.70fb2838@amdc308.digital.local>
-Date: Wed, 17 Jul 2013 10:58:40 +0530
-Message-ID: <CAKohpokni=zPob9yz2-ak_g_xhwFaLBhk6wNGV5EGSfxx-eGZA@mail.gmail.com>
-Subject: Re: [PATCH v5 2/7] cpufreq: Add boost frequency support in core
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374038558.7622.7.camel@envy.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 July 2013 17:36, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> On Tue, 16 Jul 2013 15:11:54 +0530 Viresh Kumar viresh.kumar@linaro.org
-> wrote,
->> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com> wrote:
+On Tue, Jul 16, 2013 at 10:22:38PM -0700, Darren Hart wrote:
+> On Tue, 2013-07-16 at 21:48 -0700, Linus Torvalds wrote:
+> 
+> > Guys, I love my job. The kernel developer community is great. But I
+> > suspect that some of you don't necessarily think about the other side.
+> > I had slashdot discussing my abusive relationship with my wife and
+> > kids thanks to Sarah's comments. Talk about having a thick skin -
+> > trust me when I tell you that I get as well as I give out.
+> 
+> That's awful. People suck. I stopped reading slashdot years ago for the
+> quality of the content and commentary, apparently it has not improved.
 
->> > +void cpufreq_set_boost_enabled(int state)
->           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
->
->>
->> Maybe cpufreq_block_boost? As suggested by Rafael.
->
-> What do you mean by cpufreq_block_boost()? This name would reverse the
-> logic.
->
-> Function [*] is used to change boost_enabled static flag (defined at
-> cpufreq.c file) state according to acpi-cpufreq.c boost support status.
+Slashdot, Hacker News, and Reddit are all cesspools.  I would much
+rather discuss this topic on LKML or at KS than wade through that muck.
 
-I misread it again :(
+Bah, let's settle this at KS, away from the court of public opinion.
 
-So, what about adding another field in struct cpufreq_driver: boost_enabled?
-And get rid of the global boost_enabled we have used? Similar to how
-boost_supported is used, then we don't need this routine.
+Sarah Sharp
