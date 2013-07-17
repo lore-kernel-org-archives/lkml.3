@@ -1,220 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab3GQLo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:44:29 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42713 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754039Ab3GQLni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:43:38 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH 2/3] ARM: OMAP2+: omap_device: add pinctrl handling
-Date: Wed, 17 Jul 2013 14:41:51 +0300
-Message-ID: <1374061312-25469-3-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com>
-References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com>
+	id S1754391Ab3GQLqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:46:54 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50016 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754209Ab3GQLqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 07:46:52 -0400
+Date: Wed, 17 Jul 2013 13:46:50 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Oliver Schinagl <oliver+list@schinagl.nl>, linux-sunxi@googlegroups.com,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, andy.shevchenko@gmail.com,
+        linux@arm.linux.org.uk, linus.walleij@linaro.org,
+        Oliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [linux-sunxi] Re: [PATCH 1/2] Initial support for Allwinner's
+ Security ID fuses
+Message-ID: <20130717114650.GN3125@lukather>
+References: <51C87DC7.50005@schinagl.nl>
+ <20130624181509.GA8847@kroah.com>
+ <51C8B84C.3020200@schinagl.nl>
+ <20130624214615.GA17604@kroah.com>
+ <51CAA709.4060801@schinagl.nl>
+ <20130626175144.GC2222@kroah.com>
+ <51D674BF.9030207@schinagl.nl>
+ <20130706193646.GB9778@kroah.com>
+ <51E466A3.4010503@schinagl.nl>
+ <20130716064107.GA10868@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qYrsQHciA3Wqs7Iv"
+Content-Disposition: inline
+In-Reply-To: <20130716064107.GA10868@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before switching to DT pinctrl states of OMAP IPs have been handled by hwmod
-framework. After switching to DT-boot the pinctrl handling was dropped from
-hwmod framework and, as it was recommended, OMAP IP's drivers have to be updated
-to handle pinctrl states by itself using pinctrl_pm_select_xx() helpers
-(see http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173514.html)
 
-But this is not right for OMAP2+ SoC where real IPs state is controlled
-by omap_device core which enables/disables modules & clocks actually.
+--qYrsQHciA3Wqs7Iv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For example, if OMAP I2C driver will handle pinctrl state during system wide
-suspend the following issue may occure:
-- suspend_noirq - I2C device can be still active because of PM auto-suspend
-  |-_od_suspend_noirq
-     |- omap_i2c_suspend_noirq
-        |- PINs state set to SLEEP
-  |- pm_generic_runtime_suspend
-     |- omap_i2c_runtime_suspend()
-        |- PINs state set to IDLE  <--- *oops* PINs state is IDLE and not SLEEP
-  |- omap_device_idle()
-     |- omap_hwmod_idle()
-        |- _idle()
-           |- disbale module (sysc&clocks)
+On Mon, Jul 15, 2013 at 11:41:07PM -0700, Greg KH wrote:
+> On Mon, Jul 15, 2013 at 11:16:19PM +0200, Oliver Schinagl wrote:
+> > So using these new patches for binary attributes, how can I pass data=
+=20
+> > between my driver and the sysfs files using a platform_driver? Or are=
+=20
+> > other 'hacks' needed and using the .groups attribute from=20
+> > platform_driver->device_driver->groups is really the wrong approach.
+> >=20
+> > I did ask around and still haven't figured it out so far, so I do=20
+> > apologize if you feel I'm wasting your precious time.
+>=20
+> How is the platform device not the same thing that was passed to your
+> probe function?
 
-- resume_noirq - I2C was active before suspend
-  |-_od_resume_noirq
-     |- omap_hwmod_enable()
-        |- _enable()
-           |- enable module (sysc&clocks)
-     |- pm_generic_runtime_resume
-        |- omap_i2c_runtime_resume()
-           |- PINs state set to DEFAULT  <--- !!!!
-     |- omap_i2c_resume_noirq
-        |- PINs state set to DEFAULT
-        |- PINs state set to IDLE  <--- *big oops* we have active module and its
-                                         PINs state is IDLE
-(see https://patchwork.kernel.org/patch/2642101/)
+One thing I don't get here is why it should be set in the
+platform_driver structure. From my understanding of the device model,
+and since what Oliver is trying to do is exposing a few bytes of memory
+to sysfs, shouldn't the sysfs file be attached to the device instead?
 
-Of course, everything can be handled by adding a tons of code in ecah driver to
-check PM state of device and override default behavior of omap_device core, but
-this not good.
+I mean, here, the sysfs file will be created under something like
+=2E../drivers/sunxi-sid/eeprom. What happens when you have several
+instances of that driver loaded? I'd expect it to have several sysfs
+files created, one for each instance. So to me, it should be in the
+device structure, not the driver one.
 
-Hence, add pinctrl handling in omap_device core as shown below:
-                                         +
-                                         |
-                                         |  .probe()
-                                         |
-                                   +-----v--------+
-                                   |              |
-                                   |  default     |
-                                   |              |
-                                   +----+--+------+
-                                        |  |
-                        pm_runtime_get()|  | pm_runtime_put()
-                       +----------------+  +------------+
-                       |                                |
-                +------v------+ pm_runtime_put()+-------v-----+
-                |             +----------------->             |
-    +----------->  Active     |pm_runtime_get() |   Idle      <----------+
-    |           |             <-----------------+             |          |
-    |           +-------+-----+                 +-------+-----+          |
-    |                   |.suspend_noirq()               |.suspend_noirq()|
-    |                   |                               |                |
-    |                   |                               |                |
-    |                   |                               |                |
-    |                   |                               |                |
-    |           +-------v-----+                 +-------v-----+          |
-    |           |             |                 |             |          |
-    +-----------+  Sleep      ------+           |  Sleep      +----------+
-.resume_noirq() |             |     |           |             |.resume_noirq()
-                +-------|-----+     |           +-------------+
-                        |  Idle     |
-                        +-----------+
-1) on PM runtime resume
-- switch pinctrl state to "active"
-2) on PM runtime suspend
-- switch pinctrl state to "idle"
-3) during system wide suspend
-- switch pinctrl state to "sleep" or "idle" if omap_device core disables device
-- switch pinctrl state to "sleep" if device has been disabled already
-4) during system wide resume
-- switch pinctrl state to "active" if omap_device core has
-  disabled device during suspend
-- switch pinctrl state to "idle" if device was already disabled before suspend
+Couldn't that be also the reason of Oliver's NULL pointer? If the kobj
+is attached to the platform_driver and not to the platform_device, it
+should definitely get nasty when we try to cast it and retrieve data
+=66rom it (and that would match the different pointers stuff as well.)
 
-This will enable pinctrl for all OMAP2+ IP's drivers by default -
-no changes in code is needed and only DT data will need to be updated
-(add "default", "active", "idle", "sleep" states).
+Maxime
 
-Related discussions:
-- [3/3] i2c: nomadik: use pinctrl PM helpers
- https://patchwork.kernel.org/patch/2670291/
-- mmc: omap_hsmmc: Remux pins to support SDIO interrupt and PM runtime
- https://patchwork.kernel.org/patch/2690191/
-- [PATCH 00/11] drivers: Add Pinctrl PM support
- https://lkml.org/lkml/2013/5/31/210
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-CC: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- arch/arm/mach-omap2/omap_device.c |   40 +++++++++++++++++++++++++++++++------
- 1 file changed, 34 insertions(+), 6 deletions(-)
+--qYrsQHciA3Wqs7Iv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index 5cc9287..4ebdbd7 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -39,6 +39,7 @@
- #include "soc.h"
- #include "omap_device.h"
- #include "omap_hwmod.h"
-+#include "iomap.h"
- 
- /* Private functions */
- 
-@@ -582,8 +583,10 @@ static int _od_runtime_suspend(struct device *dev)
- 
- 	ret = pm_generic_runtime_suspend(dev);
- 
--	if (!ret)
-+	if (!ret) {
- 		omap_device_idle(pdev);
-+		pinctrl_pm_select_idle_state(dev);
-+	}
- 
- 	return ret;
- }
-@@ -592,12 +595,25 @@ static int _od_runtime_resume(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 
-+	pinctrl_pm_select_active_state(dev);
-+
- 	omap_device_enable(pdev);
- 
- 	return pm_generic_runtime_resume(dev);
- }
- #endif
- 
-+void _od_suspend_sel_pinctrl_state(struct device *dev)
-+{
-+	if (!dev->pins)
-+		return;
-+	/* try to select *deepest* pinctrl state */
-+	if (IS_ERR(dev->pins->sleep_state))
-+		pinctrl_pm_select_idle_state(dev);
-+	else
-+		pinctrl_pm_select_sleep_state(dev);
-+}
-+
- #ifdef CONFIG_SUSPEND
- static int _od_suspend_noirq(struct device *dev)
- {
-@@ -610,11 +626,19 @@ static int _od_suspend_noirq(struct device *dev)
- 		return 0;
- 
- 	ret = pm_generic_suspend_noirq(dev);
--
--	if (!ret && !pm_runtime_status_suspended(dev)) {
--		if (pm_generic_runtime_suspend(dev) == 0) {
--			omap_device_idle(pdev);
--			od->flags |= OMAP_DEVICE_SUSPENDED;
-+	if (!ret) {
-+		if (!pm_runtime_status_suspended(dev)) {
-+			if (pm_generic_runtime_suspend(dev) == 0) {
-+				omap_device_idle(pdev);
-+				od->flags |= OMAP_DEVICE_SUSPENDED;
-+				_od_suspend_sel_pinctrl_state(dev);
-+			}
-+		} else {
-+			/*
-+			 * "idle" pinctrl state already applied -
-+			 * try to set "sleep" state
-+			 */
-+			pinctrl_pm_select_sleep_state(dev);
- 		}
- 	}
- 
-@@ -630,7 +654,11 @@ static int _od_resume_noirq(struct device *dev)
- 	    !pm_runtime_status_suspended(dev)) {
- 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
- 		omap_device_enable(pdev);
-+		pinctrl_pm_select_active_state(dev);
- 		pm_generic_runtime_resume(dev);
-+	} else if (pm_runtime_status_suspended(dev)) {
-+		/* switch back to "idle" pinctrl state */
-+		pinctrl_pm_select_idle_state(dev);
- 	}
- 
- 	return pm_generic_resume_noirq(dev);
--- 
-1.7.9.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR5oQqAAoJEBx+YmzsjxAgK0UP/0bgj+M8xwNNvjG1Xw0swJs1
+y0dI/iGSDNc/KdNKNnYIsFercufhmqpfxLK7qd/xUWwoWsp9vf0gxlTsCXmhbNYf
+u+UQcTF2/MVizQ41GUoCfq3sB2G7RSJmJYhxMvqng5Vlgmi/vQ5dkfhLMR3wc7jp
+isIM4sJZBiKZsPc1pHUY0R4UYFanR6XMkUBasBZJ83iEWGzvTHKbj6jT78sikoBi
+FwP/uBKAmrIHyFWx7fAmZeL++5LF5GWEBrRVmLWeJ8edbLaciIvqBhT3jwnC6+w0
+82ywGp4tR98dMjB0F5KBfmj5+1KOROqY+6DOhot95QIDjCyGb17hE8B7O2fw07ge
+TTSSIq7KjQ1TiDl4GxVi1TOcUJj6hm7+M476Fr3HvWAkG6V9hQGbsyTIgUx+16fY
+2ez0RJrTt/T9dVG+qksTs9AZSb9JgQue9LVWu84sRsCS4cRZRTRWKyPBJfYUN/3O
+qCa8yK4b8ycRJCAd15PqM5IV56dd60ALzUdaEDygRJ1iMuV1q+U2e1mn5amCJipf
+rcZgB876LqXhixrNg8K6fiEl7cP3rW8q4PR7PQUxXmkpQCfRROtQ3efe9ctOIjsV
+jzwm7NtJO1nGFGscV4KmJtir9XmR9JYVul6tQH/ShtMRtHLFB0BXLgb5DC/chRNn
+2l09/D9WymE5RjCu+53K
+=KT0E
+-----END PGP SIGNATURE-----
+
+--qYrsQHciA3Wqs7Iv--
