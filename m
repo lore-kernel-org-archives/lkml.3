@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab3GQLUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 07:20:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50426 "EHLO
+	id S1754108Ab3GQLVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 07:21:07 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50422 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab3GQLUr (ORCPT
+	with ESMTP id S1751927Ab3GQLVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 07:20:47 -0400
+	Wed, 17 Jul 2013 07:21:05 -0400
 From: Mark Brown <broonie@kernel.org>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@linaro.org>
-Date: Wed, 17 Jul 2013 12:20:37 +0100
-Message-Id: <1374060037-18527-2-git-send-email-broonie@kernel.org>
+Date: Wed, 17 Jul 2013 12:20:36 +0100
+Message-Id: <1374060037-18527-1-git-send-email-broonie@kernel.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374060037-18527-1-git-send-email-broonie@kernel.org>
-References: <1374060037-18527-1-git-send-email-broonie@kernel.org>
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 2/2] mfd: wm8994: Remove check for active audio in runtime suspend
+Subject: [PATCH 1/2] mfd: wm8994: Remove duplicate check for active JACKDET
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,60 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Brown <broonie@linaro.org>
 
-Since enabling VMID takes a runtime PM reference there is no need to
-suppress suspend when doing a runtime suspend. Similarly the digital
-inputs and outputs are DAPM widgets and therefore the ASoC core will
-be holding a reference for them.
-
-This used to be required when integration with system suspend was being
-bodged.
+Probably the result of a mismerge or rebase failing to notice that the
+hunk had already been applied.
 
 Signed-off-by: Mark Brown <broonie@linaro.org>
 ---
- drivers/mfd/wm8994-core.c | 30 +-----------------------------
- 1 file changed, 1 insertion(+), 29 deletions(-)
+ drivers/mfd/wm8994-core.c | 14 --------------
+ 1 file changed, 14 deletions(-)
 
 diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index e8ecb8e..e1c283e 100644
+index 781115e..e8ecb8e 100644
 --- a/drivers/mfd/wm8994-core.c
 +++ b/drivers/mfd/wm8994-core.c
-@@ -201,35 +201,7 @@ static int wm8994_suspend(struct device *dev)
- 	int ret;
+@@ -245,20 +245,6 @@ static int wm8994_suspend(struct device *dev)
+ 		break;
+ 	}
  
- 	/* Don't actually go through with the suspend if the CODEC is
--	 * still active (eg, for audio passthrough from CP. */
--	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_1);
--	if (ret < 0) {
--		dev_err(dev, "Failed to read power status: %d\n", ret);
--	} else if (ret & WM8994_VMID_SEL_MASK) {
--		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
--		return 0;
+-	switch (wm8994->type) {
+-	case WM1811:
+-		ret = wm8994_reg_read(wm8994, WM8994_ANTIPOP_2);
+-		if (ret < 0) {
+-			dev_err(dev, "Failed to read jackdet: %d\n", ret);
+-		} else if (ret & WM1811_JACKDET_MODE_MASK) {
+-			dev_dbg(dev, "CODEC still active, ignoring suspend\n");
+-			return 0;
+-		}
+-		break;
+-	default:
+-		break;
 -	}
 -
--	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_4);
--	if (ret < 0) {
--		dev_err(dev, "Failed to read power status: %d\n", ret);
--	} else if (ret & (WM8994_AIF2ADCL_ENA | WM8994_AIF2ADCR_ENA |
--			  WM8994_AIF1ADC2L_ENA | WM8994_AIF1ADC2R_ENA |
--			  WM8994_AIF1ADC1L_ENA | WM8994_AIF1ADC1R_ENA)) {
--		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
--		return 0;
--	}
--
--	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_5);
--	if (ret < 0) {
--		dev_err(dev, "Failed to read power status: %d\n", ret);
--	} else if (ret & (WM8994_AIF2DACL_ENA | WM8994_AIF2DACR_ENA |
--			  WM8994_AIF1DAC2L_ENA | WM8994_AIF1DAC2R_ENA |
--			  WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA)) {
--		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
--		return 0;
--	}
--
-+	 * still active for accessory detect. */
- 	switch (wm8994->type) {
- 	case WM8958:
- 	case WM1811:
+ 	/* Disable LDO pulldowns while the device is suspended if we
+ 	 * don't know that something will be driving them. */
+ 	if (!wm8994->ldo_ena_always_driven)
 -- 
 1.8.3.2
 
