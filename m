@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3GQJjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 05:39:16 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:39432 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab3GQJjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 05:39:14 -0400
-X-IronPort-AV: E=Sophos;i="4.89,683,1367971200"; 
-   d="scan'208";a="37459821"
-Date: Wed, 17 Jul 2013 10:38:55 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S1753467Ab3GQJk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 05:40:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58998 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab3GQJk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 05:40:27 -0400
+Date: Wed, 17 Jul 2013 11:39:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        <ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: Re: [ATTEND] How to act on LKML
-In-Reply-To: <alpine.LRH.2.00.1307170038390.20418@twin.jikos.cz>
-Message-ID: <alpine.DEB.2.02.1307171017580.8258@kaball.uk.xensource.com>
-References: <20130715174659.GC15531@xanatos>   <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>   <20130715180403.GD15531@xanatos>   <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>   <20130715184642.GE15531@xanatos>
-   <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>   <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>   <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>   <1373926109.17876.221.camel@gandalf.local.home>
-   <20130715223615.GI15531@xanatos> <1373932170.28142.24.camel@envy.home>   <864nbv9qcm.fsf@void.printf.net>  <1373944014.17876.255.camel@gandalf.local.home>  <51E4BFA9.1030600@zytor.com>  <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
- <1373991399.6458.6.camel@gandalf.local.home> <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com> <alpine.LRH.2.00.1307170038390.20418@twin.jikos.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
+ frequently
+Message-ID: <20130717093913.GP23818@dyad.programming.kicks-ass.net>
+References: <1374002463.3944.11.camel@j-VirtualBox>
+ <20130716202015.GX17211@twins.programming.kicks-ass.net>
+ <1374014881.2332.21.camel@j-VirtualBox>
+ <20130717072504.GY17211@twins.programming.kicks-ass.net>
+ <1374048701.6000.21.camel@j-VirtualBox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374048701.6000.21.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013, Jiri Kosina wrote:
-> On Tue, 16 Jul 2013, Stefano Stabellini wrote:
-> 
-> > > > I think that it's hurting Linux and in particular it's hurting
-> > > > attracting new talents.
-> > > 
-> > > Then why do we have the largest # of developers than any other Open
-> > > Source project?
-> > 
-> > Because Linux is the most widely used kernel, it's everywhere from
-> > embedded devices to supercomputers.
-> 
-> And that's because ... ?
-> 
-> Yes, because the community has been very open since its very beginning 
-> (and this is not "being open about why I hate you personally", but this is 
-> "being open about what I think about your code").
+On Wed, Jul 17, 2013 at 01:11:41AM -0700, Jason Low wrote:
+> For the more complex model, are you suggesting that each completion time
+> is the time it takes to complete 1 iteration of the for_each_domain()
+> loop? 
 
-Being open about what I think about your code doesn't mean that I can
-feel free to verbally attack you.
+Per sd, yes? So higher domains (or lower depending on how you model the thing
+in you head) have bigger CPU spans, and thus take longer to complete. Imagine
+the top domain of a 4096 cpu system, it would go look at all cpus to see if it
+could find a task.
 
+> Based on some of the data I collected, a single iteration of the
+> for_each_domain() loop is almost always significantly lower than the
+> approximate CPU idle time, even in workloads where idle_balance is
+> lowering performance. The bigger issue is that it takes so many of these
+> attempts before idle_balance actually "worked" and pulls a tasks.
 
-> Plus there is a *LOT* of humor and sarcasm in all that. Which just 
-> contributes to working on linux kernel being fun. I'd absolutely like to 
-> keep that spirit.
-> 
-> If you guys now start telling others what is allowed and what is forbidden 
-> to say, you are going to destroy this completely.
-> 
-> I don't want to be a part of a community where you have to read a legal 
-> code before you can speak without fear of being accused of verbal 
-> violence.
-> 
-> This just doesn't fit into how people of my culture see the world; hence, 
-> I may even feel offended by Sarah's proposal (i.e. being very restrictive 
-> about what I am allowed to say), actually. I like openness, I like 
-> sarcasm, I like fun. Anyone who is trying to forbid this just doesn't fit 
-> into my culture.
+I'm confused, so:
 
-We should be able to prevent verbal abuses without involving legal,
-right?
-Would a NETIQUETTE file be enough, or would you consider that "legal
-code"?
+  schedule()
+    if (!rq->nr_running)
+      idle_balance()
+        for_each_domain(sd)
+          load_balance(sd)
 
+is the entire thing, there's no other loop in there.
 
-> > > Honestly, I think LKML over the years has become more tame. Yeah, back
-> > > in 2005 it was rather harsh, but I don't really see that anymore. I
-> > > don't see the nasty flame wars going on. Everything seems to be focused
-> > > more on the technical side, and there's really very little personal
-> > > attacks out there. Sure, with 15,000 emails a month, you get a few. And
-> > > Linus will get fed up and burst. But they are really few and far
-> > > between. And sometimes, a Linus burst gets things moving along much
-> > > faster than being "professional". You think ARM would have gotten their
-> > > act together as quick as they did if Linus didn't curse them out and
-> > > threaten to stop pulling their crap?
-> >  
-> > I think there is a way to get the point across without cursing.
-> 
-> Maybe there is, maybe there is not.
-> 
-> I am not cursing in my e-mails, you are probably neither. Linus is. Others 
-> are.
-> 
-> So what? He/they believe they achieves their goal through that mode of 
-> operation (and very often they indeed do), as so do we, through different 
-> means of communication.
-> 
-> No need to change anything anywhere. Please let everyone express their 
-> feelings the way the believe it's best for achieving their goals, and do 
-> the same.
+> I initially was thinking about each "completion time" of an idle balance
+> as the sum total of the times of all iterations to complete until a task
+> is successfully pulled within each domain.
 
-There is a very fine line between cursing and what people might perceive
-as a personal attack.
+So you're saying that normally idle_balance() won't find a task to pull? And we
+need many times going newidle before we do get something?
+
+Wouldn't this mean that there simply weren't enough tasks to keep all cpus busy?
+
+If there were tasks we could've pulled, we might need to look at why they
+weren't and maybe fix that. Now it could be that it things this cpu, even with
+the (little) idle time it has is sufficiently loaded and we'll get a 'local'
+wakeup soon enough. That's perfectly fine.
+
+What we should avoid is spending more time looking for tasks then we have idle,
+since that reduces the total time we can spend doing useful work. So that is I
+think the critical cut-off point.
