@@ -1,72 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab3GQMkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 08:40:40 -0400
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:56289
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754780Ab3GQMke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 08:40:34 -0400
-X-Greylist: delayed 1949 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Jul 2013 08:40:34 EDT
-Message-ID: <51E68922.5020503@newflow.co.uk>
-Date: Wed, 17 Jul 2013 13:08:02 +0100
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2] ARM: dts: add AM33XX MMC support
-References: <1372303956-30208-1-git-send-email-joelf@ti.com>
-In-Reply-To: <1372303956-30208-1-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755135Ab3GQMlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 08:41:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6461 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754565Ab3GQMgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 08:36:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,684,1367996400"; 
+   d="scan'208";a="371625833"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH V7 01/14] perf tools: add debug prints
+Date: Wed, 17 Jul 2013 15:43:01 +0300
+Message-Id: <1374064994-17810-2-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1374064994-17810-1-git-send-email-adrian.hunter@intel.com>
+References: <1374064994-17810-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/06/13 04:32, Joel Fernandes wrote:
-> From: Matt Porter <mporter@ti.com>
-> 
-> Adds AM33XX MMC support for am335x-bone, am335x-evm, and am335x-evmsk.
-> Also added is the DMA binding definitions based on the generic DMA
-> request binding.
-> 
-> The HWMOD data removal was breaking MMC so some new properties like reg,
-> interrupt etc were added.
-> 
-> Changes to DTS:
-> Interrupt and reg added by: Joel Fernandes <joelf@ti.com>
-> Compatible added by Balaji TK <balajitk@ti.com>
-> ti,needs-special-hs-handling added by Gururaja Hebbar <gururaja.hebbar@ti.com>
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
->  .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   26 +++++++++++++-
->  arch/arm/boot/dts/am335x-bone.dts                  |    7 ++++
->  arch/arm/boot/dts/am335x-evm.dts                   |    7 ++++
->  arch/arm/boot/dts/am335x-evmsk.dts                 |    7 ++++
->  arch/arm/boot/dts/am33xx.dtsi                      |   38 ++++++++++++++++++++
->  5 files changed, 84 insertions(+), 1 deletion(-)
+It is useful to see the arguments to perf_event_open
+and whether the perf events ring buffer was mmapped
+per-cpu or per-thread.  That information will now be
+displayed when verbose is 2 i.e option -vv
 
-Excuse my ignorance, but which git repository is this against ?
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/evlist.c |  3 +++
+ tools/perf/util/evsel.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+)
+
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 42ea4e9..2b77b33 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -14,6 +14,7 @@
+ #include "target.h"
+ #include "evlist.h"
+ #include "evsel.h"
++#include "debug.h"
+ #include <unistd.h>
+ 
+ #include "parse-events.h"
+@@ -454,6 +455,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+ 	int nr_threads = thread_map__nr(evlist->threads);
+ 
++	pr_debug2("perf event ring buffer mmapped per cpu\n");
+ 	for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 		int output = -1;
+ 
+@@ -492,6 +494,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
+ 	int thread;
+ 	int nr_threads = thread_map__nr(evlist->threads);
+ 
++	pr_debug2("perf event ring buffer mmapped per thread\n");
+ 	for (thread = 0; thread < nr_threads; thread++) {
+ 		int output = -1;
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a635461..0b9c4fd 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -21,6 +21,7 @@
+ #include "thread_map.h"
+ #include "target.h"
+ #include "perf_regs.h"
++#include "debug.h"
+ 
+ static struct {
+ 	bool sample_id_all;
+@@ -817,6 +818,58 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
+ 	return fd;
+ }
+ 
++static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
++{
++	size_t ret;
++
++	ret = fprintf(fp, "------------------------------------------------------------\n");
++	ret += fprintf(fp, "perf_event_attr:\n");
++	ret += fprintf(fp, "  type                %u\n", attr->type);
++	ret += fprintf(fp, "  size                %u\n", attr->size);
++	ret += fprintf(fp, "  config              %#"PRIx64"\n", (uint64_t)attr->config);
++	ret += fprintf(fp, "  sample_period       %"PRIu64"\n", (uint64_t)attr->sample_period);
++	ret += fprintf(fp, "  sample_freq         %"PRIu64"\n", (uint64_t)attr->sample_freq);
++	ret += fprintf(fp, "  sample_type         %#"PRIx64"\n", (uint64_t)attr->sample_type);
++	ret += fprintf(fp, "  read_format         %#"PRIx64"\n", (uint64_t)attr->read_format);
++
++	ret += fprintf(fp, "  disabled            %u    ", attr->disabled);
++	ret += fprintf(fp, "inherit             %u\n", attr->inherit);
++	ret += fprintf(fp, "  pinned              %u    ", attr->pinned);
++	ret += fprintf(fp, "exclusive           %u\n", attr->exclusive);
++	ret += fprintf(fp, "  exclude_user        %u    ", attr->exclude_user);
++	ret += fprintf(fp, "exclude_kernel      %u\n", attr->exclude_kernel);
++	ret += fprintf(fp, "  exclude_hv          %u    ", attr->exclude_hv);
++	ret += fprintf(fp, "exclude_idle        %u\n", attr->exclude_idle);
++	ret += fprintf(fp, "  mmap                %u    ", attr->mmap);
++	ret += fprintf(fp, "comm                %u\n", attr->comm);
++	ret += fprintf(fp, "  freq                %u    ", attr->freq);
++	ret += fprintf(fp, "inherit_stat        %u\n", attr->inherit_stat);
++	ret += fprintf(fp, "  enable_on_exec      %u    ", attr->enable_on_exec);
++	ret += fprintf(fp, "task                %u\n", attr->task);
++	ret += fprintf(fp, "  watermark           %u    ", attr->watermark);
++	ret += fprintf(fp, "precise_ip          %u\n", attr->precise_ip);
++	ret += fprintf(fp, "  mmap_data           %u    ", attr->mmap_data);
++	ret += fprintf(fp, "sample_id_all       %u\n", attr->sample_id_all);
++	ret += fprintf(fp, "  exclude_host        %u    ", attr->exclude_host);
++	ret += fprintf(fp, "exclude_guest       %u\n", attr->exclude_guest);
++	ret += fprintf(fp, "  excl.callchain.kern %u    ", attr->exclude_callchain_kernel);
++	ret += fprintf(fp, "excl.callchain.user %u\n", attr->exclude_callchain_user);
++
++	ret += fprintf(fp, "  wakeup_events       %u\n", attr->wakeup_events);
++	ret += fprintf(fp, "  wakeup_watermark    %u\n", attr->wakeup_watermark);
++	ret += fprintf(fp, "  bp_type             %#x\n", attr->bp_type);
++	ret += fprintf(fp, "  bp_addr             %#"PRIx64"\n", (uint64_t)attr->bp_addr);
++	ret += fprintf(fp, "  config1             %#"PRIx64"\n", (uint64_t)attr->config1);
++	ret += fprintf(fp, "  bp_len              %"PRIu64"\n", (uint64_t)attr->bp_len);
++	ret += fprintf(fp, "  config2             %#"PRIx64"\n", (uint64_t)attr->config2);
++	ret += fprintf(fp, "  branch_sample_type  %#"PRIx64"\n", (uint64_t)attr->branch_sample_type);
++	ret += fprintf(fp, "  sample_regs_user    %#"PRIx64"\n", (uint64_t)attr->sample_regs_user);
++	ret += fprintf(fp, "  sample_stack_user   %u\n", attr->sample_stack_user);
++	ret += fprintf(fp, "------------------------------------------------------------\n");
++
++	return ret;
++}
++
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+@@ -840,6 +893,9 @@ retry_sample_id:
+ 	if (perf_missing_features.sample_id_all)
+ 		evsel->attr.sample_id_all = 0;
+ 
++	if (verbose >= 2)
++		perf_event_attr__fprintf(&evsel->attr, stderr);
++
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 
+ 		for (thread = 0; thread < threads->nr; thread++) {
+@@ -850,6 +906,8 @@ retry_sample_id:
+ 
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+ 
++			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
++				  pid, cpus->map[cpu], group_fd, flags);
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+ 								     pid,
+ 								     cpus->map[cpu],
+-- 
+1.7.11.7
 
