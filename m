@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934591Ab3GQW4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56861 "EHLO
+	id S934623Ab3GQXAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:00:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56869 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757870Ab3GQW4t (ORCPT
+	with ESMTP id S1757959Ab3GQW4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:49 -0400
+	Wed, 17 Jul 2013 18:56:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+Cc: John Stultz <john.stultz@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 037/145] crypto: algboss - Hold ref count on larval
-Date: Wed, 17 Jul 2013 15:46:09 -0700
-Message-Id: <1374101277-7915-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 057/145] tick: Prevent uncontrolled switch to oneshot mode
+Date: Wed, 17 Jul 2013 15:46:29 -0700
+Message-Id: <1374101277-7915-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,180 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 939e17799619e31331d2433041196529515a86a6 upstream.
+commit 1f73a9806bdd07a5106409bbcab3884078bd34fe upstream.
 
-On Thu, Jun 20, 2013 at 10:00:21AM +0200, Daniel Borkmann wrote:
-> After having fixed a NULL pointer dereference in SCTP 1abd165e ("net:
-> sctp: fix NULL pointer dereference in socket destruction"), I ran into
-> the following NULL pointer dereference in the crypto subsystem with
-> the same reproducer, easily hit each time:
->
-> BUG: unable to handle kernel NULL pointer dereference at (null)
-> IP: [<ffffffff81070321>] __wake_up_common+0x31/0x90
-> PGD 0
-> Oops: 0000 [#1] SMP
-> Modules linked in: padlock_sha(F-) sha256_generic(F) sctp(F) libcrc32c(F) [..]
-> CPU: 6 PID: 3326 Comm: cryptomgr_probe Tainted: GF            3.10.0-rc5+ #1
-> Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
-> task: ffff88007b6cf4e0 ti: ffff88007b7cc000 task.ti: ffff88007b7cc000
-> RIP: 0010:[<ffffffff81070321>]  [<ffffffff81070321>] __wake_up_common+0x31/0x90
-> RSP: 0018:ffff88007b7cde08  EFLAGS: 00010082
-> RAX: ffffffffffffffe8 RBX: ffff88003756c130 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: 0000000000000003 RDI: ffff88003756c130
-> RBP: ffff88007b7cde48 R08: 0000000000000000 R09: ffff88012b173200
-> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000282
-> R13: ffff88003756c138 R14: 0000000000000000 R15: 0000000000000000
-> FS:  0000000000000000(0000) GS:ffff88012fc60000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000000 CR3: 0000000001a0b000 CR4: 00000000000007e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Stack:
->  ffff88007b7cde28 0000000300000000 ffff88007b7cde28 ffff88003756c130
->  0000000000000282 ffff88003756c128 ffffffff81227670 0000000000000000
->  ffff88007b7cde78 ffffffff810722b7 ffff88007cdcf000 ffffffff81a90540
-> Call Trace:
->  [<ffffffff81227670>] ? crypto_alloc_pcomp+0x20/0x20
->  [<ffffffff810722b7>] complete_all+0x47/0x60
->  [<ffffffff81227708>] cryptomgr_probe+0x98/0xc0
->  [<ffffffff81227670>] ? crypto_alloc_pcomp+0x20/0x20
->  [<ffffffff8106760e>] kthread+0xce/0xe0
->  [<ffffffff81067540>] ? kthread_freezable_should_stop+0x70/0x70
->  [<ffffffff815450dc>] ret_from_fork+0x7c/0xb0
->  [<ffffffff81067540>] ? kthread_freezable_should_stop+0x70/0x70
-> Code: 41 56 41 55 41 54 53 48 83 ec 18 66 66 66 66 90 89 75 cc 89 55 c8
->       4c 8d 6f 08 48 8b 57 08 41 89 cf 4d 89 c6 48 8d 42 e
-> RIP  [<ffffffff81070321>] __wake_up_common+0x31/0x90
->  RSP <ffff88007b7cde08>
-> CR2: 0000000000000000
-> ---[ end trace b495b19270a4d37e ]---
->
-> My assumption is that the following is happening: the minimal SCTP
-> tool runs under ``echo 1 > /proc/sys/net/sctp/auth_enable'', hence
-> it's making use of crypto_alloc_hash() via sctp_auth_init_hmacs().
-> It forks itself, heavily allocates, binds, listens and waits in
-> accept on sctp sockets, and then randomly kills some of them (no
-> need for an actual client in this case to hit this). Then, again,
-> allocating, binding, etc, and then killing child processes.
->
-> The problem that might be happening here is that cryptomgr requests
-> the module to probe/load through cryptomgr_schedule_probe(), but
-> before the thread handler cryptomgr_probe() returns, we return from
-> the wait_for_completion_interruptible() function and probably already
-> have cleared up larval, thus we run into a NULL pointer dereference
-> when in cryptomgr_probe() complete_all() is being called.
->
-> If we wait with wait_for_completion() instead, this panic will not
-> occur anymore. This is valid, because in case a signal is pending,
-> cryptomgr_probe() returns from probing anyway with properly calling
-> complete_all().
+When the system switches from periodic to oneshot mode, the broadcast
+logic causes a possibility that a CPU which has not yet switched to
+oneshot mode puts its own clock event device into oneshot mode without
+updating the state and the timer handler.
 
-The use of wait_for_completion_interruptible is intentional so that
-we don't lock up the thread if a bug causes us to never wake up.
+CPU0				CPU1
+				per cpu tickdev is in periodic mode
+				and switched to broadcast
 
-This bug is caused by the helper thread using the larval without
-holding a reference count on it.  If the helper thread completes
-after the original thread requesting for help has gone away and
-destroyed the larval, then we get the crash above.
+Switch to oneshot mode
+ tick_broadcast_switch_to_oneshot()
+  cpumask_copy(tick_oneshot_broacast_mask,
+	       tick_broadcast_mask);
 
-So the fix is to hold a reference count on the larval.
+  broadcast device mode = oneshot
 
-Reported-by: Daniel Borkmann <dborkman@redhat.com>
-Tested-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+				Timer interrupt
+
+				irq_enter()
+				 tick_check_oneshot_broadcast()
+				  dev->set_mode(ONESHOT);
+
+				tick_handle_periodic()
+				 if (dev->mode == ONESHOT)
+				   dev->next_event += period;
+				   FAIL.
+
+We fail, because dev->next_event contains KTIME_MAX, if the device was
+in periodic mode before the uncontrolled switch to oneshot happened.
+
+We must copy the broadcast bits over to the oneshot mask, because
+otherwise a CPU which relies on the broadcast would not been woken up
+anymore after the broadcast device switched to oneshot mode.
+
+So we need to verify in tick_check_oneshot_broadcast() whether the CPU
+has already switched to oneshot mode. If not, leave the device
+untouched and let the CPU switch controlled into oneshot mode.
+
+This is a long standing bug, which was never noticed, because the main
+user of the broadcast x86 cannot run into that scenario, AFAICT. The
+nonarchitected timer mess of ARM creates a gazillion of differently
+broken abominations which trigger the shortcomings of that broadcast
+code, which better had never been necessary in the first place.
+
+Reported-and-tested-by: Stehle Vincent-B46079 <B46079@freescale.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+Cc: Mark Rutland <mark.rutland@arm.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[ luis: backported to 3.8: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- crypto/algboss.c  | 15 ++++++++-------
- crypto/api.c      |  6 ------
- crypto/internal.h |  6 ++++++
- 3 files changed, 14 insertions(+), 13 deletions(-)
+ kernel/time/tick-broadcast.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/algboss.c b/crypto/algboss.c
-index 769219b..76fc0b2 100644
---- a/crypto/algboss.c
-+++ b/crypto/algboss.c
-@@ -45,10 +45,9 @@ struct cryptomgr_param {
- 		} nu32;
- 	} attrs[CRYPTO_MAX_ATTRS];
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 239a323..f8961bf 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -400,7 +400,15 @@ void tick_check_oneshot_broadcast(int cpu)
+ 	if (cpumask_test_cpu(cpu, to_cpumask(tick_broadcast_oneshot_mask))) {
+ 		struct tick_device *td = &per_cpu(tick_cpu_device, cpu);
  
--	char larval[CRYPTO_MAX_ALG_NAME];
- 	char template[CRYPTO_MAX_ALG_NAME];
- 
--	struct completion *completion;
-+	struct crypto_larval *larval;
- 
- 	u32 otype;
- 	u32 omask;
-@@ -87,7 +86,8 @@ static int cryptomgr_probe(void *data)
- 	crypto_tmpl_put(tmpl);
- 
- out:
--	complete_all(param->completion);
-+	complete_all(&param->larval->completion);
-+	crypto_alg_put(&param->larval->alg);
- 	kfree(param);
- 	module_put_and_exit(0);
+-		clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
++		/*
++		 * We might be in the middle of switching over from
++		 * periodic to oneshot. If the CPU has not yet
++		 * switched over, leave the device alone.
++		 */
++		if (td->mode == TICKDEV_MODE_ONESHOT) {
++			clockevents_set_mode(td->evtdev,
++					     CLOCK_EVT_MODE_ONESHOT);
++		}
+ 	}
  }
-@@ -187,18 +187,19 @@ static int cryptomgr_schedule_probe(struct crypto_larval *larval)
- 	param->otype = larval->alg.cra_flags;
- 	param->omask = larval->mask;
  
--	memcpy(param->larval, larval->alg.cra_name, CRYPTO_MAX_ALG_NAME);
--
--	param->completion = &larval->completion;
-+	crypto_alg_get(&larval->alg);
-+	param->larval = larval;
- 
- 	thread = kthread_run(cryptomgr_probe, param, "cryptomgr_probe");
- 	if (IS_ERR(thread))
--		goto err_free_param;
-+		goto err_put_larval;
- 
- 	wait_for_completion_interruptible(&larval->completion);
- 
- 	return NOTIFY_STOP;
- 
-+err_put_larval:
-+	crypto_alg_put(&larval->alg);
- err_free_param:
- 	kfree(param);
- err_put_module:
-diff --git a/crypto/api.c b/crypto/api.c
-index 033a714..3b61803 100644
---- a/crypto/api.c
-+++ b/crypto/api.c
-@@ -34,12 +34,6 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
- BLOCKING_NOTIFIER_HEAD(crypto_chain);
- EXPORT_SYMBOL_GPL(crypto_chain);
- 
--static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
--{
--	atomic_inc(&alg->cra_refcnt);
--	return alg;
--}
--
- struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
- {
- 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
-diff --git a/crypto/internal.h b/crypto/internal.h
-index 9ebedae..bd39bfc 100644
---- a/crypto/internal.h
-+++ b/crypto/internal.h
-@@ -103,6 +103,12 @@ int crypto_register_notifier(struct notifier_block *nb);
- int crypto_unregister_notifier(struct notifier_block *nb);
- int crypto_probing_notify(unsigned long val, void *v);
- 
-+static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
-+{
-+	atomic_inc(&alg->cra_refcnt);
-+	return alg;
-+}
-+
- static inline void crypto_alg_put(struct crypto_alg *alg)
- {
- 	if (atomic_dec_and_test(&alg->cra_refcnt) && alg->cra_destroy)
 -- 
 1.8.1.2
 
