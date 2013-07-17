@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab3GQGoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 02:44:37 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:33190 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab3GQGof (ORCPT
+	id S1752371Ab3GQHBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 03:01:01 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:50585 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab3GQHA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 02:44:35 -0400
-Date: Wed, 17 Jul 2013 08:44:35 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        rockorequin@hotmail.com, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>, alexkaltsas@gmail.com,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v2] drm/i915: fix long-standing SNB regression in power
- consumption after resume
-Message-ID: <20130717064435.GA5784@phenom.ffwll.local>
-Mail-Followup-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	rockorequin@hotmail.com, Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>, alexkaltsas@gmail.com,
-	dri-devel@lists.freedesktop.org
-References: <20130714163009.22374.22100.stgit@zurg>
- <20130717062258.5467.69414.stgit@zurg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130717062258.5467.69414.stgit@zurg>
-X-Operating-System: Linux phenom 3.10.0-rc7+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Jul 2013 03:00:59 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-80-51e641239430
+Date: Wed, 17 Jul 2013 09:00:44 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, l.majewski@majess.pl,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v5 2/7] cpufreq: Add boost frequency support in core
+Message-id: <20130717090044.4392d86a@amdc308.digital.local>
+In-reply-to: <CAKohpokni=zPob9yz2-ak_g_xhwFaLBhk6wNGV5EGSfxx-eGZA@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-3-git-send-email-l.majewski@samsung.com>
+ <CAKohpomfWKiRjznXeYsg32xAAWPTBQ4Gd0D_pftbA5=zMDiH4Q@mail.gmail.com>
+ <20130716140632.70fb2838@amdc308.digital.local>
+ <CAKohpokni=zPob9yz2-ak_g_xhwFaLBhk6wNGV5EGSfxx-eGZA@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xgK6y47NAg4UL5Sz+vF3OavG06Qe7
+	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4LS7vmsNm8bn3CKPF7cYVbBb9C3uZLJ487GOz2PjV
+	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
+	royFfb3MBd84KlbdvMHWwNjN3sXIySEhYCIx6c5bZghbTOLCvfVsXYxcHEICixgllh//wg7h
+	tDNJTFpzgw2kikVAVeL3v0dgNpuAnsTnu0+Zuhg5OEQEtCRe3kwFqWcW+MgscffgbRaQGmEB
+	D4lFu++A1fAKWEt8nJsNEuYUCJbYOHsWM8T8v0wSE343gF3BLyAp0f7vB9RFdhLnPm0Au5RX
+	QFDix+R7YDOZgXZt3tbECmHLS2xe85Z5AqPgLCRls5CUzUJStoCReRWjaGpBckFxUnqukV5x
+	Ym5xaV66XnJ+7iZGcCQ9k97BuKrB4hCjAAejEg/vhLCngUKsiWXFlbmHGCU4mJVEeKs1ngUK
+	8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYGz+Pf2KWvDD
+	xxJF97bsZdstIWvXsuDt7qR1C0wmGU/iOR93lGHSVQnbQ0wlCff0rm+OvDFlz/yzT9cFbmH5
+	N83HdY98wOqX/2QNvRiWuHIWmh+ZsW/H26APPz6HyR7gy3FdyHi4Tj+NXzdR+UntqlXbHnBn
+	G894sPCXqt+KST3XPmtecDjGr2WqxFKckWioxVxUnAgACYFlHKACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 10:22:58AM +0400, Konstantin Khlebnikov wrote:
-> This patch fixes regression in power consumtion of sandy bridge gpu, which
-> exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
-> it's extremely busy. After that it never reaches rc6 state.
+On Wed, 17 Jul 2013 10:58:40 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 16 July 2013 17:36, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > On Tue, 16 Jul 2013 15:11:54 +0530 Viresh Kumar
+> > viresh.kumar@linaro.org wrote,
+> >> On 4 July 2013 14:20, Lukasz Majewski <l.majewski@samsung.com>
+> >> wrote:
 > 
-> Bug exists since kernel v3.6, commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
-> ("drm/i915: load boot context at driver init time").
+> >> > +void cpufreq_set_boost_enabled(int state)
+> >           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
+> >
+> >>
+> >> Maybe cpufreq_block_boost? As suggested by Rafael.
+> >
+> > What do you mean by cpufreq_block_boost()? This name would reverse
+> > the logic.
+> >
+> > Function [*] is used to change boost_enabled static flag (defined at
+> > cpufreq.c file) state according to acpi-cpufreq.c boost support
+> > status.
 > 
-> For some reason RC6 is already enabled at the beginning of resuming process.
-> Following initliaztion breaks some internal state and confuses RPS engine.
-> This patch disables RC6 at the beginnig of resume and initialization.
+> I misread it again :(
 > 
-> I've rearranged initialization sequence, because intel_disable_gt_powersave()
-> needs initialized force_wake_get/put and some locks from the dev_priv.
-> 
-> References: https://bugs.freedesktop.org/show_bug.cgi?id=54089
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=58971
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> So, what about adding another field in struct cpufreq_driver:
+> boost_enabled? And get rid of the global boost_enabled we have used?
+> Similar to how boost_supported is used, then we don't need this
+> routine.
 
-lgtm, thanks a lot for digging through this giant mess and figuring out
-what's actually broken here. Patch is merged to my -fixes queue with a
-slightly pimped commit message and cc: stable added.
-
-Note that there's a small issue with the drps code on ilk, we now write a
-bogus fstart value as the requested frequency. I'll follow-up with a patch
-to fix this, but I've figured that merging this one here first for wider
-testing is more important.
-
-Cheers, Daniel
-
-> ---
->  drivers/gpu/drm/i915/i915_dma.c |   16 ++++++++--------
->  drivers/gpu/drm/i915/intel_pm.c |    5 +++--
->  2 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index 3b315ba..d1ee611 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1511,6 +1511,13 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->  	dev_priv->dev = dev;
->  	dev_priv->info = info;
->  
-> +	spin_lock_init(&dev_priv->irq_lock);
-> +	spin_lock_init(&dev_priv->gpu_error.lock);
-> +	spin_lock_init(&dev_priv->rps.lock);
-> +	mutex_init(&dev_priv->dpio_lock);
-> +	mutex_init(&dev_priv->rps.hw_lock);
-> +	mutex_init(&dev_priv->modeset_restore_lock);
-> +
->  	i915_dump_device_info(dev_priv);
->  
->  	if (i915_get_bridge_dev(dev)) {
-> @@ -1602,6 +1609,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->  
->  	intel_irq_init(dev);
->  	intel_gt_init(dev);
-> +	intel_gt_reset(dev);
->  
->  	/* Try to make sure MCHBAR is enabled before poking at it */
->  	intel_setup_mchbar(dev);
-> @@ -1626,14 +1634,6 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->  	if (!IS_I945G(dev) && !IS_I945GM(dev))
->  		pci_enable_msi(dev->pdev);
->  
-> -	spin_lock_init(&dev_priv->irq_lock);
-> -	spin_lock_init(&dev_priv->gpu_error.lock);
-> -	spin_lock_init(&dev_priv->rps.lock);
-> -	mutex_init(&dev_priv->dpio_lock);
-> -
-> -	mutex_init(&dev_priv->rps.hw_lock);
-> -	mutex_init(&dev_priv->modeset_restore_lock);
-> -
->  	dev_priv->num_plane = 1;
->  	if (IS_VALLEYVIEW(dev))
->  		dev_priv->num_plane = 2;
-> diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-> index aa01128..b86db1e 100644
-> --- a/drivers/gpu/drm/i915/intel_pm.c
-> +++ b/drivers/gpu/drm/i915/intel_pm.c
-> @@ -4497,6 +4497,9 @@ void intel_gt_reset(struct drm_device *dev)
->  		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
->  			__gen6_gt_force_wake_mt_reset(dev_priv);
->  	}
-> +
-> +	/* BIOS often leaves RC6 enabled, but disable it for hw init */
-> +	intel_disable_gt_powersave(dev);
->  }
->  
->  void intel_gt_init(struct drm_device *dev)
-> @@ -4505,8 +4508,6 @@ void intel_gt_init(struct drm_device *dev)
->  
->  	spin_lock_init(&dev_priv->gt_lock);
->  
-> -	intel_gt_reset(dev);
-> -
->  	if (IS_VALLEYVIEW(dev)) {
->  		dev_priv->gt.force_wake_get = vlv_force_wake_get;
->  		dev_priv->gt.force_wake_put = vlv_force_wake_put;
-> 
+Ok, I will implement this.
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
