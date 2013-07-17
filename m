@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934443Ab3GQXd7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:33:59 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:59436 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934180Ab3GQXd4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 19:33:56 -0400
+	id S964868Ab3GQX1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:27:20 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47808 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757633Ab3GQX1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 19:27:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 29/30] ACPI / hotplug / PCI: Clean up bridge_mutex usage
+Date: Thu, 18 Jul 2013 01:35:45 +0200
+Message-ID: <1699392.oW1xlocqas@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2366394.4EoP1MXmG2@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <2366394.4EoP1MXmG2@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1374103783.24916.49.camel@misato.fc.hp.com>
-References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
- <CAHGf_=pND-R=qMHg7b=Fi5SqS6ahXJCG865WsOS2eKWa6g3A7A@mail.gmail.com> <1374103783.24916.49.camel@misato.fc.hp.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Wed, 17 Jul 2013 19:33:35 -0400
-Message-ID: <CAHGf_=q-9C4JZgv9Xp1Z3_Ks1a7t_sOArD3e1myj1EdiH5GBHQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "vasilis.liaskovitis" <vasilis.liaskovitis@profitbricks.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 7:29 PM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Wed, 2013-07-17 at 19:22 -0400, KOSAKI Motohiro wrote:
->> On Wed, Jul 17, 2013 at 5:45 PM, Toshi Kani <toshi.kani@hp.com> wrote:
->> > CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
->> > interface, which allows a given memory address to be hot-added as
->> > follows. (See Documentation/memory-hotplug.txt for more detail.)
->> >
->> > # echo start_address_of_new_memory > /sys/devices/system/memory/probe
->> >
->> > This probe interface is required on powerpc. On x86, however, ACPI
->> > notifies a memory hotplug event to the kernel, which performs its
->> > hotplug operation as the result. Therefore, users should not be
->> > required to use this interface on x86. This probe interface is also
->> > error-prone that the kernel blindly adds a given memory address
->> > without checking if the memory is present on the system; no probing
->> > is done despite of its name. The kernel crashes when a user requests
->> > to online a memory block that is not present on the system.
->> >
->> > This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86,
->> > and clarifies it in Documentation/memory-hotplug.txt.
->>
->> Why don't you completely remove it? Who should use this strange interface?
->
-> According to the comment below, this probe interface is used on powerpc.
-> So, we cannot remove it, but to disable it on x86.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I meant x86. Why can't we completely remove ARCH_MEMORY_PROBE section
-from x86 Kconfig?
+Do not acquire bridge_mutex around the addition of a slot to its
+bridge's list of slots and arount the addition of a function to
+its slot's list of functions, because that doesn't help anything
+right now (those lists are walked without any locking anyway).
+
+However, acquire bridge_mutex around the list walk in
+acpiphp_remove_slots() and use list_for_each_entry() there,
+because we terminate the walk as soon as we find the first matching
+entry.  This prevents that list walk from colliding with bridge
+addition and removal.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/hotplug/acpiphp_glue.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -323,9 +323,7 @@ static acpi_status register_slot(acpi_ha
+ 	INIT_LIST_HEAD(&slot->funcs);
+ 	mutex_init(&slot->crit_sect);
+ 
+-	mutex_lock(&bridge_mutex);
+ 	list_add_tail(&slot->node, &bridge->slots);
+-	mutex_unlock(&bridge_mutex);
+ 
+ 	/* Register slots for ejectable funtions only. */
+ 	if (acpi_pci_check_ejectable(pbus, handle)  || is_dock_device(handle)) {
+@@ -355,9 +353,7 @@ static acpi_status register_slot(acpi_ha
+ 
+  slot_found:
+ 	newfunc->slot = slot;
+-	mutex_lock(&bridge_mutex);
+ 	list_add_tail(&newfunc->sibling, &slot->funcs);
+-	mutex_unlock(&bridge_mutex);
+ 
+ 	if (pci_bus_read_dev_vendor_id(pbus, PCI_DEVFN(device, function),
+ 				       &val, 60*1000))
+@@ -1025,17 +1021,21 @@ void acpiphp_enumerate_slots(struct pci_
+ /* Destroy hotplug slots associated with the PCI bus */
+ void acpiphp_remove_slots(struct pci_bus *bus)
+ {
+-	struct acpiphp_bridge *bridge, *tmp;
++	struct acpiphp_bridge *bridge;
+ 
+ 	if (acpiphp_disabled)
+ 		return;
+ 
+-	list_for_each_entry_safe(bridge, tmp, &bridge_list, list)
++	mutex_lock(&bridge_mutex);
++	list_for_each_entry(bridge, &bridge_list, list)
+ 		if (bridge->pci_bus == bus) {
++			mutex_unlock(&bridge_mutex);
+ 			cleanup_bridge(bridge);
+ 			put_bridge(bridge);
+-			break;
++			return;
+ 		}
++
++	mutex_unlock(&bridge_mutex);
+ }
+ 
+ /**
+
