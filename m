@@ -1,95 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab3GQC50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 22:57:26 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:41524 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab3GQC5Y (ORCPT
+	id S1751783Ab3GQC6X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 22:58:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43903 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751533Ab3GQC6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 22:57:24 -0400
-Date: Tue, 16 Jul 2013 19:57:20 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soeren.brinkmann@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Willy Tarreau <w@1wt.eu>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION 3.10.1] System does not wake up from suspend
-Message-ID: <20130717025720.GA1267@skorgonTP.att.net>
-References: <20130715043625.GA2162@skorgonTP.att.net>
- <20130715045400.GU32054@1wt.eu>
- <51E39BAB.4060308@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
-Content-Disposition: inline
-In-Reply-To: <51E39BAB.4060308@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Jul 2013 22:58:21 -0400
+Message-ID: <1374029882.2537.74.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linux-foundation.org" 
+	<ksummit-2013-discuss@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 17 Jul 2013 03:58:02 +0100
+In-Reply-To: <20130716201041.GC20721@1wt.eu>
+References: <20130712005023.GB31005@thunk.org>
+	 <20130712051451.GC25815@1wt.eu>
+	 <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz>
+	 <s5hwqoqv4oo.wl%tiwai@suse.de> <20130716165933.GU22506@sirena.org.uk>
+	 <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com>
+	 <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
+	 <1374000084.6458.36.camel@gandalf.local.home>
+	 <20130716191147.GA1680@kroah.com>
+	 <1374003789.6458.55.camel@gandalf.local.home>
+	 <20130716201041.GC20721@1wt.eu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-8sIWsnkmxR8DCU1q+CBr"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---tKW2IUtsqtDRztdT
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+--=-8sIWsnkmxR8DCU1q+CBr
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 15, 2013 at 12:20:19PM +0530, Srivatsa S. Bhat wrote:
-> On 07/15/2013 10:24 AM, Willy Tarreau wrote:
-> > On Sun, Jul 14, 2013 at 09:36:25PM -0700, S=C3=B6ren Brinkmann wrote:
-> >> Hi Greg,
-> >>
-> >> since upgrading to 3.10.1 I find my system not waking up from suspend
-> >> from time to time. Unfortunately, I couldn't figure out how to reliably
-> >> reproduce the issue. Sometimes it works just fine.
-> >>
-> >> All I know so far:
-> >> On 3.10 I had my system completely freezing a few times. But that did
-> >> not seem to be related to suspend/resume. I never experienced the
-> >> behavior described below on 3.10.
-> >>
-> >> On 3.10.1 I hit this bug a few times, that my system did not wake up.
-> >> I.e. the screen stayed black and the power LED kept flashing. But
-> >> nothing brought the system back up and I had to longpress power to res=
-et
-> >> the system.
-> >> I had none of the system freezes like the ones described above anymore.
+On Tue, 2013-07-16 at 22:10 +0200, Willy Tarreau wrote:
+> On Tue, Jul 16, 2013 at 03:43:09PM -0400, Steven Rostedt wrote:
+> > On Tue, 2013-07-16 at 12:11 -0700, Greg Kroah-Hartman wrote:
 > >=20
-> > Fortunately, 3.10.1 is very small. The only patch it contains which is
-> > related to suspend is 18/19 (cpufreq ondemand governor). Maybe you're
-> > having a problem with cpufreq on this machine in fact.
+> > > People mark stable patches that way already today with a:
+> > > 	Cc: stable <stable@vger.kernel.org> # delay for 3.12-rc4
+> > > or some such wording.  I take those and don't apply them until the no=
+ted
+> > > release happens, so you can do this if needed.
 > >=20
-> > You may want to try to force it to performance mode or powersave mode
-> > and try for a while, it is possible that both 3.10 and 3.10.1 will work
-> > fine.
-> >=20
+> > I guess the thing is, are stable patches prone to regressions. Do we
+> > just do that for patches that we think are too complex and may cause
+> > some harm. Of course, there's the question about having a clue about
+> > what patches might cause harm or not.
 >=20
-> Or, you could try applying the patch shown below on top of 3.10.1 and
-> see if it fixes the suspend/resume regression for you.
->=20
-> https://lkml.org/lkml/2013/7/11/661
->=20
-> (Just apply patch 1, not the entire patchset).
-So, this didn't end well. With that patch applied I end up in a kernel
-panic on suspend, reproducible - well two out of two is a small test set,
-but anyway. Unfortunately too late to get any information about it
-and my logs don't show anything either. But it's seems worse than the
-rather occasional hangs on resume on the vanilla 3.10.1 kernel.
+> We'd probably better switch the tag to be "# now" to imply that we don't
+> want to delay them, and that by default those merged prior to rc4 are all
+> postponed.
 
-	S=C3=B6ren
+I think this might work.  I definitely agree that most fixes aren't
+worth the risk of allowing into a stable release that quickly, so it's
+the right default.
 
---tKW2IUtsqtDRztdT
-Content-Type: application/pgp-signature
+> I suspect that the switching could be mostly automated this way,
+> avoiding to add burden to Greg :
+>=20
+>   - if commit ID >=3D -rc4
+>     move to immediate queue, it's a "critical" fix as per Linus' rules
+>=20
+>   - if Cc: stable line has "now" at the end, move to immediate queue as
+>     the maintainer takes this reponsibility ;
+>=20
+>   - otherwise move to the next .2 queue.
+
+I can't speak for Greg, but that seems reasonably easy to implement.
+(Which I would have to do, as I was unable to reuse Greg's scripts.)
+
+Ben.
+
+--=20
+Ben Hutchings
+Humans are not rational beings; they are rationalising beings.
+
+--=-8sIWsnkmxR8DCU1q+CBr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAEBAgAGBQJR5ggQAAoJEE3EUu+tZnRfH6wH/0B/IHzGyYe5wQ5G2BD+ePY0
-4JVhGPX2GgtWkgXvj8P59GMm74cBuHJwj/CPpf19otBtUQlnOeh6QlKQzrP0KkG/
-8+yQSjFJZJJ20dTbrLRpF7kGQPgyU5gFDHAFhHhuwelSX/p4si0Ru4nAOKQBIr0c
-m+8Zm9hLRIOlpsMCAhpI/+JoGn9uBWBYIIzV3DKI3rCTIiTMzRBBllz0bVhd70Si
-R9aNLwrb/AQHwFhrVi3D5sY6Q6GAUa+L9gma0Rv6Yw/qapfYwG9k1dCT0f37wma6
-q27X53jKQ3TRo5QDIp3X1mXnmHMBqqwgibMIjhRAUm6mtH/Rfe8pKdgIE7rZ+GM=
-=CCL/
+iQIVAwUAUeYIOue/yOyVhhEJAQqTJQ//UoR0fe5UnGpiQSc5mrzJ9uU1558rS3y7
+/ZSdEsbiYJS70GIQLgoZNkslCsU5WBIE72XTHNb6dWu/Y2/KpLiuoxAn3iaCJwZN
+hUpMs0y9X5oano2mItbh4HHHq+3wBpwdCXmQ91OB8hA7U4r7hiB0JTFub5/jLFZC
+z+xH5Ce5jHIrNvmsWeU0KhCZzCEAnYVMzS5poAJbueg9xRxZtF37zXGPP5SrZROK
+noBCGUJv+/LFgyO3zCRL86YUwnICM61C40HykEV6CjJFxl748D9dBwb+Oqr1Tt49
+GEY+EPE3RRb7/JU836YsYE6PnhU3mdT3eKMAEWN+UVe1XvmOKH1eUgXmSWxcRRzy
+0R5FTzSu9YGA9uIPY6JO7c7LAfg6b4ETcxg1WgNL68QOPofoxiAP8btsg/qPbgEf
+GfyrG/+XYgkwVYzSPFAtUodJz6CoxTeBIwZm8LgqUe8ePGq99SD3YB+UJOOCJE2/
+kQoiSODJZYqvlWmJLdHWc/BJRzruF6LxeTqQ4i9YEQczMPtbi+clHYBCtngqmOS2
+6KKbHlgntbrm1rwfJ+7bYpm2smyfqttN0E2plMIx6gzVqM29tP1trwbtgqnwfSxn
+I20z1qCYz/syfnjF36Rx+PUpHnMfx80TQQm4BxiTk1dJsl08SwRFSKp80u+nwdFW
+C+w+WlmUK9E=
+=mnA1
 -----END PGP SIGNATURE-----
 
---tKW2IUtsqtDRztdT--
+--=-8sIWsnkmxR8DCU1q+CBr--
