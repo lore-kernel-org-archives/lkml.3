@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab3GQTSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 15:18:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34282 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755932Ab3GQTSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 15:18:33 -0400
-Message-ID: <1374088711.1949.107.camel@joe-AO722>
-Subject: Re: [PATCH] MAINTAINERS: add the generic sched_clock under
- timekeeping
-From: Joe Perches <joe@perches.com>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Jul 2013 12:18:31 -0700
-In-Reply-To: <20130717191222.GW6950@tarshish>
-References: <a38977cc6608170b69b21b8a5ee985685c7e8a0d.1374055149.git.baruch@tkos.co.il>
-	 <51E6E91C.1090700@linaro.org> <20130717191222.GW6950@tarshish>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756928Ab3GQTTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 15:19:10 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:65013 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755932Ab3GQTTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 15:19:08 -0400
+From: enselic@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, sfr@canb.auug.org.au,
+        Martin Nordholts <enselic@gmail.com>
+Subject: [PATCH] Documentation: development-process: Update -mm and -next URLs
+Date: Wed, 17 Jul 2013 21:19:06 +0200
+Message-Id: <1374088746-6862-1-git-send-email-enselic@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-17 at 22:12 +0300, Baruch Siach wrote:
-[]
-> > >diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> > >@@ -7129,6 +7129,7 @@ M:	Thomas Gleixner <tglx@linutronix.de>
-[]
-> > >+F:	include/linux/sched_clock.h
-[]
-> > >+F:	kernel/time/sched_clock.c
-> > 
-> > It seems like we could probably simplify this bit to kernel/time/*, no?
-> 
-> This would add jiffies.c and all the tick-* files that are currently covered 
-> by the "HIGH-RESOLUTION TIMERS, CLOCKEVENTS, DYNTICKS" section.
+From: Martin Nordholts <enselic@gmail.com>
 
-Another option would be to move files into
-a separate directory, but I think it's not
-a big deal either way.
+Both old URLs are broken, so update them.
+
+Signed-off-by: Martin Nordholts <enselic@gmail.com>
+---
+ Documentation/development-process/2.Process |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/development-process/2.Process b/Documentation/development-process/2.Process
+index 4823577..2e06179 100644
+--- a/Documentation/development-process/2.Process
++++ b/Documentation/development-process/2.Process
+@@ -276,7 +276,7 @@ mainline get there via -mm.
+ The current -mm patch is available in the "mmotm" (-mm of the moment)
+ directory at:
+ 
+-	http://userweb.kernel.org/~akpm/mmotm/
++	http://www.ozlabs.org/~akpm/mmotm/
+ 
+ Use of the MMOTM tree is likely to be a frustrating experience, though;
+ there is a definite chance that it will not even compile.
+@@ -287,7 +287,7 @@ the mainline is expected to look like after the next merge window closes.
+ Linux-next trees are announced on the linux-kernel and linux-next mailing
+ lists when they are assembled; they can be downloaded from:
+ 
+-	http://www.kernel.org/pub/linux/kernel/people/sfr/linux-next/
++	http://www.kernel.org/pub/linux/kernel/next/
+ 
+ Some information about linux-next has been gathered at:
+ 
+-- 
+1.7.10.4
 
