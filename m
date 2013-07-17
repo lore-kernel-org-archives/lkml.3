@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab3GQW4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:56:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56777 "EHLO
+	id S1757959Ab3GQXCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:02:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56819 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934562Ab3GQW4f (ORCPT
+	with ESMTP id S1757525Ab3GQW4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:56:35 -0400
+	Wed, 17 Jul 2013 18:56:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Seth Heasley <seth.heasley@intel.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 035/145] USB: option,qcserial: move Novatel Gobi1K IDs to qcserial
-Date: Wed, 17 Jul 2013 15:46:07 -0700
-Message-Id: <1374101277-7915-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 028/145] ata_piix: IDE-mode SATA patch for Intel Coleto Creek DeviceIDs
+Date: Wed, 17 Jul 2013 15:46:00 -0700
+Message-Id: <1374101277-7915-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,63 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit a254810a86aaaac4ac6ba44fa934558b042a17a7 upstream.
+commit c7e8695bfa0611b39493a9dfe8bab9f63f9809bd upstream.
 
-These devices are all Gobi1K devices (according to the Windows INF
-files) and should be handled by qcserial instead of option.  Their
-network port is handled by qmi_wwan.
+This patch adds the IDE-mode SATA DeviceIDs for the Intel Coleto Creek PCH.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c   | 4 ----
- drivers/usb/serial/qcserial.c | 8 +++++++-
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/ata/ata_piix.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 9162db2..c94fe3e 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -159,8 +159,6 @@ static void option_instat_callback(struct urb *urb);
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
--#define NOVATELWIRELESS_PRODUCT_G1		0xA001
--#define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index 12fb576..c70942f 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -338,6 +338,8 @@ static const struct pci_device_id piix_pci_tbl[] = {
+ 	/* SATA Controller IDE (BayTrail) */
+ 	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
++	/* SATA Controller IDE (Coleto Creek) */
++	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
  
-@@ -730,8 +728,6 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC547) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1_M) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index bd794b4..c65437c 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -35,7 +35,13 @@ static const struct usb_device_id id_table[] = {
- 	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
- 	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
- 	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
--	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel/Verizon USB-1000 */
-+	{DEVICE_G1K(0x1410, 0xa002)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa003)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa004)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa005)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa006)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa007)},	/* Novatel Gobi Modem device */
- 	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
- 	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
- 	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
+ 	{ }	/* terminate list */
+ };
 -- 
 1.8.1.2
 
