@@ -1,71 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab3GQPc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:32:58 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:35471 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932285Ab3GQPcz (ORCPT
+	id S1756249Ab3GQPcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:32:42 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27703 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755740Ab3GQPck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:32:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/p0laj5z6HjXzGsqiWNcYM
-Date: Wed, 17 Jul 2013 08:32:49 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 3/3] ARM: dts: omap4-sdp: add dynamic pin states for
- uart3/4
-Message-ID: <20130717153248.GI7656@atomide.com>
-References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com>
- <1374061312-25469-4-git-send-email-grygorii.strashko@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374061312-25469-4-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 17 Jul 2013 11:32:40 -0400
+From: Vaughan Cao <vaughan.cao@oracle.com>
+To: joern@logfs.org
+Cc: dgilbert@interlog.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vaughan.cao@oracle.com
+Subject: [PATCH v4 3/4] [SCSI] sg: checking sdp->detached isn't protected when open
+Date: Wed, 17 Jul 2013 23:34:05 +0800
+Message-Id: <1374075246-22923-4-git-send-email-vaughan.cao@oracle.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com>
+References: <20130715203730.GA21804@logfs.org>
+ <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grygorii Strashko <grygorii.strashko@ti.com> [130717 04:49]:
-> Add dynamic "active"/"idle" pin states for uart3/4 which will be applied
-> when uart3/4 state is switched from active to idle and back by Runtime
-> PM or during system suspend.
+@detached is set under the protection of sg_index_lock. Without getting the
+lock, new sfp will be added during sg removal and there is no chance for it
+to be picked out. So check with sg_index_lock held in sg_add_sfp().
 
-This is good for testing code, but should not be merged because
-omap4 has the iopad wake-ups available for uarts. So those can
-be always enabled.
+Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
+---
+ drivers/scsi/sg.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index 671b760..4d2a19f 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -196,7 +196,7 @@ static void sg_remove_scat(Sg_scatter_hold * schp);
+ static void sg_build_reserve(Sg_fd * sfp, int req_size);
+ static void sg_link_reserve(Sg_fd * sfp, Sg_request * srp, int size);
+ static void sg_unlink_reserve(Sg_fd * sfp, Sg_request * srp);
+-static Sg_fd *sg_add_sfp(Sg_device * sdp, int dev);
++static Sg_fd *sg_add_sfp(Sg_device * sdp, int dev, int * reason);
+ static void sg_remove_sfp(struct kref *);
+ static Sg_request *sg_get_rq_mark(Sg_fd * sfp, int pack_id);
+ static Sg_request *sg_add_request(Sg_fd * sfp);
+@@ -295,21 +295,14 @@ sg_open(struct inode *inode, struct file *filp)
+ 	if (flags & O_EXCL)
+ 		sdp->exclude = 1;	/* used by release lock */
  
-> --- a/arch/arm/boot/dts/omap4-sdp.dts
-> +++ b/arch/arm/boot/dts/omap4-sdp.dts
-> @@ -181,18 +181,40 @@
->  		pinctrl-single,pins = <
->  			0x100 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart3_cts_rctx.uart3_cts_rctx */
->  			0x102 (PIN_OUTPUT | MUX_MODE0)		/* uart3_rts_sd.uart3_rts_sd */
-> -			0x104 (PIN_INPUT | MUX_MODE0)		/* uart3_rx_irrx.uart3_rx_irrx */
->  			0x106 (PIN_OUTPUT | MUX_MODE0)		/* uart3_tx_irtx.uart3_tx_irtx */
->  		>;
->  	};
+-	if (sdp->detached) {
+-		retval = -ENODEV;
+-		goto sem_out;
+-	}
+ 	if (sfds_list_empty(sdp)) {	/* no existing opens on this device */
+ 		sdp->sgdebug = 0;
+ 		q = sdp->device->request_queue;
+ 		sdp->sg_tablesize = queue_max_segments(q);
+ 	}
+-	if ((sfp = sg_add_sfp(sdp, dev)))
+-		filp->private_data = sfp;
+-	else {
+-		retval = -ENOMEM;
++	if (!(sfp = sg_add_sfp(sdp, dev, &retval)))
+ 		goto sem_out;
+-	}
++	filp->private_data = sfp;
+ 	retval = 0;
+ 
+ 	if (retval) {
+@@ -2047,15 +2040,18 @@ sg_remove_request(Sg_fd * sfp, Sg_request * srp)
+ }
+ 
+ static Sg_fd *
+-sg_add_sfp(Sg_device * sdp, int dev)
++sg_add_sfp(Sg_device * sdp, int dev, int * reason)
+ {
+ 	Sg_fd *sfp;
+ 	unsigned long iflags;
+ 	int bufflen;
+ 
+ 	sfp = kzalloc(sizeof(*sfp), GFP_ATOMIC | __GFP_NOWARN);
+-	if (!sfp)
++	if (!sfp) {
++		if (reason)
++			*reason = -ENOMEM;
+ 		return NULL;
++	}
+ 
+ 	init_waitqueue_head(&sfp->read_wait);
+ 	rwlock_init(&sfp->rq_list_lock);
+@@ -2070,6 +2066,12 @@ sg_add_sfp(Sg_device * sdp, int dev)
+ 	sfp->keep_orphan = SG_DEF_KEEP_ORPHAN;
+ 	sfp->parentdp = sdp;
+ 	write_lock_irqsave(&sg_index_lock, iflags);
++	if (sdp->detached) {
++		write_unlock_irqrestore(&sg_index_lock, iflags);
++		if (reason)
++			*reason = -ENODEV;
++		return NULL;
++	}
+ 	list_add_tail(&sfp->sfd_siblings, &sdp->sfds);
+ 	write_unlock_irqrestore(&sg_index_lock, iflags);
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_add_sfp: sfp=0x%p\n", sfp));
+-- 
+1.7.11.7
 
-This just need to become:
-		pinctrl-single,pins = <
-			...
-			0x104 (WAKEUP_EN | PIN_INPUT_MUX_MODE0)	/* uart3_rx_irrx.uart3_rx_irrx */
-			...
-		>;
-		interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
-	};
-
-And so on. For am33xx you need to remux things to GPIO for the wake-up
-events, so you should maybe test on that instead.
-
-Regards,
-
-Tony
