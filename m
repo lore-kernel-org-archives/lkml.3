@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab3GQHzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 03:55:45 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19411 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab3GQHzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752636Ab3GQHzn (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Jul 2013 03:55:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,682,1367996400"; 
-   d="scan'208";a="332530896"
-Message-ID: <51E64F7C.4040307@intel.com>
-Date: Wed, 17 Jul 2013 11:02:04 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37915 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab3GQHzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 03:55:42 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Ingo Molnar <mingo@kernel.org>, David Daney <david.daney@cavium.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Borislav Petkov <bp@suse.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Date: Wed, 17 Jul 2013 09:55:11 +0200
+Message-Id: <1374047711-21518-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V6 06/12] perf tools: remove unnecessary callchain validation
-References: <1373956698-27540-1-git-send-email-adrian.hunter@intel.com> <1373956698-27540-7-git-send-email-adrian.hunter@intel.com> <20130716120549.GB9964@krava.brq.redhat.com>
-In-Reply-To: <20130716120549.GB9964@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+Subject: [PATCH] extable: Skip sorting if the table is empty
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/13 15:05, Jiri Olsa wrote:
-> On Tue, Jul 16, 2013 at 09:38:12AM +0300, Adrian Hunter wrote:
-> 
-> SNIP
-> 
->>  	}
->>  }
->>  
->> -static int perf_session__preprocess_sample(struct perf_session *session,
->> -					   union perf_event *event, struct perf_sample *sample)
->> -{
->> -	if (event->header.type != PERF_RECORD_SAMPLE ||
->> -	    !sample->callchain)
->> -		return 0;
->> -
->> -	if (!ip_callchain__valid(sample->callchain, event)) {
->> -		pr_debug("call-chain problem with event, skipping it.\n");
->> -		++session->stats.nr_invalid_chains;
->> -		session->stats.total_invalid_chains += sample->period;
-> 
-> How about the '*invalid_chains' stats here? I dont see
-> it incremented in the parsing routine.
-> 
-> Also the current behaviour is to increments stats for invalid
-> callchains, but dont fail. With your changes we fail during the
-> parsing.
+At least on ARM no-MMU the extable is empty and so there is nothing to
+sort. So add a check for the table to be empty which effectively only
+changes that the misleading pr_notice is suppressed.
 
-It would fail during parsing sometimes anyway.  The code was:
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+Hello,
 
-	if (type & PERF_SAMPLE_CALLCHAIN) {
-		if (sample_overlap(event, array, sizeof(data->callchain->nr)))
-			return -EFAULT;
+I first tried to select BUILDTIME_EXTABLE_SORT for ARM no-MMU, too, but that
+failed to build with
 
-		data->callchain = (struct ip_callchain *)array;
+	no __ex_table in  file: vmlinux
 
-		if (sample_overlap(event, array, data->callchain->nr))
-			return -EFAULT;
+. I didn't dig deeper for the reasons, but maybe this is worth fixing, too?
 
-		array += 1 + data->callchain->nr;
-	}
+Best regards
+Uwe
 
-But sample overlap did not handle size being effectively negative
-i.e. 'offset + size' overflows
+ kernel/extable.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-static bool sample_overlap(const union perf_event *event,
-			   const void *offset, u64 size)
-{
-	const void *base = event;
-
-	if (offset + size > base + event->header.size)
-		return true;
-
-	return false;
-}
-
-
-> 
-> On the other hand.. maybe we should fail ;-) I think that
-> invalid callchain data is serious enough to be overlooked
-> by not seeing the nr_invalid_chains got incremented.
-> 
-> let's see other comments and then silently push it :-)
-> 
-> jirka
-> 
-> 
+diff --git a/kernel/extable.c b/kernel/extable.c
+index 67460b9..832cb28 100644
+--- a/kernel/extable.c
++++ b/kernel/extable.c
+@@ -41,7 +41,7 @@ u32 __initdata main_extable_sort_needed = 1;
+ /* Sort the kernel's built-in exception table */
+ void __init sort_main_extable(void)
+ {
+-	if (main_extable_sort_needed) {
++	if (main_extable_sort_needed && __stop___ex_table > __start___ex_table) {
+ 		pr_notice("Sorting __ex_table...\n");
+ 		sort_extable(__start___ex_table, __stop___ex_table);
+ 	}
+-- 
+1.8.3.2
 
