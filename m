@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab3GQRty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:49:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49760 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968Ab3GQRtS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:49:18 -0400
-Date: Wed, 17 Jul 2013 10:38:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Cc: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        koen@dominion.thruhere.net
-Subject: Re: [PATCH 05/21] iio: input: am335x_adc: Add continuous mode to adc
-Message-ID: <20130717173801.GD17882@kroah.com>
-References: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
- <1374082010-28095-6-git-send-email-zubair.lutfullah@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374082010-28095-6-git-send-email-zubair.lutfullah@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756743Ab3GQRuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:50:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756620Ab3GQRuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 13:50:35 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 04/23] perf tools: Introduce feat_offset into perf_header
+Date: Wed, 17 Jul 2013 19:49:44 +0200
+Message-Id: <1374083403-14591-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 06:26:34PM +0100, Zubair Lutfullah wrote:
-> Main patch. Adds continuous sampling support for the driver
+Introducing feat_offset into perf_header to make the
+location of the features section clear.
 
-What does that mean?  Why have this in the changelog at all?
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/header.c | 6 ++++--
+ tools/perf/util/header.h | 1 +
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-> 
-> The IRQs are changed in the TSC drivers as they are shared with
-> the ADC IRQ lines.
-> 
-> This patch is based on work in the 3.2 tree by TI
-> Original Author is Patil Rachna
-> 
-> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-> ---
->  drivers/iio/adc/ti_am335x_adc.c           |  386 ++++++++++++++++++++++++-----
->  drivers/input/touchscreen/ti_am335x_tsc.c |    9 +-
->  drivers/mfd/ti_am335x_tscadc.c            |   12 +-
->  include/linux/mfd/ti_am335x_tscadc.h      |   12 +
->  4 files changed, 351 insertions(+), 68 deletions(-)
-> 
-> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> index 8a63203..1f6e800 100644
-> --- a/drivers/iio/adc/ti_am335x_adc.c
-> +++ b/drivers/iio/adc/ti_am335x_adc.c
-> @@ -29,11 +29,25 @@
->  #include <linux/math64.h>
->  #include <linux/mfd/ti_am335x_tscadc.h>
->  
-> +#include <linux/stat.h>
-> +
-> +#include <linux/sched.h>
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index dcba56a..eefb052 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2225,7 +2225,7 @@ static int perf_header__adds_write(struct perf_header *header,
+ 
+ 	sec_size = sizeof(*feat_sec) * nr_sections;
+ 
+-	sec_start = header->data_offset + header->data_size;
++	sec_start = header->feat_offset;
+ 	lseek(fd, sec_start + sec_size, SEEK_SET);
+ 
+ 	for_each_set_bit(feat, header->adds_features, HEADER_FEAT_BITS) {
+@@ -2304,6 +2304,7 @@ int perf_session__write_header(struct perf_session *session,
+ 	}
+ 
+ 	header->data_offset = lseek(fd, 0, SEEK_CUR);
++	header->feat_offset = header->data_offset + header->data_size;
+ 
+ 	if (at_exit) {
+ 		err = perf_header__adds_write(header, evlist, fd);
+@@ -2373,7 +2374,7 @@ int perf_header__process_sections(struct perf_header *header, int fd,
+ 
+ 	sec_size = sizeof(*feat_sec) * nr_sections;
+ 
+-	lseek(fd, header->data_offset + header->data_size, SEEK_SET);
++	lseek(fd, header->feat_offset, SEEK_SET);
+ 
+ 	err = perf_header__getbuffer64(header, fd, feat_sec, sec_size);
+ 	if (err < 0)
+@@ -2572,6 +2573,7 @@ int perf_file_header__read(struct perf_file_header *header,
+ 
+ 	ph->data_offset  = header->data.offset;
+ 	ph->data_size	 = header->data.size;
++	ph->feat_offset  = header->data.offset + header->data.size;
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 6fa80f9..e6387dc 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -88,6 +88,7 @@ struct perf_header {
+ 	bool			needs_swap;
+ 	u64			data_offset;
+ 	u64			data_size;
++	u64			feat_offset;
+ 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
+ 	struct perf_session_env env;
+ };
+-- 
+1.7.11.7
 
-Why extra newlines?
-
-> +#include <linux/iio/buffer.h>
-> +#include <linux/iio/trigger_consumer.h>
-> +#include <linux/iio/kfifo_buf.h>
-> +#include <linux/iio/sysfs.h>
-> +#include <linux/delay.h>
-> +
->  struct tiadc_device {
->  	struct ti_tscadc_dev *mfd_tscadc;
->  	int channels;
->  	u8 channel_line[8];
->  	u8 channel_step[8];
-> +	struct work_struct      poll_work;
-> +	wait_queue_head_t       wq_data_avail;
-> +	int                     irq;
-> +	bool                    is_continuous_mode;
-> +        u16                     *buffer;
-
-Please run all of these patches through checkpatch and fix the issues
-that are reported, otherwise there is no way they can be accepted.
-
-I've stopped reviewing this series here...
-
-thanks,
-
-greg k-h
