@@ -1,278 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3GQJZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 05:25:33 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:45515 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab3GQJZb (ORCPT
+	id S1753374Ab3GQJZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 05:25:49 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:56204 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab3GQJZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 05:25:31 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-watchdog@vger.kernel.org
-Cc: wim@iguana.be, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org, linux@roeck-us.net,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v3] watchdog: Add MOXA ART watchdog driver
-Date: Wed, 17 Jul 2013 11:24:51 +0200
-Message-Id: <1374053091-5907-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1373981055-18515-1-git-send-email-jonas.jensen@gmail.com>
-References: <1373981055-18515-1-git-send-email-jonas.jensen@gmail.com>
+	Wed, 17 Jul 2013 05:25:46 -0400
+From: Dragos Foianu <dragos.foianu@gmail.com>
+To: samuel@sortiz.org
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dragos Foianu <dragos.foianu@gmail.com>
+Subject: [PATCH] net/irda: fixed style issues in irttp
+Date: Wed, 17 Jul 2013 12:25:38 +0100
+Message-Id: <1374060338-5633-1-git-send-email-dragos.foianu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add watchdog driver for MOXA ART SoCs.
+Applied error fixes suggested by checpatch.pl
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
 ---
+ net/irda/irttp.c |   50 +++++++++++++++++++++++---------------------------
+ 1 file changed, 23 insertions(+), 27 deletions(-)
 
-Notes:
-    Changes since v2:
-    
-    1. add devicetree bindings document
-    
-    Applies to next-20130716
-
- .../bindings/watchdog/moxa,moxart-watchdog.txt     |  15 ++
- drivers/watchdog/Kconfig                           |  10 ++
- drivers/watchdog/Makefile                          |   1 +
- drivers/watchdog/moxart_wdt.c                      | 171 +++++++++++++++++++++
- 4 files changed, 197 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
- create mode 100644 drivers/watchdog/moxart_wdt.c
-
-diff --git a/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
-new file mode 100644
-index 0000000..fb99e50
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
-@@ -0,0 +1,15 @@
-+MOXA ART Watchdog timer
-+
-+Required properties:
-+
-+- compatible : Should be "moxa,moxart-watchdog"
-+- reg : Should contain registers location and length
-+- clocks : Should contain phandle for APB clock "clkapb"
-+
-+Example:
-+
-+	watchdog: watchdog@98500000 {
-+		compatible = "moxa,moxart-watchdog";
-+		reg = <0x98500000 0x10>;
-+		clocks = <&clkapb>;
-+	};
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 362085d..6883aab 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -382,6 +382,16 @@ config RETU_WATCHDOG
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called retu_wdt.
+diff --git a/net/irda/irttp.c b/net/irda/irttp.c
+index ae43c62..85372cf 100644
+--- a/net/irda/irttp.c
++++ b/net/irda/irttp.c
+@@ -75,7 +75,7 @@ static pi_minor_info_t pi_minor_call_table[] = {
+ 	{ NULL, 0 },                                             /* 0x00 */
+ 	{ irttp_param_max_sdu_size, PV_INTEGER | PV_BIG_ENDIAN } /* 0x01 */
+ };
+-static pi_major_info_t pi_major_call_table[] = {{ pi_minor_call_table, 2 }};
++static pi_major_info_t pi_major_call_table[] = { { pi_minor_call_table, 2 } };
+ static pi_param_info_t param_info = { pi_major_call_table, 1, 0x0f, 4 };
  
-+config MOXART_WDT
-+	tristate "MOXART watchdog"
-+	depends on ARCH_MOXART
-+	help
-+	  Say Y here to include Watchdog timer support for the watchdog
-+	  existing on the MOXA ART SoC series platforms.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called moxart_wdt.
-+
- # AVR32 Architecture
+ /************************ GLOBAL PROCEDURES ************************/
+@@ -205,7 +205,7 @@ static void irttp_todo_expired(unsigned long data)
+  */
+ static void irttp_flush_queues(struct tsap_cb *self)
+ {
+-	struct sk_buff* skb;
++	struct sk_buff *skb;
  
- config AT32AP700X_WDT
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 2f26a0b..7cab53a 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
- obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
- obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
- obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
-+obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+ 	IRDA_DEBUG(4, "%s()\n", __func__);
  
- # AVR32 Architecture
- obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
-diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
-new file mode 100644
-index 0000000..966855d
---- /dev/null
-+++ b/drivers/watchdog/moxart_wdt.c
-@@ -0,0 +1,171 @@
-+/*
-+ * MOXA ART SoCs watchdog driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/types.h>
-+#include <linux/watchdog.h>
-+
-+#include <asm/system_misc.h>
-+
-+#define REG_COUNT			0x4
-+#define REG_MODE			0x8
-+#define REG_ENABLE			0xC
-+
-+struct moxart_wdt_dev {
-+	struct watchdog_device wdt_dev;
-+	void __iomem *wdt_base;
-+};
-+
-+static struct moxart_wdt_dev *moxart_wdt;
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+static int heartbeat;
-+static unsigned int clock_frequency;
-+static unsigned int max_timeout;
-+
-+static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
-+{
-+	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
-+	void __iomem *wdt_base = moxart_wdt->wdt_base;
-+
-+	writel(0, wdt_base + REG_ENABLE);
-+
-+	return 0;
-+}
-+
-+static int moxart_wdt_start(struct watchdog_device *wdt_dev)
-+{
-+	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
-+	void __iomem *wdt_base = moxart_wdt->wdt_base;
-+
-+	writel(clock_frequency * moxart_wdt->wdt_dev.timeout,
-+	       wdt_base + REG_COUNT);
-+	writel(0x5ab9, wdt_base + REG_MODE);
-+	writel(0x03, wdt_base + REG_ENABLE);
-+
-+	return 0;
-+}
-+
-+static int moxart_wdt_set_timeout(struct watchdog_device *wdt_dev,
-+				  unsigned int timeout)
-+{
-+	dev_dbg(wdt_dev->dev, "%s: timeout=%u\n", __func__, timeout);
-+
-+	moxart_wdt->wdt_dev.timeout = timeout;
-+
-+	return 0;
-+}
-+
-+static const struct watchdog_info moxart_wdt_info = {
-+	.identity       = "moxart-wdt",
-+	.options        = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING |
-+			  WDIOF_MAGICCLOSE,
-+};
-+
-+static const struct watchdog_ops moxart_wdt_ops = {
-+	.owner          = THIS_MODULE,
-+	.start          = moxart_wdt_start,
-+	.stop           = moxart_wdt_stop,
-+	.set_timeout    = moxart_wdt_set_timeout,
-+};
-+
-+static int moxart_wdt_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *node = dev->of_node;
-+	struct resource *res;
-+	struct clk *clk;
-+	int err;
-+
-+	moxart_wdt = devm_kzalloc(&pdev->dev, sizeof(*moxart_wdt), GFP_KERNEL);
-+	if (!moxart_wdt)
-+		return -EINVAL;
-+
-+	platform_set_drvdata(pdev, moxart_wdt);
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	moxart_wdt->wdt_base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(moxart_wdt->wdt_base))
-+		return PTR_ERR(moxart_wdt->wdt_base);
-+
-+	clk = of_clk_get(node, 0);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: of_clk_get failed\n", __func__);
-+		return PTR_ERR(clk);
-+	}
-+
-+	clock_frequency = clk_get_rate(clk);
-+
-+	max_timeout = UINT_MAX / clock_frequency;
-+
-+	moxart_wdt->wdt_dev.info = &moxart_wdt_info;
-+	moxart_wdt->wdt_dev.ops = &moxart_wdt_ops;
-+	moxart_wdt->wdt_dev.timeout = max_timeout;
-+	moxart_wdt->wdt_dev.min_timeout = 1;
-+	moxart_wdt->wdt_dev.max_timeout = max_timeout;
-+	moxart_wdt->wdt_dev.parent = &pdev->dev;
-+
-+	watchdog_init_timeout(&moxart_wdt->wdt_dev, heartbeat, &pdev->dev);
-+	watchdog_set_nowayout(&moxart_wdt->wdt_dev, nowayout);
-+
-+	watchdog_set_drvdata(&moxart_wdt->wdt_dev, moxart_wdt);
-+
-+	err = watchdog_register_device(&moxart_wdt->wdt_dev);
-+	if (unlikely(err))
-+		return err;
-+
-+	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
-+		moxart_wdt->wdt_dev.timeout, nowayout);
-+
-+	return 0;
-+}
-+
-+static int moxart_wdt_remove(struct platform_device *pdev)
-+{
-+	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
-+
-+	moxart_wdt_stop(&moxart_wdt->wdt_dev);
-+	watchdog_unregister_device(&moxart_wdt->wdt_dev);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id moxart_watchdog_match[] = {
-+	{ .compatible = "moxa,moxart-watchdog" },
-+	{ },
-+};
-+
-+static struct platform_driver moxart_wdt_driver = {
-+	.probe      = moxart_wdt_probe,
-+	.remove     = moxart_wdt_remove,
-+	.driver     = {
-+		.name		= "moxart-watchdog",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= moxart_watchdog_match,
-+	},
-+};
-+module_platform_driver(moxart_wdt_driver);
-+
-+module_param(heartbeat, int, 0);
-+MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds");
-+
-+MODULE_DESCRIPTION("MOXART watchdog driver");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
+@@ -400,7 +400,7 @@ struct tsap_cb *irttp_open_tsap(__u8 stsap_sel, int credit, notify_t *notify)
+ 	/* The IrLMP spec (IrLMP 1.1 p10) says that we have the right to
+ 	 * use only 0x01-0x6F. Of course, we can use LSAP_ANY as well.
+ 	 * JeanII */
+-	if((stsap_sel != LSAP_ANY) &&
++	if ((stsap_sel != LSAP_ANY) &&
+ 	   ((stsap_sel < 0x01) || (stsap_sel >= 0x70))) {
+ 		IRDA_DEBUG(0, "%s(), invalid tsap!\n", __func__);
+ 		return NULL;
+@@ -427,7 +427,7 @@ struct tsap_cb *irttp_open_tsap(__u8 stsap_sel, int credit, notify_t *notify)
+ 	ttp_notify.data_indication = irttp_data_indication;
+ 	ttp_notify.udata_indication = irttp_udata_indication;
+ 	ttp_notify.flow_indication = irttp_flow_indication;
+-	if(notify->status_indication != NULL)
++	if (notify->status_indication != NULL)
+ 		ttp_notify.status_indication = irttp_status_indication;
+ 	ttp_notify.instance = self;
+ 	strncpy(ttp_notify.name, notify->name, NOTIFY_MAX_NAME);
+@@ -639,8 +639,7 @@ int irttp_data_request(struct tsap_cb *self, struct sk_buff *skb)
+ 	 */
+ 	if ((self->tx_max_sdu_size != 0) &&
+ 	    (self->tx_max_sdu_size != TTP_SAR_UNBOUND) &&
+-	    (skb->len > self->tx_max_sdu_size))
+-	{
++	    (skb->len > self->tx_max_sdu_size)) {
+ 		IRDA_ERROR("%s: SAR enabled, but data is larger than TxMaxSduSize!\n",
+ 			   __func__);
+ 		ret = -EMSGSIZE;
+@@ -733,8 +732,7 @@ static void irttp_run_tx_queue(struct tsap_cb *self)
+ 	 * poll us through irttp_flow_indication() - Jean II */
+ 	while ((self->send_credit > 0) &&
+ 	       (!irlmp_lap_tx_queue_full(self->lsap)) &&
+-	       (skb = skb_dequeue(&self->tx_queue)))
+-	{
++	       (skb = skb_dequeue(&self->tx_queue))) {
+ 		/*
+ 		 *  Since we can transmit and receive frames concurrently,
+ 		 *  the code below is a critical region and we must assure that
+@@ -798,8 +796,7 @@ static void irttp_run_tx_queue(struct tsap_cb *self)
+ 	 * where we can spend a bit of time doing stuff. - Jean II */
+ 	if ((self->tx_sdu_busy) &&
+ 	    (skb_queue_len(&self->tx_queue) < TTP_TX_LOW_THRESHOLD) &&
+-	    (!self->close_pend))
+-	{
++	    (!self->close_pend)) {
+ 		if (self->notify.flow_indication)
+ 			self->notify.flow_indication(self->notify.instance,
+ 						     self, FLOW_START);
+@@ -892,7 +889,7 @@ static int irttp_udata_indication(void *instance, void *sap,
+ 	/* Just pass data to layer above */
+ 	if (self->notify.udata_indication) {
+ 		err = self->notify.udata_indication(self->notify.instance,
+-						    self,skb);
++						    self, skb);
+ 		/* Same comment as in irttp_do_data_indication() */
+ 		if (!err)
+ 			return 0;
+@@ -1057,7 +1054,7 @@ static void irttp_flow_indication(void *instance, void *sap, LOCAL_FLOW flow)
+ 	 * to do that. Jean II */
+ 
+ 	/* If we need to send disconnect. try to do it now */
+-	if(self->disconnect_pend)
++	if (self->disconnect_pend)
+ 		irttp_start_todo_timer(self, 0);
+ }
+ 
+@@ -1116,7 +1113,7 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
+ 	IRDA_ASSERT(self->magic == TTP_TSAP_MAGIC, return -EBADR;);
+ 
+ 	if (self->connected) {
+-		if(userdata)
++		if (userdata)
+ 			dev_kfree_skb(userdata);
+ 		return -EISCONN;
+ 	}
+@@ -1137,7 +1134,7 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
+ 		 *  headers
+ 		 */
+ 		IRDA_ASSERT(skb_headroom(userdata) >= TTP_MAX_HEADER,
+-			{ dev_kfree_skb(userdata); return -1; } );
++			{ dev_kfree_skb(userdata); return -1; });
+ 	}
+ 
+ 	/* Initialize connection parameters */
+@@ -1157,7 +1154,7 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
+ 	 *  Give away max 127 credits for now
+ 	 */
+ 	if (n > 127) {
+-		self->avail_credit=n-127;
++		self->avail_credit = n - 127;
+ 		n = 127;
+ 	}
+ 
+@@ -1166,10 +1163,10 @@ int irttp_connect_request(struct tsap_cb *self, __u8 dtsap_sel,
+ 	/* SAR enabled? */
+ 	if (max_sdu_size > 0) {
+ 		IRDA_ASSERT(skb_headroom(tx_skb) >= (TTP_MAX_HEADER + TTP_SAR_HEADER),
+-			{ dev_kfree_skb(tx_skb); return -1; } );
++			{ dev_kfree_skb(tx_skb); return -1; });
+ 
+ 		/* Insert SAR parameters */
+-		frame = skb_push(tx_skb, TTP_HEADER+TTP_SAR_HEADER);
++		frame = skb_push(tx_skb, TTP_HEADER + TTP_SAR_HEADER);
+ 
+ 		frame[0] = TTP_PARAMETERS | n;
+ 		frame[1] = 0x04; /* Length */
+@@ -1386,7 +1383,7 @@ int irttp_connect_response(struct tsap_cb *self, __u32 max_sdu_size,
+ 		 *  headers
+ 		 */
+ 		IRDA_ASSERT(skb_headroom(userdata) >= TTP_MAX_HEADER,
+-			{ dev_kfree_skb(userdata); return -1; } );
++			{ dev_kfree_skb(userdata); return -1; });
+ 	}
+ 
+ 	self->avail_credit = 0;
+@@ -1409,10 +1406,10 @@ int irttp_connect_response(struct tsap_cb *self, __u32 max_sdu_size,
+ 	/* SAR enabled? */
+ 	if (max_sdu_size > 0) {
+ 		IRDA_ASSERT(skb_headroom(tx_skb) >= (TTP_MAX_HEADER + TTP_SAR_HEADER),
+-			{ dev_kfree_skb(tx_skb); return -1; } );
++			{ dev_kfree_skb(tx_skb); return -1; });
+ 
+ 		/* Insert TTP header with SAR parameters */
+-		frame = skb_push(tx_skb, TTP_HEADER+TTP_SAR_HEADER);
++		frame = skb_push(tx_skb, TTP_HEADER + TTP_SAR_HEADER);
+ 
+ 		frame[0] = TTP_PARAMETERS | n;
+ 		frame[1] = 0x04; /* Length */
+@@ -1522,7 +1519,7 @@ int irttp_disconnect_request(struct tsap_cb *self, struct sk_buff *userdata,
+ 	 * function may be called from various context, like user, timer
+ 	 * for following a disconnect_indication() (i.e. net_bh).
+ 	 * Jean II */
+-	if(test_and_set_bit(0, &self->disconnect_pend)) {
++	if (test_and_set_bit(0, &self->disconnect_pend)) {
+ 		IRDA_DEBUG(0, "%s(), disconnect already pending\n",
+ 			   __func__);
+ 		if (userdata)
+@@ -1627,7 +1624,7 @@ static void irttp_disconnect_indication(void *instance, void *sap,
+ 	 * Jean II */
+ 
+ 	/* No need to notify the client if has already tried to disconnect */
+-	if(self->notify.disconnect_indication)
++	if (self->notify.disconnect_indication)
+ 		self->notify.disconnect_indication(self->notify.instance, self,
+ 						   reason, skb);
+ 	else
+@@ -1738,8 +1735,7 @@ static void irttp_run_rx_queue(struct tsap_cb *self)
+ 		 *  This is the last fragment, so time to reassemble!
+ 		 */
+ 		if ((self->rx_sdu_size <= self->rx_max_sdu_size) ||
+-		    (self->rx_max_sdu_size == TTP_SAR_UNBOUND))
+-		{
++		    (self->rx_max_sdu_size == TTP_SAR_UNBOUND)) {
+ 			/*
+ 			 * A little optimizing. Only queue the fragment if
+ 			 * there are other fragments. Since if this is the
+@@ -1860,7 +1856,7 @@ static int irttp_seq_show(struct seq_file *seq, void *v)
+ 	seq_printf(seq, "dtsap_sel: %02x\n",
+ 		   self->dtsap_sel);
+ 	seq_printf(seq, "  connected: %s, ",
+-		   self->connected? "TRUE":"FALSE");
++		   self->connected ? "TRUE" : "FALSE");
+ 	seq_printf(seq, "avail credit: %d, ",
+ 		   self->avail_credit);
+ 	seq_printf(seq, "remote credit: %d, ",
+@@ -1876,9 +1872,9 @@ static int irttp_seq_show(struct seq_file *seq, void *v)
+ 	seq_printf(seq, "rx_queue len: %u\n",
+ 		   skb_queue_len(&self->rx_queue));
+ 	seq_printf(seq, "  tx_sdu_busy: %s, ",
+-		   self->tx_sdu_busy? "TRUE":"FALSE");
++		   self->tx_sdu_busy ? "TRUE" : "FALSE");
+ 	seq_printf(seq, "rx_sdu_busy: %s\n",
+-		   self->rx_sdu_busy? "TRUE":"FALSE");
++		   self->rx_sdu_busy ? "TRUE" : "FALSE");
+ 	seq_printf(seq, "  max_seg_size: %u, ",
+ 		   self->max_seg_size);
+ 	seq_printf(seq, "tx_max_sdu_size: %u, ",
 -- 
-1.8.2.1
+1.7.10.4
 
