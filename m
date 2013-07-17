@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965104Ab3GQXMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:12:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56660 "EHLO
+	id S965121Ab3GQXMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:12:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56659 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964962Ab3GQWzu (ORCPT
+	with ESMTP id S964961Ab3GQWzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Jul 2013 18:55:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 080/145] netfilter: xt_TCPOPTSTRIP: don't use tcp_hdr()
-Date: Wed, 17 Jul 2013 15:46:52 -0700
-Message-Id: <1374101277-7915-81-git-send-email-kamal@canonical.com>
+Cc: David Disseldorp <ddiss@suse.de>, Steve French <smfrench@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 119/145] [CIFS] use sensible file nlink values if unprovided
+Date: Wed, 17 Jul 2013 15:47:31 -0700
+Message-Id: <1374101277-7915-120-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -27,42 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Steve French <smfrench@gmail.com>
 
-commit ed82c437320c48a4032492f4a55a7e2c934158b6 upstream.
+commit 6658b9f70ebca5fc0795b1d6d733996af1e2caa7 upstream.
 
-In (bc6bcb5 netfilter: xt_TCPOPTSTRIP: fix possible mangling beyond
-packet boundary), the use of tcp_hdr was introduced. However, we
-cannot assume that skb->transport_header is set for non-local packets.
+Certain servers may not set the NumberOfLinks field in query file/path
+info responses. In such a case, cifs_inode_needs_reval() assumes that
+all regular files are hardlinks and triggers revalidation, leading to
+excessive and unnecessary network traffic.
 
-Cc: Florian Westphal <fw@strlen.de>
-Reported-by: Phil Oester <kernel@linuxace.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+This change hardcodes cf_nlink (and subsequently i_nlink) when not
+returned by the server, similar to what already occurs in cifs_mkdir().
+
+Signed-off-by: David Disseldorp <ddiss@suse.de>
+Signed-off-by: Steve French <smfrench@gmail.com>
+[ kamal: backport to 3.8 ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/netfilter/xt_TCPOPTSTRIP.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/cifs/inode.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/netfilter/xt_TCPOPTSTRIP.c b/net/netfilter/xt_TCPOPTSTRIP.c
-index 1eb1a44..b68fa19 100644
---- a/net/netfilter/xt_TCPOPTSTRIP.c
-+++ b/net/netfilter/xt_TCPOPTSTRIP.c
-@@ -48,11 +48,13 @@ tcpoptstrip_mangle_packet(struct sk_buff *skb,
- 		return NF_DROP;
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 5c669f4..2de6ce5 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -546,6 +546,11 @@ cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
+ 			fattr->cf_mode &= ~(S_IWUGO);
  
- 	len = skb->len - tcphoff;
--	if (len < (int)sizeof(struct tcphdr) ||
--	    tcp_hdr(skb)->doff * 4 > len)
-+	if (len < (int)sizeof(struct tcphdr))
- 		return NF_DROP;
+ 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
++		if (fattr->cf_nlink < 1) {
++			cFYI(1, "replacing bogus file nlink value %u\n",
++				fattr->cf_nlink);
++			fattr->cf_nlink = 1;
++		}
+ 	}
  
- 	tcph = (struct tcphdr *)(skb_network_header(skb) + tcphoff);
-+	if (tcph->doff * 4 > len)
-+		return NF_DROP;
-+
- 	opt  = (u_int8_t *)tcph;
- 
- 	/*
+ 	fattr->cf_uid = cifs_sb->mnt_uid;
 -- 
 1.8.1.2
 
