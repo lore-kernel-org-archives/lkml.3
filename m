@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3GQO0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 10:26:55 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:62358 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab3GQO0x (ORCPT
+	id S1755410Ab3GQO2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 10:28:00 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:62905 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab3GQO17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 10:26:53 -0400
+	Wed, 17 Jul 2013 10:27:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374058786-16603-1-git-send-email-broonie@kernel.org>
-References: <1374058786-16603-1-git-send-email-broonie@kernel.org>
-Date: Wed, 17 Jul 2013 19:56:52 +0530
-Message-ID: <CAK9yfHxdL0KpS0R_zBqiRGO=E-PMkv6JfwZpyTrHL0nPv3iCgQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: samsung: Staticise non-exported symbols
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130717010244.GM4994@xanatos>
+References: <20130715204135.GH15531@xanatos>
+	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	<1373926109.17876.221.camel@gandalf.local.home>
+	<20130715223615.GI15531@xanatos>
+	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
+	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
+	<20130716211235.GG4994@xanatos>
+	<20130716221821.GB21611@1wt.eu>
+	<20130716223957.GJ4994@xanatos>
+	<51E5DB59.2050209@schaufler-ca.com>
+	<20130717010244.GM4994@xanatos>
+Date: Wed, 17 Jul 2013 09:27:57 -0500
+Message-ID: <CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
+Subject: Re: [ATTEND] How to act on LKML
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>, Willy Tarreau <w@1wt.eu>,
+        Olivier Galibert <galibert@pobox.com>, David Lang <david@lang.hm>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 July 2013 16:29, Mark Brown <broonie@kernel.org> wrote:
-> From: Mark Brown <broonie@linaro.org>
->
-> This avoids polluting the global namespace and silences lots of sparse
-> warnings. The change pushes us over 80 columns a lot but I couldn't see
-> a tasteful place to break the lines as-is.
->
-> Signed-off-by: Mark Brown <broonie@linaro.org>
+On Tue, Jul 16, 2013 at 8:02 PM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
 
-I have already posted a series which does similar things:
-comments.gmane.org/gmane.linux.kernel.samsung-soc/20696
+> I've provided examples and personal stories in an attempt to give
+> incentive to change.
 
+Those are just stories; things that happened. What you need to provide
+is *evidence* that if the community changes, things will be better,
+and unless you have a study of series of collaborative groups like the
+Linux kernel, that demonstrates that suppressing swearing has a
+positive effect in the community, I'd say all you have is an
+*opinion*.
+
+> I cannot force on anyone the will to change, nor
+> would I want to.  I cannot "manage" change in others.  I can only
+> politely point out that the current community behavior does hurt other
+> people, and keep people from contributing.
+
+Which people have been hurt? Mauro? I would like to hear that from
+him. Another recipient of your stories was Rafael, and he already said
+he didn't feel personally attacked. I have also been a recipient of
+Linus' cursing, and I don't see any reason to change.
+
+But the more important question is; was the cursing justified? In the
+case of Mauro, it most definitely was, because as Linus mentioned; he
+broke the #1 rule of Linux, and that can't be tolerated from a
+lieutenant.
+
+So no, your stories don't prove that any people were hurt, justified
+or not. But even that is not important, what is important is; was the
+*project* hurt? I'd say you would need more than a couple of stories
+to prove that.
+
+> I'm not demanding change.  I'm merely asking to discuss the possibly of
+> change at KS.
+
+Everything is possible, the question is not "*can* it change", the
+question is "*should* it change". And again, you need evidence to show
+that it should.
+
+Cheers.
 
 -- 
-With warm regards,
-Sachin
+Felipe Contreras
