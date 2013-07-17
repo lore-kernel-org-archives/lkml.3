@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3GQR04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:26:56 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:49963 "EHLO
+	id S1756755Ab3GQR1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:27:03 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:39847 "EHLO
 	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755900Ab3GQR0y (ORCPT
+	with ESMTP id S1755900Ab3GQR05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:26:54 -0400
+	Wed, 17 Jul 2013 13:26:57 -0400
 From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 To: jic23@cam.ac.uk
 Cc: linux-iio@vger.kernel.org, gregkh@linuxfoundation.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net,
         zubair.lutfullah@gmail.com
-Subject: [PATCH 00/21] iio: TI-am335x-adc continuous mode
-Date: Wed, 17 Jul 2013 18:26:29 +0100
-Message-Id: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
+Subject: [PATCH 01/21] MFD: ti_tscadc: disable TSC control
+Date: Wed, 17 Jul 2013 18:26:30 +0100
+Message-Id: <1374082010-28095-2-git-send-email-zubair.lutfullah@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
+References: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A series of patches that add continuous sampling support
-for the adc drivers for the am335x.
+Register bits when TSC not in use
 
-Most of the work is done by Rachil Patna and Russ Dill from TI.
+AFE Pen Ctrl and TouchScreen transistors enabling is not
 
-TI maintains a 3.2 based kernel tree.
-I forward ported these patches from those.
+required when only ADC mode is being used, so check for availability of
 
-One of the significant changes I made to their patches
-was to the ring_sw buffer as that support has been removed from iio.
+TSC driver before accessing control register.
 
-I also merged some of their bug fixes in the same large patch which
-adds the main support (patch 5 with the subject "Add continuous mode to adc")
+This patch is based on work in the 3.2 tree by TI
+Original Author is Patil Rachna
 
-MFD and Input changes are little. I will cc them once IIO has acked
-this patchset. No need to clutter their lists with a dozen iio patches.
+Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+---
+ drivers/mfd/ti_am335x_tscadc.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-These apply on top of mfd-next after the recent set of patches
-on this driver by Sebastian Andrzej Siewior.
-
-Tested on the Beaglebone Black running 3.11
-
-Check_patch.pl issues are resolved in the last three patches separately.
-
-*** BLURB HERE ***
-
-Zubair Lutfullah (21):
-  MFD: ti_tscadc: disable TSC control
-  IIO: ADC: ti_adc: Fix 1st sample read
-  iio: ti_am335x_adc: Added iio_voltageX_scale
-  input: ti_tsc: Enable shared IRQ for TSC
-  iio: input: am335x_adc: Add continuous mode to adc
-  MFD: ti_tscadc: ADC Clock check not required
-  iio: TI-am335x-adc: Cleanup
-  IIO: ti_adc: Handle set to clear IRQENABLE register properly.
-  IIO: ti_adc: Handle set to clear IRQSTATUS register properly
-  IIO: ti_adc: Handle overrun before threshold event
-  iio: ti_adc: Avoid double threshold event
-  IIO: ti_adc: Also clear threshold event when clearing overrun event
-  IO: ti_adc: Reset and clear overrun status before capture.
-  IIO: ti_adc: Properly handle out of memory situation.
-  IIO: ti_adc: Print error and handle short FIFO events
-  IIO: ti_adc: Fix allocation count of FIFO buffer.
-  Revert "IIO: ti_adc: Correct wrong samples received on 1st read in
-    continuous mode"
-  IIO: ti_adc: Fix capture operation during resume
-  iio: ti_amss5x adc Fix check_patch.pl issues
-  input: ti_am335x_tsc.c fix checkpatch.pl issues
-  mfd: ti_am335x_tscadc.c fix checkpatch.pl issues
-
- drivers/iio/adc/ti_am335x_adc.c           |  388 ++++++++++++++++++++++++++---
- drivers/input/touchscreen/ti_am335x_tsc.c |   17 +-
- drivers/mfd/ti_am335x_tscadc.c            |   30 +--
- include/linux/mfd/ti_am335x_tscadc.h      |   29 ++-
- 4 files changed, 403 insertions(+), 61 deletions(-)
-
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index b003a16..d72001c 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -208,13 +208,14 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 
+ 	/* Set the control register bits */
+ 	ctrl = CNTRLREG_STEPCONFIGWRT |
+-			CNTRLREG_TSCENB |
+-			CNTRLREG_STEPID |
+-			CNTRLREG_4WIRE;
++			CNTRLREG_STEPID;
++	if (tsc_wires > 0)
++		ctrl |= CNTRLREG_4WIRE | CNTRLREG_TSCENB;
+ 	tscadc_writel(tscadc, REG_CTRL, ctrl);
+ 
+ 	/* Set register bits for Idle Config Mode */
+-	tscadc_idle_config(tscadc);
++	if (tsc_wires > 0)
++		tscadc_idle_config(tscadc);
+ 
+ 	/* Enable the TSC module enable bit */
+ 	ctrl = tscadc_readl(tscadc, REG_CTRL);
+@@ -294,10 +295,13 @@ static int tscadc_resume(struct device *dev)
+ 	pm_runtime_get_sync(dev);
+ 
+ 	/* context restore */
+-	ctrl = CNTRLREG_STEPCONFIGWRT | CNTRLREG_TSCENB |
+-			CNTRLREG_STEPID | CNTRLREG_4WIRE;
++	ctrl = CNTRLREG_STEPCONFIGWRT |	CNTRLREG_STEPID;
++	if (tscadc_dev->tsc_cell != -1)
++		ctrl |= CNTRLREG_TSCENB | CNTRLREG_4WIRE;
+ 	tscadc_writel(tscadc_dev, REG_CTRL, ctrl);
+-	tscadc_idle_config(tscadc_dev);
++
++	if (tscadc_dev->tsc_cell != -1)
++		tscadc_idle_config(tscadc_dev);
+ 	am335x_tsc_se_update(tscadc_dev);
+ 	restore = tscadc_readl(tscadc_dev, REG_CTRL);
+ 	tscadc_writel(tscadc_dev, REG_CTRL,
 -- 
 1.7.9.5
 
