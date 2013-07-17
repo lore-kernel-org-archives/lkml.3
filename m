@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3GQNkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:40:46 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:20502 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab3GQNkn (ORCPT
+	id S1755441Ab3GQNmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:42:39 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:43857 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab3GQNmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:40:43 -0400
-X-IronPort-AV: E=Sophos;i="4.89,684,1367971200"; 
-   d="scan'208";a="35705011"
-Date: Wed, 17 Jul 2013 14:40:31 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Julien Grall <julien.grall@linaro.org>
-CC: <stefano.stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
-        <ian.campbell@citrix.com>, <patches@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xen.org>
-Subject: Re: [PATCH] xen/arm: enable PV control for ARM
-In-Reply-To: <1373898219-15713-1-git-send-email-julien.grall@linaro.org>
-Message-ID: <alpine.DEB.2.02.1307171435000.8258@kaball.uk.xensource.com>
-References: <1373898219-15713-1-git-send-email-julien.grall@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 17 Jul 2013 09:42:37 -0400
+X-AuditID: cbfec7f4-b7fd76d0000035e1-70-51e69f4b7ed1
+Message-id: <51E69F49.10500@samsung.com>
+Date: Wed, 17 Jul 2013 15:42:33 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
+References: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
+ <51E65577.7010403@samsung.com>
+ <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
+In-reply-to: <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xa7re858FGtxezWtxtukNu8XlXXPY
+	LHo2bGW12HP0MLvFlLc/2S26uucxObB57Jx1l93j8a+XbB7v911l8+jbsorR4/MmuQDWKC6b
+	lNSczLLUIn27BK6MW4umshXM5Ky4//ceewPjNvYuRk4OCQETia1r17BC2GISF+6tZwOxhQSW
+	MkocvSrZxcgFZDczSdz8eQqsgVdAQ2IV0BoQm0VAVeLevkWMIDabgKFE19susLioQKjEtCUL
+	GCHqBSV+TL7HAmKLCJhLXP7QCVbDLHCUUaJpKthiYQEviRdzfjNDLNvAKPF45iemLkYODk6B
+	YIlVz5Qg6s0kHrWsY4aw5SU2r3nLPIFRYBaSFbOQlM1CUraAkXkVo2hqaXJBcVJ6rqFecWJu
+	cWleul5yfu4mRkhof9nBuPiY1SFGAQ5GJR7eiWFPA4VYE8uKK3MPMUpwMCuJ8F5rfhYoxJuS
+	WFmVWpQfX1Sak1p8iJGJg1OqgXHzM7+6n+mrxWdMmu6jz1914+1yyWgta+7V31fnzi25oBT6
+	+4HUhIYdt7JZBSIiLU5um/WbI45vwdId+ySKGDTEmNofRWgkXXleIzpZw/xX9+SWz62WN5m0
+	vtftlU86sJPn/kYfJb1YiUX10jmLNx+e+d/1sKLI7XUfVee3K+0x/FUQ8WJ2ubMSS3FGoqEW
+	c1FxIgBws2KoSwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Jul 2013, Julien Grall wrote:
-> Enable power management from the toolstack for ARM guest.
-> 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+Hello,
 
-Considering that now we support both ARM and ARM64, could you please
-add an ifneq ($(CONFIG_ARM64),y) too around cpu_hotplug.o, since you are
-at it?
+On 7/17/2013 11:43 AM, Ricardo Ribalda Delgado wrote:
+> Hi Marek
+>
+>   alloc_pages_exact returns pages of order 0, every single page is
+> filled into buf->pages, that then is used by vb2_dma_sg_mmap(), that
+> also expects order 0 pages (its loops increments in PAGE_SIZE). The
+> code has been tested on real HW.
+>
+> Your concern is that that alloc_pages_exact splits the higher order pages?
+>
+> Do you want that videobuf2-dma-sg to have support for higher order pages?
+
+Ah... My fault. I didn't notice that you recalculate req_pages at the
+begginning of each loop iteration, so the code is correct, buf->pages is
+filled correctly with order 0 pages.
+
+So now the only issue I see is the oversized sglist allocation (the size
+of sg list is computed for worst case, 0 order pages) and lack of the max
+segment size support. Sadly there are devices which can handle single sg
+chunk up to some predefined size (see dma_get_max_seg_size() function).
+
+For some reference code, please check __iommu_map_sg() and maybe
+__iommu_alloc_buffer() functions in arch/arm/mm/dma-mapping.c
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung R&D Institute Poland
 
 
->  drivers/xen/Makefile |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> index 2bf461a..a5f12bd 100644
-> --- a/drivers/xen/Makefile
-> +++ b/drivers/xen/Makefile
-> @@ -1,9 +1,8 @@
->  ifneq ($(CONFIG_ARM),y)
-> -obj-y	+= manage.o
->  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
->  endif
->  obj-$(CONFIG_X86)			+= fallback.o
-> -obj-y	+= grant-table.o features.o events.o balloon.o time.o
-> +obj-y	+= grant-table.o features.o events.o balloon.o time.o manage.o
->  obj-y	+= xenbus/
->  
->  nostackp := $(call cc-option, -fno-stack-protector)
-> -- 
-> 1.7.10.4
-> 
