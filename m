@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab3GQQov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:44:51 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:46591 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab3GQQot (ORCPT
+	id S932722Ab3GQQoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:44:54 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:35141 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932551Ab3GQQow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:44:49 -0400
+	Wed, 17 Jul 2013 12:44:52 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 04/18] context_tracing: Fix guest accounting with native vtime
-Date: Wed, 17 Jul 2013 18:44:17 +0200
-Message-Id: <1374079471-3129-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 06/18] context_tracking: Fix runtime CPU off-case
+Date: Wed, 17 Jul 2013 18:44:19 +0200
+Message-Id: <1374079471-3129-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
 References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
@@ -26,19 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) If context tracking is enabled with native vtime accounting (which
-combo is useless except for dev testing), we call vtime_guest_enter()
-and vtime_guest_exit() on host <-> guest switches. But those are stubs
-in this configurations. As a result, cputime is not correctly flushed
-on kvm context switches.
+As long as the context tracking is enabled on any CPU, even
+a single one, all other CPUs need to keep track of their
+user <-> kernel boundaries cross as well.
 
-2) If context tracking runs but is disabled on some CPUs, those
-CPUs end up calling __guest_enter/__guest_exit which in turn
-call vtime_account_system(). We don't want to call this because we
-run in tick based accounting for these CPUs.
+This is because a task can sleep while servicing an exception
+that happened in the kernel or in userspace. Then when the task
+eventually wakes up and return from the exception, the CPU needs
+to know if we resume in userspace or in the kernel. exception_exit()
+get this information from exception_enter() that saved the previous
+state.
 
-Refactor the guest_enter/guest_exit code such that all combinations
-finally work.
+If the CPU where the exception happened didn't keep track of
+these informations, exception_exit() doesn't know which state
+tracking to restore on the CPU where the task got migrated
+and we may return to userspace with the context tracking
+subsystem thinking that we are in kernel mode.
+
+This can be fixed in the long term if we move our context tracking
+probes on very low level arch fast path user <-> kernel boundary,
+although even that is worrisome as an exception can still happen
+in the few instructions between the probe and the actual iret.
+
+Also we are not yet ready to set these probes in the fast path given
+the potential overhead problem it induces.
+
+So let's fix this by always enable context tracking even on CPUs
+that are not in the full dynticks range. OTOH we can spare the
+rcu_user_*() and vtime_user_*() calls there because the tick runs
+on these CPUs and we can handle RCU state machine and cputime
+accounting through it.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -51,125 +68,86 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/context_tracking.h |   52 ++++++++++++++++----------------------
- kernel/context_tracking.c        |    6 +++-
- 2 files changed, 26 insertions(+), 32 deletions(-)
+ kernel/context_tracking.c |   52 ++++++++++++++++++++++++++++----------------
+ 1 files changed, 33 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index fc09d7b..5984f25 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -20,25 +20,6 @@ struct context_tracking {
- 	} state;
- };
- 
--static inline void __guest_enter(void)
--{
--	/*
--	 * This is running in ioctl context so we can avoid
--	 * the call to vtime_account() with its unnecessary idle check.
--	 */
--	vtime_account_system(current);
--	current->flags |= PF_VCPU;
--}
--
--static inline void __guest_exit(void)
--{
--	/*
--	 * This is running in ioctl context so we can avoid
--	 * the call to vtime_account() with its unnecessary idle check.
--	 */
--	vtime_account_system(current);
--	current->flags &= ~PF_VCPU;
--}
- 
- #ifdef CONFIG_CONTEXT_TRACKING
- DECLARE_PER_CPU(struct context_tracking, context_tracking);
-@@ -56,9 +37,6 @@ static inline bool context_tracking_active(void)
- extern void user_enter(void);
- extern void user_exit(void);
- 
--extern void guest_enter(void);
--extern void guest_exit(void);
--
- static inline enum ctx_state exception_enter(void)
- {
- 	enum ctx_state prev_ctx;
-@@ -81,21 +59,35 @@ extern void context_tracking_task_switch(struct task_struct *prev,
- static inline bool context_tracking_in_user(void) { return false; }
- static inline void user_enter(void) { }
- static inline void user_exit(void) { }
-+static inline enum ctx_state exception_enter(void) { return 0; }
-+static inline void exception_exit(enum ctx_state prev_ctx) { }
-+static inline void context_tracking_task_switch(struct task_struct *prev,
-+						struct task_struct *next) { }
-+#endif /* !CONFIG_CONTEXT_TRACKING */
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+extern void guest_enter(void);
-+extern void guest_exit(void);
-+#else
- static inline void guest_enter(void)
- {
--	__guest_enter();
-+	/*
-+	 * This is running in ioctl context so we can avoid
-+	 * the call to vtime_account() with its unnecessary idle check.
-+	 */
-+	vtime_account_system(current);
-+	current->flags |= PF_VCPU;
- }
- 
- static inline void guest_exit(void)
- {
--	__guest_exit();
-+	/*
-+	 * This is running in ioctl context so we can avoid
-+	 * the call to vtime_account() with its unnecessary idle check.
-+	 */
-+	vtime_account_system(current);
-+	current->flags &= ~PF_VCPU;
- }
--
--static inline enum ctx_state exception_enter(void) { return 0; }
--static inline void exception_exit(enum ctx_state prev_ctx) { }
--static inline void context_tracking_task_switch(struct task_struct *prev,
--						struct task_struct *next) { }
--#endif /* !CONFIG_CONTEXT_TRACKING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
- 
- #endif
 diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 942835c..1f47119 100644
+index 1f47119..7b095de 100644
 --- a/kernel/context_tracking.c
 +++ b/kernel/context_tracking.c
-@@ -141,12 +141,13 @@ void user_exit(void)
+@@ -54,17 +54,31 @@ void user_enter(void)
+ 	WARN_ON_ONCE(!current->mm);
+ 
+ 	local_irq_save(flags);
+-	if (__this_cpu_read(context_tracking.active) &&
+-	    __this_cpu_read(context_tracking.state) != IN_USER) {
++	if ( __this_cpu_read(context_tracking.state) != IN_USER) {
++		if (__this_cpu_read(context_tracking.active)) {
++			/*
++			 * At this stage, only low level arch entry code remains and
++			 * then we'll run in userspace. We can assume there won't be
++			 * any RCU read-side critical section until the next call to
++			 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
++			 * on the tick.
++			 */
++			vtime_user_enter(current);
++			rcu_user_enter();
++		}
+ 		/*
+-		 * At this stage, only low level arch entry code remains and
+-		 * then we'll run in userspace. We can assume there won't be
+-		 * any RCU read-side critical section until the next call to
+-		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
+-		 * on the tick.
++		 * Even if context tracking is disabled on this CPU, because it's outside
++		 * the full dynticks mask for example, we still have to keep track of the
++		 * context transitions and states to prevent inconsistency on those of
++		 * other CPUs.
++		 * If a task triggers an exception in userspace, sleep on the exception
++		 * handler and then migrate to another CPU, that new CPU must know where
++		 * the exception returns by the time we call exception_exit().
++		 * This information can only be provided by the previous CPU when it called
++		 * exception_enter().
++		 * OTOH we can spare the calls to vtime and RCU when context_tracking.active
++		 * is false because we know that CPU is not tickless.
+ 		 */
+-		vtime_user_enter(current);
+-		rcu_user_enter();
+ 		__this_cpu_write(context_tracking.state, IN_USER);
+ 	}
  	local_irq_restore(flags);
- }
+@@ -130,12 +144,14 @@ void user_exit(void)
  
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- void guest_enter(void)
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
+-		/*
+-		 * We are going to run code that may use RCU. Inform
+-		 * RCU core about that (ie: we may need the tick again).
+-		 */
+-		rcu_user_exit();
+-		vtime_user_exit(current);
++		if (__this_cpu_read(context_tracking.active)) {
++			/*
++			 * We are going to run code that may use RCU. Inform
++			 * RCU core about that (ie: we may need the tick again).
++			 */
++			rcu_user_exit();
++			vtime_user_exit(current);
++		}
+ 		__this_cpu_write(context_tracking.state, IN_KERNEL);
+ 	}
+ 	local_irq_restore(flags);
+@@ -178,8 +194,6 @@ EXPORT_SYMBOL_GPL(guest_exit);
+ void context_tracking_task_switch(struct task_struct *prev,
+ 			     struct task_struct *next)
  {
- 	if (vtime_accounting_enabled())
- 		vtime_guest_enter(current);
- 	else
--		__guest_enter();
-+		current->flags |= PF_VCPU;
+-	if (__this_cpu_read(context_tracking.active)) {
+-		clear_tsk_thread_flag(prev, TIF_NOHZ);
+-		set_tsk_thread_flag(next, TIF_NOHZ);
+-	}
++	clear_tsk_thread_flag(prev, TIF_NOHZ);
++	set_tsk_thread_flag(next, TIF_NOHZ);
  }
- EXPORT_SYMBOL_GPL(guest_enter);
- 
-@@ -155,9 +156,10 @@ void guest_exit(void)
- 	if (vtime_accounting_enabled())
- 		vtime_guest_exit(current);
- 	else
--		__guest_exit();
-+		current->flags &= ~PF_VCPU;
- }
- EXPORT_SYMBOL_GPL(guest_exit);
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
- 
- 
- /**
 -- 
 1.7.5.4
 
