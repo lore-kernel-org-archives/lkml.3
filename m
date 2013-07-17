@@ -1,97 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445Ab3GQEsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 00:48:43 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:53597 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab3GQEsl (ORCPT
+	id S1751471Ab3GQEwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 00:52:42 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:39936 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab3GQEwi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 00:48:41 -0400
+	Wed, 17 Jul 2013 00:52:38 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Jens Axboe <axboe@kernel.dk>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Hannes Reinecke <hare@suse.de>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        James Smart <James.Smart@Emulex.Com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kmo@daterainc.com" <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Thread-Topic: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Thread-Index: AQHOgqlyjpwMoCXftEyMj3Ut8LMdtQ==
+Date: Wed, 17 Jul 2013 04:52:32 +0000
+Message-ID: <1374036751.2045.20.camel@dabdike>
+References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
+	 <20130712010223.GA15673@kroah.com>
+	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
+	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
+	 <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+	 <20130716211529.GQ22392@kernel.dk>
+In-Reply-To: <20130716211529.GQ22392@kernel.dk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [83.149.9.174]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <D48F40C483B0A344BB598243A23AA10F@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1374031004.2537.84.camel@deadeye.wl.decadent.org.uk>
-References: <20130715195316.GF15531@xanatos>
-	<20130715204135.GH15531@xanatos>
-	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	<1373926109.17876.221.camel@gandalf.local.home>
-	<20130715223615.GI15531@xanatos>
-	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-	<20130716211235.GG4994@xanatos>
-	<20130716212704.GB9371@thunk.org>
-	<20130716224357.GK4994@xanatos>
-	<20130716235008.GC9371@thunk.org>
-	<1374027494.2537.47.camel@deadeye.wl.decadent.org.uk>
-	<CA+55aFyaNLt3HBO7a9NLbm9j-ppw1bhda+3rDtHbr48FJpiB_g@mail.gmail.com>
-	<1374031004.2537.84.camel@deadeye.wl.decadent.org.uk>
-Date: Tue, 16 Jul 2013 21:48:40 -0700
-X-Google-Sender-Auth: zK7ozurxcNmbnXL87tu25BKC7Os
-Message-ID: <CA+55aFyE0c6DQVn9Unbjriya27W-8nJQcZwUM7vc_1Hk0n38WQ@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [ 00/19]
- 3.10.1-stable review)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 8:16 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Tue, 2013-07-16 at 20:02 -0700, Linus Torvalds wrote:
->>
->> Umm. Notice how the "Joseph" I replied to had deleted all the comments he wrote?
->
-> Sorry, that completely escaped me.
->
->> That should tell you something. I smacked down a troll.
->>
->> If I was polite to you all those years ago, and I was polite but firm
->> in the two first responses, please give me credit for when I smack
->> somebody down. There may be a reason for it. The fact that the person
->> deleted his messages (or github deleted them for him - I have no idea
->> what their comment policy is) and you cannot see that context any more
->> online should not make you think that I suddenly went crazy.
->
-> Unfortunately, it seems I'm not the only one to be confused by this.
+On Tue, 2013-07-16 at 15:15 -0600, Jens Axboe wrote:
+> On Tue, Jul 16 2013, Nicholas A. Bellinger wrote:
+> > On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
+> > > On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
+> > > > On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
+> > > > > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
+> > > > >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
+> > > > >>> Drilling down the work items ahead of a real mainline push is high on
+> > > > >>> priority list for discussion.
+> > > > >>>
+> > > > >>> The parties to be included in such a discussion are:
+> > > > >>>
+> > > > >>>   - Jens Axboe (blk-mq author)
+> > > > >>>   - James Bottomley (scsi maintainer)
+> > > > >>>   - Christoph Hellwig (scsi)
+> > > > >>>   - Martin Petersen (scsi)
+> > > > >>>   - Tejun Heo (block + libata)
+> > > > >>>   - Hannes Reinecke (scsi error recovery)
+> > > > >>>   - Kent Overstreet (block, per-cpu ida)
+> > > > >>>   - Stephen Cameron (scsi-over-pcie driver)
+> > > > >>>   - Andrew Vasquez (qla2xxx LLD)
+> > > > >>>   - James Smart (lpfc LLD)
+> > > > >>
+> > > > >> Isn't this something that should have been discussed at the storage
+> > > > >> mini-summit a few months ago?
+> > > > > 
+> > > > > The scsi-mq prototype, along with blk-mq (in it's current form) did not
+> > > > > exist a few short months ago.  ;)
+> > > > > 
+> > > > >>  It seems very specific to one subsystem to be a kernel summit topic,
+> > > > >> don't you think?
+> > > > > 
+> > > > > It's no more subsystem specific than half of the other proposals so far,
+> > > > > and given it's reach across multiple subsystems (block, scsi, target),
+> > > > > and the amount of off-list interest on the topic, I think it would make
+> > > > > a good candidate for discussion.
+> > > > > 
+> > > > And it'll open up new approaches which previously were dismissed,
+> > > > like re-implementing multipathing on top of scsi-mq, giving us the
+> > > > single scsi device like other UNIX systems.
+> > > > 
+> > > > Also I do think there's quite some synergy to be had, as with blk-mq
+> > > > we could nail each queue to a processor, which would eliminate the
+> > > > need for locking.
+> > > > Which could be useful for other subsystems, too.
+> > > 
+> > > Lets start with discussing this on the list, please, and then see where
+> > > we go from there ...
+> > > 
+> > 
+> > Yes, the discussion is beginning to make it's way to the list.  I've
+> > mostly been waiting for blk-mq to get a wider review before taking the
+> > early scsi-mq prototype driver to a larger public audience.
+> > 
+> > Primarily, I'm now reaching out to the people most effected by existing
+> > scsi_request_fn() based performance limitations.  Most of them have
+> > abandoned existing scsi_request_fn() based logic in favor of raw block
+> > make_request() based drivers, and are now estimating the amount of
+> > effort to move to an scsi-mq based approach.
+> > 
+> > Regardless, as the prototype progresses over the next months, having a
+> > face-to-face discussion with the key parties in the room would be very
+> > helpful given the large amount of effort involved to actually make this
+> > type of generational shift in SCSI actually happen.
+> 
+> There's a certain amount of overlap with the aio/O_DIRECT work as well.
+> But if it's not a general session, could always be a BOF or something.
+> 
+> I'll second the argument that most technical topics probably DO belong
+> in a topic related workshop. But that leaves us with basically only
+> process related topics at KS, I don't think it hurts to have a bit of
+> tech meat on the bone too. At least I personally miss that part of KS
+> from years gone by.
 
-Heh.
+Heh well, given that most of the block mq discussions at LSF have been
+you saying you really should get around to cleaning up and posting the
+code, you'll understand my wanting to see that happen first ...
 
-I think this one is a pretty extreme example (because the context
-simply is no longer *there*), but the fact is, it's not uncommon.
+I suppose we could try to run a storage workshop within KS, but I think
+most of the mini summit slots have already gone.  There's also plumbers
+if all slots are gone (I would say that, being biased and on the
+programme committee) Ric is running the storage and Filesystems MC
 
-People think I get all the credit (and hey, I do), but here's a
-somewhat darker side to the story too. I get a lot of grief too, and
-usually from people who don't have the context. In the blog you
-posted, it was because the context simply wasn't there any more, but
-let's be honest: even when the context is there, how many people read
-it? It's a cesspool out there (*cough*slashdot*cough*).
+http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/tracks/159
 
-And hey, I think Sarah's outburst itself was due to a similar "I know
-Linus curses at people, and who cares about context, it's never
-acceptable". Because I guarantee that it was *not* because of the
-actual email she replied to, or anything I've written her. Feel free
-to go back and check.
+James
 
-I'm really not complaining. It's part of my job, and I'm quite used to
-it. This is not new. Certain people and places love to hate on Linus,
-the egotistical ass. And hey, on the whole I can honestly say that I'm
-*way* ahead. They aren't exactly wrong - it's not like I have a weak
-ego. I get most annoyed when people say it's "new" and due to the
-success of Linux. Dammit, I had a strong ego when I started this whole
-thing, so don't try to chalk it all up to success.
-
-Guys, I love my job. The kernel developer community is great. But I
-suspect that some of you don't necessarily think about the other side.
-I had slashdot discussing my abusive relationship with my wife and
-kids thanks to Sarah's comments. Talk about having a thick skin -
-trust me when I tell you that I get as well as I give out.
-
-                 Linus
