@@ -1,115 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab3GQPqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:46:21 -0400
-Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:44430 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754302Ab3GQPqT (ORCPT
+	id S1756337Ab3GQPrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:47:22 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:41706 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755641Ab3GQPrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:46:19 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Andrew Victor <linux@maxim.org.za>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH v2 25/42] ARM: at91: move pit timer to common clk framework
-Date: Wed, 17 Jul 2013 17:46:11 +0200
-Message-Id: <1374075971-20254-1-git-send-email-b.brezillon@overkiz.com>
+	Wed, 17 Jul 2013 11:47:21 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH RFC FINAL v5] media: OF: add "sync-on-green-active" property
+Date: Wed, 17 Jul 2013 21:17:02 +0530
+Message-Id: <1374076022-10960-1-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 13558931104938293356
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use device tree to get the source clock of the PIT (Periodic Interval Timer).
-If the clock is not found in device tree (or dt is not enabled) we'll try to
-get it using clk_lookup definitions.
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+This patch adds 'sync-on-green-active' property as part
+of endpoint property.
+
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- arch/arm/mach-at91/at91sam926x_time.c |   21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+  Changes for v5:
+  1: Changed description for sync-on-green-active property in
+     documentation file as suggested by Sylwester.
+  
+  Changes for v4:
+  1: Fixed review comments pointed by Sylwester.
 
-diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
-index 3a4bc2e..fba7bd6 100644
---- a/arch/arm/mach-at91/at91sam926x_time.c
-+++ b/arch/arm/mach-at91/at91sam926x_time.c
-@@ -39,6 +39,7 @@
- static u32 pit_cycle;		/* write-once */
- static u32 pit_cnt;		/* access only w/system irq blocked */
- static void __iomem *pit_base_addr __read_mostly;
-+static struct clk *mck;
+  Changes for v3:
+  1: Fixed review comments pointed by Laurent and Sylwester.
+
+  RFC v2 https://patchwork.kernel.org/patch/2578091/
+
+  RFC V1 https://patchwork.kernel.org/patch/2572341/
+
+ .../devicetree/bindings/media/video-interfaces.txt |    2 ++
+ drivers/media/v4l2-core/v4l2-of.c                  |    4 ++++
+ include/media/v4l2-mediabus.h                      |    2 ++
+ 3 files changed, 8 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
+index e022d2d..ce719f8 100644
+--- a/Documentation/devicetree/bindings/media/video-interfaces.txt
++++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
+@@ -88,6 +88,8 @@ Optional endpoint properties
+ - field-even-active: field signal level during the even field data transmission.
+ - pclk-sample: sample data on rising (1) or falling (0) edge of the pixel clock
+   signal.
++- sync-on-green-active: active state of Sync-on-green (SoG) signal, 0/1 for
++  LOW/HIGH respectively.
+ - data-lanes: an array of physical data lane indexes. Position of an entry
+   determines the logical lane number, while the value of an entry indicates
+   physical lane, e.g. for 2-lane MIPI CSI-2 bus we could have
+diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+index aa59639..5c4c9f0 100644
+--- a/drivers/media/v4l2-core/v4l2-of.c
++++ b/drivers/media/v4l2-core/v4l2-of.c
+@@ -100,6 +100,10 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
+ 	if (!of_property_read_u32(node, "data-shift", &v))
+ 		bus->data_shift = v;
  
- static inline unsigned int pit_read(unsigned int reg_offset)
- {
-@@ -186,6 +187,7 @@ static int __init of_at91sam926x_pit_init(void)
- {
- 	struct device_node	*np;
- 	int			ret;
-+	int			err = -EINVAL;
- 
- 	np = of_find_matching_node(NULL, pit_timer_ids);
- 	if (!np)
-@@ -195,10 +197,19 @@ static int __init of_at91sam926x_pit_init(void)
- 	if (!pit_base_addr)
- 		goto node_err;
- 
-+	mck = of_clk_get(np, 0);
-+	if (IS_ERR(mck)) {
-+		err = PTR_RET(mck);
-+		mck = NULL;
-+		pr_crit("AT91: PIT: Unable to get mck clk from DT\n");
-+		goto ioremap_err;
-+	}
++	if (!of_property_read_u32(node, "sync-on-green-active", &v))
++		flags |= v ? V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH :
++			V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW;
 +
- 	/* Get the interrupts property */
- 	ret = irq_of_parse_and_map(np, 0);
- 	if (!ret) {
- 		pr_crit("AT91: PIT: Unable to get IRQ from DT\n");
-+		clk_put(mck);
- 		goto ioremap_err;
- 	}
- 	at91sam926x_pit_irq.irq = ret;
-@@ -212,7 +223,7 @@ ioremap_err:
- node_err:
- 	of_node_put(np);
- err:
--	return -EINVAL;
-+	return err;
+ 	bus->flags = flags;
+ 
  }
- #else
- static int __init of_at91sam926x_pit_init(void)
-@@ -237,7 +248,13 @@ void __init at91sam926x_pit_init(void)
- 	 * Use our actual MCK to figure out how many MCK/16 ticks per
- 	 * 1/HZ period (instead of a compile-time constant LATCH).
- 	 */
--	pit_rate = clk_get_rate(clk_get(NULL, "mck")) / 16;
-+	if (!mck)
-+		mck = clk_get(NULL, "mck");
-+
-+	if (IS_ERR(mck))
-+		panic("AT91: PIT: Unable to get mck clk\n");
-+	pit_rate = clk_get_rate(mck) / 16;
-+	pr_notice("AT91: PIT: mck rate = %lu\n", pit_rate);
- 	pit_cycle = (pit_rate + HZ/2) / HZ;
- 	WARN_ON(((pit_cycle - 1) & ~AT91_PIT_PIV) != 0);
+diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
+index 83ae07e..d47eb81 100644
+--- a/include/media/v4l2-mediabus.h
++++ b/include/media/v4l2-mediabus.h
+@@ -40,6 +40,8 @@
+ #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
+ /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
+ #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
++#define V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH	(1 << 12)
++#define V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW		(1 << 13)
  
+ /* Serial flags */
+ /* How many lanes the client can use */
 -- 
 1.7.9.5
 
