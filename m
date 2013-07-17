@@ -1,142 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3GQNHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 09:07:10 -0400
-Received: from mout.web.de ([212.227.15.4]:55829 "EHLO mout.web.de"
+	id S1755046Ab3GQNPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 09:15:44 -0400
+Received: from 1wt.eu ([62.212.114.60]:34811 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767Ab3GQNHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 09:07:08 -0400
-From: Martin Walch <walch.martin@web.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [kconfig] results of some syntactical checks
-Date: Wed, 17 Jul 2013 15:07:05 +0200
-Message-ID: <98150748.1bixKSE5hB@tacticalops>
-User-Agent: KMail/4.10.5 (Linux/3.9.9-gentoo-gnu; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1374042658.26384.31.camel@x61.thuisdomein>
-References: <7121962.G9xfZAqBSy@tacticalops> <1374016680.26384.22.camel@x61.thuisdomein> <1374042658.26384.31.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2066309.85Ng5ExefY"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:xEKZa5lvEd1yqk2wPvTvPN2Qw2jjc0zQ+w8qSt2G38aTWmOuQUX
- SLWzswkMOMOvCmr993EQOIDRgz9IhJf7oMvCGRwKWxHvpzrpgbjsumef0K6VmYH+X5GmTJa
- ec/vbfC6r+eeiKkxvIxXP8X9xHrQ7vuQu5bHi2Y0Tui0B5nUrk6DSlDEtIpnDmIdh950qB8
- jQmW2SRQ6RHtVuRtTUOEg==
+	id S1752705Ab3GQNPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 09:15:33 -0400
+Date: Wed, 17 Jul 2013 15:10:51 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ricardo Ferreira <rikajff@gmail.com>, Jeff Liu <jeff.liu@oracle.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        David Lang <david@lang.hm>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Message-ID: <20130717131051.GD24293@1wt.eu>
+References: <20130716212704.GB9371@thunk.org> <20130716224357.GK4994@xanatos> <1374015299.6458.76.camel@gandalf.local.home> <20130716231217.GL4994@xanatos> <51E5E609.1030202@oracle.com> <1374022296.6458.118.camel@gandalf.local.home> <20130717055139.GC21611@1wt.eu> <1374063678.6458.124.camel@gandalf.local.home> <CACtES-ouVn+w8oJoe8+MLLEdnKA-XwBNhhuNQFGa84o9x=1yZA@mail.gmail.com> <1374066215.6458.135.camel@gandalf.local.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374066215.6458.135.camel@gandalf.local.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart2066309.85Ng5ExefY
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-
-On Wednesday 17 July 2013 01:18:00 Paul Bolle wrote:
-> On Wed, 2013-07-17 at 00:34 +0200, Martin Walch wrote:
-> > As I am working on yet another project for analyzing LKC's input files, I
-> > have some intermediate results from simple syntactical checks.
+On Wed, Jul 17, 2013 at 09:03:35AM -0400, Steven Rostedt wrote:
+> On Wed, 2013-07-17 at 13:30 +0100, Ricardo Ferreira wrote:
+> > Slashdot is just a cesspool of trolls, not a good comparison.
 > 
-> Naive question: LKC?
-
-Sorry, I thought the abbreviation of the kconfig system "LinuxKernelConf" was 
-common.
-
-> > The results below are an excerpt from a run against tche current master.
+> Point taken.
 > 
-> One thing I noticed is that it is practical to be able to parse
-> arbitrary tags (commits) in the git tree. So you can quickly parse a
-> tree you don't actually have checked out in git. But perhaps your
-> checker also does that.
-
-Actually no, it does not. So far, a tree has to be checked out and a branch 
-has to be manually selected.
-
-> > Actually defined symbols with dangerous names: 2
-> > 
-> >   8260 at
-> >   
-> >     arch/powerpc/platforms/82xx/Kconfig:55:0
-> >   
-> >   8272 at
-> >   
-> >     arch/powerpc/platforms/82xx/Kconfig:64:0
+> I posted this privately, and I think I'll repost it here. I need to
+> modify it a bit as it wasn't meant to be public.
 > 
-> I've wondered for some time what happens when one uses either of these
-> numbers as the value for an "int" Kconfig symbol. I've never tried.
-
-I would not expect anything bad to happen when the user manually assigns a 
-value like 8260. However, it can break a range value like this:
-
-config FOO
-        int "FOO"
-        range 8260 8272
-
-On ARCH=powerpc, this will effectively make LKC print a warning "range is 
-invalid" and pin down the value of FOO to 0.
-
-Similar problems occur with default values:
-
-config FOO
-        int "FOO" if n
-        default 8260
-
-This will raise a warning "'FOO': number is invalid" and default FOO to 0.
-
-No warning will show up if the symbol with the integer name would be actually 
-an int:
-
-config 4711
-        int "4711"
-
-config FOO
-        int "FOO" if n
-        default 4711
-
-In this case, FOO will be set to whatever 4711 is set to.
-
-All this can be avoided by quoting values, i. e.
-
-	range "8260" "8272"
-
-and
-
-        default "4711"
-
-Also, avoiding integers (and hex values) as symbol names looks like a 
-reasonable idea.
-
-> >   Symbol: PLATFORM_MICROBLAZE_AUTO at
-> >   
-> >     arch/microblaze/platform/Kconfig.platform:10:0
 > 
-> This is a default of a "choice". There used to be quite a lot of invalid
-> "choice" defaults, so I stopped checking those. (But I didn't bother to
-> look how my local script now handles these.) In practice these are
-> treated as "no default", aren't they?
-
-As far as I can tell, yes. Such a default line will be basically just ignored.
-
-
-On Wednesday 17 July 2013 08:30:58 Paul Bolle wrote:
-> > My script currently finds 28 undefined symbols. That equals this result
-> > (given you have 2 false positive and 1 undefined choice default.)
+> When I started sending patches to LKML it was not the cursing I was
+> afraid of, it was the possibility of top notch developers pointing out
+> my flaws. Linux is intimidating not because it can be harsh, but because
+> its the big league. You are posting code not only to the world but also
+> to some of the best programmers on the planet, and frankly, that's
+> really scary. And I think that's the real reason people who are shy tend
+> not to want to participate. They use the harshness of LKML as an excuse,
+> but I think it's really that they may be insecure about their own work
+> and how it will compare with the best of the best.
 > 
-> So those 2 were actually correct positives.
+> Both my wife and I have done karate for decades. My wife has even won a
+> national tournament. She can do demos without a problem, but when she
+> has to get up in front of other top black belts, she's a nervous wreck.
+> She's her biggest critic, but she tends to know that when performing in
+> front of people as good as she is, or better, they can see her flaws as
+> much as she can. That is intimidating.
+> 
+> The point I'm making is that we need to find out what is preventing good
+> developers from joining the Linux community. Is it really the harshness
+> of the project, or is it because we expect you to have the best code,
+> and you will not be accepted if you are not that good. And I do not want
+> people joining that are not good programmers.
+> 
+> The answer is not to bash Linus into being a nice guy (which seems to be
+> what Sarah's trying to do), but we can get mentors or even "scouts" to
+> look for people of talent and help them get into the community. What
+> those people need is not a nicer LKML that will let mediocre developers
+> in, but someone that recognizes their talent and encourages them to
+> join, by reinforcing to them how good of a developer they are. I've
+> helped people this way. Talented programmers that were unsure of
+> themselves, and they have done extremely well in our community.
 
-I am glad that our results match. So they are presumably correct.
--- 
++1
 
---nextPart2066309.85Ng5ExefY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iEYEABECAAYFAlHmlvkACgkQM6S4K8IXn9fbwgCfVDceQQLZ/zRhzpeJBfJjhaXb
-vn4An1OR6MBLRcA3V5l6Jt9TC+SvzwJ4
-=WGvF
------END PGP SIGNATURE-----
-
---nextPart2066309.85Ng5ExefY--
+Willy
 
