@@ -1,57 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3GQPQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 11:16:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14249 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab3GQPQQ (ORCPT
+	id S1755587Ab3GQPSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 11:18:21 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43183 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab3GQPSR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 11:16:16 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=QIZFyTDxVIcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=WKn5AdJQQDgA:10 a=M_hnxo_MEYx3oxdosq8A:9 a=QEXdDO2ut3YA:10 a=N4w7ZklE4n8A:10 a=UUpEAJXpyccA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374074169.6458.145.camel@gandalf.local.home>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Ricardo Ferreira <rikajff@gmail.com>, Willy Tarreau <w@1wt.eu>,
-        Jeff Liu <jeff.liu@oracle.com>, David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
+	Wed, 17 Jul 2013 11:18:17 -0400
+Message-ID: <51E6B5B9.4090506@arm.com>
+Date: Wed, 17 Jul 2013 16:18:17 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Wed, 17 Jul 2013 11:16:09 -0400
-In-Reply-To: <20130717150203.GC16513@xanatos>
-References: <20130716212704.GB9371@thunk.org>
-	 <20130716224357.GK4994@xanatos>
-	 <1374015299.6458.76.camel@gandalf.local.home>
-	 <20130716231217.GL4994@xanatos> <51E5E609.1030202@oracle.com>
-	 <1374022296.6458.118.camel@gandalf.local.home>
-	 <20130717055139.GC21611@1wt.eu>
-	 <1374063678.6458.124.camel@gandalf.local.home>
-	 <CACtES-ouVn+w8oJoe8+MLLEdnKA-XwBNhhuNQFGa84o9x=1yZA@mail.gmail.com>
-	 <1374066215.6458.135.camel@gandalf.local.home>
-	 <20130717150203.GC16513@xanatos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [RFC PATCH v2 01/15] of: add support for retrieving cpu node
+ for a given logical cpu index
+References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374069984-20567-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <51E6AF49.20403@gmail.com>
+In-Reply-To: <51E6AF49.20403@gmail.com>
+X-OriginalArrivalTime: 17 Jul 2013 15:18:13.0953 (UTC) FILETIME=[DB1AD310:01CE8300]
+X-MC-Unique: 113071716181409201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-17 at 08:02 -0700, Sarah Sharp wrote:
+On 17/07/13 15:50, Rob Herring wrote:
+> On 07/17/2013 09:06 AM, Sudeep.KarkadaNagesha@arm.com wrote:
+>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>>
+>> Currently different drivers requiring to access cpu device node are
+>> parsing the device tree themselves. Since the ordering in the DT need
+>> not match the logical cpu ordering, the parsing logic needs to consider
+>> that. However, this has resulted in lots of code duplication and in some
+>> cases even incorrect logic.
+>>
+>> It's better to consolidate them by adding support for getting cpu
+>> device node for a given logical cpu index in DT core library. However
+>> logical to physical index mapping can be architecture specific.
+>>
+>> This patch adds of_get_cpu_node to retrieve a cpu device node for a
+>> given logical cpu index. The default matching of the physical id to the
+>> logical cpu index can be overridden by architecture specific code.
+>>
+>> It is recommended to use these helper function only in pre-SMP/early
+>> initialisation stages to retrieve CPU device node pointers in logical
+>> ordering. Once the cpu devices are registered, it can be retrieved easily
+>> from cpu device of_node which avoids unnecessary parsing and matching.
+>>
+>> Cc: Rob Herring <rob.herring@calxeda.com>
+>> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> One comment below, but otherwise for patches 1-4, 8 and 9:
+> 
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> 
+> Also, patch 3 needs to come before patch 2 or the matching will be wrong
+> if patch 3 is not applied.
+Ah, correct will fix it in next version.
 
-> Are you volunteering to be a mentor for the FOSS Outreach Program for
-> Women? ;)  I will happily take more mentors for the next round in
-> November!
+> 
+>> ---
+>>  drivers/of/base.c  | 66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/of.h |  5 +++++
+>>  2 files changed, 71 insertions(+)
+>>
+>> diff --git a/drivers/of/base.c b/drivers/of/base.c
+>> index 5c54279..363b8f9 100644
+>> --- a/drivers/of/base.c
+>> +++ b/drivers/of/base.c
+>> @@ -230,6 +230,72 @@ const void *of_get_property(const struct device_node *np, const char *name,
+>>  }
+>>  EXPORT_SYMBOL(of_get_property);
+>>  
+>> +/*
+>> + * arch_match_cpu_phys_id - Match the given logical CPU and physical id
+>> + *
+>> + * @cpu: logical index of a cpu
+>> + * @phys_id: physical identifier of a cpu
+>> + *
+>> + * CPU logical to physical index mapping is architecure specific.
+>> + * However this __weak function provides a default match of physical
+>> + * id to logical cpu index.
+>> + *
+>> + * Returns 1 if the physical identifier and the logical index correspond
+>> + * to the same cpu, 0 otherwise.
+>> + */
+>> +int __weak arch_match_cpu_phys_id(int cpu, u64 phys_id)
+>> +{
+>> +	return (u32)phys_id == cpu;
+>> +}
+>> +
+>> +/**
+>> + * of_get_cpu_node - Get device node associated with the given logical CPU
+>> + *
+>> + * @cpu: CPU number(logical index) for which device node is required
+>> + *
+>> + * The main purpose of this function is to retrieve the device node for the
+>> + * given logical CPU index. It should be used to intialise the of_node in
+>> + * cpu device. Once of_node in cpu device is populated, all the further
+>> + * references can use that instead.
+>> + *
+>> + * CPU logical to physical index mapping is architecure specific and is built
+>> + * before booting secondary cores. This function uses arch_match_cpu_phys_id
+>> + * which can be overridden by architecture specific implementation.
+>> + *
+>> + * Returns a node pointer for the logical cpu if found, else NULL.
+>> + */
+>> +struct device_node *of_get_cpu_node(int cpu)
+>> +{
+>> +	struct device_node *cpun, *cpus;
+>> +	const u32 *cell;
+>> +	u64 hwid;
+>> +	int ac, prop_len;
+>> +
+>> +	cpus = of_find_node_by_path("/cpus");
+>> +	if (WARN(!cpus, "Missing cpus node, bailing out\n"))
+> 
+> What happens on a system with no /cpus nodes? Seems like this is another
+> case of adding new warnings to existing working systems.
+> 
+> I'd replace all the WARN's with a single pr_warn on any errors below.
+> For missing /cpus, I would just silently return.
 
-If you have someone interested in Real Time OS development. Sure!
+Ah, forgot recent discussions on this, will fix it.
 
--- Steve
-
+Regards,
+Sudeep
 
