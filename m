@@ -1,101 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab3GQRa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 13:30:57 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:39220 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab3GQR1J (ORCPT
+	id S933648Ab3GQRbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 13:31:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49426 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933075Ab3GQRbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 13:27:09 -0400
-From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-To: jic23@cam.ac.uk
-Cc: linux-iio@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net,
-        zubair.lutfullah@gmail.com
-Subject: [PATCH 08/21] IIO: ti_adc: Handle set to clear IRQENABLE register properly.
-Date: Wed, 17 Jul 2013 18:26:37 +0100
-Message-Id: <1374082010-28095-9-git-send-email-zubair.lutfullah@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
-References: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
+	Wed, 17 Jul 2013 13:31:01 -0400
+Date: Wed, 17 Jul 2013 10:25:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: grant.likely@linaro.org, tony@atomide.com, balbi@ti.com, arnd@arndb.de,
+        swarren@nvidia.com, sylvester.nawrocki@gmail.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        akpm@linux-foundation.org, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, benoit.cousson@linaro.org, mchehab@redhat.com,
+        cesarb@cesarb.net, davem@davemloft.net, rnayak@ti.com,
+        shawn.guo@linaro.org, santosh.shilimkar@ti.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        nsekhar@ti.com, balajitk@ti.com, george.cherian@ti.com
+Subject: Re: [PATCH v9 1/8] drivers: phy: add generic PHY framework
+Message-ID: <20130717172510.GB17093@kroah.com>
+References: <1372247257-30186-1-git-send-email-kishon@ti.com>
+ <1372247257-30186-2-git-send-email-kishon@ti.com>
+ <20130717062944.GA24968@kroah.com>
+ <51E664CB.8050906@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E664CB.8050906@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is currently mishandling the IRQENABLE register. The driver
+On Wed, Jul 17, 2013 at 03:02:59PM +0530, Kishon Vijay Abraham I wrote:
+> Hi,
+> 
+> On Wednesday 17 July 2013 11:59 AM, Greg KH wrote:
+> > On Wed, Jun 26, 2013 at 05:17:29PM +0530, Kishon Vijay Abraham I wrote:
+> >> +menuconfig GENERIC_PHY
+> >> +	tristate "PHY Subsystem"
+> >> +	help
+> >> +	  Generic PHY support.
+> >> +
+> >> +	  This framework is designed to provide a generic interface for PHY
+> >> +	  devices present in the kernel. This layer will have the generic
+> >> +	  API by which phy drivers can create PHY using the phy framework and
+> >> +	  phy users can obtain reference to the PHY.
+> > 
+> > Shouldn't this be something that other drivers select?  How will anyone
+> > know if they need this or not?
+> 
+> All the PHY drivers should go here. So only if *GENERIC_PHY* is enabled those
+> PHY drivers can be selected like in [1].
+> The PHY consumer driver should ideally use *depends on* in their Kconfig.
+> 
+> [1] ->
+> http://archive.arm.linux.org.uk/lurker/message/20130628.134308.4a8f7668.ca.html
 
-should write a 1 for bits it wishes to set, and a zero for bits it does not
+No, switch it around the other way.  How would I even _know_ that I need
+to enable the generic PHY subsystem in the first place?  How can I
+determine that I need this for my hardware?  You need to give hints to
+someone who doesn't even know what a PHY is, otherwise they will always
+disable it and move on.
 
-wish to change. The read of the current register contents is not
+> >> --- /dev/null
+> >> +++ b/drivers/phy/phy-core.c
+> >> @@ -0,0 +1,544 @@
+> >> +/*
+> >> + * phy-core.c  --  Generic Phy framework.
+> >> + *
+> >> + * Copyright (C) 2013 Texas Instruments
+> >> + *
+> >> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
+> >> + *
+> >> + * This program is free software; you can redistribute  it and/or modify it
+> >> + * under  the terms of  the GNU General  Public License as published by the
+> >> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> >> + * option) any later version.
+> > 
+> > You really mean "any later version" (I have to ask)?
+> 
+> That was copied from somewhere :-s
 
-necessary.
+So, is that what you really mean to have for this code?
 
-Write 0 = No action.
+> >> + * This program is distributed in the hope that it will be useful,
+> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> >> + * GNU General Public License for more details.
+> >> + *
+> >> + * You should have received a copy of the GNU General Public License
+> >> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> > 
+> > Are these two paragraphs needed?  This isn't a "program", and they got a
+> > copy of the GPL already with the kernel.
+> 
+> hmm.. I can remove that.
+> > 
+> >> +static struct class *phy_class;
+> > 
+> > Why do you need a class?
+> 
+> Wanted to group all the PHY drivers to be used by different subsystems
+> (SATA/USB/PCIE/HDMI/VIDEO) into a single entity. There were some comments in my
+> initial version [3] on using a bus_type instead of class but then it was
+> decided to go with class itself.
+> 
+> [3] -> http://lkml.indiana.edu/hypermail/linux/kernel/1302.2/01389.html
 
-Read 0 = Interrupt disabled (masked).
+Ok, but what does the class usage get you?
 
-Read 1 = Interrupt enabled.
+> > When modifying/adding new sysfs stuff, you need a Documentation/ABI/
+> > entry as well.
+> 
+> I'm not actually adding any new sysfs entry other than what a *class_create*
+> must have created. Do I need to add one for that?
 
-Write 1 = Enable interrupt.
+If you are not creating anything in sysfs at all, why use the driver
+model?  (hint, I think you need to do something here to justify it...)
 
-The current read/update/write method is currently not causing any
+thanks,
 
-problems, but could cause confusion in the future.
-
-Signed-off-by: Russ Dill <Russ.Dill@ti.com>
-Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
----
- drivers/iio/adc/ti_am335x_adc.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 31665fa..a86830b 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -211,7 +211,7 @@ static void tiadc_poll_handler(struct work_struct *work_s)
-                 container_of(work_s, struct tiadc_device, poll_work);
-         struct iio_dev *idev = iio_priv_to_dev(adc_dev);
-         struct iio_buffer *buffer = idev->buffer;
--        unsigned int fifo1count, readx1, status;
-+        unsigned int fifo1count, readx1;
-         int i;
-         u32 *iBuf;
- 
-@@ -234,9 +234,8 @@ static void tiadc_poll_handler(struct work_struct *work_s)
-         }
- 
-         buffer->access->store_to(buffer, (u8 *) iBuf);
--        status = tiadc_readl(adc_dev, REG_IRQENABLE);
--        tiadc_writel(adc_dev, REG_IRQENABLE,
--                        (status | IRQENB_FIFO1THRES));
-+        tiadc_writel(adc_dev, REG_IRQENABLE, 
-+				IRQENB_FIFO1THRES);
- 
-         kfree(iBuf);
- }
-@@ -253,7 +252,7 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
- {
-         struct tiadc_device *adc_dev = iio_priv(idev);
-         struct iio_buffer *buffer = idev->buffer;
--        unsigned int enb, status, fifo1count;
-+        unsigned int enb, fifo1count;
-         int stepnum, i;
-         u8 bit;
- 
-@@ -261,11 +260,10 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
-                 printk("Data cannot be read continuously in one shot mode\n");
-                 return -EINVAL;
-         } else {
--                status = tiadc_readl(adc_dev, REG_IRQENABLE);
-                 tiadc_writel(adc_dev, REG_IRQENABLE,
--                                (status | IRQENB_FIFO1THRES)|
-+                                (IRQENB_FIFO1THRES |
-                                  IRQENB_FIFO1OVRRUN |
--                                 IRQENB_FIFO1UNDRFLW);
-+                                 IRQENB_FIFO1UNDRFLW));
- 
-                 fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
-                 for (i = 0; i < fifo1count; i++)
--- 
-1.7.9.5
-
+greg k-h
