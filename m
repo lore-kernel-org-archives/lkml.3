@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934297Ab3GQWy2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 18:54:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56443 "EHLO
+	id S934334Ab3GQXVD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:21:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934221Ab3GQWyU (ORCPT
+	with ESMTP id S934285Ab3GQWy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 18:54:20 -0400
+	Wed, 17 Jul 2013 18:54:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Axel Lin <axel.lin@ingics.com>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 091/145] drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-Date: Wed, 17 Jul 2013 15:47:03 -0700
-Message-Id: <1374101277-7915-92-git-send-email-kamal@canonical.com>
+Subject: [PATCH 066/145] drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
+Date: Wed, 17 Jul 2013 15:46:38 -0700
+Message-Id: <1374101277-7915-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -29,50 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Salwan <jonathan.salwan@gmail.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 542db01579fbb7ea7d1f7bb9ddcef1559df660b2 upstream.
+commit 29ecd78c0fd6ee05f2c6b07b23823a6ae43c13ff upstream.
 
-In drivers/cdrom/cdrom.c mmc_ioctl_cdrom_read_data() allocates a memory
-area with kmalloc in line 2885.
+In the disable AIE irq code path, current code passes "1" to enable
+parameter of rv3029c2_rtc_i2c_alarm_set_irq().  Thus it does not disable
+AIE irq.
 
-  2885         cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-  2886         if (cgc->buffer == NULL)
-  2887                 return -ENOMEM;
-
-In line 2908 we can find the copy_to_user function:
-
-  2908         if (!ret && copy_to_user(arg, cgc->buffer, blocksize))
-
-The cgc->buffer is never cleaned and initialized before this function.
-If ret = 0 with the previous basic block, it's possible to display some
-memory bytes in kernel space from userspace.
-
-When we read a block from the disk it normally fills the ->buffer but if
-the drive is malfunctioning there is a chance that it would only be
-partially filled.  The result is an leak information to userspace.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Heiko Schocher <hs@denx.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cdrom/cdrom.c | 2 +-
+ drivers/rtc/rtc-rv3029c2.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index d620b44..8a3aff7 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2882,7 +2882,7 @@ static noinline int mmc_ioctl_cdrom_read_data(struct cdrom_device_info *cdi,
- 	if (lba < 0)
- 		return -EINVAL;
- 
--	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-+	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
- 	if (cgc->buffer == NULL)
- 		return -ENOMEM;
+diff --git a/drivers/rtc/rtc-rv3029c2.c b/drivers/rtc/rtc-rv3029c2.c
+index f8ee8ad..a7869c8 100644
+--- a/drivers/rtc/rtc-rv3029c2.c
++++ b/drivers/rtc/rtc-rv3029c2.c
+@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(struct i2c_client *client,
+ 		dev_dbg(&client->dev, "alarm IRQ armed\n");
+ 	} else {
+ 		/* disable AIE irq */
+-		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
++		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
+ 		if (ret)
+ 			return ret;
  
 -- 
 1.8.1.2
