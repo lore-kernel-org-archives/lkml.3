@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab3GQQxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 12:53:14 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:40555 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756528Ab3GQQol (ORCPT
+	id S1756644Ab3GQQ5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 12:57:47 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:50603 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756574Ab3GQQ5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 12:44:41 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 01/18] nohz: Do not warn about unstable tsc unless user uses nohz_full
-Date: Wed, 17 Jul 2013 18:44:14 +0200
-Message-Id: <1374079471-3129-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
-References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
+	Wed, 17 Jul 2013 12:57:45 -0400
+Date: Wed, 17 Jul 2013 18:57:43 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: commit f8f559422b (KVM: MMU: fast invalidate all mmio sptes)
+ causes hang
+Message-ID: <20130717165743.GA357@x4>
+References: <20130717163215.GA359@x4>
+ <20130717164232.GI13732@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717164232.GI13732@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+On 2013.07.17 at 19:42 +0300, Gleb Natapov wrote:
+> On Wed, Jul 17, 2013 at 06:32:15PM +0200, Markus Trippelsdorf wrote:
+> > The following commit:
+> >  commit f8f559422b6c6a05469dfde614b67789b6142cb5
+> >  Author: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >  Date:   Fri Jun 7 16:51:26 2013 +0800
+> > 
+> >     KVM: MMU: fast invalidate all mmio sptes
+> > 
+> > causes my kvm qemu qcow2 images to hang when they switch from the boot
+> > console to the desktop. For example:
+> >  qemu-system-x86_64 -enable-kvm -net nic,vlan=0,model=virtio -net user -drive file=ubuntu,if=virtio,cache=unsafe -smp 2 -m 1024
+> > boots normally at first, but then hangs as soon as Xorg gets started.`
+> > 
+> Which guest is is exactly and how reproducible is this?
 
-If the user enables CONFIG_NO_HZ_FULL and runs the kernel on a machine
-with an unstable TSC, it will produce a WARN_ON dump as well as taint
-the kernel. This is a bit extreme for a kernel that just enables a
-feature but doesn't use it.
+Ubuntu 12.04.
+It's 100% reproducible or else it wouldn't have been so easily
+bisectable.
 
-The warning should only happen if the user tries to use the feature by
-either adding nohz_full to the kernel command line, or by enabling
-CONFIG_NO_HZ_FULL_ALL that makes nohz used on all CPUs at boot up. Note,
-this second feature should not (yet) be used by distros or anyone that
-doesn't care if NO_HZ is used or not.
+> > Perf top shows:
+> >  20.99%  [kernel]                                  [k] svm_vcpu_run
+> >  17.24%  [kernel]                                  [k] handle_mmio_page_fault_common
+> >  15.61%  [kernel]                                  [k] kvm_arch_vcpu_ioctl_run
+> >  12.49%  [kernel]                                  [k] fast_page_fault.part.78
+> > 
+> > I'm running:
+> > QEMU emulator version 1.4.2 
+> > on an AMD PhenomII X4 CPU.
+> > 
+> What is the output of "cat /proc/cpuinfo"?
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/time/tick-sched.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6960172..6f47049 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -182,7 +182,8 @@ static bool can_stop_full_tick(void)
- 		 * Don't allow the user to think they can get
- 		 * full NO_HZ with this machine.
- 		 */
--		WARN_ONCE(1, "NO_HZ FULL will not work with unstable sched clock");
-+		WARN_ONCE(have_nohz_full_mask,
-+			  "NO_HZ FULL will not work with unstable sched clock");
- 		return false;
- 	}
- #endif
+processor	: 0
+vendor_id	: AuthenticAMD
+cpu family	: 16
+model		: 4
+model name	: AMD Phenom(tm) II X4 955 Processor
+stepping	: 2
+microcode	: 0x10000db
+cpu MHz		: 800.000
+cache size	: 512 KB
+physical id	: 0
+siblings	: 4
+core id		: 0
+cpu cores	: 4
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 5
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm 3dnowext 3dnow constant_tsc rep_good nopl nonstop_tsc extd_apicid pni monitor cx16 popcnt lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt hw_pstate npt lbrv svm_lock nrip_save
+bogomips	: 6424.73
+TLB size	: 1024 4K pages
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 48 bits physical, 48 bits virtual
+power management: ts ttp tm stc 100mhzsteps hwpstate
+...
+*4
+
 -- 
-1.7.5.4
-
+Markus
