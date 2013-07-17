@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab3GQSH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:07:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:62710 "EHLO mga14.intel.com"
+	id S933822Ab3GQSIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:08:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab3GQSHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:07:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,686,1367996400"; 
-   d="scan'208";a="269625896"
-From: "Hefty, Sean" <sean.hefty@intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>, Roland Dreier <roland@kernel.org>,
-        "Hal Rosenstock" <hal.rosenstock@gmail.com>
-CC: "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] RDMA/cma: silence GCC warning
-Thread-Topic: [PATCH v2] RDMA/cma: silence GCC warning
-Thread-Index: AQHOgslwu4T8fMVfOUWFnu6cSwwiSZlpJv8A
-Date: Wed, 17 Jul 2013 18:07:17 +0000
-Message-ID: <1828884A29C6694DAF28B7E6B8A82373805B8318@ORSMSX109.amr.corp.intel.com>
-References: <1373886239.2591.26.camel@x61.thuisdomein>
-	 <1828884A29C6694DAF28B7E6B8A82373805A65C0@ORSMSX110.amr.corp.intel.com>
- <1374050453.26384.41.camel@x61.thuisdomein>
-In-Reply-To: <1374050453.26384.41.camel@x61.thuisdomein>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S932160Ab3GQSId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 14:08:33 -0400
+Date: Wed, 17 Jul 2013 14:08:25 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Message-ID: <1374084505-2en57dv0-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130717180249.19F1BE0090@blue.fi.intel.com>
+References: <1374012587-whdyhveh-mutt-n-horiguchi@ah.jp.nec.com>
+ <1374078950-8o0ev16q-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130717180249.19F1BE0090@blue.fi.intel.com>
+Subject: Re: [PATCH] mm/swap.c: clear PageActive before adding pages onto
+ unevictable list (Re: 3.11.0-rc1: kernel BUG at mm/migrate.c:458 in page
+ migration)
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20130717180249.19F1BE0090@blue.fi.intel.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6HI7YLl028918
 
-> Building cma.o triggers this GCC warning:
->     drivers/infiniband/core/cma.c: In function â€˜rdma_resolve_addrâ€™:
->     drivers/infiniband/core/cma.c:465:23: warning: â€˜portâ€™ may be used
-> uninitialized in this function [-Wmaybe-uninitialized]
->     drivers/infiniband/core/cma.c:426:5: note: â€˜portâ€™ was declared here
+On Wed, Jul 17, 2013 at 09:02:49PM +0300, Kirill A. Shutemov wrote:
+...
+> > ---
+> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Date: Wed, 17 Jul 2013 11:49:56 -0400
+> > Subject: [PATCH] mm/swap.c: clear PageActive before adding pages onto
+> >  unevictable list
+> > 
+> > As a result of v3.10-3600-g13f7f78 "mm: pagevec: defer deciding which LRU
+> > to add a page to until pagevec drain time," pages on unevictable lists can
+> > have both of PageActive and PageUnevictable set. This is not only confusing,
+> > but also corrupts page migration and shrink_[in]active_list.
+> > 
+> > This patch fixes the problem by adding ClearPageActive before adding pages
+> > into unevictable list. It also cleans up VM_BUG_ONs.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Cc: stable@vger.kernel.org # 3.10
 > 
-> This is a false positive, as "port" will always be initialized if we're
-> at "found". But if we assign to "id_priv->id.port_num" directly, we can
-> drop "port". That will, obviously, silence GCC.
+> Looks good to me.
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Acked-by: Sean Hefty <sean.hefty@intel.com>
+Thanks.
 
-> ---
-> 0) v2: assign to "id_priv->id.port_num" directly, instead of
-> initializing "port" to 0, as discussed with Sean.
+> One more patch related to the topic:
 > 
-> 1) Still only compile tested.
+> https://lkml.org/lkml/2013/7/15/140
 
-tested - thanks
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Yes, that's why I added CC to you :)
+
+Naoya
