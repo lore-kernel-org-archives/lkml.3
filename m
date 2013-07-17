@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab3GQVKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 17:10:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15915 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab3GQVKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 17:10:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,687,1367996400"; 
-   d="scan'208";a="332936531"
-Date: Wed, 17 Jul 2013 23:10:21 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Olof Johansson <olof@lixom.net>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Subject: Re: [RFC PATCH v5 0/1] drivers: mfd: Versatile Express SPC support
-Message-ID: <20130717211021.GB19864@zurbaran>
-References: <1373990743-23106-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1374052705.3146.86.camel@hornet>
- <alpine.LFD.2.03.1307170825240.14924@syhkavp.arg>
- <1374067786.3146.123.camel@hornet>
- <alpine.LFD.2.03.1307171014510.14924@syhkavp.arg>
- <1374070811.3146.124.camel@hornet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374070811.3146.124.camel@hornet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757349Ab3GQVOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 17:14:09 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:35883 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab3GQVOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 17:14:07 -0400
+From: Chris J Arges <christopherarges@gmail.com>
+To: alsa-devel@alsa-project.org
+Cc: martin@meltin.net, Chris J Arges <christopherarges@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Eldad Zack <eldad@fogrefinery.com>, Trulan Martin <trulanm@gmail.com>,
+        Damien Zammit <damien@zamaudio.com>, Mark Hills <mark@xwax.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ALSA: usb-audio: Add quirk for Focusrite Scarlett 18i8
+Date: Wed, 17 Jul 2013 16:12:12 -0500
+Message-Id: <1374095558-9949-1-git-send-email-christopherarges@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pawel,
+This patch is similar to commit 1762a59d8e8b5e99f6f4a0f292b40f3cacb108ba.
+The same non-standard interface descriptor causes snd_usb_create_mixer()
+to fail for the Focusrite Scarlett 18i8 as well.
 
-On Wed, Jul 17, 2013 at 03:20:11PM +0100, Pawel Moll wrote:
-> On Wed, 2013-07-17 at 15:16 +0100, Nicolas Pitre wrote:
-> > On Wed, 17 Jul 2013, Pawel Moll wrote:
-> > 
-> > > On Wed, 2013-07-17 at 13:33 +0100, Nicolas Pitre wrote:
-> > > > If this is really miscelaneous code that really doesn't fit 
-> > > > anywhere else, it should rather go into drivers/misc/ as a last resort.
-> > > 
-> > > Interestingly enough drivers/misc was my first choice for all the
-> > > vexpress stuff, but it wasn't received well...
-> > > 
-> > > Anyway, the SPC driver as it is now seem to be a "power management
-> > > system driver". Maybe a relevant directory would be in place? Wouldn't
-> > > PSCI belong there as well? (there are two psci.c files in arch/arm and
-> > > arch/arm64, surprisingly similar ones ;-)
-> > > 
-> > > The bottom line is: today it is not an MFD driver.
-> > 
-> > But we know it will, right?  So better  save some churn by storing the 
-> > initial code where it would end up anyway once complete.
-> 
-> Not in that form, no. The code living in mfd will just register
-> mfd_cells while "functional" parts are going to live elsewhere. This is
-> how I understand what Samuel asked me to do and that's what is happening
-> to vexpress-sysreg now.
-Very good, I'll happily apply such changes.
-If I understand the IP correctly, the SPC driver will stay as a set of
-runtime APIs for controlling the SPC features. If that's the case, then
-misc sounds like a more appropriate place for this driver.
-drivers/power/ really is for power supplies and charging drivers.
+Signed-off-by: Chris J Arges <christopherarges@gmail.com>
+---
+ sound/usb/quirks-table.h |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
-Cheers,
-Samuel. 
-
+diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+index 7f1585b..b954ec5 100644
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -3232,6 +3232,52 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+ 		}
+ 	}
+ },
++{
++	/*
++	 * Focusrite Scarlett 18i8
++	 *
++	 * Avoid mixer creation similar to the Scarlett 18i6 interface.
++	 */
++	USB_DEVICE(0x1235, 0x8014),
++	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
++		.vendor_name = "Focusrite",
++		.product_name = "Scarlett 18i8",
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = & (const struct snd_usb_audio_quirk[]) {
++			{
++				/* InterfaceSubClass 1 (Control Device) */
++				.ifnum = 0,
++				.type = QUIRK_IGNORE_INTERFACE
++			},
++			{
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 2,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				/* InterfaceSubClass 1 (Control Device) */
++				.ifnum = 3,
++				.type = QUIRK_IGNORE_INTERFACE
++			},
++			{
++				.ifnum = 4,
++				.type = QUIRK_MIDI_STANDARD_INTERFACE
++			},
++			{
++				/* InterfaceSubClass 1 (Device Firmware Update) */
++				.ifnum = 5,
++				.type = QUIRK_IGNORE_INTERFACE
++			},
++			{
++				.ifnum = -1
++			}
++		}
++	}
++},
+ 
+ {
+ 	/*
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.5
+
