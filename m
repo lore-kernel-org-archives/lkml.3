@@ -1,75 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934026Ab3GQSYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 14:24:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50065 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932198Ab3GQSYI convert rfc822-to-8bit (ORCPT
+	id S1756771Ab3GQS1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 14:27:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17553 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab3GQS1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 14:24:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,686,1367996400"; 
-   d="scan'208";a="366799227"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: David Lang <david@lang.hm>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        "Olivier Galibert" <galibert@pobox.com>,
-        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: RE: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Thread-Topic: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Thread-Index: AQHOgolY07hmiG1600ewQhox5c/nnplpY++A///KGfA=
-Date: Wed, 17 Jul 2013 18:24:07 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31C8FE9D@ORSMSX106.amr.corp.intel.com>
-References: <20130715204135.GH15531@xanatos>
-	<CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	<1373926109.17876.221.camel@gandalf.local.home>
-	<20130715223615.GI15531@xanatos>
-	<alpine.DEB.2.02.1307160025250.16723@nftneq.ynat.uz>
-	<CAMFK0gseVAyCNwM6+-5ChJP5ReodjBA-estzB0u_pEhk2bAQsw@mail.gmail.com>
-	<20130716211235.GG4994@xanatos> <20130716221821.GB21611@1wt.eu>
-	<20130716223957.GJ4994@xanatos> <51E5DB59.2050209@schaufler-ca.com>
-	<20130717010244.GM4994@xanatos>
- <CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
-In-Reply-To: <CAMP44s0rPF-ERDiGWkB4Ph9t=7ws7Q63g6Oe5h4WTdkNrnQsKw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 17 Jul 2013 14:27:19 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BnuARR2adj4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=rGvCwB5G_vEA:10 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=KKAkSRfTAAAA:8 a=64P-dxXnfzm9MPK2dpUA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=Zh68SRI7RUMA:10 a=3Rfx1nUSh_UA:10 a=1JvJEtVdGvUA:10 a=_RhRFcbxBZMA:10 a=WwgC8nHKvroA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374085637.6458.170.camel@gandalf.local.home>
+Subject: Re: [PATCH 07/18] nohz: Selectively enable context tracking on full
+ dynticks CPUs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Date: Wed, 17 Jul 2013 14:27:17 -0400
+In-Reply-To: <1374079471-3129-8-git-send-email-fweisbec@gmail.com>
+References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
+	 <1374079471-3129-8-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Those are just stories; things that happened. What you need to provide
-> is *evidence* that if the community changes, things will be better,
-> and unless you have a study of series of collaborative groups like the
-> Linux kernel, that demonstrates that suppressing swearing has a
-> positive effect in the community, I'd say all you have is an
-> *opinion*.
+On Wed, 2013-07-17 at 18:44 +0200, Frederic Weisbecker wrote:
+> The code is ready to do so in the context tracking subsystem, now
 
-1) There isn't going to be any hard evidence - this isn't a physics problem,
-or even an engineering problem. It's a social problem.  There are no other
-collaborative groups sufficiently similar to the Linux kernel community, so there
-are no studies that would be relevant. Asking for the impossible is just a
-lame delaying tactic.
+"do so"? Do what?
 
-2) Sarah hasn't even asked to cut down on the swearing - so why mention
-it at all? Did you even read the thread?
+> we just need to pass our cpu range selection to it from the
 
-So I shall (for comedic effect) indulge in my own (uncharacteristic) bit
-of name calling and dub thee a troll (and every other bad thing that anyone
-is ever alleged of calling another on LKML, just to be sure).
+Pass cpu range selection to what?
 
--Tony
+Pronouns are evil in technical documentation.
+
+> full dynticks subsystem.
+> 
+> This way we can spare the overhead of RCU user extended quiescent
+> state and vtime maintainance on these CPUs. Just keep in mind the
+> context tracking itself is still necessary everywhere.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> ---
+>  include/linux/context_tracking.h |    2 ++
+>  init/Kconfig                     |    2 +-
+>  kernel/context_tracking.c        |    5 +++++
+>  kernel/time/Kconfig              |    1 -
+>  kernel/time/tick-sched.c         |    6 ++++++
+>  5 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+> index 12045ce..2c2b73aa 100644
+> --- a/include/linux/context_tracking.h
+> +++ b/include/linux/context_tracking.h
+> @@ -34,6 +34,8 @@ static inline bool context_tracking_active(void)
+>  	return __this_cpu_read(context_tracking.active);
+>  }
+>  
+> +extern void context_tracking_cpu_set(int cpu);
+> +
+>  extern void user_enter(void);
+>  extern void user_exit(void);
+>  
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 247084b..914da3f 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -527,7 +527,7 @@ config RCU_USER_QS
+>  config CONTEXT_TRACKING_FORCE
+>  	bool "Force context tracking"
+>  	depends on CONTEXT_TRACKING
+> -	default CONTEXT_TRACKING
+> +	default y if !NO_HZ_FULL
+
+Why the if !NO_HZ_FULL?
+
+That selects this anyway. Oh wait, you changed this.
+
+>  	help
+>  	  Probe on user/kernel boundaries by default in order to
+>  	  test the features that rely on it such as userspace RCU extended
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index 7b095de..72bcb25 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -26,6 +26,11 @@ DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
+>  #endif
+>  };
+>  
+> +void context_tracking_cpu_set(int cpu)
+> +{
+> +	per_cpu(context_tracking.active, cpu) = true;
+> +}
+> +
+>  /**
+>   * user_enter - Inform the context tracking that the CPU is going to
+>   *              enter userspace mode.
+> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+> index 70f27e8..747bbc7 100644
+> --- a/kernel/time/Kconfig
+> +++ b/kernel/time/Kconfig
+> @@ -105,7 +105,6 @@ config NO_HZ_FULL
+>  	select RCU_USER_QS
+>  	select RCU_NOCB_CPU
+>  	select VIRT_CPU_ACCOUNTING_GEN
+> -	select CONTEXT_TRACKING_FORCE
+
+OK, I'm confused.
+
+-- Steve
+
+>  	select IRQ_WORK
+>  	help
+>  	 Adaptively try to shutdown the tick whenever possible, even when
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 088c411..062759e 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/irq_work.h>
+>  #include <linux/posix-timers.h>
+>  #include <linux/perf_event.h>
+> +#include <linux/context_tracking.h>
+>  
+>  #include <asm/irq_regs.h>
+>  
+> @@ -344,11 +345,16 @@ static int tick_nohz_init_all(void)
+>  
+>  void __init tick_nohz_init(void)
+>  {
+> +	int cpu;
+> +
+>  	if (!have_nohz_full_mask) {
+>  		if (tick_nohz_init_all() < 0)
+>  			return;
+>  	}
+>  
+> +	for_each_cpu(cpu, nohz_full_mask)
+> +		context_tracking_cpu_set(cpu);
+> +
+>  	cpu_notifier(tick_nohz_cpu_down_callback, 0);
+>  	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), nohz_full_mask);
+>  	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
+
+
