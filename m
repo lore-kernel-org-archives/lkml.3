@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3GQUmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 16:42:39 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:4370
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753370Ab3GQUmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 16:42:23 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-CC: "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Brad Figg <brad.figg@canonical.com>
-Subject: Re: [RESEND][v3.8] [v3.9] [v3.10] [Regression]  efi: be more
- paranoid about available space when creating variables
-Thread-Topic: [RESEND][v3.8] [v3.9] [v3.10] [Regression]  efi: be more
- paranoid about available space when creating variables
-Thread-Index: AQHOgy0XsNF1noMDeEabk9KR1N+rTJlpVdKA
-Date: Wed, 17 Jul 2013 20:42:02 +0000
-Message-ID: <1374093721.2670.0.camel@x230>
-References: <51E6FFD2.7010505@canonical.com>
-In-Reply-To: <51E6FFD2.7010505@canonical.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-x-forefront-prvs: 0910AAF391
-x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(24454002)(377424004)(199002)(189002)(53806001)(50986001)(33646001)(74662001)(74502001)(51856001)(33716001)(76482001)(63696002)(74876001)(54356001)(83322001)(81342001)(74366001)(19580395003)(56816003)(76796001)(46102001)(49866001)(81542001)(79102001)(74706001)(65816001)(77982001)(31966008)(47976001)(56776001)(69226001)(47736001)(54316002)(83072001)(16406001)(76786001)(80022001)(77096001)(59766001)(47446002)(4396001)(19580405001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB224;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:10.255.84.4;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <0C5B31AD18C0504DB65B54FF0B70B3E8@namprd05.prod.outlook.com>
+	id S1756274Ab3GQUn3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 16:43:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35415 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752005Ab3GQUn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 16:43:26 -0400
+Subject: [RFC][PATCH 00/10] Associative array & Massive expansion of keyring
+ capacity
+To: keyrings@linux-nfs.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 17 Jul 2013 21:43:14 +0100
+Message-ID: <20130717204314.8591.52892.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6HKgpLJ029871
 
-On Wed, 2013-07-17 at 16:34 -0400, Joseph Salisbury wrote:
-> Hi Matthew,
-> 
-> A bug was opened that reports a regression that prevents a system from
-> booting[0].  After a kernel bisect, it was found that reverting the
-> following commit resolved this bug:
 
-This should be fixed by f8b8404337de4e2466e2e1139ea68b1f8295974f
+Here's a set of patches that do two main things:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ (1) Provide a general purpose associative array implementation.
+
+ (2) Use the associative array implementation to provide key pointer storage
+     for keyrings thereby massively increasing capacity.
+
+There are numerous smaller patches also that are split out of (2) to make the
+patch in (2) smaller, plus a fix patch that didn't get taken into the last
+merge window.
+
+The patches can also be found at:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-devel
+
+
+The impetus for these is that the NFS ID mapper uses keyrings to store name to
+ID mappings, but is running up against the limitation imposed by the flat
+array currently used by the keyring.
+
+The associative array implementation does all the work.  To quickly summarise
+its capabilities: no capacity limit; objects don't need to be modified to go
+in it (no list_head/rb_node equivalent needed); objects need a unique index
+key of arbitrary length; objects can be anything; modifications are generally
+RCU-safe; the contents can be iterated over and it can directly walk to an
+object in O(log(N)-ish) time given the key; and lastly, there are several
+features to reduce the memory footprint (node sharing and shortcuts).
+Documentation is included in the patch.
+
+Note that the associative array implementation was developed in userspace and
+has been thoroughly valground and tested inserting new objects whilst
+iterating over 2,000,000 objects amongst other things.
+
+The keyutils testsuite has been run successfully against a kernel with these
+patches applied, though the testsuite did need some tweaks: (a) previously
+keys added to a keyring with no removals appeared to be ordered and (b) some
+of the errors have changed.
+
+David
+---
+David Howells (10):
+      KEYS: Skip key state checks when checking for possession
+      Add a generic associative array implementation.
+      KEYS: Use bool in make_key_ref() and is_key_possessed()
+      KEYS: key_is_dead() should take a const key pointer argument
+      KEYS: Consolidate the concept of an 'index key' for key access
+      KEYS: Introduce a search context structure
+      KEYS: Search for auth-key by name rather than targt key ID
+      KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+      KEYS: Drop the permissions argument from __keyring_search_one()
+      KEYS: Expand the capacity of a keyring
+
+
+ Documentation/assoc_array.txt    |  583 +++++++++++++
+ Documentation/security/keys.txt  |   20 
+ include/keys/keyring-type.h      |   17 
+ include/linux/assoc_array.h      |   94 ++
+ include/linux/assoc_array_priv.h |  159 +++
+ include/linux/key-type.h         |    5 
+ include/linux/key.h              |   48 +
+ lib/Kconfig                      |   14 
+ lib/Makefile                     |    1 
+ lib/assoc_array.c                | 1734 ++++++++++++++++++++++++++++++++++++++
+ security/keys/Kconfig            |    1 
+ security/keys/gc.c               |   30 -
+ security/keys/internal.h         |   65 +
+ security/keys/key.c              |   91 +-
+ security/keys/keyring.c          | 1447 ++++++++++++++++----------------
+ security/keys/proc.c             |   17 
+ security/keys/process_keys.c     |  131 +--
+ security/keys/request_key.c      |   56 +
+ security/keys/request_key_auth.c |   31 -
+ security/keys/user_defined.c     |   18 
+ 20 files changed, 3596 insertions(+), 966 deletions(-)
+ create mode 100644 Documentation/assoc_array.txt
+ create mode 100644 include/linux/assoc_array.h
+ create mode 100644 include/linux/assoc_array_priv.h
+ create mode 100644 lib/assoc_array.c
+
