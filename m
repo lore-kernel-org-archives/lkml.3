@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934428Ab3GQXhg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:37:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56213 "EHLO
+	id S934699Ab3GQXjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:39:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56198 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757546Ab3GQWso (ORCPT
+	with ESMTP id S1757482Ab3GQWso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Jul 2013 18:48:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 011/145] zram: destroy all devices on error recovery path in zram_init()
-Date: Wed, 17 Jul 2013 15:45:43 -0700
-Message-Id: <1374101277-7915-12-git-send-email-kamal@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 019/145] libata: skip SRST for all SIMG [34]7x port-multipliers
+Date: Wed, 17 Jul 2013 15:45:51 -0700
+Message-Id: <1374101277-7915-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
@@ -28,76 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 39a9b8ac9333e4268ecff7da6c9d1ab3823ff243 upstream.
+commit 7a87718d92760fc688628ad6a430643dafa16f1f upstream.
 
-On error recovery path of zram_init(), it leaks the zram device object
-causing the failure. So change create_device() to free allocated
-resources on error path.
+For some reason, a lot of port-multipliers have issues with softreset.
+SIMG [34]7x series port-multipliers have been quite erratic in this
+regard.  I recall that it was better with some firmware revisions and
+the current list of quirks worked fine for a while.  I think it got
+worse with later firmwares or maybe my test coverage wasn't good
+enough.  Anyways, HPA is reporting that his 3726 setup suffers SRST
+failures and then the PMP gets confused and fails to probe the last
+port.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The hope was that we try to stick to the standard as much as possible
+and soonish the PMPs and their firmwares will improve in quality, so
+the quirk list was kept to minimum.  Well, it seems like that's never
+gonna happen.
+
+Let's set NO_SRST for all [34]7x PMPs so that whatever remaining
+userbase of the device suffer the least.  Maybe we should do the same
+for 57xx's but unfortunately I don't have any device left to test and
+I'm not even sure 57xx's have ever been made widely available, so
+let's leave those alone for now.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: "H. Peter Anvin" <hpa@zytor.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_drv.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/ata/libata-pmp.c | 33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 0113897..ff2228e 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -628,7 +628,7 @@ static const struct block_device_operations zram_devops = {
+diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
+index 61c59ee..1c41722 100644
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -389,9 +389,13 @@ static void sata_pmp_quirks(struct ata_port *ap)
+ 			/* link reports offline after LPM */
+ 			link->flags |= ATA_LFLAG_NO_LPM;
  
- static int create_device(struct zram *zram, int device_id)
- {
--	int ret = 0;
-+	int ret = -ENOMEM;
+-			/* Class code report is unreliable. */
++			/*
++			 * Class code report is unreliable and SRST times
++			 * out under certain configurations.
++			 */
+ 			if (link->pmp < 5)
+-				link->flags |= ATA_LFLAG_ASSUME_ATA;
++				link->flags |= ATA_LFLAG_NO_SRST |
++					       ATA_LFLAG_ASSUME_ATA;
  
- 	init_rwsem(&zram->lock);
- 	init_rwsem(&zram->init_lock);
-@@ -638,7 +638,6 @@ static int create_device(struct zram *zram, int device_id)
- 	if (!zram->queue) {
- 		pr_err("Error allocating disk queue for device %d\n",
- 			device_id);
--		ret = -ENOMEM;
- 		goto out;
- 	}
- 
-@@ -648,11 +647,9 @@ static int create_device(struct zram *zram, int device_id)
- 	 /* gendisk structure */
- 	zram->disk = alloc_disk(1);
- 	if (!zram->disk) {
--		blk_cleanup_queue(zram->queue);
- 		pr_warn("Error allocating disk structure for device %d\n",
- 			device_id);
--		ret = -ENOMEM;
--		goto out;
-+		goto out_free_queue;
- 	}
- 
- 	zram->disk->major = zram_major;
-@@ -681,11 +678,17 @@ static int create_device(struct zram *zram, int device_id)
- 				&zram_disk_attr_group);
- 	if (ret < 0) {
- 		pr_warn("Error creating sysfs group");
--		goto out;
-+		goto out_free_disk;
- 	}
- 
- 	zram->init_done = 0;
-+	return 0;
- 
-+out_free_disk:
-+	del_gendisk(zram->disk);
-+	put_disk(zram->disk);
-+out_free_queue:
-+	blk_cleanup_queue(zram->queue);
- out:
- 	return ret;
- }
+ 			/* port 5 is for SEMB device and it doesn't like SRST */
+ 			if (link->pmp == 5)
+@@ -399,20 +403,17 @@ static void sata_pmp_quirks(struct ata_port *ap)
+ 					       ATA_LFLAG_ASSUME_SEMB;
+ 		}
+ 	} else if (vendor == 0x1095 && devid == 0x4723) {
+-		/* sil4723 quirks */
+-		ata_for_each_link(link, ap, EDGE) {
+-			/* link reports offline after LPM */
+-			link->flags |= ATA_LFLAG_NO_LPM;
+-
+-			/* class code report is unreliable */
+-			if (link->pmp < 2)
+-				link->flags |= ATA_LFLAG_ASSUME_ATA;
+-
+-			/* the config device at port 2 locks up on SRST */
+-			if (link->pmp == 2)
+-				link->flags |= ATA_LFLAG_NO_SRST |
+-					       ATA_LFLAG_ASSUME_ATA;
+-		}
++		/*
++		 * sil4723 quirks
++		 *
++		 * Link reports offline after LPM.  Class code report is
++		 * unreliable.  SIMG PMPs never got SRST reliable and the
++		 * config device at port 2 locks up on SRST.
++		 */
++		ata_for_each_link(link, ap, EDGE)
++			link->flags |= ATA_LFLAG_NO_LPM |
++				       ATA_LFLAG_NO_SRST |
++				       ATA_LFLAG_ASSUME_ATA;
+ 	} else if (vendor == 0x1095 && devid == 0x4726) {
+ 		/* sil4726 quirks */
+ 		ata_for_each_link(link, ap, EDGE) {
 -- 
 1.8.1.2
 
