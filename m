@@ -1,153 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab3GQG1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 02:27:06 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36969 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab3GQG1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 02:27:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,682,1367996400"; 
-   d="scan'208";a="269327905"
-Message-ID: <51E63ABA.9030803@intel.com>
-Date: Wed, 17 Jul 2013 09:33:30 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1752145Ab3GQG23 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 02:28:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8524 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab3GQG22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 02:28:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 16 Jul 2013 23:25:52 -0700
+Message-ID: <51E6392E.5080906@nvidia.com>
+Date: Wed, 17 Jul 2013 14:26:54 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V6 05/12] perf tools: tidy up sample parsing overflow
- checking
-References: <1373956698-27540-1-git-send-email-adrian.hunter@intel.com> <1373956698-27540-6-git-send-email-adrian.hunter@intel.com> <20130716115323.GA9964@krava.brq.redhat.com>
-In-Reply-To: <20130716115323.GA9964@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 1/4] hwmon: (lm90) split set&show temp as common codes
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com> <1373615287-18502-2-git-send-email-wni@nvidia.com> <20130712152615.23464a6b@endymion.delvare> <20130712135000.GA3386@roeck-us.net> <20130712163034.1fc1cd66@endymion.delvare> <20130712144011.GC3629@roeck-us.net> <51E395D9.6070000@nvidia.com> <20130715092415.6d082aa2@endymion.delvare> <20130717042618.GA11359@mithrandir> <20130717051409.GA16413@roeck-us.net>
+In-Reply-To: <20130717051409.GA16413@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/13 14:53, Jiri Olsa wrote:
-> On Tue, Jul 16, 2013 at 09:38:11AM +0300, Adrian Hunter wrote:
->> The size of data retrieved from a sample event must be
->> validated to ensure it does not go past the end of the
->> event.  That was being done sporadically and without
->> considering integer overflows.
+On 07/17/2013 01:14 PM, Guenter Roeck wrote:
+> On Wed, Jul 17, 2013 at 06:26:20AM +0200, Thierry Reding wrote:
+>> On Mon, Jul 15, 2013 at 09:24:15AM +0200, Jean Delvare wrote:
+>>> On Mon, 15 Jul 2013 14:25:29 +0800, Wei Ni wrote:
+>>>> On 07/12/2013 10:40 PM, Guenter Roeck wrote:
+>>>>> On Fri, Jul 12, 2013 at 04:30:34PM +0200, Jean Delvare wrote:
+>>>>>> If that means that for example the ACPI thermal zone is no longer
+>>>>>> displayed by "sensors", then I strongly object - unless it is
+>>>>>> explicitly registered as a separate hwmon device from now on, of course.
+>>>>>
+>>>>> If I recall correctly that was the idea. Of course, in practice that will mean
+>>>>> that devices will _not_ get exposed as hwmon devices, as implementers won't
+>>>>> bother doing both.
+>>>>>
+>>>>>> My idea was to make the bridge optional - you decide when you register
+>>>>>> a thermal device if it should be exposed as hwmon or not.
+>>>>>
+>>>>> Yes, that would be a much better solution.
+>>>>
+>>>> I think we can decide it in the DT, we can add a dt property in the lm90
+>>>> device node, such as:
+>>>> sys-interface = SYS_HWMON;
+>>>> or
+>>>> sys-interface = SYS_THERMAL;
+>>>> So we register it as the hwmon or thermal device
+>>>
+>>> This is an option, but please keep in mind that DT is not the only way
+>>> to instantiate LM90-like devices, and we should not expose duplicate
+>>> inputs by default. It is fine with me if the default is to create only a
+>>> HWMON device (as the lm90 driver was doing so far), and only
+>>> DT-instantiated devices have the choice.
 >>
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>  tools/perf/util/evsel.c | 102 ++++++++++++++++++++++++++++++------------------
->>  1 file changed, 64 insertions(+), 38 deletions(-)
+>> I don't think this information belongs in the device tree. Whether the
+>> device is exposed as hwmon or thermal device (or both) is entirely a
+>> software issue whereas DT is a means to describe the hardware.
 >>
->> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
->> index 724b75a..20e2ed9 100644
->> --- a/tools/perf/util/evsel.c
->> +++ b/tools/perf/util/evsel.c
->> @@ -1114,24 +1114,38 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
->>  	return 0;
->>  }
->>  
->> -static bool sample_overlap(const union perf_event *event,
->> -			   const void *offset, u64 size)
->> +static inline bool overflow_one(const void *endp, const void *offset)
->>  {
->> -	const void *base = event;
->> -
->> -	if (offset + size > base + event->header.size)
->> -		return true;
->> +	return offset + sizeof(u64) > endp;
->> +}
->>  
->> -	return false;
->> +static inline bool overflow(const void *endp, u16 max_size, const void *offset,
->> +			    u64 size)
->> +{
->> +	return size > max_size || offset + size > endp;
+> Correct; this is exactly the type of information which does _not_ belong int
+> devicetree.
 > 
-> hum, does '(size > max_size)' catch anything that would
-> not be catched by '(offset + size > endp)' ?
+>> It seems to me that the earlier proposal of communicating to the bridge
+>> whether or not a device should be exposed as hwmon device is the right
+>> thing to do here.
+>>
+> Agreed..
 
-'offset + size' can overflow and end up less than endp
+Sorry, what's the "bridge" mean, does it mean we need to add a flag in
+the thermal_zone_device_register() to indicate if we want to register
+virtual hwmon device or not?
+
+Thanks.
+Wei.
 
 > 
->>  }
->>  
->> +#define OVERFLOW_CHECK_ONE(offset)				\
->> +	do {							\
->> +		if (overflow_one(endp, (offset)))		\
->> +			return -EFAULT;				\
->> +	} while (0)
->> +
->> +#define OVERFLOW_CHECK(offset, size)				\
->> +	do {							\
->> +		if (overflow(endp, max_size, (offset), (size)))	\
->> +			return -EFAULT;				\
->> +	} while (0)
+> Guenter
 > 
-> I think, it'd be better to have just one overflow check function, like:
-> 
-> static inline bool overflow(const void *endp, const void *offset, u64 size)
-> {
->         return offset + size > endp;
-> }
-> 
-> #define OVERFLOW_CHECK(offset, size)                            \
->         do {                                                    \
->                 if (overflow(endp, (offset), (size)))           \
->                         return -EFAULT;                         \
->         } while (0)
-> 
-> #define OVERFLOW_CHECK_u64(offset) OVERFLOW_CHECK(offset, sizeof(u64))
-> 
-
-OK
-
->> +
->>  int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
->>  			     struct perf_sample *data)
->>  {
-> 
-> Hum, I was thinking of making this check more general and
-> cover also perf_event__synthesize_sample function.. but
-> looks like it's not needed there..?
-
-Currently the caller must ensure there is enough space.
-
-> 
-> 
->>  	u64 type = evsel->attr.sample_type;
->> -	u64 regs_user = evsel->attr.sample_regs_user;
->>  	bool swapped = evsel->needs_swap;
->>  	const u64 *array;
->> +	u16 max_size = event->header.size;
->> +	const void *endp = (void *)event + max_size;
->> +	u64 sz;
->>  
->>  	/*
->>  	 * used for cross-endian analysis. See git commit 65014ab3
->> @@ -1153,6 +1167,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
->>  
->>  	array = event->sample.array;
->>  
->> +	/*
->> +	 * sample_size is based on PERF_SAMPLE_MASK which includes up to
-> 
-> please prepend ^^^: The evsel's
-
-OK
-
-> 
->> +	 * PERF_SAMPLE_PERIOD.  After that overflow_one() or overflow() must be
->> +	 * used to check the format does not go past the end of the event.
->> +	 */
->>  	if (evsel->sample_size + sizeof(event->header) > event->header.size)
->>  		return -EFAULT;
->>  
 
