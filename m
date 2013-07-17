@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965112Ab3GQXLd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 19:11:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56671 "EHLO
+	id S965015Ab3GQXLc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 19:11:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56672 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964981Ab3GQWzx (ORCPT
+	with ESMTP id S964982Ab3GQWzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Jul 2013 18:55:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: ybu <ybu@qti.qualcomm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 123/145] [SCSI] megaraid_sas: fix memory leak if SGL has zero length entries
-Date: Wed, 17 Jul 2013 15:47:35 -0700
-Message-Id: <1374101277-7915-124-git-send-email-kamal@canonical.com>
+Subject: [PATCH 092/145] printk: Fix rq->lock vs logbuf_lock unlock lock inversion
+Date: Wed, 17 Jul 2013 15:47:04 -0700
+Message-Id: <1374101277-7915-93-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374101277-7915-1-git-send-email-kamal@canonical.com>
 References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,46 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: "Bu, Yitian" <ybu@qti.qualcomm.com>
 
-commit 7a6a731bd00ca90d0e250867c3b9c05b5ff0fa49 upstream.
+commit dbda92d16f8655044e082930e4e9d244b87fde77 upstream.
 
-commit 98cb7e44 ([SCSI] megaraid_sas: Sanity check user
-supplied length before passing it to dma_alloc_coherent())
-introduced a memory leak.  Memory allocated for entries
-following zero length SGL entries will not be freed.
+commit 07354eb1a74d1 ("locking printk: Annotate logbuf_lock as raw")
+reintroduced a lock inversion problem which was fixed in commit
+0b5e1c5255 ("printk: Release console_sem after logbuf_lock"). This
+happened probably when fixing up patch rejects.
 
-Reference: http://bugs.debian.org/688198
+Restore the ordering and unlock logbuf_lock before releasing
+console_sem.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Adam Radford <aradford@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: ybu <ybu@qti.qualcomm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ kernel/printk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index 66a0fec..996a314 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4852,10 +4852,12 @@ megasas_mgmt_fw_ioctl(struct megasas_instance *instance,
- 				    sense, sense_handle);
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 0f0ac58..37425c3 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1367,9 +1367,9 @@ static int console_trylock_for_printk(unsigned int cpu)
+ 		}
  	}
+ 	logbuf_cpu = UINT_MAX;
++	raw_spin_unlock(&logbuf_lock);
+ 	if (wake)
+ 		up(&console_sem);
+-	raw_spin_unlock(&logbuf_lock);
+ 	return retval;
+ }
  
--	for (i = 0; i < ioc->sge_count && kbuff_arr[i]; i++) {
--		dma_free_coherent(&instance->pdev->dev,
--				    kern_sge32[i].length,
--				    kbuff_arr[i], kern_sge32[i].phys_addr);
-+	for (i = 0; i < ioc->sge_count; i++) {
-+		if (kbuff_arr[i])
-+			dma_free_coherent(&instance->pdev->dev,
-+					  kern_sge32[i].length,
-+					  kbuff_arr[i],
-+					  kern_sge32[i].phys_addr);
- 	}
- 
- 	megasas_return_cmd(instance, cmd);
 -- 
 1.8.1.2
 
