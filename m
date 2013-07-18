@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965068Ab3GRTxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:53:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41701 "EHLO
+	id S965032Ab3GRTxB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:53:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41705 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759497Ab3GRTub (ORCPT
+	with ESMTP id S1759500Ab3GRTub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:31 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 54/76] perf diff: Switching the base hists to be pairs head
-Date: Thu, 18 Jul 2013 16:49:41 -0300
-Message-Id: <1374177003-3706-55-git-send-email-acme@infradead.org>
+Subject: [PATCH 63/76] perf tools: Move hist_entry__period_snprintf into stdio code
+Date: Thu, 18 Jul 2013 16:49:50 -0300
+Message-Id: <1374177003-3706-64-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,13 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Making the baseline hists to act as a pairs head.
-
-So far we don't care which hists act as a pairs head, because we have
-only 2 files to deal with and any of them is suitable to do the job.
-
-But if we want to process more files, we need to pick up one hists to
-act as pairs head, and the baseline hists is the most suitable.
+Moving hist_entry__period_snprintf function into stdio code and making
+it static, as it's no longer used anywhere else.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Reviewed-by: Namhyung Kim <namhyung@kernel.org>
@@ -44,181 +39,130 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-cklmt2o4j87i9viz900245ae@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ah8ms343h8xygt20iqz91kz4@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 60 +++++++++++++++++++++++------------------------
- tools/perf/ui/hist.c      | 25 ++++----------------
- 2 files changed, 35 insertions(+), 50 deletions(-)
+ tools/perf/ui/hist.c       | 40 ----------------------------------------
+ tools/perf/ui/stdio/hist.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/hist.h     |  2 --
+ 3 files changed, 41 insertions(+), 42 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 015ca2d..0cfe99e 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -167,34 +167,34 @@ double perf_diff__period_percent(struct hist_entry *he, u64 period)
- 
- double perf_diff__compute_delta(struct hist_entry *he, struct hist_entry *pair)
- {
--	double new_percent = perf_diff__period_percent(he, he->stat.period);
--	double old_percent = perf_diff__period_percent(pair, pair->stat.period);
-+	double old_percent = perf_diff__period_percent(he, he->stat.period);
-+	double new_percent = perf_diff__period_percent(pair, pair->stat.period);
- 
--	he->diff.period_ratio_delta = new_percent - old_percent;
--	he->diff.computed = true;
--	return he->diff.period_ratio_delta;
-+	pair->diff.period_ratio_delta = new_percent - old_percent;
-+	pair->diff.computed = true;
-+	return pair->diff.period_ratio_delta;
- }
- 
- double perf_diff__compute_ratio(struct hist_entry *he, struct hist_entry *pair)
- {
--	double new_period = he->stat.period;
--	double old_period = pair->stat.period;
-+	double old_period = he->stat.period ?: 1;
-+	double new_period = pair->stat.period;
- 
--	he->diff.computed = true;
--	he->diff.period_ratio = new_period / old_period;
--	return he->diff.period_ratio;
-+	pair->diff.computed = true;
-+	pair->diff.period_ratio = new_period / old_period;
-+	return pair->diff.period_ratio;
- }
- 
- s64 perf_diff__compute_wdiff(struct hist_entry *he, struct hist_entry *pair)
- {
--	u64 new_period = he->stat.period;
--	u64 old_period = pair->stat.period;
-+	u64 old_period = he->stat.period;
-+	u64 new_period = pair->stat.period;
- 
--	he->diff.computed = true;
--	he->diff.wdiff = new_period * compute_wdiff_w2 -
--			 old_period * compute_wdiff_w1;
-+	pair->diff.computed = true;
-+	pair->diff.wdiff = new_period * compute_wdiff_w2 -
-+			   old_period * compute_wdiff_w1;
- 
--	return he->diff.wdiff;
-+	return pair->diff.wdiff;
- }
- 
- static int formula_delta(struct hist_entry *he, struct hist_entry *pair,
-@@ -203,15 +203,15 @@ static int formula_delta(struct hist_entry *he, struct hist_entry *pair,
- 	return scnprintf(buf, size,
- 			 "(%" PRIu64 " * 100 / %" PRIu64 ") - "
- 			 "(%" PRIu64 " * 100 / %" PRIu64 ")",
--			  he->stat.period, he->hists->stats.total_period,
--			  pair->stat.period, pair->hists->stats.total_period);
-+			  pair->stat.period, pair->hists->stats.total_period,
-+			  he->stat.period, he->hists->stats.total_period);
- }
- 
- static int formula_ratio(struct hist_entry *he, struct hist_entry *pair,
- 			 char *buf, size_t size)
- {
--	double new_period = he->stat.period;
--	double old_period = pair->stat.period;
-+	double old_period = he->stat.period;
-+	double new_period = pair->stat.period;
- 
- 	return scnprintf(buf, size, "%.0F / %.0F", new_period, old_period);
- }
-@@ -219,8 +219,8 @@ static int formula_ratio(struct hist_entry *he, struct hist_entry *pair,
- static int formula_wdiff(struct hist_entry *he, struct hist_entry *pair,
- 			 char *buf, size_t size)
- {
--	u64 new_period = he->stat.period;
--	u64 old_period = pair->stat.period;
-+	u64 old_period = he->stat.period;
-+	u64 new_period = pair->stat.period;
- 
- 	return scnprintf(buf, size,
- 		  "(%" PRIu64 " * " "%" PRId64 ") - (%" PRIu64 " * " "%" PRId64 ")",
-@@ -462,23 +462,23 @@ static void hists__compute_resort(struct hists *hists)
- 	}
- }
- 
--static void hists__process(struct hists *old, struct hists *new)
-+static void hists__process(struct hists *base, struct hists *new)
- {
--	hists__match(new, old);
-+	hists__match(base, new);
- 
- 	if (show_baseline_only)
--		hists__baseline_only(new);
-+		hists__baseline_only(base);
- 	else
--		hists__link(new, old);
-+		hists__link(base, new);
- 
- 	if (sort_compute) {
--		hists__precompute(new);
--		hists__compute_resort(new);
-+		hists__precompute(base);
-+		hists__compute_resort(base);
- 	} else {
--		hists__output_resort(new);
-+		hists__output_resort(base);
- 	}
- 
--	hists__fprintf(new, true, 0, 0, 0, stdout);
-+	hists__fprintf(base, true, 0, 0, 0, stdout);
- }
- 
- static void data_process(void)
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index f45c97f..02313a9 100644
+index dc900d7..0a19328 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -178,18 +178,8 @@ static int hpp__width_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+@@ -236,46 +236,6 @@ void perf_hpp__column_enable(unsigned col)
+ 	perf_hpp__column_register(&perf_hpp__format[col]);
+ }
  
- static double baseline_percent(struct hist_entry *he)
- {
--	struct hist_entry *pair = hist_entry__next_pair(he);
--	struct hists *pair_hists = pair ? pair->hists : NULL;
--	double percent = 0.0;
+-static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+-{
+-	hpp->buf  += inc;
+-	hpp->size -= inc;
+-}
 -
--	if (pair) {
--		u64 total_period = pair_hists->stats.total_period;
--		u64 base_period  = pair->stat.period;
+-int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+-				bool color)
+-{
+-	const char *sep = symbol_conf.field_sep;
+-	struct perf_hpp_fmt *fmt;
+-	char *start = hpp->buf;
+-	int ret;
+-	bool first = true;
 -
--		percent = 100.0 * base_period / total_period;
+-	if (symbol_conf.exclude_other && !he->parent)
+-		return 0;
+-
+-	perf_hpp__for_each_format(fmt) {
+-		/*
+-		 * If there's no field_sep, we still need
+-		 * to display initial '  '.
+-		 */
+-		if (!sep || !first) {
+-			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+-			advance_hpp(hpp, ret);
+-		} else
+-			first = false;
+-
+-		if (color && fmt->color)
+-			ret = fmt->color(fmt, hpp, he);
+-		else
+-			ret = fmt->entry(fmt, hpp, he);
+-
+-		advance_hpp(hpp, ret);
 -	}
 -
--	return percent;
-+	struct hists *hists = he->hists;
-+	return 100.0 * he->stat.period / hists->stats.total_period;
- }
- 
- static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
-@@ -197,10 +187,8 @@ static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+-	return hpp->buf - start;
+-}
+-
+ int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
+ 			      struct hists *hists)
  {
- 	double percent = baseline_percent(he);
- 
--	if (hist_entry__has_pairs(he) || symbol_conf.field_sep)
--		return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
--	else
--		return scnprintf(hpp->buf, hpp->size, "        ");
-+	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%",
-+				      percent);
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index ee70372..5b4fb33 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -308,6 +308,47 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
+ 	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
  }
  
- static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
-@@ -209,10 +197,7 @@ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
- 	double percent = baseline_percent(he);
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
++static inline void advance_hpp(struct perf_hpp *hpp, int inc)
++{
++	hpp->buf  += inc;
++	hpp->size -= inc;
++}
++
++static int hist_entry__period_snprintf(struct perf_hpp *hpp,
++				       struct hist_entry *he,
++				       bool color)
++{
++	const char *sep = symbol_conf.field_sep;
++	struct perf_hpp_fmt *fmt;
++	char *start = hpp->buf;
++	int ret;
++	bool first = true;
++
++	if (symbol_conf.exclude_other && !he->parent)
++		return 0;
++
++	perf_hpp__for_each_format(fmt) {
++		/*
++		 * If there's no field_sep, we still need
++		 * to display initial '  '.
++		 */
++		if (!sep || !first) {
++			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
++			advance_hpp(hpp, ret);
++		} else
++			first = false;
++
++		if (color && fmt->color)
++			ret = fmt->color(fmt, hpp, he);
++		else
++			ret = fmt->entry(fmt, hpp, he);
++
++		advance_hpp(hpp, ret);
++	}
++
++	return hpp->buf - start;
++}
++
+ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 			       struct hists *hists, FILE *fp)
+ {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index bfcbb11..1329b6b 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -174,8 +174,6 @@ enum {
+ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
+-int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+-				bool color);
  
--	if (hist_entry__has_pairs(he) || symbol_conf.field_sep)
--		return scnprintf(hpp->buf, hpp->size, fmt, percent);
--	else
--		return scnprintf(hpp->buf, hpp->size, "            ");
-+	return scnprintf(hpp->buf, hpp->size, fmt, percent);
- }
+ struct perf_evlist;
  
- static int hpp__header_period_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
 -- 
 1.8.1.4
 
