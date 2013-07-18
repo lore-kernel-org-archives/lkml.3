@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965233Ab3GRUBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:01:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41630 "EHLO
+	id S965193Ab3GRUB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:01:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41642 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759452Ab3GRTu1 (ORCPT
+	with ESMTP id S1759459Ab3GRTu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:27 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 48/76] perf tools: Default to cpu// for events v5
-Date: Thu, 18 Jul 2013 16:49:35 -0300
-Message-Id: <1374177003-3706-49-git-send-email-acme@infradead.org>
+Subject: [PATCH 37/76] perf gtk/hists: Display callchain overhead also
+Date: Thu, 18 Jul 2013 16:49:24 -0300
+Message-Id: <1374177003-3706-38-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -23,124 +27,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-When an event fails to parse and it's not in a new style format,
-try to parse it again as a cpu event.
+Display callchain percent value in the overhead column.
 
-This allows to use sysfs exported events directly without //, so you can use
-
-perf record -e mem-loads ...
-
-instead of
-
-perf record -e cpu/mem-loads/
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1366480949-32292-1-git-send-email-andi@firstfloor.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1370337737-30812-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/include/linux/string.h |  1 +
- tools/perf/util/parse-events.c         | 30 +++++++++++++++++++++++++++++-
- tools/perf/util/string.c               | 24 ++++++++++++++++++++++++
- 3 files changed, 54 insertions(+), 1 deletion(-)
+ tools/perf/ui/gtk/hists.c | 27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/include/linux/string.h b/tools/perf/util/include/linux/string.h
-index 6f19c54..97a8007 100644
---- a/tools/perf/util/include/linux/string.h
-+++ b/tools/perf/util/include/linux/string.h
-@@ -1,3 +1,4 @@
- #include <string.h>
- 
- void *memdup(const void *src, size_t len);
-+int str_append(char **s, int *len, const char *a);
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index e853769..a5076f4 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -6,7 +6,7 @@
- #include "parse-options.h"
- #include "parse-events.h"
- #include "exec_cmd.h"
--#include "string.h"
-+#include "linux/string.h"
- #include "symbol.h"
- #include "cache.h"
- #include "header.h"
-@@ -823,6 +823,32 @@ int parse_events_name(struct list_head *list, char *name)
- 	return 0;
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 226c7e1..fa9f8a0 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -134,7 +134,7 @@ static void callchain_list__sym_name(struct callchain_list *cl,
  }
  
-+static int parse_events__scanner(const char *str, void *data, int start_token);
-+
-+static int parse_events_fixup(int ret, const char *str, void *data,
-+			      int start_token)
-+{
-+	char *o = strdup(str);
-+	char *s = NULL;
-+	char *t = o;
-+	char *p;
-+	int len = 0;
-+
-+	if (!o)
-+		return ret;
-+	while ((p = strsep(&t, ",")) != NULL) {
-+		if (s)
-+			str_append(&s, &len, ",");
-+		str_append(&s, &len, "cpu/");
-+		str_append(&s, &len, p);
-+		str_append(&s, &len, "/");
-+	}
-+	free(o);
-+	if (!s)
-+		return -ENOMEM;
-+	return parse_events__scanner(s, data, start_token);
-+}
-+
- static int parse_events__scanner(const char *str, void *data, int start_token)
+ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+-				    GtkTreeIter *parent, int col)
++				    GtkTreeIter *parent, int col, u64 total)
  {
- 	YY_BUFFER_STATE buffer;
-@@ -843,6 +869,8 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
- 	parse_events__flush_buffer(buffer, scanner);
- 	parse_events__delete_buffer(buffer, scanner);
- 	parse_events_lex_destroy(scanner);
-+	if (ret && !strchr(str, '/'))
-+		ret = parse_events_fixup(ret, str, data, start_token);
- 	return ret;
- }
+ 	struct rb_node *nd;
+ 	bool has_single_node = (rb_first(root) == rb_last(root));
+@@ -144,9 +144,14 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+ 		struct callchain_list *chain;
+ 		GtkTreeIter iter, new_parent;
+ 		bool need_new_parent;
++		double percent;
++		u64 hits, child_total;
  
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 29c7b2c..f0b0c00 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -387,3 +387,27 @@ void *memdup(const void *src, size_t len)
+ 		node = rb_entry(nd, struct callchain_node, rb_node);
  
- 	return p;
- }
++		hits = callchain_cumul_hits(node);
++		percent = 100.0 * hits / total;
 +
-+/**
-+ * str_append - reallocate string and append another
-+ * @s: pointer to string pointer
-+ * @len: pointer to len (initialized)
-+ * @a: string to append.
-+ */
-+int str_append(char **s, int *len, const char *a)
-+{
-+	int olen = *s ? strlen(*s) : 0;
-+	int nlen = olen + strlen(a) + 1;
-+	if (*len < nlen) {
-+		*len = *len * 2;
-+		if (*len < nlen)
-+			*len = nlen;
-+		*s = realloc(*s, *len);
-+		if (!*s)
-+			return -ENOMEM;
-+		if (olen == 0)
-+			**s = 0;
-+	}
-+	strcat(*s, a);
-+	return 0;
-+}
+ 		new_parent = *parent;
+ 		need_new_parent = !has_single_node && (node->val_nr > 1);
+ 
+@@ -155,6 +160,9 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+ 
+ 			gtk_tree_store_append(store, &iter, &new_parent);
+ 
++			scnprintf(buf, sizeof(buf), "%5.2f%%", percent);
++			gtk_tree_store_set(store, &iter, 0, buf, -1);
++
+ 			callchain_list__sym_name(chain, buf, sizeof(buf));
+ 			gtk_tree_store_set(store, &iter, col, buf, -1);
+ 
+@@ -168,8 +176,14 @@ static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
+ 			}
+ 		}
+ 
++		if (callchain_param.mode == CHAIN_GRAPH_REL)
++			child_total = node->children_hit;
++		else
++			child_total = total;
++
+ 		/* Now 'iter' contains info of the last callchain_list */
+-		perf_gtk__add_callchain(&node->rb_root, store, &iter, col);
++		perf_gtk__add_callchain(&node->rb_root, store, &iter, col,
++					child_total);
+ 	}
+ }
+ 
+@@ -283,8 +297,15 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		}
+ 
+ 		if (symbol_conf.use_callchain && sort__has_sym) {
++			u64 total;
++
++			if (callchain_param.mode == CHAIN_GRAPH_REL)
++				total = h->stat.period;
++			else
++				total = hists->stats.total_period;
++
+ 			perf_gtk__add_callchain(&h->sorted_chain, store, &iter,
+-						sym_col);
++						sym_col, total);
+ 		}
+ 	}
+ 
 -- 
 1.8.1.4
 
