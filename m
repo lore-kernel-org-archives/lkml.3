@@ -1,85 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802Ab3GRLZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:25:01 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2515 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757889Ab3GRLY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:24:59 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <51E7D080.6070401@broadcom.com>
-Date: Thu, 18 Jul 2013 13:24:48 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1758822Ab3GRLZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:25:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33280 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758806Ab3GRLZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 07:25:12 -0400
+Date: Thu, 18 Jul 2013 14:24:58 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <balbi@ti.com>, <broonie@kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
+        <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
+Message-ID: <20130718112458.GJ11251@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
+ <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
+ <20130718102404.GH11251@arwen.pp.htv.fi>
+ <51E7CF11.5030301@ti.com>
 MIME-Version: 1.0
-To: "Roger Quadros" <rogerq@ti.com>
-cc: tony@atomide.com, linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
- ethernet
-References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com>
-In-Reply-To: <51E7CEF3.5000408@ti.com>
-X-WSS-ID: 7DF9102A31W53275225-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8cpS+6Cx+xtICsjy"
+Content-Disposition: inline
+In-Reply-To: <51E7CF11.5030301@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 01:18 PM, Roger Quadros wrote:
-> Hi Arend,
->
-> On 07/18/2013 11:41 AM, Arend van Spriel wrote:
->> Hi Tony,
->>
->>
->> We are using the panda board (es variant) for testing our SDIO based chips. For this we have an adapter card connection to expansion connector A. As this adapter is not publicly available we had internally patched board-omap4panda.c. Also we follow the -rc releases and use TFTP to boot the kernel image which requires USB.
->>
->> Moving to 3.11-rc1 I found that the mentioned board file was removed by your commit:
->>
->> commit b42b918194c4791510ac049e3d507169a7de8544
->> Author: Tony Lindgren <tony@atomide.com>
->> Date:   Thu May 30 12:53:05 2013 -0700
->>
->>      ARM: OMAP2+: Remove board-omap4panda.c
->>
->> As our patches on that file are internal I do not hold it against you. This is no regression and we need to fix it.
->>
->> So my first step was to follow the recipe given in that commit. Beside that I noticed a thread about USB issue on LKML so I also applied the following commit:
->>
->> commit 352f573e59050c7a604c35c58b4bbfc51edebbee
->> Author: Roger Quadros <rogerq@ti.com>
->> Date:   Tue Jun 18 19:04:47 2013 +0300
->>
->>      ARM: OMAP2+: Provide alias to USB PHY clock
->>
->> The attached kernel log seems to suggest that the device tree is picked up by the kernel, but the USB does not seem very active. No ethernet connectivity. This does seem a regression to me. Is there some other patch that I need to get it going again?
->>
->
-> I tried with your config and 3.11-rc1 kernel with the above commit on top and ethernet seems to
-> work for me. My boot log is attached.
->
-> Are you sure that you are building the DTB for panda-es and the bootloader is picking up the right file and
-> not an outdated one?
+--8cpS+6Cx+xtICsjy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I appended the DTB to the kernel image thus avoiding the need to update 
-u-boot (at least that is what I understood from Tony's commit).
+On Thu, Jul 18, 2013 at 04:48:41PM +0530, Sourav Poddar wrote:
+> >>+static void qspi_write_msg(struct ti_qspi *qspi, struct spi_transfer *=
+t)
+> >>+{
+> >>+	const u8 *txbuf;
+> >>+	int wlen, count;
+> >>+
+> >>+	count =3D t->len;
+> >>+	txbuf =3D t->tx_buf;
+> >>+	wlen =3D t->bits_per_word;
+> >>+
+> >>+	while (count--) {
+> >>+		dev_dbg(qspi->dev, "tx cmd %08x dc %08x data %02x\n",
+> >>+			qspi->cmd | QSPI_WR_SNGL, qspi->dc, *txbuf);
+> >>+		ti_qspi_writel_data(qspi, *txbuf++, QSPI_SPI_DATA_REG, wlen);
+> >you always increment by each byte. Here, if you used writel(), you wrote
+> >4 bytes and should increment txbuf by 4.
+>=20
+> hmm..got this point. Yes, my mistake, here I agree if wlen is not 8 bits
+> txbuf++ is not valid.
+> >  Same goes for read_data(),
+> >below. Another thing. Even though your wlen might be 8 bits, if you
+> >write 4 bytes to write, you can save a few CPU cycles by using writel().
+> >
+> Do you mean 4 words of 8 bits?
 
-> Why is the version of SPL loader and u-boot different in your log?
-> You need to use the MLO file generated by the u-boot build along with the uImage.
->
-> Just to be sure we are on the same setup could you please try with latest u-boot release (2013-04). Thanks.
+yeah. Say you have wlen =3D 8 but the transfer length is 8 bytes (64
+bits). If you use writeb(), you will do 8 writes, if you use writel()
+you'll do 2 writes.
 
-I recall having difficulty with TFTP boot using a 2013 u-boot release, 
-but that hurdle is for later. I will try.
+> >>+static int ti_qspi_start_transfer_one(struct spi_master *master,
+> >>+		struct spi_message *m)
+> >>+{
+> >>+	struct ti_qspi *qspi =3D spi_master_get_devdata(master);
+> >>+	struct spi_device *spi =3D m->spi;
+> >>+	struct spi_transfer *t;
+> >>+	int status =3D 0, ret;
+> >>+	int frame_length;
+> >>+
+> >>+	/* setup device control reg */
+> >>+	qspi->dc =3D 0;
+> >>+
+> >>+	if (spi->mode&  SPI_CPHA)
+> >>+		qspi->dc |=3D QSPI_CKPHA(spi->chip_select);
+> >>+	if (spi->mode&  SPI_CPOL)
+> >>+		qspi->dc |=3D QSPI_CKPOL(spi->chip_select);
+> >>+	if (spi->mode&  SPI_CS_HIGH)
+> >>+		qspi->dc |=3D QSPI_CSPOL(spi->chip_select);
+> >>+
+> >>+	frame_length =3D DIV_ROUND_UP(m->frame_length * spi->bits_per_word,
+> >>+				spi->bits_per_word);
+> >this calculation doesn't look correct.
+> >
+> >	(m->frame_length * spi->bits_per_word) /
+> >		spi->bits_per_word =3D m->frame_length
+> >
+> >What are you trying to achieve here ? frame_length should be counted in
+> >words right ? And we get that value in bytes. So what's the best
+> >calculation to convert bytes into words ? If you have 8 bits_per_word
+> >you don't need any calculation, but if you have 32 bits_per_word, you
+> >_do_ need something.
+> >
+> Yes, just derive this formulae with 8 bits per word in mind.
+> Will change.
+> It should be (m->frame_length * 8) / spi->bits_per_word
 
-> cheers,
-> -roger
+right on. To make sure this will execute a little faster (you never know
+what several different versions of GCC will do), instead of multiplying
+by 8, left shift by 3.
 
-Thanks,
-Arend
+> >How will you achieve the number you want ? (hint: 1 byte =3D=3D 8 bits)
+> >
+> >And btw, all of these mistakes pretty much tell me that this driver
+> >hasn't been tested. How have you tested this driver ?
+> After bootup, I checked for deive detting enumerated as /proc/mtd.
+> After which I am using mtdutils(erase, dump and write utilied to
+> check for the communication with the flash device.)
 
+alright, make that clear in your commit log.
 
+--=20
+balbi
+
+--8cpS+6Cx+xtICsjy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR59CKAAoJEIaOsuA1yqREi6UQAKK8mB1uaKjGbfzz/HtObff3
+/J4OHd43TSb4dwxzP5YAtMPWo+q84x90kBgPl6Eleej6biVegF/lPw1LS00ZBQw2
+dVChiGwj/snnX44EalD/ppVSiQbTyjiMn2vbkPxSz2Bu8NMPxaQUaf7h8jUFRSpo
+1kzhRsPJ1bObEhUIR1rpr4i19NSk/oTP9L/tMuTGseiAs+aWCE3Y/wP8Je1u8/GV
+osBC8Ewmr2dQ/FAWMtNZ3uQNB+hIEM6xRwk9sKvVajPuacWU65iRkcJC40fditS+
+4oSo44aasQ13yt50zdoHkOD4Z6g4feYoWYpNmvjq4LH3b1Jp/z1aXxD3U4Inr8xK
+CWEebzYk6wctcu5mhGbu2axBsysKKBowmLIVkXGlUo9jJZBiltzdzBdzuZO9Vjwp
+zgX4l7bhqTMylcFBTrkVjtTYuKp0fS8Ni+7+H5HtbUbaJ09sWlZLvMnhAo+ZEz6d
+nqTlgGPRB8X/CEeX5usa4kKnz2GmKSy/J8Y06ME2g5Juc3DHJJh1hIeoE6fetAx1
+zlKynd5Xb7uERkYN2Vk+w22cUeC/YFkWsHp3DfoZjf3ihNf7DE6BjKPXxtjO1r7u
+QkK6y4Ww0ZIbFTcCgSiZrmEgmhpJbNoMKH9HauQevYvJ/s7+wFk5rhDs7Oa+NZ9X
+u1R/9vp1o527SR8c+VM7
+=hjgP
+-----END PGP SIGNATURE-----
+
+--8cpS+6Cx+xtICsjy--
