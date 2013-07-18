@@ -1,111 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934467Ab3GRVai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:30:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43900 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933829Ab3GRVah (ORCPT
+	id S934491Ab3GRVbB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:31:01 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:61171 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933140Ab3GRVbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:30:37 -0400
-Message-ID: <51E85E73.608@kernel.dk>
-Date: Thu, 18 Jul 2013 15:30:27 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 18 Jul 2013 17:31:00 -0400
+Date: Thu, 18 Jul 2013 23:30:55 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 05/18] vtime: Update a few comments
+Message-ID: <20130718213053.GD7398@somewhere>
+References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
+ <1374079471-3129-6-git-send-email-fweisbec@gmail.com>
+ <1374083871.6458.166.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
-References: <1373994390-5479-1-git-send-email-jack@suse.cz> <20130717161200.40a97074623be2685beb8156@linux-foundation.org> <20130718130932.GA10419@quack.suse.cz>
-In-Reply-To: <20130718130932.GA10419@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374083871.6458.166.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 07:09 AM, Jan Kara wrote:
-> On Wed 17-07-13 16:12:00, Andrew Morton wrote:
->> On Tue, 16 Jul 2013 19:06:30 +0200 Jan Kara <jack@suse.cz> wrote:
->>
->>> With users of radix_tree_preload() run from interrupt (CFQ is one such
->>> possible user), the following race can happen:
->>>
->>> radix_tree_preload()
->>> ...
->>> radix_tree_insert()
->>>   radix_tree_node_alloc()
->>>     if (rtp->nr) {
->>>       ret = rtp->nodes[rtp->nr - 1];
->>> <interrupt>
->>> ...
->>> radix_tree_preload()
->>> ...
->>> radix_tree_insert()
->>>   radix_tree_node_alloc()
->>>     if (rtp->nr) {
->>>       ret = rtp->nodes[rtp->nr - 1];
->>>
->>> And we give out one radix tree node twice. That clearly results in radix
->>> tree corruption with different results (usually OOPS) depending on which
->>> two users of radix tree race.
->>>
->>> Fix the problem by disabling interrupts when working with rtp variable.
->>> In-interrupt user can still deplete our preloaded nodes but at least we
->>> won't corrupt radix trees.
->>>
->>> ...
->>>
->>>   There are some questions regarding this patch:
->>> Do we really want to allow in-interrupt users of radix_tree_preload()?  CFQ
->>> could certainly do this in older kernels but that particular call site where I
->>> saw the bug hit isn't there anymore so I'm not sure this can really happen with
->>> recent kernels.
->>
->> Well, it was never anticipated that interrupt-time code would run
->> radix_tree_preload().  The whole point in the preloading was to be able
->> to perform GFP_KERNEL allocations before entering the spinlocked region
->> which needs to allocate memory.
->>
->> Doing all that from within an interrupt is daft, because the interrupt code
->> can't use GFP_KERNEL anyway.
->   Fully agreed here.
+On Wed, Jul 17, 2013 at 01:57:51PM -0400, Steven Rostedt wrote:
+> On Wed, 2013-07-17 at 18:44 +0200, Frederic Weisbecker wrote:
+> > Update a stale comment from the old vtime era and document some
+> > locking that might be non obvious.
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Borislav Petkov <bp@alien8.de>
+> > Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> > Cc: Mike Galbraith <efault@gmx.de>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > ---
+> >  include/linux/context_tracking.h |    8 ++------
+> >  kernel/sched/cputime.c           |    7 +++++++
+> >  2 files changed, 9 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+> > index 5984f25..12045ce 100644
+> > --- a/include/linux/context_tracking.h
+> > +++ b/include/linux/context_tracking.h
+> > @@ -72,8 +72,8 @@ extern void guest_exit(void);
+> >  static inline void guest_enter(void)
+> >  {
+> >  	/*
+> > -	 * This is running in ioctl context so we can avoid
+> > -	 * the call to vtime_account() with its unnecessary idle check.
+> > +	 * This is running in ioctl context so its safe
+> > +	 * to assume the pending cputime to flush is stime.
 > 
->>> Also it is actually harmful to do preloading if you are in interrupt context
->>> anyway. The disadvantage of disallowing radix_tree_preload() in interrupt is
->>> that we would need to tweak radix_tree_node_alloc() to somehow recognize
->>> whether the caller wants it to use preloaded nodes or not and that callers
->>> would have to get it right (although maybe some magic in radix_tree_preload()
->>> could handle that).
->>>
->>> Opinions?
->>
->> BUG_ON(in_interrupt()) :)
->   Or maybe WARN_ON()... But it's not so easy :) Currently radix tree code
-> assumes that if gfp_mask doesn't have __GFP_WAIT set caller has performed
-> radix_tree_preload(). Clearly this will stop working for in-interrupt users
-> of radix tree. So how do we propagate the information from the caller of
-> radix_tree_insert() down to radix_tree_node_alloc() whether the preload has
-> been performed or not? Will we rely on in_interrupt() or use some special
-> gfp_mask bit?
+> The above is worded funny. What about:
+> 
+> "This is running in ioctl context so its safe to assume that its the
+> stime pending cputime to flush"
 
-Should have read the full thread... in_interrupt() is ugly to base
-decisions on, imho. I'd say just use __GFP_WAIT to signal this.
+May be. What I try to express is that we have some tickless
+cputime that elapsed since the last snapshot and we need to know the nature
+of that cputime in order to account it to the right stats: was it userspace,
+system or idle cputime? We are in the kernel serving an ioctl syscall so
+we know it's system, hence the vtime_account_system().
 
-> Secondly, CFQ has this unpleasant property that some functions are
-> sometimes called from interrupt context and sometimes not. So these
-> functions would have to check in what context they are called and either
-> perform preload or not. That's doable but it's going to be a bit ugly and
-> has to match the check in radix_tree_node_alloc() whether preload should be
-> used or not. So leaving the checking to the users of radix tree looks
-> fragile.  So maybe we could just silently exit from radix_tree_preload()
-> when we are in_interrupt()?
+You are the native speaker and I wasn't listening in my english courses
+so you definetly have the last word on this, I just want to be sure you
+correctly understand why I try to say :)
 
-Which CFQ functions are these? Generally we get callbacks from the
-drivers on both queue and complete times that can be done at various
-contexts, so it's not something that is easily solvable. I'm assuming
-you are referring to the blk-ioc.c functions here, though?
+> 
+> I don't know. But "is stime" is what made me have to read that three
+> times to figure out what you meant.
+> 
+> 
+> >  	 */
+> >  	vtime_account_system(current);
+> >  	current->flags |= PF_VCPU;
+> > @@ -81,10 +81,6 @@ static inline void guest_enter(void)
+> >  
+> >  static inline void guest_exit(void)
+> >  {
+> > -	/*
+> > -	 * This is running in ioctl context so we can avoid
+> > -	 * the call to vtime_account() with its unnecessary idle check.
+> > -	 */
+> 
+> Should we copy the comment here too?
 
--- 
-Jens Axboe
+Yeah or a small reminder.
 
+Thanks.
+
+> 
+> -- Steve
+> 
+> >  	vtime_account_system(current);
+> >  	current->flags &= ~PF_VCPU;
+> >  }
+> > diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> > index a7959e0..223a35e 100644
+> > --- a/kernel/sched/cputime.c
+> > +++ b/kernel/sched/cputime.c
+> > @@ -712,6 +712,13 @@ void vtime_user_enter(struct task_struct *tsk)
+> >  
+> >  void vtime_guest_enter(struct task_struct *tsk)
+> >  {
+> > +	/*
+> > +	 * The flags must be updated under the lock with
+> > +	 * the vtime_snap flush and update.
+> > +	 * That enforces a right ordering and update sequence
+> > +	 * synchronization against the reader (task_gtime())
+> > +	 * that can thus safely catch up with a tickless delta.
+> > +	 */
+> >  	write_seqlock(&tsk->vtime_seqlock);
+> >  	__vtime_account_system(tsk);
+> >  	current->flags |= PF_VCPU;
+> 
+> 
