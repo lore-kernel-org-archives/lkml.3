@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759230Ab3GRQxF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:53:05 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:57864 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778Ab3GRQxC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:53:02 -0400
-From: Hubert Feurstein <h.feurstein@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hubert Feurstein <h.feurstein@gmail.com>
-Subject: [PATCH] serial/imx: fix custom-baudrate handling
-Date: Thu, 18 Jul 2013 18:52:49 +0200
-Message-Id: <1374166369-20342-1-git-send-email-h.feurstein@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1759241Ab3GRQzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:55:21 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57546 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757578Ab3GRQzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 12:55:20 -0400
+Message-ID: <1374166518.1949.122.camel@joe-AO722>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+From: Joe Perches <joe@perches.com>
+To: Sricharan R <r.sricharan@ti.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        nm@ti.com, rnayak@ti.com, balbi@ti.com
+Date: Thu, 18 Jul 2013 09:55:18 -0700
+In-Reply-To: <1374165830-6367-2-git-send-email-r.sricharan@ti.com>
+References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com>
+	 <1374165830-6367-2-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was not possible to set custom-baudrates like 62500.
+On Thu, 2013-07-18 at 22:13 +0530, Sricharan R wrote:
+> Some socs have a large number of interrupts/dma requests to service
+> the needs of its many peripherals and subsystems. All of the
+> requests lines from the subsystems are not needed at the same
+> time, so they have to be muxed to the controllers appropriately.
+> In such places a interrupt/dma controllers are preceded by an
+> IRQ/DMA CROSSBAR that provides flexibility in muxing the device
+> requests to the controller inputs.
+[]
+> diff --git a/drivers/misc/crossbar.c b/drivers/misc/crossbar.c
+[]
+> +int crossbar_unmap(struct device_node *cbdev_node, unsigned index)
+[]
+> +	list_for_each_entry(cbdev, &cb_devlist, node) {
+> +		if (strcmp(cbdev->name, tmp.cb_name))
+> +			continue;
+[]
+> +				dev_warn(cbdev->dev,
+> +					 "unmapped int_no %x mapped to cb %x\n",
+> +					 tmp.int_no, tmp.cb_no);
+> +				return 0;
+[]
+> +	dev_warn(cbdev->dev, "%s cb entry %d not found\n",
+> +		 __func__, tmp.cb_no);
+> +	return -ENOENT;
 
-Signed-off-by: Hubert Feurstein <h.feurstein@gmail.com>
----
- drivers/tty/serial/imx.c |    5 +++++
- 1 file changed, 5 insertions(+)
+Why does this function always emit a dev_warn
+before return?  Maybe the first should be dev_info?
 
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index 415cec6..a6671ed 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -1020,6 +1020,11 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
- 		 */
- 		div = 1;
- 	} else {
-+		/* custom-baudrate handling */
-+		div = sport->port.uartclk / (baud * 16);
-+		if (baud == 38400 && quot != div)
-+			baud = sport->port.uartclk / (quot * 16);
-+
- 		div = sport->port.uartclk / (baud * 16);
- 		if (div > 7)
- 			div = 7;
--- 
-1.7.9.5
 
