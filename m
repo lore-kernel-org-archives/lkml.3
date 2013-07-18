@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759197Ab3GRQTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:19:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37002 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758379Ab3GRQTW (ORCPT
+	id S932904Ab3GRQXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:23:53 -0400
+Received: from smtp-out-169.synserver.de ([212.40.185.169]:1083 "EHLO
+	smtp-out-169.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758647Ab3GRQXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:19:22 -0400
-Date: Thu, 18 Jul 2013 13:19:13 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Robert Richter <rric@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix 'make tools/perf'
-Message-ID: <20130718161913.GA2288@ghostprotocols.net>
-References: <1370964158-4135-1-git-send-email-rric@kernel.org>
- <tip-107de3724eff5a6fa6474a4d2aa5460b63749ebf@git.kernel.org>
- <20130712093909.GD8731@rric.localhost>
- <20130716145036.GH8731@rric.localhost>
- <20130717153118.GC2071@ghostprotocols.net>
- <20130717154001.GA4454@pd.tnic>
- <20130717161051.GJ8731@rric.localhost>
- <20130718121924.GL8731@rric.localhost>
+	Thu, 18 Jul 2013 12:23:51 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 32582
+Message-ID: <51E816BD.9010302@metafoo.de>
+Date: Thu, 18 Jul 2013 18:24:29 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718121924.GL8731@rric.localhost>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Oleksandr Kravchenko <x0199363@ti.com>
+CC: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: Re: [PATCH] iio: core: Avoid double minus in sysfs output
+References: <1374162430-30709-1-git-send-email-x0199363@ti.com>
+In-Reply-To: <1374162430-30709-1-git-send-email-x0199363@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 18, 2013 at 02:19:24PM +0200, Robert Richter escreveu:
-> Arnaldo,
+On 07/18/2013 05:47 PM, Oleksandr Kravchenko wrote:
+> From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 > 
-> I noticed you applied the patch to acme/perf/core, but it should be
-> instead in urgent since mainline is broken.
+> This patch fixes the issue with double minus in output when
+> reading channels from sysfs for IIO_VAL_INT_PLUS_MICRO and
+> IIO_VAL_INT_PLUS_NANO cases. Until this patch if val and val2
+> both are negatives output string contains "--" before
+> digits. It is result of "-%d..." in sprintf() format.
+> 
 
-I did it because there are alternative ways to build the tools that
-don't require this fix, i.e. this is not _strictly_ needed to build the
-tools.
+Hm, this might be a bug in a driver that is triggering this. The idea is
+that val2 is only allowed to be negative if val is 0.
 
-What do you guys think: a case like this always needs to go to the
-current release candidate? Ingo?
+- Lars
 
-- Arnaldo
- 
-> On 17.07.13 18:10:51, Robert Richter wrote:
-> > On 17.07.13 17:40:01, Borislav Petkov wrote:
-> > > On Wed, Jul 17, 2013 at 12:31:18PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > Humm, probably it will look at the top level 'install' target? There
-> > > > was some discussion about this, right? Can you refresh my mind?
+> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+> ---
+>  drivers/iio/industrialio-core.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Now tested with:
+> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> index d56d122..b3d3959 100644
+> --- a/drivers/iio/industrialio-core.c
+> +++ b/drivers/iio/industrialio-core.c
+> @@ -383,14 +383,14 @@ static ssize_t iio_read_channel_info(struct device *dev,
+>  		scale_db = true;
+>  	case IIO_VAL_INT_PLUS_MICRO:
+>  		if (val2 < 0)
+> -			return sprintf(buf, "-%d.%06u%s\n", val, -val2,
+> +			return sprintf(buf, "-%d.%06u%s\n", abs(val), -val2,
+>  				scale_db ? " dB" : "");
+>  		else
+>  			return sprintf(buf, "%d.%06u%s\n", val, val2,
+>  				scale_db ? " dB" : "");
+>  	case IIO_VAL_INT_PLUS_NANO:
+>  		if (val2 < 0)
+> -			return sprintf(buf, "-%d.%09u\n", val, -val2);
+> +			return sprintf(buf, "-%d.%09u\n", abs(val), -val2);
+>  		else
+>  			return sprintf(buf, "%d.%09u\n", val, val2);
+>  	case IIO_VAL_FRACTIONAL:
 > 
->  make O=... DESTDIR=... tools/perf
->  make O=... DESTDIR=... tools/perf_install
->  make O=... DESTDIR=... -C tools/ perf
->  make O=... DESTDIR=... -C tools/ perf_install
->  make O=... DESTDIR=... -C tools/perf
->  make O=... DESTDIR=... -C tools/perf install
->  make tools/perf
->  make DESTDIR=... tools/perf_install
->  make -C tools/ perf
->  make -C tools/ DESTDIR=... perf_install
->  make -C tools/perf
->  make -C tools/perf DESTDIR=... install
-> 
-> No issues noticed, accept that doc is built when running the 'install'
-> target, not 'all'.
-> 
-> Will look at this.
-> 
-> We also should remove dependencies from install targets that trigger a
-> rebuild since 'make install' is run as root. I had a conversation with
-> Linus about this for building the arm kernel, but the same applies
-> also for perf tools. I don't have the time for changing this now, but
-> maybe in some weeks or so.
-> 
-> Thanks,
-> 
-> -Robert
+
