@@ -1,170 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab3GRJIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 05:08:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52026 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756609Ab3GRJIh (ORCPT
+	id S1757595Ab3GRJLo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 05:11:44 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:34862 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756100Ab3GRJLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 05:08:37 -0400
-Date: Thu, 18 Jul 2013 10:08:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Nathan Rutman <nathan@clusterfs.com>
-Subject: [lustre mess] is mgc_fs_setup() reachable at all?
-Message-ID: <20130718090835.GZ4165@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Jul 2013 05:11:40 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-2d-51e7b14ba50d
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: update file name in the inode block during f2fs_rename
+Date: Thu, 18 Jul 2013 18:11:23 +0900
+Message-id: <1374138684-28520-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ13vjc8DDV7sFLC4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2PVxGnsBTcFK14u
+	ucLewHiMr4uRk0NCwETi5NPLTBC2mMSFe+vZuhi5OIQEljFK7Ow/wARTtPT6SiaIxHRGiXuT
+	pjFCOG1MEjvm3ALKcHCwCWhLbN5vANIgIsAssWDqebAaZoEJjBL/F71nAUkIC/hKbDs4mxXE
+	ZhFQlXj35TSYzSvgLvF71UYWiG26EotOHGSFsO+zScy/aAJRLyDxbfIhFpBdEgKyEpsOMEOU
+	SEocXHGDZQKj4AJGhlWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsYISHYu4Px9gHrQ4zJQOMm
+	MkuJJucDQzivJN7Q2MzIwtTE1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xM
+	HJxSDYxTW2M5bj9VNV4UHeqowLyYJ8Aw+ZL9wq9iC8N2S93qaN5wh2myp2TOrVNs99QErx73
+	38I6xzFFPrLTVWyFVvE7saeqvLdm74muF9e+ZLeWyYRv7t2FO5Y8nBXOWPUopfzfcdfzgsJK
+	gpMkFYN8e6akm7/ivrRoQVnpszVvmDZH2ylZ8q5SCVBiKc5INNRiLipOBADMYgWEVwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQV3vjc8DDU738Fhc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5ixauI09oKbghUvl1xhb2A8xtfFyMkhIWAisfT6SiYIW0ziwr31bF2MXBxC
+	AtMZJe5NmsYI4bQxSeyYcwuoioODTUBbYvN+A5AGEQFmiQVTz4PVMAtMYJT4v+g9C0hCWMBX
+	YtvB2awgNouAqsS7L6fBbF4Bd4nfqzayQGzTlVh04iDrBEbuBYwMqxhFUwuSC4qT0nON9IoT
+	c4tL89L1kvNzNzGCQ/yZ9A7GVQ0WhxgFOBiVeHhv8DwPFGJNLCuuzD3EKMHBrCTCW24GFOJN
+	SaysSi3Kjy8qzUktPsSYDLR9IrOUaHI+MP7ySuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQ
+	nliSmp2aWpBaBLOFiYNTqoGxdX5nfZzhqUNbeUwDSxQ+HZ32yjRPrjgnbHU839UlUY5e3hJF
+	xba1bw0rVyd+i6+138/wpX75E5ss1c3nojwdlrbPnx2sJvlcjLe4ZurdnfargqQvCFl87dqs
+	st1FePHC4DknCr2riy6Hzb5vbVW9e9/mXwerlG6Kb8pI3cp465zLlJLbpgxKLMUZiYZazEXF
+	iQDlKnbZtQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[nathan cc'd since he's the only person mentioned in mgc_request.c]
+The error is reproducible by:
 
-One general observation: drivers/taging/lustre is highly reviewer-hostile...
+After this, when we retrieve the inode->i_name of test2 by dump.f2fs, we get
+test1 instead of test2.
+This is because f2fs didn't update the file name during the f2fs_rename.
 
-Found by unrelated grep:
+So, this patch fixes that.
 
-drivers/staging/lustre/lustre/mgc/mgc_request.c:1040:		if (vallen != sizeof(struct super_block))
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/dir.c   | 15 +++++++++++++++
+ fs/f2fs/f2fs.h  |  1 +
+ fs/f2fs/namei.c |  5 +++++
+ 3 files changed, 21 insertions(+)
 
-Huh?  The code around that line looks so:
-	if (KEY_IS(KEY_SET_FS)) {
-		struct super_block *sb = (struct super_block *)val;
-		struct lustre_sb_info *lsi;
-		if (vallen != sizeof(struct super_block))
-			RETURN(-EINVAL);
-		lsi = s2lsi(sb);
-		rc = mgc_fs_setup(exp->exp_obd, sb, lsi->lsi_srv_mnt);
-		if (rc) {
-			CERROR("set_fs got %d\n", rc);
-		}
-		RETURN(rc);
-	}
-What is going on here?  We cast something to struct super_block *?
-Where does it come from?  The function it's in is
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 89ecb37..d1bb260 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -276,6 +276,21 @@ static void init_dent_inode(const struct qstr *name, struct page *ipage)
+ 	set_page_dirty(ipage);
+ }
+ 
++int update_dent_inode(struct inode *inode, const struct qstr *name)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct page *page;
++
++	page = get_node_page(sbi, inode->i_ino);
++	if (IS_ERR(page))
++		return PTR_ERR(page);
++
++	init_dent_inode(name, page);
++	f2fs_put_page(page, 1);
++
++	return 0;
++}
++
+ static int make_empty_dir(struct inode *inode,
+ 		struct inode *parent, struct page *page)
+ {
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 2dfd584..a6858c7 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -953,6 +953,7 @@ struct f2fs_dir_entry *f2fs_parent_dir(struct inode *, struct page **);
+ ino_t f2fs_inode_by_name(struct inode *, struct qstr *);
+ void f2fs_set_link(struct inode *, struct f2fs_dir_entry *,
+ 				struct page *, struct inode *);
++int update_dent_inode(struct inode *, const struct qstr *);
+ int __f2fs_add_link(struct inode *, const struct qstr *, struct inode *);
+ void f2fs_delete_entry(struct f2fs_dir_entry *, struct page *, struct inode *);
+ int f2fs_make_empty(struct inode *, struct inode *);
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 64c0716..3297278 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -427,6 +427,11 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		if (!new_entry)
+ 			goto out_dir;
+ 
++		if (update_dent_inode(old_inode, &new_dentry->d_name)) {
++			f2fs_put_page(new_page, 1);
++			goto out_dir;
++		}
++
+ 		f2fs_set_link(new_dir, new_entry, new_page, old_inode);
+ 
+ 		new_inode->i_ctime = CURRENT_TIME;
+-- 
+1.8.3.1.437.g0dbd812
 
-int mgc_set_info_async(const struct lu_env *env, struct obd_export *exp,
-		       obd_count keylen, void *key, obd_count vallen,
-		       void *val, struct ptlrpc_request_set *set)
-
-which says damn little, other than "multiplexor with no type safety".  Who
-calls that?
-; git grep -n -w mgc_set_info_async
-drivers/staging/lustre/lustre/mgc/mgc_request.c:1001:int mgc_set_info_async(const struct lu_env *env, struct obd_export *exp,
-drivers/staging/lustre/lustre/mgc/mgc_request.c:1836:	.o_set_info_async = mgc_set_info_async,
-;
-
-Umm...  OK, looks like it's only called as a method.  Unfortunately, grep for
-o_set_info_async brings a lot of instances and no callers.  After a lot of
-cursing, the following antisocial Fine Piece Of Code had been located:
-
-#define OBP(dev, op)    (dev)->obd_type->typ_dt_ops->o_ ## op
-
-along with
-
-        rc = OBP(exp->exp_obd, set_info_async)(env, exp, keylen, key, vallen,
-                                               val, set);
-
-As far as I'm concerned, macros like that are equivalent to spitting into
-reviewers' eyes.  Sometimes out of malice, sometimes just because the authors
-felt like it would be a cute prank, either way it makes life really unpleasant -
-when you need to guess which part of method/function name is to be searched for
-to locate the call sites... it gets old very soon.
-Anyway, this thing is in
-
-static inline int obd_set_info_async(const struct lu_env *env,
-				     struct obd_export *exp, obd_count keylen,
-				     void *key, obd_count vallen, void *val,
-				     struct ptlrpc_request_set *set)
-
-Again, the type safety is inexistent, but let's cross the fingers and look for
-callers (and hope they hadn't pulled a similar cute trick with ## here)
-
-; git grep -n -w obd_set_info_async
-drivers/staging/lustre/lustre/include/obd_class.h:508:static inline int obd_set_info_async(const struct lu_env *env,
-drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c:522:		rc = obd_set_info_async(req->rq_svc_thread->t_env,
-drivers/staging/lustre/lustre/llite/dir.c:658:	rc = obd_set_info_async(NULL, mgc, sizeof(KEY_SET_INFO), KEY_SET_INFO,
-drivers/staging/lustre/lustre/llite/llite_lib.c:558:	err = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CHECKSUM),
-drivers/staging/lustre/lustre/llite/llite_lib.c:563:	err = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CACHE_SET),
-drivers/staging/lustre/lustre/llite/llite_lib.c:1964:	obd_set_info_async(NULL, sbi->ll_md_exp,
-drivers/staging/lustre/lustre/llite/llite_lib.c:1967:	obd_set_info_async(NULL, sbi->ll_dt_exp,
-drivers/staging/lustre/lustre/llite/llite_lib.c:2032:		err = obd_set_info_async(NULL, sbi->ll_md_exp,
-drivers/staging/lustre/lustre/llite/lproc_llite.c:437:		rc = obd_set_info_async(NULL, sbi->ll_dt_exp,
-drivers/staging/lustre/lustre/llite/lproc_llite.c:485:	rc = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CHECKSUM),
-drivers/staging/lustre/lustre/lmv/lmv_obd.c:281:		obd_set_info_async(NULL, tgt->ltd_exp, sizeof(KEY_INTERMDS),
-drivers/staging/lustre/lustre/lmv/lmv_obd.c:2239:			err = obd_set_info_async(env, tgt->ltd_exp,
-drivers/staging/lustre/lustre/lov/lov_obd.c:638:		rc = obd_set_info_async(NULL, tgt->ltd_exp,
-drivers/staging/lustre/lustre/lov/lov_obd.c:2629:			err = obd_set_info_async(env, tgt->ltd_exp,
-drivers/staging/lustre/lustre/lov/lov_obd.c:2633:			err = obd_set_info_async(env, tgt->ltd_exp,
-drivers/staging/lustre/lustre/lov/lov_obd.c:2646:			err = obd_set_info_async(env, tgt->ltd_exp, keylen,
-drivers/staging/lustre/lustre/lov/lov_obd.c:2655:			err = obd_set_info_async(env, tgt->ltd_exp,
-drivers/staging/lustre/lustre/mdc/mdc_request.c:1767:		rc = obd_set_info_async(NULL, exp, strlen(KEY_CHANGELOG_CLEAR),
-drivers/staging/lustre/lustre/obdclass/genops.c:624:		rc2 = obd_set_info_async(NULL, obd->obd_self_export,
-drivers/staging/lustre/lustre/obdclass/obd_mount.c:277:		rc = obd_set_info_async(NULL, obd->obd_self_export,
-drivers/staging/lustre/lustre/obdclass/obd_mount.c:326:		rc = obd_set_info_async(NULL, obd->obd_self_export,
-drivers/staging/lustre/lustre/obdclass/obd_mount.c:425:	rc = obd_set_info_async(NULL, obd->obd_self_export,
-drivers/staging/lustre/lustre/obdclass/obd_mount.c:437:	rc = obd_set_info_async(NULL, obd->obd_self_export,
-;
-
-Oh, joy... 23 call sites to sift through.  Which ones are we interested in?
-The test down in the FPOS that has started it all is also reviewer-hostile -
-KEY_IS(KEY_SET_FS) has no visible references to function arguments.  Oh, well...
-
-#define KEY_IS(str) \
-	(keylen >= (sizeof(str)-1) && memcmp(key, str, (sizeof(str)-1)) == 0)
-#define KEY_SET_FS		"set_fs"
-
-and KEY_SET_FS is _NOT_ mentioned anywhere outside that check.  Neither is
-"set_fs" as explicit string constant.  I would've assumed the whole thing
-to be dead code, but... what with the preprocessor tricks we'd already seen
-there, I wouldn't bet against that thing coming from string concat.  Or from
-macro stringifying set_fs (sans double quotes).  Or from any number of sick
-preprocessor tricks.  Oh, well - at least we can go through that list and
-drop the call sites that pass a different string constant.  A few minutes
-and curses later we are down to these 5:
-
-                        err = obd_set_info_async(env, tgt->ltd_exp,
-                                                 keylen, key, vallen, val, set);
-in lmv_set_info_async(),
-and
-			err = obd_set_info_async(env, tgt->ltd_exp,
-					 keylen, key, sizeof(int),
-					 &mgi->group, set);
-			err = obd_set_info_async(env, tgt->ltd_exp,
-					 keylen, key, vallen,
-					 ((struct obd_id_info*)val)->data, set);
-			err = obd_set_info_async(env, tgt->ltd_exp, keylen,
-						 key, sizeof(*info->capa),
-						 info->capa, set);
-			err = obd_set_info_async(env, tgt->ltd_exp,
-					 keylen, key, vallen, val, set);
-in lov_set_info_async().
-
-; git grep -n -w lmv_set_info_async
-drivers/staging/lustre/lustre/lmv/lmv_obd.c:2212:int lmv_set_info_async(const struct lu_env *env, struct obd_export *exp,
-drivers/staging/lustre/lustre/lmv/lmv_obd.c:2661:	.o_set_info_async       = lmv_set_info_async,
-;
-
-IOW, this one is another o_set_info_async instance and key/keylen/val/vallen
-is passed from its caller as-is.
-
-; git grep -n -w lov_set_info_async
-drivers/staging/lustre/lustre/lov/lov_obd.c:2559:static int lov_set_info_async(const struct lu_env *env, struct obd_export *exp,
-drivers/staging/lustre/lustre/lov/lov_obd.c:2850:	.o_set_info_async      = lov_set_info_async,
-;
-
-... and this one is also o_set_info_async instance.  In one of 4 call sites
-we appear to pass the arguments as-is, the rest... key/keylen is passed as-is,
-val/vallen isn't.  In any case, key must have originated in one of the
-call sites we'd already eliminated.
-
-So unless I've missed something in that paragon of good taste, there is no
-call chain that could've lead to mgc_set_info_async() with key being "set_fs".
-Incidentally, there is a couple of recursive loops in there that might or
-might not lead to stack overflows.
-
-Could somebody familiar with that thing confirm that this is, in fact, dead
-code?  As the matter of fact, could maintainers please stand up and put their
-names into MAINTAINERS?
