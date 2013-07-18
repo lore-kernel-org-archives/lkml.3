@@ -1,106 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934815Ab3GRXhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:37:10 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:37645 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934751Ab3GRXhI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:37:08 -0400
-Message-ID: <51E87C1F.1090301@hurleysoftware.com>
-Date: Thu, 18 Jul 2013 19:37:03 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S934835Ab3GRXjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:39:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54939 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933481Ab3GRXji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 19:39:38 -0400
+Message-ID: <51E87C98.5030001@ti.com>
+Date: Thu, 18 Jul 2013 19:39:04 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        joseph.salisbury@canonical.com
-CC: Nestor Lopez Casado <nlopezcasad@logitech.com>, jkosina@suse.cz,
-        benjamin.tissoires@gmail.com, adlr@chromium.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying
- device issue""
-References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com> <51E84FD1.4050400@hurleysoftware.com> <20130718220936.GA8025@xanatos>
-In-Reply-To: <20130718220936.GA8025@xanatos>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Nishanth Menon <nm@ti.com>, <balbi@ti.com>
+CC: Sricharan R <r.sricharan@ti.com>, <linux@arm.linux.org.uk>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <rnayak@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com>
+In-Reply-To: <51E83A4F.5080904@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 06:09 PM, Sarah Sharp wrote:
-> On Thu, Jul 18, 2013 at 04:28:01PM -0400, Peter Hurley wrote:
->> [ +cc Sarah Sharp, linux-usb ]
+On Thursday 18 July 2013 02:56 PM, Nishanth Menon wrote:
+> On 07/18/2013 11:43 AM, Sricharan R wrote:
+>> Some socs have a large number of interrupts/dma requests to service
+>> the needs of its many peripherals and subsystems. All of the
+>> requests lines from the subsystems are not needed at the same
+>> time, so they have to be muxed to the controllers appropriately.
+>> In such places a interrupt/dma controllers are preceded by an
+>> IRQ/DMA CROSSBAR that provides flexibility in muxing the device
+>> requests to the controller inputs.
 >>
->> On 07/18/2013 09:21 AM, Nestor Lopez Casado wrote:
->>> This reverts commit 8af6c08830b1ae114d1a8b548b1f8b056e068887.
->>>
->>> This patch re-adds the workaround introduced by 596264082f10dd4
->>> which was reverted by 8af6c08830b1ae114.
->>>
->>> The original patch 596264 was needed to overcome a situation where
->>> the hid-core would drop incoming reports while probe() was being
->>> executed.
->>>
->>> This issue was solved by c849a6143bec520af which added
->>> hid_device_io_start() and hid_device_io_stop() that enable a specific
->>> hid driver to opt-in for input reports while its probe() is being
->>> executed.
->>>
->>> Commit a9dd22b730857347 modified hid-logitech-dj so as to use the
->>> functionality added to hid-core. Having done that, workaround 596264
->>> was no longer necessary and was reverted by 8af6c08.
->>>
->>> We now encounter a different problem that ends up 'again' thwarting
->>> the Unifying receiver enumeration. The problem is time and usb controller
->>> dependent. Ocasionally the reports sent to the usb receiver to start
->>> the paired devices enumeration fail with -EPIPE and the receiver never
->>> gets to enumerate the paired devices.
->>>
->>> With dcd9006b1b053c7b1c the problem was "hidden" as the call to the usb
->>> driver became asynchronous and none was catching the error from the
->>> failing URB.
->>>
->>> As the root cause for this failing SET_REPORT is not understood yet,
->>> -possibly a race on the usb controller drivers or a problem with the
->>> Unifying receiver- reintroducing this workaround solves the problem.
+>> The Peripheral irq/dma requests are connected to one crossbar's input
+>> and the output of the crossbar is connected to controller's input
+>> line. On POR, there are some mappings which are done by default.
+>> Those peripherals which do not have a mapping on POR, should be configured
+>> to route its requests using the crossbar.
 >>
+>> The drivers identifies every controller's crossbar as individual devices.
+>> The mappings can be specified from the DT crossbar nodes and those gets mapped
+>> during the crossbar device's probe. The mappings can also be specified by adding
+>> the crossbar lines to the peripheral device nodes and map it with
+>> crossbar_map/unmap apis.
 >>
->> Before we revert to using the workaround, I'd like to suggest that
->> this new "hidden" problem may be an interaction with the xhci_hcd host
->> controller driver only.
+>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+>> ---
+>>   .../devicetree/bindings/arm/omap/crossbar.txt      |   24 ++
+>>   drivers/misc/Kconfig                               |    8 +
+>>   drivers/misc/Makefile                              |    1 +
+>>   drivers/misc/crossbar.c                            |  258 ++++++++++++++++++++
+>>   include/linux/crossbar.h                           |   71 ++++++
+>>   5 files changed, 362 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>>   create mode 100644 drivers/misc/crossbar.c
+>>   create mode 100644 include/linux/crossbar.h
 >>
->> Looking at the related bug, the OP indicates the machine only has
->> USB3 ports. Additionally, comments #7, #100, and #104 of the original
->> bug report [1] add additional information that would seem to confirm
->> this suspicion.
->
-> Question: does this USB device need a control transfer to reset its
-> endpoints when the endpoints are not actually halted?  If so, yes, that
-> is a known xHCI driver bug that needs to be fixed.  The xHCI host will
-> not accept a Reset Endpoint command when the endpoints are not actually
-> halted, but the USB core will send the control transfer to reset the
-> endpoint.  That means the device and host toggles will be out of sync,
-> and all messages will start to fail with -EPIPE.
->
-> Can the OP capture a usbmon trace when the device starts failing?  That
-> will reveal whether this actually is the issue.  dmesg output with
-> CONFIG_USB_DEBUG and CONFIG_USB_XHCI_HCD_DEBUGGING turned on would also
-> be helpful.
+>> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>> new file mode 100644
+>> index 0000000..02a8a28
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>> @@ -0,0 +1,24 @@
+>> +* TI - IRQ/DMA Crossbar
+>> +
+>> +This version is an implementation of the Crossbar IRQ/DMA IP
+>> +
+>> +Required properties:
+>> +- compatible : Should be "ti,dra-crossbar"
+>> +- crossbar-name: Name of the controller to which crossbar output is routed
+>> +- reg:    Contains crossbar register address range
+>> +- reg-width: Represents the width of the individual registers
+>> +- crossbar-lines:  Default mappings.Should contain the crossbar-name
+>> +           device name, int/dma request number, crossbar number,
+>> +           register offset in the same order.
+>> +
+>> +Examples:
+>> +        crossbar_mpu: mpuirq@4a002a48 {
+>> +            compatible = "crossbar";
+>> +            crossbar-name = "mpu-irq";
+>> +            reg = <0x4a002a48 0x0130>;
+>> +            reg-width = <16>;
+>> +            crossbar-lines = "mpu-irq", "rtc-ss-alarm", <0x9f 0xd9 0x12c>,
+>> +                     "mpu-irq", "mcasp3-arevt", <0x9e 0x96 0x12a>,
+>> +                     "mpu-irq", "mcasp3-axevt", <0x9d 0x97 0x128>;
+>> +        };
+> 
+> I carry forward my TI internal objection to this approach:
+> 
+> NAK.
+> 
+> DRA7 uses a cross bar to map a line to GIC interrupt. Flow of interrupt is as follows:
+> hardware IP block -interrupt line-> IRQ Cross bar -> GIC IRQ line --> MPU IRQ.
+> 
+> 
+> What we have done today for DRA is to provide IRQ numbers as direct maps from hardware IP block to GIC based on default IRQ cross bar mapping.
+> 
+> Lets see what happens as a result of this:
+> 
+> https://patchwork.kernel.org/patch/2825148/ (introducing DTS for DRA7)
+> uart1 to uart6 is defined. while in fact 10 uarts exist on IP block.
+> uart1: serial@4806a000 {
+> <snip>
+> +            interrupts = <0 72 0x4>;
+> Assumes that GIC interrupt by default mapping used.
+> 
+> Now, think of a product that wants to use UART10 instead of UART1, SoC design allows you do that by doing a remapping of GIC interrupt to UART10 - which is awesome.
+> 
+> Option 1: u-boot/bootloader
+> mw.l IRQ_CROSSBAR_address with value to map uart10 to GIC IRQ for UART1,
+> 
+> Option 2: in kernel do a raw_writel version of option 1.
+> This patch does option 1 in kernel in a "fancy way" - why the heck would I want to do that when u-boot allows me to do the same thing in uEnv.txt
+> 
+> Option 3: map GIC interrupt to IRQ CROSS bar dynamically.
+> a) Allows us to define every single IP available on DRA7 SoC.
+> b) GIC allocation happens dynamically
+> c) allow products use IPs as needed.
+> 
+> Sorry, Conceptually option 3 is the right approach in my view.
+> instead of doing
+> uart1: serial@4806a000 {
+> <snip>
+> +            interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+> 
+> we should be able to do the following:
+> uart1: serial@4806a000 {
+> <snip>
+> +            interrupts = <TI_IRQ_CROSSBAR 192 IRQ_TYPE_LEVEL_HIGH>;
+> 
+> and not worry about the GIC interrupt number used
+> 
+> 
+Since the cross-bar is not limited t0 IRQ lines and applicable for
+DMA request lines as well, making it IRQ chip doesn't make sense. Its
+not typical pin control functionality either but at least that framework
+is much closer to consider as an option.
 
-Sarah,
+Actually its more of setting up the IRQ and DMA pins maps once
+at boot for a given SOC based on chosen configuration by the
+board. So I am leaning towards pinctrl as well. Just haven't
+thought enough about whether thats the best approach.
 
-I forwarded your usbmon capture request to the OP in the bug report
-(I don't have an email address for the reporter).
-
-As far as getting printk output from a custom kernel, I think that may
-be beyond the reporter's capability. Perhaps one of the Ubuntu devs
-triaging this bug could provide a test kernel for the OP with those
-options on.
-
-Joseph, would you be willing to do that?
+CC'ing Linus W and Tony L whether we can use pinctrl framework
+for such an IP and if yes how ;-).
 
 Regards,
-Peter Hurley
+Santosh
+
