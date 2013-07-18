@@ -1,92 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336Ab3GRV3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:29:46 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:44635 "HELO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933212Ab3GRV3o (ORCPT
+	id S934424Ab3GRV37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:29:59 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:41907 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759369Ab3GRV35 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:29:44 -0400
-Date: Fri, 19 Jul 2013 09:28:15 +1200
-From: Michael Cree <cree@waikato.ac.nz>
-To: Richard Henderson <rth@twiddle.net>
-Cc: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru, mattst88@gmail.com,
-        linux-alpha@vger.kernel.org
-Subject: Re: [RFC PATCH 00/10] Alpha support for QEMU
-Message-ID: <20130718212815.GA32459@stolen.phys.waikato.ac.nz>
-References: <1373996058-13399-1-git-send-email-rth@twiddle.net>
- <20130718011435.GA20007@stolen.phys.waikato.ac.nz>
- <51E7EFC6.6070003@twiddle.net>
+	Thu, 18 Jul 2013 17:29:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E7EFC6.6070003@twiddle.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130718211806.GB2394@swordfish>
+References: <20130712092400.GA2565@swordfish>
+	<CADv+DGka4s1xc2UYqu+-EqHW8jA56JrtEE_sMsMOpc6NDmc6Zw@mail.gmail.com>
+	<20130712094830.GA2257@swordfish.minsk.epam.com>
+	<20130718211806.GB2394@swordfish>
+Date: Thu, 18 Jul 2013 23:29:57 +0200
+X-Google-Sender-Auth: quOuec8HETyCAOXOl5c6GeAko0k
+Message-ID: <CAMuHMdXCsRKpFQRwMTteQpBCbtuJVqmb9UvszHi3ffTS=RxJmw@mail.gmail.com>
+Subject: Re: [PATCH] LZ4: compression/decompression signedness mismatch
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 06:38:14AM -0700, Richard Henderson wrote:
-> On 07/17/2013 06:14 PM, Michael Cree wrote:
-> > Tested the patch series applied against 3.10.1 on a 3-CPU ES45.  System came
-> > up fine but I noticed date was wrong and had been reset back to the start
-> > of the epoch (Jan 1 1970).  Appears it is not reading hardware clock
-> > correctly on boot.
-> 
-> Please scan the dmesg for the "Using epoch 2000 for rtc year 13" line,
-> and compare vs a similar message on the previous kernel.
+On Thu, Jul 18, 2013 at 11:18 PM, Sergey Senozhatsky
+<sergey.senozhatsky@gmail.com> wrote:
+> On (07/12/13 12:48), Sergey Senozhatsky wrote:
+>> On (07/12/13 11:28), Yann Collet wrote:
+>> >    The reference implementation, hosted at :�
+>> >    [1]https://code.google.com/p/lz4/
+>> >    only proposes char* (signed) types as part of the interface contract.
+>> >    I would recommend to keep it that way, to remain consistent.
+>> >    Regards
+>>
+>> Crypto lz4 accepts u8 * for both compression and decompression:
+>>
+>>  lz4_compress_crypto(struct crypto_tfm *tfm, const u8 *src,
+>>                             unsigned int slen, u8 *dst, unsigned int *dlen)
+>>
+>>  lz4_decompress_crypto(struct crypto_tfm *tfm, const u8 *src,
+>>                        unsigned int slen, u8 *dst, unsigned int *dlen)
+>>
+>>
+>> Internally LZ4 may cast unsigned char* to signed char*, the same way you
+>> already do with compression:
+>>
+>>       int lz4_compress(const unsigned char *src, size_t src_len,
+>>                       unsigned char *dst, size_t *dst_len, void *wrkmem)
+>>
+>>               calls:
+>>                       lz4_compressctx(void *ctx,
+>>                               const char *source, char *dest,
+>>                               int isize, int maxoutputsize)
+>>
+>
+>
+> + lib/decompress_unlz4.c
+>  STATIC int INIT decompress(unsigned char *buf, int in_len,
+>                                 int(*fill)(void*, unsigned int),
+>                                 int(*flush)(void*, unsigned int),
+>                                 unsigned char *output,
+>                                 int *posp,
+>                                 void(*error)(char *x)
+>
+>>
+>> At the moment API is a bit misaligned: unsiged char* for compression and signed char* for
+>> decompression.
+>>
+>>
+>> My 'real word' use case is, suppose:
+>>
+>>       struct foo {
+>>       [..]
+>>               int (*compress)(const unsigned char *src, size_t src_len,
+>>                               unsigned char *dst, size_t *dst_len, void *wrkmem);
+>>               int (*decompress)(const unsigned char *src, size_t src_len,
+>>                               unsigned char *dst, size_t *dst_len);
+>>       };
+>>
+>>
+>> and (for example) module also provides sysfs attribute, so user can switch select
+>> LZO or LZ4 compressions depending of his needs:
+>>
+>>       ->compress = lzo1x_1_compress;
+>>       ->decompress = lzo1x_decompress_safe;
+>>
+>> to
+>>       ->compress = lz4_compress;
+>>       ->decompress = lz4_decompress_unknownoutputsize;
+>>
+>>
+>> the last one produces unneccessary compilation warning.
+>>
+>
+> did you guys have a chance to review the patch? it does not change
+> implementation/internals, just decompression exported symbols.
 
-The kernel without the patch set has the "Using epoch 2000" line and
-the kernel with the patch set is missing the "Using epoch 2000" line.
+IMHO, all these memory buffers should be of type "(const) void *", cfr.
+e.g. read(2) and memcpy(3).
 
-The differences in config between the two kernels are:
+This avoids casts in the callers.
 
-diff /boot/config-3.10.1-titan-p1+ /boot/config-3.10.1-titan-rth2+ 
-25c25
-< CONFIG_LOCALVERSION="-titan-p1"
----
-> CONFIG_LOCALVERSION="-titan-rth2"
-44c44,53
-< CONFIG_GENERIC_CMOS_UPDATE=y
----
-> CONFIG_GENERIC_CLOCKEVENTS=y
-> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-> 
-> #
-> # Timers subsystem
-> #
-> CONFIG_HZ_PERIODIC=y
-> # CONFIG_NO_HZ_IDLE is not set
-> # CONFIG_NO_HZ is not set
-> # CONFIG_HIGH_RES_TIMERS is not set
-253a263
-> # CONFIG_ALPHA_QEMU is not set
-277a288,293
-> # CONFIG_HZ_32 is not set
-> # CONFIG_HZ_64 is not set
-> # CONFIG_HZ_128 is not set
-> # CONFIG_HZ_256 is not set
-> CONFIG_HZ_1024=y
-> # CONFIG_HZ_1200 is not set
+Gr{oetje,eeting}s,
 
+                        Geert
 
-> > I manually set the clock to the correct time but noticed it is running slow,
-> > indeed in a period of 60s the system clock incremented by 21s (+/-1s) so
-> > would appear clock is running slow by a factor given by the number of CPUs.
-> 
-> That's curious.  I wonder if somehow I botched the smp changes, and I'm
-> not getting the timer interrupt either (1) enabled or (2) registered on
-> the secondary cpus...
-> 
-> Perhaps /proc/interrupts will confirm or deny this?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-On the kernel without the patch set the dummy-RTC timer interrupt received
-30876 interrupts in a 30s period which is within measurement uncertainty of
-the expected 30*1024 = 30720 interrupts.
-
-On the kernel with the patch set the dummy-RTC timer interrupt received 14419 
-interrupts on CPU-1, 13935 interrupts on CPU-2 and 2619 interrupts on CPU-3
-over a 30s period.
-
-Cheers
-Michael.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
