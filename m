@@ -1,270 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759165Ab3GRQmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:42:23 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46800 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128Ab3GRQmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:42:21 -0400
-Date: Thu, 18 Jul 2013 18:42:15 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Ming Lei <tom.leiming@gmail.com>, Linda Walsh <lkml@tlinx.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
-Subject: Re: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
-Message-ID: <20130718164215.GC15992@pd.tnic>
-References: <51D9EAF3.4050804@tlinx.org>
- <CACVXFVPRwakzB6vtqRqL49StHKdugCpxDyNvx3VzcDC7GggFMQ@mail.gmail.com>
- <20130712080428.GB359@x4>
- <20130712134115.GI24008@pd.tnic>
- <51E00B55.5070003@infradead.org>
- <20130712142106.GJ24008@pd.tnic>
- <20130712131340.1a371662.mchehab@infradead.org>
- <3908561D78D1C84285E8C5FCA982C28F31C7D83C@ORSMSX106.amr.corp.intel.com>
+	id S1759199Ab3GRQnm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:43:42 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:34232 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab3GRQnl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 12:43:41 -0400
+Message-ID: <51E81B39.2030805@linaro.org>
+Date: Thu, 18 Jul 2013 17:43:37 +0100
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31C7D83C@ORSMSX106.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH] arm: choose debug/uncompress.h include when uncompress
+ debug is disabled
+References: <1373897706-15331-1-git-send-email-julien.grall@linaro.org> <alpine.DEB.2.02.1307171420350.8258@kaball.uk.xensource.com> <20130717151148.GM24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130717151148.GM24642@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 04:19:24PM +0000, Luck, Tony wrote:
-> > What would be a reasonable maximum limit for the number of memory
-> > controllers, on a -EX machine?
->
-> Westmere-EX has one memory controller per socket ... and there are
-> glueless systems up to 8 sockets. So 8 there. Not sure if any OEM is
-> building larger machines with a node controller (SGI? Not sure if they
-> build their behemoths from -EP or -EX parts).
->
-> Ivy Bridge ups the ante with two memory controllers on a socket. So
-> plan on doubling soon.
+On 07/17/2013 04:11 PM, Russell King - ARM Linux wrote:
+> On Wed, Jul 17, 2013 at 02:25:38PM +0100, Stefano Stabellini wrote:
+>> On Mon, 15 Jul 2013, Julien Grall wrote:
+>>> Even if uncompress debug is disabled, some board will continue to print
+>>> information during uncompress step.
+>>
+>> Are you talking about DEBUG_UNCOMPRESS?
+>> Should I read the sentence as "even if DEBUG_UNCOMPRESS is not selected,
+>> some board will continue to print information during the uncompress step"?
+>>
+>> Isn't this a bug in the platform specific code that should be fixed anyway?
+> 
+> Hang on, let's be clear what's going on here.
+> 
+> 1. The normal output from the decompressor is *not* debugging.  By that
+>    I mean the "Uncompressing kernel... done" message.  That is part of
+>    user output.
+> 
+> 2. In non-multiplatform environments, the decompressor will normally use
+>    the putc/flush functions found in arch/arm/mach-*/include/mach/uncompress.h
+>    to implement its output, irrespective of the DEBUG_UNCOMPRESS setting.
+>    (An interesting point is that DEBUG_UNCOMPRESS really should depend on
+>    MULTIPLATFORM so that this point is explicit - the option requires
+>    MULTIPLATFORM to be set.)
+> 
+> 3. DEBUG_UNCOMPRESS allows the functions which we've implemented for LL
+>    debug to be re-used for decompressor output.
 
-Let's give it a second try, 16 memory controllers max:
+When Xen will boot, it will use one UART, given by the user, to be able
+to log its information. Xen will not map the UART region and the IRQ to
+dom0. Of course it will not be present in the device tree either. So if
+Linux tries to access to this memory region, it will crash.
 
----
->From 18fec2fd4279640b9f471c28aa3a5dc8be104273 Mon Sep 17 00:00:00 2001
-From: Borislav Petkov <bp@suse.de>
-Date: Fri, 12 Jul 2013 10:53:38 +0200
-Subject: [PATCH] EDAC: Fix lockdep splat
+When Linux will boot as dom0, it will either use an hvc console or
+another UART.
 
-Fix the following:
+In case of multi-platform environments, there is no issue because when
+CONFIG_DEBUG_UNCOMPRESS is disabled.
 
-BUG: key ffff88043bdd0330 not in .data!
-------------[ cut here ]------------
-WARNING: at kernel/lockdep.c:2987 lockdep_init_map+0x565/0x5a0()
-DEBUG_LOCKS_WARN_ON(1)
-Modules linked in: glue_helper sb_edac(+) edac_core snd acpi_cpufreq lrw gf128mul ablk_helper iTCO_wdt evdev i2c_i801 dcdbas button cryptd pcspkr iTCO_vendor_support usb_common lpc_ich mfd_core soundcore mperf processor microcode
-CPU: 2 PID: 599 Comm: modprobe Not tainted 3.10.0 #1
-Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
- 0000000000000009 ffff880439a1d920 ffffffff8160a9a9 ffff880439a1d958
- ffffffff8103d9e0 ffff88043af4a510 ffffffff81a16e11 0000000000000000
- ffff88043bdd0330 0000000000000000 ffff880439a1d9b8 ffffffff8103dacc
-Call Trace:
-  dump_stack
-  warn_slowpath_common
-  warn_slowpath_fmt
-  lockdep_init_map
-  ? trace_hardirqs_on_caller
-  ? trace_hardirqs_on
-  debug_mutex_init
-  __mutex_init
-  bus_register
-  edac_create_sysfs_mci_device
-  edac_mc_add_mc
-  sbridge_probe
-  pci_device_probe
-  driver_probe_device
-  __driver_attach
-  ? driver_probe_device
-  bus_for_each_dev
-  driver_attach
-  bus_add_driver
-  driver_register
-  __pci_register_driver
-  ? 0xffffffffa0010fff
-  sbridge_init
-  ? 0xffffffffa0010fff
-  do_one_initcall
-  load_module
-  ? unset_module_init_ro_nx
-  SyS_init_module
-  tracesys
----[ end trace d24a70b0d3ddf733 ]---
-EDAC MC0: Giving out device to 'sbridge_edac.c' 'Sandy Bridge Socket#0': DEV 0000:3f:0e.0
-EDAC sbridge: Driver loaded.
+Now, in non-multiplatform environment, the decompressor will use a
+pre-defined UART. This UART may be already used by Xen and Linux will
+abort at the first access.
 
-What happens is that bus_register needs a statically allocated lock_key
-because it is handed in to lockdep. However, struct mem_ctl_info embeds
-struct bus_type (the whole struct, not a pointer to it) which gets
-dynamically allocated.
+I think, the decompressor should be able to detect if the UART exists
+(I'm not sure it's possible) or disabled at compile time uncompress log.
 
-Fix this by using a statically allocated struct bus_type for the MC bus.
+Do you have any better ideas?
 
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/edac/edac_mc.c       |  6 ++++++
- drivers/edac/edac_mc_sysfs.c | 28 +++++++++++++++-------------
- drivers/edac/i5100_edac.c    |  2 +-
- include/linux/edac.h         |  7 ++++++-
- 4 files changed, 28 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 27e86d938262..429e971e02d7 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -48,6 +48,8 @@ static LIST_HEAD(mc_devices);
-  */
- static void const *edac_mc_owner;
- 
-+static struct bus_type mc_bus[EDAC_MAX_MCS];
-+
- unsigned edac_dimm_info_location(struct dimm_info *dimm, char *buf,
- 			         unsigned len)
- {
-@@ -762,6 +764,10 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
- 	/* set load time so that error rate can be tracked */
- 	mci->start_time = jiffies;
- 
-+	BUG_ON(mci->mc_idx >= EDAC_MAX_MCS);
-+
-+	mci->bus = &mc_bus[mci->mc_idx];
-+
- 	if (edac_create_sysfs_mci_device(mci)) {
- 		edac_mc_printk(mci, KERN_WARNING,
- 			"failed to create sysfs device\n");
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index ef15a7e613bc..e7c32c4f7837 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -370,7 +370,7 @@ static int edac_create_csrow_object(struct mem_ctl_info *mci,
- 		return -ENODEV;
- 
- 	csrow->dev.type = &csrow_attr_type;
--	csrow->dev.bus = &mci->bus;
-+	csrow->dev.bus = mci->bus;
- 	device_initialize(&csrow->dev);
- 	csrow->dev.parent = &mci->dev;
- 	csrow->mci = mci;
-@@ -605,7 +605,7 @@ static int edac_create_dimm_object(struct mem_ctl_info *mci,
- 	dimm->mci = mci;
- 
- 	dimm->dev.type = &dimm_attr_type;
--	dimm->dev.bus = &mci->bus;
-+	dimm->dev.bus = mci->bus;
- 	device_initialize(&dimm->dev);
- 
- 	dimm->dev.parent = &mci->dev;
-@@ -975,11 +975,13 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 	 * The memory controller needs its own bus, in order to avoid
- 	 * namespace conflicts at /sys/bus/edac.
- 	 */
--	mci->bus.name = kasprintf(GFP_KERNEL, "mc%d", mci->mc_idx);
--	if (!mci->bus.name)
-+	mci->bus->name = kasprintf(GFP_KERNEL, "mc%d", mci->mc_idx);
-+	if (!mci->bus->name)
- 		return -ENOMEM;
--	edac_dbg(0, "creating bus %s\n", mci->bus.name);
--	err = bus_register(&mci->bus);
-+
-+	edac_dbg(0, "creating bus %s\n", mci->bus->name);
-+
-+	err = bus_register(mci->bus);
- 	if (err < 0)
- 		return err;
- 
-@@ -988,7 +990,7 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 	device_initialize(&mci->dev);
- 
- 	mci->dev.parent = mci_pdev;
--	mci->dev.bus = &mci->bus;
-+	mci->dev.bus = mci->bus;
- 	dev_set_name(&mci->dev, "mc%d", mci->mc_idx);
- 	dev_set_drvdata(&mci->dev, mci);
- 	pm_runtime_forbid(&mci->dev);
-@@ -997,8 +999,8 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 	err = device_add(&mci->dev);
- 	if (err < 0) {
- 		edac_dbg(1, "failure: create device %s\n", dev_name(&mci->dev));
--		bus_unregister(&mci->bus);
--		kfree(mci->bus.name);
-+		bus_unregister(mci->bus);
-+		kfree(mci->bus->name);
- 		return err;
- 	}
- 
-@@ -1064,8 +1066,8 @@ fail:
- 	}
- fail2:
- 	device_unregister(&mci->dev);
--	bus_unregister(&mci->bus);
--	kfree(mci->bus.name);
-+	bus_unregister(mci->bus);
-+	kfree(mci->bus->name);
- 	return err;
- }
- 
-@@ -1098,8 +1100,8 @@ void edac_unregister_sysfs(struct mem_ctl_info *mci)
- {
- 	edac_dbg(1, "Unregistering device %s\n", dev_name(&mci->dev));
- 	device_unregister(&mci->dev);
--	bus_unregister(&mci->bus);
--	kfree(mci->bus.name);
-+	bus_unregister(mci->bus);
-+	kfree(mci->bus->name);
- }
- 
- static void mc_attr_release(struct device *dev)
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index 1b635178cc44..157b934e8ce3 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -974,7 +974,7 @@ static int i5100_setup_debugfs(struct mem_ctl_info *mci)
- 	if (!i5100_debugfs)
- 		return -ENODEV;
- 
--	priv->debugfs = debugfs_create_dir(mci->bus.name, i5100_debugfs);
-+	priv->debugfs = debugfs_create_dir(mci->bus->name, i5100_debugfs);
- 
- 	if (!priv->debugfs)
- 		return -ENOMEM;
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index 0b763276f619..5c6d7fbaf89e 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -622,7 +622,7 @@ struct edac_raw_error_desc {
-  */
- struct mem_ctl_info {
- 	struct device			dev;
--	struct bus_type			bus;
-+	struct bus_type			*bus;
- 
- 	struct list_head link;	/* for global list of mem_ctl_info structs */
- 
-@@ -742,4 +742,9 @@ struct mem_ctl_info {
- #endif
- };
- 
-+/*
-+ * Maximum number of memory controllers in the coherent fabric.
-+ */
-+#define EDAC_MAX_MCS	16
-+
- #endif
--- 
-1.8.3
+Cheers,
 
 -- 
-Regards/Gruss,
-    Boris.
+Julien
 
-Sent from a fat crate under my desk. Formatting is fine.
---
