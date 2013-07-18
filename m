@@ -1,82 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab3GRJHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 05:07:25 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:49200 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757072Ab3GRJHV (ORCPT
+	id S1757661Ab3GRJIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 05:08:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52026 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756609Ab3GRJIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 05:07:21 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-eb-51e7b047b040
-Date: Thu, 18 Jul 2013 18:07:19 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
-        Anton Blanchard <anton@samba.org>
-Subject: Re: [PATCH] hugepage: allow parallelization of the hugepage fault
- path
-Message-ID: <20130718090719.GB9761@lge.com>
-References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
- <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
- <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
- <20130715072432.GA28053@voom.fritz.box>
- <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
- <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
+	Thu, 18 Jul 2013 05:08:37 -0400
+Date: Thu, 18 Jul 2013 10:08:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Nathan Rutman <nathan@clusterfs.com>
+Subject: [lustre mess] is mgc_fs_setup() reachable at all?
+Message-ID: <20130718090835.GZ4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 12:50:25PM -0700, Davidlohr Bueso wrote:
+[nathan cc'd since he's the only person mentioned in mgc_request.c]
 
-> From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> 
-> - Cleaned up and forward ported to Linus' latest.
-> - Cache aligned mutexes.
-> - Keep non SMP systems using a single mutex.
-> 
-> It was found that this mutex can become quite contended
-> during the early phases of large databases which make use of huge pages - for instance
-> startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
-> reports that this mutex can be one of the top 5 most contended locks in the kernel during
-> the first few minutes:
-> 
->     	     hugetlb_instantiation_mutex:   10678     10678
->              ---------------------------
->              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
->              ---------------------------
->              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
-> 
-> contentions:          10678
-> acquisitions:         99476
-> waittime-total: 76888911.01 us
+One general observation: drivers/taging/lustre is highly reviewer-hostile...
 
-Hello,
-I have a question :)
+Found by unrelated grep:
 
-So, each contention takes 7.6 ms in your result.
-Do you map this area with VM_NORESERVE?
-If we map with VM_RESERVE, when page fault, we just dequeue a huge page from a queue and clear
-a page and then map it to a page table. So I guess, it shouldn't take so long.
-I'm wondering why it takes so long.
+drivers/staging/lustre/lustre/mgc/mgc_request.c:1040:		if (vallen != sizeof(struct super_block))
 
-And do you use 16KB-size hugepage?
-If so, region handling could takes some times. If you access the area as random order,
-the number of region can be more than 90000. I guess, this can be one reason to too long
-waittime.
+Huh?  The code around that line looks so:
+	if (KEY_IS(KEY_SET_FS)) {
+		struct super_block *sb = (struct super_block *)val;
+		struct lustre_sb_info *lsi;
+		if (vallen != sizeof(struct super_block))
+			RETURN(-EINVAL);
+		lsi = s2lsi(sb);
+		rc = mgc_fs_setup(exp->exp_obd, sb, lsi->lsi_srv_mnt);
+		if (rc) {
+			CERROR("set_fs got %d\n", rc);
+		}
+		RETURN(rc);
+	}
+What is going on here?  We cast something to struct super_block *?
+Where does it come from?  The function it's in is
 
-Thanks.
+int mgc_set_info_async(const struct lu_env *env, struct obd_export *exp,
+		       obd_count keylen, void *key, obd_count vallen,
+		       void *val, struct ptlrpc_request_set *set)
+
+which says damn little, other than "multiplexor with no type safety".  Who
+calls that?
+; git grep -n -w mgc_set_info_async
+drivers/staging/lustre/lustre/mgc/mgc_request.c:1001:int mgc_set_info_async(const struct lu_env *env, struct obd_export *exp,
+drivers/staging/lustre/lustre/mgc/mgc_request.c:1836:	.o_set_info_async = mgc_set_info_async,
+;
+
+Umm...  OK, looks like it's only called as a method.  Unfortunately, grep for
+o_set_info_async brings a lot of instances and no callers.  After a lot of
+cursing, the following antisocial Fine Piece Of Code had been located:
+
+#define OBP(dev, op)    (dev)->obd_type->typ_dt_ops->o_ ## op
+
+along with
+
+        rc = OBP(exp->exp_obd, set_info_async)(env, exp, keylen, key, vallen,
+                                               val, set);
+
+As far as I'm concerned, macros like that are equivalent to spitting into
+reviewers' eyes.  Sometimes out of malice, sometimes just because the authors
+felt like it would be a cute prank, either way it makes life really unpleasant -
+when you need to guess which part of method/function name is to be searched for
+to locate the call sites... it gets old very soon.
+Anyway, this thing is in
+
+static inline int obd_set_info_async(const struct lu_env *env,
+				     struct obd_export *exp, obd_count keylen,
+				     void *key, obd_count vallen, void *val,
+				     struct ptlrpc_request_set *set)
+
+Again, the type safety is inexistent, but let's cross the fingers and look for
+callers (and hope they hadn't pulled a similar cute trick with ## here)
+
+; git grep -n -w obd_set_info_async
+drivers/staging/lustre/lustre/include/obd_class.h:508:static inline int obd_set_info_async(const struct lu_env *env,
+drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c:522:		rc = obd_set_info_async(req->rq_svc_thread->t_env,
+drivers/staging/lustre/lustre/llite/dir.c:658:	rc = obd_set_info_async(NULL, mgc, sizeof(KEY_SET_INFO), KEY_SET_INFO,
+drivers/staging/lustre/lustre/llite/llite_lib.c:558:	err = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CHECKSUM),
+drivers/staging/lustre/lustre/llite/llite_lib.c:563:	err = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CACHE_SET),
+drivers/staging/lustre/lustre/llite/llite_lib.c:1964:	obd_set_info_async(NULL, sbi->ll_md_exp,
+drivers/staging/lustre/lustre/llite/llite_lib.c:1967:	obd_set_info_async(NULL, sbi->ll_dt_exp,
+drivers/staging/lustre/lustre/llite/llite_lib.c:2032:		err = obd_set_info_async(NULL, sbi->ll_md_exp,
+drivers/staging/lustre/lustre/llite/lproc_llite.c:437:		rc = obd_set_info_async(NULL, sbi->ll_dt_exp,
+drivers/staging/lustre/lustre/llite/lproc_llite.c:485:	rc = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CHECKSUM),
+drivers/staging/lustre/lustre/lmv/lmv_obd.c:281:		obd_set_info_async(NULL, tgt->ltd_exp, sizeof(KEY_INTERMDS),
+drivers/staging/lustre/lustre/lmv/lmv_obd.c:2239:			err = obd_set_info_async(env, tgt->ltd_exp,
+drivers/staging/lustre/lustre/lov/lov_obd.c:638:		rc = obd_set_info_async(NULL, tgt->ltd_exp,
+drivers/staging/lustre/lustre/lov/lov_obd.c:2629:			err = obd_set_info_async(env, tgt->ltd_exp,
+drivers/staging/lustre/lustre/lov/lov_obd.c:2633:			err = obd_set_info_async(env, tgt->ltd_exp,
+drivers/staging/lustre/lustre/lov/lov_obd.c:2646:			err = obd_set_info_async(env, tgt->ltd_exp, keylen,
+drivers/staging/lustre/lustre/lov/lov_obd.c:2655:			err = obd_set_info_async(env, tgt->ltd_exp,
+drivers/staging/lustre/lustre/mdc/mdc_request.c:1767:		rc = obd_set_info_async(NULL, exp, strlen(KEY_CHANGELOG_CLEAR),
+drivers/staging/lustre/lustre/obdclass/genops.c:624:		rc2 = obd_set_info_async(NULL, obd->obd_self_export,
+drivers/staging/lustre/lustre/obdclass/obd_mount.c:277:		rc = obd_set_info_async(NULL, obd->obd_self_export,
+drivers/staging/lustre/lustre/obdclass/obd_mount.c:326:		rc = obd_set_info_async(NULL, obd->obd_self_export,
+drivers/staging/lustre/lustre/obdclass/obd_mount.c:425:	rc = obd_set_info_async(NULL, obd->obd_self_export,
+drivers/staging/lustre/lustre/obdclass/obd_mount.c:437:	rc = obd_set_info_async(NULL, obd->obd_self_export,
+;
+
+Oh, joy... 23 call sites to sift through.  Which ones are we interested in?
+The test down in the FPOS that has started it all is also reviewer-hostile -
+KEY_IS(KEY_SET_FS) has no visible references to function arguments.  Oh, well...
+
+#define KEY_IS(str) \
+	(keylen >= (sizeof(str)-1) && memcmp(key, str, (sizeof(str)-1)) == 0)
+#define KEY_SET_FS		"set_fs"
+
+and KEY_SET_FS is _NOT_ mentioned anywhere outside that check.  Neither is
+"set_fs" as explicit string constant.  I would've assumed the whole thing
+to be dead code, but... what with the preprocessor tricks we'd already seen
+there, I wouldn't bet against that thing coming from string concat.  Or from
+macro stringifying set_fs (sans double quotes).  Or from any number of sick
+preprocessor tricks.  Oh, well - at least we can go through that list and
+drop the call sites that pass a different string constant.  A few minutes
+and curses later we are down to these 5:
+
+                        err = obd_set_info_async(env, tgt->ltd_exp,
+                                                 keylen, key, vallen, val, set);
+in lmv_set_info_async(),
+and
+			err = obd_set_info_async(env, tgt->ltd_exp,
+					 keylen, key, sizeof(int),
+					 &mgi->group, set);
+			err = obd_set_info_async(env, tgt->ltd_exp,
+					 keylen, key, vallen,
+					 ((struct obd_id_info*)val)->data, set);
+			err = obd_set_info_async(env, tgt->ltd_exp, keylen,
+						 key, sizeof(*info->capa),
+						 info->capa, set);
+			err = obd_set_info_async(env, tgt->ltd_exp,
+					 keylen, key, vallen, val, set);
+in lov_set_info_async().
+
+; git grep -n -w lmv_set_info_async
+drivers/staging/lustre/lustre/lmv/lmv_obd.c:2212:int lmv_set_info_async(const struct lu_env *env, struct obd_export *exp,
+drivers/staging/lustre/lustre/lmv/lmv_obd.c:2661:	.o_set_info_async       = lmv_set_info_async,
+;
+
+IOW, this one is another o_set_info_async instance and key/keylen/val/vallen
+is passed from its caller as-is.
+
+; git grep -n -w lov_set_info_async
+drivers/staging/lustre/lustre/lov/lov_obd.c:2559:static int lov_set_info_async(const struct lu_env *env, struct obd_export *exp,
+drivers/staging/lustre/lustre/lov/lov_obd.c:2850:	.o_set_info_async      = lov_set_info_async,
+;
+
+... and this one is also o_set_info_async instance.  In one of 4 call sites
+we appear to pass the arguments as-is, the rest... key/keylen is passed as-is,
+val/vallen isn't.  In any case, key must have originated in one of the
+call sites we'd already eliminated.
+
+So unless I've missed something in that paragon of good taste, there is no
+call chain that could've lead to mgc_set_info_async() with key being "set_fs".
+Incidentally, there is a couple of recursive loops in there that might or
+might not lead to stack overflows.
+
+Could somebody familiar with that thing confirm that this is, in fact, dead
+code?  As the matter of fact, could maintainers please stand up and put their
+names into MAINTAINERS?
