@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965199Ab3GRUC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:02:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41626 "EHLO
+	id S965276Ab3GRUDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:03:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41599 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759450Ab3GRTu0 (ORCPT
+	with ESMTP id S1759437Ab3GRTuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:50:26 -0400
+	Thu, 18 Jul 2013 15:50:25 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/76] perf report: Fix perf_session__delete removal
-Date: Thu, 18 Jul 2013 16:48:59 -0300
-Message-Id: <1374177003-3706-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 30/76] perf script: Adopt latency_format variable
+Date: Thu, 18 Jul 2013 16:49:17 -0300
+Message-Id: <1374177003-3706-31-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -30,102 +28,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-There's no point of having out_delete label with perf_session__delete
-call within __cmd_report function, because it's called at the end of the
-cmd_report function.
+It's the only user of the variable, so move it.
 
-The speed up due to commenting out the perf_session__delete at the end
-does not seem relevant anymore. Measured speedup for ~1GB data file with
-222466 FORKS events is around 0.5%.
-
-  $ perf report -i perf.data.delete -P perf_session__delete -s parent
-
-  +  99.51%  [other]
-  +   0.49%  perf_session__delete
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1372161253-22081-6-git-send-email-jolsa@redhat.com
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1370323231-14022-14-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 23 +++++------------------
- 1 file changed, 5 insertions(+), 18 deletions(-)
+ tools/perf/builtin-script.c         | 1 +
+ tools/perf/util/trace-event-parse.c | 2 --
+ tools/perf/util/trace-event.h       | 1 -
+ 3 files changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 6ab49da..ee2ca3e 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -497,7 +497,7 @@ static int __cmd_report(struct perf_report *rep)
- 		ret = perf_session__cpu_bitmap(session, rep->cpu_list,
- 					       rep->cpu_bitmap);
- 		if (ret)
--			goto out_delete;
-+			return ret;
- 	}
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 92d4658..3de8979 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -24,6 +24,7 @@ static u64			last_timestamp;
+ static u64			nr_unordered;
+ extern const struct option	record_options[];
+ static bool			no_callchain;
++static bool			latency_format;
+ static bool			system_wide;
+ static const char		*cpu_list;
+ static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 0deae88..fe7a27d 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -28,8 +28,6 @@
+ #include "util.h"
+ #include "trace-event.h"
  
- 	if (use_browser <= 0)
-@@ -508,11 +508,11 @@ static int __cmd_report(struct perf_report *rep)
+-bool latency_format;
+-
+ struct pevent *read_trace_init(int file_bigendian, int host_bigendian)
+ {
+ 	struct pevent *pevent = pevent_alloc();
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 761c484..ed30c9c 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -10,7 +10,6 @@ struct perf_sample;
+ union perf_event;
+ struct perf_tool;
  
- 	ret = perf_report__setup_sample_type(rep);
- 	if (ret)
--		goto out_delete;
-+		return ret;
+-extern bool latency_format;
+ extern struct pevent *perf_pevent;
  
- 	ret = perf_session__process_events(session, &rep->tool);
- 	if (ret)
--		goto out_delete;
-+		return ret;
- 
- 	kernel_map = session->machines.host.vmlinux_maps[MAP__FUNCTION];
- 	kernel_kmap = map__kmap(kernel_map);
-@@ -547,7 +547,7 @@ static int __cmd_report(struct perf_report *rep)
- 
- 	if (dump_trace) {
- 		perf_session__fprintf_nr_events(session, stdout);
--		goto out_delete;
-+		return 0;
- 	}
- 
- 	nr_samples = 0;
-@@ -572,7 +572,7 @@ static int __cmd_report(struct perf_report *rep)
- 
- 	if (nr_samples == 0) {
- 		ui__error("The %s file has no samples!\n", session->filename);
--		goto out_delete;
-+		return 0;
- 	}
- 
- 	list_for_each_entry(pos, &session->evlist->entries, node)
-@@ -598,19 +598,6 @@ static int __cmd_report(struct perf_report *rep)
- 	} else
- 		perf_evlist__tty_browse_hists(session->evlist, rep, help);
- 
--out_delete:
--	/*
--	 * Speed up the exit process, for large files this can
--	 * take quite a while.
--	 *
--	 * XXX Enable this when using valgrind or if we ever
--	 * librarize this command.
--	 *
--	 * Also experiment with obstacks to see how much speed
--	 * up we'll get here.
--	 *
-- 	 * perf_session__delete(session);
-- 	 */
- 	return ret;
- }
- 
+ enum {
 -- 
 1.8.1.4
 
