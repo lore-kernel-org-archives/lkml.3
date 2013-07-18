@@ -1,120 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759461Ab3GRXKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:10:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55044 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759084Ab3GRXKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:10:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
-   d="scan'208";a="270318569"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v4
-Date: Thu, 18 Jul 2013 16:10:15 -0700
-Message-Id: <1374189015-19950-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1759492Ab3GRXPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:15:33 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35058 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759242Ab3GRXPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 19:15:32 -0400
+X-AuditID: 85900ec0-d56cbb900000151e-6a-51e8771189ff
+Subject: [PATCH 0/2] [BUGFIX] virtio/console: Fix two bugs of splice_write
+To: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnd Bergmann <arnd@arndb.de>, yrl.pp-manager.tt@hitachi.com
+Date: Fri, 19 Jul 2013 08:19:27 +0900
+Message-ID: <20130718231927.3664.50418.stgit@yunodevel>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi,
 
-With checkpointed counters there can be a situation where the counter
-is overflowing, aborts the transaction, is set back to a non overflowing
-checkpoint, causes interupt. The interrupt doesn't see the overflow
-because it has been checkpointed.  This is then a spurious PMI, typically with
-a ugly NMI message.  It can also lead to excessive aborts.
+This patch set fixes two bugs of splice_write in the virtio-console driver.
 
-Avoid this problem by:
-- Using the full counter width for counting counters (earlier patch)
-- Forbid sampling for checkpointed counters. It's not too useful anyways,
-checkpointing is mainly for counting. The check is approximate
-(to still handle KVM), but should catch the majority of cases.
-- On a PMI always set back checkpointed counters to zero.
+[BUG1] Although pipe->nrbufs is empty, the driver tries to do splice_write.
+       => This induces oops in sg_init_table().
 
-v2: Add unlikely. Add comment
-v3: Allow large sampling periods with CP for KVM
-v4: Use event_is_checkpointed. Use EOPNOTSUPP. (Stephane Eranian)
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+[BUG2] No lock for competition of splice_write.
+       => This induces oops in splice_from_pipe_feed() by bug of any user
+          application.
+
+These reports are written in each patch.
+
+Thanks!
+
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 39 ++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index ef9236b..10b51f6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1137,6 +1137,11 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
- }
- 
-+static inline bool event_is_checkpointed(struct perf_event *event)
-+{
-+	return (event->hw.config & HSW_IN_TX_CHECKPOINTED) != 0;
-+}
-+
- /*
-  * Save and restart an expired event. Called by NMI contexts,
-  * so it has to be careful about preempting normal event ops:
-@@ -1144,6 +1149,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
- int intel_pmu_save_and_restart(struct perf_event *event)
- {
- 	x86_perf_event_update(event);
-+	/*
-+	 * For a checkpointed counter always reset back to 0.  This
-+	 * avoids a situation where the counter overflows, aborts the
-+	 * transaction and is then set back to shortly before the
-+	 * overflow, and overflows and aborts again.
-+	 */
-+	if (unlikely(event_is_checkpointed(event))) {
-+		/* No race with NMIs because the counter should not be armed */
-+		wrmsrl(event->hw.event_base, 0);
-+		local64_set(&event->hw.prev_count, 0);
-+	}
- 	return x86_perf_event_set_period(event);
- }
- 
-@@ -1227,6 +1243,15 @@ again:
- 		x86_pmu.drain_pebs(regs);
- 	}
- 
-+	/*
-+	 * To avoid spurious interrupts with perf stat always reset checkpointed
-+	 * counters.
-+	 *
-+	 * XXX move somewhere else.
-+	 */
-+	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
-+		status |= (1ULL << 2);
-+
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-@@ -1692,6 +1717,20 @@ static int hsw_hw_config(struct perf_event *event)
- 	      event->attr.precise_ip > 0))
- 		return -EOPNOTSUPP;
- 
-+	if (event_is_checkpointed(event)) {
-+		/*
-+		 * Sampling of checkpointed events can cause situations where
-+		 * the CPU constantly aborts because of a overflow, which is
-+		 * then checkpointed back and ignored. Forbid checkpointing
-+		 * for sampling.
-+		 *
-+		 * But still allow a long sampling period, so that perf stat
-+		 * from KVM works.
-+		 */
-+		if (event->attr.sample_period > 0 &&
-+		    event->attr.sample_period < 0x7fffffff)
-+			return -EOPNOTSUPP;
-+	}
- 	return 0;
- }
- 
+Yoshihiro YUNOMAE (2):
+      [BUGFIX] virtio/console: Quit from splice_write if pipe->nrbufs is 0
+      [BUGFIX] virtio/console: Add pipe_lock/unlock for splice_write
+
+
+ drivers/char/virtio_console.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
 -- 
-1.8.1.4
-
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
