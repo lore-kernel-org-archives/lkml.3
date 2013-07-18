@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab3GRH71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 03:59:27 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:42508 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab3GRH70 (ORCPT
+	id S1756427Ab3GRICc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:02:32 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:39845 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3GRIC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 03:59:26 -0400
-Date: Thu, 18 Jul 2013 00:59:30 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.11-rc2
-Message-ID: <20130718075930.GA9880@roeck-us.net>
+	Thu, 18 Jul 2013 04:02:28 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51E72752.9020206@zytor.com>
+References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
+	<20130716004727.b60b2c96.akpm@linux-foundation.org>
+	<20130716005611.e4ccab02.akpm@linux-foundation.org>
+	<201307161008.07643.yann.morin.1998@free.fr>
+	<20130716180408.GA19863@merkur.ravnborg.org>
+	<20130717211649.GA5619@merkur.ravnborg.org>
+	<20130717223033.GF3385@free.fr>
+	<51E72752.9020206@zytor.com>
+Date: Thu, 18 Jul 2013 10:02:27 +0200
+X-Google-Sender-Auth: cKLzLhKDzr5A1dB4-CruWLhVI_g
+Message-ID: <CAMuHMdVo3rnTtXUZOZavdjJ4uHv4KYPA5g1Py6GTdZD3dPwFzQ@mail.gmail.com>
+Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
+ streaming format
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kyungsik Lee <kyungsik.lee@lge.com>,
+        Michal Marek <mmarek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        hyojun.im@lge.com, chan.jeong@lge.com,
+        Andy Lee <raphael.andy.lee@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
+        Florian Fainelli <florian@openwrt.org>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Chanho Min <chanho.min@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 18, 2013 at 1:22 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> It is worth noting that one of the things that keep getting brought up
+> as something that need this is gcc/binutils support for a specific feature.
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yeah, then those tests would be run only once, at kconfig time. I guess we
+still run some of them many times, due to the use of recursive make?
 
-Hi Linus,
+Note that these will end up in your .config --- which is not necesarily a bad
+thing --- but it does mean that if e.g. you sent me your .config,
+several options
+may change when I try to use it.
 
-Please pull hwmon fixes for Linux 3.11-rc2 from signed tag:
+Gr{oetje,eeting}s,
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+                        Geert
 
-Thanks,
-Guenter
-------
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
-
-  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 0b905d83c4db7ae98718c44d79c717836a2ecaa7:
-
-  hwmon: (abx500) Staticize abx500_temp_attributes (2013-07-14 16:24:25 -0700)
-
-----------------------------------------------------------------
-Single patch to staticize a local variable
-
-----------------------------------------------------------------
-Sachin Kamat (1):
-      hwmon: (abx500) Staticize abx500_temp_attributes
-
- drivers/hwmon/abx500.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---qDbXVdCdHGoSgWSk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR56BiAAoJEMsfJm/On5mB2UgQAKwzXYODsfIXhO3Hy8z813fB
-/v0Utt/vzLOtf0T0ENgjQpIqZESMr+P0F65rP/BcZXTl5G/FdjQjXr7yF8i55Sn8
-sXsjW2jcOb5udSn4QYHXLy7F5RYSyic+dvnSv0X18e5ocC4QcbzQwSLzdnB51SqW
-ZGyfEtoXyN4C9GHrjUAjPz/sIGbCDtBclpLCWGG/DMX79PCr5N5FNDTiKQGDDWEa
-tBgz5tTrCRE06yAM5emKchNVeAeaMeMMq9OQekkPbhESIcYfpL8xLwoLFDNbTwmK
-IJrwA6N/BVKdxMDQDTpuCJNDKpoR+3b0R4c3quHMijt/bd55QtVxTutPa3bCAxpY
-QkqmswBBWJd5pEsIWEMObOlaTd2Cx4V0QSLPVdlUCCz0SQhzVdfqdndWqZh797jP
-0c1sBgNf9bl4ivzfpisI3ffcHCuKSJXaGB35PCQJSyJ/q/b1P9w26mr6SMAWDRM8
-432fZogl9sZ1D4Z6/pfVyT/TyosaqdDwkqrU19p/F9I8UKvakn6bEydn6675Jy1e
-iWRiAB/UgIK6eXPtTLuKjBCypEh67jfBmseSNz++ots2tPDYeJuJkyqTssII8hps
-AzKsMiraEFNbDuu8vfDc52yP81CKDoDmIN/okCdFK1UCOaZbsuMyHNZWCsnoi72W
-Xx4Ap+QvalCEXUdijU6F
-=a278
------END PGP SIGNATURE-----
-
---qDbXVdCdHGoSgWSk--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
