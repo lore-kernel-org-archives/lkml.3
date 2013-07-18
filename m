@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758437Ab3GRHBv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 03:01:51 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:35149 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab3GRHBu (ORCPT
+	id S1758542Ab3GRHCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 03:02:35 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33580 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758335Ab3GRHCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 03:01:50 -0400
-Date: Thu, 18 Jul 2013 09:01:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
-Subject: Re: [PATCH v2] x86, tboot: iomem fixes
-Message-ID: <20130718070145.GB17622@gmail.com>
-References: <1374114943-5932-1-git-send-email-qiaowei.ren@intel.com>
+	Thu, 18 Jul 2013 03:02:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18f3/qb4Z+W815dyk3WxOo1
+Date: Thu, 18 Jul 2013 00:02:20 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: gregkh@linuxfoundation.org, kyungmin.park@samsung.com, balbi@ti.com,
+        jg1.han@samsung.com, s.nawrocki@samsung.com, kgene.kim@samsung.com,
+        grant.likely@linaro.org, arnd@arndb.de, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com
+Subject: Re: [PATCH 04/15] ARM: OMAP: USB: Add phy binding information
+Message-ID: <20130718070219.GM7656@atomide.com>
+References: <1374129984-765-1-git-send-email-kishon@ti.com>
+ <1374129984-765-5-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374114943-5932-1-git-send-email-qiaowei.ren@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374129984-765-5-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
-
-> Fixes for iomem annotations in arch/x86/kernel/tboot.c
+* Kishon Vijay Abraham I <kishon@ti.com> [130717 23:53]:
+> In order for controllers to get PHY in case of non dt boot, the phy
+> binding information (phy device name) should be added in the platform
+> data of the controller.
 > 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
 > ---
->  arch/x86/kernel/tboot.c |   21 ++++++++++++---------
->  1 file changed, 12 insertions(+), 9 deletions(-)
+>  arch/arm/mach-omap2/usb-musb.c |    3 +++
+>  include/linux/usb/musb.h       |    3 +++
+>  2 files changed, 6 insertions(+)
 > 
-> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-> index 3ff42d2..afe8cf8 100644
-> --- a/arch/x86/kernel/tboot.c
-> +++ b/arch/x86/kernel/tboot.c
-> @@ -466,9 +466,12 @@ struct sinit_mle_data {
->  	u32               vtd_dmars_off;
->  } __packed;
+> diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+> index 8c4de27..6aa7cbf 100644
+> --- a/arch/arm/mach-omap2/usb-musb.c
+> +++ b/arch/arm/mach-omap2/usb-musb.c
+> @@ -85,6 +85,9 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
+>  	musb_plat.mode = board_data->mode;
+>  	musb_plat.extvbus = board_data->extvbus;
 >  
-> +#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
+> +	if (cpu_is_omap34xx())
+> +		musb_plat.phy_label = "twl4030";
 > +
->  struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
->  {
-> -	void *heap_base, *heap_ptr, *config;
-> +	void __iomem *heap_base, *heap_ptr, *config;
-> +	u32 dmar_tbl_off;
+>  	if (soc_is_am35xx()) {
+>  		oh_name = "am35x_otg_hs";
+>  		name = "musb-am35x";
+
+I don't think there's a USB PHY on non-twl4030 chips, so this should
+be OK:
+
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+
+> diff --git a/include/linux/usb/musb.h b/include/linux/usb/musb.h
+> index 053c268..596f8c8 100644
+> --- a/include/linux/usb/musb.h
+> +++ b/include/linux/usb/musb.h
+> @@ -104,6 +104,9 @@ struct musb_hdrc_platform_data {
+>  	/* for clk_get() */
+>  	const char	*clock;
 >  
->  	if (!tboot_enabled())
->  		return dmar_tbl;
-> @@ -485,25 +488,25 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
->  		return NULL;
+> +	/* phy label */
+> +	const char	*phy_label;
+> +
+>  	/* (HOST or OTG) switch VBUS on/off */
+>  	int		(*set_vbus)(struct device *dev, int is_on);
 >  
->  	/* now map TXT heap */
-> -	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
-> -			    *(u64 *)(config + TXTCR_HEAP_SIZE));
-> +	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
-> +			    readl(config + TXTCR_HEAP_SIZE));
->  	iounmap(config);
->  	if (!heap_base)
->  		return NULL;
->  
->  	/* walk heap to SinitMleData */
->  	/* skip BiosData */
-> -	heap_ptr = heap_base + *(u64 *)heap_base;
-> +	heap_ptr = heap_base + readq(heap_base);
->  	/* skip OsMleData */
-> -	heap_ptr += *(u64 *)heap_ptr;
-> +	heap_ptr += readq(heap_ptr);
->  	/* skip OsSinitData */
-> -	heap_ptr += *(u64 *)heap_ptr;
-> +	heap_ptr += readq(heap_ptr);
->  	/* now points to SinitMleDataSize; set to SinitMleData */
->  	heap_ptr += sizeof(u64);
->  	/* get addr of DMAR table */
-> -	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
-> -		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
-> -		   sizeof(u64));
-> +	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
-> +	memcpy_fromio(dmar_tbl, heap_ptr + dmar_tbl_off - sizeof(u64),
-> +			sizeof(struct acpi_table_header));
-
-The changelog is not sufficient, as this change is clearly not just about 
-annotations: that memcpy_fromio() call is new.
-
-Please use the customary changelog style we use in the kernel:
-
-  " Current code does (A), this has a problem when (B).
-    We can improve this doing (C), because (D)."
-
-Thanks,
-
-        Ingo
+> -- 
+> 1.7.10.4
+> 
