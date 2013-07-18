@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933652Ab3GRSwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 14:52:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28723 "EHLO mx1.redhat.com"
+	id S933483Ab3GRSwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 14:52:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64471 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933347Ab3GRSwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932803Ab3GRSwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 14:52:14 -0400
-Date: Thu, 18 Jul 2013 20:47:10 +0200
+Date: Thu, 18 Jul 2013 20:47:12 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] tracing: Simplify the iteration logic in f_start/f_next
-Message-ID: <20130718184710.GA4783@redhat.com>
+Subject: [PATCH 2/2] tracing: Do not (ab)use trace_seq in event_id_read()
+Message-ID: <20130718184712.GA4786@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,139 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-f_next() looks overcomplicated, and it is not strictly correct
-even if this doesn't matter.
+event_id_read() has no reason to kmalloc "struct trace_seq"
+(more than PAGE_SIZE!), it can use a small buffer instead.
 
-Say, FORMAT_FIELD_SEPERATOR should not return NULL (means EOF)
-if trace_get_fields() returns an empty list, we should simply
-advance to FORMAT_PRINTFMT as we do when we find the end of list.
+Note: "if (*ppos) return 0" looks strange and even wrong,
+simple_read_from_buffer() handles ppos != 0 case corrrectly.
 
-1. Change f_next() to return "struct list_head *" rather than
-   "ftrace_event_field *", and change f_show() to do list_entry().
-
-   This simplifies the code a bit, only f_show() needs to know
-   about ftrace_event_field, and f_next() can play with ->prev
-   directly
-
-2. Change f_next() to not play with ->prev / return inside the
-   switch() statement. It can simply set node = head/common_head,
-   the prev-or-advance-to-the-next-magic below does all work.
-
-While at it. f_start() looks overcomplicated too. I don't think
-*pos == 0 makes sense as a separate case, just change this code
-to do "while" instead of "do/while".
-
-The patch also moves f_start() down, close to f_stop(). This is
-purely cosmetic, just to make the locking added by the next patch
-more clear/visible.
+And it seems that almost every user of trace_seq in this file
+should be converted too. Unless you use seq_open(), trace_seq
+buys nothing compared to the raw buffer, but it needs a bit
+more memory and code.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace_events.c |   60 +++++++++++++++---------------------------
- 1 files changed, 22 insertions(+), 38 deletions(-)
+ kernel/trace/trace_events.c |   17 ++++-------------
+ 1 files changed, 4 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 9d2b499..2c3a8c5 100644
+index 2c3a8c5..1d2c8db 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -826,59 +826,33 @@ enum {
- static void *f_next(struct seq_file *m, void *v, loff_t *pos)
+@@ -947,23 +947,14 @@ static ssize_t
+ event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
  {
- 	struct ftrace_event_call *call = m->private;
--	struct ftrace_event_field *field;
- 	struct list_head *common_head = &ftrace_common_fields;
- 	struct list_head *head = trace_get_fields(call);
-+	struct list_head *node = v;
+ 	struct ftrace_event_call *call = filp->private_data;
+-	struct trace_seq *s;
+-	int r;
++	char buf[32];
++	int len;
  
- 	(*pos)++;
- 
- 	switch ((unsigned long)v) {
- 	case FORMAT_HEADER:
--		if (unlikely(list_empty(common_head)))
--			return NULL;
--
--		field = list_entry(common_head->prev,
--				   struct ftrace_event_field, link);
--		return field;
-+		node = common_head;
-+		break;
- 
- 	case FORMAT_FIELD_SEPERATOR:
--		if (unlikely(list_empty(head)))
--			return NULL;
--
--		field = list_entry(head->prev, struct ftrace_event_field, link);
--		return field;
-+		node = head;
-+		break;
- 
- 	case FORMAT_PRINTFMT:
- 		/* all done */
- 		return NULL;
- 	}
- 
--	field = v;
--	if (field->link.prev == common_head)
-+	node = node->prev;
-+	if (node == common_head)
- 		return (void *)FORMAT_FIELD_SEPERATOR;
--	else if (field->link.prev == head)
-+	else if (node == head)
- 		return (void *)FORMAT_PRINTFMT;
--
--	field = list_entry(field->link.prev, struct ftrace_event_field, link);
--
--	return field;
--}
--
--static void *f_start(struct seq_file *m, loff_t *pos)
--{
--	loff_t l = 0;
--	void *p;
--
--	/* Start by showing the header */
--	if (!*pos)
--		return (void *)FORMAT_HEADER;
--
--	p = (void *)FORMAT_HEADER;
--	do {
--		p = f_next(m, p, &l);
--	} while (p && l < *pos);
--
--	return p;
-+	else
-+		return node;
- }
- 
- static int f_show(struct seq_file *m, void *v)
-@@ -904,8 +878,7 @@ static int f_show(struct seq_file *m, void *v)
+ 	if (*ppos)
  		return 0;
- 	}
  
--	field = v;
+-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+-	if (!s)
+-		return -ENOMEM;
 -
-+	field = list_entry(v, struct ftrace_event_field, link);
- 	/*
- 	 * Smartly shows the array type(except dynamic array).
- 	 * Normal:
-@@ -932,6 +905,17 @@ static int f_show(struct seq_file *m, void *v)
- 	return 0;
+-	trace_seq_init(s);
+-	trace_seq_printf(s, "%d\n", call->event.type);
+-
+-	r = simple_read_from_buffer(ubuf, cnt, ppos,
+-				    s->buffer, s->len);
+-	kfree(s);
+-	return r;
++	len = sprintf(buf, "%d\n", call->event.type);
++	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
  }
  
-+static void *f_start(struct seq_file *m, loff_t *pos)
-+{
-+	void *p = (void *)FORMAT_HEADER;
-+	loff_t l = 0;
-+
-+	while (l < *pos && p)
-+		p = f_next(m, p, &l);
-+
-+	return p;
-+}
-+
- static void f_stop(struct seq_file *m, void *p)
- {
- }
+ static ssize_t
 -- 
 1.5.5.1
 
