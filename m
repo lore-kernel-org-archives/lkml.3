@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab3GRKgU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:36:20 -0400
+	id S1757940Ab3GRKg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:36:27 -0400
 Received: from mga09.intel.com ([134.134.136.24]:56267 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754638Ab3GRKgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:36:18 -0400
+	id S1754638Ab3GRKgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:36:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
-   d="scan'208";a="347700550"
+   d="scan'208";a="347700574"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,176 +17,178 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V8 00/15] perf tools: some fixes and tweaks
-Date: Thu, 18 Jul 2013 13:42:42 +0300
-Message-Id: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V8 01/15] perf tools: add debug prints
+Date: Thu, 18 Jul 2013 13:42:43 +0300
+Message-Id: <1374144177-24762-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
 Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+It is useful to see the arguments to perf_event_open
+and whether the perf events ring buffer was mmapped
+per-cpu or per-thread.  That information will now be
+displayed when verbose is 2 i.e option -vv
 
-Here are some fixes and tweaks to perf tools (version 8).
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/evlist.c |  3 +++
+ tools/perf/util/evsel.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/python.c | 20 +++++++++++++++++
+ 3 files changed, 81 insertions(+)
 
-Changes in V8:
-	perf tools: add debug prints
-		Fixed Python link errors
-	perf tools: move perf_evlist__config() to a new source file
-		New Patch to avoid Python link errors
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		Adjustments due to patch above
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 42ea4e9..2b77b33 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -14,6 +14,7 @@
+ #include "target.h"
+ #include "evlist.h"
+ #include "evsel.h"
++#include "debug.h"
+ #include <unistd.h>
+ 
+ #include "parse-events.h"
+@@ -454,6 +455,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+ 	int nr_threads = thread_map__nr(evlist->threads);
+ 
++	pr_debug2("perf event ring buffer mmapped per cpu\n");
+ 	for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 		int output = -1;
+ 
+@@ -492,6 +494,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
+ 	int thread;
+ 	int nr_threads = thread_map__nr(evlist->threads);
+ 
++	pr_debug2("perf event ring buffer mmapped per thread\n");
+ 	for (thread = 0; thread < nr_threads; thread++) {
+ 		int output = -1;
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a635461..0b9c4fd 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -21,6 +21,7 @@
+ #include "thread_map.h"
+ #include "target.h"
+ #include "perf_regs.h"
++#include "debug.h"
+ 
+ static struct {
+ 	bool sample_id_all;
+@@ -817,6 +818,58 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
+ 	return fd;
+ }
+ 
++static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
++{
++	size_t ret;
++
++	ret = fprintf(fp, "------------------------------------------------------------\n");
++	ret += fprintf(fp, "perf_event_attr:\n");
++	ret += fprintf(fp, "  type                %u\n", attr->type);
++	ret += fprintf(fp, "  size                %u\n", attr->size);
++	ret += fprintf(fp, "  config              %#"PRIx64"\n", (uint64_t)attr->config);
++	ret += fprintf(fp, "  sample_period       %"PRIu64"\n", (uint64_t)attr->sample_period);
++	ret += fprintf(fp, "  sample_freq         %"PRIu64"\n", (uint64_t)attr->sample_freq);
++	ret += fprintf(fp, "  sample_type         %#"PRIx64"\n", (uint64_t)attr->sample_type);
++	ret += fprintf(fp, "  read_format         %#"PRIx64"\n", (uint64_t)attr->read_format);
++
++	ret += fprintf(fp, "  disabled            %u    ", attr->disabled);
++	ret += fprintf(fp, "inherit             %u\n", attr->inherit);
++	ret += fprintf(fp, "  pinned              %u    ", attr->pinned);
++	ret += fprintf(fp, "exclusive           %u\n", attr->exclusive);
++	ret += fprintf(fp, "  exclude_user        %u    ", attr->exclude_user);
++	ret += fprintf(fp, "exclude_kernel      %u\n", attr->exclude_kernel);
++	ret += fprintf(fp, "  exclude_hv          %u    ", attr->exclude_hv);
++	ret += fprintf(fp, "exclude_idle        %u\n", attr->exclude_idle);
++	ret += fprintf(fp, "  mmap                %u    ", attr->mmap);
++	ret += fprintf(fp, "comm                %u\n", attr->comm);
++	ret += fprintf(fp, "  freq                %u    ", attr->freq);
++	ret += fprintf(fp, "inherit_stat        %u\n", attr->inherit_stat);
++	ret += fprintf(fp, "  enable_on_exec      %u    ", attr->enable_on_exec);
++	ret += fprintf(fp, "task                %u\n", attr->task);
++	ret += fprintf(fp, "  watermark           %u    ", attr->watermark);
++	ret += fprintf(fp, "precise_ip          %u\n", attr->precise_ip);
++	ret += fprintf(fp, "  mmap_data           %u    ", attr->mmap_data);
++	ret += fprintf(fp, "sample_id_all       %u\n", attr->sample_id_all);
++	ret += fprintf(fp, "  exclude_host        %u    ", attr->exclude_host);
++	ret += fprintf(fp, "exclude_guest       %u\n", attr->exclude_guest);
++	ret += fprintf(fp, "  excl.callchain.kern %u    ", attr->exclude_callchain_kernel);
++	ret += fprintf(fp, "excl.callchain.user %u\n", attr->exclude_callchain_user);
++
++	ret += fprintf(fp, "  wakeup_events       %u\n", attr->wakeup_events);
++	ret += fprintf(fp, "  wakeup_watermark    %u\n", attr->wakeup_watermark);
++	ret += fprintf(fp, "  bp_type             %#x\n", attr->bp_type);
++	ret += fprintf(fp, "  bp_addr             %#"PRIx64"\n", (uint64_t)attr->bp_addr);
++	ret += fprintf(fp, "  config1             %#"PRIx64"\n", (uint64_t)attr->config1);
++	ret += fprintf(fp, "  bp_len              %"PRIu64"\n", (uint64_t)attr->bp_len);
++	ret += fprintf(fp, "  config2             %#"PRIx64"\n", (uint64_t)attr->config2);
++	ret += fprintf(fp, "  branch_sample_type  %#"PRIx64"\n", (uint64_t)attr->branch_sample_type);
++	ret += fprintf(fp, "  sample_regs_user    %#"PRIx64"\n", (uint64_t)attr->sample_regs_user);
++	ret += fprintf(fp, "  sample_stack_user   %u\n", attr->sample_stack_user);
++	ret += fprintf(fp, "------------------------------------------------------------\n");
++
++	return ret;
++}
++
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+@@ -840,6 +893,9 @@ retry_sample_id:
+ 	if (perf_missing_features.sample_id_all)
+ 		evsel->attr.sample_id_all = 0;
+ 
++	if (verbose >= 2)
++		perf_event_attr__fprintf(&evsel->attr, stderr);
++
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 
+ 		for (thread = 0; thread < threads->nr; thread++) {
+@@ -850,6 +906,8 @@ retry_sample_id:
+ 
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+ 
++			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
++				  pid, cpus->map[cpu], group_fd, flags);
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+ 								     pid,
+ 								     cpus->map[cpu],
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 925e0c3..381f4fd 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -8,6 +8,26 @@
+ #include "cpumap.h"
+ #include "thread_map.h"
+ 
++/*
++ * Support debug printing even though util/debug.c is not linked.  That means
++ * implementing 'verbose' and 'eprintf'.
++ */
++int verbose;
++
++int eprintf(int level, const char *fmt, ...)
++{
++	va_list args;
++	int ret = 0;
++
++	if (verbose >= level) {
++		va_start(args, fmt);
++		ret = vfprintf(stderr, fmt, args);
++		va_end(args);
++	}
++
++	return ret;
++}
++
+ /* Define PyVarObject_HEAD_INIT for python 2.5 */
+ #ifndef PyVarObject_HEAD_INIT
+ # define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+-- 
+1.7.11.7
 
-Changes in V7:
-	perf: Update perf_event_type documentation
-		Proposed new patch from Peter Zijlstra
-	perf: make events stream always parsable
-		Adjustments due to patch above
-	perf tools: tidy up sample parsing overflow checking
-		Change to a single overflow function
-		Amend comment
-	perf tools: add a function to calculate sample event size
-		New patch
-	perf tools: add a sample parsing test
-		Amended to use sample event size calculation
-
-Changes in V6:
-	Some checkpatch fixes
-
-	perf: make events stream always parsable
-		Add sample format comments
-
-Changes in V5:
-	Re-based to Arnaldo's tree and dropped already applied patches:
-		perf tools: remove unused parameter
-		perf tools: fix missing tool parameter
-		perf tools: fix missing 'finished_round'
-		perf tools: fix parse_events_terms() segfault on error path
-		perf tools: fix new_term() missing free on error path
-		perf tools: add const specifier to perf_pmu__find name parameter
-		perf tools: tidy duplicated munmap code
-		perf tools: validate perf event header size
-
-	perf tools: add debug prints
-		Changed to perf_event_attr__fprintf()
-	perf tools: add pid to struct thread
-		Always set the pid, even if a pid is already set
-	perf tools: change machine__findnew_thread() to set thread pid
-		Replaces: perf tools: change "machine" functions to set thread pid
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		Only use PERF_SAMPLE_IDENTFIER if sample types are different
-	perf tools: expand perf_event__synthesize_sample()
-		New patch in preparation of a sample parsing test
-	perf tools: add a sample parsing test
-		New patch
-
-Changes in V4:
-	I added kernel support for matching sample types via
-	PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
-	first fixing some other things.
-
-	perf tools: fix parse_events_terms() freeing local variable on error path
-		Dropped - covered by David Ahern
-	perf tools: struct thread has a tid not a pid
-		Added ack by David Ahern
-	perf tools: add pid to struct thread
-		Remove unused function
-	perf tools: fix missing increment in sample parsing
-		New patch
-	perf tools: tidy up sample parsing overflow checking
-		New patch
-	perf tools: remove unnecessary callchain validation
-		New patch
-	perf tools: remove references to struct ip_event
-		New patch
-	perf tools: move struct ip_event
-		New patch
-	perf: make events stream always parsable
-		New patch
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		New patch
-
-Changes in V3:
-	perf tools: add pid to struct thread
-		Split into 2 patches
-	perf tools: fix ppid in thread__fork()
-		Dropped for now
-
-Changes in V2:
-	perf tools: fix missing tool parameter
-		Fixed one extra occurrence
-	perf tools: fix parse_events_terms() freeing local variable on error path
-		Made "freeing" code into a new function
-	perf tools: validate perf event header size
-		Corrected byte-swapping
-	perf tools: allow non-matching sample types
-		Added comments
-		Fixed id_pos calculation
-		id_pos/is_pos updated whenever sample_type changes
-		Removed perf_evlist__sample_type()
-		Added __perf_evlist__combined_sample_type()
-		Added perf_evlist__combined_sample_type()
-		Added perf_evlist__make_sample_types_compatible()
-	Added ack's to patches acked by Jiri Olsa
-
-
-Adrian Hunter (14):
-      perf tools: add debug prints
-      perf tools: allow non-matching sample types
-      perf tools: add pid to struct thread
-      perf tools: change machine__findnew_thread() to set thread pid
-      perf tools: tidy up sample parsing overflow checking
-      perf tools: remove unnecessary callchain validation
-      perf tools: remove references to struct ip_event
-      perf tools: move struct ip_event
-      perf: make events stream always parsable
-      perf tools: move perf_evlist__config() to a new source file
-      perf tools: add support for PERF_SAMPLE_IDENTFIER
-      perf tools: expand perf_event__synthesize_sample()
-      perf tools: add a function to calculate sample event size
-      perf tools: add a sample parsing test
-
-Peter Zijlstra (1):
-      perf: Update perf_event_type documentation
-
- include/uapi/linux/perf_event.h   |  46 ++++-
- kernel/events/core.c              |  42 ++--
- tools/perf/Makefile               |   2 +
- tools/perf/builtin-inject.c       |   7 +-
- tools/perf/builtin-kmem.c         |   3 +-
- tools/perf/builtin-kvm.c          |   3 +-
- tools/perf/builtin-lock.c         |   3 +-
- tools/perf/builtin-mem.c          |   2 +-
- tools/perf/builtin-report.c       |   2 +-
- tools/perf/builtin-sched.c        |  17 +-
- tools/perf/builtin-script.c       |   3 +-
- tools/perf/builtin-top.c          |  11 +-
- tools/perf/builtin-trace.c        |  12 +-
- tools/perf/tests/builtin-test.c   |   4 +
- tools/perf/tests/hists_link.c     |  30 ++-
- tools/perf/tests/mmap-basic.c     |   2 +-
- tools/perf/tests/sample-parsing.c | 263 +++++++++++++++++++++++++
- tools/perf/tests/tests.h          |   1 +
- tools/perf/util/build-id.c        |  11 +-
- tools/perf/util/callchain.c       |   8 -
- tools/perf/util/callchain.h       |   5 -
- tools/perf/util/event.c           |   5 +-
- tools/perf/util/event.h           |  33 ++--
- tools/perf/util/evlist.c          | 146 ++++++++++++--
- tools/perf/util/evlist.h          |  10 +-
- tools/perf/util/evsel.c           | 404 +++++++++++++++++++++++++++++++++-----
- tools/perf/util/evsel.h           |  13 +-
- tools/perf/util/machine.c         |  37 ++--
- tools/perf/util/machine.h         |   3 +-
- tools/perf/util/python.c          |  20 ++
- tools/perf/util/record.c          | 111 +++++++++++
- tools/perf/util/session.c         |  36 +---
- tools/perf/util/thread.c          |   3 +-
- tools/perf/util/thread.h          |   3 +-
- 34 files changed, 1109 insertions(+), 192 deletions(-)
- create mode 100644 tools/perf/tests/sample-parsing.c
- create mode 100644 tools/perf/util/record.c
-
-Regards
-Adrian
