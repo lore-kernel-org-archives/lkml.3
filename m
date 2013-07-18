@@ -1,102 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994Ab3GRXIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:08:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59796 "EHLO mga02.intel.com"
+	id S1759461Ab3GRXKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:10:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55044 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759084Ab3GRXIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:08:11 -0400
+	id S1759084Ab3GRXKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 19:10:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
-   d="scan'208";a="372834152"
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module
- dependency.
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, ak <ak@linux.intel.com>,
-        rjw@rjwysocki.net
-In-Reply-To: <51E8696A.7090406@intel.com>
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>
-	 <1374098936.22432.322.camel@schen9-DESK>
-	 <201307180347.r6I3l5e9077577@www262.sakura.ne.jp>
-	 <1374181200.22432.350.camel@schen9-DESK>  <51E8696A.7090406@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Jul 2013 16:08:14 -0700
-Message-ID: <1374188894.22432.354.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="270318569"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v4
+Date: Thu, 18 Jul 2013 16:10:15 -0700
+Message-Id: <1374189015-19950-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 00:17 +0200, Rafael J. Wysocki wrote:
-> On 7/18/2013 11:00 PM, Tim Chen wrote:
-> > On Thu, 2013-07-18 at 12:47 +0900, Tetsuo Handa wrote:
-> >> Tim Chen wrote:
-> >>>>> Your approach is quite complicated.  I think something simpler like the
-> >>>>> following will work:
-> >>>> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
-> >>>
-> >>> The following code in crct10dif-pclmul_glue.c
-> >>>
-> >>> static const struct x86_cpu_id crct10dif_cpu_id[] = {
-> >>>          X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
-> >>>          {}
-> >>> };
-> >>> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
-> >>>
-> >>> will put the module in the device table and get the module
-> >>> loaded, as long as the cpu support PCLMULQDQ. So we should be able
-> >>> to benefit.
-> >> Excuse me, how can crct10dif-pclmul.ko get loaded automatically?
-> >> Did you test CONFIG_CRYPTO_CRCT10DIF_PCLMUL=m with below debug message?
-> > The code:
-> >
-> > static const struct x86_cpu_id crct10dif_cpu_id[] = {
-> >           X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
-> >           {}
-> > };
-> > MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
-> >
-> > causes the following line to be added to modules.alias file:
-> >
-> > alias x86cpu:vendor:*:family:*:model:*:feature:*0081* crct10dif_pclmul
-> >
-> > This should cause udev to load the crct10dif_pclml module when cpu
-> > support the PCLMULQDQ (feature code 0081).  I did my testing during
-> > development on 3.10 and the module was indeed loaded.
-> >
-> > However, I found that the following commit under 3.11-rc1 broke
-> > the mechanism after some bisection.
-> >
-> > commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
-> > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Date:   Fri May 3 00:26:22 2013 +0200
-> >
-> >      ACPI / processor: Use common hotplug infrastructure
-> >      
-> >      Split the ACPI processor driver into two parts, one that is
-> >      non-modular, resides in the ACPI core and handles the enumeration
-> >      and hotplug of processors and one that implements the rest of the
-> >      existing processor driver functionality.
-> >      
-> > Rafael, can you check and see if this can be fixed so those optimized
-> > crypto modules for Intel cpu that support them can be loaded?
-> 
-> I think this is an ordering issue between udev startup and the time when 
-> devices are registered.
+From: Andi Kleen <ak@linux.intel.com>
 
-Something that can be fixed?
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with
+a ugly NMI message.  It can also lead to excessive aborts.
 
-> 
-> I wonder what happens if you put those modules into the initramfs image?
+Avoid this problem by:
+- Using the full counter width for counting counters (earlier patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting. The check is approximate
+(to still handle KVM), but should catch the majority of cases.
+- On a PMI always set back checkpointed counters to zero.
 
-Under initramfs image's /lib/modules/3.11.0-rc1/kernel/arch/x86/crypto
-directory?  Any files in /lib/modules/3.11.0-rc1/modules.* need to be
-modified?
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
+v4: Use event_is_checkpointed. Use EOPNOTSUPP. (Stephane Eranian)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 39 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-Tim
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index ef9236b..10b51f6 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1137,6 +1137,11 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
+ }
+ 
++static inline bool event_is_checkpointed(struct perf_event *event)
++{
++	return (event->hw.config & HSW_IN_TX_CHECKPOINTED) != 0;
++}
++
+ /*
+  * Save and restart an expired event. Called by NMI contexts,
+  * so it has to be careful about preempting normal event ops:
+@@ -1144,6 +1149,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
+ {
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event_is_checkpointed(event))) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
+ }
+ 
+@@ -1227,6 +1243,15 @@ again:
+ 		x86_pmu.drain_pebs(regs);
+ 	}
+ 
++	/*
++	 * To avoid spurious interrupts with perf stat always reset checkpointed
++	 * counters.
++	 *
++	 * XXX move somewhere else.
++	 */
++	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
++		status |= (1ULL << 2);
++
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
+@@ -1692,6 +1717,20 @@ static int hsw_hw_config(struct perf_event *event)
+ 	      event->attr.precise_ip > 0))
+ 		return -EOPNOTSUPP;
+ 
++	if (event_is_checkpointed(event)) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period > 0 &&
++		    event->attr.sample_period < 0x7fffffff)
++			return -EOPNOTSUPP;
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.8.1.4
 
