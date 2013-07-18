@@ -1,116 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab3GRDBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 23:01:36 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:45547 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab3GRDBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 23:01:34 -0400
-Date: Wed, 17 Jul 2013 23:00:54 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Ric Wheeler <ricwheeler@gmail.com>, David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Olivier Galibert <galibert@pobox.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Message-ID: <1913177574.2417392.1374116454346.JavaMail.root@redhat.com>
-In-Reply-To: <20130717144849.GB16513@xanatos>
-References: <20130715204135.GH15531@xanatos> <20130716224357.GK4994@xanatos> <1374015299.6458.76.camel@gandalf.local.home> <20130716231217.GL4994@xanatos> <51E5D7C8.5000306@gmail.com> <1374018809.2249.29.camel@leira.trondhjem.org> <1000066089.1803398.1374046596236.JavaMail.root@redhat.com> <20130717144849.GB16513@xanatos>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
-Thread-Topic: How to act on LKML
-Thread-Index: 0ak6UtPbtOOzm2X/44qbS3Q3Eku1kA==
+	id S1758083Ab3GRDGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 23:06:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21900 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636Ab3GRDGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 23:06:12 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net V2 1/2] tuntap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
+Date: Thu, 18 Jul 2013 10:55:15 +0800
+Message-Id: <1374116116-43844-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We try to linearize part of the skb when the number of iov is greater than
+MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
+one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
+network.
 
+Solve this problem by calculate the pages needed for iov before trying to do
+zerocopy and switch to use copy instead of zerocopy if it needs more than
+MAX_SKB_FRAGS.
 
------ Original Message -----
-> From: "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
-> To: "CAI Qian" <caiqian@redhat.com>
-> Cc: "Trond Myklebust" <Trond.Myklebust@netapp.com>, "Ric Wheeler" <ricwheeler@gmail.com>, "David Lang"
-> <david@lang.hm>, ksummit-2013-discuss@lists.linuxfoundation.org, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-> "Darren Hart" <dvhart@linux.intel.com>, "Ingo Molnar" <mingo@kernel.org>, "Olivier Galibert" <galibert@pobox.com>,
-> "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, "stable" <stable@vger.kernel.org>, "Linus Torvalds"
-> <torvalds@linux-foundation.org>, "Willy Tarreau" <w@1wt.eu>
-> Sent: Wednesday, July 17, 2013 10:48:49 PM
-> Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-> 
-> On Wed, Jul 17, 2013 at 03:36:36AM -0400, CAI Qian wrote:
-> > > On Tue, 2013-07-16 at 19:31 -0400, Ric Wheeler wrote:
-> > > > On 07/16/2013 07:12 PM, Sarah Sharp wrote:
-> > > > > On Tue, Jul 16, 2013 at 06:54:59PM -0400, Steven Rostedt wrote:
-> > > > >> On Tue, 2013-07-16 at 15:43 -0700, Sarah Sharp wrote:
-> > > > > In order to make our community better, we need to figure out where
-> > > > > the
-> > > > > baseline of "good" behavior is.  We need to define what behavior we
-> > > > > want
-> > > > > from both maintainers and patch submitters.  E.g. "No regressions"
-> > > > > and
-> > > > > "don't break userspace" and "no personal attacks".  That needs to be
-> > > > > written down somewhere, and it isn't.  If it's documented somewhere,
-> > > > > point me to the file in Documentation.  Hint: it's not there.
-> > > > >
-> > > > > That is the problem.
-> > > > >
-> > > > > Sarah Sharp
-> > > > 
-> > > > The problem you are pointing out - and it is a problem - makes us less
-> > > > effective
-> > > > as a community.
-> > > 
-> > > Not really. Most of the people who already work as part of this
-> > > community are completely used to it. We've created the environment, and
-> > > have no problems with it.
-> > > 
-> > > Where it could possibly be a problem is when it comes to recruiting
-> > > _new_ members to our community. Particularly so given that some
-> > > journalists take a special pleasure in reporting particularly juicy
-> > > comments and antics. That would tend to scare off a lot of gun-shy
-> > > newbies.
-> > >
-> > > On the other hand, it might tend to bias our recruitment toward people
-> > > of a more "special" disposition. Perhaps we finally need the services of
-> > > a social scientist to help us find out...
-> >
-> > Does that sound like there are not going to have enough direct/thick skin
-> > new kernel developers around to maintain the future Linux community? Maybe
-> > just need a better pipeline for people comfortable for this culture?
-> 
-> No, we don't need a better pipeline for people who can "put up with
-> shit".  We need a better pipeline for people who can work together
-> civilly, and still get shit done.
-> 
-> I'm working on getting a pipeline of women into kernel development,
-> through the FOSS Outreach Program for Women.  They slowly get introduced
-> to Linux development culture, starting with a very friendly separate
-> mailing list and IRC channel, and finally moving to work with a kernel
-> mentor on a bigger project on the main Linux kernel development lists.
-> We have seven women participating this round, and I suspect we'll have
-> even more the next round.
-> 
-> So deal with it.  You're going to have a lot more women in the kernel
-> community, and not all of them will be willing to put up with verbal
-> abuse.  If you want to attract top talent that also happen to be women
-> or racial minorities, the verbal abuse needs to stop.
-Maybe we need something like this?
-http://us.battle.net/en/community/conduct
-> 
-> Sarah Sharp
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+This is done through introducing a new helper to count the pages for iov, and
+call uarg->callback() manually when switching from zerocopy to copy to notify
+vhost.
+
+We can do further optimization on top.
+
+The bug were introduced from commit 0690899b4d4501b3505be069b9a687e68ccbe15b
+(tun: experimental zero copy tx support)
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+---
+The patch is needed fot -stable.
+---
+ drivers/net/tun.c |   62 ++++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 38 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 5cdcf92..db690a3 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1035,6 +1035,29 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 	return 0;
+ }
+ 
++static unsigned long iov_pages(const struct iovec *iv, int offset,
++			       unsigned long nr_segs)
++{
++	unsigned long seg, base;
++	int pages = 0, len, size;
++
++	while (nr_segs && (offset >= iv->iov_len)) {
++		offset -= iv->iov_len;
++		++iv;
++		--nr_segs;
++	}
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		base = (unsigned long)iv[seg].iov_base + offset;
++		len = iv[seg].iov_len - offset;
++		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		pages += size;
++		offset = 0;
++	}
++
++	return pages;
++}
++
+ /* Get packet from user space buffer */
+ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 			    void *msg_control, const struct iovec *iv,
+@@ -1082,32 +1105,18 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 			return -EINVAL;
+ 	}
+ 
+-	if (msg_control)
+-		zerocopy = true;
+-
+-	if (zerocopy) {
+-		/* Userspace may produce vectors with count greater than
+-		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+-		 * to let the rest of data to be fit in the frags.
+-		 */
+-		if (count > MAX_SKB_FRAGS) {
+-			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
+-			if (copylen < offset)
+-				copylen = 0;
+-			else
+-				copylen -= offset;
+-		} else
+-				copylen = 0;
+-		/* There are 256 bytes to be copied in skb, so there is enough
+-		 * room for skb expand head in case it is used.
++	if (msg_control) {
++		/* There are 256 bytes to be copied in skb, so there is
++		 * enough room for skb expand head in case it is used.
+ 		 * The rest of the buffer is mapped from userspace.
+ 		 */
+-		if (copylen < gso.hdr_len)
+-			copylen = gso.hdr_len;
+-		if (!copylen)
+-			copylen = GOODCOPY_LEN;
++		copylen = gso.hdr_len ? gso.hdr_len : GOODCOPY_LEN;
+ 		linear = copylen;
+-	} else {
++		if (iov_pages(iv, offset + copylen, count) <= MAX_SKB_FRAGS)
++			zerocopy = true;
++	}
++
++	if (!zerocopy) {
+ 		copylen = len;
+ 		linear = gso.hdr_len;
+ 	}
+@@ -1121,8 +1130,13 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 
+ 	if (zerocopy)
+ 		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
+-	else
++	else {
+ 		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
++		if (!err && msg_control) {
++			struct ubuf_info *uarg = msg_control;
++			uarg->callback(uarg, false);
++		}
++	}
+ 
+ 	if (err) {
+ 		tun->dev->stats.rx_dropped++;
+-- 
+1.7.1
+
