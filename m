@@ -1,126 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab3GRKiL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:38:11 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33675 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758530Ab3GRKiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:38:07 -0400
-Date: Thu, 18 Jul 2013 06:37:39 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Thomas Backlund <tmb@mageia.org>
-Cc: Kamal Mostafa <kamal@canonical.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: Re: [PATCH 089/145] iommu/vt-d: add quirk for broken interrupt
- remapping on 55XX chipsets
-Message-ID: <20130718103739.GA3626@hmsreliant.think-freely.org>
-References: <1374101277-7915-1-git-send-email-kamal@canonical.com>
- <1374101277-7915-90-git-send-email-kamal@canonical.com>
- <51E7A0F8.9000308@mageia.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51E7A0F8.9000308@mageia.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	id S932719Ab3GRKic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:38:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56267 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932590Ab3GRKhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:37:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
+   d="scan'208";a="347700872"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V8 13/15] perf tools: expand perf_event__synthesize_sample()
+Date: Thu, 18 Jul 2013 13:42:55 +0300
+Message-Id: <1374144177-24762-14-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 11:02:00AM +0300, Thomas Backlund wrote:
-> 18.07.2013 01:47, Kamal Mostafa skrev:
-> >3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
-> >
-> >------------------
-> >
-> >From: Neil Horman <nhorman@tuxdriver.com>
-> >
-> >commit 03bbcb2e7e292838bb0244f5a7816d194c911d62 upstream.
-> >
-> >A few years back intel published a spec update:
-> >http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
-> >
-> >For the 5520 and 5500 chipsets which contained an errata (specificially errata
-> >53), which noted that these chipsets can't properly do interrupt remapping, and
-> >as a result the recommend that interrupt remapping be disabled in bios.  While
-> >many vendors have a bios update to do exactly that, not all do, and of course
-> >not all users update their bios to a level that corrects the problem.  As a
-> >result, occasionally interrupts can arrive at a cpu even after affinity for that
-> >interrupt has be moved, leading to lost or spurrious interrupts (usually
-> >characterized by the message:
-> >kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
-> >
-> >There have been several incidents recently of people seeing this error, and
-> >investigation has shown that they have system for which their BIOS level is such
-> >that this feature was not properly turned off.  As such, it would be good to
-> >give them a reminder that their systems are vulnurable to this problem.  For
-> >details of those that reported the problem, please see:
-> >https://bugzilla.redhat.com/show_bug.cgi?id=887006
-> >
-> >[ Joerg: Removed CONFIG_IRQ_REMAP ifdef from early-quirks.c ]
-> >
-> >Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> >CC: Prarit Bhargava <prarit@redhat.com>
-> >CC: Don Zickus <dzickus@redhat.com>
-> >CC: Don Dutile <ddutile@redhat.com>
-> >CC: Bjorn Helgaas <bhelgaas@google.com>
-> >CC: Asit Mallick <asit.k.mallick@intel.com>
-> >CC: David Woodhouse <dwmw2@infradead.org>
-> >CC: linux-pci@vger.kernel.org
-> >CC: Joerg Roedel <joro@8bytes.org>
-> >CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
-> >Signed-off-by: Joerg Roedel <joro@8bytes.org>
-> >Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> >---
-> >  arch/x86/include/asm/irq_remapping.h |  2 ++
-> >  arch/x86/kernel/early-quirks.c       | 20 ++++++++++++++++++++
-> >  drivers/iommu/intel_irq_remapping.c  | 10 ++++++++++
-> >  drivers/iommu/irq_remapping.c        |  6 ++++++
-> >  drivers/iommu/irq_remapping.h        |  2 ++
-> >  5 files changed, 40 insertions(+)
-> >
-> 
-> This patch introduces this warning on 3.8 series kernels:
-> 
-> In file included from arch/x86/kernel/early-quirks.c:21:0:
-> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:46:10:
-> varning: ”struct irq_data” deklarerad inuti parameterlista
-> [aktiverat som standard]
-> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:46:10:
-> varning: dess scope-område är endast denna definition eller
-> deklaration, vilket troligen inte är vad du vill. [aktiverat som
-> standard]
-> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:50:17:
-> varning: ”struct msi_msg” deklarerad inuti parameterlista [aktiverat
-> som standard]
-> 
-> 
-> You need to add this upstream fix too:
-> 
-> commit 35d3d814cbd46a85bed97cd74ba97fbbb51e0ccd
-> Author: Joerg Roedel <joro@8bytes.org>
-> Date:   Fri Apr 19 20:34:55 2013 +0200
-> 
->     iommu: Fix compile warnings with forward declarations
-> 
-I submited a 3.9 backport that included that fix to -stable over a week ago, you
-should just be able to use that if you want.
-Neil
+Expand perf_event__synthesize_sample() to handle all
+sample format bits.
 
-> 
-> --
-> 
-> Thomas
-> 
-> 
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/builtin-inject.c |  3 +-
+ tools/perf/util/event.h     |  1 +
+ tools/perf/util/evsel.c     | 70 ++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 72 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index ffacd46..eb33da6 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -301,7 +301,8 @@ found:
+ 	sample_sw.period = sample->period;
+ 	sample_sw.time	 = sample->time;
+ 	perf_event__synthesize_sample(event_sw, evsel->attr.sample_type,
+-				      &sample_sw, false);
++				      evsel->attr.sample_regs_user, &sample_sw,
++				      false);
+ 	build_id__mark_dso_hit(tool, event_sw, &sample_sw, evsel, machine);
+ 	return perf_event__repipe(tool, event_sw, &sample_sw, machine);
+ }
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 82bad0d..7f5c36b 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -228,6 +228,7 @@ int perf_event__preprocess_sample(const union perf_event *self,
+ const char *perf_event__name(unsigned int id);
+ 
+ int perf_event__synthesize_sample(union perf_event *event, u64 type,
++				  u64 sample_regs_user,
+ 				  const struct perf_sample *sample,
+ 				  bool swapped);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 4b45e98..047ab02 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1349,11 +1349,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ }
+ 
+ int perf_event__synthesize_sample(union perf_event *event, u64 type,
++				  u64 sample_regs_user,
+ 				  const struct perf_sample *sample,
+ 				  bool swapped)
+ {
+ 	u64 *array;
+-
++	size_t sz;
+ 	/*
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+ 	 * for why this goofiness is needed.
+@@ -1426,6 +1427,73 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 		array++;
+ 	}
+ 
++	if (type & PERF_SAMPLE_READ) {
++		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
++		return -1;
++	}
++
++	if (type & PERF_SAMPLE_CALLCHAIN) {
++		sz = (sample->callchain->nr + 1) * sizeof(u64);
++		memcpy(array, sample->callchain, sz);
++		array = (void *)array + sz;
++	}
++
++	if (type & PERF_SAMPLE_RAW) {
++		u.val32[0] = sample->raw_size;
++		if (WARN_ONCE(swapped,
++			      "Endianness of raw data not corrected!\n")) {
++			/*
++			 * Inverse of what is done in perf_evsel__parse_sample
++			 */
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++			u.val64 = bswap_64(u.val64);
++		}
++		*array = u.val64;
++		array = (void *)array + sizeof(u32);
++
++		memcpy(array, sample->raw_data, sample->raw_size);
++		array = (void *)array + sample->raw_size;
++	}
++
++	if (type & PERF_SAMPLE_BRANCH_STACK) {
++		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
++		sz += sizeof(u64);
++		memcpy(array, sample->branch_stack, sz);
++		array = (void *)array + sz;
++	}
++
++	if (type & PERF_SAMPLE_REGS_USER) {
++		if (sample->user_regs.regs && sample_regs_user) {
++			*array++ = sample_regs_user;
++			sz = hweight_long(sample_regs_user) * sizeof(u64);
++			memcpy(array, sample->user_regs.regs, sz);
++			array = (void *)array + sz;
++		} else {
++			*array++ = 0;
++		}
++	}
++
++	if (type & PERF_SAMPLE_STACK_USER) {
++		sz = sample->user_stack.size;
++		*array++ = sz;
++		if (sz) {
++			memcpy(array, sample->user_stack.data, sz);
++			array = (void *)array + sz;
++			*array++ = sz;
++		}
++	}
++
++	if (type & PERF_SAMPLE_WEIGHT) {
++		*array = sample->weight;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_DATA_SRC) {
++		*array = sample->data_src;
++		array++;
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.11.7
+
