@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916Ab3GRMnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 08:43:53 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21931 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757881Ab3GRMnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 08:43:52 -0400
-Message-ID: <51E7E2FC.3070807@oracle.com>
-Date: Thu, 18 Jul 2013 20:43:40 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1758730Ab3GRMq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 08:46:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35101 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754283Ab3GRMqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 08:46:25 -0400
+Date: Thu, 18 Jul 2013 14:46:01 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 02/23] perf tools: Remove data_offset seek as it's not
+ needed
+Message-ID: <20130718124601.GC1092@krava.brq.redhat.com>
+References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+ <1374083403-14591-3-git-send-email-jolsa@redhat.com>
+ <87li54wcng.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: zswap: How to determine whether it is compressing swap pages?
-References: <1674223.HVFdAhB7u5@merkaba> <3337744.IgTT2hGPE5@merkaba> <20130717143834.GA4379@variantweb.net> <3125575.Ki4S75m1kx@merkaba>
-In-Reply-To: <3125575.Ki4S75m1kx@merkaba>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87li54wcng.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
-
-On 07/18/2013 03:38 AM, Martin Steigerwald wrote:
-> Am Mittwoch, 17. Juli 2013, 09:38:34 schrieb Seth Jennings:
->> On Wed, Jul 17, 2013 at 01:41:44PM +0200, Martin Steigerwald wrote:
->>> Is there any way to run zcache concurrently with zswap? I.e. use zcache only
->>> for read caches for filesystem and zswap for swap?
->>
->> No, at least not with zcache's frontswap features enabled.  frontswap is a very
->> simple API that allows only one "backend" to register with it at a time.  So
->> that means _either_ zswap or zcache.
->>
->> The only way they can be used in a meaningful way together is to use the
->> "nofrontswap" zcache option in the kernel boot parameters to prevent
->> zcache overriding zswap's frontswap registration.
->>
->> But the general answer is no, they shouldn't be used together.
->>
->>
->>>
->>> What is better suited for swap? zswap or zcache?
->>
->> zswap targets the specific case of caching swapped out pages in a compressed
->> cache and this is much simpler than zcache. zswap is also in mainline as of
->> 3.11-rc1.
+On Thu, Jul 18, 2013 at 04:27:47PM +0900, Namhyung Kim wrote:
+> On Wed, 17 Jul 2013 19:49:42 +0200, Jiri Olsa wrote:
+> > Removing data_offset seek as it's not needed, because
+> > data are not read by syscall but mmaped instead.
 > 
-> Thanks.
-> 
-> Okay, then I will test zswap for now. I have a nice use case for it: Playing
+> Yes we do, but it's not mandatory, right?  I'd rather expect the file
+> offset remains at the beginning of data after calling
+> perf_session__read_header() instead of a random point (EOF?).
 
-Could you make some test by kernel compiling? Something like kernbench.
-During my testing, I found that the swap ins/outs operations reduced but
-the kernel compile time didn't reduce accordingly.
+well it's just useless, and I think it's better and more clear
+to set it properly before the reading anyway. Also AFAICS there's
+no other read after this seek even later.
 
--- 
-Regards,
--Bob
+jirka
