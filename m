@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab3GRDlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 23:41:13 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34579 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab3GRDlL (ORCPT
+	id S932486Ab3GRDmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 23:42:31 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:25125 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756579Ab3GRDma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 23:41:11 -0400
-Message-ID: <51E763D3.4000308@linaro.org>
-Date: Wed, 17 Jul 2013 20:41:07 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 17 Jul 2013 23:42:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjoPABpj51F5LK4r/2dsb2JhbABagwa8DoUvBAGBDhd0giMBAQQBOhwjBQsIAxgJJQ8FJQMhE4gKBbZrFo5HgR0Hg3sDl1uRToMkKg
+Date: Thu, 18 Jul 2013 13:42:03 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Myers <bpm@sgi.com>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, xfs@oss.sgi.com
+Subject: Re: splice vs execve lockdep trace.
+Message-ID: <20130718034203.GO11674@dastard>
+References: <20130716193332.GB3572@sgi.com>
+ <CA+55aFzTBUKStdZu1GhKoiYc2knybhiaUFr2By98QYew_STE=A@mail.gmail.com>
+ <20130716204335.GH11674@dastard>
+ <CA+55aFwHMQd-VDeTDh-gm3jyj+5+FSoAHOeU47mwU-mKtEj9RQ@mail.gmail.com>
+ <20130717040616.GI11674@dastard>
+ <CA+55aFz5xw9Qi9Q6mwoCSud5eQh5u-QZ-xrY+TqgZPoKOgn6ew@mail.gmail.com>
+ <20130717055103.GK11674@dastard>
+ <CA+55aFxdqzMY5VJoYaLmL=+=f2s1cbHHV-TjC3=taXpF-xov1w@mail.gmail.com>
+ <20130717234049.GC3572@sgi.com>
+ <CA+55aFy-8QH4bTW7hU=381tuEWgHC=PUM6WP3qn-ooge=7M0QQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: arm@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 0/3] Cleanup sched_clock.h users
-References: <1374115161-675-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1374115161-675-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy-8QH4bTW7hU=381tuEWgHC=PUM6WP3qn-ooge=7M0QQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 07:39 PM, Stephen Boyd wrote:
-> This patchset cleans up the last few stragglers using the sched_clock.h
-> header file in asm and removes the asm header.
->
-> A new one appeared in drivers/clocksource so I'm not sure who
-> wants to take that one.
+On Wed, Jul 17, 2013 at 05:17:36PM -0700, Linus Torvalds wrote:
+> On Wed, Jul 17, 2013 at 4:40 PM, Ben Myers <bpm@sgi.com> wrote:
+> >>
+> >> We're still talking at cross purposes then.
+> >>
+> >> How the hell do you handle mmap() and page faulting?
+> >
+> > __xfs_get_blocks serializes access to the block map with the i_lock on the
+> > xfs_inode.  This appears to be racy with respect to hole punching.
+> 
+> Would it be possible to just make __xfs_get_blocks get the i_iolock
+> (non-exclusively)?
 
-Thanks for doing this!
+No. __xfs_get_blocks() operates on metadata (e.g. extent lists), and
+as such is protected by the i_ilock (note: not the i_iolock).  i.e.
+XFS has a multi-level locking strategy:
 
-I'll queue the drivers/clocksource one on its own in a separate branch, 
-that way I'll merge it into my own 3.12 queue, and Arnd/Olof can also 
-merge just that change it in before they drop the asm/sched_clock.h header.
+	i_iolock is provided for *data IO serialisation*,
+	i_ilock is for *inode metadata serialisation*.
 
-I just pushed it out here:
+Truncate and hole punching require IO level serialisation rather
+than metadata or page cache level serialisation as they have to be
+safe against direct IO as well as page cache based IO.
 
-git://git.linaro.org/people/jstultz/linux.git fortglx/3.12/sched-clock-cleanups
+> Or, alternatively, do it in the readpage() function?
+> 
+> That was what I thought you did anyway. Exactly because of the whole
+> page faulting issue.
 
+We protect the inode itself with the i_ilock in the page fault path,
+but we have no IO level serialisation. Racing faults serialise
+access to inode metadata via on the i_ilock, but this doesn't
+serialise against IO in progress....
 
-thanks
--john
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
