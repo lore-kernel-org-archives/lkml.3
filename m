@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab3GRKIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:08:36 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:38479 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902Ab3GRKId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:08:33 -0400
+	id S1758354Ab3GRKLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:11:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43330 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757343Ab3GRKLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:11:10 -0400
+Date: Thu, 18 Jul 2013 13:10:58 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Rong Wang <wr011235813@gmail.com>
+CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Rong.Wang@csr.com>
+Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
+Message-ID: <20130718101058.GG11251@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
+ <20130715165209.GA6000@kroah.com>
+ <CA+k=oDzZ5sf_wFMUvE_vkkqRQaOV0P3vWP99tDpoZkrwMN7Q+A@mail.gmail.com>
+ <20130716063117.GA30320@kroah.com>
+ <20130717075706.GC5291@arwen.pp.htv.fi>
+ <CA+k=oDza-oN++KCYtVMD0V62xgkJ3ctUOmzNkaYYYhXuKtaWKQ@mail.gmail.com>
+ <20130717132736.GA7614@arwen.pp.htv.fi>
+ <CA+k=oDy=_CWMCfcGfy=wbhn0BDm45Y8wS=wpe6SviPcnetntTw@mail.gmail.com>
+ <20130718084041.GE11251@arwen.pp.htv.fi>
+ <CA+k=oDxbu09FoQdOVUQhK-Q4hKuPYyiYDS1akoE2kggN7echgA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <b57caaaed2bd127fe656e6c145970ed6a05c0125.1372515621.git.yann.morin.1998@free.fr>
-References: <cover.1372515621.git.yann.morin.1998@free.fr>
-	<b57caaaed2bd127fe656e6c145970ed6a05c0125.1372515621.git.yann.morin.1998@free.fr>
-Date: Thu, 18 Jul 2013 12:08:33 +0200
-X-Google-Sender-Auth: 1Bq8KOadfcmuJvPwcaTS_M8EfRE
-Message-ID: <CAMuHMdUNQOiaia=j-+Cf7fW33ZfGi-kYAO0Y4qpCa5HBkKN8mQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] kconfig: allow "hex" and "range" to support longs
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Kees Cook <keescook@chromium.org>
-Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FK65GREB+Evh/hTL"
+Content-Disposition: inline
+In-Reply-To: <CA+k=oDxbu09FoQdOVUQhK-Q4hKuPYyiYDS1akoE2kggN7echgA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 29, 2013 at 4:21 PM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
-> From: Kees Cook <keescook@chromium.org>
->
-> The parsing routines for Kconfig files use strtol(), but store and
-> render values as int. Switch types and formating to long to support a
-> wider range of values. For example, 0x80000000 wasn't representable.
+--FK65GREB+Evh/hTL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-0x80000000 does fit in an int. If it's printed as hex, it's treated as unsigned.
-Is there a "0" missing, or am I missing something?
+On Thu, Jul 18, 2013 at 05:28:19PM +0800, Rong Wang wrote:
+> Hi Felipe,
+>=20
+> Thanks, I'll test the patch.
+>=20
+> But sysfs_notify(&gadget->dev.kobj, NULL, "status"), status or state ?
+> I notice that DEVICE_ATTR(state, S_IRUGO, usb_gadget_state_show, NULL)
 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> ---
->  scripts/kconfig/symbol.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-> index 387d554..d550300 100644
-> --- a/scripts/kconfig/symbol.c
-> +++ b/scripts/kconfig/symbol.c
-> @@ -136,7 +136,7 @@ static struct property *sym_get_range_prop(struct symbol *sym)
->         return NULL;
->  }
->
-> -static int sym_get_range_val(struct symbol *sym, int base)
-> +static long sym_get_range_val(struct symbol *sym, int base)
->  {
->         sym_calc_value(sym);
->         switch (sym->type) {
+good eyes, please send a patch which I'll queue on this -rc and Cc:
+<stable@vger.kernel.org>.
 
-Changing all these "int" to "long" only matters on 64-bit platforms.
-As kconfig is built on the host, this will cause different behavior when
-cross-compiling 64-bit (I assume that's where you need it most) kernels
-on a 32-bit or a 64-bit host.
+I'll rewrite my patch on top of the patched -rc later.
 
-Probably you wanted to use "long long" instead of "long", and switch
-to "strtoll()", to make them always 64-bit?
+--=20
+balbi
 
-Still, beware using 64-bit config symbols with arithmetic shell operations from
-a Makefile, cfr. https://lkml.org/lkml/2013/6/13/200.
+--FK65GREB+Evh/hTL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Sorry for only noticing now, after it went into 3.11-rc1.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Gr{oetje,eeting}s,
+iQIcBAEBAgAGBQJR578yAAoJEIaOsuA1yqRELScQAKIv8ll9Q1VZERV2yONWLcR4
+HNNEQ/MkmL8FiMBcUYBuuv4rVqkfZS3M2MKXe6b8w/HZgx3/32jHsaYtyOjWmrsy
+t4gBx4wFqWYRNTtXPDjYTokbxS0WOQZgefEQHrWTgxpXbl8JNEo0z/qIMUNnuTwA
+ayPLal4sv034cM+4rqDEHdy1+RpprPR56u8ekCuAnweIPN+/RRWbnERSvM4i3xc+
+x0IGj28vycFGfz0tWJF7WuO0XOL6f1SiMZE2RJQUOrS1TW2YI/4V0FH+Cgt9nOB3
+QbSxO7cDYAMS8PnZd7T/wF5i/9Jr2My+N8UWAEjB+tpcEgwpXR0lGfTZDHH5sTG9
+qPiPSZXPomfbdfHsL7dTaO+usbRTsHisZZLt5QVJMJlcMVoAAm4t0w0ENzLoU1S/
+UWSiRySMMGapWMTPkSE7tEQ6kPIsjnG+6MqOMb/eB3J8ZPWgIp48d/ht9n/FT2lu
+797rMitCfFuwuyKblRORy0hjE0ryAvrIsh7Ct3iHAPBQFY5Et475rg6yJwNefeow
+xV+szz7zRssna5EB+8a04yF8pOwQ5bTKdfets9zZDbfBNa3jzA2yjAWB4/ARrDM4
+OuBYtTJoKma5yKlKuZ31NUJXW4f1i445t2WlEsb16wueZU0gJIninDsR4y3gmOZd
+FkiPlWV0sARW6fuqEWMK
+=VL0Z
+-----END PGP SIGNATURE-----
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--FK65GREB+Evh/hTL--
