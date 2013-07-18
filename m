@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab3GRIFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:05:48 -0400
-Received: from ams-iport-2.cisco.com ([144.254.224.141]:60151 "EHLO
-	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3GRIFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:05:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsQFAESf51GQ/khN/2dsb2JhbABagwaDQ71/gRIWdIIjAQEFeRALDgouITYGE4d+Aw+tRg2IXo0QgmoHg3sDiG+NBIFpjCeFJoMUOg
-X-IronPort-AV: E=Sophos;i="4.89,691,1367971200"; 
-   d="scan'208";a="84638741"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-Subject: Re: [PATCH 4/4] [media] em28xx: Fix vidioc fmt vid cap v4l2 compliance
-Date: Thu, 18 Jul 2013 10:05:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Alban Browaeys <alban.browaeys@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alban Browaeys <prahal@yahoo.com>
-References: <1374016006-27678-1-git-send-email-prahal@yahoo.com> <CAGoCfixECL-5uazWhBXdXVQufwbcB=Opahux3k+wEnt2riLjsA@mail.gmail.com>
-In-Reply-To: <CAGoCfixECL-5uazWhBXdXVQufwbcB=Opahux3k+wEnt2riLjsA@mail.gmail.com>
+	id S1756819Ab3GRIIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:08:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58211 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755625Ab3GRIIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 04:08:31 -0400
+Date: Thu, 18 Jul 2013 11:08:23 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+CC: <jic23@cam.ac.uk>, <linux-iio@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <koen@dominion.thruhere.net>
+Subject: Re: [PATCH 05/21] iio: input: am335x_adc: Add continuous mode to adc
+Message-ID: <20130718080823.GB11251@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1374082010-28095-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1374082010-28095-6-git-send-email-zubair.lutfullah@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307181005.38765.hverkuil@xs4all.nl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HG+GLK89HZ1zG0kk"
+Content-Disposition: inline
+In-Reply-To: <1374082010-28095-6-git-send-email-zubair.lutfullah@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18 July 2013 04:07:51 Devin Heitmueller wrote:
-> On Tue, Jul 16, 2013 at 7:06 PM, Alban Browaeys
-> <alban.browaeys@gmail.com> wrote:
-> > Set fmt.pix.priv to zero in vidioc_g_fmt_vid_cap
-> >  and vidioc_try_fmt_vid_cap.
-> 
-> Any reason not to have the v4l2 core do this before dispatching to the
-> driver?  Set it to zero before the core calls g_fmt.  This avoids all
-> the drivers (most of which don't use the field) from having to set the
-> value themselves.
+--HG+GLK89HZ1zG0kk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There is still one driver (sn9c102) that's (ab)using it. Although perhaps I
-should take a look at it and fix it.
+Hi,
 
-Note that priv only needs to be cleared for try/s_fmt. g_fmt does clear it
-already in the core before handing it over to the driver.
+On Wed, Jul 17, 2013 at 06:26:34PM +0100, Zubair Lutfullah wrote:
+> Main patch. Adds continuous sampling support for the driver
+>=20
+> The IRQs are changed in the TSC drivers as they are shared with
+> the ADC IRQ lines.
+>=20
+> This patch is based on work in the 3.2 tree by TI
+> Original Author is Patil Rachna
+>=20
+> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 
-That said, I am undecided whether to put this in the core. We might actually
-start to use this field for something useful in the future. By having drivers
-clear it explicitly it will be easier to do that.
+to me this patch looks incorrect. IIO framework provides a generic ring
+buffer implementation which could be used for continuous mode. Adding
+driver specific attributes isn't very nice IMO.
 
-Regards,
+--=20
+balbi
 
-	Hans
+--HG+GLK89HZ1zG0kk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR56J3AAoJEIaOsuA1yqRER10P/3LR6XQMMELc0CSBIUVxJarV
+FasaTZ9VdRP6CbPQ985wf7fZw7j1N6OSukdvlrOIYzZqG7TaF8AARNpeLZl2JQd/
+CeF9ilbz98b7jC+h61Y5EFKXcRTCp+HRh7f49MYH7Kcast7QknETADN854NTYNMS
+qBqqmxLvRXZOMyMdoJ6zNwgjDziQZaW+z0xJ8OeJnD0q0jc5SSg46it9MfHEv6Yf
+9oBQ0xAjUhtm0iWg0KZwm64bsHQ+F1SbtL/j04hqGMKmczHW5BfJPTg5QmxtVrpv
+7sspXza3dNturIhvoMWah2dxg5CQScTZPyCG8E+ti7Pot2thXhGyXzcqwCd90/3O
+mJ3JIn1zf9qhYB+VdpEW8nslqa0G/PAJZpLCtKzVPn2YBVKxLo3mqxHizLtRZb+9
+aorlPQsPybKaISRZPv4zPETgFEGsxRMx4v6QlBwedgjw0ZqTOQcqzXgiyRDfbLmN
+NBKpJifKaKhNrE22N+Pq5kKI9NFfCodQtc+AY97SKWs9dxm3pslzza5Kgk3WQ62u
+KZ4IO9ezjpD+VJp1PlwIkDKt8nd5hPcIbDl7izB1oUb9H8HHxN0YolHwvLxmMxXW
+FylTB4ILeXG9sY59oI2RN6aNs4Lnc14UkA+W+upLtCU+Tc6mZ45LjThiJ0wqO4Dx
+nalYEjThI+4LUz/7jSD3
+=TUXm
+-----END PGP SIGNATURE-----
+
+--HG+GLK89HZ1zG0kk--
