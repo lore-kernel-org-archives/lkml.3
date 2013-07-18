@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965389Ab3GRUJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:09:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41514 "EHLO
+	id S965369Ab3GRUJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:09:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41515 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759409Ab3GRTuW (ORCPT
+	with ESMTP id S1759411Ab3GRTuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:22 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 35/76] perf gtk/hists: Use GtkTreeStore instead of GtkListStore
-Date: Thu, 18 Jul 2013 16:49:22 -0300
-Message-Id: <1374177003-3706-36-git-send-email-acme@infradead.org>
+Subject: [PATCH 33/76] perf util: Remove unused enum and macro in trace-event.h
+Date: Thu, 18 Jul 2013 16:49:20 -0300
+Message-Id: <1374177003-3706-34-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,72 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The GtkTreeStore can save items in a tree-like way.  This is a
-preparation for supporting callgraphs in the hist browser.
+They're internals of ftrace ring-buffer and not used in perf code
+directly.  As it now resides on libtraceevent/kbuffer.h, just get rid of
+them.
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1370337737-30812-2-git-send-email-namhyung@kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1370323231-14022-17-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/gtk/hists.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ tools/perf/util/trace-event.h | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 9708dd5..cb6a9b4 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -131,7 +131,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	GType col_types[MAX_COLUMNS];
- 	GtkCellRenderer *renderer;
- 	struct sort_entry *se;
--	GtkListStore *store;
-+	GtkTreeStore *store;
- 	struct rb_node *nd;
- 	GtkWidget *view;
- 	int col_idx;
-@@ -156,7 +156,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		col_types[nr_cols++] = G_TYPE_STRING;
- 	}
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index ed30c9c..669a64a 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -12,16 +12,6 @@ struct perf_tool;
  
--	store = gtk_list_store_newv(nr_cols, col_types);
-+	store = gtk_tree_store_newv(nr_cols, col_types);
+ extern struct pevent *perf_pevent;
  
- 	view = gtk_tree_view_new();
+-enum {
+-	RINGBUF_TYPE_PADDING		= 29,
+-	RINGBUF_TYPE_TIME_EXTEND	= 30,
+-	RINGBUF_TYPE_TIME_STAMP		= 31,
+-};
+-
+-#ifndef TS_SHIFT
+-#define TS_SHIFT		27
+-#endif
+-
+ int bigendian(void);
  
-@@ -199,7 +199,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		if (percent < min_pcnt)
- 			continue;
- 
--		gtk_list_store_append(store, &iter);
-+		gtk_tree_store_append(store, &iter, NULL);
- 
- 		col_idx = 0;
- 
-@@ -209,7 +209,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 			else
- 				fmt->entry(&hpp, h);
- 
--			gtk_list_store_set(store, &iter, col_idx++, s, -1);
-+			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
- 		}
- 
- 		list_for_each_entry(se, &hist_entry__sort_list, list) {
-@@ -219,7 +219,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 			se->se_snprintf(h, s, ARRAY_SIZE(s),
- 					hists__col_len(hists, se->se_width_idx));
- 
--			gtk_list_store_set(store, &iter, col_idx++, s, -1);
-+			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
- 		}
- 	}
- 
+ struct pevent *read_trace_init(int file_bigendian, int host_bigendian);
 -- 
 1.8.1.4
 
