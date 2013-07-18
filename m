@@ -1,72 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759495Ab3GRXyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:54:14 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:43131 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759147Ab3GRXyM (ORCPT
+	id S934777Ab3GRX7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:59:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:32902 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759333Ab3GRX7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:54:12 -0400
-Date: Thu, 18 Jul 2013 16:54:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, abbotti@mev.co.uk, oliver@schinagl.nl
-Subject: Re: [PATCH v3 01/10] Driver core and sysfs changes for attribute
- groups
-Message-ID: <20130718235417.GA9538@roeck-us.net>
-References: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Jul 2013 19:59:36 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: [PATCH v4 1/5] clocksource: arch_timer: Make register accessors less error-prone
+Date: Thu, 18 Jul 2013 16:59:28 -0700
+Message-Id: <1374191972-18015-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.3.754.g9c3c367
+In-Reply-To: <1374191972-18015-1-git-send-email-sboyd@codeaurora.org>
+References: <1374191972-18015-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 14, 2013 at 04:05:50PM -0700, Greg Kroah-Hartman wrote:
-> Hi all,
-> 
-> Here is the third iteration of the patchset to add better attribute
-> group support to the driver core and sysfs.
-> 
-> Others have now tested it, and we got 3 more patches fixing a warning
-> that was showing up when binary attributes were in a group with no
-> "normal" attributes, and some more helper macros were added and cleaned
-> up.
-> 
-> I've booted this successfully against 3.11-rc1 with no problems (am
-> sending these from that machine.)
-> 
-> Ian, I didn't add a DEVICE_PATTR() macro yet, that can come later.  I
-> considered it, but that would also mean a BUS_PATTR() and the like, which I
-> guess works, but I hate even a _hint_ of "Hungarian" notation, which this
-> implies.
-> 
-> Anyone else have a better name for this macro:
-> 	#define DEVICE_PATTR(_name)	&dev_attr_##_name.attr
-> that they can think of?  It will cut down on the typing done for
-> attribute lists.
-> 
-> changes from v3:
-> 	- tested by Guenter
-> 	- patches from Oliver added
-> 	- refreshed on 3.11-rc1 (minor fuzz)
-> 	- Ian glanced at them.
-> 
-> changes from v2:
-> 	- actually boots
-> 	- 7th patch added properly
-> 	- added BUS_ATTR, CLASS_ATTR, and DRIVER_ATTR RW and RO macros
-> 	  to help with converting code to use attributes properly.
-> 
-Hi Greg,
+Using an enum for the register we wish to access allows newer
+compilers to determine if we've forgotten a case in our switch
+statement. This allows us to remove the BUILD_BUG() instances in
+the arm64 port, avoiding problems where optimizations may not
+happen.
 
-thanks a lot for this series of patches, and for pushing it upstream.
+To try and force better code generation we're currently marking
+the accessor functions as inline, but newer compilers can ignore
+the inline keyword unless it's marked __always_inline. Luckily on
+arm and arm64 inline is __always_inline, but let's make
+everything __always_inline to be explicit.
 
-Do you by any chance have a repository for the cleanup patches depending on this
-series ? It looks like a good area to get involved with when I am tired/annoyed
-by my other work, but I would not want to duplicate your work.
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/include/asm/arch_timer.h    | 14 ++++++--------
+ arch/arm64/include/asm/arch_timer.h  | 23 +++++++++--------------
+ drivers/clocksource/arm_arch_timer.c |  6 +++---
+ include/clocksource/arm_arch_timer.h |  6 ++++--
+ 4 files changed, 22 insertions(+), 27 deletions(-)
 
-Thanks,
-Guenter
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index accefe0..aeb93f3 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -17,7 +17,8 @@ int arch_timer_arch_init(void);
+  * nicely work out which register we want, and chuck away the rest of
+  * the code. At least it does so with a recent GCC (4.6.3).
+  */
+-static inline void arch_timer_reg_write(const int access, const int reg, u32 val)
++static __always_inline
++void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val)
+ {
+ 	if (access == ARCH_TIMER_PHYS_ACCESS) {
+ 		switch (reg) {
+@@ -28,9 +29,7 @@ static inline void arch_timer_reg_write(const int access, const int reg, u32 val
+ 			asm volatile("mcr p15, 0, %0, c14, c2, 0" : : "r" (val));
+ 			break;
+ 		}
+-	}
+-
+-	if (access == ARCH_TIMER_VIRT_ACCESS) {
++	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
+ 		switch (reg) {
+ 		case ARCH_TIMER_REG_CTRL:
+ 			asm volatile("mcr p15, 0, %0, c14, c3, 1" : : "r" (val));
+@@ -44,7 +43,8 @@ static inline void arch_timer_reg_write(const int access, const int reg, u32 val
+ 	isb();
+ }
+ 
+-static inline u32 arch_timer_reg_read(const int access, const int reg)
++static __always_inline
++u32 arch_timer_reg_read(int access, enum arch_timer_reg reg)
+ {
+ 	u32 val = 0;
+ 
+@@ -57,9 +57,7 @@ static inline u32 arch_timer_reg_read(const int access, const int reg)
+ 			asm volatile("mrc p15, 0, %0, c14, c2, 0" : "=r" (val));
+ 			break;
+ 		}
+-	}
+-
+-	if (access == ARCH_TIMER_VIRT_ACCESS) {
++	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
+ 		switch (reg) {
+ 		case ARCH_TIMER_REG_CTRL:
+ 			asm volatile("mrc p15, 0, %0, c14, c3, 1" : "=r" (val));
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index d56ed11..dbca771 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -26,7 +26,13 @@
+ 
+ #include <clocksource/arm_arch_timer.h>
+ 
+-static inline void arch_timer_reg_write(int access, int reg, u32 val)
++/*
++ * These register accessors are marked inline so the compiler can
++ * nicely work out which register we want, and chuck away the rest of
++ * the code.
++ */
++static __always_inline
++void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val)
+ {
+ 	if (access == ARCH_TIMER_PHYS_ACCESS) {
+ 		switch (reg) {
+@@ -36,8 +42,6 @@ static inline void arch_timer_reg_write(int access, int reg, u32 val)
+ 		case ARCH_TIMER_REG_TVAL:
+ 			asm volatile("msr cntp_tval_el0, %0" : : "r" (val));
+ 			break;
+-		default:
+-			BUILD_BUG();
+ 		}
+ 	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
+ 		switch (reg) {
+@@ -47,17 +51,14 @@ static inline void arch_timer_reg_write(int access, int reg, u32 val)
+ 		case ARCH_TIMER_REG_TVAL:
+ 			asm volatile("msr cntv_tval_el0, %0" : : "r" (val));
+ 			break;
+-		default:
+-			BUILD_BUG();
+ 		}
+-	} else {
+-		BUILD_BUG();
+ 	}
+ 
+ 	isb();
+ }
+ 
+-static inline u32 arch_timer_reg_read(int access, int reg)
++static __always_inline
++u32 arch_timer_reg_read(int access, enum arch_timer_reg reg)
+ {
+ 	u32 val;
+ 
+@@ -69,8 +70,6 @@ static inline u32 arch_timer_reg_read(int access, int reg)
+ 		case ARCH_TIMER_REG_TVAL:
+ 			asm volatile("mrs %0, cntp_tval_el0" : "=r" (val));
+ 			break;
+-		default:
+-			BUILD_BUG();
+ 		}
+ 	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
+ 		switch (reg) {
+@@ -80,11 +79,7 @@ static inline u32 arch_timer_reg_read(int access, int reg)
+ 		case ARCH_TIMER_REG_TVAL:
+ 			asm volatile("mrs %0, cntv_tval_el0" : "=r" (val));
+ 			break;
+-		default:
+-			BUILD_BUG();
+ 		}
+-	} else {
+-		BUILD_BUG();
+ 	}
+ 
+ 	return val;
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 053d846..aa07038 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -43,7 +43,7 @@ static bool arch_timer_use_virtual = true;
+  * Architected system timer support.
+  */
+ 
+-static inline irqreturn_t timer_handler(const int access,
++static __always_inline irqreturn_t timer_handler(const int access,
+ 					struct clock_event_device *evt)
+ {
+ 	unsigned long ctrl;
+@@ -72,7 +72,7 @@ static irqreturn_t arch_timer_handler_phys(int irq, void *dev_id)
+ 	return timer_handler(ARCH_TIMER_PHYS_ACCESS, evt);
+ }
+ 
+-static inline void timer_set_mode(const int access, int mode)
++static __always_inline void timer_set_mode(const int access, int mode)
+ {
+ 	unsigned long ctrl;
+ 	switch (mode) {
+@@ -99,7 +99,7 @@ static void arch_timer_set_mode_phys(enum clock_event_mode mode,
+ 	timer_set_mode(ARCH_TIMER_PHYS_ACCESS, mode);
+ }
+ 
+-static inline void set_next_event(const int access, unsigned long evt)
++static __always_inline void set_next_event(const int access, unsigned long evt)
+ {
+ 	unsigned long ctrl;
+ 	ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL);
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index c463ce9..f3da817 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -23,8 +23,10 @@
+ #define ARCH_TIMER_CTRL_IT_MASK		(1 << 1)
+ #define ARCH_TIMER_CTRL_IT_STAT		(1 << 2)
+ 
+-#define ARCH_TIMER_REG_CTRL		0
+-#define ARCH_TIMER_REG_TVAL		1
++enum arch_timer_reg {
++	ARCH_TIMER_REG_CTRL,
++	ARCH_TIMER_REG_TVAL,
++};
+ 
+ #define ARCH_TIMER_PHYS_ACCESS		0
+ #define ARCH_TIMER_VIRT_ACCESS		1
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
