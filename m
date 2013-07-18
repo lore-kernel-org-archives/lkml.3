@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594Ab3GRKjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:39:16 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:57171 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932119Ab3GRKjM (ORCPT
+	id S932518Ab3GRKjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:39:36 -0400
+Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:60349 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753668Ab3GRKjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:39:12 -0400
-Date: Thu, 18 Jul 2013 12:39:07 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130718103907.GC23558@gmail.com>
-References: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
- <20130715174659.GC15531@xanatos>
- <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
- <20130715180403.GD15531@xanatos>
- <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+	Thu, 18 Jul 2013 06:39:33 -0400
+Message-ID: <51E7C1B2.8000206@overkiz.com>
+Date: Thu, 18 Jul 2013 12:21:38 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v4 5/5] ASoC: atmel-ssc: remove clk_disable_unprepare
+ call from critical section
+References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com> <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com> <20130718095337.GD22506@sirena.org.uk>
+In-Reply-To: <20130718095337.GD22506@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 13953277545781098726
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 18/07/2013 11:53, Mark Brown wrote:
+> On Thu, Jul 18, 2013 at 09:48:40AM +0200, Boris BREZILLON wrote:
+>> clk_prepare/unprepare (and indirectly clk_prepare_enable/disable_unprepare)
+>> may sleep and thus cannot be called in critical section.
+> I'm missing patches 1-4?
+I can send you the whole series if you want (already sent to LKML and 
+LAKML).
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+But I'd like to understand who I should send patches from this series to.
 
-> On Mon, Jul 15, 2013 at 1:41 PM, Sarah Sharp
-> <sarah.a.sharp@linux.intel.com> wrote:
-> >
-> > Oh, FFS, I just called out on private email for "playing the victim
-> > card".  I will repeat: this is not just about me, or other minorities.
-> > I should not have to ask for professional behavior on the mailing lists.
-> > Professional behavior should be the default.
-> 
+Here's my approach:
+1) send all patches of the series to at91 maintainers (as they are 
+directly concerned).
+2) send all patches of the series LKML and LAKML
+3) send each patch of the series to the persons and mailing lists 
+concerned by this patch :
+     contributors and maintainers (retrieved by get_maintainer.pl script)
 
-> [...]
-> 
-> Because if you want me to "act professional", I can tell you that I'm 
-> not interested. I'm sitting in my home office wearign a bathrobe. The 
-> same way I'm not going to start wearing ties, I'm *also* not going to 
-> buy into the fake politeness, the lying, the office politics and 
-> backstabbing, the passive aggressiveness, and the buzzwords. Because 
-> THAT is what "acting professionally" results in: people resort to all 
-> kinds of really nasty things because they are forced to act out their 
-> normal urges in unnatural ways.
+Could you tell me if I'm doing something wrong?
 
-Sarah, that's a pretty potent argument by Linus, that "acting 
-professionally" risks replacing a raw but honest culture with a
-polished but dishonest culture - which is harmful to developing
-good technology.
+Thanks
 
-That's a valid concern. What's your reply to that argument?
+Best Regards,
 
-Thanks,
-
-	Ingo
+Boris
