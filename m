@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab3GRMlE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 08:41:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49182 "EHLO mx1.redhat.com"
+	id S1758869Ab3GRMlY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 08:41:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28581 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab3GRMlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 08:41:02 -0400
-Date: Thu, 18 Jul 2013 14:40:41 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 06/23] perf doc: Add perf data file documentation
-Message-ID: <20130718124041.GB1092@krava.brq.redhat.com>
-References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
- <1374083403-14591-7-git-send-email-jolsa@redhat.com>
- <20130717195905.GC5127@infradead.org>
+	id S1756746Ab3GRMlV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 08:41:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
+   d="scan'208";a="372353180"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shuah Khan (shuah.kh@samsung.com)" <shuah.kh@samsung.com>,
+        "Konstantin Khlebnikov (khlebnikov@openvz.org)" 
+	<khlebnikov@openvz.org>
+Subject: RE: [char-misc 0/4 3.11] Fix mei suspend/resume failure
+Thread-Topic: [char-misc 0/4 3.11] Fix mei suspend/resume failure
+Thread-Index: AQHOgudK0Ej0F1tjp0OVOBJnDTbTCplpBFwQ
+Date: Thu, 18 Jul 2013 12:41:16 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B028EBE55@HASMSX106.ger.corp.intel.com>
+References: <1374063197-26855-1-git-send-email-tomas.winkler@intel.com>
+In-Reply-To: <1374063197-26855-1-git-send-email-tomas.winkler@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130717195905.GC5127@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 04:59:05PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jul 17, 2013 at 07:49:46PM +0200, Jiri Olsa escreveu:
-> > Adding perf data file documentation.
-> > 
-> > TODO: Finish the FEATURES section
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+
+
 > 
->     ASCIIDOC /tmp/build/perf/perf-evlist.xml
-> asciidoc: ERROR: perf-data-file-v2.txt: line 5: name section expected
-> asciidoc: FAILED: perf-data-file-v2.txt: line 5: section title expected
-
-hum, I did not know there were some rules for doc :-) will fix
-
-thanks,
-jirka
-
-> make[2]: *** [/tmp/build/perf/perf-data-file-v2.xml] Error 1
-> make[2]: *** Waiting for unfinished jobs....
-> make[2]: Leaving directory `/home/git/linux/tools/perf/Documentation'
-> make[1]: *** [try-install-man] Error 2
-> make[1]: Leaving directory `/home/git/linux/tools/perf/Documentation'
-> make: *** [try-install-man] Error 2
-> make: Leaving directory `/home/git/linux/tools/perf'
-> [acme@zoo linux]$ 
+> This series should fix the long standing reset storm issue in mei
+> suspend/resume failure
 > 
+> The issue was reported in few places:
+> https://lkml.org/lkml/2013/6/26/693
+> https://lkml.org/lkml/2013/7/14/69
+> 
+> 
+> Tomas Winkler (4):
+>   mei: hbm: fix typo in error message
+>   mei: me: fix reset state machine
+>   mei: don't have to clean the state on power up
+>   mei: me: fix waiting for hw ready
+> 
+>  drivers/misc/mei/hbm.c   |  2 +-
+>  drivers/misc/mei/hw-me.c | 14 ++++++++++----  drivers/misc/mei/init.c  |  3
+> ++-
+>  3 files changed, 13 insertions(+), 6 deletions(-)
+
+
+CC: Konstantin and Shuah 
+
+Tomas
