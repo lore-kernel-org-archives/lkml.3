@@ -1,139 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953Ab3GRPpD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 11:45:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59185 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758362Ab3GRPpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 11:45:01 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: [PATCH] RTC: Add an alarm disable quirk
-Date: Thu, 18 Jul 2013 17:44:54 +0200
-Message-Id: <1374162294-29726-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.3
+	id S1759027Ab3GRPpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 11:45:25 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:8491 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758162Ab3GRPpV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 11:45:21 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh1432Idf9Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
+Date: Thu, 18 Jul 2013 08:45:03 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] arm: zynq: slcr: Use read-modify-write for register
+ writes
+References: <1374081015-31431-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1374081015-31431-4-git-send-email-soren.brinkmann@xilinx.com>
+ <20130718072106.GB15514@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130718072106.GB15514@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <a57f684c-8983-48d2-8e99-8c9712383091@TX2EHSMHS024.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On Thu, Jul 18, 2013 at 09:21:06AM +0200, Steffen Trumtrar wrote:
+> On Wed, Jul 17, 2013 at 10:10:15AM -0700, Sören Brinkmann wrote:
+> > zynq_slcr_cpu_start/stop() ignored the current register state when
+> > writing to a register. Fixing this by implementing proper
+> > read-modify-write.
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > ---
+> >  arch/arm/mach-zynq/slcr.c | 16 ++++++++--------
+> >  1 file changed, 8 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
+> > index 44a4ab6..1836d5a 100644
+> > --- a/arch/arm/mach-zynq/slcr.c
+> > +++ b/arch/arm/mach-zynq/slcr.c
+> > @@ -61,11 +61,11 @@ void zynq_slcr_system_reset(void)
+> >   */
+> >  void zynq_slcr_cpu_start(int cpu)
+> >  {
+> > -	/* enable CPUn */
+> > -	writel(SLCR_A9_CPU_CLKSTOP << cpu,
+> > -	       zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> > -	/* enable CLK for CPUn */
+> > -	writel(0x0 << cpu, zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> > +	u32 reg = readl(zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> > +	reg &= ~(SLCR_A9_CPU_RST << cpu);
+> > +	writel(reg, zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> > +	reg &= ~(SLCR_A9_CPU_CLKSTOP << cpu);
+> > +	writel(reg, zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> >  }
+> >  
+> >  /**
+> > @@ -74,9 +74,9 @@ void zynq_slcr_cpu_start(int cpu)
+> >   */
+> >  void zynq_slcr_cpu_stop(int cpu)
+> >  {
+> > -	/* stop CLK and reset CPUn */
+> > -	writel((SLCR_A9_CPU_CLKSTOP | SLCR_A9_CPU_RST) << cpu,
+> > -	       zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> > +	u32 reg = readl(zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> > +	reg |= (SLCR_A9_CPU_CLKSTOP | SLCR_A9_CPU_RST) << cpu;
+> > +	writel(reg, zynq_slcr_base + SLCR_A9_CPU_RST_CTRL_OFFSET);
+> >  }
+> >  
+> 
+> Hi!
+> 
+> Why do you also remove the comments? In my opinion they can stay.
+I found the #defines descriptive enough
 
-41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
-functionality to disable the RTC wake alarm when shutting down the box.
+	Sören
 
-However, there are at least two b0rked BIOSes we know about:
-
-https://bugzilla.novell.com/show_bug.cgi?id=812592
-https://bugzilla.novell.com/show_bug.cgi?id=805740
-
-where, when wakeup alarm is enabled in the BIOS, the machine reboots
-automatically right after shutdown, regardless of what wakeup time is
-programmed.
-
-Bisecting the issue lead to this patch so disable its functionality with
-a DMI quirk only for those boxes.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
----
- drivers/rtc/class.c     | 24 ++++++++++++++++++++++++
- drivers/rtc/interface.c |  8 ++++++++
- include/linux/rtc.h     |  1 +
- 3 files changed, 33 insertions(+)
-
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index 02426812bebc..f3006db26125 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -19,6 +19,8 @@
- #include <linux/idr.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
-+#include <linux/dmi.h>
-+#include <linux/mod_devicetable.h>
- 
- #include "rtc-core.h"
- 
-@@ -26,6 +28,25 @@
- static DEFINE_IDA(rtc_ida);
- struct class *rtc_class;
- 
-+static int __init clear_disable_alarm(const struct dmi_system_id *id)
-+{
-+	rtc_disable_alarm = false;
-+	return 0;
-+}
-+
-+static const struct dmi_system_id rtc_quirks[] __initconst = {
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
-+	{
-+		.callback = clear_disable_alarm,
-+		.ident    = "IBM Truman",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
-+		},
-+	},
-+	{}
-+};
-+
- static void rtc_device_release(struct device *dev)
- {
- 	struct rtc_device *rtc = to_rtc_device(dev);
-@@ -340,6 +361,9 @@ static int __init rtc_init(void)
- 	rtc_class->pm = RTC_CLASS_DEV_PM_OPS;
- 	rtc_dev_init();
- 	rtc_sysfs_init(rtc_class);
-+
-+	dmi_check_system(rtc_quirks);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index 72c5cdbe0791..0d944d1c02b8 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -17,6 +17,11 @@
- #include <linux/log2.h>
- #include <linux/workqueue.h>
- 
-+/*
-+ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
-+ */
-+bool rtc_disable_alarm = true;
-+
- static int rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer);
- static void rtc_timer_remove(struct rtc_device *rtc, struct rtc_timer *timer);
- 
-@@ -787,6 +792,9 @@ static void rtc_alarm_disable(struct rtc_device *rtc)
- 	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
- 		return;
- 
-+	if (!rtc_disable_alarm)
-+		return;
-+
- 	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
- }
- 
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index c2c28975293c..124de6ca4e94 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -185,6 +185,7 @@ int rtc_timer_start(struct rtc_device *rtc, struct rtc_timer* timer,
- 			ktime_t expires, ktime_t period);
- int rtc_timer_cancel(struct rtc_device *rtc, struct rtc_timer* timer);
- void rtc_timer_do_work(struct work_struct *work);
-+extern bool rtc_disable_alarm;
- 
- static inline bool is_leap_year(unsigned int year)
- {
--- 
-1.8.3
 
