@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab3GRIKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:10:12 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18915 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751972Ab3GRIJ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:09:59 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19t742o6zOP+6Iy1kV5aQMF
-Date: Thu, 18 Jul 2013 01:09:53 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 3/3] ARM: dts: omap4-sdp: add dynamic pin states for
- uart3/4
-Message-ID: <20130718080953.GR7656@atomide.com>
-References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com>
- <1374061312-25469-4-git-send-email-grygorii.strashko@ti.com>
- <20130717153248.GI7656@atomide.com>
- <51E6C939.40208@ti.com>
+	id S1756855Ab3GRINp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:13:45 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:34413 "EHLO purkki.adurom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753063Ab3GRINm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 04:13:42 -0400
+X-Greylist: delayed 1668 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Jul 2013 04:13:41 EDT
+From: Kalle Valo <kvalo@adurom.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Greg KH <greg@kroah.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable kernel, let's dump the cc: stable tag
+References: <1373916476.2748.69.camel@dabdike>
+	<20130715214422.GA2478@kroah.com> <1373951852.2148.9.camel@dabdike>
+	<20130716062058.GB19052@kroah.com> <1373960616.2148.34.camel@dabdike>
+	<20130717150857.GA2291@tuxdriver.com>
+Date: Thu, 18 Jul 2013 10:45:47 +0300
+In-Reply-To: <20130717150857.GA2291@tuxdriver.com> (John W. Linville's message
+	of "Wed, 17 Jul 2013 11:08:58 -0400")
+Message-ID: <87k3koxqdw.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E6C939.40208@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grygorii Strashko <grygorii.strashko@ti.com> [130717 09:48]:
-> Hi,
-> 
-> On 07/17/2013 06:32 PM, Tony Lindgren wrote:
-> >* Grygorii Strashko <grygorii.strashko@ti.com> [130717 04:49]:
-> >>Add dynamic "active"/"idle" pin states for uart3/4 which will be applied
-> >>when uart3/4 state is switched from active to idle and back by Runtime
-> >>PM or during system suspend.
-> >
-> >This is good for testing code, but should not be merged because
-> >omap4 has the iopad wake-ups available for uarts. So those can
-> >be always enabled.
-> 
-> In this case, 2 IRQ will be received per each UART RX event - one from
-> PRCM and from UART - and that's not good from PM perspective (It will
-> affect on CPUIdle and CPUFreq at least).
+"John W. Linville" <linville@tuxdriver.com> writes:
 
-Oh I see, that's because I accidentally left the debug code enabled
-to make it easier to test the wake-up events without having to
-have working off-idle. The wake flags can be kept on always for
-sure.
+> Is having a flood of fixes in x.y.1 any worse than having to got to an
+> -rc8 or an -rc9?
 
-The patch below should sort out the issue of getting wake-up interrupts
-during runtime as long as you don't have DEBUG defined.
+I think it's better to send less fixes to -rc8 or -rc9 and focus more on
+testing. That way there should be less regressions in later stages of
+-rc releases and especially in the final x.y.0 release.
 
-Regards,
+Most of the time I don't even consider updating to the stable releases,
+I just wait for the next .0 release from Linus. For this kind of
+workflow there is a clear advantage of slowing down patch flow before
+the release, better chances of not needing to update the kernel that
+often.
 
-Tony
-
---- a/drivers/pinctrl/pinctrl-single-omap.c
-+++ b/drivers/pinctrl/pinctrl-single-omap.c
-@@ -140,9 +140,17 @@ static irqreturn_t pcs_omap_handle_irq(int irq, void *data)
- 		if ((val & OMAP_WAKEUP_EVENT_MASK) == OMAP_WAKEUP_EVENT_MASK)
- 			generic_handle_irq(wakeirq);
- 	}
--
-+#ifdef DEBUG
-+	/*
-+	 * This enables wake-up interrupts during runtime also
-+	 * causing duplicate interrupts. But it also makes debugging
-+	 * the wake-up events easy as deeper idle states often are
-+	 * not working for new devices while the drivers are being
-+	 * developed.
-+	 */
- 	if (pcso->reconfigure_io_chain)
- 		pcso->reconfigure_io_chain();
-+#endif
- 
- 	return IRQ_HANDLED;
- }
+-- 
+Kalle Valo
