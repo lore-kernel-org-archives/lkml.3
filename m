@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956Ab3GROZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:25:29 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:44444 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758412Ab3GROZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:25:28 -0400
+	id S1758817Ab3GRO1b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:27:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756256Ab3GRO13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 10:27:29 -0400
+Date: Thu, 18 Jul 2013 16:26:41 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 05/23] perf tests: Add simple session read/write test
+Message-ID: <20130718142641.GA4406@krava.brq.redhat.com>
+References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+ <1374083403-14591-6-git-send-email-jolsa@redhat.com>
+ <20130717193313.GA5127@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20130718135650.GD29153@e106331-lin.cambridge.arm.com>
-References: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
-	<1374067396-30155-1-git-send-email-jonas.jensen@gmail.com>
-	<20130718095035.GA29153@e106331-lin.cambridge.arm.com>
-	<CACmBeS2SnpiUtiQD6j9qyaXZ5-chHSHVeo4c5=UhitVonvkKtw@mail.gmail.com>
-	<20130718110201.GB29153@e106331-lin.cambridge.arm.com>
-	<CACmBeS24smrJ4SLY7snv1_6SRcuXRkZ8t0PGMvBupUpKMMb43w@mail.gmail.com>
-	<20130718135650.GD29153@e106331-lin.cambridge.arm.com>
-Date: Thu, 18 Jul 2013 16:25:27 +0200
-Message-ID: <CACmBeS2rBTtyfzUgB41zXkDC5-DRcvArgeyjbqHQHXO5+QLvmA@mail.gmail.com>
-Subject: Re: [PATCH v3] clk: add MOXA ART SoCs clock driver
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717193313.GA5127@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 July 2013 15:56, Mark Rutland <mark.rutland@arm.com> wrote:
-> When you say look up the apb-clock node, I assume they find it via their
-> clocks property with of_clk_get or similar, rather than scanning the
-> tree for a "moxart,moxa-apb-clock" node specifically?
+On Wed, Jul 17, 2013 at 04:33:13PM -0300, Arnaldo Carvalho de Melo wrote:
 
-Yes, all use of_clk_get(node, 0), which is fortunate because e.g.
-clocksource is already merged with linaro's clockevent drivers tree.
+SNIP
 
-That should mean I can get away with only changing the DT files :)
+> > +
+> > +static union perf_event *get_event_MMAP(void)
+> > +{
+> > +	static union perf_event event;
+> > +	size_t size;
+> > +
+> > +	size = snprintf(event.mmap.filename, sizeof(event.mmap.filename),
+> > +			"krava") + 1;
+> > +	size = PERF_ALIGN(size, sizeof(u64));
+> > +
+> > +	event.header.type = PERF_RECORD_MMAP;
+> > +	event.header.misc = PERF_RECORD_MISC_KERNEL;
+> > +	event.header.size = sizeof(event.mmap) -
+> > +			    (sizeof(event.mmap.filename) - size);
+> > +
+> > +	event.mmap.pgoff = 10;
+> > +	event.mmap.start = 0;
+> > +	event.mmap.len   = 10;
+> > +	event.mmap.pid   = 123;
+> > +
+> > +	return &event;
+> > +}
+> 
+> Don't use statics, here perhaps we can have another general purpose
+> helper:
+> 
+> 	void perf_event__init_mmap(union perf_event *event)
 
-> Given the above, I think it would make more sense to have core-clock
-> registered, and have it passed to the devices currently passed
-> apb-clock.
+well, the thing is that it makes the test simple, I can use it like:
 
-OK, I'll return with an updated version.
+	TEST_ASSERT_VAL("failed to store MMAP event",
+			!store_event(fd, get_event_MMAP(), &size));
 
+no need to call extra functions, just get the single event
 
-Best regards,
-Jonas
+jirka
