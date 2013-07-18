@@ -1,60 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758387Ab3GRGpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 02:45:10 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49133 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab3GRGpI (ORCPT
+	id S1758473Ab3GRGqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 02:46:31 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43438 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab3GRGq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 02:45:08 -0400
-Message-ID: <51E78ED4.2020107@ti.com>
-Date: Thu, 18 Jul 2013 09:44:36 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 18 Jul 2013 02:46:29 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-9e-51e78f444b81
+Date: Thu, 18 Jul 2013 15:46:28 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Jianguo Wu <wujianguo@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] mm, hugetlb: fix and clean-up node iteration code to
+ alloc or free
+Message-ID: <20130718064627.GA9425@lge.com>
+References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1373881967-16153-5-git-send-email-iamjoonsoo.kim@lge.com>
+ <51E5FAD0.40306@huawei.com>
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 0/3] ARM: OMAP2+: omap_device: add dynamic pinctrl handling
-References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com> <51E686C1.8020801@ti.com> <51E68E6C.60100@ti.com>
-In-Reply-To: <51E68E6C.60100@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E5FAD0.40306@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 03:30 PM, Grygorii Strashko wrote:
-> On 07/17/2013 02:57 PM, Roger Quadros wrote:
->> Hi Grygorii,
->>
->> On 07/17/2013 02:41 PM, Grygorii Strashko wrote:
->>> Hi Tony, Kevin
->>>
->>> This patch series introduces dynamic pinctrl handling in OMAP device framework
->>> in the same way as it was before switching to DT.
->>> This allow OMAP devices driver's developers to simply add dynamic pinctrl
->>> handling for "default", "active", "idle", "sleep" PIN states in their drivers
->>> by modifying DT definitions only - no modifications in drivers code are not needed.
->>>
->>
->> Overall I like the idea but can we make a provision for device drivers to override
->> this default pin state handling?
->>
->> The OMAP EHCI driver is one such special case where the wakeup mechanism is tied to pinctrl states
->> as it uses IO daisy chaining to implement wakeup.
->> So depending on whether wakeup needs to be enabled or not I must be able to chose whether
->> I put the pin in just "sleep" state or "sleep with wakeup" state.
+On Wed, Jul 17, 2013 at 10:00:48AM +0800, Jianguo Wu wrote:
+> On 2013/7/15 17:52, Joonsoo Kim wrote:
 > 
-> I think, in this case you can't use default behavior and need to define
-> custom pins states like "sleep_wakeup"/"sleep_no_wakeup" and do not
-> define pins state with name "sleep', so Device core and OMAP device
-> framework will not touch your pins.
+> > Current node iteration code have a minor problem which do one more
+> > node rotation if we can't succeed to allocate. For example,
+> > if we start to allocate at node 0, we stop to iterate at node 0.
+> > Then we start to allocate at node 1 for next allocation.
+> > 
+> > I introduce new macros "for_each_node_mask_to_[alloc|free]" and
+> > fix and clean-up node iteration code to alloc or free.
+> > This makes code more understandable.
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 0067cf4..a838e6b 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -752,33 +752,6 @@ static int hstate_next_node_to_alloc(struct hstate *h,
+> >  	return nid;
+> >  }
+> >  
+> > -static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
+> > -{
+> > -	struct page *page;
+> > -	int start_nid;
+> > -	int next_nid;
+> > -	int ret = 0;
+> > -
+> > -	start_nid = hstate_next_node_to_alloc(h, nodes_allowed);
+> > -	next_nid = start_nid;
+> > -
+> > -	do {
+> > -		page = alloc_fresh_huge_page_node(h, next_nid);
+> > -		if (page) {
+> > -			ret = 1;
+> > -			break;
+> > -		}
+> > -		next_nid = hstate_next_node_to_alloc(h, nodes_allowed);
+> > -	} while (next_nid != start_nid);
+> > -
+> > -	if (ret)
+> > -		count_vm_event(HTLB_BUDDY_PGALLOC);
+> > -	else
+> > -		count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+> > -
+> > -	return ret;
+> > -}
+> > -
+> >  /*
+> >   * helper for free_pool_huge_page() - return the previously saved
+> >   * node ["this node"] from which to free a huge page.  Advance the
+> > @@ -797,6 +770,42 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
+> >  	return nid;
+> >  }
+> >  
+> > +#define for_each_node_mask_to_alloc(hs, nr_nodes, node, mask)		\
+> > +	for (nr_nodes = nodes_weight(*mask),				\
+> > +		node = hstate_next_node_to_alloc(hs, mask);		\
+> > +		nr_nodes > 0 &&						\
+> > +		((node = hstate_next_node_to_alloc(hs, mask)) || 1);	\
+> 
+> Hi Joonsoo,
 
-Yes, I think this should be fine. Thanks.
+Hello, Jianguo.
 
-cheers,
--roger
+> 
+> For the first loop, node = hstate_next_node_to_alloc() will be executed two times,
+> so will skip the first node in mask, right?
+
+Yes, it's my fault.
+I will fix it on v2.
+
+Thanks.
+
+> 
+> Thanks,
+> Jianguo Wu.
+> 
+> > +		nr_nodes--)
+> > +
+> > +#define for_each_node_mask_to_free(hs, nr_nodes, node, mask)		\
+> > +	for (nr_nodes = nodes_weight(*mask),				\
+> > +		node = hstate_next_node_to_free(hs, mask);		\
+> > +		nr_nodes > 0 &&						\
+> > +		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
+> > +		nr_nodes--)
+> > +
+> > +static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
+> > +{
+> > +	struct page *page;
+> > +	int nr_nodes, node;
+> > +	int ret = 0;
+> > +
+> > +	for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
+> > +		page = alloc_fresh_huge_page_node(h, node);
+> > +		if (page) {
+> > +			ret = 1;
+> > +			break;
+> > +		}
+> > +	}
+> > +
+> > +	if (ret)
+> > +		count_vm_event(HTLB_BUDDY_PGALLOC);
+> > +	else
+> > +		count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> >  /*
+> >   * Free huge page from pool from next node to free.
+> >   * Attempt to keep persistent huge pages more or less
+> > @@ -806,36 +815,31 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
+> >  static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
+> >  							 bool acct_surplus)
+> >  {
+> > -	int start_nid;
+> > -	int next_nid;
+> > +	int nr_nodes, node;
+> >  	int ret = 0;
+> >  
+> > -	start_nid = hstate_next_node_to_free(h, nodes_allowed);
+> > -	next_nid = start_nid;
+> > -
+> > -	do {
+> > +	for_each_node_mask_to_free(h, nr_nodes, node, nodes_allowed) {
+> >  		/*
+> >  		 * If we're returning unused surplus pages, only examine
+> >  		 * nodes with surplus pages.
+> >  		 */
+> > -		if ((!acct_surplus || h->surplus_huge_pages_node[next_nid]) &&
+> > -		    !list_empty(&h->hugepage_freelists[next_nid])) {
+> > +		if ((!acct_surplus || h->surplus_huge_pages_node[node]) &&
+> > +		    !list_empty(&h->hugepage_freelists[node])) {
+> >  			struct page *page =
+> > -				list_entry(h->hugepage_freelists[next_nid].next,
+> > +				list_entry(h->hugepage_freelists[node].next,
+> >  					  struct page, lru);
+> >  			list_del(&page->lru);
+> >  			h->free_huge_pages--;
+> > -			h->free_huge_pages_node[next_nid]--;
+> > +			h->free_huge_pages_node[node]--;
+> >  			if (acct_surplus) {
+> >  				h->surplus_huge_pages--;
+> > -				h->surplus_huge_pages_node[next_nid]--;
+> > +				h->surplus_huge_pages_node[node]--;
+> >  			}
+> >  			update_and_free_page(h, page);
+> >  			ret = 1;
+> >  			break;
+> >  		}
+> > -		next_nid = hstate_next_node_to_free(h, nodes_allowed);
+> > -	} while (next_nid != start_nid);
+> > +	}
+> >  
+> >  	return ret;
+> >  }
+> > @@ -1173,14 +1177,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> >  int __weak alloc_bootmem_huge_page(struct hstate *h)
+> >  {
+> >  	struct huge_bootmem_page *m;
+> > -	int nr_nodes = nodes_weight(node_states[N_MEMORY]);
+> > +	int nr_nodes, node;
+> >  
+> > -	while (nr_nodes) {
+> > +	for_each_node_mask_to_alloc(h, nr_nodes, node, &node_states[N_MEMORY]) {
+> >  		void *addr;
+> >  
+> > -		addr = __alloc_bootmem_node_nopanic(
+> > -				NODE_DATA(hstate_next_node_to_alloc(h,
+> > -						&node_states[N_MEMORY])),
+> > +		addr = __alloc_bootmem_node_nopanic(NODE_DATA(node),
+> >  				huge_page_size(h), huge_page_size(h), 0);
+> >  
+> >  		if (addr) {
+> > @@ -1192,7 +1194,6 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
+> >  			m = addr;
+> >  			goto found;
+> >  		}
+> > -		nr_nodes--;
+> >  	}
+> >  	return 0;
+> >  
+> > @@ -1331,48 +1332,28 @@ static inline void try_to_free_low(struct hstate *h, unsigned long count,
+> >  static int adjust_pool_surplus(struct hstate *h, nodemask_t *nodes_allowed,
+> >  				int delta)
+> >  {
+> > -	int start_nid, next_nid;
+> > -	int ret = 0;
+> > +	int nr_nodes, node;
+> >  
+> >  	VM_BUG_ON(delta != -1 && delta != 1);
+> >  
+> > -	if (delta < 0)
+> > -		start_nid = hstate_next_node_to_alloc(h, nodes_allowed);
+> > -	else
+> > -		start_nid = hstate_next_node_to_free(h, nodes_allowed);
+> > -	next_nid = start_nid;
+> > -
+> > -	do {
+> > -		int nid = next_nid;
+> > -		if (delta < 0)  {
+> > -			/*
+> > -			 * To shrink on this node, there must be a surplus page
+> > -			 */
+> > -			if (!h->surplus_huge_pages_node[nid]) {
+> > -				next_nid = hstate_next_node_to_alloc(h,
+> > -								nodes_allowed);
+> > -				continue;
+> > -			}
+> > +	if (delta < 0) {
+> > +		for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
+> > +			if (h->surplus_huge_pages_node[node])
+> > +				goto found;
+> >  		}
+> > -		if (delta > 0) {
+> > -			/*
+> > -			 * Surplus cannot exceed the total number of pages
+> > -			 */
+> > -			if (h->surplus_huge_pages_node[nid] >=
+> > -						h->nr_huge_pages_node[nid]) {
+> > -				next_nid = hstate_next_node_to_free(h,
+> > -								nodes_allowed);
+> > -				continue;
+> > -			}
+> > +	} else {
+> > +		for_each_node_mask_to_free(h, nr_nodes, node, nodes_allowed) {
+> > +			if (h->surplus_huge_pages_node[node] <
+> > +					h->nr_huge_pages_node[node])
+> > +				goto found;
+> >  		}
+> > +	}
+> > +	return 0;
+> >  
+> > -		h->surplus_huge_pages += delta;
+> > -		h->surplus_huge_pages_node[nid] += delta;
+> > -		ret = 1;
+> > -		break;
+> > -	} while (next_nid != start_nid);
+> > -
+> > -	return ret;
+> > +found:
+> > +	h->surplus_huge_pages += delta;
+> > +	h->surplus_huge_pages_node[node] += delta;
+> > +	return 1;
+> >  }
+> >  
+> >  #define persistent_huge_pages(h) (h->nr_huge_pages - h->surplus_huge_pages)
+> 
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
