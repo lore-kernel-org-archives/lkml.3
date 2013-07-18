@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934870Ab3GRXW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:22:59 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58816 "EHLO
+	id S934863Ab3GRXXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:23:39 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58806 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934808Ab3GRXVl (ORCPT
+	with ESMTP id S934802Ab3GRXVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 19:21:41 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
@@ -15,10 +15,11 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Russell King <linux@arm.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>
-Subject: [PATCH v4 17/17] sched_clock: Deprecate setup_sched_clock()
-Date: Thu, 18 Jul 2013 16:21:30 -0700
-Message-Id: <1374189690-10810-18-git-send-email-sboyd@codeaurora.org>
+        Christopher Covington <cov@codeaurora.org>,
+        Barry Song <Baohua.Song@csr.com>
+Subject: [PATCH v4 15/17] clocksource: sirf: Switch to sched_clock_register() and use 64 bits
+Date: Thu, 18 Jul 2013 16:21:28 -0700
+Message-Id: <1374189690-10810-16-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.3.754.g9c3c367
 In-Reply-To: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
 References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
@@ -26,28 +27,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users of the generic sched_clock framework should use
-sched_clock_register() instead of setup_sched_clock(). Mark the
-function as deprecated.
+The 32 bit sched_clock interface now supports 64 bits. Upgrade to
+the 64 bit function to allow us to remove the 32 bit registration
+interface and use all 64 bits of this timer.
 
+Cc: Barry Song <Baohua.Song@csr.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- include/linux/sched_clock.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/clocksource/timer-prima2.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/sched_clock.h b/include/linux/sched_clock.h
-index cddf0c2..d3da3e2 100644
---- a/include/linux/sched_clock.h
-+++ b/include/linux/sched_clock.h
-@@ -14,7 +14,8 @@ extern void sched_clock_postinit(void);
- static inline void sched_clock_postinit(void) { }
- #endif
+diff --git a/drivers/clocksource/timer-prima2.c b/drivers/clocksource/timer-prima2.c
+index ef3cfb2..8a492d3 100644
+--- a/drivers/clocksource/timer-prima2.c
++++ b/drivers/clocksource/timer-prima2.c
+@@ -165,9 +165,9 @@ static struct irqaction sirfsoc_timer_irq = {
+ };
  
--extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
-+/* Use sched_clock_register() instead */
-+extern void __deprecated setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
- extern void sched_clock_register(u64 (*read)(void), int bits,
- 				 unsigned long rate);
+ /* Overwrite weak default sched_clock with more precise one */
+-static u32 notrace sirfsoc_read_sched_clock(void)
++static u64 notrace sirfsoc_read_sched_clock(void)
+ {
+-	return (u32)(sirfsoc_timer_read(NULL) & 0xffffffff);
++	return sirfsoc_timer_read(NULL);
+ }
+ 
+ static void __init sirfsoc_clockevent_init(void)
+@@ -206,7 +206,7 @@ static void __init sirfsoc_prima2_timer_init(struct device_node *np)
+ 
+ 	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE));
+ 
+-	setup_sched_clock(sirfsoc_read_sched_clock, 32, CLOCK_TICK_RATE);
++	sched_clock_register(sirfsoc_read_sched_clock, 64, CLOCK_TICK_RATE);
+ 
+ 	BUG_ON(setup_irq(sirfsoc_timer_irq.irq, &sirfsoc_timer_irq));
  
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
