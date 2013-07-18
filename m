@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab3GRCPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 22:15:33 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52306 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791Ab3GRCPc (ORCPT
+	id S932748Ab3GRCUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 22:20:50 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36285 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754791Ab3GRCUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 22:15:32 -0400
-Message-ID: <51E74FB6.3060900@linux.vnet.ibm.com>
-Date: Thu, 18 Jul 2013 10:15:18 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 17 Jul 2013 22:20:49 -0400
+Message-ID: <51E750F4.5070200@hitachi.com>
+Date: Thu, 18 Jul 2013 11:20:36 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, Mike Galbraith <efault@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: smart wake-affine
-References: <51D29EE5.8080307@linux.vnet.ibm.com> <20130704091339.GK18898@dyad.programming.kicks-ass.net> <51D5428D.7080805@linux.vnet.ibm.com> <1372934013.9046.16.camel@marge.simpson.net> <51D633DB.5010508@linux.vnet.ibm.com> <1372997318.7315.23.camel@marge.simpson.net> <51D64C84.5080100@linux.vnet.ibm.com> <1373002865.8318.11.camel@marge.simpson.net> <51D664B9.7010407@linux.vnet.ibm.com> <1373179405.19316.41.camel@marge.simpson.net> <20130708082106.GW23916@twins.programming.kicks-ass.net> <1373309998.1744.3.camel@buesod1.americas.hpqcorp.net> <51DB75D4.6050302@linux.vnet.ibm.com> <1373337407.1744.20.camel@buesod1.americas.hpqcorp.net> <51DB7AF7.50708@linux.vnet.ibm.com> <51E38517.5040300@linux.vnet.ibm.com> <1373867877.2072.2.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1373867877.2072.2.camel@buesod1.americas.hpqcorp.net>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
+        Jiri Olsa <jolsa@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing event_file/call
+ in inode->i_private
+References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com> <20130717145148.GB7358@redhat.com>
+In-Reply-To: <20130717145148.GB7358@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071802-7014-0000-0000-00000355FE5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Peter
-
-Davidlohr has tested the v3 patch set and it work well as reported (and
-in my test too), I thing your patch has solved the issue he found in v2 :)
-
-Thus I think v3 is ready for next step now, I wish it has not yet been
-removed out of your apply-queue ;-)
-
-Regards,
-Michael Wang
-
-On 07/15/2013 01:57 PM, Davidlohr Bueso wrote:
-[snip]
-> 
-> Sorry for the delay. I'm glad you reminded me since I already had the
-> data.
+(2013/07/17 23:51), Oleg Nesterov wrote:
+> On 07/17, Masami Hiramatsu wrote:
 >>
->> I suppose the issue have been addressed, but please let us know if v3
->> also show regression on your box, we could try to solve the problem ;-)
-> 
-> It has, high_systime no longer shows a hit and all workloads remain
-> basically the same.
-> 
-> Tested-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> 
-> Thanks.
-> 
->>
->> Regards,
->> Michael Wang
->>
->>>
->>> Regards,
->>> Michael Wang
->>>
+>> (2013/07/16 3:16), Oleg Nesterov wrote:
+>>> On 07/09, Masami Hiramatsu wrote:
 >>>>
->>>> Thanks,
->>>> Davidlohr
->>>>
+>>>> To avoid this, when opening events/*/*/enable, we have to ensure
+>>>> the dentry of the file is not unlinked yet, under event_mutex
+>>>> is locked.
 >>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
+>>> Probably this can work, but I am starting to think that this ref
+>>> count becomes toooooo complex....
 >>
+>> Oleg, I agree that is a bit complex way to fix but it can fix.
+>>
+>> However, I think we should fix bugs first, because there are bugs.
+>> I don't like to leave a bug in the kernel as it is, while we re-
+>> start discussing new approach...
 > 
+> And I am trying to fix the same problems, just _I think_ there is
+> another and simpler approach.
+
+I see.
+I also just feel uncomfortable with leaving obvious bugs, like as
+having ants in my pants :)
+
+>> So, I'd like to suggest you getting these fixes into ftrace as
+>> first-aid treatment, and discuss your new series.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Well, perhaps you are right... But this TRACE_EVENT_FL_REF_MASK code
+> is new too, it is not that we only need a small fixlets to finish it.
+
+Would you mean that TRACE_EVENT_FL_REF_MASK may also have some problems?
+
+> So I think that it makes sense to discuss the alternatives before we
+> decide what exactly we should do.
+
+Your approach is also interesting for me, indeed. However, it is so
+different from current one. I think you should clarify what bug you
+would like to solve and how. And we should clarify what ants^H^H^H^H
+bugs we have found in ftrace too. ;)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
