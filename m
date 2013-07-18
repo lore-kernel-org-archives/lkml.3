@@ -1,164 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934535Ab3GRWV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:21:29 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54107 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932931Ab3GRWVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:21:25 -0400
-Date: Thu, 18 Jul 2013 17:21:17 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: splice vs execve lockdep trace.
-Message-ID: <20130718222117.GE3572@sgi.com>
-References: <20130716204335.GH11674@dastard>
- <CA+55aFwHMQd-VDeTDh-gm3jyj+5+FSoAHOeU47mwU-mKtEj9RQ@mail.gmail.com>
- <20130717040616.GI11674@dastard>
- <CA+55aFz5xw9Qi9Q6mwoCSud5eQh5u-QZ-xrY+TqgZPoKOgn6ew@mail.gmail.com>
- <20130717055103.GK11674@dastard>
- <CA+55aFxdqzMY5VJoYaLmL=+=f2s1cbHHV-TjC3=taXpF-xov1w@mail.gmail.com>
- <20130717234049.GC3572@sgi.com>
- <CA+55aFy-8QH4bTW7hU=381tuEWgHC=PUM6WP3qn-ooge=7M0QQ@mail.gmail.com>
- <20130718034203.GO11674@dastard>
- <20130718211632.GD3572@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718211632.GD3572@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934580Ab3GRWVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:21:38 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:55209 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759049Ab3GRWVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:21:35 -0400
+From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+To: jic23@cam.ac.uk
+Cc: gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
+Subject: [PATCH 02/15] iio: ti_am335x_adc: Fix wrong samples received on 1st read
+Date: Thu, 18 Jul 2013 23:21:13 +0100
+Message-Id: <1374186086-5015-3-git-send-email-zubair.lutfullah@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+From: "Patil, Rachna" <rachna@ti.com>
 
-On Thu, Jul 18, 2013 at 04:16:32PM -0500, Ben Myers wrote:
-> On Thu, Jul 18, 2013 at 01:42:03PM +1000, Dave Chinner wrote:
-> > On Wed, Jul 17, 2013 at 05:17:36PM -0700, Linus Torvalds wrote:
-> > > On Wed, Jul 17, 2013 at 4:40 PM, Ben Myers <bpm@sgi.com> wrote:
-> > > >>
-> > > >> We're still talking at cross purposes then.
-> > > >>
-> > > >> How the hell do you handle mmap() and page faulting?
-> > > >
-> > > > __xfs_get_blocks serializes access to the block map with the i_lock on the
-> > > > xfs_inode.  This appears to be racy with respect to hole punching.
-> > > 
-> > > Would it be possible to just make __xfs_get_blocks get the i_iolock
-> > > (non-exclusively)?
-> > 
-> > No. __xfs_get_blocks() operates on metadata (e.g. extent lists), and
-> > as such is protected by the i_ilock (note: not the i_iolock).  i.e.
-> > XFS has a multi-level locking strategy:
-> > 
-> > 	i_iolock is provided for *data IO serialisation*,
-> > 	i_ilock is for *inode metadata serialisation*.
-> 
-> I think if __xfs_get_blocks has some way of knowing it is the mmap/page fault
-> path, taking the iolock shared in addition to the ilock (in just that case)
-> would prevent the mmap from being able to read stale data from disk.  You would
-> see either the data before the punch or you would see the hole.  
-> 
-> Actually... I think that is wrong:  You'd have to take the iolock across the
-> read itself (not just the access to the block map) for it to have the desired
-> effect:
-> 
-> 1608 int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> ...
-> 1704 page_not_uptodate:
-> 1705         /*
-> 1706          * Umm, take care of errors if the page isn't up-to-date.
-> 1707          * Try to re-read it _once_. We do this synchronously,
-> 1708          * because there really aren't any performance issues here
-> 1709          * and we need to check for errors.
-> 1710          */
-> 1711         ClearPageError(page);
-> 1712         error = mapping->a_ops->readpage(file, page);
-> 1713         if (!error) {
-> 1714                 wait_on_page_locked(page);
-> 1715                 if (!PageUptodate(page))
-> 1716                         error = -EIO;
-> 1717         }
-> 1718         page_cache_release(page);
-> 
-> Wouldn't you have to hold the iolock until after wait_on_page_locked returns?
+Previously we tried to read data form ADC even before ADC sequencer
+finished sampling. This led to wrong samples.
+We now wait on ADC status register idle bit to be set.
 
-Maybe like so (crappy/untested/probably wrong/fodder for ridicule/etc):
+Signed-off-by: Patil, Rachna <rachna@ti.com>
+Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+---
+ drivers/iio/adc/ti_am335x_adc.c      |   30 ++++++++++++++++++++++--------
+ include/linux/mfd/ti_am335x_tscadc.h |   16 ++++++++++++++++
+ 2 files changed, 38 insertions(+), 8 deletions(-)
 
-Index: xfs/fs/xfs/xfs_aops.c
-===================================================================
---- xfs.orig/fs/xfs/xfs_aops.c
-+++ xfs/fs/xfs/xfs_aops.c
-@@ -1663,6 +1663,24 @@ xfs_vm_readpages(
- 	return mpage_readpages(mapping, pages, nr_pages, xfs_get_blocks);
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 4427e8e..f73fee1 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -60,7 +60,6 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
+ {
+ 	unsigned int stepconfig;
+ 	int i, steps;
+-	u32 step_en;
+ 
+ 	/*
+ 	 * There are 16 configurable steps and 8 analog input
+@@ -86,8 +85,7 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
+ 		adc_dev->channel_step[i] = steps;
+ 		steps++;
+ 	}
+-	step_en = get_adc_step_mask(adc_dev);
+-	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
++
  }
  
-+void
-+xfs_vm_fault_lock(
-+	struct inode		*inode)
-+{
-+	struct xfs_inode	*ip = XFS_I(inode);
+ static const char * const chan_name_ain[] = {
+@@ -142,10 +140,22 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 		int *val, int *val2, long mask)
+ {
+ 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
+-	int i;
+-	unsigned int fifo1count, read;
++	int i, map_val;
++	unsigned int fifo1count, read, stepid;
+ 	u32 step = UINT_MAX;
+ 	bool found = false;
++	u32 step_en;
++	unsigned long timeout = jiffies + usecs_to_jiffies
++				(IDLE_TIMEOUT * adc_dev->channels);
++	step_en = get_adc_step_mask(adc_dev);
++	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
 +
-+	xfs_ilock(ip, XFS_IOLOCK_SHARED);
-+}
++	/* Wait for ADC sequencer to complete sampling */
++	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
++		if (time_after(jiffies, timeout))
++			return -EAGAIN;
++		}
++	map_val = chan->channel + TOTAL_CHANNELS;
+ 
+ 	/*
+ 	 * When the sub-system is first enabled,
+@@ -170,12 +180,16 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+ 	for (i = 0; i < fifo1count; i++) {
+ 		read = tiadc_readl(adc_dev, REG_FIFO1);
+-		if (read >> 16 == step) {
+-			*val = read & 0xfff;
++		stepid = read & FIFOREAD_CHNLID_MASK;
++		stepid = stepid >> 0x10;
 +
-+void
-+xfs_vm_fault_unlock(
-+	struct inode		*inode)
-+{
-+	struct xfs_inode	*ip = XFS_I(inode);
-+
-+	xfs_iunlock(ip, XFS_IOLOCK_SHARED);
-+}
-+
- const struct address_space_operations xfs_address_space_operations = {
- 	.readpage		= xfs_vm_readpage,
- 	.readpages		= xfs_vm_readpages,
-@@ -1677,4 +1695,6 @@ const struct address_space_operations xf
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
-+	.fault_lock		= xfs_vm_fault_lock,
-+	.fault_unlock		= xfs_vm_fault_unlock,
- };
-Index: xfs/mm/filemap.c
-===================================================================
---- xfs.orig/mm/filemap.c
-+++ xfs/mm/filemap.c
-@@ -1709,12 +1709,16 @@ page_not_uptodate:
- 	 * and we need to check for errors.
- 	 */
- 	ClearPageError(page);
-+	if (mapping->a_ops->fault_lock)
-+		mapping->a_ops->fault_lock(inode);
- 	error = mapping->a_ops->readpage(file, page);
- 	if (!error) {
- 		wait_on_page_locked(page);
- 		if (!PageUptodate(page))
- 			error = -EIO;
++		if (stepid == map_val) {
++			read = read & FIFOREAD_DATA_MASK;
+ 			found = true;
++			*val = read;
+ 		}
  	}
-+	if (mapping->a_ops->fault_unlock)
-+		mapping->a_ops->fault_unlock(inode);
- 	page_cache_release(page);
- 
- 	if (!error || error == AOP_TRUNCATED_PAGE)
-Index: xfs/include/linux/fs.h
-===================================================================
---- xfs.orig/include/linux/fs.h
-+++ xfs/include/linux/fs.h
-@@ -388,6 +388,9 @@ struct address_space_operations {
- 	int (*swap_activate)(struct swap_info_struct *sis, struct file *file,
- 				sector_t *span);
- 	void (*swap_deactivate)(struct file *file);
+-	am335x_tsc_se_update(adc_dev->mfd_tscadc);
 +
-+	void (*fault_lock) (struct inode *inode);
-+	void (*fault_unlock) (struct inode *inode);
- };
+ 	if (found == false)
+ 		return -EBUSY;
+ 	return IIO_VAL_INT;
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index 8d73fe2..db1791b 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -113,11 +113,27 @@
+ #define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
+ #define CNTRLREG_TSCENB		BIT(7)
  
- extern const struct address_space_operations empty_aops;
++/* FIFO READ Register */
++#define FIFOREAD_DATA_MASK (0xfff << 0)
++#define FIFOREAD_CHNLID_MASK (0xf << 16)
++
++/* Sequencer Status */
++#define SEQ_STATUS BIT(5)
++
+ #define ADC_CLK			3000000
+ #define	MAX_CLK_DIV		7
+ #define TOTAL_STEPS		16
+ #define TOTAL_CHANNELS		8
+ 
++/*
++* ADC runs at 3MHz, and it takes
++* 15 cycles to latch one data output.
++* Hence the idle time for ADC to
++* process one sample data would be
++* around 5 micro seconds.
++*/
++#define IDLE_TIMEOUT 5 /* microsec */
++
+ #define TSCADC_CELLS		2
+ 
+ struct ti_tscadc_dev {
+-- 
+1.7.9.5
 
