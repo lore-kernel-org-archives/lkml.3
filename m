@@ -1,143 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab3GRDGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 23:06:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38503 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab3GRDGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 23:06:14 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+	id S1758154Ab3GRDGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 23:06:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26326 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758132Ab3GRDGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 23:06:43 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=CP4Tl-rxqdAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=9d5NqswhC6UA:10 a=-305aJ_IDpQvUcWqkfUA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374116802.6458.205.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/3] tracing/perf: perf_trace_buf/perf_xxx hacks.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net V2 2/2] macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
-Date: Thu, 18 Jul 2013 10:55:16 +0800
-Message-Id: <1374116116-43844-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1374116116-43844-1-git-send-email-jasowang@redhat.com>
-References: <1374116116-43844-1-git-send-email-jasowang@redhat.com>
+Date: Wed, 17 Jul 2013 23:06:42 -0400
+In-Reply-To: <20130618192147.GA19443@redhat.com>
+References: <20130618192147.GA19443@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We try to linearize part of the skb when the number of iov is greater than
-MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-network.
+On Tue, 2013-06-18 at 21:21 +0200, Oleg Nesterov wrote:
+> Hello.
+> 
+> On top of "PATCH 0/3] tracing: more list_empty(perf_events) checks"
+> series I sent yesterday.
+> 
+> Compile tested only, not for inclusion yet.
 
-Solve this problem by calculate the pages needed for iov before trying to do
-zerocopy and switch to use copy instead of zerocopy if it needs more than
-MAX_SKB_FRAGS.
+Oleg, I know you sent me a mbox with these patches, but I rather pull
+the real email. But this is the only one I have. With a comment like
+that, I wouldn't pull it in.
 
-This is done through introducing a new helper to count the pages for iov, and
-call uarg->callback() manually when switching from zerocopy to copy to notify
-vhost.
+But as you sent me them to include them, I take it, this is ready.
 
-We can do further optimization on top.
+Peter, Frederic, can you review these patches and ack or nack them?
 
-This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-(macvtap: zerocopy: validate vectors before building skb).
+Thanks,
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+-- Steve
 
----
-The patch is needed for -stable.
-Changes from V1:
-- remove the wrong comment
----
- drivers/net/macvtap.c |   62 +++++++++++++++++++++++++++++-------------------
- 1 files changed, 37 insertions(+), 25 deletions(-)
+> 
+> But I'll appreciate if you can take a look. I'll try to test this
+> tomorrow somehow and let you know. Right now I am looking at asm code,
+> looks correct...
+> 
+> I also compiled the kernel with the additional patch below, everything
+> compiles except sched/core.o as expected.
+> 
+> Oleg.
+> 
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -664,6 +664,8 @@ perf_trace_##call(void *__data, proto)					\
+>  									\
+>  	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
+>  									\
+> +	BUILD_BUG_ON(!(__builtin_constant_p(!__task) && !__task));	\
+> +									\
+>  	head = this_cpu_ptr(event_call->perf_events);			\
+>  	if (__builtin_constant_p(!__task) && !__task &&			\
+>  				hlist_empty(head))			\
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index a7c5654..a98fb0e 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -698,6 +698,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
- 	return 0;
- }
- 
-+static unsigned long iov_pages(const struct iovec *iv, int offset,
-+			       unsigned long nr_segs)
-+{
-+	unsigned long seg, base;
-+	int pages = 0, len, size;
-+
-+	while (nr_segs && (offset >= iv->iov_len)) {
-+		offset -= iv->iov_len;
-+		++iv;
-+		--nr_segs;
-+	}
-+
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		base = (unsigned long)iv[seg].iov_base + offset;
-+		len = iv[seg].iov_len - offset;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		pages += size;
-+		offset = 0;
-+	}
-+
-+	return pages;
-+}
- 
- /* Get packet from user space buffer */
- static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-@@ -744,31 +766,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	if (unlikely(count > UIO_MAXIOV))
- 		goto err;
- 
--	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
--		zerocopy = true;
--
--	if (zerocopy) {
--		/* Userspace may produce vectors with count greater than
--		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
--		 * to let the rest of data to be fit in the frags.
--		 */
--		if (count > MAX_SKB_FRAGS) {
--			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
--			if (copylen < vnet_hdr_len)
--				copylen = 0;
--			else
--				copylen -= vnet_hdr_len;
--		}
--		/* There are 256 bytes to be copied in skb, so there is enough
--		 * room for skb expand head in case it is used.
--		 * The rest buffer is mapped from userspace.
--		 */
--		if (copylen < vnet_hdr.hdr_len)
--			copylen = vnet_hdr.hdr_len;
--		if (!copylen)
--			copylen = GOODCOPY_LEN;
-+	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-+		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
- 		linear = copylen;
--	} else {
-+		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-+		    <= MAX_SKB_FRAGS)
-+			zerocopy = true;
-+	}
-+
-+	if (!zerocopy) {
- 		copylen = len;
- 		linear = vnet_hdr.hdr_len;
- 	}
-@@ -780,9 +786,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 
- 	if (zerocopy)
- 		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
--	else
-+	else {
- 		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
- 						   len);
-+		if (!err && m && m->msg_control) {
-+			struct ubuf_info *uarg = m->msg_control;
-+			uarg->callback(uarg, false);
-+		}
-+	}
-+
- 	if (err)
- 		goto err_kfree;
- 
--- 
-1.7.1
 
