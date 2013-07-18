@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965395Ab3GRULa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:11:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41467 "EHLO
+	id S965372Ab3GRUL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:11:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41475 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759397Ab3GRTuV (ORCPT
+	with ESMTP id S1759399Ab3GRTuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:21 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/76] perf tools: Rename cpu_map__all() to cpu_map__empty()
-Date: Thu, 18 Jul 2013 16:48:48 -0300
-Message-Id: <1374177003-3706-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/76] perf util: Move debugfs/tracing helper functions to util.c
+Date: Thu, 18 Jul 2013 16:48:56 -0300
+Message-Id: <1374177003-3706-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -25,64 +29,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The CPU map is in an "empty" (or not-applicable) state when monitoring
-specific threads.
+Since they're generic helpers move them to util.c so that they can be
+used by others.
 
-cpu_map__all() returns true if the CPU map is in this empty state (i.e
-for the 'empty_cpu_map' or if we created the map via
-cpu_map__dummy_new().
-
-The name, cpu_map__all(), is misleading, because even when monitoring
-all CPUs, (eg: perf record -a), cpu_map__all() returns false.
-
-Rename cpu_map__all() to cpu_map__empty().
-
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/20130523012620.GA27733@us.ibm.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1372230862-15861-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/cpumap.h | 2 +-
- tools/perf/util/evlist.c | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/trace-event-info.c | 59 --------------------------------------
+ tools/perf/util/util.c             | 59 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/util.h             |  3 ++
+ 3 files changed, 62 insertions(+), 59 deletions(-)
 
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index 9bed02e..b123bb9 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -41,7 +41,7 @@ static inline int cpu_map__nr(const struct cpu_map *map)
- 	return map ? map->nr : 1;
- }
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 3917eb9..615c062 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -46,65 +46,6 @@
+ static int output_fd;
  
--static inline bool cpu_map__all(const struct cpu_map *map)
-+static inline bool cpu_map__empty(const struct cpu_map *map)
+ 
+-static const char *find_debugfs(void)
+-{
+-	const char *path = perf_debugfs_mount(NULL);
+-
+-	if (!path)
+-		pr_debug("Your kernel does not support the debugfs filesystem");
+-
+-	return path;
+-}
+-
+-/*
+- * Finds the path to the debugfs/tracing
+- * Allocates the string and stores it.
+- */
+-static const char *find_tracing_dir(void)
+-{
+-	static char *tracing;
+-	static int tracing_found;
+-	const char *debugfs;
+-
+-	if (tracing_found)
+-		return tracing;
+-
+-	debugfs = find_debugfs();
+-	if (!debugfs)
+-		return NULL;
+-
+-	tracing = malloc(strlen(debugfs) + 9);
+-	if (!tracing)
+-		return NULL;
+-
+-	sprintf(tracing, "%s/tracing", debugfs);
+-
+-	tracing_found = 1;
+-	return tracing;
+-}
+-
+-static char *get_tracing_file(const char *name)
+-{
+-	const char *tracing;
+-	char *file;
+-
+-	tracing = find_tracing_dir();
+-	if (!tracing)
+-		return NULL;
+-
+-	file = malloc(strlen(tracing) + strlen(name) + 2);
+-	if (!file)
+-		return NULL;
+-
+-	sprintf(file, "%s/%s", tracing, name);
+-	return file;
+-}
+-
+-static void put_tracing_file(char *file)
+-{
+-	free(file);
+-}
+-
+ int bigendian(void)
  {
- 	return map ? map->map[0] == -1 : true;
+ 	unsigned char str[] = { 0x1, 0x2, 0x3, 0x4, 0x0, 0x0, 0x0, 0x0};
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 59d868a..9a06584 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -269,3 +269,62 @@ void perf_debugfs_set_path(const char *mntpt)
+ 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
+ 	set_tracing_events_path(mntpt);
  }
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 8065ce8..4a901be 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -421,7 +421,7 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
- static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- {
- 	evlist->nr_mmaps = cpu_map__nr(evlist->cpus);
--	if (cpu_map__all(evlist->cpus))
-+	if (cpu_map__empty(evlist->cpus))
- 		evlist->nr_mmaps = thread_map__nr(evlist->threads);
- 	evlist->mmap = zalloc(evlist->nr_mmaps * sizeof(struct perf_mmap));
- 	return evlist->mmap != NULL ? 0 : -ENOMEM;
-@@ -573,7 +573,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 			return -ENOMEM;
- 	}
++
++static const char *find_debugfs(void)
++{
++	const char *path = perf_debugfs_mount(NULL);
++
++	if (!path)
++		fprintf(stderr, "Your kernel does not support the debugfs filesystem");
++
++	return path;
++}
++
++/*
++ * Finds the path to the debugfs/tracing
++ * Allocates the string and stores it.
++ */
++const char *find_tracing_dir(void)
++{
++	static char *tracing;
++	static int tracing_found;
++	const char *debugfs;
++
++	if (tracing_found)
++		return tracing;
++
++	debugfs = find_debugfs();
++	if (!debugfs)
++		return NULL;
++
++	tracing = malloc(strlen(debugfs) + 9);
++	if (!tracing)
++		return NULL;
++
++	sprintf(tracing, "%s/tracing", debugfs);
++
++	tracing_found = 1;
++	return tracing;
++}
++
++char *get_tracing_file(const char *name)
++{
++	const char *tracing;
++	char *file;
++
++	tracing = find_tracing_dir();
++	if (!tracing)
++		return NULL;
++
++	file = malloc(strlen(tracing) + strlen(name) + 2);
++	if (!file)
++		return NULL;
++
++	sprintf(file, "%s/%s", tracing, name);
++	return file;
++}
++
++void put_tracing_file(char *file)
++{
++	free(file);
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 2732fad..cc1574e 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -80,6 +80,9 @@ extern char buildid_dir[];
+ extern char tracing_events_path[];
+ extern void perf_debugfs_set_path(const char *mountpoint);
+ const char *perf_debugfs_mount(const char *mountpoint);
++const char *find_tracing_dir(void);
++char *get_tracing_file(const char *name);
++void put_tracing_file(char *file);
  
--	if (cpu_map__all(cpus))
-+	if (cpu_map__empty(cpus))
- 		return perf_evlist__mmap_per_thread(evlist, prot, mask);
- 
- 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
+ /* On most systems <limits.h> would have given us this, but
+  * not on some systems (e.g. GNU/Hurd).
 -- 
 1.8.1.4
 
