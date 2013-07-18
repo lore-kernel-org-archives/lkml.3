@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759142Ab3GRQNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:13:38 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:42827 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3GRQNg (ORCPT
+	id S1759133Ab3GRQPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:15:53 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:58087 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987Ab3GRQPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:13:36 -0400
+	Thu, 18 Jul 2013 12:15:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374106861-3549-1-git-send-email-bleung@chromium.org>
-References: <1374106861-3549-1-git-send-email-bleung@chromium.org>
-Date: Thu, 18 Jul 2013 18:13:35 +0200
-Message-ID: <CAC-DJzKqv7b0fdPOL5+Sx2AF7EG=2+xrq8R+UrK-ev1-sNu=Pw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Platform: x86: chromeos_laptop - Deferred Probing
-From: Martin Nordholts <enselic@gmail.com>
-To: Benson Leung <bleung@chromium.org>
-Cc: matthew.garrett@nebula.com, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, adurbin@chromium.org,
-        olofj@chromium.org, axel.lin@ingics.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <alpine.DEB.2.02.1307171420350.8258@kaball.uk.xensource.com>
+References: <1373897706-15331-1-git-send-email-julien.grall@linaro.org> <alpine.DEB.2.02.1307171420350.8258@kaball.uk.xensource.com>
+From: Julien Grall <julien.grall@linaro.org>
+Date: Thu, 18 Jul 2013 17:15:21 +0100
+Message-ID: <CAPnVf8yH7PBOSSC57qJv+pWmsinRUxGr81QUPH9GoOkKw2oo3Q@mail.gmail.com>
+Subject: Re: [PATCH] arm: choose debug/uncompress.h include when uncompress
+ debug is disabled
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: linux@arm.linux.org.uk, Ian Campbell <Ian.Campbell@citrix.com>,
+        Patch Tracking <patches@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/18 Benson Leung <bleung@chromium.org>
+On 17 July 2013 14:25, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+> On Mon, 15 Jul 2013, Julien Grall wrote:
+>> Even if uncompress debug is disabled, some board will continue to print
+>> information during uncompress step.
 >
-> The following patch series refactors the dmi check system and
-> returns -EPROBE_DEFER when an expected i2c adapter is not present
-> at probe time.
+> Are you talking about DEBUG_UNCOMPRESS?
+> Should I read the sentence as "even if DEBUG_UNCOMPRESS is not selected,
+> some board will continue to print information during the uncompress step"?
+
+Yes. On the arndale, uncompress log are directly output on UART-2.
+This is annoying
+because  Xen doesn't expose the UART to dom0.
+
+> Isn't this a bug in the platform specific code that should be fixed anyway?
 >
-> This will allow the touchpad, touchscreen, and light sensors on
-> Pixel to load even if the i915 DDC and PANEL buses are instantiated
-> after chromeos_laptop.
+>> By using debug/uncompress.h include, all debug output will be disabled.
 >
-> [PATCH 1/2] Platform: x86: chromeos_laptop - Restructure device associations
-> [PATCH 2/2] Platform: x86: chromeos_laptop - Use deferred probing
+> I am not sure if this is the right solution to the problem.
+> I think it might be better to add the appropriate ifdefs into the
+> platform specific code.
 
-
-Hi,
-
-I have worked on the same problem for the last days and just submitted
-my solution proposal for review:
-http://www.mail-archive.com/platform-driver-x86@vger.kernel.org/msg04440.html
-
-One downside with the solution in this set of patches is that more
-lines are added to the driver.
-By making use of the i2c_driver.detect() mechanism like in my patch,
-we can actually reduce the number of lines in the driver.
-
-Looking forward to your comments on my other solution proposal!
-
-/ Martin
+--
+Julien Grall
