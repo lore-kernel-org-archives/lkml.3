@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965208Ab3GRUD3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:03:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41598 "EHLO
+	id S1759430Ab3GRTuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:50:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41451 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759439Ab3GRTuZ (ORCPT
+	with ESMTP id S1759396Ab3GRTuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:50:25 -0400
+	Thu, 18 Jul 2013 15:50:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 40/76] perf gtk/hists: Set rules hint for the hist browser
-Date: Thu, 18 Jul 2013 16:49:27 -0300
-Message-Id: <1374177003-3706-41-git-send-email-acme@infradead.org>
+Subject: [PATCH 21/76] tools lib traceevent: Add trace_seq_reset()
+Date: Thu, 18 Jul 2013 16:49:08 -0300
+Message-Id: <1374177003-3706-22-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,38 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The 'rules' means that every second line of the tree view has a shaded
-background, which makes it easier to see which cell belongs to which
-row in the tree view.  It can be useful for a tree view that has a lot
-of rows.
+Sometimes it'd be useful if existing trace_seq can be reused.  But
+currently it's impossible since there's no API to reset the trace_seq.
+Let's add trace_seq_reset() for this case.
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1370337737-30812-7-git-send-email-namhyung@kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1370323231-14022-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/gtk/hists.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/lib/traceevent/event-parse.h |  1 +
+ tools/lib/traceevent/trace-seq.c   | 13 +++++++++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 3a5d013..3254903 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -326,6 +326,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		}
- 	}
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index bfceab9..39f0c1d 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -69,6 +69,7 @@ struct trace_seq {
+ };
  
-+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
+ void trace_seq_init(struct trace_seq *s);
++void trace_seq_reset(struct trace_seq *s);
+ void trace_seq_destroy(struct trace_seq *s);
+ 
+ extern int trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
+diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+index a57db80..d7f2e68 100644
+--- a/tools/lib/traceevent/trace-seq.c
++++ b/tools/lib/traceevent/trace-seq.c
+@@ -49,6 +49,19 @@ void trace_seq_init(struct trace_seq *s)
+ }
+ 
+ /**
++ * trace_seq_reset - re-initialize the trace_seq structure
++ * @s: a pointer to the trace_seq structure to reset
++ */
++void trace_seq_reset(struct trace_seq *s)
++{
++	if (!s)
++		return;
++	TRACE_SEQ_CHECK(s);
++	s->len = 0;
++	s->readpos = 0;
++}
 +
- 	g_signal_connect(view, "row-activated",
- 			 G_CALLBACK(on_row_activated), NULL);
- 	gtk_container_add(GTK_CONTAINER(window), view);
++/**
+  * trace_seq_destroy - free up memory of a trace_seq
+  * @s: a pointer to the trace_seq to free the buffer
+  *
 -- 
 1.8.1.4
 
