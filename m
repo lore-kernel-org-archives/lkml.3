@@ -1,36 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab3GROnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:43:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60166 "EHLO
+	id S932415Ab3GROzB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:55:01 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47951 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757351Ab3GROnL (ORCPT
+	with ESMTP id S1754625Ab3GROzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:43:11 -0400
-Date: Thu, 18 Jul 2013 15:42:41 +0100
+	Thu, 18 Jul 2013 10:55:00 -0400
+Date: Thu, 18 Jul 2013 15:54:36 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>,
-        spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
-        rnayak@ti.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130718144241.GO22506@sirena.org.uk>
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
- <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
- <20130718104233.GG22506@sirena.org.uk>
- <51E7D569.2010709@ti.com>
- <20130718131822.GN22506@sirena.org.uk>
- <20130718133158.GA1628@arwen.pp.htv.fi>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130718145436.GP22506@sirena.org.uk>
+References: <1374157317.8329.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mkFcsau6kMcX4bpT"
+	protocol="application/pgp-signature"; boundary="J40Vvg1kvFCV4Ndf"
 Content-Disposition: inline
-In-Reply-To: <20130718133158.GA1628@arwen.pp.htv.fi>
+In-Reply-To: <1374157317.8329.1.camel@phoenix>
 X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
+Subject: Re: [PATCH] regulator: core: Allow fixed voltage range in multiple
+ linear ranges
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,53 +31,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mkFcsau6kMcX4bpT
+--J40Vvg1kvFCV4Ndf
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jul 18, 2013 at 04:31:58PM +0300, Felipe Balbi wrote:
-> On Thu, Jul 18, 2013 at 02:18:22PM +0100, Mark Brown wrote:
+On Thu, Jul 18, 2013 at 10:21:57PM +0800, Axel Lin wrote:
+> Current code does not allow fixed voltage range in multiple linear ranges.
+> If someone does set range->uV_step == 0 in one of the linear ranges, we hit
+> divided by zero bug. This patch fixes this issue.
+> For fixed voltage range, return any selector means the same voltage.
+> Thus just return 0.
 
-> > So why do we report that we handled the interrupt then?  Shouldn't we at
-> > least warn if we're getting spurious IRQs?
+Applied, thanks.
 
-> not spurious. OMAP has two sets of IRQ status registers. One is call
-> IRQSTATUS$n (n = 0, 1, ...) and IRQSTATUS_RAW$n.
-
-> IRQSTATUS$n will only enable the bits which fired IRQs and aren't
-> masked while IRQSTATUS_RAW$n will also enable the bits which are masked.
-> I could never come up with a use case where we would need to handle IRQs
-> which we decided to mask, but perhaps there might be some cases, I don't
-> know.
-
-> Based on that, I believe Sourav is reading IRQSTATUS_RAW$n, then he need
-> to clear the masked bits.
-
-That's not the issue - the issue is that if none of the unmasked
-interrupts are being asserted we shouldn't be in the interrupt handler
-in the first place but the driver silently accepts that and reports that
-it handled the interrupt.
-
---mkFcsau6kMcX4bpT
+--J40Vvg1kvFCV4Ndf
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR5/7eAAoJELSic+t+oim9keQP/3SJe7J2pK0LjYO+/4lS1LV2
-bTBysL9rcqADayeXAGPIOGtQGGXLRwtwc1di/UyIz/U+nhf5ugevw7GBuTGJYyBe
-wQEZxyF3rTFSETfs63NikBfPM8Qu0Y62i9tpwqkp9Wshs29NYteFP1RjbTdm3leB
-vqb9gnzgAAtKOfedMick+HAd2zKp7HZfM35MHklaSfNRVyXLWKgqL7ZqWPEGM0N2
-3nkRuOYhjL49801mNDF8EN/H69eNsH2wWatCPxDbKEHXD2Jrc7IFQcGMupMA18CH
-hwEnVyH7mvGr/3N9TcuKbKr6kweDDKOKZqK8C9wEJOByCe/T+gQCROVIF+KXoEen
-fjJA+8YfR2HqZnlq8me9JetIL49qSnIvY5VEb7fTJXredgMRFROh+/QgITE/X8tF
-q17agXrggedHb7z4YXohKAkUCXBs7u9SgqVlh9o9NaDuOjQwG+EGAFPF5yGh7zQy
-mABC5zl5DaQ5jtDJuP6A1YKOdS8bXavbXK0vtAp/ub8fqh19en0JnlFEuePuOR2G
-+RjOebes9zgGbVBkVj2KonoP6oPoeou96aZlgXaam4Ln0ZIizQs7+L+84Rudi3zw
-GuOqfEy4SirfjOS1EfJd0HgkRQXCFXT0shy8zQCTjxc0YVDQKT+zgS1aHJPDvOiN
-oNkDgy71ty0pciZtIrlI
-=rsqo
+iQIcBAEBAgAGBQJR6AGpAAoJELSic+t+oim9LT0P/A5D9wBXU8tsga/Gc8QJdXlc
+7YVlgNPn5euGC+5oylKiHybsmvfae/Vm1zRUFWPbdJ7SYbcqwx2vgjHNk20S0m6L
+MDJgWqMAxP8ULgqsIhzccvKViNLX/WD5UT40O4Xxl7gLW+u9hEhpFG+zIa70XDwX
+ulgSkDJFO4IisbgaVL5VsBqbZOLsWAbE+NE6SzmetMMtIKK+yGkdfOfO6bUaIkrt
++ymzdYtlRukjPyAJWFE3odt2HaRWv3y7azRGqgKOL5JrDZDp4HLOM87S2KQFSoPq
+PYggG0M+WbeJb4iC46DsMQP/ET9QPpXyydSWChmjO6H4dgDb1Ovj29yPlMiCn5Ih
+66bX4GADWDMbb+caMQWz4WYPuOy64wIOW8LK2TEni9euFQb94jUAqjBgyxwGY3XV
+f5pQmO+bqpK4tl0mWjiaD3/nmoEBZLsRGJe7cPKp0S5chQBvHuTkwN4HX2x2uSNQ
+emCCBKrF8KVpzcxJdfuVMMEeg0z+xzlWnUbL25i8zflzhDPfAL9W3QFMsph+O2RC
+Jm+cu0Yi3kWN3hYr6JGCYmIKNi3QEYEMwnZFuPod9qtUVGlKkKz3F9aVywmo8IPG
+W3wGTmW8iOE4K2N6NLR/qCMy/YThQr59mlTVhO8ZPRI+FxVKUmxYlGbutlLqce0R
+TeO+yKGXAQBK3pO4eSSt
+=cMZX
 -----END PGP SIGNATURE-----
 
---mkFcsau6kMcX4bpT--
+--J40Vvg1kvFCV4Ndf--
