@@ -1,105 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136Ab3GRDrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 23:47:18 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:60688 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717Ab3GRDrQ (ORCPT
+	id S1758155Ab3GRDrj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 23:47:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32969 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab3GRDrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 23:47:16 -0400
-X-Nat-Received: from [202.181.97.72]:54951 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1374119225.3641
-Message-Id: <201307180347.r6I3l5e9077577@www262.sakura.ne.jp>
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
-From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-MIME-Version: 1.0
-Date: Thu, 18 Jul 2013 12:47:05 +0900
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <1374098936.22432.322.camel@schen9-DESK>
-In-Reply-To: <1374098936.22432.322.camel@schen9-DESK>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	Wed, 17 Jul 2013 23:47:36 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=E3gBSPWCDXAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=8pif782wAAAA:8 a=WvReu7qsAAAA:8 a=sGiUFW_jAAAA:8 a=Yk0LXWlqWQjVu4L9nkQA:9 a=QEXdDO2ut3YA:10 a=1sPhbhFeNFkA:10 a=PYa3-Kt2IoYX8qBM:21 a=IVrkdwzQ_SMAROSZ:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374119254.6458.220.camel@gandalf.local.home>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: CAI Qian <caiqian@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Date: Wed, 17 Jul 2013 23:47:34 -0400
+In-Reply-To: <1368728064.2419741.1374117402465.JavaMail.root@redhat.com>
+References: <20130715155202.GC29526@xanatos>
+	 <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	 <20130715180403.GD15531@xanatos>
+	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	 <20130715184642.GE15531@xanatos>
+	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+	 <20130715195316.GF15531@xanatos>
+	 <alpine.DEB.2.02.1307172336410.4089@ionos.tec.linutronix.de>
+	 <1368728064.2419741.1374117402465.JavaMail.root@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17072013 #10621529, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tim Chen wrote:
-> > > Your approach is quite complicated.  I think something simpler like the
-> > > following will work:
-> >
-> > We cannot benefit from PCLMULQDQ. Is it acceptable for you?
-> 
-> 
-> The following code in crct10dif-pclmul_glue.c
-> 
-> static const struct x86_cpu_id crct10dif_cpu_id[] = {
->         X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
->         {}
-> };
-> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
-> 
-> will put the module in the device table and get the module
-> loaded, as long as the cpu support PCLMULQDQ. So we should be able
-> to benefit.
+On Wed, 2013-07-17 at 23:16 -0400, CAI Qian wrote:
 
-Excuse me, how can crct10dif-pclmul.ko get loaded automatically?
-Did you test CONFIG_CRYPTO_CRCT10DIF_PCLMUL=m with below debug message?
+> > So if you talk about abuse, then you need an abuser and a victim. So
+> > your argumentation falls flat because there is no victim.
+> Could victim be someone else in the future since it is an example that
+> people may follow?
+> http://en.wikipedia.org/wiki/Silvio_Berlusconi_underage_prostitution_charges
+> It called "abuse of office" or abuse of the power.
 
-diff --git a/arch/x86/crypto/crct10dif-pclmul_glue.c b/arch/x86/crypto/crct10dif-pclmul_glue.c
-index 7845d7f..a8a95aa 100644
---- a/arch/x86/crypto/crct10dif-pclmul_glue.c
-+++ b/arch/x86/crypto/crct10dif-pclmul_glue.c
-@@ -129,9 +129,10 @@ MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
- 
- static int __init crct10dif_intel_mod_init(void)
- {
-+	printk(KERN_WARNING "********** Checking for X86_FEATURE_PCLMULQDQ\n");
- 	if (!x86_match_cpu(crct10dif_cpu_id))
- 		return -ENODEV;
--
-+	printk(KERN_WARNING "********** Registering crct10dif-pclmul\n");
- 	return crypto_register_shash(&alg);
- }
+Wow! You are now comparing Linus to a Prime Minister that has paid
+underage prostitutes for sex?
 
-As far as I tested, crct10dif-pclmul.ko will not be loaded unless manually
-adding "modprobe crct10dif-pclmul" to initramfs's /init or choosing
-CONFIG_CRYPTO_CRCT10DIF_PCLMUL=y.
+That's pretty low.
 
-> So as long as the crct10dif.ko and crct10dif-pclmul.ko are loaded,
-> the pclmulqdq t10dif will have a higher priority and get allocated
-> and used.
+What Linus does is not an abuse of power, it's a protection of his baby.
+He created Linux, and although today he's not the one writing the code,
+he is ultimately the front man responsible for the kernel.
 
-What I'm talking are
+Think about it. If Linux does something horrible, Linus is the one that
+takes the most blame. That's a HUGE responsibility. Linus has the most
+to lose if Linux becomes crap.
 
-  (1) Since mkinitramfs is unable to know that crct10dif-pclmul.ko has higher
-      priority than crct10dif.ko , mkinitramfs will not include
-      "modprobe crct10dif-pclmul" line in the generated initramfs.
+Not only does Linus have to check on code, he must also dictate policy.
+Which means dealing with different people, and how they work. If someone
+gets lazy and uses his trust to get something whacky in, Linus takes the
+blame for it if that happens. Thus, to prevent people from taking
+advantage of his trust, he has to be hard on them to make sure he can
+keep their trust.
 
-  (2) In order to get benefit from PCLMULQDQ, users have to manually make sure
-      that "modprobe crct10dif-pclmul" is called before crc-t10dif.ko (which is
-      loaded before sd_mod.ko is loaded) is loaded by their initramfs's /init
-      script.
+Linus takes his job seriously. He may joke and name his kernel after
+90's operating systems, but that's just to make the job more fun. But to
+keep the job, he needs to be a hard ass.
 
-  (3) The cause of (1) is that crct10dif-pclmul.ko will not be loaded
-      automatically unless choosing CONFIG_CRYPTO_CRCT10DIF_PCLMUL=y.
+The few times he's yelled at me, he always did it with a bit of comedy
+and wit. That makes the harsh yelling not so bad, and I actually got a
+chuckle out of it. But I also took the harsh yelling in a way that I had
+better not do that again.
 
-  (4) The cause of (3) is that modules.dep does not describe that users will
-      benefit by loading crct10dif-pclmul.ko before loading crc-t10dif.ko .
+This is the big leagues folks. You think major league baseball managers
+are nice to their players?
 
-  (5) Currently crct10dif-pclmul.ko cannot be loaded if PCLMULQDQ is not
-      supported. This leads to boot failure (since sd_mod.ko cannot be loaded)
-      if modules.dep says that "crct10dif-pclmul.ko is required by
-      crc-t10dif.ko".
+"You just walked 4 players. That's not good. Keep this up I'll have to
+take you out off the team".
 
-  (6) To solve (4) and (5), modules.dep should say "crct10dif-pclmul.ko is
-      preferred for crc-t10dif.ko but is not required by crc-t10dif.ko".
-      But there is no such mechanism. Thus, currently available choice is
-      "allow loading crct10dif-pclmul.ko even if PCLMULQDQ is not supported"
-      or "ignore errors by built-in the crct10dif-pclmul.ko module".
+  vs
 
-My patch (b) seems to be complicated but is required in order to solve (4)
-without asking users to manually add "modprobe crct10dif-pclmul" into their
-initramfs. If we choose patch (b) rather than patch (a), we need to solve (5).
+"What the f*ck is wrong with you. Get you head out of your @ss and start
+throwing the ball over the God damn plate before I throw your @ss out of
+this field!"
+
+They both relay basically the same thing. The first one is nice and
+polite but states that bad things will happen if they keep it up. The
+second is quite harsh (although never calling the person a name), and
+will probably wake the person up and change his game. Which one of those
+tones do you think successful baseball managers use?
+
+Sometimes tone *does* matter. You want quality from the top maintainers,
+and they start to slack, you can't just treat them like this is a grade
+school sport. Results matter. You want them to understand that this is
+serious and cursing someone out gives that person that feeling.
+
+-- Steve
+
+
