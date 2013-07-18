@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758930Ab3GROVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:21:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29498 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3GROVw (ORCPT
+	id S1759031Ab3GROWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:22:07 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:51652 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189Ab3GROWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:21:52 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5NiN66EgdxkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=BRhfnD90nwUA:10 a=hD80L64hAAAA:8 a=Q_DkemjZ-AC6CvWWFzsA:9 a=QEXdDO2ut3YA:10 a=eNrLh-20BWwA:10 a=lIDsJlomiS4A:10 a=v3rLFGiuRE8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374157309.6458.232.camel@gandalf.local.home>
-Subject: Re: [PATCH v3] power: new trace event to print device suspend and
- resume time
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "len.brown@intel.com" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Date: Thu, 18 Jul 2013 10:21:49 -0400
-In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6173D4A9@sisaex02sj>
-References: <1374102201-2937-1-git-send-email-shuah.kh@samsung.com>
-	 <1374110574.6458.201.camel@gandalf.local.home>
-	 <B8EFE96D1287C24090BAD9D858E15E6173D4A9@sisaex02sj>
+	Thu, 18 Jul 2013 10:22:03 -0400
+Message-ID: <1374157317.8329.1.camel@phoenix>
+Subject: [PATCH] regulator: core: Allow fixed voltage range in multiple
+ linear ranges
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Thu, 18 Jul 2013 22:21:57 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 14:00 +0000, Shuah Khan wrote:
+Current code does not allow fixed voltage range in multiple linear ranges.
+If someone does set range->uV_step == 0 in one of the linear ranges, we hit
+divided by zero bug. This patch fixes this issue.
+For fixed voltage range, return any selector means the same voltage.
+Thus just return 0.
 
-> >
-> > Don't you want to convert the ops_time on display? You can have:
-> >
-> > 	TP_printk("%s %s parent=%s state=%s ops=%snsecs=%lld err=%d",
-> > 		__get_str(driver), __get_str(device), __get_str(parent),
-> > 		__get_str(pm_event_str), __get_str(pm_ops),
-> > 		ktime_to_ns(__entry->ops_time), __entry->error)
-> >
-> >
-> > -- Steve
-> 
-> I decided to pass in the converted value to the tracepoint. Please see 
-> the drivers/base/power/main.c call to trace_device_pm_report_time()
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Note: One of the use case is tps65217.
 
-But why? You are still doing the calculation in the fast path. The
-TP_printk() is in the slow path. Why add overhead to the execution of
-the code?
+The voltage table for tps65217_vsel_to_uv1:
 
--- Steve
+0  ... 24: uV = vsel * 25000 + 900000;
+25 ... 52: uV = (vsel - 24) * 50000 + 1500000;
+              = (vsel -25) * 50000 + 1550000;
+53 ... 55: uV = (vsel - 52) * 100000 + 2900000;
+              = (vsel - 53) * 100000 + 3000000;
+56 ... 62: uV = 3300000;
 
-> 
-> +
-> +	trace_device_pm_report_time(dev_name(dev), dev_driver_string(dev),
-> +				dev->parent ? dev_name(dev->parent) : "none",
-> +				info ? info : "none ",
-> +				(s64) ktime_to_ns(delta), pm_verb(state.event),
-> +				error);
-> 
-> -- Shuah
-> 
-> Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-> America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+ drivers/regulator/core.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index b6efead..51a8077 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2437,9 +2437,15 @@ int regulator_map_voltage_linear_range(struct regulator_dev *rdev,
+ 		if (min_uV <= range->min_uV)
+ 			min_uV = range->min_uV;
+ 
+-		ret = DIV_ROUND_UP(min_uV - range->min_uV, range->uV_step);
+-		if (ret < 0)
+-			return ret;
++		/* range->uV_step == 0 means fixed voltage range */
++		if (range->uV_step == 0) {
++			ret = 0;
++		} else {
++			ret = DIV_ROUND_UP(min_uV - range->min_uV,
++					   range->uV_step);
++			if (ret < 0)
++				return ret;
++		}
+ 
+ 		break;
+ 	}
+-- 
+1.8.1.2
+
 
 
