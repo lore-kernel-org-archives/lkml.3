@@ -1,121 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964898Ab3GRS6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 14:58:25 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37132 "EHLO comal.ext.ti.com"
+	id S933714Ab3GRTAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:00:41 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49674 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933065Ab3GRS6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 14:58:23 -0400
-Message-ID: <51E83A9D.5020008@ti.com>
-Date: Thu, 18 Jul 2013 13:57:33 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S933460Ab3GRS7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 14:59:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 2/30] ACPI / hotplug / PCI: Consolidate acpiphp_enumerate_slots()
+Date: Thu, 18 Jul 2013 21:09:39 +0200
+Message-ID: <2875178.oTVLArQBaT@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQXcLeNxjmh-6+jtpOmgC-NB3=Pwh1vZnb+DNLnoKzZQaQ@mail.gmail.com>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <10121200.vQGTlJqFtd@vostro.rjw.lan> <CAE9FiQXcLeNxjmh-6+jtpOmgC-NB3=Pwh1vZnb+DNLnoKzZQaQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Balaji TK <balajitk@ti.com>, Gururaja Hebbar <gururaja.hebbar@ti.com>,
-        Chris Ball <cjb@laptop.org>, Jason Kridner <jkridner@beagleboard.org>,
-        Mark Jackson <mpfj-list@newflow.co.uk>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, <vinod.koul@intel.com>
-Subject: Re: [PATCH 1/3] dmaengine: add dma_get_slave_sg_limits()
-References: <1374166001-31340-1-git-send-email-joelf@ti.com> <1374166001-31340-2-git-send-email-joelf@ti.com> <20130718170825.GZ21614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130718170825.GZ21614@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 12:08 PM, Russell King - ARM Linux wrote:
-> On Thu, Jul 18, 2013 at 11:46:39AM -0500, Joel Fernandes wrote:
->> The API is optionally implemented by dmaengine drivers and when
->> unimplemented will return a NULL pointer. A client driver using
->> this API provides the required dma channel, address width, and
->> burst size of the transfer. dma_get_slave_sg_limits() returns an
->> SG limits structure with the maximum number and size of SG segments
->> that the given channel can handle.
+On Wednesday, July 17, 2013 06:40:10 PM Yinghai Lu wrote:
+> On Wed, Jul 17, 2013 at 4:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > The acpiphp_enumerate_slots() function is now split into two parts,
+> > acpiphp_enumerate_slots() proper and init_bridge_misc() which is
+> > only called by the former.  If these functions are combined,
+> > it is possible to make the code easier to follow and to clean up
+> > the error handling (to prevent memory leaks on error from
+> > happening in particular), so do that.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/pci/hotplug/acpiphp_glue.c |   92 ++++++++++++++++++-------------------
+> >  1 file changed, 45 insertions(+), 47 deletions(-)
+> >
+> > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> > @@ -353,46 +353,6 @@ static int detect_ejectable_slots(acpi_h
+> >         return found;
+> >  }
+> >
+> > -/* initialize miscellaneous stuff for both root and PCI-to-PCI bridge */
+> > -static void init_bridge_misc(struct acpiphp_bridge *bridge)
+> > -{
+> > -       acpi_status status;
+> > -
+> > -       /* must be added to the list prior to calling register_slot */
+> > -       mutex_lock(&bridge_mutex);
+> > -       list_add(&bridge->list, &bridge_list);
+> > -       mutex_unlock(&bridge_mutex);
+> > -
+> > -       /* register all slot objects under this bridge */
+> > -       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, bridge->handle, (u32)1,
+> > -                                    register_slot, NULL, bridge, NULL);
+> > -       if (ACPI_FAILURE(status)) {
+> > -               mutex_lock(&bridge_mutex);
+> > -               list_del(&bridge->list);
+> > -               mutex_unlock(&bridge_mutex);
+> > -               return;
+> > -       }
+> > -
+> > -       /* install notify handler for P2P bridges */
+> > -       if (!pci_is_root_bus(bridge->pci_bus)) {
+> > -               if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
+> > -                       status = acpi_remove_notify_handler(bridge->func->handle,
+> > -                                               ACPI_SYSTEM_NOTIFY,
+> > -                                               handle_hotplug_event_func);
+> > -                       if (ACPI_FAILURE(status))
+> > -                               err("failed to remove notify handler\n");
+> > -               }
+> > -               status = acpi_install_notify_handler(bridge->handle,
+> > -                                            ACPI_SYSTEM_NOTIFY,
+> > -                                            handle_hotplug_event_bridge,
+> > -                                            bridge);
+> > -
+> > -               if (ACPI_FAILURE(status)) {
+> > -                       err("failed to register interrupt notify handler\n");
+> > -               }
+> > -       }
+> > -}
+> > -
+> >
+> >  /* find acpiphp_func from acpiphp_bridge */
+> >  static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle)
+> > @@ -1149,8 +1109,9 @@ static void handle_hotplug_event_func(ac
+> >   */
+> >  void acpiphp_enumerate_slots(struct pci_bus *bus)
+> >  {
+> > -       acpi_handle handle;
+> >         struct acpiphp_bridge *bridge;
+> > +       acpi_handle handle;
+> > +       acpi_status status;
+> >
+> >         if (acpiphp_disabled)
+> >                 return;
+> > @@ -1178,14 +1139,51 @@ void acpiphp_enumerate_slots(struct pci_
+> >          */
+> >         get_device(&bus->dev);
+> >
+> > -       if (!pci_is_root_bus(bridge->pci_bus) &&
+> > -           acpi_has_method(bridge->handle, "_EJ0")) {
+> > -               dbg("found ejectable p2p bridge\n");
+> > -               bridge->flags |= BRIDGE_HAS_EJ0;
+> > -               bridge->func = acpiphp_bridge_handle_to_function(handle);
+> > +       /* must be added to the list prior to calling register_slot */
+> > +       mutex_lock(&bridge_mutex);
+> > +       list_add(&bridge->list, &bridge_list);
+> > +       mutex_unlock(&bridge_mutex);
+> > +
+> > +       /* register all slot objects under this bridge */
+> > +       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, bridge->handle, 1,
+> > +                                    register_slot, NULL, bridge, NULL);
+> > +       if (ACPI_FAILURE(status)) {
+> > +               acpi_handle_err(bridge->handle, "failed to register slots\n");
+> > +               goto err;
+> > +       }
+> > +
+> > +       if (pci_is_root_bus(bridge->pci_bus))
+> > +               return;
+> > +
+> > +       /* install notify handler for P2P bridges */
+> > +       status = acpi_install_notify_handler(bridge->handle, ACPI_SYSTEM_NOTIFY,
+> > +                                            handle_hotplug_event_bridge,
+> > +                                            bridge);
+> > +       if (ACPI_FAILURE(status)) {
+> > +               acpi_handle_err(bridge->handle,
+> > +                               "failed to register notify handler\n");
+> > +               goto err;
+> >         }
+> >
+> > -       init_bridge_misc(bridge);
+> > +       if (!acpi_has_method(bridge->handle, "_EJ0"))
+> > +               return;
+> > +
+> > +       dbg("found ejectable p2p bridge\n");
+> > +       bridge->flags |= BRIDGE_HAS_EJ0;
+> > +       bridge->func = acpiphp_bridge_handle_to_function(bridge->handle);
+> > +       if (bridge->func) {
+> > +               status = acpi_remove_notify_handler(bridge->func->handle,
+> > +                                                   ACPI_SYSTEM_NOTIFY,
+> > +                                                   handle_hotplug_event_func);
+> > +               if (ACPI_FAILURE(status))
+> > +                       acpi_handle_err(bridge->func->handle,
+> > +                                       "failed to remove notify handler\n");
+> > +       }
 > 
-> Please look at what's already in struct device:
+> looks little weird that you change to install bridge notifier handler and remove
+> bridge func notifier handler.
+> actually these two handles is the same one.
 > 
-> struct device {
-> ...
->         struct device_dma_parameters *dma_parms;
-> ...
-> };
-> 
-> This provides:
-> 
-> struct device_dma_parameters {
->         /*
->          * a low level driver may set these to teach IOMMU code about
->          * sg limitations.
->          */
->         unsigned int max_segment_size;
->         unsigned long segment_boundary_mask;
-> };
-> 
-> Now, these are helpfully accessed via:
-> 
-> dma_get_max_seg_size(dev)
-> dma_set_max_seg_size(dev)
-> dma_get_seg_boundary(dev)
-> dma_set_seg_boundary(dev, mask)
-> Drivers already use these to work out how to construct the scatterlist
-> before passing it to the DMA API, which means that they should also be
-> used when creating a scatterlist for the DMA engine (think about it -
-> you have to use the DMA API to map the buffers for the DMA engine too.)
-> 
-> So, we already have two properties defined on a per-device basis: the
-> maximum size of a scatterlist segment, and the boundary over which any
-> segment must not cross.
-> 
-> The former ties up with your max_seg_len() property, though arguably it
-> may depend on the DMA engine access size.  The problem with implementing
-> this new API though is that the subsystems (such as SCSI) which already
-> use dma_get_max_seg_size() will be at odds with what is possible via the
-> DMA engine.
+> I would prefer to keeping the old sequence.
 
-Not very clear for this particular case, are you saying the DMAEngine
-driver implementation should set the max_seg_size of its own struct dev,
-and then the drivers retrieve it from the channel they are allocated?
+First, it doesn't matter because one of the notifiers goes away in the
+subsequent patches and it would complicate those patches without any real
+reason if I did that.
 
-> I strongly suggest using the infrastructure at device level and not
-> implementing some private DMA engine API to convey this information.
+Second, it doesn't matter because there can be multiple notify handlers for the
+same handle and if one of the above two triggers, the second one won't really
+do anything.
 
-Certainly see the value. OK with either approach. Can Vinod add to the
-discussion here, and we can decide a way forward? Is it ok to use the
-new CAPS API added for now so that we can keep AM33xx MMC alive?
-seg_size atleast is a real regression, the number of slots limit however
-is related more to MMC grabbing a lot of slots. Atleast for -rc cycle
-the seg_size and MMC fixes should go in.
-
-> As for the maximum number of scatterlist entries, really that's a bug in
-> the DMA engine implementations if they can't accept arbitary lengths.
-> I've created DMA engine drivers for implementations where you have to
-> program each segment individually, ones which can have the current and
-> next segments, as well as those which can walk a list.  Provided you get
-> informed of a transfer being completed, there really is no reason for a
-> DMA engine driver to limit the number of scatterlist entries that it
-> will accept.
-
-Sure, that makes sense. Can you point to such a typical example
-implementation to get some ideas?
+So no, I'm not going to do that, sorry.
 
 Thanks,
+Rafael
 
--Joel
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
