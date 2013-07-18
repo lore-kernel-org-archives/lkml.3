@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934258Ab3GRTy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:54:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41687 "EHLO
+	id S934226Ab3GRTy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:54:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41688 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759287Ab3GRTua (ORCPT
+	with ESMTP id S1759481Ab3GRTua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:30 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 60/76] perf diff: Update perf diff documentation for multiple data comparison
-Date: Thu, 18 Jul 2013 16:49:47 -0300
-Message-Id: <1374177003-3706-61-git-send-email-acme@infradead.org>
+Subject: [PATCH 55/76] perf hists: Marking dummy hists entries
+Date: Thu, 18 Jul 2013 16:49:42 -0300
+Message-Id: <1374177003-3706-56-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,8 +29,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Updating perf diff documentation to include multiple perf data files
-comparison.
+It does not make sense to make some computation (ratio, wdiff), when the
+hist_entry is 'dummy' - added via hists__link.
+
+Adding dummy field to struct hist_entry which indicates that it was
+added by hists__link and avoiding some of the processing for such
+entries.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Reviewed-by: Namhyung Kim <namhyung@kernel.org>
@@ -39,138 +43,100 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-tr6su3wfm20k2m5npjggyvtw@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-g8bxml0n0pnqsrpyd98p0ird@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt | 73 +++++++++++++++++++++++++++++-----
- 1 file changed, 64 insertions(+), 9 deletions(-)
+ tools/perf/ui/hist.c   | 21 ++++++++++++++-------
+ tools/perf/util/hist.c |  1 +
+ tools/perf/util/sort.h |  3 +++
+ 3 files changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index 5b3123d..2d134f3 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -3,17 +3,17 @@ perf-diff(1)
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 02313a9..a359b75 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -187,8 +187,11 @@ static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+ {
+ 	double percent = baseline_percent(he);
  
- NAME
- ----
--perf-diff - Read two perf.data files and display the differential profile
-+perf-diff - Read perf.data files and display the differential profile
+-	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%",
+-				      percent);
++	if (!he->dummy)
++		return percent_color_snprintf(hpp->buf, hpp->size,
++					      " %6.2f%%", percent);
++	else
++		return scnprintf(hpp->buf, hpp->size, "        ");
+ }
  
- SYNOPSIS
- --------
- [verse]
--'perf diff' [oldfile] [newfile]
-+'perf diff' [baseline file] [data file1] [[data file2] ... ]
+ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+@@ -197,7 +200,10 @@ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 	double percent = baseline_percent(he);
+ 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
  
- DESCRIPTION
- -----------
--This command displays the performance difference amongst two perf.data files
--captured via perf record.
-+This command displays the performance difference amongst two or more perf.data
-+files captured via perf record.
+-	return scnprintf(hpp->buf, hpp->size, fmt, percent);
++	if (!he->dummy)
++		return scnprintf(hpp->buf, hpp->size, fmt, percent);
++	else
++		return scnprintf(hpp->buf, hpp->size, "            ");
+ }
  
- If no parameters are passed it will assume perf.data.old and perf.data.
+ static int hpp__header_period_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+@@ -251,8 +257,7 @@ static int hpp__entry_delta(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 			diff = he->diff.period_ratio_delta;
+ 		else
+ 			diff = perf_diff__compute_delta(he, pair);
+-	} else
+-		diff = perf_diff__period_percent(he, he->stat.period);
++	}
  
-@@ -87,6 +87,59 @@ OPTIONS
- --formula::
-         Show formula for given computation.
+ 	if (fabs(diff) >= 0.01)
+ 		scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
+@@ -282,7 +287,8 @@ static int hpp__entry_ratio(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 	char buf[32] = " ";
+ 	double ratio = 0.0;
  
-+COMPARISON
-+----------
-+The comparison is governed by the baseline file. The baseline perf.data
-+file is iterated for samples. All other perf.data files specified on
-+the command line are searched for the baseline sample pair. If the pair
-+is found, specified computation is made and result is displayed.
+-	if (pair) {
++	/* No point for ratio number if we are dummy.. */
++	if (!he->dummy && pair) {
+ 		if (he->diff.computed)
+ 			ratio = he->diff.period_ratio;
+ 		else
+@@ -317,7 +323,8 @@ static int hpp__entry_wdiff(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 	char buf[32] = " ";
+ 	s64 wdiff = 0;
+ 
+-	if (pair) {
++	/* No point for wdiff number if we are dummy.. */
++	if (!he->dummy && pair) {
+ 		if (he->diff.computed)
+ 			wdiff = he->diff.wdiff;
+ 		else
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index b11a6cf..a9dd1b9 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -912,6 +912,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 		rb_link_node(&he->rb_node_in, parent, p);
+ 		rb_insert_color(&he->rb_node_in, root);
+ 		hists__inc_nr_entries(hists, he);
++		he->dummy = true;
+ 	}
+ out:
+ 	return he;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index a4a6d0b..586022d 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -89,6 +89,9 @@ struct hist_entry {
+ 
+ 	struct hist_entry_diff	diff;
+ 
++	/* We are added by hists__add_dummy_entry. */
++	bool			dummy;
 +
-+All samples from non-baseline perf.data files, that do not match any
-+baseline entry, are displayed with empty space within baseline column
-+and possible computation results (delta) in their related column.
-+
-+Example files samples:
-+- file A with samples f1, f2, f3, f4,    f6
-+- file B with samples     f2,     f4, f5
-+- file C with samples f1, f2,         f5
-+
-+Example output:
-+  x - computation takes place for pair
-+  b - baseline sample percentage
-+
-+- perf diff A B C
-+
-+  baseline/A compute/B compute/C  samples
-+  ---------------------------------------
-+  b                    x          f1
-+  b          x         x          f2
-+  b                               f3
-+  b          x                    f4
-+  b                               f6
-+             x         x          f5
-+
-+- perf diff B A C
-+
-+  baseline/B compute/A compute/C  samples
-+  ---------------------------------------
-+  b          x         x          f2
-+  b          x                    f4
-+  b                    x          f5
-+             x         x          f1
-+             x                    f3
-+             x                    f6
-+
-+- perf diff C B A
-+
-+  baseline/C compute/B compute/A  samples
-+  ---------------------------------------
-+  b                    x          f1
-+  b          x         x          f2
-+  b          x                    f5
-+                       x          f3
-+             x         x          f4
-+                       x          f6
-+
- COMPARISON METHODS
- ------------------
- delta
-@@ -96,7 +149,7 @@ If specified the 'Delta' column is displayed with value 'd' computed as:
-   d = A->period_percent - B->period_percent
- 
- with:
--  - A/B being matching hist entry from first/second file specified
-+  - A/B being matching hist entry from data/baseline file specified
-     (or perf.data/perf.data.old) respectively.
- 
-   - period_percent being the % of the hist entry period value within
-@@ -109,24 +162,26 @@ If specified the 'Ratio' column is displayed with value 'r' computed as:
-   r = A->period / B->period
- 
- with:
--  - A/B being matching hist entry from first/second file specified
-+  - A/B being matching hist entry from data/baseline file specified
-     (or perf.data/perf.data.old) respectively.
- 
-   - period being the hist entry period value
- 
--wdiff
--~~~~~
-+wdiff:WEIGHT-B,WEIGHT-A
-+~~~~~~~~~~~~~~~~~~~~~~~
- If specified the 'Weighted diff' column is displayed with value 'd' computed as:
- 
-    d = B->period * WEIGHT-A - A->period * WEIGHT-B
- 
--  - A/B being matching hist entry from first/second file specified
-+  - A/B being matching hist entry from data/baseline file specified
-     (or perf.data/perf.data.old) respectively.
- 
-   - period being the hist entry period value
- 
-   - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-     behind ':' separator like '-c wdiff:1,2'.
-+    - WIEGHT-A being the weight of the data file
-+    - WIEGHT-B being the weight of the baseline data file
- 
- SEE ALSO
- --------
+ 	/* XXX These two should move to some tree widget lib */
+ 	u16			row_offset;
+ 	u16			nr_rows;
 -- 
 1.8.1.4
 
