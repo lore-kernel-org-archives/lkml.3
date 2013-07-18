@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934202Ab3GRT72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:59:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41668 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759467Ab3GRTu2 (ORCPT
+	id S965130Ab3GRUAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:00:55 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33260 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964817Ab3GRUAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:50:28 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 56/76] perf diff: Display data file info ahead of the diff output
-Date: Thu, 18 Jul 2013 16:49:43 -0300
-Message-Id: <1374177003-3706-57-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
-References: <1374177003-3706-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 18 Jul 2013 16:00:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130718183201.GA21183@www.outflux.net>
+References: <20130718183201.GA21183@www.outflux.net>
+Date: Thu, 18 Jul 2013 22:00:49 +0200
+X-Google-Sender-Auth: NmJwnAV_Wji1YifwppDpNM_uu0M
+Message-ID: <CAMuHMdX4dj3q53RsWTTmo-AOU1ee-xgp257CwacJnHfWn0BEAQ@mail.gmail.com>
+Subject: Re: [PATCH v2] kconfig: switch to "long long" for sanity
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Michal Marek <mmarek@suse.cz>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On Thu, Jul 18, 2013 at 8:32 PM, Kees Cook <keescook@chromium.org> wrote:
+> Instead of using "long" for kconfig "hex" and "range" values, which may
+> change in size depending on the host architecture, use "long long". This
+> will allow values greater than INT_MAX on 32-bit hosts when cross
+> compiling.
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Data files are referenced through the index of the file on the command
-line. Adding list of data files for each index to ease up navigation for
-user.
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-It's displayed only if in verbose mode.
+Gr{oetje,eeting}s,
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/n/tip-dfjxa6n116ughjjxohpkuvi8@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-diff.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+                        Geert
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 0cfe99e..9574ba1 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -481,6 +481,21 @@ static void hists__process(struct hists *base, struct hists *new)
- 	hists__fprintf(base, true, 0, 0, 0, stdout);
- }
- 
-+static void data__fprintf(void)
-+{
-+	struct data__file *d;
-+	int i;
-+
-+	fprintf(stdout, "# Data files:\n");
-+
-+	data__for_each_file(i, d)
-+		fprintf(stdout, "#  [%d] %s %s\n",
-+			d->idx, d->file,
-+			!d->idx ? "(Baseline)" : "");
-+
-+	fprintf(stdout, "#\n");
-+}
-+
- static void data_process(void)
- {
- 	struct perf_evlist *evlist_old = data__files[0].session->evlist;
-@@ -500,6 +515,9 @@ static void data_process(void)
- 
- 		first = false;
- 
-+		if (verbose)
-+			data__fprintf();
-+
- 		hists__process(&evsel_old->hists, &evsel_new->hists);
- 	}
- }
--- 
-1.8.1.4
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
