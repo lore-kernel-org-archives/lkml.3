@@ -1,122 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759503Ab3GRWq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:46:27 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:60968 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759182Ab3GRWqZ (ORCPT
+	id S1759328Ab3GRWtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:49:15 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:29555 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759072Ab3GRWtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:46:25 -0400
-Date: Fri, 19 Jul 2013 00:46:21 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 6/7] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130718224620.GF7398@somewhere>
-References: <20130709012934.GA26058@linux.vnet.ibm.com>
- <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1373333406-26979-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130717233119.GA2801@somewhere>
- <20130718004141.GI4161@linux.vnet.ibm.com>
- <20130718013259.GA7398@somewhere>
- <20130718033921.GL4161@linux.vnet.ibm.com>
- <20130718142450.GB7398@somewhere>
- <20130718164749.GV4161@linux.vnet.ibm.com>
+	Thu, 18 Jul 2013 18:49:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AssNADlw6FF5LK4r/2dsb2JhbABagwaDIrh1hS8EAYERF3SCJAEBBScTHCMQCAMOCgklDwUlAyETiA+2OxaOXIEdB4MObgOXXJFOgyQq
+Date: Fri, 19 Jul 2013 08:49:07 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Ben Myers <bpm@sgi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: splice vs execve lockdep trace.
+Message-ID: <20130718224907.GD13468@dastard>
+References: <CA+55aFwHMQd-VDeTDh-gm3jyj+5+FSoAHOeU47mwU-mKtEj9RQ@mail.gmail.com>
+ <20130717040616.GI11674@dastard>
+ <CA+55aFz5xw9Qi9Q6mwoCSud5eQh5u-QZ-xrY+TqgZPoKOgn6ew@mail.gmail.com>
+ <20130717055103.GK11674@dastard>
+ <CA+55aFxdqzMY5VJoYaLmL=+=f2s1cbHHV-TjC3=taXpF-xov1w@mail.gmail.com>
+ <20130717234049.GC3572@sgi.com>
+ <CA+55aFy-8QH4bTW7hU=381tuEWgHC=PUM6WP3qn-ooge=7M0QQ@mail.gmail.com>
+ <20130718034203.GO11674@dastard>
+ <20130718211632.GD3572@sgi.com>
+ <20130718222117.GE3572@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130718164749.GV4161@linux.vnet.ibm.com>
+In-Reply-To: <20130718222117.GE3572@sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 09:47:49AM -0700, Paul E. McKenney wrote:
-> On Thu, Jul 18, 2013 at 04:24:51PM +0200, Frederic Weisbecker wrote:
-> > On Wed, Jul 17, 2013 at 08:39:21PM -0700, Paul E. McKenney wrote:
-> > > On Thu, Jul 18, 2013 at 03:33:01AM +0200, Frederic Weisbecker wrote:
-> > > > So it's like:
+On Thu, Jul 18, 2013 at 05:21:17PM -0500, Ben Myers wrote:
+> Dave,
+> 
+> On Thu, Jul 18, 2013 at 04:16:32PM -0500, Ben Myers wrote:
+> > On Thu, Jul 18, 2013 at 01:42:03PM +1000, Dave Chinner wrote:
+> > > On Wed, Jul 17, 2013 at 05:17:36PM -0700, Linus Torvalds wrote:
+> > > > On Wed, Jul 17, 2013 at 4:40 PM, Ben Myers <bpm@sgi.com> wrote:
+> > > > >>
+> > > > >> We're still talking at cross purposes then.
+> > > > >>
+> > > > >> How the hell do you handle mmap() and page faulting?
+> > > > >
+> > > > > __xfs_get_blocks serializes access to the block map with the i_lock on the
+> > > > > xfs_inode.  This appears to be racy with respect to hole punching.
 > > > > 
-> > > >     CPU 0                                              CPU 1
-> > > > 
-> > > >     read I                                             write I
-> > > >     smp_mb()                                           smp_mb()
-> > > >     cmpxchg S                                          read S
-> > > > 
-> > > > I still can't find what guarantees we don't read a value in CPU 1 that is way below
-> > > > what we want.
+> > > > Would it be possible to just make __xfs_get_blocks get the i_iolock
+> > > > (non-exclusively)?
 > > > 
-> > > One key point is that there is a second cycle from LONG to FULL.
+> > > No. __xfs_get_blocks() operates on metadata (e.g. extent lists), and
+> > > as such is protected by the i_ilock (note: not the i_iolock).  i.e.
+> > > XFS has a multi-level locking strategy:
 > > > 
-> > > (Not saying that there is not a bug -- there might well be.  In fact,
-> > > I am starting to think that I need to do another Promela model...
+> > > 	i_iolock is provided for *data IO serialisation*,
+> > > 	i_ilock is for *inode metadata serialisation*.
 > > 
-> > Now I'm very confused :)
+> > I think if __xfs_get_blocks has some way of knowing it is the mmap/page fault
+> > path, taking the iolock shared in addition to the ilock (in just that case)
+> > would prevent the mmap from being able to read stale data from disk.  You would
+> > see either the data before the punch or you would see the hole.  
+> > 
+> > Actually... I think that is wrong:  You'd have to take the iolock across the
+> > read itself (not just the access to the block map) for it to have the desired
+> > effect:
+> > 
+> > 1608 int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+> > ...
+> > 1704 page_not_uptodate:
+> > 1705         /*
+> > 1706          * Umm, take care of errors if the page isn't up-to-date.
+> > 1707          * Try to re-read it _once_. We do this synchronously,
+> > 1708          * because there really aren't any performance issues here
+> > 1709          * and we need to check for errors.
+> > 1710          */
+> > 1711         ClearPageError(page);
+> > 1712         error = mapping->a_ops->readpage(file, page);
+> > 1713         if (!error) {
+> > 1714                 wait_on_page_locked(page);
+> > 1715                 if (!PageUptodate(page))
+> > 1716                         error = -EIO;
+> > 1717         }
+> > 1718         page_cache_release(page);
+> > 
+> > Wouldn't you have to hold the iolock until after wait_on_page_locked returns?
 > 
-> To quote a Nobel Laureate who presented at an ISEF here in Portland some
-> years back, "Confusion is the most productive state of mind."  ;-)
+> Maybe like so (crappy/untested/probably wrong/fodder for ridicule/etc):
 
-Then I must be a very productive guy!
+Try running it with lockdep. You'll see pretty quickly why you can't
+take the i_iolock or i_mutex in the ->fault path - it is called
+with the mmap_sem held.
 
-> 
-> > I'm far from being a specialist on these matters but I would really love to
-> > understand this patchset. Is there any documentation somewhere I can read
-> > that could help, something about cycles of committed memory or something?
-> 
-> Documentation/memory-barriers.txt should suffice for this.  If you want
-> more rigor, http://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test7.pdf
-> 
-> But memory-barrier pairing suffices here.  Here is case 2 from my
-> earlier email in more detail.  The comments with capital letters
-> mark important memory barriers, some of which are buried in atomic
-> operations.
-> 
-> 1. Some CPU coming out of idle:
-> 
-> o	rcu_sysidle_exit():
-> 
-> 	smp_mb__before_atomic_inc();
-> 	atomic_inc(&rdtp->dynticks_idle);
-> 	smp_mb__after_atomic_inc(); /* A */
-> 
-> o	rcu_sysidle_force_exit():
-> 
-> 	oldstate = ACCESS_ONCE(full_sysidle_state);
-> 
-> 2. RCU GP kthread:
-> 
-> o	rcu_sysidle():
-> 
-> 	cmpxchg(&full_sysidle_state, RCU_SYSIDLE_SHORT, RCU_SYSIDLE_LONG);
-> 		/* B */
-> 
-> o	rcu_sysidle_check_cpu():
-> 
-> 	cur = atomic_read(&rdtp->dynticks_idle);
-> 
-> Memory barrier A pairs with memory barrier B, so that if #1's load
-> from full_sysidle_state sees RCU_SYSIDLE_SHORT, we know that #1's
-> atomic_inc() must be visible to #2's atomic_read().  This will cause #2
-> to recognize that the CPU came out of idle, which will in turn cause it
-> to invoke rcu_sysidle_cancel() instead of rcu_sysidle(), resulting in
-> full_sysidle_state being set to RCU_SYSIDLE_NOT.
+The lock inversion that can deadlock is that the page fault might be
+occurring in the read path that is already holding the
+i_mutex/i_iolock....
 
-Ok I get it for that direction.
-Now imagine CPU 0 is the RCU GP kthread (#2) and CPU 1 is idle and stays
-so.
+Cheers,
 
-CPU 0 then rounds and see that all CPUs are idle, until it finally sets
-up RCU_SYSIDLE_SHORT_FULL and finally goes to sleep.
+Dave.
 
-Then CPU 1 wakes up. It really has to see a value above RCU_SYSIDLE_SHORT
-otherwise it won't do the cmpxchg and see the FULL_NOTED that makes it send
-the IPI.
-
-What provides the guarantee that CPU 1 sees a value above RCU_SYSIDLE_SHORT?
-Not on the cmpxchg but when it first dereference with ACCESS_ONCE.
+-- 
+Dave Chinner
+david@fromorbit.com
