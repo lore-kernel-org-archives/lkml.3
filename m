@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934784Ab3GRWY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:24:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50701 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932931Ab3GRWY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:24:57 -0400
-Date: Fri, 19 Jul 2013 00:24:51 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
-Subject: Re: [PATCH -tip  0/3] kprobes, x86: Move optprobe on top of int3-based
- instruction patching
-In-Reply-To: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
-Message-ID: <alpine.LNX.2.00.1307190024110.31632@pobox.suse.cz>
-References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934633Ab3GRWZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:25:42 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:64092 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934499Ab3GRWVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:21:33 -0400
+From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+To: jic23@cam.ac.uk
+Cc: gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
+Subject: [PATCH 01/15] MFD: ti_tscadc: disable TSC config registers in adc mode
+Date: Thu, 18 Jul 2013 23:21:12 +0100
+Message-Id: <1374186086-5015-2-git-send-email-zubair.lutfullah@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Jul 2013, Masami Hiramatsu wrote:
+From: "Patil, Rachna" <rachna@ti.com>
 
-> Hi,
-> 
-> Here is a series of kprobes and x86 patches for moving
-> optprobe (jump optimized kprobe) onto the int3-based
-> instruction patching (a.k.a. text_poke_bp, introduced by
-> Jiri Kosina).
-> 
-> Since this completely moves text_poke_smp* user to new
-> text_poke_bp, I also remove the old text_poke_smp* code
-> from alternative.c. As a side effect, it also fixes a
-> Kconfig warning about CONFIG_STOP_MACHINE dependency
-> confliction.
-> 
-> Thank you,
-> 
-> ---
-> 
-> Masami Hiramatsu (3):
->       [CLEANUP] kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
->       kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
->       x86: Remove unused text_poke_smp and text_poke_smp_batch
+AFE Pen Ctrl and TouchScreen transistors enabling is not
+required when only ADC mode is being used, so check for availability of
+TSC driver before accessing control register.
 
-Nice.
+Signed-off-by: Patil, Rachna <rachna@ti.com>
+Acked-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+---
+ drivers/mfd/ti_am335x_tscadc.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-	Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-
-Thanks.
-
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index b003a16..d72001c 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -208,13 +208,14 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 
+ 	/* Set the control register bits */
+ 	ctrl = CNTRLREG_STEPCONFIGWRT |
+-			CNTRLREG_TSCENB |
+-			CNTRLREG_STEPID |
+-			CNTRLREG_4WIRE;
++			CNTRLREG_STEPID;
++	if (tsc_wires > 0)
++		ctrl |= CNTRLREG_4WIRE | CNTRLREG_TSCENB;
+ 	tscadc_writel(tscadc, REG_CTRL, ctrl);
+ 
+ 	/* Set register bits for Idle Config Mode */
+-	tscadc_idle_config(tscadc);
++	if (tsc_wires > 0)
++		tscadc_idle_config(tscadc);
+ 
+ 	/* Enable the TSC module enable bit */
+ 	ctrl = tscadc_readl(tscadc, REG_CTRL);
+@@ -294,10 +295,13 @@ static int tscadc_resume(struct device *dev)
+ 	pm_runtime_get_sync(dev);
+ 
+ 	/* context restore */
+-	ctrl = CNTRLREG_STEPCONFIGWRT | CNTRLREG_TSCENB |
+-			CNTRLREG_STEPID | CNTRLREG_4WIRE;
++	ctrl = CNTRLREG_STEPCONFIGWRT |	CNTRLREG_STEPID;
++	if (tscadc_dev->tsc_cell != -1)
++		ctrl |= CNTRLREG_TSCENB | CNTRLREG_4WIRE;
+ 	tscadc_writel(tscadc_dev, REG_CTRL, ctrl);
+-	tscadc_idle_config(tscadc_dev);
++
++	if (tscadc_dev->tsc_cell != -1)
++		tscadc_idle_config(tscadc_dev);
+ 	am335x_tsc_se_update(tscadc_dev);
+ 	restore = tscadc_readl(tscadc_dev, REG_CTRL);
+ 	tscadc_writel(tscadc_dev, REG_CTRL,
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
