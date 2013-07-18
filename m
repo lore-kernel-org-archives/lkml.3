@@ -1,54 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965134Ab3GRVEs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:04:48 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53763 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754929Ab3GRVEq (ORCPT
+	id S1759439Ab3GRVLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:11:52 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:34774 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759224Ab3GRVLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:04:46 -0400
-Message-ID: <51E8586C.7040808@codeaurora.org>
-Date: Thu, 18 Jul 2013 14:04:44 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 18 Jul 2013 17:11:50 -0400
+Date: Thu, 18 Jul 2013 14:11:54 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, wni@nvidia.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, l.stach@pengutronix.de
+Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
+ zone build
+Message-ID: <20130718211154.GB4110@roeck-us.net>
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
+ <20130717220942.GB990@roeck-us.net>
+ <51E7F341.8020508@ti.com>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>
-CC: linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        devicetree-discuss@lists.ozlabs.org, Tero Kristo <t-kristo@ti.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Matt Sealey <neko@bakuhatsu.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/5] clk: dt: bindings for mux, divider & gate clocks
-References: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
-In-Reply-To: <1371795256-16703-1-git-send-email-mturquette@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E7F341.8020508@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/13 23:14, Mike Turquette wrote:
-> This series introduces binding definitions for common register-mapped
-> clock multiplexer, divider and gate IP blocks along with the
-> corresponding setup functions for matching DT data.  The bindings are
-> similar to the struct definitions but please don't hold that against the
-> binding: the struct definitions closely model the hardware register
-> layout.
+On Thu, Jul 18, 2013 at 09:53:05AM -0400, Eduardo Valentin wrote:
+> Hello Guenter,
+> 
+> On 17-07-2013 18:09, Guenter Roeck wrote:
+> > On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin wrote:
+> >> Hello all,
+> >>
+> >> As you noticed, I am working in a way to represent thermal data
+> >> using device tree [1]. Essentially, this should be a way to say
+> >> what to do with a sensor and how to associate (cooling) actions
+> >> with it.
+> >>
+> > Seems to me that goes way beyond the supposed scope of devicetree data.
+> > Devicetree data is supposed to describe hardware, not its configuration or use.
+> > This is clearly a use case.
+> 
+> Thanks for rising your voice here. It is important to know what hwmon
+> ppl think about this.
+> 
+Sorry, I don't know what ppl stands for.
 
-I know there was some discussion about clock bindings and how they
-should and should not be done at Linaro Connect Europe last week. Can
-someone in that discussion reply to the mailing list with what came out
-of that? I only have second hand knowledge about the discussion so it
-would be good for me and others to know what was discussed. I'm
-especially curious because the arm soc update etherpad[1] says "DT
-describes what HW is (location, type, attributes), not how HW works
-(register descriptions, bitmasks, etc)." but these proposed generic
-clock bindings are describing registers and bitmasks.
+> > 
+> > Guenter
+> 
+> As your answers to the series are giving same argument, I chose to
+> answer on patch 0. I would be happier if you could elaborate a bit more
+> on your concern, specially if you take hwmon cap here, and give your
+> view with that perspective.
+> 
+> I also considered that this work could be abusing of DT purposes. But
+> let me explain why I still think it makes sense to have it.
+> 
+Ultimately, you are making my point here. If you considered it, did you ask
+devicetree experts for an opinion ? Did you discuss the subject on the
+devicetree-discuss mailing list ? If so, what was the result ?
 
-[1] http://pad.linaro.org/p/LCE13_ARM_SOC_Tree_Consolidation_Update
+> First thing is that this series intend to describe the thermal data
+> required for a specific board. That means, considering your board
+> layout, mechanics, power dissipation and composition of your ICs, etc,
+> that will impose thermal requirements on your system. That is not
+> configuration, but part of your board design and non-functional
+> requirement. To me, configuration would be something like saying you
+> want to use a specific keyboard layout, or defining your wifi card
+> channel, or display size, etc.
+> 
+> Here what is described and setup may get confused with configuration,
+> but it is not because what goes in DT in this case must be actually
+> derived from your HW needs. Putting a sensor  close to your battery has
+> a strong meaning behind. Same if you put a sensor close to your
+> processor. For instance, we have cases we need to consider external heat
+> in order to properly determine our CPU hotspot level, using a board
+> sensor. That is what I mean by HW requirement/need.
+> 
+> Again, just to refresh our minds, this is about protecting your board
+> and ICs from operating out of their spec and extending their lifetime.
+> This is not about configuring something just because user has chosen to.
+> That is definitely not a configuration.
+> 
+> Being a use case, well, these new DT nodes can still be seen as a use
+> case, yes. But depends on your understanding of use case. Because a
+> sensor device may be used on different needs, composing different use
+> cases. But still here we are talking about HW needs and composition. And
+> yes, if you take that perspective, there are use cases already described
+> in DT.
+> 
+> For instance, just because you use an LDO to power a MMC, does it mean
+> you always will use it to power MMC on all boards. Would that be a use
+> case? And in that example, because your MMC requires 2.8V, if you have a
+> DT property to say that, does it mean it is  configuration? Well, yes,
+> but that is based on HW needs, otherwise it wont operate properly. Same
+> thing here, leave your hw operating out of temperature specs and you
+> will see what is the outcome.
+> 
+> Similar example would be cpufreq, or OPPs for opp layer. Defining an OPP
+> in DT could be considered a configuration?  Well in theory yes, one can
+> pick what ever configuration for your (D)PLL then match with a
+> minimalist voltage level. And in theory, a voltage level can sustain
+> more than one frequency level. An OPP is still a virtual concept, and we
+> still describe it in DT. Why? To me is because it is a HW need, because
+> HW folks have actually validated that configuration of PLL (frequency)
+> and voltage level. Sometimes they have even optimized it (for low power
+> consumption for instance), as one may achieve same OPP with different
+> configuration. Then why thermal data, which is again, a 'HW
+> configuration' that has been optimized by HW folks, known to be a HW
+> requirement, cannot be described in DT?
+> 
+> Similar argument goes to the fact that one may think this is subsystem
+> specific. Again, describing your OPPs is not OPP layer specific?
+> Besides, one can still read the device tree nodes I have written for
+> describing thermal data and implement the HW requirement elsewhere, if
+> wanted (say in user land). I don't see as subsystem specific.
+> 
+> Keep in mind that these very same concepts are actually derived from
+> ACPI specification. They don't come from nowhere. And just because your
+> system does not have ACPI support, does not mean it won't have a need to
+> describe thermal?
+> 
+> So, because with this work (i) we are describing something that is
+> required for properly usage of your HW (and not choice of the user),
+> because (ii) same data is used on different specification (that is used
+> on different OSes too), because (iii) you don't need thermal fw to read
+> this data and you could implement the HW requirement elsewhere, because
+> (iv) there are other similar requirements already implemented via DT; I
+> still think this work is within DT scope. And that is based on evidence
+> of existing work not because DT is nice and I would want to use it.
+> 
+> Hope that clarifies.
+> 
+> Of course it is always welcome to hear ppl opinion. I would be really
+> interested to know what ppl from OF think about this topic.
+> 
+Yes, me too, or more widely the devicetree community. This is exactly
+why I brought it up.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> If still, this does not fit DT, I would like to understand a proper
+> argument. Better than, this is configuration/use case.
+> 
 
+I am not a devicetree expert. One of the complaints by the devicetree
+folks is that much is added to devicetree which should not be there.
+I find this use case questionable. Maybe I am wrong and it isn't,
+which may well be. But you thought about it as well, so I don't think
+I am that far off track.
+
+This needs to be discussed and determined by devicetree experts, not me.
+I'll be happy with your patch series if you get an agreement or an Ack
+by the devicetree maintainer for your patch series.
+
+Guenter
