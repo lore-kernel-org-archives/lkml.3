@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759306Ab3GRQrt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:47:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35101 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759216Ab3GRQrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:47:45 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>
-CC: Jason Kridner <jkridner@beagleboard.org>,
-        Mark Jackson <mpfj-list@newflow.co.uk>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 0/3] Pending dmaengine patches
-Date: Thu, 18 Jul 2013 11:46:38 -0500
-Message-ID: <1374166001-31340-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1759323Ab3GRQry (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:47:54 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:50890 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759308Ab3GRQrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 12:47:52 -0400
+Date: Thu, 18 Jul 2013 18:47:46 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix 'make tools/perf'
+Message-ID: <20130718164746.GN8731@rric.localhost>
+References: <1370964158-4135-1-git-send-email-rric@kernel.org>
+ <tip-107de3724eff5a6fa6474a4d2aa5460b63749ebf@git.kernel.org>
+ <20130712093909.GD8731@rric.localhost>
+ <20130716145036.GH8731@rric.localhost>
+ <20130717153118.GC2071@ghostprotocols.net>
+ <20130717154001.GA4454@pd.tnic>
+ <20130717161051.GJ8731@rric.localhost>
+ <20130718121924.GL8731@rric.localhost>
+ <20130718161913.GA2288@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718161913.GA2288@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've reworked Matt's dmaegine sg_limits series addressing review comments at [1].
+On 18.07.13 13:19:13, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jul 18, 2013 at 02:19:24PM +0200, Robert Richter escreveu:
+> > I noticed you applied the patch to acme/perf/core, but it should be
+> > instead in urgent since mainline is broken.
+> 
+> I did it because there are alternative ways to build the tools that
+> don't require this fix, i.e. this is not _strictly_ needed to build the
+> tools.
+> 
+> What do you guys think: a case like this always needs to go to the
+> current release candidate? Ingo?
 
-Currently MMC on AM33xx requires EDMA which was posted and accepted, following
-it is a series that are fixes that have to go in for it to work correctly.
-Without this series, DMA fails on MMC resulting in I/O errors.
+Since it worked before with v3.10 this is a regression in v3.11.
 
-A subsequent MMC DT patch for AM33xx is also on hold [2] for the same reason.
+> > No issues noticed, accept that doc is built when running the 'install'
+> > target, not 'all'.
 
-Tested on AM335x (Beaglebone Rev A5A).
+There is another problem building the doc with xmlto. I noticed odd
+timestamps leading *.1 files to be rebuilt (note that the .xml file is
+newer than *.1):
 
-[1] http://linux.davincidsp.com/pipermail/davinci-linux-open-source/2013-March/026658.html
-[2] http://lkml.indiana.edu/hypermail/linux/kernel/1306.3/03766.html
+ -rw-r--r-- 1 robert robert  5049 2013-07-18 14:57:27.000000000 +0200 perf-diff.1
+ -rw-r--r-- 1 robert robert  6771 2013-07-18 14:57:27.000207803 +0200 perf-diff.xml
 
-Matt Porter (3):
-  dmaengine: add dma_get_slave_sg_limits()
-  mmc: omap_hsmmc: set max_segs based on dma engine limits
-  dma: edma: add device_slave_sg_limits() support
+The reason is that xmlto builds the files in /tmp. In my system /tmp
+is ext3 while /home is ext4. Only ext4 supports nanosecond
+timestamps. Thus, timestamps are not quite comparable and make is
+confused a bit.
 
- drivers/dma/edma.c            |   14 +++++++++++++
- drivers/mmc/host/omap_hsmmc.c |    9 +++++++++
- include/linux/dmaengine.h     |   45 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 68 insertions(+)
+This would fix this, but I am not sure if we really want this change:
 
--- 
-1.7.9.5
+diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
+index 47df22d..1d6e045 100644
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -273,7 +273,8 @@ $(MAN_HTML): $(OUTPUT)%.html : %.txt
+ 
+ $(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
+ 	$(QUIET_XMLTO)$(RM) $@ && \
+-	$(XMLTO) -o $(OUTPUT). -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
++	$(XMLTO) -o $(OUTPUT). -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $< && \
++	touch $@
+ 
+ $(OUTPUT)%.xml : %.txt
+ 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
 
+If so, I will send a patch.
+
+Thanks,
+
+-Robert
