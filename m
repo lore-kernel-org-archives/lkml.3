@@ -1,194 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759011Ab3GRNc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 09:32:58 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:63156 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758990Ab3GRNc4 (ORCPT
+	id S1759047Ab3GRNe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 09:34:26 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:24942 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758775Ab3GRNeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 09:32:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130718090835.GZ4165@ZenIV.linux.org.uk>
-References: <20130718090835.GZ4165@ZenIV.linux.org.uk>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Thu, 18 Jul 2013 21:32:34 +0800
-Message-ID: <CA+a=Yy49WfQVJAYybUzVvigi9b--kuagqKxBEH+yy0RZSKVnQA@mail.gmail.com>
-Subject: Re: [lustre mess] is mgc_fs_setup() reachable at all?
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Nathan Rutman <Nathan_Rutman@xyratex.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 18 Jul 2013 09:34:24 -0400
+X-AuditID: cbfec7f4-b7fd76d0000035e1-3a-51e7eede30d5
+Message-id: <51E7EEDC.9080003@samsung.com>
+Date: Thu, 18 Jul 2013 15:34:20 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
+References: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
+ <51E65577.7010403@samsung.com>
+ <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
+ <51E69F49.10500@samsung.com>
+ <CAPybu_0b9ADaUFFHuw=tKkVR4fiu9bGNJVgy4MGbuE-zAA9sZQ@mail.gmail.com>
+ <51E7960C.8050707@samsung.com>
+ <CAPybu_36Pe5+RO+qmUXTQtbESnrJg4hwey1mXXRH4urc9i4GAg@mail.gmail.com>
+In-reply-to: <CAPybu_36Pe5+RO+qmUXTQtbESnrJg4hwey1mXXRH4urc9i4GAg@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t/xK7r33j0PNNh5VdjibNMbdovLu+aw
+	WfRs2MpqsefoYXaLKW9/slt0dc9jcmDz2DnrLrvH418v2Tze77vK5tG3ZRWjx+dNcgGsUVw2
+	Kak5mWWpRfp2CVwZX/ZMZyr4JFxx/9tu1gbGL/xdjJwcEgImEk/nzmGFsMUkLtxbz9bFyMUh
+	JLCUUeLgi5eMEE4zk8Sqd3OYQKp4BbQkzjw+BdbBIqAq8aL1DjuIzSZgKNH1tosNxBYVCJWY
+	tmQBI0S9oMSPyfdYQGwRAXOJyx86wWqYBY4ySjRNBZsjLOAl8WLOb2aIZf+YJBb+3gO2jFMg
+	WOLWitdMEA1mEo9a1jFD2PISm9e8ZZ7AKDALyY5ZSMpmISlbwMi8ilE0tTS5oDgpPddQrzgx
+	t7g0L10vOT93EyMkvL/sYFx8zOoQowAHoxIPryH/80Ah1sSy4srcQ4wSHMxKIryVL4FCvCmJ
+	lVWpRfnxRaU5qcWHGJk4OKUaGEOUeW7ECjCFcV7IUm+sYZ526/2NrXyMXMY3I1TqArwCW7+c
+	CxF8vaLTw60v+rlmTM2JTy6sfw5GaQjt1bqVxuOdGLQ7sqEs9sacmV4TdWViGr1f/w5mMLu9
+	VfrNhY2/VP58is3/WZM47cBVx5N1LTNWib14ujRWddXD0MIFqXdDmkyPLXryVImlOCPRUIu5
+	qDgRALaZ+IlNAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+Hello,
 
-On Thu, Jul 18, 2013 at 5:08 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> [nathan cc'd since he's the only person mentioned in mgc_request.c]
+On 7/18/2013 9:39 AM, Ricardo Ribalda Delgado wrote:
+> Hello again:
 >
-clusterfs is long gone. Add nathan's new mail address. Also add
-Andreas Dilger. He is the maintainer of the Lustre code.
+> I have started to implemt it, but I think there is more hidden work in
+> this task as it seems. In order to call dma_map_sg and
+> max_dma_segment_size I need acess to the struct device, but (correct
+> me if I am wrong), vb2 is device agnostic. Adding the above
+> functionality will mean not only updating marvell-ccic and solo6x10,
+> but updating all the vb2 buffers.
 
-> One general observation: drivers/taging/lustre is highly reviewer-hostile...
->
-sorry...
+For getting device pointer, vb2-dma-sg need to be extended with so called
+'allocator context'. Please check how it is done in vb2-dma-contig
+(vb2_dma_contig_init_ctx() function).
 
-> Found by unrelated grep:
->
-> drivers/staging/lustre/lustre/mgc/mgc_request.c:1040:           if (vallen != sizeof(struct super_block))
->
-> Huh?  The code around that line looks so:
->         if (KEY_IS(KEY_SET_FS)) {
->                 struct super_block *sb = (struct super_block *)val;
->                 struct lustre_sb_info *lsi;
->                 if (vallen != sizeof(struct super_block))
->                         RETURN(-EINVAL);
->                 lsi = s2lsi(sb);
->                 rc = mgc_fs_setup(exp->exp_obd, sb, lsi->lsi_srv_mnt);
->                 if (rc) {
->                         CERROR("set_fs got %d\n", rc);
->                 }
->                 RETURN(rc);
->         }
-> What is going on here?  We cast something to struct super_block *?
-> Where does it come from?  The function it's in is
->
-> int mgc_set_info_async(const struct lu_env *env, struct obd_export *exp,
->                        obd_count keylen, void *key, obd_count vallen,
->                        void *val, struct ptlrpc_request_set *set)
->
-> which says damn little, other than "multiplexor with no type safety".  Who
-> calls that?
-> ; git grep -n -w mgc_set_info_async
-> drivers/staging/lustre/lustre/mgc/mgc_request.c:1001:int mgc_set_info_async(const struct lu_env *env, struct obd_export *exp,
-> drivers/staging/lustre/lustre/mgc/mgc_request.c:1836:   .o_set_info_async = mgc_set_info_async,
-> ;
->
-> Umm...  OK, looks like it's only called as a method.  Unfortunately, grep for
-> o_set_info_async brings a lot of instances and no callers.  After a lot of
-> cursing, the following antisocial Fine Piece Of Code had been located:
->
-> #define OBP(dev, op)    (dev)->obd_type->typ_dt_ops->o_ ## op
->
-> along with
->
->         rc = OBP(exp->exp_obd, set_info_async)(env, exp, keylen, key, vallen,
->                                                val, set);
->
-> As far as I'm concerned, macros like that are equivalent to spitting into
-> reviewers' eyes.  Sometimes out of malice, sometimes just because the authors
-> felt like it would be a cute prank, either way it makes life really unpleasant -
-> when you need to guess which part of method/function name is to be searched for
-> to locate the call sites... it gets old very soon.
-It caused a lot of trouble for many to follow the code...
 
-Andreas, can we just drop such macros?
+> Also after some readings, maybe the sg compactation should not be done
+> here, but in dma_map_sg. According to the doc:
+>
+> """
+> The implementation is free to merge several consecutive sglist entries
+> into one (e.g. if DMA mapping is done with PAGE_SIZE granularity, any
+> consecutive sglist entries can be merged into one provided the first one
+> ends and the second one starts on a page boundary - in fact this is a huge
+> advantage for cards which either cannot do scatter-gather or have very
+> limited number of scatter-gather entries) and returns the actual number
+> of sg entries it mapped them to. On failure 0 is returned.
+> """
+>
+> So, my proposal would be to alloc with alloc_pages to try to get
+> memory as coherent as possible, then split the page, set the sg in
+> PAGE_SIZE lenghts, and then let the dma_map_sg do its magic. if it
+> doesnt do compactation, fix dma_map_sg, so more driver could take
+> advantage of it.
 
-> Anyway, this thing is in
->
-> static inline int obd_set_info_async(const struct lu_env *env,
->                                      struct obd_export *exp, obd_count keylen,
->                                      void *key, obd_count vallen, void *val,
->                                      struct ptlrpc_request_set *set)
->
-> Again, the type safety is inexistent, but let's cross the fingers and look for
-> callers (and hope they hadn't pulled a similar cute trick with ## here)
->
-> ; git grep -n -w obd_set_info_async
-> drivers/staging/lustre/lustre/include/obd_class.h:508:static inline int obd_set_info_async(const struct lu_env *env,
-> drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c:522:            rc = obd_set_info_async(req->rq_svc_thread->t_env,
-> drivers/staging/lustre/lustre/llite/dir.c:658:  rc = obd_set_info_async(NULL, mgc, sizeof(KEY_SET_INFO), KEY_SET_INFO,
-> drivers/staging/lustre/lustre/llite/llite_lib.c:558:    err = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CHECKSUM),
-> drivers/staging/lustre/lustre/llite/llite_lib.c:563:    err = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CACHE_SET),
-> drivers/staging/lustre/lustre/llite/llite_lib.c:1964:   obd_set_info_async(NULL, sbi->ll_md_exp,
-> drivers/staging/lustre/lustre/llite/llite_lib.c:1967:   obd_set_info_async(NULL, sbi->ll_dt_exp,
-> drivers/staging/lustre/lustre/llite/llite_lib.c:2032:           err = obd_set_info_async(NULL, sbi->ll_md_exp,
-> drivers/staging/lustre/lustre/llite/lproc_llite.c:437:          rc = obd_set_info_async(NULL, sbi->ll_dt_exp,
-> drivers/staging/lustre/lustre/llite/lproc_llite.c:485:  rc = obd_set_info_async(NULL, sbi->ll_dt_exp, sizeof(KEY_CHECKSUM),
-> drivers/staging/lustre/lustre/lmv/lmv_obd.c:281:                obd_set_info_async(NULL, tgt->ltd_exp, sizeof(KEY_INTERMDS),
-> drivers/staging/lustre/lustre/lmv/lmv_obd.c:2239:                       err = obd_set_info_async(env, tgt->ltd_exp,
-> drivers/staging/lustre/lustre/lov/lov_obd.c:638:                rc = obd_set_info_async(NULL, tgt->ltd_exp,
-> drivers/staging/lustre/lustre/lov/lov_obd.c:2629:                       err = obd_set_info_async(env, tgt->ltd_exp,
-> drivers/staging/lustre/lustre/lov/lov_obd.c:2633:                       err = obd_set_info_async(env, tgt->ltd_exp,
-> drivers/staging/lustre/lustre/lov/lov_obd.c:2646:                       err = obd_set_info_async(env, tgt->ltd_exp, keylen,
-> drivers/staging/lustre/lustre/lov/lov_obd.c:2655:                       err = obd_set_info_async(env, tgt->ltd_exp,
-> drivers/staging/lustre/lustre/mdc/mdc_request.c:1767:           rc = obd_set_info_async(NULL, exp, strlen(KEY_CHANGELOG_CLEAR),
-> drivers/staging/lustre/lustre/obdclass/genops.c:624:            rc2 = obd_set_info_async(NULL, obd->obd_self_export,
-> drivers/staging/lustre/lustre/obdclass/obd_mount.c:277:         rc = obd_set_info_async(NULL, obd->obd_self_export,
-> drivers/staging/lustre/lustre/obdclass/obd_mount.c:326:         rc = obd_set_info_async(NULL, obd->obd_self_export,
-> drivers/staging/lustre/lustre/obdclass/obd_mount.c:425: rc = obd_set_info_async(NULL, obd->obd_self_export,
-> drivers/staging/lustre/lustre/obdclass/obd_mount.c:437: rc = obd_set_info_async(NULL, obd->obd_self_export,
-> ;
->
-> Oh, joy... 23 call sites to sift through.  Which ones are we interested in?
-> The test down in the FPOS that has started it all is also reviewer-hostile -
-> KEY_IS(KEY_SET_FS) has no visible references to function arguments.  Oh, well...
->
-> #define KEY_IS(str) \
->         (keylen >= (sizeof(str)-1) && memcmp(key, str, (sizeof(str)-1)) == 0)
-> #define KEY_SET_FS              "set_fs"
->
-> and KEY_SET_FS is _NOT_ mentioned anywhere outside that check.  Neither is
-> "set_fs" as explicit string constant.  I would've assumed the whole thing
-> to be dead code, but... what with the preprocessor tricks we'd already seen
-> there, I wouldn't bet against that thing coming from string concat.  Or from
-> macro stringifying set_fs (sans double quotes).  Or from any number of sick
-> preprocessor tricks.  Oh, well - at least we can go through that list and
-> drop the call sites that pass a different string constant.  A few minutes
-> and curses later we are down to these 5:
->
->                         err = obd_set_info_async(env, tgt->ltd_exp,
->                                                  keylen, key, vallen, val, set);
-> in lmv_set_info_async(),
-> and
->                         err = obd_set_info_async(env, tgt->ltd_exp,
->                                          keylen, key, sizeof(int),
->                                          &mgi->group, set);
->                         err = obd_set_info_async(env, tgt->ltd_exp,
->                                          keylen, key, vallen,
->                                          ((struct obd_id_info*)val)->data, set);
->                         err = obd_set_info_async(env, tgt->ltd_exp, keylen,
->                                                  key, sizeof(*info->capa),
->                                                  info->capa, set);
->                         err = obd_set_info_async(env, tgt->ltd_exp,
->                                          keylen, key, vallen, val, set);
-> in lov_set_info_async().
->
-> ; git grep -n -w lmv_set_info_async
-> drivers/staging/lustre/lustre/lmv/lmv_obd.c:2212:int lmv_set_info_async(const struct lu_env *env, struct obd_export *exp,
-> drivers/staging/lustre/lustre/lmv/lmv_obd.c:2661:       .o_set_info_async       = lmv_set_info_async,
-> ;
->
-> IOW, this one is another o_set_info_async instance and key/keylen/val/vallen
-> is passed from its caller as-is.
->
-> ; git grep -n -w lov_set_info_async
-> drivers/staging/lustre/lustre/lov/lov_obd.c:2559:static int lov_set_info_async(const struct lu_env *env, struct obd_export *exp,
-> drivers/staging/lustre/lustre/lov/lov_obd.c:2850:       .o_set_info_async      = lov_set_info_async,
-> ;
->
-> ... and this one is also o_set_info_async instance.  In one of 4 call sites
-> we appear to pass the arguments as-is, the rest... key/keylen is passed as-is,
-> val/vallen isn't.  In any case, key must have originated in one of the
-> call sites we'd already eliminated.
->
-> So unless I've missed something in that paragon of good taste, there is no
-> call chain that could've lead to mgc_set_info_async() with key being "set_fs".
-> Incidentally, there is a couple of recursive loops in there that might or
-> might not lead to stack overflows.
->
-You analysis looks correct. After searching down the list on my own, I
-agree with you that the piece of code is unreachable at all. But it is
-better to get confirmed by Andreas or Nathan.
+Right, this approach is probably the best one, but this way you would need
+to do the compaction in every dma-mapping implementation for every supported
+architecture. IMHO vb2-dma-sg can help dma-mapping by at least by allocating
+memory in larger chunks and constructing shorter scatter list. Updating
+dma-mapping functions across all architectures is a lot of work and testing,
+so for initial version we should focus on vb2-dma-sg. Memory allocators
+already do some work to ease mapping a buffer to dma space.
 
-> Could somebody familiar with that thing confirm that this is, in fact, dead
-> code?  As the matter of fact, could maintainers please stand up and put their
-> names into MAINTAINERS?
+> I could also of course fix marvell-ccic and solo6x10 to use sg_table.
+>
+> Does anything of this make sense?
 
-Andreas, please?
+I would also like to help you as much as possible, but for the next 10 days
+I will be not available for both personal reasons and holidays. If you have
+any questions, feel free to leave them on my mail, I will reply asap I get
+back.
 
-Thanks,
-Tao
+Best regards
+-- 
+Marek Szyprowski
+Samsung R&D Institute Poland
+
+
