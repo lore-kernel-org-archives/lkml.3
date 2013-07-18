@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934141Ab3GRW61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:58:27 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33512 "EHLO mga11.intel.com"
+	id S934363Ab3GRW7E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:59:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5770 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932682Ab3GRW60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:58:26 -0400
+	id S932682Ab3GRW7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:59:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
-   d="scan'208";a="372646284"
+   d="scan'208";a="367595679"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] tools, perf: Add a precise event qualifier v2
-Date: Thu, 18 Jul 2013 15:58:23 -0700
-Message-Id: <1374188303-17857-1-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] perf, tools: Move weight back to common sort keys
+Date: Thu, 18 Jul 2013 15:58:53 -0700
+Message-Id: <1374188333-17899-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,76 +23,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a precise qualifier, like cpu/event=0x3c,precise=1/
+This is a partial revert of Namhyung's patch
+ afab87b91f3f331d55664172dad8e476e6ffca9d
+ perf sort: Separate out memory-specific sort keys
 
-This is needed so that the kernel can request enabling PEBS
-on specific events. This is useful for mem-loads/mem-stores
+He wrote
 
-Currently you have to known that mem-loads is a PEBS event
-and use
+ For global/local weights, I'm not entirely sure to place them into the
+ memory dimension.  But it's the only user at this time.
 
-perf record -e cpu/mem-loads/p ...
+Well TSX is another (in fact the original) user of the flags,
+and it needs them to be common. So move local/global weight
+back to the common sort keys.
 
-With this patch we can export the PEBSness of events in sysfs and
-then allow
-
-perf record -e cpu/mem-loads/ ...
-
-or with the additional patch to automatically add cpu//
-
-perf record -e mem-loads ...
-
-Also useful for some other events added in later patches.
-
-v2: Allow 3 as value
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/parse-events.c | 6 ++++++
- tools/perf/util/parse-events.h | 1 +
- tools/perf/util/parse-events.l | 1 +
- 3 files changed, 8 insertions(+)
+ tools/perf/util/sort.c | 4 ++--
+ tools/perf/util/sort.h | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 995fc25..34f1470 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -568,6 +568,12 @@ do {								\
- 	case PARSE_EVENTS__TERM_TYPE_NAME:
- 		CHECK_TYPE_VAL(STR);
- 		break;
-+	case PARSE_EVENTS__TERM_TYPE_PRECISE:
-+		CHECK_TYPE_VAL(NUM);
-+		if ((unsigned)term->val.num > 3)
-+			return -EINVAL;
-+		attr->precise_ip = term->val.num;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 8a48593..13d7c66 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -48,6 +48,7 @@ enum {
- 	PARSE_EVENTS__TERM_TYPE_NAME,
- 	PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD,
- 	PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE,
-+	PARSE_EVENTS__TERM_TYPE_PRECISE,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 313a5a7..5919480 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -872,6 +872,8 @@ static struct sort_dimension common_sort_dimensions[] = {
+ 	DIM(SORT_PARENT, "parent", sort_parent),
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
++	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
++	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
  };
  
- struct parse_events_term {
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index e9d1134..32a9000 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -169,6 +169,7 @@ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
- branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- ,			{ return ','; }
- "/"			{ BEGIN(INITIAL); return '/'; }
-+precise			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_PRECISE); }
- {name_minus}		{ return str(yyscanner, PE_NAME); }
- }
+ #undef DIM
+@@ -891,8 +893,6 @@ static struct sort_dimension bstack_sort_dimensions[] = {
+ #define DIM(d, n, func) [d - __SORT_MEMORY_MODE] = { .name = n, .entry = &(func) }
  
+ static struct sort_dimension memory_sort_dimensions[] = {
+-	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
+-	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
+ 	DIM(SORT_MEM_DADDR_SYMBOL, "symbol_daddr", sort_mem_daddr_sym),
+ 	DIM(SORT_MEM_DADDR_DSO, "dso_daddr", sort_mem_daddr_dso),
+ 	DIM(SORT_MEM_LOCKED, "locked", sort_mem_locked),
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 45ac84c..2860d46 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -138,6 +138,8 @@ enum sort_type {
+ 	SORT_PARENT,
+ 	SORT_CPU,
+ 	SORT_SRCLINE,
++	SORT_LOCAL_WEIGHT,
++	SORT_GLOBAL_WEIGHT,
+ 
+ 	/* branch stack specific sort keys */
+ 	__SORT_BRANCH_STACK,
+@@ -149,9 +151,7 @@ enum sort_type {
+ 
+ 	/* memory mode specific sort keys */
+ 	__SORT_MEMORY_MODE,
+-	SORT_LOCAL_WEIGHT = __SORT_MEMORY_MODE,
+-	SORT_GLOBAL_WEIGHT,
+-	SORT_MEM_DADDR_SYMBOL,
++	SORT_MEM_DADDR_SYMBOL = __SORT_MEMORY_MODE,
+ 	SORT_MEM_DADDR_DSO,
+ 	SORT_MEM_LOCKED,
+ 	SORT_MEM_TLB,
 -- 
 1.8.1.4
 
