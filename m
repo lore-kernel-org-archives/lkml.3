@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775Ab3GRTDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:03:53 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:21758 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933079Ab3GRTDw (ORCPT
+	id S933909Ab3GRTFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:05:11 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59404 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933317Ab3GRTFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:03:52 -0400
-Message-ID: <1374174227.1792.39.camel@j-VirtualBox>
-Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
- frequently
-From: Jason Low <jason.low2@hp.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
-Date: Thu, 18 Jul 2013 12:03:47 -0700
-In-Reply-To: <20130718121245.GA3745@linux.vnet.ibm.com>
-References: <20130716202015.GX17211@twins.programming.kicks-ass.net>
-	 <1374014881.2332.21.camel@j-VirtualBox>
-	 <20130717072504.GY17211@twins.programming.kicks-ass.net>
-	 <1374048701.6000.21.camel@j-VirtualBox>
-	 <20130717093913.GP23818@dyad.programming.kicks-ass.net>
-	 <1374076741.7412.35.camel@j-VirtualBox>
-	 <20130717161815.GR23818@dyad.programming.kicks-ass.net>
-	 <51E6D9B7.1030705@redhat.com>
-	 <20130717180156.GS23818@dyad.programming.kicks-ass.net>
-	 <1374120144.1816.45.camel@j-VirtualBox>
-	 <20130718121245.GA3745@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 18 Jul 2013 15:05:08 -0400
+Message-ID: <51E83C46.3040000@ti.com>
+Date: Thu, 18 Jul 2013 14:04:38 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <balbi@ti.com>
+Subject: Re: [PATCH 2/3] ARM: dts: DRA: Add crossbar device binding
+References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-3-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1374165830-6367-3-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 17:42 +0530, Srikar Dronamraju wrote:
-> > > 
-> > > idle_balance(u64 idle_duration)
-> > > {
-> > >   u64 cost = 0;
-> > > 
-> > >   for_each_domain(sd) {
-> > >     if (cost + sd->cost > idle_duration/N)
-> > >       break;
-> > > 
-> > >     ...
-> > > 
-> > >     sd->cost = (sd->cost + this_cost) / 2;
-> > >     cost += this_cost;
-> > >   }
-> > > }
-> > > 
-> > > I would've initially suggested using something like N=2 since we're dealing
-> > > with averages and half should ensure we don't run over except for the worst
-> > > peaks. But we could easily use a bigger N.
-> > 
-> > I ran a few AIM7 workloads for the 8 socket HT enabled case and I needed
-> > to set N to more than 20 in order to get the big performance gains.
-> > 
-> 
-> As per your observation, newly idle balancing isn't picking tasks and
-> mostly finding the domains to be balanced. find_busiest_queue() is
-> under rcu. So where and how are we getting these performance gains?
+On 07/18/2013 11:43 AM, Sricharan R wrote:
+> This adds the irq/dma crossbar device nodes.
+>
+> There is a IRQ and DMA crossbar device in the soc, which
+> maps the irq/dma requests from the peripherals to the
+> mpu/dsp/ipu/eve interrupt and sdma/edma controller's inputs.
+> The Peripheral irq/dma requests are connected to only one crossbar
+> input and the output of the crossbar is connected to only one
+> controller's input line. On POR, there are some mappings which
+> are done by default. Those peripherals which do not have a
+> mapping on POR, should be configured to route its requests
+> using the crossbar control registers.
+>
 
-I actually just ran fserver on 8 sockets (which idle balance lowers the
-performance in this workload at this socket count), and for this
-workload, idle balancing is finding tasks to move fairly often on a
-per-cpu basis. So I guess it is not always the case that idle balancing
-isn't moving tasks on this box.
+What is POR? Plan on Record? I supppose, we just love our TLA?
 
-Jason
+> The irq/dma mapping for some peripherals are
+> added with the crossbar nodes here.
+>
+> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> ---
+>   arch/arm/boot/dts/dra7.dtsi |   19 +++++++++++++++++++
+>   1 file changed, 19 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index a5d9350..e6208b4 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -85,6 +85,25 @@
+>   		ranges;
+>   		ti,hwmods = "l3_main_1", "l3_main_2";
+>
+> +		crossbar_mpu: mpuirq@4a002a48 {
+> +			compatible = "crossbar";
+> +			crossbar-name = "mpu-irq";
+> +			reg = <0x4a002a48 0x0130>;
+> +			reg-width = <16>;
+> +			crossbar-lines = "mpu-irq", "rtc-ss-alarm", <0x9f 0xd9 0x12c>,
+> +					 "mpu-irq", "mcasp3-arevt", <0x9e 0x96 0x12a>,
+> +					 "mpu-irq", "mcasp3-axevt", <0x9d 0x97 0x128>;
 
+a) I'd like to use UART10. oh, let me guess: we dont map all cross bar 
+options here.. just "certain ones"
+b) I like to use random 6 uarts out of the available 10 uarts on the fly.
+c) I'd like to use IRQCROSS bar such that i use all the hardware block 
+instances that dont have default GIC IRQ mapping.
+
+
+> +		};
+> +
+> +		crossbar_dma: dmareq@4a002b78 {
+> +			compatible = "crossbar";
+> +			crossbar-name = "dma-req";
+> +			reg = <0x4a002b78 0x0100>;
+> +			reg-width = <16>;
+> +			crossbar-lines = "dma-req", "mcasp3-rx", <0x7e 0x84 0xfc>,
+> +					 "dma-req", "mcasp3-tx", <0x7d 0x85 0xfa>;
+> +		};
+> +
+>   		counter32k: counter@4ae04000 {
+>   			compatible = "ti,omap-counter32k";
+>   			reg = <0x4ae04000 0x40>;
+>
+
+
+-- 
+Regards,
+Nishanth Menon
