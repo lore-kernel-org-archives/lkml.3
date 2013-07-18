@@ -1,98 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab3GRIfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:35:17 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:16934 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab3GRIfO (ORCPT
+	id S1757411Ab3GRIgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:36:46 -0400
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:37187 "EHLO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757147Ab3GRIgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:35:14 -0400
-Message-ID: <51E7A7DC.80108@huawei.com>
-Date: Thu, 18 Jul 2013 16:31:24 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 18 Jul 2013 04:36:43 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3 V2] tracing: guard tracing_selftest_disabled by CONFIG_FTRACE_STARTUP_TEST
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+In-Reply-To: <51E6DCB5.3070302@metafoo.de>
+References: <1374059564-6872-1-git-send-email-oleksandr.kozaruk@ti.com>
+	<1374059564-6872-3-git-send-email-oleksandr.kozaruk@ti.com>
+	<51E6DCB5.3070302@metafoo.de>
+Date: Thu, 18 Jul 2013 11:36:42 +0300
+X-Google-Sender-Auth: Y0slhXZ_bZAgOdaORwOXOuVYJDw
+Message-ID: <CAPb7_muAzO-jRqgcm89fcKT-hTLq38Aj2p0WAWjGjN9DoQUwPg@mail.gmail.com>
+Subject: Re: [PATCH v5 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: tony@atomide.com, benoit.cousson@linaro.org, rnayak@ti.com,
+        peter.ujfalusi@ti.com, kishon@ti.com, jic23@cam.ac.uk,
+        grant.likely@linaro.org, rob.herring@calxeda.com,
+        sameo@linux.intel.com, ch.naveen@samsung.com, poeschel@lemonage.de,
+        milo.kim@ti.com, balajitk@ti.com, gg@slimlogic.co.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable tracing_selftest_disabled have not any sense when
-CONFIG_FTRACE_STARTUP_TEST is disabled.
+Hello Lars,
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
----
- kernel/trace/trace.c        |    4 +++-
- kernel/trace/trace.h        |    2 +-
- kernel/trace/trace_events.c |    2 ++
- 3 files changed, 6 insertions(+), 2 deletions(-)
+On Wed, Jul 17, 2013 at 9:04 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> +static int twl6032_calibration(struct twl6030_gpadc_data *gpadc)
+>> +{
+>> +     int chn, d1 = 0, d2 = 0, temp;
+>> +     u8 trim_regs[17];
+>> +     int ret;
+>> +
+>> +     ret = twl_i2c_read(TWL6030_MODULE_ID2, trim_regs + 1,
+>> +                     TWL6030_GPADC_TRIM1, 16);
+>> +     if (ret < 0) {
+>> +             dev_err(gpadc->dev, "calibration failed\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     /*
+>> +      * Loop to calculate the value needed for returning voltages from
+>> +      * GPADC not values.
+>> +      *
+>> +      * gain is calculated to 3 decimal places fixed point.
+>> +      */
+>> +     for (chn = 0; chn < TWL6032_GPADC_MAX_CHANNELS; chn++) {
+>> +
+>> +             switch (chn) {
+>> +             case 0:
+>> +             case 1:
+>> +             case 2:
+>> +             case 3:
+>> +             case 4:
+>> +             case 5:
+>> +             case 6:
+>> +             case 11:
+>> +             case 12:
+>> +             case 13:
+>> +             case 14:
+>> +                     /* D1 */
+>> +                     d1 = (trim_regs[3] & 0x1F) << 2;
+>> +                     d1 |= (trim_regs[1] & 0x06) >> 1;
+>> +                     if (trim_regs[1] & 0x01)
+>> +                             d1 = -d1;
+>> +
+>> +                     /* D2 */
+>> +                     d2 = (trim_regs[4] & 0x3F) << 2;
+>> +                     d2 |= (trim_regs[2] & 0x06) >> 1;
+>> +                     if (trim_regs[2] & 0x01)
+>> +                             d2 = -d2;
+>> +                     break;
+>> +             case 8:
+>> +                     /* D1 */
+>> +                     temp = (trim_regs[3] & 0x1F) << 2;
+>> +                     temp |= (trim_regs[1] & 0x06) >> 1;
+>> +                     if (trim_regs[1] & 0x01)
+>> +                             temp = -temp;
+>> +
+>> +                     d1 = (trim_regs[8] & 0x18) << 1;
+>> +                     d1 |= (trim_regs[7] & 0x1E) >> 1;
+>> +                     if (trim_regs[7] & 0x01)
+>> +                             d1 = -d1;
+>> +
+>> +                     d1 += temp;
+>> +
+>> +                     /* D2 */
+>> +                     temp = (trim_regs[4] & 0x3F) << 2;
+>> +                     temp |= (trim_regs[2] & 0x06) >> 1;
+>> +                     if (trim_regs[2] & 0x01)
+>> +                             temp = -temp;
+>> +
+>> +                     d2 = (trim_regs[10] & 0x1F) << 2;
+>> +                     d2 |= (trim_regs[8] & 0x06) >> 1;
+>> +                     if (trim_regs[8] & 0x01)
+>> +                             d2 = -d2;
+>> +
+>> +                     d2 += temp;
+>> +                     break;
+>> +             case 9:
+>> +                     /* D1 */
+>> +                     temp = (trim_regs[3] & 0x1F) << 2;
+>> +                     temp |= (trim_regs[1] & 0x06) >> 1;
+>> +                     if (trim_regs[1] & 0x01)
+>> +                             temp = -temp;
+>> +
+>> +                     d1 = (trim_regs[14] & 0x18) << 1;
+>> +                     d1 |= (trim_regs[12] & 0x1E) >> 1;
+>> +                     if (trim_regs[12] & 0x01)
+>> +                             d1 = -d1;
+>> +
+>> +                     d1 += temp;
+>> +
+>> +                     /* D2 */
+>> +                     temp = (trim_regs[4] & 0x3F) << 2;
+>> +                     temp |= (trim_regs[2] & 0x06) >> 1;
+>> +                     if (trim_regs[2] & 0x01)
+>> +                             temp = -temp;
+>> +
+>> +                     d2 = (trim_regs[16] & 0x1F) << 2;
+>> +                     d2 |= (trim_regs[14] & 0x06) >> 1;
+>> +                     if (trim_regs[14] & 0x01)
+>> +                             d2 = -d2;
+>> +
+>> +                     d2 += temp;
+>> +             case 10:
+>> +                     /* D1 */
+>> +                     d1 = (trim_regs[11] & 0x0F) << 3;
+>> +                     d1 |= (trim_regs[9] & 0x0E) >> 1;
+>> +                     if (trim_regs[9] & 0x01)
+>> +                             d1 = -d1;
+>> +
+>> +                     /* D2 */
+>> +                     d2 = (trim_regs[15] & 0x0F) << 3;
+>> +                     d2 |= (trim_regs[13] & 0x0E) >> 1;
+>> +                     if (trim_regs[13] & 0x01)
+>> +                             d2 = -d2;
+>> +                     break;
+>> +             case 7:
+>> +             case 18:
+>> +                     /* D1 */
+>> +                     temp = (trim_regs[3] & 0x1F) << 2;
+>> +                     temp |= (trim_regs[1] & 0x06) >> 1;
+>> +                     if (trim_regs[1] & 0x01)
+>> +                             temp = -temp;
+>> +
+>> +                     d1 = (trim_regs[5] & 0x7E) >> 1;
+>> +                     if (trim_regs[5] & 0x01)
+>> +                             d1 = -d1;
+>> +.
+>> +                     d1 += temp;
+>> +
+>> +                     /* D2 */
+>> +                     temp = (trim_regs[4] & 0x3F) << 2;
+>> +                     temp |= (trim_regs[2] & 0x06) >> 1;
+>> +                     if (trim_regs[2] & 0x01)
+>> +                             temp = -temp;
+>> +
+>> +                     d2 = (trim_regs[6] & 0xFE) >> 1;
+>> +                     if (trim_regs[6] & 0x01)
+>> +                             d2 = -d2;
+>> +
+>> +                     d2 += temp;
+>> +                     break;
+>
+>
+> There is quite a bit of copy paste in here. Putting the bit swizziling into
+> a helper function should also improbe legibility.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 41340c3..248a856 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -58,10 +58,12 @@ bool ring_buffer_expanded;
-  */
- static bool __read_mostly tracing_selftest_running;
+Trimming bits are scattered randomly between registers and in
+different bit positions.
+I don't see any commonalities, that could be generalized. as Graeme
+said about it "it's a bane of my life".
 
-+#ifdef CONFIG_FTRACE_STARTUP_TEST
- /*
-  * If a tracer is running, we do not want to run SELFTEST.
-  */
- bool __read_mostly tracing_selftest_disabled;
-+#endif
-
- /* For tracers that don't implement custom flags */
- static struct tracer_opt dummy_tracer_opt[] = {
-@@ -1093,9 +1095,9 @@ int register_tracer(struct tracer *type)
- 	/* Do we want this tracer to start on bootup? */
- 	tracing_set_tracer(type->name);
- 	default_bootup_tracer = NULL;
-+#ifdef CONFIG_FTRACE_STARTUP_TEST
- 	/* disable other selftests, since this will break it. */
- 	tracing_selftest_disabled = true;
--#ifdef CONFIG_FTRACE_STARTUP_TEST
- 	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
- 	       type->name);
- #endif
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 20572ed..532c2e3 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -658,10 +658,10 @@ extern int DYN_FTRACE_TEST_NAME(void);
- extern int DYN_FTRACE_TEST_NAME2(void);
-
- extern bool ring_buffer_expanded;
--extern bool tracing_selftest_disabled;
- DECLARE_PER_CPU(int, ftrace_cpu_disabled);
-
- #ifdef CONFIG_FTRACE_STARTUP_TEST
-+extern bool tracing_selftest_disabled;
- extern int trace_selftest_startup_function(struct tracer *trace,
- 					   struct trace_array *tr);
- extern int trace_selftest_startup_function_graph(struct tracer *trace,
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 27963e2..5f694ce 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -2228,7 +2228,9 @@ static __init int setup_trace_event(char *str)
- {
- 	strlcpy(bootup_event_buf, str, COMMAND_LINE_SIZE);
- 	ring_buffer_expanded = true;
-+#ifdef CONFIG_FTRACE_STARTUP_TEST
- 	tracing_selftest_disabled = true;
-+#endif
-
- 	return 1;
- }
--- 
-1.7.9.7
-
-
+Regards,
+OK.
