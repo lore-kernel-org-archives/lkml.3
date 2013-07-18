@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab3GRLwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:52:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34233 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731Ab3GRLwP (ORCPT
+	id S1758884Ab3GRLz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:55:28 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:34909 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757126Ab3GRLz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:52:15 -0400
-Message-ID: <51E7D6E1.3000208@ti.com>
-Date: Thu, 18 Jul 2013 17:22:01 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 18 Jul 2013 07:55:27 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
-        <balbi@ti.com>, <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCHv2 3/3] driver: spi: Add quad spi read support
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com> <1374141687-10790-4-git-send-email-sourav.poddar@ti.com> <20130718104414.GH22506@sirena.org.uk>
-In-Reply-To: <20130718104414.GH22506@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130718110201.GB29153@e106331-lin.cambridge.arm.com>
+References: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
+	<1374067396-30155-1-git-send-email-jonas.jensen@gmail.com>
+	<20130718095035.GA29153@e106331-lin.cambridge.arm.com>
+	<CACmBeS2SnpiUtiQD6j9qyaXZ5-chHSHVeo4c5=UhitVonvkKtw@mail.gmail.com>
+	<20130718110201.GB29153@e106331-lin.cambridge.arm.com>
+Date: Thu, 18 Jul 2013 13:55:26 +0200
+Message-ID: <CACmBeS24smrJ4SLY7snv1_6SRcuXRkZ8t0PGMvBupUpKMMb43w@mail.gmail.com>
+Subject: Re: [PATCH v3] clk: add MOXA ART SoCs clock driver
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 July 2013 04:14 PM, Mark Brown wrote:
-> On Thu, Jul 18, 2013 at 03:31:27PM +0530, Sourav Poddar wrote:
->> Since, qspi controller uses quad read.
->>
->> Configuring the command register, if the transfer of data needs
->> dual or quad lines.
->>
->> This patch has been done on top of the following patch[1], which is just the
->> basic idea of adding dual/quad support in spi framework.
->> $subject patch will undergo changes as the parent patch goes[1]
->>
->> [1]: http://comments.gmane.org/gmane.linux.kernel.spi.devel/14047
-> Just as with commit IDs you should include a plain text description of
-> anything you link to so that people reading your e-mail can tell what
-> you're talking about without going on line.
-Ok, will keep that in mind for future.
+On 18 July 2013 13:02, Mark Rutland <mark.rutland@arm.com> wrote:
+> Ok. I'm just concerned that the linkage isn't explicit or obvious.
 
-Just to give you a brief description here,
-Requirement is to have a dual/quad support in spi frameowrk, so that
-drivers can use multiple lines for data transfers.
+> This does leave apb-clock completely dependent on core-clock, and unless
+> I've missed something there's no linkage between the two described in
+> the dt.
 
-What patch[1] tries to does, is
-[1]:  http://comments.gmane.org/gmane.linux.kernel.spi.devel/14047
+I can add a description in the core-clock binding and also for
+apb-clock pointing
+out that it's set from core-clock.
 
-is to add to each transfer the bitwidth it supports, so that that 
-bitwidth information
-can be parsed in controller driver and can be used for respective 
-read/writes.
+> How does core-clock physically relate to apb-clock? Does it feed or is
+> it fed by apb-clock?
 
-A typical usecase on my side is,
-I have a spansion flash connected to qspi. Flash device supports quad 
-read with
-a certain read opcode(QUAD_READ). So, Whenever the opcode send is QUAD_READ,
-we will append that information as a bitwidth to the spi transfer. This 
-information will
-be parsed by the controller driver and will be used to configure the cmd 
-reg to do
-the particular type of reads.
+apb-clock is entirely a DT construct used by drivers to get the fixed
+rate 48MHz.
+It's not fed by core-clock more than what happens in probe.
+
+For UC-7112-LX, drivers using apb-clock are: clocksource, MMC, watchdog
+
+Because clocksource relies on apb-clock, a successful probe of
+core-clock is critical.
+
+Commonly, drivers look up the apb-clock node and call clk_get_rate.
+
+> Are we always guaranteed to have core-clock if we have apb-clock, and is
+> it part of the same block in hardware? If so we could describe the
+> amalgamation as a provider with two clock outputs, with core-clock's
+> registers for configuration at probe-time.
+
+Yes, as described above, there can not be a apb-clock without core-clock.
+
+
+I think drivers could find and use core-clock instead. Maybe the abstraction
+of apb-clock is unnecessary?
+
+
+Best regards,
+Jonas
