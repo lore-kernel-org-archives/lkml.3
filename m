@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab3GRK4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:56:41 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:38269 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757780Ab3GRK4j (ORCPT
+	id S932221Ab3GRK65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:58:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48167 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757770Ab3GRK64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:56:39 -0400
-Message-ID: <51E7C9E3.1070506@hitachi.com>
-Date: Thu, 18 Jul 2013 19:56:35 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 18 Jul 2013 06:58:56 -0400
+Date: Thu, 18 Jul 2013 11:58:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: boris brezillon <b.brezillon@overkiz.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20130718105846.GJ22506@sirena.org.uk>
+References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
+ <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com>
+ <20130718095337.GD22506@sirena.org.uk>
+ <51E7C1B2.8000206@overkiz.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Re: [RFC PATCH 3/4] tracing: Kill tracing_open/release_generic_file
-References: <20130716185726.GA21200@redhat.com> <1374004295.6458.59.camel@gandalf.local.home> <20130717191917.GA14137@redhat.com>
-In-Reply-To: <20130717191917.GA14137@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="V9E4GD/88frki9uz"
+Content-Disposition: inline
+In-Reply-To: <51E7C1B2.8000206@overkiz.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 5/5] ASoC: atmel-ssc: remove clk_disable_unprepare
+ call from critical section
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/18 4:19), Oleg Nesterov wrote:
-> On 07/16, Steven Rostedt wrote:
->>
->> On Tue, 2013-07-16 at 20:57 +0200, Oleg Nesterov wrote:
->>> trace_array_get() goes away. NOTE! this is actually wrong until we
->>> change instance_delete() path to nullify ->i_private.
->>
->> I think this needs to be done first.
-> 
-> Do you mean "change instance_delete() path to nullify ->i_private" ?
-> 
-> Yes. Well yes and no, afaics, but please ignore. Of course, I won't
-> send the patches with the holes which I knew about.
-> 
-> Once again, this is just RFC to know your and Masami's opinion. If
-> you think this can work, I'll try to resend this series with the
-> additional bits to cover instance_delete() too. _Afaics_ this needs
-> some temporary uglifications "in between".
 
-I think your proposal goes a good direction, but it also requires
-completeness, because, as I pointed, we have to take care of all
-operations are correctly checked except for open/close.
+--V9E4GD/88frki9uz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So, I agree with Steven, I'd like to see a complete patchset.
+On Thu, Jul 18, 2013 at 12:21:38PM +0200, boris brezillon wrote:
 
-Thank you,
+> I can send you the whole series if you want (already sent to LKML
+> and LAKML).
 
+> But I'd like to understand who I should send patches from this series to.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+When you send me patch 5/5 with no other information on the rest of the
+series I've no idea if there's any dependencies on the other code or
+anything like that.  The key thing here is to make sure the people
+getting the patch can understand the interdependencies somehow.
 
+If you're sending a bunch of unrelated changes with no dependencies
+you're better off sending them all separately rather than as a part of a
+series.
 
+--V9E4GD/88frki9uz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR58piAAoJELSic+t+oim9rnIP/jrPFnmFAnocqH0df+CKoI6o
+oI7RDWuMcmusIi2qOqknVIRJoV9o5pWSQMA00LppcNjDJDD1DErb4JKFFInmoLYS
+0AnKepYXn7MoidjVymPbblZlVQILbpD1ryxsWd+NwmM24RGhB/wTXEKxtWzvlRk+
+FQ85AWpDkg9Ewp5oPOl7km2Xvfm42StjCuo61IgZaC1O+M+C6f986Oiv8CnnRzLW
+ChKBTk3k2gMiZHogbxaO+wMDkW3uUF0HFlBFwKRimoC2tImStEI1YcNzogfWZWMB
+fuygYPDa7s8WXsysdE0gpO7QK3jZdMmOcHdtEq+FfaUC4W+Q/rg4GKyADYzFLAam
+VW+cPqjhkGphA7xuvdmJ9dJGd+Cij2BROOdWFTzEkyz9JK5FXK/D89DTfrBsAY8V
+SBCJMsB6OuQKvA+P5Y2ckPPjfMnOopsCCaErtMtLgVbSjTEeoqd2OqmwU9qyDlM5
+tp7Gw51pKPQhLmMzQaWi1qSMD7IAKn2S7N8JT50DKCYTW/1FK3NJdGN6BHAc636l
+3s+mWUZ5Q6GTXwZlDp6H1CF8RyiyWxPim6lhrfCGfEfe0QLokEERyuRHszqhMJVO
+ekZ192YUTc+ygz8r0/WuiNndIYYRLpGOqZIfwt2XhrYB85U+1myXj+Xp2211PKGz
+M7yRVKM/hiqG22k+QdPH
+=yCaG
+-----END PGP SIGNATURE-----
+
+--V9E4GD/88frki9uz--
