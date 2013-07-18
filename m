@@ -1,273 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab3GRJDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 05:03:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25170 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757016Ab3GRJCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 05:02:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
-   d="scan'208";a="347664667"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, eranian@google.com,
-        ak@linux.intel.com, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 2/2] perf, x86: Add Silvermont (22nm Atom) support
-Date: Thu, 18 Jul 2013 17:02:24 +0800
-Message-Id: <1374138144-17278-2-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
-References: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
+	id S1757731Ab3GRJEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 05:04:16 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:65484 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757022Ab3GRJEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 05:04:13 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+OqK2G2BYG8Bs5c7ce8p5T
+Date: Thu, 18 Jul 2013 02:04:08 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 3/3] ARM: dts: omap4-sdp: add dynamic pin states for
+ uart3/4
+Message-ID: <20130718090408.GU7656@atomide.com>
+References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com>
+ <1374061312-25469-4-git-send-email-grygorii.strashko@ti.com>
+ <20130717153248.GI7656@atomide.com>
+ <51E6C939.40208@ti.com>
+ <20130718080953.GR7656@atomide.com>
+ <51E7AD38.6010108@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E7AD38.6010108@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+* Grygorii Strashko <grygorii.strashko@ti.com> [130718 02:01]:
+> On 07/18/2013 11:09 AM, Tony Lindgren wrote:
+> 
+> Don't think it's debug code - IO chain need to be rearmed after each
+> PRCM IO IRQ - otherwise IO wakeup events may be lost (at least on
+> OMAP4, OMAP5 requires more complex handling(( ).
 
-Compare to old atom, Silvermont has offcore and has more events
-that support PEBS.
+Nope, only after the mux register changes. I've verified it on
+am3730 with off-idle for both serial and wl12xx.
+ 
+> I didn't pick up your padconf patches yet -seems i need to be in sync :)
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event.h          |   2 +
- arch/x86/kernel/cpu/perf_event_intel.c    | 158 ++++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c |  26 +++++
- 3 files changed, 186 insertions(+)
+Well you need those for proper wake-up event support..
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 97e557b..cc16faa 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -641,6 +641,8 @@ extern struct event_constraint intel_core2_pebs_event_constraints[];
- 
- extern struct event_constraint intel_atom_pebs_event_constraints[];
- 
-+extern struct event_constraint intel_slm_pebs_event_constraints[];
-+
- extern struct event_constraint intel_nehalem_pebs_event_constraints[];
- 
- extern struct event_constraint intel_westmere_pebs_event_constraints[];
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index d312edf..e4bb30a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -164,6 +164,15 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
- 	EVENT_CONSTRAINT_END
- };
- 
-+static struct event_constraint intel_slm_event_constraints[] __read_mostly =
-+{
-+	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-+	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
-+	FIXED_EVENT_CONSTRAINT(0x013c, 2), /* CPU_CLK_UNHALTED.REF */
-+	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* pseudo CPU_CLK_UNHALTED.REF */
-+	EVENT_CONSTRAINT_END
-+};
-+
- static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
- 	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
- 	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
-@@ -886,6 +895,140 @@ static __initconst const u64 atom_hw_cache_event_ids
-  },
- };
- 
-+static struct extra_reg intel_slm_extra_regs[] __read_mostly =
-+{
-+	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
-+	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffff, RSP_0),
-+	INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffff, RSP_1),
-+	EVENT_EXTRA_END
-+};
-+
-+#define SLM_DMND_READ		SNB_DMND_DATA_RD
-+#define SLM_DMND_WRITE		SNB_DMND_RFO
-+#define SLM_DMND_PREFETCH	(SNB_PF_DATA_RD|SNB_PF_RFO)
-+
-+#define SLM_SNP_ANY		(SNB_SNP_NONE|SNB_SNP_MISS|SNB_NO_FWD|SNB_HITM)
-+#define SLM_LLC_ACCESS		SNB_RESP_ANY
-+#define SLM_LLC_MISS		(SLM_SNP_ANY|SNB_NON_DRAM)
-+
-+static __initconst const u64 slm_hw_cache_extra_regs
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = SLM_DMND_READ|SLM_LLC_ACCESS,
-+		[ C(RESULT_MISS)   ] = SLM_DMND_READ|SLM_LLC_MISS,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = SLM_DMND_WRITE|SLM_LLC_ACCESS,
-+		[ C(RESULT_MISS)   ] = SLM_DMND_WRITE|SLM_LLC_MISS,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = SLM_DMND_PREFETCH|SLM_LLC_ACCESS,
-+		[ C(RESULT_MISS)   ] = SLM_DMND_PREFETCH|SLM_LLC_MISS,
-+	},
-+ },
-+};
-+
-+static __initconst const u64 slm_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0x0104, /* LD_DCU_MISS */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0380, /* ICACHE.ACCESSES */
-+		[ C(RESULT_MISS)   ] = 0x0280, /* ICACGE.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		/* OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		/* OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE.ANY_RFO.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		/* OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		/* OFFCORE_RESPONSE.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x01b7,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0x0804, /* LD_DTLB_MISS */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x00c0, /* INST_RETIRED.ANY_P */
-+		[ C(RESULT_MISS)   ] = 0x0282, /* ITLB.MISSES */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x00c4, /* BR_INST_RETIRED.ANY */
-+		[ C(RESULT_MISS)   ] = 0x00c5, /* BP_INST_RETIRED.MISPRED */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
- static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
- {
- 	/* user explicitly requested branch sampling */
-@@ -2180,6 +2323,21 @@ __init int intel_pmu_init(void)
- 		pr_cont("Atom events, ");
- 		break;
- 
-+	case 55: /* Atom 22nm "Silvermont" */
-+		memcpy(hw_cache_event_ids, slm_hw_cache_event_ids,
-+			sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, slm_hw_cache_extra_regs,
-+		       sizeof(hw_cache_extra_regs));
-+
-+		intel_pmu_lbr_init_atom();
-+
-+		x86_pmu.event_constraints = intel_slm_event_constraints;
-+		x86_pmu.pebs_constraints = intel_slm_pebs_event_constraints;
-+		x86_pmu.extra_regs = intel_slm_extra_regs;
-+		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-+		pr_cont("Silvermont events, ");
-+		break;
-+
- 	case 37: /* 32 nm nehalem, "Clarkdale" */
- 	case 44: /* 32 nm nehalem, "Gulftown" */
- 	case 47: /* 32 nm Xeon E7 */
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3065c57..442fcc2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -517,6 +517,32 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
- 	EVENT_CONSTRAINT_END
- };
- 
-+struct event_constraint intel_slm_pebs_event_constraints[] = {
-+	INTEL_UEVENT_CONSTRAINT(0x0103, 0x1), /* REHABQ.LD_BLOCK_ST_FORWARD_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0803, 0x1), /* REHABQ.LD_SPLITS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0204, 0x1), /* MEM_UOPS_RETIRED.L2_HIT_LOADS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0404, 0x1), /* MEM_UOPS_RETIRED.L2_MISS_LOADS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x0804, 0x1), /* MEM_UOPS_RETIRED.DTLB_MISS_LOADS_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x2004, 0x1), /* MEM_UOPS_RETIRED.HITM_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x00c4, 0x1), /* BR_INST_RETIRED.ALL_BRANCHES_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x7ec4, 0x1), /* BR_INST_RETIRED.JCC_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xbfc4, 0x1), /* BR_INST_RETIRED.FAR_BRANCH_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xebc4, 0x1), /* BR_INST_RETIRED.NON_RETURN_IND_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xf7c4, 0x1), /* BR_INST_RETIRED.RETURN_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xf9c4, 0x1), /* BR_INST_RETIRED.CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfbc4, 0x1), /* BR_INST_RETIRED.IND_CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfdc4, 0x1), /* BR_INST_RETIRED.REL_CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfec4, 0x1), /* BR_INST_RETIRED.TAKEN_JCC_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_MISP_RETIRED.ALL_BRANCHES_PS */
-+	INTEL_UEVENT_CONSTRAINT(0x7ec5, 0x1), /* BR_INST_MISP_RETIRED.JCC_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xebc5, 0x1), /* BR_INST_MISP_RETIRED.NON_RETURN_IND_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xf7c5, 0x1), /* BR_INST_MISP_RETIRED.RETURN_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfbc5, 0x1), /* BR_INST_MISP_RETIRED.IND_CALL_PS */
-+	INTEL_UEVENT_CONSTRAINT(0xfec5, 0x1), /* BR_INST_MISP_RETIRED.TAKEN_JCC_PS */
-+	EVENT_CONSTRAINT_END
-+};
-+
- struct event_constraint intel_nehalem_pebs_event_constraints[] = {
- 	INTEL_PLD_CONSTRAINT(0x100b, 0xf),      /* MEM_INST_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
--- 
-1.8.1.4
+> Below the diff I used to verify IO wake up (It follows old IO daisy
+> chain hanlding models in hwmod before DT):
 
+..then these changes not needed with the pinctrl-single changes.
+
+Regards,
+
+Tony
