@@ -1,146 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab3GRJBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 05:01:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55025 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757022Ab3GRJBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 05:01:41 -0400
-Message-ID: <51E7AECA.1000204@ti.com>
-Date: Thu, 18 Jul 2013 14:30:58 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <kyungmin.park@samsung.com>, <balbi@ti.com>, <jg1.han@samsung.com>,
-        <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
-        <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
-        <swarren@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: Re: [PATCH 02/15] usb: phy: omap-usb2: use the new generic PHY framework
-References: <1374129984-765-1-git-send-email-kishon@ti.com> <1374129984-765-3-git-send-email-kishon@ti.com> <20130718072149.GB16720@kroah.com>
-In-Reply-To: <20130718072149.GB16720@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1757625Ab3GRJCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 05:02:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25170 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756499Ab3GRJCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 05:02:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
+   d="scan'208";a="347664653"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, eranian@google.com,
+        ak@linux.intel.com, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 1/2] perf, x86: use INTEL_UEVENT_EXTRA_REG to define MSR_OFFCORE_RSP_X
+Date: Thu, 18 Jul 2013 17:02:23 +0800
+Message-Id: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 July 2013 12:51 PM, Greg KH wrote:
-> On Thu, Jul 18, 2013 at 12:16:11PM +0530, Kishon Vijay Abraham I wrote:
->> Used the generic PHY framework API to create the PHY. Now the power off and
->> power on are done in omap_usb_power_off and omap_usb_power_on respectively.
->>
->> However using the old USB PHY library cannot be completely removed
->> because OTG is intertwined with PHY and moving to the new framework
->> will break OTG. Once we have a separate OTG state machine, we
->> can get rid of the USB PHY library.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> Acked-by: Felipe Balbi <balbi@ti.com>
->> ---
->>  drivers/usb/phy/Kconfig         |    1 +
->>  drivers/usb/phy/phy-omap-usb2.c |   45 +++++++++++++++++++++++++++++++++++----
->>  2 files changed, 42 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
->> index 3622fff..cc55993 100644
->> --- a/drivers/usb/phy/Kconfig
->> +++ b/drivers/usb/phy/Kconfig
->> @@ -75,6 +75,7 @@ config OMAP_CONTROL_USB
->>  config OMAP_USB2
->>  	tristate "OMAP USB2 PHY Driver"
->>  	depends on ARCH_OMAP2PLUS
->> +	depends on GENERIC_PHY
->>  	select OMAP_CONTROL_USB
->>  	help
->>  	  Enable this to support the transceiver that is part of SOC. This
->> diff --git a/drivers/usb/phy/phy-omap-usb2.c b/drivers/usb/phy/phy-omap-usb2.c
->> index 844ab68..751b30f 100644
->> --- a/drivers/usb/phy/phy-omap-usb2.c
->> +++ b/drivers/usb/phy/phy-omap-usb2.c
->> @@ -28,6 +28,7 @@
->>  #include <linux/pm_runtime.h>
->>  #include <linux/delay.h>
->>  #include <linux/usb/omap_control_usb.h>
->> +#include <linux/phy/phy.h>
->>  
->>  /**
->>   * omap_usb2_set_comparator - links the comparator present in the sytem with
->> @@ -119,10 +120,36 @@ static int omap_usb2_suspend(struct usb_phy *x, int suspend)
->>  	return 0;
->>  }
->>  
->> +static int omap_usb_power_off(struct phy *x)
->> +{
->> +	struct omap_usb *phy = phy_get_drvdata(x);
->> +
->> +	omap_control_usb_phy_power(phy->control_dev, 0);
->> +
->> +	return 0;
->> +}
->> +
->> +static int omap_usb_power_on(struct phy *x)
->> +{
->> +	struct omap_usb *phy = phy_get_drvdata(x);
->> +
->> +	omap_control_usb_phy_power(phy->control_dev, 1);
->> +
->> +	return 0;
->> +}
->> +
->> +static struct phy_ops ops = {
->> +	.power_on	= omap_usb_power_on,
->> +	.power_off	= omap_usb_power_off,
->> +	.owner		= THIS_MODULE,
->> +};
->> +
->>  static int omap_usb2_probe(struct platform_device *pdev)
->>  {
->>  	struct omap_usb			*phy;
->> +	struct phy			*generic_phy;
->>  	struct usb_otg			*otg;
->> +	struct phy_provider		*phy_provider;
->>  
->>  	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
->>  	if (!phy) {
->> @@ -144,6 +171,11 @@ static int omap_usb2_probe(struct platform_device *pdev)
->>  	phy->phy.otg		= otg;
->>  	phy->phy.type		= USB_PHY_TYPE_USB2;
->>  
->> +	phy_provider = devm_of_phy_provider_register(phy->dev,
->> +			of_phy_simple_xlate);
->> +	if (IS_ERR(phy_provider))
->> +		return PTR_ERR(phy_provider);
->> +
->>  	phy->control_dev = omap_get_control_dev();
->>  	if (IS_ERR(phy->control_dev)) {
->>  		dev_dbg(&pdev->dev, "Failed to get control device\n");
->> @@ -159,6 +191,15 @@ static int omap_usb2_probe(struct platform_device *pdev)
->>  	otg->start_srp		= omap_usb_start_srp;
->>  	otg->phy		= &phy->phy;
->>  
->> +	platform_set_drvdata(pdev, phy);
->> +	pm_runtime_enable(phy->dev);
->> +
->> +	generic_phy = devm_phy_create(phy->dev, 0, &ops, "omap-usb2");
->> +	if (IS_ERR(generic_phy))
->> +		return PTR_ERR(generic_phy);
-> 
-> So, if I have two of these controllers in my system, I can't create the
-> second phy because the name for it will be identical to the first?
-> That's why the phy core should handle the id, and not rely on the
-> drivers to set it, as they have no idea how many they have in the
-> system.
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-hmm.. for such cases I'll have something like PLATFORM_DEVID_AUTO.
+Silvermont (22nm Atom) has two offcore response configuration MSRs,
+unlike other Intel CPU, its event code for MSR_OFFCORE_RSP_1 is 0x02b7.
+To avoid complicating intel_fixup_er(), use INTEL_UEVENT_EXTRA_REG to
+define MSR_OFFCORE_RSP_X. So intel_fixup_er() can find the event code
+for OFFCORE_RSP_N by x86_pmu.extra_regs[N].event.
 
-Thanks
-Kishon
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index fbc9210..d312edf 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -81,7 +81,8 @@ static struct event_constraint intel_nehalem_event_constraints[] __read_mostly =
+ 
+ static struct extra_reg intel_nehalem_extra_regs[] __read_mostly =
+ {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+ 	EVENT_EXTRA_END
+ };
+@@ -143,8 +144,9 @@ static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
+ 
+ static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
+ {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+-	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
++	INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+ 	EVENT_EXTRA_END
+ };
+@@ -163,15 +165,17 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
+ };
+ 
+ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
+-	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
++	INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+ 	EVENT_EXTRA_END
+ };
+ 
+ static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
+-	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
++	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
++	INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
+ 	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+ 	EVENT_EXTRA_END
+ };
+@@ -1301,11 +1305,11 @@ static void intel_fixup_er(struct perf_event *event, int idx)
+ 
+ 	if (idx == EXTRA_REG_RSP_0) {
+ 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+-		event->hw.config |= 0x01b7;
++		event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_0].event;
+ 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
+ 	} else if (idx == EXTRA_REG_RSP_1) {
+ 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+-		event->hw.config |= 0x01bb;
++		event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_1].event;
+ 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
+ 	}
+ }
+-- 
+1.8.1.4
+
