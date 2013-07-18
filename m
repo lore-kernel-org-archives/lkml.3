@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab3GRLu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:50:29 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52516 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3GRLu2 (ORCPT
+	id S1758855Ab3GRLuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:50:35 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:33409 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab3GRLub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:50:28 -0400
-X-AuditID: 85900ec0-d56cbb900000151e-01-51e7d681cebf
-Subject: [PATCH -tip  0/3] kprobes,
- x86: Move optprobe on top of int3-based instruction patching
+	Thu, 18 Jul 2013 07:50:31 -0400
+X-AuditID: 85900ec0-d1ac5b900000151e-02-51e7d684eb27
+Subject: [PATCH -tip 1/3] [CLEANUP] kprobes/x86: Remove an incorrect comment
+ about int3 in NMI/MCE
 To: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
         Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
         yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
-Date: Thu, 18 Jul 2013 20:47:38 +0900
-Message-ID: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
+Date: Thu, 18 Jul 2013 20:47:47 +0900
+Message-ID: <20130718114747.26675.84110.stgit@mhiramat-M0-7522>
+In-Reply-To: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
+References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,38 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Remove a comment about an int3 issue in NMI/MCE, since
+the commit 3f3c8b8c already fixed that. Keeping this
+incorrect comment can mislead developers.
 
-Here is a series of kprobes and x86 patches for moving
-optprobe (jump optimized kprobe) onto the int3-based
-instruction patching (a.k.a. text_poke_bp, introduced by
-Jiri Kosina).
-
-Since this completely moves text_poke_smp* user to new
-text_poke_bp, I also remove the old text_poke_smp* code
-from alternative.c. As a side effect, it also fixes a
-Kconfig warning about CONFIG_STOP_MACHINE dependency
-confliction.
-
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
+ arch/x86/kernel/kprobes/opt.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
-Masami Hiramatsu (3):
-      [CLEANUP] kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
-      kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
-      x86: Remove unused text_poke_smp and text_poke_smp_batch
+diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+index 76dc6f0..d7d8a8c 100644
+--- a/arch/x86/kernel/kprobes/opt.c
++++ b/arch/x86/kernel/kprobes/opt.c
+@@ -415,11 +415,6 @@ void __kprobes arch_optimize_kprobes(struct list_head *oplist)
+ 			break;
+ 	}
+ 
+-	/*
+-	 * text_poke_smp doesn't support NMI/MCE code modifying.
+-	 * However, since kprobes itself also doesn't support NMI/MCE
+-	 * code probing, it's not a problem.
+-	 */
+ 	text_poke_smp_batch(jump_poke_params, c);
+ }
+ 
+@@ -455,11 +450,6 @@ extern void arch_unoptimize_kprobes(struct list_head *oplist,
+ 			break;
+ 	}
+ 
+-	/*
+-	 * text_poke_smp doesn't support NMI/MCE code modifying.
+-	 * However, since kprobes itself also doesn't support NMI/MCE
+-	 * code probing, it's not a problem.
+-	 */
+ 	text_poke_smp_batch(jump_poke_params, c);
+ }
+ 
 
-
- arch/x86/Kconfig                   |    5 --
- arch/x86/include/asm/alternative.h |   11 ----
- arch/x86/kernel/alternative.c      |   98 +-------------------------------
- arch/x86/kernel/kprobes/common.h   |    5 --
- arch/x86/kernel/kprobes/core.c     |    2 -
- arch/x86/kernel/kprobes/opt.c      |  110 +++++++-----------------------------
- 6 files changed, 25 insertions(+), 206 deletions(-)
-
--- 
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-IT Management Research Dept. and Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
