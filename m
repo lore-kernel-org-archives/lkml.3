@@ -1,176 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab3GRQfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:35:32 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:42862 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427Ab3GRQfa (ORCPT
+	id S1759092Ab3GRQkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:40:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12445 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758887Ab3GRQkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:35:30 -0400
-Message-ID: <51E8194E.1030704@linaro.org>
-Date: Thu, 18 Jul 2013 09:35:26 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH] RTC: Add an alarm disable quirk
-References: <1374162294-29726-1-git-send-email-bp@alien8.de>
-In-Reply-To: <1374162294-29726-1-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 18 Jul 2013 12:40:32 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=OBo3vzDK1icA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=GDUt3bqODRQA:10 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=HmXPV2sSyQM2aKoY0MgA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374165631.6458.248.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2] tracing: Fix error handling to ensure instances can
+ always be removed
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alexander Z Lam <azl@google.com>
+Cc: linux-kernel@vger.kernel.org, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>
+Date: Thu, 18 Jul 2013 12:40:31 -0400
+In-Reply-To: <1373502874-1706-2-git-send-email-azl@google.com>
+References: <1373502874-1706-1-git-send-email-azl@google.com>
+	 <1373502874-1706-2-git-send-email-azl@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 08:44 AM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
->
-> 41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
-> functionality to disable the RTC wake alarm when shutting down the box.
->
-> However, there are at least two b0rked BIOSes we know about:
->
-> https://bugzilla.novell.com/show_bug.cgi?id=812592
-> https://bugzilla.novell.com/show_bug.cgi?id=805740
+On Wed, 2013-07-10 at 17:34 -0700, Alexander Z Lam wrote:
+> Remove debugfs directories for tracing instances during creation if an error
+> occurs causing the trace_array for that instance to not be added to
+> ftrace_trace_arrays. If the directory continues to exist after the error, it
+> cannot be removed because the respective trace_array is not in
+> ftrace_trace_arrays.
 
-So first of all, thanks for digging in and generating a patch here! This 
-issue has been on my list, but I've not been able to reproduce it and 
-have just not had the time to chase it down remotely, so I really 
-appreciate your efforts here!
+This patch is fine, I'll put it in now.
 
+Thanks,
 
-> where, when wakeup alarm is enabled in the BIOS, the machine reboots
-> automatically right after shutdown, regardless of what wakeup time is
-> programmed.
+-- Steve
 
-So this doesn't quite make sense, since the wakeup alarm is being 
-disabled on shutdown (and this patch is allowing the alarm interrupt to 
-be left enabled). I assumed it was some sort of BIOS issue where any 
-modification of the RTC_AIE bit caused the alarm irq line to be left 
-high(or something like that) that triggered the immediate power-on on 
-shutdown. But I've not been able to dig down on this.
-
-So while I do want to make sure we resolve this issue for the affected 
-users, I would like to better understand exactly what is wrong in the 
-BIOS that causes this.
-
-
-> Bisecting the issue lead to this patch so disable its functionality with
-> a DMI quirk only for those boxes.
-So from the one bug above I could read, it looks like the RTC wakeup 
-alarm functionality is also disabled with this patch, no? Might want to 
-document that clearly, so we understand the known side-effects of 
-applying this. It might also be interesting to see if much older kernels 
-(pre 2.6.38 - before the RTC rework landed) have this functionality 
-issue as well. I suspect there has to be some way to make the hardware 
-work properly.
-
->
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+> 
+> Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> Cc: David Sharp <dhsharp@google.com>
+> Cc: Alexander Z Lam <lambchop468@gmail.com>
+> Signed-off-by: Alexander Z Lam <azl@google.com>
 > ---
->   drivers/rtc/class.c     | 24 ++++++++++++++++++++++++
->   drivers/rtc/interface.c |  8 ++++++++
->   include/linux/rtc.h     |  1 +
->   3 files changed, 33 insertions(+)
->
-> diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-> index 02426812bebc..f3006db26125 100644
-> --- a/drivers/rtc/class.c
-> +++ b/drivers/rtc/class.c
-> @@ -19,6 +19,8 @@
->   #include <linux/idr.h>
->   #include <linux/slab.h>
->   #include <linux/workqueue.h>
-> +#include <linux/dmi.h>
-> +#include <linux/mod_devicetable.h>
->   
->   #include "rtc-core.h"
->   
-> @@ -26,6 +28,25 @@
->   static DEFINE_IDA(rtc_ida);
->   struct class *rtc_class;
->   
-> +static int __init clear_disable_alarm(const struct dmi_system_id *id)
-> +{
-> +	rtc_disable_alarm = false;
-> +	return 0;
-> +}
-> +
-> +static const struct dmi_system_id rtc_quirks[] __initconst = {
-> +	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
-Any chance that bugzilla bug can be made public (it apparently requires 
-a login to read, where as the other bug doesn't).
+>  kernel/trace/trace.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index ca2743b..4ea9967 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -5985,8 +5985,10 @@ static int new_instance_create(const char *name)
+>  		goto out_free_tr;
+>  
+>  	ret = event_trace_add_tracer(tr->dir, tr);
+> -	if (ret)
+> +	if (ret) {
+> +		debugfs_remove_recursive(tr->dir);
+>  		goto out_free_tr;
+> +	}
+>  
+>  	init_tracer_debugfs(tr, tr->dir);
+>  
 
 
-> +	{
-> +		.callback = clear_disable_alarm,
-> +		.ident    = "IBM Truman",
-
-"IBM Truman"?
-
-> +		.matches  = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
-> +		},
-> +	},
-> +	{}
-> +};
-> +
-
-Also, this seems to only address one of the systems you described. Do we 
-need a second quirk entry as well?
-
->   static void rtc_device_release(struct device *dev)
->   {
->   	struct rtc_device *rtc = to_rtc_device(dev);
-> @@ -340,6 +361,9 @@ static int __init rtc_init(void)
->   	rtc_class->pm = RTC_CLASS_DEV_PM_OPS;
->   	rtc_dev_init();
->   	rtc_sysfs_init(rtc_class);
-> +
-> +	dmi_check_system(rtc_quirks);
-> +
-
-Since this issue so far only affects x86 systems, would it be smarter to 
-move the dmi quirk to the actual RTC driver in drivers/rtc/rtc-cmos.c 
-rather then leaving it in the RTC core?
-
-
->   	return 0;
->   }
->   
-> diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-> index 72c5cdbe0791..0d944d1c02b8 100644
-> --- a/drivers/rtc/interface.c
-> +++ b/drivers/rtc/interface.c
-> @@ -17,6 +17,11 @@
->   #include <linux/log2.h>
->   #include <linux/workqueue.h>
->   
-> +/*
-> + * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
-> + */
-> +bool rtc_disable_alarm = true;
-> +
->   static int rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer);
->   static void rtc_timer_remove(struct rtc_device *rtc, struct rtc_timer *timer);
->   
-> @@ -787,6 +792,9 @@ static void rtc_alarm_disable(struct rtc_device *rtc)
->   	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
->   		return;
->   
-> +	if (!rtc_disable_alarm)
-> +		return;
-> +
->   	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
-
-I suspect the same logic could be better applied in cmos_alarm_irq_enable().
-
-thanks again!
--john
