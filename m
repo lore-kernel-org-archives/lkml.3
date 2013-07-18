@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759060Ab3GRPpk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 11:45:40 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:49774 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758992Ab3GRPpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 11:45:38 -0400
+	id S1759051Ab3GRPrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 11:47:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59065 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758607Ab3GRPri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 11:47:38 -0400
+From: Oleksandr Kravchenko <x0199363@ti.com>
+To: <jic23@cam.ac.uk>
+CC: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: [PATCH] iio: core: Avoid double minus in sysfs output
+Date: Thu, 18 Jul 2013 18:47:09 +0300
+Message-ID: <1374162430-30709-1-git-send-email-x0199363@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1374162013.1949.119.camel@joe-AO722>
-References: <1374161380-12762-1-git-send-email-prabhakar.csengg@gmail.com> <1374162013.1949.119.camel@joe-AO722>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 18 Jul 2013 21:15:15 +0530
-Message-ID: <CA+V-a8vBzRnRXhvaLGsQMDhKEAyNDRvnd4QZQ0xnUUo-D3Ek2A@mail.gmail.com>
-Subject: Re: [PATCH v2 5/5] media: davinci: vpbe: Replace printk with dev_*
-To: Joe Perches <joe@perches.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 
-On Thu, Jul 18, 2013 at 9:10 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2013-07-18 at 20:59 +0530, Prabhakar Lad wrote:
->> Use the dev_* message logging API instead of raw printk.
-> []
->> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
-> []
->> @@ -595,7 +595,7 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
->>        * matching with device name
->>        */
->>       if (NULL == vpbe_dev || NULL == dev) {
->> -             printk(KERN_ERR "Null device pointers.\n");
->> +             dev_err(dev, "Null device pointers.\n");
->
-> And if dev actually is NULL?
->
-Ah nice catch, I overlooked it, I'll fix it.
+This patch fixes the issue with double minus in output when
+reading channels from sysfs for IIO_VAL_INT_PLUS_MICRO and
+IIO_VAL_INT_PLUS_NANO cases. Until this patch if val and val2
+both are negatives output string contains "--" before
+digits. It is result of "-%d..." in sprintf() format.
 
-Regards,
---Prabhakar
+Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+---
+ drivers/iio/industrialio-core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index d56d122..b3d3959 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -383,14 +383,14 @@ static ssize_t iio_read_channel_info(struct device *dev,
+ 		scale_db = true;
+ 	case IIO_VAL_INT_PLUS_MICRO:
+ 		if (val2 < 0)
+-			return sprintf(buf, "-%d.%06u%s\n", val, -val2,
++			return sprintf(buf, "-%d.%06u%s\n", abs(val), -val2,
+ 				scale_db ? " dB" : "");
+ 		else
+ 			return sprintf(buf, "%d.%06u%s\n", val, val2,
+ 				scale_db ? " dB" : "");
+ 	case IIO_VAL_INT_PLUS_NANO:
+ 		if (val2 < 0)
+-			return sprintf(buf, "-%d.%09u\n", val, -val2);
++			return sprintf(buf, "-%d.%09u\n", abs(val), -val2);
+ 		else
+ 			return sprintf(buf, "%d.%09u\n", val, val2);
+ 	case IIO_VAL_FRACTIONAL:
+-- 
+1.7.9.5
+
