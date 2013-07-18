@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934386Ab3GRT4b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:56:31 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49794 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934147Ab3GRT4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:56:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 4/30] ACPI / hotplug / PCI: Hotplug context objects for bridges and functions
-Date: Thu, 18 Jul 2013 22:06:16 +0200
-Message-ID: <2397558.EsSCoq8A3j@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3688658.K73mT4hj2a@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <CAE9FiQWjzZ6b1aGgL9OjNZF00hvwaEZJb7ABxjaVbS5FwNwpSQ@mail.gmail.com> <3688658.K73mT4hj2a@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S934408Ab3GRT4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:56:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41974 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934321Ab3GRT4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 15:56:25 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Robert Richter <rric@kernel.org>,
+        Robert Richter <robert.richter@linaro.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 69/76] perf tools: Fix 'make tools/perf'
+Date: Thu, 18 Jul 2013 16:49:56 -0300
+Message-Id: <1374177003-3706-70-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
+References: <1374177003-3706-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 18, 2013 09:04:11 PM Rafael J. Wysocki wrote:
-> On Wednesday, July 17, 2013 07:00:33 PM Yinghai Lu wrote:
-> > On Wed, Jul 17, 2013 at 4:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >
-> > > When either a new hotplug bridge or a new hotplug function is added
-> > > by the ACPI-based PCI hotplug (ACPIPHP) code, attach a context object
-> > > to its ACPI handle to store hotplug-related information in it.  To
-> > > start with, put the handle's bridge and function pointers into that
-> > > object.  Count references to the context objects and drop them when
-> > > they are not needed any more.
-> > >
-> > > First of all, this makes it possible to find out if the given bridge
-> > > has been registered as a function already in a much more
-> > > straightforward way and acpiphp_bridge_handle_to_function() can be
-> > > dropped (Yay!).
-> > >
-> > > This also will allow some more simplifications to be made going
-> > > forward.
-> > >
-> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > ---
-> > >  drivers/pci/hotplug/acpiphp.h      |   10 ++
-> > >  drivers/pci/hotplug/acpiphp_glue.c |  179 ++++++++++++++++++++++++++++---------
-> > >  2 files changed, 146 insertions(+), 43 deletions(-)
-> > 
-> > no, more lines are added.
-> 
-> Well, that's what 'quilt refresh --diffstat' tells me, quite consistently.
-> 
-> Have you actually counted them?
+From: Robert Richter <rric@kernel.org>
 
-Now I have done that (using "grep '^+' | wc -l") and that indeed turns out ot
-the right number.
+Boris just raised another variant of building perf tools which is
+broken:
 
-What gives?
+ $ make tools/perf
+ ...
+     LINK /home/robert/cx/linux/tools/perf/perf
+ gcc: error: ../linux/tools/lib/lk/liblk.a: No such file or directory
 
-Rafael
+The variant wasn't considered by:
 
+ 107de37 perf tools: Fix build errors with O and DESTDIR make vars set
 
+There are other variant of building perf too:
+
+ $ make -C tools perf
+ $ make -C tools/perf
+
+Plus variants with O= and DESTDIR set.
+
+This patch fixes the above and was tested with the following:
+
+ $ make O=... DESTDIR=... tools/perf
+ $ make O=... DESTDIR=... -C tools/ perf
+ $ make O=... DESTDIR=... -C tools/perf
+ $ make tools/perf
+ $ make -C tools/ perf
+ $ make -C tools/perf
+
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Robert Richter <robert.richter@linaro.org>
+Signed-off-by: Robert Richter <rric@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-tip-commits@vger.kernel.org
+Link: http://lkml.kernel.org/r/20130716145036.GH8731@rric.localhost
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 5b7c6db..2a69026 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -124,7 +124,7 @@ strip-libs = $(filter-out -l%,$(1))
+ ifneq ($(OUTPUT),)
+   TE_PATH=$(OUTPUT)
+ ifneq ($(subdir),)
+-  LK_PATH=$(objtree)/lib/lk/
++  LK_PATH=$(OUTPUT)/../lib/lk/
+ else
+   LK_PATH=$(OUTPUT)
+ endif
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.4
+
