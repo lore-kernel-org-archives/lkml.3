@@ -1,188 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab3GRKjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:39:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56267 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932365Ab3GRKgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:36:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
-   d="scan'208";a="347700754"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V8 09/15] perf: Update perf_event_type documentation
-Date: Thu, 18 Jul 2013 13:42:51 +0300
-Message-Id: <1374144177-24762-10-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
-References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+	id S932594Ab3GRKjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:39:16 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:57171 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932119Ab3GRKjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:39:12 -0400
+Date: Thu, 18 Jul 2013 12:39:07 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130718103907.GC23558@gmail.com>
+References: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+ <20130715174659.GC15531@xanatos>
+ <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+ <20130715180403.GD15531@xanatos>
+ <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+ <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+ <20130715195316.GF15531@xanatos>
+ <20130715204135.GH15531@xanatos>
+ <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
 
-Due to a discussion with Adrian I had a good look at the perf_event_type record
-layout and found the documentation to be somewhat unclear.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- include/uapi/linux/perf_event.h | 19 ++++++++++++++++++-
- kernel/events/core.c            | 31 ++++++++++++++++---------------
- 2 files changed, 34 insertions(+), 16 deletions(-)
+> On Mon, Jul 15, 2013 at 1:41 PM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+> >
+> > Oh, FFS, I just called out on private email for "playing the victim
+> > card".  I will repeat: this is not just about me, or other minorities.
+> > I should not have to ask for professional behavior on the mailing lists.
+> > Professional behavior should be the default.
+> 
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 0b1df41..876a18c 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -478,6 +478,16 @@ enum perf_event_type {
- 	 * file will be supported by older perf tools, with these new optional
- 	 * fields being ignored.
- 	 *
-+	 * struct sample_id {
-+	 *	{ u32			pid, tid; } && PERF_SAMPLE_TID
-+	 *	{ u64			time;     } && PERF_SAMPLE_TIME
-+	 *	{ u64			id;       } && PERF_SAMPLE_ID
-+	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
-+	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-+	 * } && perf_event_attr.sample_id_all
-+	 */
-+
-+	/*
- 	 * The MMAP events record the PROT_EXEC mappings so that we can
- 	 * correlate userspace IPs to code. They have the following structure:
- 	 *
-@@ -489,6 +499,7 @@ enum perf_event_type {
- 	 *	u64				len;
- 	 *	u64				pgoff;
- 	 *	char				filename[];
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_MMAP			= 1,
-@@ -498,6 +509,7 @@ enum perf_event_type {
- 	 *	struct perf_event_header	header;
- 	 *	u64				id;
- 	 *	u64				lost;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_LOST			= 2,
-@@ -508,6 +520,7 @@ enum perf_event_type {
- 	 *
- 	 *	u32				pid, tid;
- 	 *	char				comm[];
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_COMM			= 3,
-@@ -518,6 +531,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_EXIT			= 4,
-@@ -528,6 +542,7 @@ enum perf_event_type {
- 	 *	u64				time;
- 	 *	u64				id;
- 	 *	u64				stream_id;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_THROTTLE			= 5,
-@@ -539,6 +554,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_FORK			= 7,
-@@ -549,6 +565,7 @@ enum perf_event_type {
- 	 *	u32				pid, tid;
- 	 *
- 	 *	struct read_format		values;
-+	 *	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_READ			= 8,
-@@ -596,7 +613,7 @@ enum perf_event_type {
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 *
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
--	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
-+	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 708ab70..c9ef899 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4462,20 +4462,6 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
- 
--	if (!event->attr.watermark) {
--		int wakeup_events = event->attr.wakeup_events;
--
--		if (wakeup_events) {
--			struct ring_buffer *rb = handle->rb;
--			int events = local_inc_return(&rb->events);
--
--			if (events >= wakeup_events) {
--				local_sub(wakeup_events, &rb->events);
--				local_inc(&rb->wakeup);
--			}
--		}
--	}
--
- 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
- 		if (data->br_stack) {
- 			size_t size;
-@@ -4511,16 +4497,31 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
- 
--	if (sample_type & PERF_SAMPLE_STACK_USER)
-+	if (sample_type & PERF_SAMPLE_STACK_USER) {
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
-+	}
- 
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
- 	if (sample_type & PERF_SAMPLE_DATA_SRC)
- 		perf_output_put(handle, data->data_src.val);
-+
-+	if (!event->attr.watermark) {
-+		int wakeup_events = event->attr.wakeup_events;
-+
-+		if (wakeup_events) {
-+			struct ring_buffer *rb = handle->rb;
-+			int events = local_inc_return(&rb->events);
-+
-+			if (events >= wakeup_events) {
-+				local_sub(wakeup_events, &rb->events);
-+				local_inc(&rb->wakeup);
-+			}
-+		}
-+	}
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
--- 
-1.7.11.7
+> [...]
+> 
+> Because if you want me to "act professional", I can tell you that I'm 
+> not interested. I'm sitting in my home office wearign a bathrobe. The 
+> same way I'm not going to start wearing ties, I'm *also* not going to 
+> buy into the fake politeness, the lying, the office politics and 
+> backstabbing, the passive aggressiveness, and the buzzwords. Because 
+> THAT is what "acting professionally" results in: people resort to all 
+> kinds of really nasty things because they are forced to act out their 
+> normal urges in unnatural ways.
 
+Sarah, that's a pretty potent argument by Linus, that "acting 
+professionally" risks replacing a raw but honest culture with a
+polished but dishonest culture - which is harmful to developing
+good technology.
+
+That's a valid concern. What's your reply to that argument?
+
+Thanks,
+
+	Ingo
