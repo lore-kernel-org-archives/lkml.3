@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965300Ab3GRUJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:09:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41519 "EHLO
+	id S965253Ab3GRUJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:09:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41518 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759413Ab3GRTuW (ORCPT
+	with ESMTP id S1759414Ab3GRTuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:22 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 22/76] tools lib traceevent: Add page_size field to pevent
-Date: Thu, 18 Jul 2013 16:49:09 -0300
-Message-Id: <1374177003-3706-23-git-send-email-acme@infradead.org>
+Subject: [PATCH 16/76] perf tests: Make terms a stack variable in test_term
+Date: Thu, 18 Jul 2013 16:49:03 -0300
+Message-Id: <1374177003-3706-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -28,56 +27,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: David Ahern <dsahern@gmail.com>
 
-The page size of traced system can be different than current system's
-because the recorded data file might be analyzed in a different machine.
-In this case we should use original page size of traced system when
-accessing the data file, so this information needs to be saved.
+No need to malloc the memory for it.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1370323231-14022-6-git-send-email-namhyung@kernel.org
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1372793245-4136-6-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ tools/perf/tests/parse-events.c | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 39f0c1d..c37b202 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -400,6 +400,7 @@ struct pevent {
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index ad950f5..344c844 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -1246,24 +1246,20 @@ static int test_events(struct evlist_test *events, unsigned cnt)
  
- 	int cpus;
- 	int long_size;
-+	int page_size;
- 
- 	struct cmdline *cmdlines;
- 	struct cmdline_list *cmdlist;
-@@ -621,6 +622,16 @@ static inline void pevent_set_long_size(struct pevent *pevent, int long_size)
- 	pevent->long_size = long_size;
- }
- 
-+static inline int pevent_get_page_size(struct pevent *pevent)
-+{
-+	return pevent->page_size;
-+}
-+
-+static inline void pevent_set_page_size(struct pevent *pevent, int _page_size)
-+{
-+	pevent->page_size = _page_size;
-+}
-+
- static inline int pevent_is_file_bigendian(struct pevent *pevent)
+ static int test_term(struct terms_test *t)
  {
- 	return pevent->file_bigendian;
+-	struct list_head *terms;
++	struct list_head terms;
+ 	int ret;
+ 
+-	terms = malloc(sizeof(*terms));
+-	if (!terms)
+-		return -ENOMEM;
+-
+-	INIT_LIST_HEAD(terms);
++	INIT_LIST_HEAD(&terms);
+ 
+-	ret = parse_events_terms(terms, t->str);
++	ret = parse_events_terms(&terms, t->str);
+ 	if (ret) {
+ 		pr_debug("failed to parse terms '%s', err %d\n",
+ 			 t->str , ret);
+ 		return ret;
+ 	}
+ 
+-	ret = t->check(terms);
+-	parse_events__free_terms(terms);
++	ret = t->check(&terms);
++	parse_events__free_terms(&terms);
+ 
+ 	return ret;
+ }
 -- 
 1.8.1.4
 
