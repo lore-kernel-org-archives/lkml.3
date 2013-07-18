@@ -1,67 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab3GRStd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 14:49:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49650 "EHLO hydra.sisk.pl"
+	id S933425Ab3GRSvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 14:51:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22696 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab3GRStb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 14:49:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 5/30] ACPI / hotplug / PCI: Unified notify handler for hotplug events
-Date: Thu, 18 Jul 2013 20:59:25 +0200
-Message-ID: <1752714.boAZzg4FTs@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQU99a=BeHCrt0FWSeNs8NORg85C4uwQyY7Ky+-nqaSfxg@mail.gmail.com>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1551099.EAQDd0lEcY@vostro.rjw.lan> <CAE9FiQU99a=BeHCrt0FWSeNs8NORg85C4uwQyY7Ky+-nqaSfxg@mail.gmail.com>
+	id S1759201Ab3GRSvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 14:51:53 -0400
+Date: Thu, 18 Jul 2013 20:46:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] tracing: minor cleanups
+Message-ID: <20130718184647.GA4761@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 17, 2013 07:07:02 PM Yinghai Lu wrote:
-> On Wed, Jul 17, 2013 at 4:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > Using the hotplug context objects introduced previously rework the
-> > ACPI-based PCI hotplug (ACPIPHP) core code so that all notifications
-> > for ACPI device objects corresponding to the hotplug PCI devices are
-> > handled by one function, handle_hotplug_event(), which recognizes
-> > whether it has to handle a bridge or a function.
-> >
-> > In addition to code size reduction it allows some ugly pieces of code
-> > where notify handlers have to be uninstalled and installed again to
-> > go away.  Moreover, it fixes a theoretically possible race between
-> > handle_hotplug_event() and free_bridge() tearing down data structures
-> > for the same handle.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/pci/hotplug/acpiphp.h      |    1
-> >  drivers/pci/hotplug/acpiphp_glue.c |  132 ++++++++++++++-----------------------
-> >  2 files changed, 53 insertions(+), 80 deletions(-)
-> 
-> Can you put this patches in one temp branch ?
+Steven,
 
-They are in linux-pm.git/bleeding-edge.
+As you suggested, I extracted 2/2 into the separate change.
 
-> 
-> Like to check final bits.
+I think that it and 1/2 makes sense in any case so I am sending
+them right now. This shrinks the next series I am trying to make.
 
-Sure.
+Oleg.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
