@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759272Ab3GRQrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:47:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34295 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759171Ab3GRQrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:47:39 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>
-CC: Jason Kridner <jkridner@beagleboard.org>,
-        Mark Jackson <mpfj-list@newflow.co.uk>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 2/3] mmc: omap_hsmmc: set max_segs based on dma engine limits
-Date: Thu, 18 Jul 2013 11:46:40 -0500
-Message-ID: <1374166001-31340-3-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374166001-31340-1-git-send-email-joelf@ti.com>
-References: <1374166001-31340-1-git-send-email-joelf@ti.com>
+	id S1759219Ab3GRQtE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:49:04 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:33395 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758572Ab3GRQtB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 12:49:01 -0400
+Date: Thu, 18 Jul 2013 09:47:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 6/7] nohz_full: Add full-system-idle state
+ machine
+Message-ID: <20130718164749.GV4161@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130709012934.GA26058@linux.vnet.ibm.com>
+ <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1373333406-26979-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130717233119.GA2801@somewhere>
+ <20130718004141.GI4161@linux.vnet.ibm.com>
+ <20130718013259.GA7398@somewhere>
+ <20130718033921.GL4161@linux.vnet.ibm.com>
+ <20130718142450.GB7398@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718142450.GB7398@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071816-5406-0000-0000-00000A9561FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Porter <mporter@ti.com>
+On Thu, Jul 18, 2013 at 04:24:51PM +0200, Frederic Weisbecker wrote:
+> On Wed, Jul 17, 2013 at 08:39:21PM -0700, Paul E. McKenney wrote:
+> > On Thu, Jul 18, 2013 at 03:33:01AM +0200, Frederic Weisbecker wrote:
+> > > So it's like:
+> > > 
+> > >     CPU 0                                              CPU 1
+> > > 
+> > >     read I                                             write I
+> > >     smp_mb()                                           smp_mb()
+> > >     cmpxchg S                                          read S
+> > > 
+> > > I still can't find what guarantees we don't read a value in CPU 1 that is way below
+> > > what we want.
+> > 
+> > One key point is that there is a second cycle from LONG to FULL.
+> > 
+> > (Not saying that there is not a bug -- there might well be.  In fact,
+> > I am starting to think that I need to do another Promela model...
+> 
+> Now I'm very confused :)
 
-The EDMA DMAC has a hardware limitation that prevents supporting
-scatter gather lists with any number of segments. The DMA Engine
-API reports the maximum number of segments a channel can support
-via the optional dma_get_slave_sg_limits() API. If the max_nr_segs
-limit is present, the value is used to configure mmc->max_segs
-appropriately.
+To quote a Nobel Laureate who presented at an ISEF here in Portland some
+years back, "Confusion is the most productive state of mind."  ;-)
 
-[Joel Fernandes <joelf@ti.com>: Allocate sg_limits structure in
-client driver, and have the dmaengine implementation fill it up]
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Joel Fernandes <joelf@ti.com>
-Cc: Mark Jackson <mpfj-list@newflow.co.uk>
----
- drivers/mmc/host/omap_hsmmc.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+> I'm far from being a specialist on these matters but I would really love to
+> understand this patchset. Is there any documentation somewhere I can read
+> that could help, something about cycles of committed memory or something?
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index eccedc7..b723095 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1776,6 +1776,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	const struct of_device_id *match;
- 	dma_cap_mask_t mask;
- 	unsigned tx_req, rx_req;
-+	struct dma_slave_sg_limits dma_sg_limits;
- 	struct pinctrl *pinctrl;
- 
- 	match = of_match_device(of_match_ptr(omap_mmc_of_match), &pdev->dev);
-@@ -1952,6 +1953,14 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
- 
-+	/* Some DMA Engines only handle a limited number of SG segments */
-+	ret = dma_get_slave_sg_limits(host->rx_chan,
-+				DMA_SLAVE_BUSWIDTH_4_BYTES,
-+				mmc->max_blk_size / 4,
-+				&dma_sg_limits);
-+	if (!ret && dma_sg_limits.max_seg_nr)
-+		mmc->max_segs = dma_sg_limits.max_seg_nr;
-+
- 	/* Request IRQ for MMC operations */
- 	ret = request_irq(host->irq, omap_hsmmc_irq, 0,
- 			mmc_hostname(mmc), host);
--- 
-1.7.9.5
+Documentation/memory-barriers.txt should suffice for this.  If you want
+more rigor, http://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test7.pdf
+
+But memory-barrier pairing suffices here.  Here is case 2 from my
+earlier email in more detail.  The comments with capital letters
+mark important memory barriers, some of which are buried in atomic
+operations.
+
+1. Some CPU coming out of idle:
+
+o	rcu_sysidle_exit():
+
+	smp_mb__before_atomic_inc();
+	atomic_inc(&rdtp->dynticks_idle);
+	smp_mb__after_atomic_inc(); /* A */
+
+o	rcu_sysidle_force_exit():
+
+	oldstate = ACCESS_ONCE(full_sysidle_state);
+
+2. RCU GP kthread:
+
+o	rcu_sysidle():
+
+	cmpxchg(&full_sysidle_state, RCU_SYSIDLE_SHORT, RCU_SYSIDLE_LONG);
+		/* B */
+
+o	rcu_sysidle_check_cpu():
+
+	cur = atomic_read(&rdtp->dynticks_idle);
+
+Memory barrier A pairs with memory barrier B, so that if #1's load
+from full_sysidle_state sees RCU_SYSIDLE_SHORT, we know that #1's
+atomic_inc() must be visible to #2's atomic_read().  This will cause #2
+to recognize that the CPU came out of idle, which will in turn cause it
+to invoke rcu_sysidle_cancel() instead of rcu_sysidle(), resulting in
+full_sysidle_state being set to RCU_SYSIDLE_NOT.
+
+							Thanx, Paul
+
+> > > > Unfortunately, the reasoning in #2 above does not hold in the small-CPU
+> > > > case because there is the possibility of both the timekeeping CPU and
+> > > > the RCU grace-period kthread concurrently advancing the state machine.
+> > > > This would be bad, good catch!!!
+> > > 
+> > > It's not like I spotted anything myself but you're welcome :)
+> > 
+> > I will take them any way I can get them.  ;-)
+> > 
+> > > > The patch below (untested) is an attempt to fix this.  If it actually
+> > > > works, I will merge it in with 6/7.
+> > > > 
+> > > > Anything else I missed?  ;-)
+> > > 
+> > > Well I guess I'll wait one more night before trying to understand
+> > > the below ;)
+> > 
+> > The key point is that the added check means that either the timekeeping
+> > CPU is advancing the state machine (if there are few CPUs) or the
+> > RCU grace-period kthread is (if there are many CPUs), but never both.
+> > Or that is the intent, anyway!
+> 
+> Yeah got that.
+> 
+> Thanks!
+> 
 
