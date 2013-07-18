@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab3GRKol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:44:41 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52907 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600Ab3GRKoj (ORCPT
+	id S1758617Ab3GRKpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:45:32 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:64473 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757497Ab3GRKpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:44:39 -0400
-Date: Thu, 18 Jul 2013 11:44:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
-        balbi@ti.com, rnayak@ti.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130718104414.GH22506@sirena.org.uk>
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
- <1374141687-10790-4-git-send-email-sourav.poddar@ti.com>
+	Thu, 18 Jul 2013 06:45:31 -0400
+Date: Thu, 18 Jul 2013 12:45:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Hunter <ahh@google.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [RFC] [PATCH] x86: avoid per_cpu for APIC id tables
+Message-ID: <20130718104527.GE23558@gmail.com>
+References: <1374090073-1957-1-git-send-email-ahh@google.com>
+ <20130718065249.GA17622@gmail.com>
+ <20130718085542.GE27075@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yBTt7CTH+yMq4SuJ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374141687-10790-4-git-send-email-sourav.poddar@ti.com>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <20130718085542.GE27075@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC/PATCHv2 3/3] driver: spi: Add quad spi read support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---yBTt7CTH+yMq4SuJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-On Thu, Jul 18, 2013 at 03:31:27PM +0530, Sourav Poddar wrote:
-> Since, qspi controller uses quad read.
->=20
-> Configuring the command register, if the transfer of data needs
-> dual or quad lines.
->=20
-> This patch has been done on top of the following patch[1], which is just =
-the=20
-> basic idea of adding dual/quad support in spi framework. =20
-> $subject patch will undergo changes as the parent patch goes[1]
->=20
-> [1]: http://comments.gmane.org/gmane.linux.kernel.spi.devel/14047
+> On Thu, Jul 18, 2013 at 08:52:49AM +0200, Ingo Molnar wrote:
+> > 
+> > * Andrew Hunter <ahh@google.com> wrote:
+> > 
+> > > Hi, I have a patch (following) that modifies handling of APIC id tables,
+> > > trading a small amount of space in the (NR_CPUS - nr_cpu_ids) >> 0 case for
+> > > faster accesses and slightly better cache layout (as APIC ids are mostly used
+> > > cross-cpu.)  I'm not an APIC expert so I'd appreciate some eyes on this, but
+> > > it shouldn't change any behavior whatsoever.  Thoughts? (We're likely to merge
+> > > this internally even if upstream judges the space loss too much of a cost, so
+> > > I'd like to know if there's some other problem I've missed that this causes.)
+> > > 
+> > > I've tested this cursorily in most of our internal configurations but not in
+> > > any particularly exotic hardware/config.
+> > > 
+> > > 
+> > > From e6bf354c05d98651e8c27f96582f0ab56992e58a Mon Sep 17 00:00:00 2001
+> > > From: Andrew Hunter <ahh@google.com>
+> > > Date: Tue, 16 Jul 2013 16:50:36 -0700
+> > > Subject: [PATCH] x86: avoid per_cpu for APIC id tables
+> > > 
+> > > DEFINE_PER_CPU(var) and friends go to lengths to arrange all of cpu
+> > > i's per cpu variables as contiguous with each other; this requires a
+> > > double indirection to reference a variable.
+> > > 
+> > > For data that is logically per-cpu but
+> > > 
+> > > a) rarely modified
+> > > b) commonly accessed from other CPUs
+> > > 
+> > > this is bad: no writes means we don't have to worry about cache ping
+> > > pong, and cross-CPU access means there's no cache savings from not
+> > > pulling in remote entries.  (Actually, it's worse than "no" cache
+> > > savings: instead of one cache line containing 32 useful APIC ids, it
+> > > will contain 3 useful APIC ids and much other percpu data from the
+> > > remote CPU we don't want.)  It's also slower to access, due to the
+> > > indirection.
+> > > 
+> > > So instead use a flat array for APIC ids, most commonly used for IPIs
+> > > and the like.  This makes a measurable improvement (up to 10%) in some
+> > > benchmarks that heavily stress remote wakeups.
+> > > 
+> > > The one disadvantage is that we waste 8 bytes per unused CPU (NR_CPUS
+> > > - actual). But this is a fairly small amount of memory for reasonable
+> > > values of NR_CPUS.
+> > > 
+> > > Tested: builds and boots, runs a suite of wakeup-intensive test without failure.
+> > 
+> > 1)
+> > 
+> > To make it easier to merge such patches it would also be nice to integrate 
+> > a remote wakeup performance test into 'perf bench sched pipe', so that we 
+> > can measure it more easily. You can also cite the results in your 
+> > changelog.
+> 
+> While one could base the code (or even share) it with pipe, I'd like it 
+> to appear a different benchmark from the outside. Also I'm fairly sure 
+> they have a benchmark for this. Venki started this work, it looks like 
+> Andrew is taking over, good! :-)
 
-Just as with commit IDs you should include a plain text description of
-anything you link to so that people reading your e-mail can tell what
-you're talking about without going on line.
+Do you mean it should be in a separate 'perf bench sched remote-wakeup' 
+benchmark, appearing as a separate benchmark to the user? Agreed with 
+that.
 
---yBTt7CTH+yMq4SuJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR58b7AAoJELSic+t+oim9jwMP/Asz1edR2cgkUy0hsKMh8dr4
-wibv6McCcJrnEy3f4CawpiuJ7QQC2I1hS1S+zn45eTaiI4SWibxKWKLp3INnY8k4
-gvnEmlbSaggRpDPdsyS6nnOpFeGOpmlcJWgqjbIkPCMIUsh5zAYN4W3G2aOLI5se
-blz7lpn9+L7zmFe8VeO1GtWl1QGngRdni/U0/d5iA9Qz+5aiZ3djwzKF1Nk9dO5v
-dghJnsP/rA5ll+sXMgGd0U07bmeVG4deicwdpPqiST2SK+MTx5TgU+/K3RVfs0h8
-YH5PVcPVjYYnRQUiO2cHvSwl2XWE4Yqbzp26cYsNK80kD2wAPUM/5Z2/MCFwKsoK
-oR/lzuvKjFu2lIxY/HVORTSaqZgttIDQRyB753//xqoQ6kXQnX5LQ19cyNHExGM3
-3kDUMICXZqvn5koBo1HWfg4U4ZThi/RUm+wA/s+bXaY/7HRXc5CtoZWLD7J2vnhn
-FYcRnx9sqtLRM5fdn1F+i2+sqWVaFzm5kSXBKSrT+iWtJV4SnGlfRlwRVA6baZuE
-fQL1m4qs7xBNjC9JKavlId2F6xDd9v/Tb/HdIyj5RFNhP9FMZ2X7tzfwwu3YrYvy
-cySGwOGXJOgFFKWXriuda6DqbT9tt5SwzCCV3/dvpZuLYaTEEq7rB7nSZZ1HlQKu
-ZeGMkRl2FftAlPrLzOzW
-=Nt+Z
------END PGP SIGNATURE-----
-
---yBTt7CTH+yMq4SuJ--
+	Ingo
