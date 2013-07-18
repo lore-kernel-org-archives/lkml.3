@@ -1,202 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491Ab3GRWGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:06:24 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:47041 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759234Ab3GRWGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:06:22 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>
-Subject: [PATCH] perf tools: Fix named threads support in perf-script
-Date: Thu, 18 Jul 2013 16:06:15 -0600
-Message-Id: <1374185175-28272-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	id S933993Ab3GRWJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:09:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44360 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759234Ab3GRWJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:09:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,696,1367996400"; 
+   d="scan'208";a="348038679"
+Date: Thu, 18 Jul 2013 15:09:36 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>, jkosina@suse.cz,
+        benjamin.tissoires@gmail.com, adlr@chromium.org,
+        joseph.salisbury@canonical.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing
+ Unifying device issue""
+Message-ID: <20130718220936.GA8025@xanatos>
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+ <51E84FD1.4050400@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E84FD1.4050400@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 73994dc broke named thread support in perf-script. The thread
-struct in al is the main thread for a multithreaded process. The
-thread struct used for analysis (e.g., dumping events) should be the
-specific thread for the sample.
+On Thu, Jul 18, 2013 at 04:28:01PM -0400, Peter Hurley wrote:
+> [ +cc Sarah Sharp, linux-usb ]
+> 
+> On 07/18/2013 09:21 AM, Nestor Lopez Casado wrote:
+> >This reverts commit 8af6c08830b1ae114d1a8b548b1f8b056e068887.
+> >
+> >This patch re-adds the workaround introduced by 596264082f10dd4
+> >which was reverted by 8af6c08830b1ae114.
+> >
+> >The original patch 596264 was needed to overcome a situation where
+> >the hid-core would drop incoming reports while probe() was being
+> >executed.
+> >
+> >This issue was solved by c849a6143bec520af which added
+> >hid_device_io_start() and hid_device_io_stop() that enable a specific
+> >hid driver to opt-in for input reports while its probe() is being
+> >executed.
+> >
+> >Commit a9dd22b730857347 modified hid-logitech-dj so as to use the
+> >functionality added to hid-core. Having done that, workaround 596264
+> >was no longer necessary and was reverted by 8af6c08.
+> >
+> >We now encounter a different problem that ends up 'again' thwarting
+> >the Unifying receiver enumeration. The problem is time and usb controller
+> >dependent. Ocasionally the reports sent to the usb receiver to start
+> >the paired devices enumeration fail with -EPIPE and the receiver never
+> >gets to enumerate the paired devices.
+> >
+> >With dcd9006b1b053c7b1c the problem was "hidden" as the call to the usb
+> >driver became asynchronous and none was catching the error from the
+> >failing URB.
+> >
+> >As the root cause for this failing SET_REPORT is not understood yet,
+> >-possibly a race on the usb controller drivers or a problem with the
+> >Unifying receiver- reintroducing this workaround solves the problem.
+> 
+> 
+> Before we revert to using the workaround, I'd like to suggest that
+> this new "hidden" problem may be an interaction with the xhci_hcd host
+> controller driver only.
+> 
+> Looking at the related bug, the OP indicates the machine only has
+> USB3 ports. Additionally, comments #7, #100, and #104 of the original
+> bug report [1] add additional information that would seem to confirm
+> this suspicion.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Feng Tang <feng.tang@intel.com>
----
- tools/perf/builtin-script.c                            |    6 +++---
- tools/perf/util/scripting-engines/trace-event-perl.c   |   14 ++++++++------
- tools/perf/util/scripting-engines/trace-event-python.c |    9 +++++----
- tools/perf/util/trace-event-scripting.c                |    3 ++-
- tools/perf/util/trace-event.h                          |    4 +++-
- 5 files changed, 21 insertions(+), 15 deletions(-)
+Question: does this USB device need a control transfer to reset its
+endpoints when the endpoints are not actually halted?  If so, yes, that
+is a known xHCI driver bug that needs to be fixed.  The xHCI host will
+not accept a Reset Endpoint command when the endpoints are not actually
+halted, but the USB core will send the control transfer to reset the
+endpoint.  That means the device and host toggles will be out of sync,
+and all messages will start to fail with -EPIPE.
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index a205ff3..2cff431 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -483,10 +483,10 @@ static void print_sample_bts(union perf_event *event,
- 
- static void process_event(union perf_event *event, struct perf_sample *sample,
- 			  struct perf_evsel *evsel, struct machine *machine,
--			  struct addr_location *al)
-+			  struct thread *thread,
-+			  struct addr_location *al __maybe_unused)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
--	struct thread *thread = al->thread;
- 
- 	if (output[attr->type].fields == 0)
- 		return;
-@@ -598,7 +598,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
- 		return 0;
- 
--	scripting_ops->process_event(event, sample, evsel, machine, &al);
-+	scripting_ops->process_event(event, sample, evsel, machine, thread, &al);
- 
- 	evsel->hists.stats.total_period += sample->period;
- 	return 0;
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index eacec85..a85e4ae 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -261,7 +261,8 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
- 				    struct perf_sample *sample,
- 				    struct perf_evsel *evsel,
- 				    struct machine *machine __maybe_unused,
--				    struct addr_location *al)
-+				    struct thread *thread,
-+					struct addr_location *al)
- {
- 	struct format_field *field;
- 	static char handler[256];
-@@ -272,7 +273,6 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
--	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	dSP;
-@@ -351,7 +351,8 @@ static void perl_process_event_generic(union perf_event *event,
- 				       struct perf_sample *sample,
- 				       struct perf_evsel *evsel,
- 				       struct machine *machine __maybe_unused,
--				       struct addr_location *al __maybe_unused)
-+				       struct thread *thread __maybe_unused,
-+					   struct addr_location *al __maybe_unused)
- {
- 	dSP;
- 
-@@ -377,10 +378,11 @@ static void perl_process_event(union perf_event *event,
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct addr_location *al)
-+			       struct thread *thread,
-+				   struct addr_location *al)
- {
--	perl_process_tracepoint(event, sample, evsel, machine, al);
--	perl_process_event_generic(event, sample, evsel, machine, al);
-+	perl_process_tracepoint(event, sample, evsel, machine, thread, al);
-+	perl_process_event_generic(event, sample, evsel, machine, thread, al);
- }
- 
- static void run_start_sub(void)
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index e87aa5d..cc75a3c 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -225,6 +225,7 @@ static void python_process_tracepoint(union perf_event *perf_event
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine __maybe_unused,
-+				 struct thread *thread,
- 				 struct addr_location *al)
- {
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
-@@ -238,7 +239,6 @@ static void python_process_tracepoint(union perf_event *perf_event
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
--	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	t = PyTuple_New(MAX_FIELDS);
-@@ -345,12 +345,12 @@ static void python_process_general_event(union perf_event *perf_event
- 					 struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
- 					 struct machine *machine __maybe_unused,
-+					 struct thread *thread,
- 					 struct addr_location *al)
- {
- 	PyObject *handler, *retval, *t, *dict;
- 	static char handler_name[64];
- 	unsigned n = 0;
--	struct thread *thread = al->thread;
- 
- 	/*
- 	 * Use the MAX_FIELDS to make the function expandable, though
-@@ -404,17 +404,18 @@ static void python_process_event(union perf_event *perf_event,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine,
-+				 struct thread *thread,
- 				 struct addr_location *al)
- {
- 	switch (evsel->attr.type) {
- 	case PERF_TYPE_TRACEPOINT:
- 		python_process_tracepoint(perf_event, sample, evsel,
--					  machine, al);
-+					  machine, thread, al);
- 		break;
- 	/* Reserve for future process_hw/sw/raw APIs */
- 	default:
- 		python_process_general_event(perf_event, sample, evsel,
--					     machine, al);
-+					     machine, thread, al);
- 	}
- }
- 
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index 8715a10..95199e4 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -39,7 +39,8 @@ static void process_event_unsupported(union perf_event *event __maybe_unused,
- 				      struct perf_sample *sample __maybe_unused,
- 				      struct perf_evsel *evsel __maybe_unused,
- 				      struct machine *machine __maybe_unused,
--				      struct addr_location *al __maybe_unused)
-+				      struct thread *thread __maybe_unused,
-+					  struct addr_location *al __maybe_unused)
- {
- }
- 
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 669a64a..fafe1a4 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -9,6 +9,7 @@ struct machine;
- struct perf_sample;
- union perf_event;
- struct perf_tool;
-+struct thread;
- 
- extern struct pevent *perf_pevent;
- 
-@@ -68,7 +69,8 @@ struct scripting_ops {
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct addr_location *al);
-+			       struct thread *thread,
-+				   struct addr_location *al);
- 	int (*generate_script) (struct pevent *pevent, const char *outfile);
- };
- 
--- 
-1.7.10.1
+Can the OP capture a usbmon trace when the device starts failing?  That
+will reveal whether this actually is the issue.  dmesg output with
+CONFIG_USB_DEBUG and CONFIG_USB_XHCI_HCD_DEBUGGING turned on would also
+be helpful.
 
+Sarah Sharp
