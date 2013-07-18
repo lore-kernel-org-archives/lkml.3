@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab3GRCJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 22:09:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59335 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3GRCJS (ORCPT
+	id S932625Ab3GRCPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 22:15:33 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52306 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754791Ab3GRCPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 22:09:18 -0400
-Date: Thu, 18 Jul 2013 12:09:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Jul 17
-Message-Id: <20130718120916.3bfd1ccdefdbc9e4fe907927@canb.auug.org.au>
-In-Reply-To: <20130718093824.d449a17a810f8898f815c199@canb.auug.org.au>
-References: <20130717141335.02a3ad620bdb473935d05aa3@canb.auug.org.au>
-	<20130717083134.GB22506@sirena.org.uk>
-	<20130718093824.d449a17a810f8898f815c199@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__18_Jul_2013_12_09_16_+1000_sYQP+s4B9ZR7rd_v"
+	Wed, 17 Jul 2013 22:15:32 -0400
+Message-ID: <51E74FB6.3060900@linux.vnet.ibm.com>
+Date: Thu, 18 Jul 2013 10:15:18 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, Mike Galbraith <efault@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: smart wake-affine
+References: <51D29EE5.8080307@linux.vnet.ibm.com> <20130704091339.GK18898@dyad.programming.kicks-ass.net> <51D5428D.7080805@linux.vnet.ibm.com> <1372934013.9046.16.camel@marge.simpson.net> <51D633DB.5010508@linux.vnet.ibm.com> <1372997318.7315.23.camel@marge.simpson.net> <51D64C84.5080100@linux.vnet.ibm.com> <1373002865.8318.11.camel@marge.simpson.net> <51D664B9.7010407@linux.vnet.ibm.com> <1373179405.19316.41.camel@marge.simpson.net> <20130708082106.GW23916@twins.programming.kicks-ass.net> <1373309998.1744.3.camel@buesod1.americas.hpqcorp.net> <51DB75D4.6050302@linux.vnet.ibm.com> <1373337407.1744.20.camel@buesod1.americas.hpqcorp.net> <51DB7AF7.50708@linux.vnet.ibm.com> <51E38517.5040300@linux.vnet.ibm.com> <1373867877.2072.2.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1373867877.2072.2.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071802-7014-0000-0000-00000355FE5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__18_Jul_2013_12_09_16_+1000_sYQP+s4B9ZR7rd_v
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi, Peter
 
-Hi Mark,
+Davidlohr has tested the v3 patch set and it work well as reported (and
+in my test too), I thing your patch has solved the issue he found in v2 :)
 
-On Thu, 18 Jul 2013 09:38:24 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> So these are the errors I got yesterday:
->=20
-> sound/soc/fsl/imx-mc13783.c:23:28: fatal error: asm/mach-types.h: No such=
- file or directory
->  #include <asm/mach-types.h>
->                             ^
->=20
-> I didn't look closely enough, because this is the same error that I got
-> the previous day, but in a different file.
+Thus I think v3 is ready for next step now, I wish it has not yet been
+removed out of your apply-queue ;-)
 
-I got this again today.
+Regards,
+Michael Wang
 
-> sound/soc/omap/omap-pcm.c: In function 'omap_pcm_preallocate_dma_buffer':
-> sound/soc/omap/omap-pcm.c:171:2: error: implicit declaration of function =
-'dma_alloc_writecombine' [-Werror=3Dimplicit-function-declaration]
->   buf->area =3D dma_alloc_writecombine(pcm->card->dev, size,
->   ^
-> sound/soc/omap/omap-pcm.c:171:12: warning: assignment makes pointer from =
-integer without a cast [enabled by default]
->   buf->area =3D dma_alloc_writecombine(pcm->card->dev, size,
->             ^
-> sound/soc/omap/omap-pcm.c: In function 'omap_pcm_free_dma_buffers':
-> sound/soc/omap/omap-pcm.c:195:3: error: implicit declaration of function =
-'dma_free_writecombine' [-Werror=3Dimplicit-function-declaration]
->    dma_free_writecombine(pcm->card->dev, buf->bytes,
->    ^
->=20
-> These are the same as the day before.
+On 07/15/2013 01:57 PM, Davidlohr Bueso wrote:
+[snip]
+> 
+> Sorry for the delay. I'm glad you reminded me since I already had the
+> data.
+>>
+>> I suppose the issue have been addressed, but please let us know if v3
+>> also show regression on your box, we could try to solve the problem ;-)
+> 
+> It has, high_systime no longer shows a hit and all workloads remain
+> basically the same.
+> 
+> Tested-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> 
+> Thanks.
+> 
+>>
+>> Regards,
+>> Michael Wang
+>>
+>>>
+>>> Regards,
+>>> Michael Wang
+>>>
+>>>>
+>>>> Thanks,
+>>>> Davidlohr
+>>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-These are now gone.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__18_Jul_2013_12_09_16_+1000_sYQP+s4B9ZR7rd_v
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR505MAAoJEECxmPOUX5FElrQP/ikfLhMx5EI0EgtoNpP2F/5u
-WA9IK0ah4JVczZu8PM1loZMnmSq0fgC5+N+g/Jtu/TiKxfetSZwgCrUywnxBLtcg
-O9kPC6aJaESEC+fv1sIgsgfgloxuDUqM2vSiqHTL9sXdXhr/rXhQltvAoxcIMHJ7
-zfyNfhx+BYiEvUpyLgNbiVyaW5J8l+xnUibQ89fMykuvvgUd8pvykrQQNSw2yLFL
-FdW/mAaJqAiMhxYuruoZyOFLcAz5+JsL19vVA6f13lEagWGWmLFZSuN3Z+FjRCNC
-i1tooxhQpAVIJF1pYCrRLl/YcmndrSv6XRFy2X4vrcQUMRdD5muCHDxe7xnVA87a
-liOzr/iWyLJ+EiB422U3H4KvRyV6jObsyHhfY4G7SqoRC+C/y95N5SNf8rWi9cwA
-S5rraaOG803m8/Svzl27rQ2gKtRBC1uPMXgPnBrzuPhS0F5iuF2AaoXGV+jIyW+l
-oC9L8uknorchbD6EEuu4c2Su9yAb4RvMV5rESvINhTVk3zXfyT170Hvpozhro2ZI
-D3XiR+RfPfjfJWK+GCdjQEAmX9GnTyq5o5Sk8Ifwk0lIqULTG6/GaFyTsCyI+wDK
-/MZnL0J2EBJ7/HNteYLWNsdkE/j80pY+nmTSGjL9aP9yJ3E9KqhFeM1Y63pyKtyK
-wYhM+typKhYzaDN/hEhL
-=6ydK
------END PGP SIGNATURE-----
-
---Signature=_Thu__18_Jul_2013_12_09_16_+1000_sYQP+s4B9ZR7rd_v--
