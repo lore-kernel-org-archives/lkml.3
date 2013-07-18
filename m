@@ -1,70 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758884Ab3GRLz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:55:28 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:34909 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757126Ab3GRLz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:55:27 -0400
+	id S1758893Ab3GRL4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:56:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40382 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757183Ab3GRL4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 07:56:21 -0400
+Date: Thu, 18 Jul 2013 14:56:07 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: Mark Brown <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>, <balbi@ti.com>, <rnayak@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
+Message-ID: <20130718115607.GK11251@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
+ <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
+ <20130718104233.GG22506@sirena.org.uk>
+ <51E7D569.2010709@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20130718110201.GB29153@e106331-lin.cambridge.arm.com>
-References: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
-	<1374067396-30155-1-git-send-email-jonas.jensen@gmail.com>
-	<20130718095035.GA29153@e106331-lin.cambridge.arm.com>
-	<CACmBeS2SnpiUtiQD6j9qyaXZ5-chHSHVeo4c5=UhitVonvkKtw@mail.gmail.com>
-	<20130718110201.GB29153@e106331-lin.cambridge.arm.com>
-Date: Thu, 18 Jul 2013 13:55:26 +0200
-Message-ID: <CACmBeS24smrJ4SLY7snv1_6SRcuXRkZ8t0PGMvBupUpKMMb43w@mail.gmail.com>
-Subject: Re: [PATCH v3] clk: add MOXA ART SoCs clock driver
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rpGc+ACYPE+RMC+Z"
+Content-Disposition: inline
+In-Reply-To: <51E7D569.2010709@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 July 2013 13:02, Mark Rutland <mark.rutland@arm.com> wrote:
-> Ok. I'm just concerned that the linkage isn't explicit or obvious.
+--rpGc+ACYPE+RMC+Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This does leave apb-clock completely dependent on core-clock, and unless
-> I've missed something there's no linkage between the two described in
-> the dt.
+Hi,
 
-I can add a description in the core-clock binding and also for
-apb-clock pointing
-out that it's set from core-clock.
+On Thu, Jul 18, 2013 at 05:15:45PM +0530, Sourav Poddar wrote:
+> >>+	list_for_each_entry(t,&m->transfers, transfer_list) {
+> >>+		qspi->cmd |=3D QSPI_WLEN(t->bits_per_word);
+> >>+		qspi->cmd |=3D QSPI_WC_CMD_INT_EN;
+> >>+
+> >>+		ret =3D qspi_transfer_msg(qspi, t);
+> >>+		if (ret) {
+> >>+			dev_dbg(qspi->dev, "transfer message failed\n");
+> >>+			return -EINVAL;
+> >>+		}
+> >>+
+> >>+		m->actual_length +=3D t->len;
+> >>+
+> >>+		if (list_is_last(&t->transfer_list,&m->transfers))
+> >>+			goto out;
+> >>+	}
+> >The use of list_is_last() here is *realy* strange - what's going on
+> >there?
+> >
+> We are checking if there is any transfer left, if no we are signalling the
+> flash device about the end of transfer.
 
-> How does core-clock physically relate to apb-clock? Does it feed or is
-> it fed by apb-clock?
+I'll quote your diff below because I wanted to show where your 'out'
+label lies:
 
-apb-clock is entirely a DT construct used by drivers to get the fixed
-rate 48MHz.
-It's not fed by core-clock more than what happens in probe.
++       list_for_each_entry(t, &m->transfers, transfer_list) {
++               qspi->cmd |=3D QSPI_WLEN(t->bits_per_word);
++               qspi->cmd |=3D QSPI_WC_CMD_INT_EN;
++
++               ret =3D qspi_transfer_msg(qspi, t);
++               if (ret) {
++                       dev_dbg(qspi->dev, "transfer message failed\n");
++                       return -EINVAL;
++               }
++
++               m->actual_length +=3D t->len;
++
++               if (list_is_last(&t->transfer_list, &m->transfers))
++                       goto out;
++       }
++
++out:
++       m->status =3D status;
++       spi_finalize_current_message(master);
 
-For UC-7112-LX, drivers using apb-clock are: clocksource, MMC, watchdog
+see how it's place right after the closing curly brackets ? In that
+case, why do you need it ? list_for_each_entry() will do exactly what it
+says: iterate over each entry on the entry. When it reaches the last
+one, the loop will end.
 
-Because clocksource relies on apb-clock, a successful probe of
-core-clock is critical.
+This renders your list_is_last() check useless. In fact, you could've
+figured that out if you just spent the time to read
+list_for_each_entry() carefully.
 
-Commonly, drivers look up the apb-clock node and call clk_get_rate.
+--=20
+balbi
 
-> Are we always guaranteed to have core-clock if we have apb-clock, and is
-> it part of the same block in hardware? If so we could describe the
-> amalgamation as a provider with two clock outputs, with core-clock's
-> registers for configuration at probe-time.
+--rpGc+ACYPE+RMC+Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Yes, as described above, there can not be a apb-clock without core-clock.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR59fXAAoJEIaOsuA1yqREAlwP/0zhNva5B7OXjxfF9oX/4Sjz
+SBcU7bAvTtwFwl9ENPGvW0yA7I/ZPVqoJKnzV/ZCEgDW5M2W/F/U2lscjriuned9
+bsj4J8ZpG+k+G9oeN688UtG7Y/toF0cUTwHd4K77lfAtAtw+z7IS0hgK9buaKome
+oKw2C6Ahu93dXNjmb9Wh5WZdoSmEsihuIffXZ98nu6mKieREtH+UJ1FCR0fz3M2i
+CXoYxsFaOvacJNyIYRGRsrllY81SBCepZh2o61MjFUrWFL23xaFN0QG0B/aH0b0x
+3OXFIT3mrQgCsiEQ5Q4GbFmfCib/gVU7FDBqCuwJ1stuo6T8wqQHVs4cTMDAbiGI
+YH/DcuSqnDiHULMQM2dzJt23lqiDGYFJD4DvNd3nAOd7Vqu6JIj7GIv2EPH7CYQn
+a7uA2/dp4MrWpGLwA0g9O669RacUU7vZ6grp3P4bBXF71/4fDDOTsbPcrFtgrKk6
+Le7aMf8FJhGNILuIC9/T6wGJ9DZwMVIqcF9vOyp1mQb2Qr8HE75PLPf7I2ELcL5s
+G5nkC2U/CR0BO+8jxrOrBe1Y0fUyL7+AXN+abuRBlkqZtA4ONbGlbUs4GFKn+znR
+E5CIymlJMPCjTaoahx/KmJbLdx/+OdpHpkwSBV8i/7+AMOQNdxx8DGxZ7KW27G4I
+qTF6O+P1pMhD8YB8gTj7
+=jftt
+-----END PGP SIGNATURE-----
 
-I think drivers could find and use core-clock instead. Maybe the abstraction
-of apb-clock is unnecessary?
-
-
-Best regards,
-Jonas
+--rpGc+ACYPE+RMC+Z--
