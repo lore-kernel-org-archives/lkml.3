@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759236Ab3GRRMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 13:12:38 -0400
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:58832 "EHLO
+	id S933183Ab3GRRQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 13:16:37 -0400
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:59024 "EHLO
 	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758705Ab3GRRMg (ORCPT
+	with ESMTP id S932394Ab3GRRQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 13:12:36 -0400
+	Thu, 18 Jul 2013 13:16:35 -0400
 X-SENDER-IP: [85.230.171.181]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak1mAFUh6FFV5qu1PGdsb2JhbABagwaDIoUjuH4EAYERFwMBAQEBODWCJAEBBAEnExwjBQsIAyElDwUlChoTiAoKtjAWjiwwgR0Hgw5uA5dchjODcIo/Og
+X-IronPort-Anti-Spam-Result: Ak5mAGEi6FFV5qu1PGdsb2JhbABagwaDIoUjuH4EAYERFwMBAQEBODWCJAEBBAEnExwjBQsIAxUMJQ8FJQoaE4gKCrY0Fo4uLoEdB4MObgOXXIYzg3CJBIE7Og
 X-IronPort-AV: E=Sophos;i="4.89,695,1367964000"; 
-   d="scan'208";a="364778321"
+   d="scan'208";a="361485979"
 From: rydberg@euromail.se
-Date: Thu, 18 Jul 2013 19:13:45 +0200
+Date: Thu, 18 Jul 2013 19:17:44 +0200
 To: Nick Dyer <nick.dyer@itdev.co.uk>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -22,15 +22,17 @@ Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
         Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH 08/51] Input: atmel_mxt_ts - Initialise IRQ before probing
-Message-ID: <20130718171345.GB32381@polaris.bitmath.org>
+        Olof Johansson <olofj@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 20/51] Input: atmel_mxt_ts - Set default irqflags when
+ there is no pdata
+Message-ID: <20130718171744.GC32381@polaris.bitmath.org>
 References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
- <1372337366-9286-9-git-send-email-nick.dyer@itdev.co.uk>
+ <1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372337366-9286-9-git-send-email-nick.dyer@itdev.co.uk>
+In-Reply-To: <1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,214 +40,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Nick,
 
-> This allows the interrupt handler to be used to detect CHG line during config
-> download. We need to make sure we do not report events if input device not yet
-> registered.
+> From: Yufeng Shen <miletus@chromium.org>
 > 
-> data->enable_reporting is checked in each of the possible message handling
-> function paths rather than higher up (such as at mxt_proc_message) because
-> some objects may be used for completions (T6).
+> This is the preparation for supporting the code path when there is
+> platform data provided and still boot the device into a sane state
+> with backup NVRAM config.
 > 
+> Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
+> provided.
+> 
+> Signed-off-by: Yufeng Shen <miletus@chromium.org>
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 > Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 > Acked-by: Benson Leung <bleung@chromium.org>
 > ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |   73 +++++++++++++++++++++---------
->  1 file changed, 51 insertions(+), 22 deletions(-)
+>  drivers/input/touchscreen/atmel_mxt_ts.c |   54 +++++++++++++++++++++---------
+>  1 file changed, 39 insertions(+), 15 deletions(-)
 > 
 > diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index 55d7667..1e24e54 100644
+> index 1334e5b..2645d36 100644
 > --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 > +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -2,6 +2,7 @@
->   * Atmel maXTouch Touchscreen driver
->   *
->   * Copyright (C) 2010 Samsung Electronics Co.Ltd
-> + * Copyright (C) 2011-2012 Atmel Corporation
->   * Copyright (C) 2012 Google, Inc.
->   *
->   * Author: Joonyoung Shim <jy0922.shim@samsung.com>
-> @@ -261,6 +262,9 @@ struct mxt_data {
->  
->  	/* for fw update in bootloader */
->  	struct completion bl_completion;
-> +
-> +	/* Enable reporting of input events */
-> +	bool enable_reporting;
->  };
->  
->  static inline size_t mxt_obj_size(const struct mxt_object *obj)
-> @@ -568,6 +572,10 @@ static void mxt_input_button(struct mxt_data *data, struct mxt_message *message)
->  	bool button;
->  	int i;
->  
-> +	/* do not report events if input device not yet registered */
-> +	if (!data->enable_reporting)
-> +		return;
-
-Regardless of the rationale, this test seems to create complex logic
-further down the patchset. Any chance it could be done differently?
-
-> +
->  	/* Active-low switch */
->  	for (i = 0; i < pdata->t19_num_keys; i++) {
->  		if (pdata->t19_keymap[i] == KEY_RESERVED)
-> @@ -588,6 +596,10 @@ static void mxt_input_touchevent(struct mxt_data *data,
->  	int area;
->  	int pressure;
->  
-> +	/* do not report events if input device not yet registered */
-> +	if (!data->enable_reporting)
-> +		return;
-> +
->  	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
->  	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
->  	if (data->max_x < 1024)
-> @@ -667,7 +679,7 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
->  		}
->  	} while (reportid != 0xff);
->  
-> -	if (update_input) {
-> +	if (data->enable_reporting && update_input) {
->  		input_mt_report_pointer_emulation(data->input_dev, false);
->  		input_sync(data->input_dev);
->  	}
-> @@ -685,6 +697,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
->  		return IRQ_HANDLED;
->  	}
->  
-> +	if (!data->object_table)
-> +		return IRQ_NONE;
-> +
->  	return mxt_process_messages_until_invalid(data);
+> @@ -232,7 +232,7 @@ struct mxt_data {
+>  	struct i2c_client *client;
+>  	struct input_dev *input_dev;
+>  	char phys[64];		/* device physical location */
+> -	const struct mxt_platform_data *pdata;
+> +	struct mxt_platform_data *pdata;
+>  	struct mxt_object *object_table;
+>  	struct mxt_info info;
+>  	unsigned int irq;
+> @@ -1640,10 +1640,29 @@ static void mxt_input_close(struct input_dev *dev)
+>  	mxt_stop(data);
 >  }
 >  
-> @@ -746,6 +761,19 @@ static int mxt_make_highchg(struct mxt_data *data)
->  	return 0;
->  }
->  
-> +static int mxt_acquire_irq(struct mxt_data *data)
+> +static int mxt_handle_pdata(struct mxt_data *data)
 > +{
-> +	int error;
+> +	data->pdata = dev_get_platdata(&data->client->dev);
 > +
-> +	enable_irq(data->irq);
+> +	/* Use provided platform data if present */
+> +	if (data->pdata)
+> +		return 0;
 > +
-> +	error = mxt_make_highchg(data);
-> +	if (error)
-> +		return error;
+> +	data->pdata = kzalloc(sizeof(*data->pdata), GFP_KERNEL);
+> +	if (!data->pdata) {
+> +		dev_err(&data->client->dev, "Failed to allocate pdata\n");
+> +		return -ENOMEM;
+> +	}
+
+Any chance this could be a static instead?
+
+> +
+> +	/* Set default parameters */
+> +	data->pdata->irqflags = IRQF_TRIGGER_FALLING;
 > +
 > +	return 0;
 > +}
 > +
 
-Strange error handling; the name suggests that an error means the irq
-has not been enabled, which it clearly does anyways. Also, the error
-is not checked everywhere later in the patchset. Opencode instead?
+Opencode instead?
 
->  static int mxt_get_info(struct mxt_data *data)
+>  static int mxt_probe(struct i2c_client *client,
+>  		const struct i2c_device_id *id)
 >  {
->  	struct i2c_client *client = data->client;
-> @@ -819,6 +847,7 @@ static void mxt_free_object_table(struct mxt_data *data)
->  {
->  	kfree(data->object_table);
->  	data->object_table = NULL;
-> +	data->enable_reporting = false;
->  	data->T6_reportid = 0;
->  	data->T9_reportid_min = 0;
->  	data->T9_reportid_max = 0;
-> @@ -849,6 +878,10 @@ static int mxt_initialize(struct mxt_data *data)
->  	if (error)
->  		goto err_free_object_table;
+> -	const struct mxt_platform_data *pdata = client->dev.platform_data;
+
+This line keeps reappearing in various versions of this
+function. Perhaps it should simply stay as is instead?
+
+>  	struct mxt_data *data;
+>  	struct input_dev *input_dev;
+>  	int error;
+> @@ -1651,9 +1670,6 @@ static int mxt_probe(struct i2c_client *client,
+>  	unsigned int mt_flags = 0;
+>  	int i;
 >  
-> +	error = mxt_acquire_irq(data);
+> -	if (!pdata)
+
+Why not just initialize the default here instead?
+
+> -		return -EINVAL;
+> -
+>  	data = kzalloc(sizeof(struct mxt_data), GFP_KERNEL);
+>  	input_dev = input_allocate_device();
+>  	if (!data || !input_dev) {
+> @@ -1675,19 +1691,23 @@ static int mxt_probe(struct i2c_client *client,
+>  
+>  	data->client = client;
+>  	data->input_dev = input_dev;
+> -	data->pdata = pdata;
+>  	data->irq = client->irq;
+> +	i2c_set_clientdata(client, data);
+> +
+> +	error = mxt_handle_pdata(data);
 > +	if (error)
-> +		goto err_free_object_table;
-> +
->  	/* Check register init values */
->  	error = mxt_check_reg_init(data);
->  	if (error)
-> @@ -886,6 +919,8 @@ static int mxt_initialize(struct mxt_data *data)
->  			info->matrix_xsize, info->matrix_ysize,
->  			info->object_num);
->  
-> +	data->enable_reporting = true;
-> +
->  	return 0;
->  
->  err_free_object_table:
-> @@ -1087,11 +1122,7 @@ static ssize_t mxt_update_fw_store(struct device *dev,
->  		dev_dbg(dev, "The firmware update succeeded\n");
->  		mxt_free_object_table(data);
->  
-> -		mxt_initialize(data);
-> -
-> -		enable_irq(data->irq);
-> -
-> -		error = mxt_make_highchg(data);
-> +		error = mxt_initialize(data);
->  		if (error)
->  			return error;
->  	}
-> @@ -1188,9 +1219,19 @@ static int mxt_probe(struct i2c_client *client,
->  
->  	mxt_calc_resolution(data);
->  
-> +	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
-> +				     pdata->irqflags | IRQF_ONESHOT,
-> +				     client->name, data);
-> +	if (error) {
-> +		dev_err(&client->dev, "Failed to register interrupt\n");
 > +		goto err_free_mem;
-> +	}
-> +
-> +	disable_irq(client->irq);
 
-It is unclear what portion of the code should be executed with irqs
-off. A better framing of the sensitive code path would be nice.
+then this would go away
 
-> +
->  	error = mxt_initialize(data);
->  	if (error)
-> -		goto err_free_mem;
-> +		goto err_free_irq;
 >  
->  	__set_bit(EV_ABS, input_dev->evbit);
->  	__set_bit(EV_KEY, input_dev->evbit);
-> @@ -1241,21 +1282,9 @@ static int mxt_probe(struct i2c_client *client,
->  	input_set_drvdata(input_dev, data);
->  	i2c_set_clientdata(client, data);
+>  	init_completion(&data->bl_completion);
+>  	init_completion(&data->reset_completion);
+>  	init_completion(&data->crc_completion);
 >  
 > -	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
 > -				     pdata->irqflags | IRQF_ONESHOT,
-> -				     client->name, data);
-> -	if (error) {
-> -		dev_err(&client->dev, "Failed to register interrupt\n");
-> -		goto err_free_object;
-> -	}
-> -
-> -	error = mxt_make_highchg(data);
-> -	if (error)
-> -		goto err_free_irq;
-> -
->  	error = input_register_device(input_dev);
->  	if (error)
-> -		goto err_free_irq;
-> +		goto err_free_object;
+> +	error = request_threaded_irq(data->irq, NULL, mxt_interrupt,
+> +				     data->pdata->irqflags | IRQF_ONESHOT,
+>  				     client->name, data);
+
+and this hunk
+
+>  	if (error) {
+>  		dev_err(&client->dev, "Failed to register interrupt\n");
+> -		goto err_free_mem;
+> +		goto err_free_pdata;
+>  	}
 >  
->  	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
->  	if (error)
-> @@ -1266,10 +1295,10 @@ static int mxt_probe(struct i2c_client *client,
->  err_unregister_device:
->  	input_unregister_device(input_dev);
->  	input_dev = NULL;
-> -err_free_irq:
-> -	free_irq(client->irq, data);
+>  	disable_irq(client->irq);
+> @@ -1700,13 +1720,13 @@ static int mxt_probe(struct i2c_client *client,
+>  	__set_bit(EV_KEY, input_dev->evbit);
+>  	__set_bit(BTN_TOUCH, input_dev->keybit);
+>  
+> -	if (pdata->t19_num_keys) {
+> +	if (data->pdata->t19_num_keys) {
+
+and this hunk
+
+>  		__set_bit(INPUT_PROP_BUTTONPAD, input_dev->propbit);
+>  
+> -		for (i = 0; i < pdata->t19_num_keys; i++)
+> -			if (pdata->t19_keymap[i] != KEY_RESERVED)
+> +		for (i = 0; i < data->pdata->t19_num_keys; i++)
+> +			if (data->pdata->t19_keymap[i] != KEY_RESERVED)
+>  				input_set_capability(input_dev, EV_KEY,
+> -						     pdata->t19_keymap[i]);
+> +						data->pdata->t19_keymap[i]);
+>  
+>  		mt_flags |= INPUT_MT_POINTER;
+>  
+> @@ -1743,7 +1763,6 @@ static int mxt_probe(struct i2c_client *client,
+>  			     0, 255, 0, 0);
+>  
+>  	input_set_drvdata(input_dev, data);
+> -	i2c_set_clientdata(client, data);
+>  
+>  	error = input_register_device(input_dev);
+>  	if (error) {
+> @@ -1767,7 +1786,10 @@ err_unregister_device:
 >  err_free_object:
 >  	kfree(data->object_table);
-> +err_free_irq:
-> +	free_irq(client->irq, data);
+>  err_free_irq:
+> -	free_irq(client->irq, data);
+> +	free_irq(data->irq, data);
+> +err_free_pdata:
+> +	if (!dev_get_platdata(&data->client->dev))
+> +		kfree(data->pdata);
 >  err_free_mem:
 >  	input_free_device(input_dev);
 >  	kfree(data);
+> @@ -1782,6 +1804,8 @@ static int mxt_remove(struct i2c_client *client)
+>  	free_irq(data->irq, data);
+>  	input_unregister_device(data->input_dev);
+>  	kfree(data->object_table);
+> +	if (!dev_get_platdata(&data->client->dev))
+> +		kfree(data->pdata);
+
+Shared ownership should perhaps be signalled in a more robust way?
+
+>  	kfree(data);
+>  
+>  	return 0;
 > -- 
 > 1.7.10.4
 > 
