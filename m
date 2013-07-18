@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965332Ab3GRULZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:11:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41482 "EHLO
+	id S965395Ab3GRULa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:11:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41467 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759400Ab3GRTuV (ORCPT
+	with ESMTP id S1759397Ab3GRTuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:21 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/76] tools lib traceevent: Remove unused install targets
-Date: Thu, 18 Jul 2013 16:49:05 -0300
-Message-Id: <1374177003-3706-19-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/76] perf tools: Rename cpu_map__all() to cpu_map__empty()
+Date: Thu, 18 Jul 2013 16:48:48 -0300
+Message-Id: <1374177003-3706-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -28,54 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-The html_install, img_install, install_plugin and install_python are
-unused in the Makefile.  Get rid of them.
+The CPU map is in an "empty" (or not-applicable) state when monitoring
+specific threads.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmig.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+cpu_map__all() returns true if the CPU map is in this empty state (i.e
+for the 'empty_cpu_map' or if we created the map via
+cpu_map__dummy_new().
+
+The name, cpu_map__all(), is misleading, because even when monitoring
+all CPUs, (eg: perf record -a), cpu_map__all() returns false.
+
+Rename cpu_map__all() to cpu_map__empty().
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1370323231-14022-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/20130523012620.GA27733@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ tools/perf/util/cpumap.h | 2 +-
+ tools/perf/util/evlist.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 0b0a907..fd7510d 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -39,13 +39,8 @@ bindir_relative = bin
- bindir = $(prefix)/$(bindir_relative)
- man_dir = $(prefix)/share/man
- man_dir_SQ = '$(subst ','\'',$(man_dir))'
--html_install = $(prefix)/share/kernelshark/html
--html_install_SQ = '$(subst ','\'',$(html_install))'
--img_install = $(prefix)/share/kernelshark/html/images
--img_install_SQ = '$(subst ','\'',$(img_install))'
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 9bed02e..b123bb9 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -41,7 +41,7 @@ static inline int cpu_map__nr(const struct cpu_map *map)
+ 	return map ? map->nr : 1;
+ }
  
--export man_dir man_dir_SQ html_install html_install_SQ INSTALL
--export img_install img_install_SQ
-+export man_dir man_dir_SQ INSTALL
- export DESTDIR DESTDIR_SQ
+-static inline bool cpu_map__all(const struct cpu_map *map)
++static inline bool cpu_map__empty(const struct cpu_map *map)
+ {
+ 	return map ? map->map[0] == -1 : true;
+ }
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 8065ce8..4a901be 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -421,7 +421,7 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
+ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+ {
+ 	evlist->nr_mmaps = cpu_map__nr(evlist->cpus);
+-	if (cpu_map__all(evlist->cpus))
++	if (cpu_map__empty(evlist->cpus))
+ 		evlist->nr_mmaps = thread_map__nr(evlist->threads);
+ 	evlist->mmap = zalloc(evlist->nr_mmaps * sizeof(struct perf_mmap));
+ 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+@@ -573,7 +573,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 			return -ENOMEM;
+ 	}
  
- # copy a bit from Linux kbuild
-@@ -300,7 +295,7 @@ define do_install
- 	$(INSTALL) $1 '$(DESTDIR_SQ)$2'
- endef
+-	if (cpu_map__all(cpus))
++	if (cpu_map__empty(cpus))
+ 		return perf_evlist__mmap_per_thread(evlist, prot, mask);
  
--install_lib: all_cmd install_plugins install_python
-+install_lib: all_cmd
- 	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
- 
- install: install_lib
+ 	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
 -- 
 1.8.1.4
 
