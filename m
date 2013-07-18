@@ -1,84 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758728Ab3GRKsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:48:05 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:50212 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758469Ab3GRKsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:48:03 -0400
-Date: Thu, 18 Jul 2013 12:47:54 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v7 0/5] kdump: Allow ELF header creation in new kernel
-Message-ID: <20130718124754.7453756e@mschwide>
-In-Reply-To: <20130718124004.098b85f4@holzheu>
-References: <OF6010D9F0.5A45F2CF-ONC1257BAB.002B1F3E-C1257BAB.002B2812@de.ibm.com>
-	<20130717180049.3b9c6ec8@holzheu>
-	<20130717214207.GB27633@redhat.com>
-	<20130718124004.098b85f4@holzheu>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758747Ab3GRKsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:48:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51135 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758368Ab3GRKsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:48:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
+   d="scan'208";a="347705282"
+Message-ID: <51E7C7E6.4020200@intel.com>
+Date: Thu, 18 Jul 2013 18:48:06 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, eranian@google.com,
+        ak@linux.intel.com
+Subject: Re: [PATCH] perf, x86: Add Silvermont (22nm Atom) support
+References: <1374125767-9411-1-git-send-email-zheng.z.yan@intel.com> <20130718082324.GA27075@twins.programming.kicks-ass.net> <51E7A6F3.10109@intel.com> <20130718090248.GF27075@twins.programming.kicks-ass.net>
+In-Reply-To: <20130718090248.GF27075@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071810-1948-0000-0000-000005B7C5B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Jul 2013 12:40:04 +0200
-Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+On 07/18/2013 05:02 PM, Peter Zijlstra wrote:
+> On Thu, Jul 18, 2013 at 04:27:31PM +0800, Yan, Zheng wrote:
+>> On 07/18/2013 04:23 PM, Peter Zijlstra wrote:
+>>> On Thu, Jul 18, 2013 at 01:36:07PM +0800, Yan, Zheng wrote:
+>>>> +static struct event_constraint intel_slm_event_constraints[] __read_mostly =
+>>>> +{
+>>>> +	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+>>>> +	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+>>>> +	FIXED_EVENT_CONSTRAINT(0x013c, 2), /* CPU_CLK_UNHALTED.REF */
+>>>> +	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* pseudo CPU_CLK_UNHALTED.REF */
+>>>
+>>> So the normal event 0x13c and the fixed counter 2 are normally _not_ the
+>>> same. Are they for slm? Are you sure?
+>>>
+>>
+>> yes, I'm sure. see page 15-15 of http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-optimization-manual.pdf
+> 
+> OK, then put in a comment how slm is 'special' and you might want to fix
+> intel_pmu_init():
+> 
+> 	if (x86_pmu.event_constraints) {
+> 		/*
+> 		 * event on fixed counter2 (REF_CYCLES) only works on this
+> 		 * counter, so do not extend mask to generic counters
+> 		 */
+> 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+> 			if (c->cmask != FIXED_EVENT_FLAGS
+> 			    || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
+> 				continue;
+> 			}
+> 
+> 			c->idxmsk64 |= (1ULL << x86_pmu.num_counters) - 1;
+> 			c->weight += x86_pmu.num_counters;
+> 		}
+> 	}
+> 
+> Since that explicitly skips the fixed counter 2 and doesn't extend its
+> constraint to include all other counters.
+> 
 
-> On Wed, 17 Jul 2013 17:42:07 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Wed, Jul 17, 2013 at 06:00:49PM +0200, Michael Holzheu wrote:
-> 
-> [snip]
-> 
-> > > But this is all additional effort now and would not be necessary if we
-> > > integrate this patch series in 3.11.
-> > > 
-> > > Perhaps we should let Andrew decide here.
-> > 
-> > Hi Michael,
-> > 
-> > Given the fact that andrew too prefers a fix to get s390 working at this
-> > stage can we modify s390 copy_from_oldmem() to be able to copy to 
-> > vmalloc() memory area.
-> > 
-> > For mmap(), let us disable it on s390. And rest of the cleanups w.r.t
-> > ELF header swap etc, let us now target that for 3.12.
-> > 
-> > Sounds reasonable?
-> 
-> Hi Vivek,
-> 
-> Ok this is not our preferred solution but we can't expect that life is
-> always easy ;-)
-> 
-> Our s390 kernel maintainer Martin Schwidefsky agreed to send the following
-> two patches upstream for 3.11:
-> 
->  * s390/kdump: Disable mmap for s390
->  * s390/kdump: Allow copy_oldmem_page() copy to virtual memory
+how about below patch
 
-Patches have been added to 
-  git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git features
-
-They will go upstream with my next pull request.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+Regards
+Yan, Zheng
+---
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 8249df4..aa0d876 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -140,7 +140,6 @@ struct x86_pmu_capability {
+ /* CPU_CLK_Unhalted.Ref: */
+ #define MSR_ARCH_PERFMON_FIXED_CTR2	0x30b
+ #define INTEL_PMC_IDX_FIXED_REF_CYCLES	(INTEL_PMC_IDX_FIXED + 2)
+-#define INTEL_PMC_MSK_FIXED_REF_CYCLES	(1ULL << INTEL_PMC_IDX_FIXED_REF_CYCLES)
+ 
+ /*
+  * We model BTS tracing as another fixed-mode PMC.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index e4bb30a..47ffb48 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -169,7 +169,6 @@ static struct event_constraint intel_slm_event_constraints[] __read_mostly =
+ 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+ 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+ 	FIXED_EVENT_CONSTRAINT(0x013c, 2), /* CPU_CLK_UNHALTED.REF */
+-	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* pseudo CPU_CLK_UNHALTED.REF */
+ 	EVENT_CONSTRAINT_END
+ };
+ 
+@@ -2331,6 +2330,9 @@ __init int intel_pmu_init(void)
+ 
+ 		intel_pmu_lbr_init_atom();
+ 
++		/* both event 0x013c and fixed counter2 count REF_CYCLES */
++		intel_perfmon_event_map[PERF_COUNT_HW_REF_CPU_CYCLES] = 0x013c;
++
+ 		x86_pmu.event_constraints = intel_slm_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_slm_pebs_event_constraints;
+ 		x86_pmu.extra_regs = intel_slm_extra_regs;
+@@ -2486,12 +2488,12 @@ __init int intel_pmu_init(void)
+ 
+ 	if (x86_pmu.event_constraints) {
+ 		/*
+-		 * event on fixed counter2 (REF_CYCLES) only works on this
+-		 * counter, so do not extend mask to generic counters
++		 * If only fixed counter2 can count event REF_CYCLES, we use
++		 * pseudo-code 0x0300 for REF_CYCLES.
+ 		 */
+ 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+-			if (c->cmask != FIXED_EVENT_FLAGS
+-			    || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
++			if (c->cmask != FIXED_EVENT_FLAGS ||
++			    c->code == 0x0300) {
+ 				continue;
+ 			}
+ 
 
