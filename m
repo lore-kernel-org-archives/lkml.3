@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab3GRIEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:04:31 -0400
-Received: from 14.mo5.mail-out.ovh.net ([188.165.51.82]:44391 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751485Ab3GRIE1 (ORCPT
+	id S1756846Ab3GRIFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:05:48 -0400
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:60151 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3GRIFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:04:27 -0400
-X-Greylist: delayed 1909 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Jul 2013 04:04:27 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: [PATCH v4 1/5] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare.
-Date: Thu, 18 Jul 2013 09:58:11 +0200
-Message-Id: <1374134291-27704-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
-References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11530340947863304300
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 18 Jul 2013 04:05:44 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsQFAESf51GQ/khN/2dsb2JhbABagwaDQ71/gRIWdIIjAQEFeRALDgouITYGE4d+Aw+tRg2IXo0QgmoHg3sDiG+NBIFpjCeFJoMUOg
+X-IronPort-AV: E=Sophos;i="4.89,691,1367971200"; 
+   d="scan'208";a="84638741"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+Subject: Re: [PATCH 4/4] [media] em28xx: Fix vidioc fmt vid cap v4l2 compliance
+Date: Thu, 18 Jul 2013 10:05:38 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Alban Browaeys <alban.browaeys@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alban Browaeys <prahal@yahoo.com>
+References: <1374016006-27678-1-git-send-email-prahal@yahoo.com> <CAGoCfixECL-5uazWhBXdXVQufwbcB=Opahux3k+wEnt2riLjsA@mail.gmail.com>
+In-Reply-To: <CAGoCfixECL-5uazWhBXdXVQufwbcB=Opahux3k+wEnt2riLjsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307181005.38765.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+On Thu 18 July 2013 04:07:51 Devin Heitmueller wrote:
+> On Tue, Jul 16, 2013 at 7:06 PM, Alban Browaeys
+> <alban.browaeys@gmail.com> wrote:
+> > Set fmt.pix.priv to zero in vidioc_g_fmt_vid_cap
+> >  and vidioc_try_fmt_vid_cap.
+> 
+> Any reason not to have the v4l2 core do this before dispatching to the
+> driver?  Set it to zero before the core calls g_fmt.  This avoids all
+> the drivers (most of which don't use the field) from having to set the
+> value themselves.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clocksource/tcb_clksrc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+There is still one driver (sn9c102) that's (ab)using it. Although perhaps I
+should take a look at it and fix it.
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 8a61872..229c019 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
- 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
- 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
--		clk_disable(tcd->clk);
-+		clk_disable_unprepare(tcd->clk);
- 	}
- 
- 	switch (m) {
-@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	 * of oneshot, we get lower overhead and improved accuracy.
- 	 */
- 	case CLOCK_EVT_MODE_PERIODIC:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
-@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
-@@ -275,7 +275,7 @@ static int __init tcb_clksrc_init(void)
- 	pdev = tc->pdev;
- 
- 	t0_clk = tc->clk[0];
--	clk_enable(t0_clk);
-+	clk_prepare_enable(t0_clk);
- 
- 	/* How fast will we be counting?  Pick something over 5 MHz.  */
- 	rate = (u32) clk_get_rate(t0_clk);
-@@ -313,7 +313,7 @@ static int __init tcb_clksrc_init(void)
- 		/* tclib will give us three clocks no matter what the
- 		 * underlying platform supports.
- 		 */
--		clk_enable(tc->clk[1]);
-+		clk_prepare_enable(tc->clk[1]);
- 		/* setup both channel 0 & 1 */
- 		tcb_setup_dual_chan(tc, best_divisor_idx);
- 	}
--- 
-1.7.9.5
+Note that priv only needs to be cleared for try/s_fmt. g_fmt does clear it
+already in the core before handing it over to the driver.
 
+That said, I am undecided whether to put this in the core. We might actually
+start to use this field for something useful in the future. By having drivers
+clear it explicitly it will be easier to do that.
+
+Regards,
+
+	Hans
