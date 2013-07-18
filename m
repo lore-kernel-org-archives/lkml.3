@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743Ab3GRTf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:35:56 -0400
-Received: from etezian.org ([198.101.225.253]:40689 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933110Ab3GRTfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:35:55 -0400
-From: Andi Shyti <andi@etezian.org>
-To: linux@arm.linux.org.uk, linus.walleij@linaro.org, lee.jones@linaro.org,
-        fabio.baltieri@linaro.org, rui.zhang@intel.com
-Cc: andi@etezian.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] u8500_defconfig: allow creation and mounting of devtmpfs
-Date: Thu, 18 Jul 2013 21:35:30 +0200
-Message-Id: <1374176130-21209-1-git-send-email-andi@etezian.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1759368Ab3GRTmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:42:42 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43366 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759194Ab3GRTml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 15:42:41 -0400
+Message-ID: <1374176560.1949.131.camel@joe-AO722>
+Subject: Re: [PATCH v4] power: new trace event to print device suspend and
+ resume time
+From: Joe Perches <joe@perches.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, gregkh@linuxfoundation.org,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paul.gortmaker@windriver.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Date: Thu, 18 Jul 2013 12:42:40 -0700
+In-Reply-To: <1374175349-3435-1-git-send-email-shuah.kh@samsung.com>
+References: <1374175349-3435-1-git-send-email-shuah.kh@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables CONFIG_DETTMPFS and CONFIG_DEVTMPFS_MOUNT
-flags for u8500 based devices.
+On Thu, 2013-07-18 at 13:22 -0600, Shuah Khan wrote:
+> A new trace event is added to pm events to print time it takes to suspend and
+> resume a device. It generates trace message that includes device, driver,
+> parent information in addition to the type of pm ops invoked as well as the
+> pm event and error status from the pm ops. Example trace below:
 
-In this way it's possible to create a tmpfs/ramfs already in the
-early stages of the boot, allowing programs like udev/mdev to
-populate the /dev directory.
+Hi again Shuah.
 
-Signed-off-by: Andi Shyti <andi@etezian.org>
----
- arch/arm/configs/u8500_defconfig | 2 ++
- 1 file changed, 2 insertions(+)
+Thanks, this looks good to me now.
 
-diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
-index a0025dc..0675d6a 100644
---- a/arch/arm/configs/u8500_defconfig
-+++ b/arch/arm/configs/u8500_defconfig
-@@ -109,6 +109,8 @@ CONFIG_EXT2_FS_SECURITY=y
- CONFIG_EXT3_FS=y
- CONFIG_EXT4_FS=y
- CONFIG_VFAT_FS=y
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_TMPFS=y
- CONFIG_TMPFS_POSIX_ACL=y
- # CONFIG_MISC_FILESYSTEMS is not set
--- 
-1.8.3.2
+Here's just one new trivial bit.
+
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+[]
+> @@ -56,6 +57,8 @@ static pm_message_t pm_transition;
+[]
+> +static char *pm_verb(int);
+
+Instead of giving a prototype to a static, can
+you move the static to this location instead?
+
+It's a trivial function that just enumerates
+the int and returns a descriptive char *
+
+btw: it should be declared "const char *" too.
+
+That could be a new patch if you're tired of
+modifying this one.
+
+cheers, Joe
 
