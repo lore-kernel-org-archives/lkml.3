@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934189Ab3GRTy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:54:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41689 "EHLO
+	id S934135Ab3GRTyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:54:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41691 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759482Ab3GRTua (ORCPT
+	with ESMTP id S1759484Ab3GRTua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:30 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Renninger <trenn@suse.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 42/76] perf tools: Fix missing tool parameter
-Date: Thu, 18 Jul 2013 16:49:29 -0300
-Message-Id: <1374177003-3706-43-git-send-email-acme@infradead.org>
+Subject: [PATCH 65/76] perf timechart: Remove event types framework only user
+Date: Thu, 18 Jul 2013 16:49:52 -0300
+Message-Id: <1374177003-3706-66-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,212 +29,241 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The 'inject' command expects to get a reference to 'struct perf_inject'
-from its 'tool' member.  For that to work, 'tool' needs to be a
-parameter of all tool callbacks.  Make it so.
+The only user of the event types data is 'perf timechart' command and
+uses this info to identify proper tracepoints based on its name.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Switching this code to use tracepoint callbacks handlers same as another
+commands like builtin-{kmem,lock,sched}.c using the
+perf_session__set_tracepoints_handlers function.
+
+This way we get rid of the only event types user and can remove them
+completely in next patches.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1372944040-32690-3-git-send-email-adrian.hunter@intel.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Renninger <trenn@suse.de>
+Link: http://lkml.kernel.org/r/1373556513-3000-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-inject.c | 26 +++++++++++---------------
- tools/perf/util/header.c    |  6 ++++--
- tools/perf/util/header.h    |  6 ++++--
- tools/perf/util/session.c   | 11 +++++++----
- tools/perf/util/tool.h      |  9 ++++-----
- 5 files changed, 30 insertions(+), 28 deletions(-)
+ tools/perf/builtin-timechart.c | 155 ++++++++++++++++++++++++++---------------
+ 1 file changed, 97 insertions(+), 58 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index f299ddf..c943513 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -73,22 +73,17 @@ static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
- 	return perf_event__repipe_synth(tool, event);
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index a512009..c2e0231 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -21,6 +21,7 @@
+ #include "util/color.h"
+ #include <linux/list.h>
+ #include "util/cache.h"
++#include "util/evlist.h"
+ #include "util/evsel.h"
+ #include <linux/rbtree.h>
+ #include "util/symbol.h"
+@@ -462,6 +463,8 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
+ 	}
  }
  
--static int perf_event__repipe_tracing_data_synth(union perf_event *event,
--						 struct perf_session *session
--						 __maybe_unused)
--{
--	return perf_event__repipe_synth(NULL, event);
--}
++typedef int (*tracepoint_handler)(struct perf_evsel *evsel,
++				  struct perf_sample *sample);
+ 
+ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				union perf_event *event __maybe_unused,
+@@ -469,8 +472,6 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct perf_evsel *evsel,
+ 				struct machine *machine __maybe_unused)
+ {
+-	struct trace_entry *te;
 -
--static int perf_event__repipe_attr(union perf_event *event,
--				   struct perf_evlist **pevlist __maybe_unused)
-+static int perf_event__repipe_attr(struct perf_tool *tool,
-+				   union perf_event *event,
-+				   struct perf_evlist **pevlist)
- {
- 	int ret;
--	ret = perf_event__process_attr(event, pevlist);
+ 	if (evsel->attr.sample_type & PERF_SAMPLE_TIME) {
+ 		if (!first_time || first_time > sample->time)
+ 			first_time = sample->time;
+@@ -478,69 +479,90 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 			last_time = sample->time;
+ 	}
+ 
+-	te = (void *)sample->raw_data;
+-	if ((evsel->attr.sample_type & PERF_SAMPLE_RAW) && sample->raw_size > 0) {
+-		char *event_str;
+-#ifdef SUPPORT_OLD_POWER_EVENTS
+-		struct power_entry_old *peo;
+-		peo = (void *)te;
+-#endif
+-		/*
+-		 * FIXME: use evsel, its already mapped from id to perf_evsel,
+-		 * remove perf_header__find_event infrastructure bits.
+-		 * Mapping all these "power:cpu_idle" strings to the tracepoint
+-		 * ID and then just comparing against evsel->attr.config.
+-		 *
+-		 * e.g.:
+-		 *
+-		 * if (evsel->attr.config == power_cpu_idle_id)
+-		 */
+-		event_str = perf_header__find_event(te->type);
+-
+-		if (!event_str)
+-			return 0;
+-
+-		if (sample->cpu > numcpus)
+-			numcpus = sample->cpu;
+-
+-		if (strcmp(event_str, "power:cpu_idle") == 0) {
+-			struct power_processor_entry *ppe = (void *)te;
+-			if (ppe->state == (u32)PWR_EVENT_EXIT)
+-				c_state_end(ppe->cpu_id, sample->time);
+-			else
+-				c_state_start(ppe->cpu_id, sample->time,
+-					      ppe->state);
+-		}
+-		else if (strcmp(event_str, "power:cpu_frequency") == 0) {
+-			struct power_processor_entry *ppe = (void *)te;
+-			p_state_change(ppe->cpu_id, sample->time, ppe->state);
+-		}
++	if (sample->cpu > numcpus)
++		numcpus = sample->cpu;
 +
-+	ret = perf_event__process_attr(tool, event, pevlist);
- 	if (ret)
- 		return ret;
++	if (evsel->handler.func != NULL) {
++		tracepoint_handler f = evsel->handler.func;
++		return f(evsel, sample);
++	}
++
++	return 0;
++}
++
++static int
++process_sample_cpu_idle(struct perf_evsel *evsel __maybe_unused,
++			struct perf_sample *sample)
++{
++	struct power_processor_entry *ppe = sample->raw_data;
++
++	if (ppe->state == (u32) PWR_EVENT_EXIT)
++		c_state_end(ppe->cpu_id, sample->time);
++	else
++		c_state_start(ppe->cpu_id, sample->time, ppe->state);
++	return 0;
++}
++
++static int
++process_sample_cpu_frequency(struct perf_evsel *evsel __maybe_unused,
++			     struct perf_sample *sample)
++{
++	struct power_processor_entry *ppe = sample->raw_data;
++
++	p_state_change(ppe->cpu_id, sample->time, ppe->state);
++	return 0;
++}
  
--	return perf_event__repipe_synth(NULL, event);
-+	return perf_event__repipe_synth(tool, event);
- }
+-		else if (strcmp(event_str, "sched:sched_wakeup") == 0)
+-			sched_wakeup(sample->cpu, sample->time, sample->pid, te);
++static int
++process_sample_sched_wakeup(struct perf_evsel *evsel __maybe_unused,
++			    struct perf_sample *sample)
++{
++	struct trace_entry *te = sample->raw_data;
  
- static int perf_event__repipe(struct perf_tool *tool,
-@@ -147,13 +142,14 @@ static int perf_event__repipe_fork(struct perf_tool *tool,
- 	return err;
- }
+-		else if (strcmp(event_str, "sched:sched_switch") == 0)
+-			sched_switch(sample->cpu, sample->time, te);
++	sched_wakeup(sample->cpu, sample->time, sample->pid, te);
++	return 0;
++}
++
++static int
++process_sample_sched_switch(struct perf_evsel *evsel __maybe_unused,
++			    struct perf_sample *sample)
++{
++	struct trace_entry *te = sample->raw_data;
++
++	sched_switch(sample->cpu, sample->time, te);
++	return 0;
++}
  
--static int perf_event__repipe_tracing_data(union perf_event *event,
-+static int perf_event__repipe_tracing_data(struct perf_tool *tool,
-+					   union perf_event *event,
- 					   struct perf_session *session)
- {
- 	int err;
- 
--	perf_event__repipe_synth(NULL, event);
--	err = perf_event__process_tracing_data(event, session);
-+	perf_event__repipe_synth(tool, event);
-+	err = perf_event__process_tracing_data(tool, event, session);
- 
- 	return err;
- }
-@@ -407,7 +403,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.unthrottle	= perf_event__repipe,
- 			.attr		= perf_event__repipe_attr,
- 			.event_type	= perf_event__repipe_event_type_synth,
--			.tracing_data	= perf_event__repipe_tracing_data_synth,
-+			.tracing_data	= perf_event__repipe_op2_synth,
- 			.build_id	= perf_event__repipe_op2_synth,
- 		},
- 		.input_name  = "-",
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index a4dafbe..d12d79c 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2922,7 +2922,8 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
- 	return err;
- }
- 
--int perf_event__process_attr(union perf_event *event,
-+int perf_event__process_attr(struct perf_tool *tool __maybe_unused,
-+			     union perf_event *event,
- 			     struct perf_evlist **pevlist)
- {
- 	u32 i, ids, n_ids;
-@@ -3065,7 +3066,8 @@ int perf_event__synthesize_tracing_data(struct perf_tool *tool, int fd,
- 	return aligned_size;
- }
- 
--int perf_event__process_tracing_data(union perf_event *event,
-+int perf_event__process_tracing_data(struct perf_tool *tool __maybe_unused,
-+				     union perf_event *event,
- 				     struct perf_session *session)
- {
- 	ssize_t size_read, padding, size = event->tracing_data.size;
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 16a3e83..2d1ca7d 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -130,7 +130,8 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
- int perf_event__synthesize_attrs(struct perf_tool *tool,
- 				 struct perf_session *session,
- 				 perf_event__handler_t process);
--int perf_event__process_attr(union perf_event *event, struct perf_evlist **pevlist);
-+int perf_event__process_attr(struct perf_tool *tool, union perf_event *event,
-+			     struct perf_evlist **pevlist);
- 
- int perf_event__synthesize_event_type(struct perf_tool *tool,
- 				      u64 event_id, char *name,
-@@ -145,7 +146,8 @@ int perf_event__process_event_type(struct perf_tool *tool,
- int perf_event__synthesize_tracing_data(struct perf_tool *tool,
- 					int fd, struct perf_evlist *evlist,
- 					perf_event__handler_t process);
--int perf_event__process_tracing_data(union perf_event *event,
-+int perf_event__process_tracing_data(struct perf_tool *tool,
-+				     union perf_event *event,
- 				     struct perf_session *session);
- 
- int perf_event__synthesize_build_id(struct perf_tool *tool,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index ad47fb9..6b71b88 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -193,7 +193,9 @@ void perf_session__delete(struct perf_session *self)
- 	vdso__exit();
- }
- 
--static int process_event_synth_tracing_data_stub(union perf_event *event
-+static int process_event_synth_tracing_data_stub(struct perf_tool *tool
-+						 __maybe_unused,
-+						 union perf_event *event
- 						 __maybe_unused,
- 						 struct perf_session *session
- 						__maybe_unused)
-@@ -202,7 +204,8 @@ static int process_event_synth_tracing_data_stub(union perf_event *event
+ #ifdef SUPPORT_OLD_POWER_EVENTS
+-		if (use_old_power_events) {
+-			if (strcmp(event_str, "power:power_start") == 0)
+-				c_state_start(peo->cpu_id, sample->time,
+-					      peo->value);
+-
+-			else if (strcmp(event_str, "power:power_end") == 0)
+-				c_state_end(sample->cpu, sample->time);
+-
+-			else if (strcmp(event_str,
+-					"power:power_frequency") == 0)
+-				p_state_change(peo->cpu_id, sample->time,
+-					       peo->value);
+-		}
+-#endif
+-	}
++static int
++process_sample_power_start(struct perf_evsel *evsel __maybe_unused,
++			   struct perf_sample *sample)
++{
++	struct power_entry_old *peo = sample->raw_data;
++
++	c_state_start(peo->cpu_id, sample->time, peo->value);
  	return 0;
  }
  
--static int process_event_synth_attr_stub(union perf_event *event __maybe_unused,
-+static int process_event_synth_attr_stub(struct perf_tool *tool __maybe_unused,
-+					 union perf_event *event __maybe_unused,
- 					 struct perf_evlist **pevlist
- 					 __maybe_unused)
- {
-@@ -921,7 +924,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
- 	/* These events are processed right away */
- 	switch (event->header.type) {
- 	case PERF_RECORD_HEADER_ATTR:
--		err = tool->attr(event, &session->evlist);
-+		err = tool->attr(tool, event, &session->evlist);
- 		if (err == 0)
- 			perf_session__set_id_hdr_size(session);
- 		return err;
-@@ -930,7 +933,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
- 	case PERF_RECORD_HEADER_TRACING_DATA:
- 		/* setup for reading amidst mmap */
- 		lseek(session->fd, file_offset, SEEK_SET);
--		return tool->tracing_data(event, session);
-+		return tool->tracing_data(tool, event, session);
- 	case PERF_RECORD_HEADER_BUILD_ID:
- 		return tool->build_id(tool, event, session);
- 	case PERF_RECORD_FINISHED_ROUND:
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index b0e1aad..88f8cbd 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -18,12 +18,11 @@ typedef int (*event_sample)(struct perf_tool *tool, union perf_event *event,
- typedef int (*event_op)(struct perf_tool *tool, union perf_event *event,
- 			struct perf_sample *sample, struct machine *machine);
++static int
++process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
++			 struct perf_sample *sample)
++{
++	c_state_end(sample->cpu, sample->time);
++	return 0;
++}
++
++static int
++process_sample_power_frequency(struct perf_evsel *evsel __maybe_unused,
++			       struct perf_sample *sample)
++{
++	struct power_entry_old *peo = sample->raw_data;
++
++	p_state_change(peo->cpu_id, sample->time, peo->value);
++	return 0;
++}
++#endif /* SUPPORT_OLD_POWER_EVENTS */
++
+ /*
+  * After the last sample we need to wrap up the current C/P state
+  * and close out each CPU for these.
+@@ -957,6 +979,17 @@ static int __cmd_timechart(const char *output_name)
+ 		.sample		 = process_sample_event,
+ 		.ordered_samples = true,
+ 	};
++	const struct perf_evsel_str_handler power_tracepoints[] = {
++		{ "power:cpu_idle",		process_sample_cpu_idle },
++		{ "power:cpu_frequency",	process_sample_cpu_frequency },
++		{ "sched:sched_wakeup",		process_sample_sched_wakeup },
++		{ "sched:sched_switch",		process_sample_sched_switch },
++#ifdef SUPPORT_OLD_POWER_EVENTS
++		{ "power:power_start",		process_sample_power_start },
++		{ "power:power_end",		process_sample_power_end },
++		{ "power:power_frequency",	process_sample_power_frequency },
++#endif
++	};
+ 	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
+ 							 0, false, &perf_timechart);
+ 	int ret = -EINVAL;
+@@ -967,6 +1000,12 @@ static int __cmd_timechart(const char *output_name)
+ 	if (!perf_session__has_traces(session, "timechart record"))
+ 		goto out_delete;
  
--typedef int (*event_attr_op)(union perf_event *event,
-+typedef int (*event_attr_op)(struct perf_tool *tool,
-+			     union perf_event *event,
- 			     struct perf_evlist **pevlist);
--typedef int (*event_simple_op)(struct perf_tool *tool, union perf_event *event);
- 
--typedef int (*event_synth_op)(union perf_event *event,
--			      struct perf_session *session);
-+typedef int (*event_simple_op)(struct perf_tool *tool, union perf_event *event);
- 
- typedef int (*event_op2)(struct perf_tool *tool, union perf_event *event,
- 			 struct perf_session *session);
-@@ -39,7 +38,7 @@ struct perf_tool {
- 			throttle,
- 			unthrottle;
- 	event_attr_op	attr;
--	event_synth_op	tracing_data;
-+	event_op2	tracing_data;
- 	event_simple_op	event_type;
- 	event_op2	finished_round,
- 			build_id;
++	if (perf_session__set_tracepoints_handlers(session,
++						   power_tracepoints)) {
++		pr_err("Initializing session tracepoint handlers failed\n");
++		goto out_delete;
++	}
++
+ 	ret = perf_session__process_events(session, &perf_timechart);
+ 	if (ret)
+ 		goto out_delete;
 -- 
 1.8.1.4
 
