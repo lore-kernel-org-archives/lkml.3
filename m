@@ -1,267 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934904Ab3GRXr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:47:56 -0400
-Received: from mail-gg0-f201.google.com ([209.85.161.201]:37373 "EHLO
-	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934780Ab3GRXrz (ORCPT
+	id S934908Ab3GRXtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:49:15 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:62202 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933467Ab3GRXtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:47:55 -0400
-Subject: mmotm 2013-07-18-16-40 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Thu, 18 Jul 2013 16:41:22 -0700
-Message-Id: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com>
+	Thu, 18 Jul 2013 19:49:12 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Julia Lawall <julia.lawall@lip6.fr>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Felix Fietkau <nbd@openwrt.org>
+Subject: [PATCH] backports: backport drvdata = NULL core driver fixes
+Date: Thu, 18 Jul 2013 16:48:59 -0700
+Message-Id: <1374191339-10124-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2013-07-18-16-40 has been uploaded to
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-   http://www.ozlabs.org/~akpm/mmotm/
+The Linux kernel had tons of code which at times cleared the
+drvdata upon probe failure or release. There are however a bunch
+of drivers that didn't clear this.
 
-mmotm-readme.txt says
+Commit 0998d063 implmented clearing this upon device_release_driver()
+and dealt with probe failure on driver_probe_device(). After this the
+kernel was cleaned up separately with *tons* of patches to remove all
+these driver specific settings given that the clearing is now done
+internally by the device core.
 
-README for mm-of-the-moment:
+Instead of ifdef'ing code back in for older code where it was properly
+in place backport this by piggy backing the new required code upon the
+calls used in place. There is a small race here upon device_release_driver()
+but we can live with that theoretical race.
 
-http://www.ozlabs.org/~akpm/mmotm/
+Due to the way we hack this backport we can't use a separate namespace
+as we have with other symbols.
 
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
+mcgrof@frijol ~/linux-stable (git::master)$ git describe --contains \
+	0998d0631001288a5974afc0b2a5f568bcdecb4d
+v3.6-rc1~99^2~14^2~17
 
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
+commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+Author: Hans de Goede <hdegoede@redhat.com>
+Date:   Wed May 23 00:09:34 2012 +0200
 
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
+    device-core: Ensure drvdata = NULL when no driver is bound
 
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
+    1) drvdata is for a driver to store a pointer to driver specific data
+    2) If no driver is bound, there is no driver specific data associated with
+       the device
+    3) Thus logically drvdata should be NULL if no driver is bound.
 
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
+    But many drivers don't clear drvdata on device_release, or set drvdata
+    early on in probe and leave it set on probe error. Both of which results
+    in a dangling pointer in drvdata.
 
+    This patch enforce for drvdata to be NULL after device_release or on probe
+    failure.
 
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
+    Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+Tested with ckmake against next-20130618:
 
-To develop on top of mmotm git:
+1   2.6.24              [  OK  ]
+2   2.6.25              [  OK  ]
+3   2.6.26              [  OK  ]
+4   2.6.27              [  OK  ]
+5   2.6.28              [  OK  ]
+6   2.6.29              [  OK  ]
+7   2.6.30              [  OK  ]
+8   2.6.31              [  OK  ]
+9   2.6.32              [  OK  ]
+10  2.6.33              [  OK  ]
+11  2.6.34              [  OK  ]
+12  2.6.35              [  OK  ]
+13  2.6.36              [  OK  ]
+14  2.6.37              [  OK  ]
+15  2.6.38              [  OK  ]
+16  2.6.39              [  OK  ]
+17  3.0.79              [  OK  ]
+18  3.1.10              [  OK  ]
+19  3.10-rc1            [  OK  ]
+20  3.2.45              [  OK  ]
+21  3.3.8               [  OK  ]
+22  3.4.46              [  OK  ]
+23  3.5.7               [  OK  ]
+24  3.6.11              [  OK  ]
+25  3.7.10              [  OK  ]
+26  3.8.13              [  OK  ]
+27  3.9.3               [  OK  ]
 
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
+real    32m2.332s
+user    860m23.688s
+sys     121m20.840s
 
-To rebase a branch with older patches to a new mmotm release:
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Cc: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+---
+ backport/backport-include/linux/device.h |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
+diff --git a/backport/backport-include/linux/device.h b/backport/backport-include/linux/device.h
+index c2f80e2..ba55d0e 100644
+--- a/backport/backport-include/linux/device.h
++++ b/backport/backport-include/linux/device.h
+@@ -176,4 +176,23 @@ extern int dev_set_name(struct device *dev, const char *name, ...)
+ 			__attribute__((format(printf, 2, 3)));
+ #endif
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,6,0)
++#define driver_probe_device(__drv, __dev)		\
++({							\
++ 	int ret;					\
++ 	ret = (driver_probe_device)(__drv, __dev);	\
++ 	if (ret)					\
++		dev_set_drvdata(__dev, NULL);		\
++ 	return ret;					\
++})
++
++#define device_release_driver(__dev)			\
++({							\
++ 	(device_release_driver)(__dev);			\
++ 	device_lock(__dev);				\
++ 	dev_set_drvdata(__dev, NULL);			\
++ 	device_unlock(__dev);				\
++})
++#endif /* LINUX_VERSION_CODE <= KERNEL_VERSION(3,6,0) */
++
+ #endif /* __BACKPORT_DEVICE_H */
+-- 
+1.7.10.4
 
-
-
-
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
-
-A git copy of this tree is available at
-
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
-
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
-
-
-This mmotm tree contains the following patches against 3.11-rc1:
-(patches marked "*" will be included in linux-next)
-
-  origin.patch
-* revert-include-linux-smph-on_each_cpu-switch-back-to-a-macro.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-  i-need-old-gcc.patch
-* mm-mempolicy-fix-mbind_range-vma_adjust-interaction.patch
-* ocfs2-refcounttree-add-the-missing-null-check-of-the-return-value-of-find_or_create_page.patch
-* ocfs2-refcounttree-add-the-missing-null-check-of-the-return-value-of-find_or_create_page-fix.patch
-* dmi_scan-add-comments-on-dmi_present-and-the-loop-in-dmi_scan_machine.patch
-* maintainers-dynamic-debug-jasons-not-there.patch
-* gitignore-ignore-lz4-files.patch
-* rapidio-fix-use-after-free-in-rio_unregister_scan.patch
-* mm-sched-numa-fix-numa-balancing-when-sched_debug.patch
-* arch-x86-platform-ce4100-ce4100c-include-rebooth.patch
-* mm-swapc-clear-pageactive-before-adding-pages-onto-unevictable-list.patch
-* thp-mm-avoid-pageunevictable-on-active-inactive-lru-lists.patch
-* drivers-thermal-x86_pkg_temp_thermalc-fix-lockup-of-cpu_down.patch
-* mm-zbud-fix-condition-check-on-allocation-size.patch
-* documentation-development-process-update-mm-and-next-urls.patch
-* printk-move-to-separate-directory-for-easier-modification.patch
-* printk-add-console_cmdlineh.patch
-* printk-move-braille-console-support-into-separate-braille-files.patch
-* printk-use-pointer-for-console_cmdline-indexing.patch
-* printk-rename-struct-log-to-struct-printk_log.patch
-* x86-make-mem=-option-to-work-for-efi-platform.patch
-* drivers-pcmcia-pd6729c-convert-to-module_pci_driver.patch
-* drivers-pcmcia-yenta_socketc-convert-to-module_pci_driver.patch
-* drm-fb-helper-dont-sleep-for-screen-unblank-when-an-oopps-is-in-progress.patch
-* drm-cirrus-correct-register-values-for-16bpp.patch
-* drm-nouveau-make-vga_switcheroo-code-depend-on-vga_switcheroo.patch
-* drivers-video-acornfbc-remove-dead-code.patch
-* cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-* include-linux-interrupth-add-dummy-irq_set_irq_wake-for-generic_hardirqs.patch
-* hrtimer-one-more-expiry-time-overflow-check-in-hrtimer_interrupt.patch
-* drivers-infiniband-core-cmc-convert-to-using-idr_alloc_cyclic.patch
-* drivers-mtd-chips-gen_probec-refactor-call-to-request_module.patch
-* drivers-net-ethernet-ibm-ehea-ehea_mainc-add-alias-entry-for-portn-properties.patch
-* misdn-add-support-for-group-membership-check.patch
-* drivers-atm-he-convert-to-module_pci_driver.patch
-* isdn-clean-up-debug-format-string-usage.patch
-* ocfs2-should-call-ocfs2_journal_access_di-before-ocfs2_delete_entry-in-ocfs2_orphan_del.patch
-* ocfs2-llseek-requires-ocfs2-inode-lock-for-the-file-in-seek_end.patch
-* ocfs2-fix-issue-that-ocfs2_setattr-does-not-deal-with-new_i_size==i_size.patch
-* ocfs2-fix-issue-that-ocfs2_setattr-does-not-deal-with-new_i_size==i_size-v2.patch
-* ocfs2-update-inode-size-after-zeronig-the-hole.patch
-* include-linux-schedh-dont-use-task-pid-tgid-in-same_thread_group-has_group_leader_pid.patch
-* lockdep-introduce-lock_acquire_exclusive-shared-helper-macros.patch
-* lglock-update-lockdep-annotations-to-report-recursive-local-locks.patch
-* drivers-scsi-a100u2w-convert-to-module_pci_driver.patch
-* drivers-scsi-dc395x-convert-to-module_pci_driver.patch
-* drivers-scsi-dmx3191d-convert-to-module_pci_driver.patch
-* drivers-scsi-initio-convert-to-module_pci_driver.patch
-* drivers-scsi-mvumi-convert-to-module_pci_driver.patch
-* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
-* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
-* watchdog-trigger-all-cpu-backtrace-when-locked-up-and-going-to-panic.patch
-* ssb-fix-alignment-of-struct-bcma_device_id.patch
-  mm.patch
-* mm-mempolicy-turn-vma_set_policy-into-vma_dup_policy.patch
-* mm-madvisec-fix-coding-style-errors.patch
-* swap-warn-when-a-swap-area-overflows-the-maximum-size.patch
-* swap-warn-when-a-swap-area-overflows-the-maximum-size-fix.patch
-* mm-swapfilec-convert-to-pr_foo.patch
-* mm-shift-vm_grows-check-from-mmap_region-to-do_mmap_pgoff.patch
-* mm-do_mmap_pgoff-cleanup-the-usage-of-file_inode.patch
-* mm-mmap_region-kill-correct_wcount-inode-use-allow_write_access.patch
-* mm-zswapc-get-swapper-address_space-by-using-macro.patch
-* mm-drop-actor-argument-of-do_generic_file_read.patch
-* mm-drop-actor-argument-of-do_shmem_file_read.patch
-* thp-account-anon-transparent-huge-pages-into-nr_anon_pages.patch
-* mm-cleanup-add_to_page_cache_locked.patch
-* thp-move-maybe_pmd_mkwrite-out-of-mk_huge_pmd.patch
-* thp-do_huge_pmd_anonymous_page-cleanup.patch
-* thp-consolidate-code-between-handle_mm_fault-and-do_huge_pmd_anonymous_page.patch
-* mm-vmstats-tlb-flush-counters.patch
-* thp-mm-locking-tail-page-is-a-bug.patch
-* swap-add-a-simple-detector-for-inappropriate-swapin-readahead.patch
-* swap-add-a-simple-detector-for-inappropriate-swapin-readahead-fix.patch
-* kernel-wide-fix-missing-validations-on-__get-__put-__copy_to-__copy_from_user.patch
-* kernel-smpc-free-related-resources-when-failure-occurs-in-hotplug_cfd.patch
-* smp-give-warning-when-calling-smp_call_function_many-single-in-serving-irq.patch
-* binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
-* firmware-dmi_scan-drop-obsolete-comment.patch
-* firmware-dmi_scan-fix-most-checkpatch-errors-and-warnings.patch
-* firmware-dmi_scan-constify-strings.patch
-* firmware-dmi_scan-drop-oom-messages.patch
-* autofs4-allow-autofs-to-work-outside-the-initial-pid-namespace.patch
-* autofs4-translate-pids-to-the-right-namespace-for-the-daemon.patch
-* drivers-rtc-rtc-hid-sensor-timec-add-module-alias-to-let-the-module-load-automatically.patch
-* fat-additions-to-support-fat_fallocate.patch
-* fat-additions-to-support-fat_fallocate-fix.patch
-* signals-eventpoll-set-saved_sigmask-at-the-start.patch
-* move-exit_task_namespaces-outside-of-exit_notify-fix.patch
-* memstick-add-support-for-legacy-memorysticks.patch
-* relay-fix-timer-madness.patch
-* relay-fix-timer-madness-v2.patch
-* ipcshm-introduce-lockless-functions-to-obtain-the-ipc-object.patch
-* ipcshm-shorten-critical-region-in-shmctl_down.patch
-* ipc-drop-ipcctl_pre_down.patch
-* ipc-drop-ipcctl_pre_down-fix.patch
-* ipcshm-introduce-shmctl_nolock.patch
-* ipcshm-make-shmctl_nolock-lockless.patch
-* ipcshm-make-shmctl_nolock-lockless-checkpatch-fixes.patch
-* ipcshm-shorten-critical-region-for-shmctl.patch
-* ipcshm-cleanup-do_shmat-pasta.patch
-* ipcshm-shorten-critical-region-for-shmat.patch
-* ipc-rename-ids-rw_mutex.patch
-* ipcmsg-drop-msg_unlock.patch
-* ipc-document-general-ipc-locking-scheme.patch
-* staging-lustre-ldlm-convert-to-shrinkers-to-count-scan-api.patch
-* staging-lustre-obdclass-convert-lu_object-shrinker-to-count-scan-api.patch
-* staging-lustre-ptlrpc-convert-to-new-shrinker-api.patch
-* staging-lustre-libcfs-cleanup-linux-memh.patch
-* staging-lustre-replace-num_physpages-with-totalram_pages.patch
-  linux-next.patch
-  linux-next-git-rejects.patch
-* fs-bump-inode-and-dentry-counters-to-long.patch
-* super-fix-calculation-of-shrinkable-objects-for-small-numbers.patch
-* dcache-convert-dentry_statnr_unused-to-per-cpu-counters.patch
-* dentry-move-to-per-sb-lru-locks.patch
-* dcache-remove-dentries-from-lru-before-putting-on-dispose-list.patch
-* mm-new-shrinker-api.patch
-* shrinker-convert-superblock-shrinkers-to-new-api.patch
-* shrinker-convert-superblock-shrinkers-to-new-api-fix.patch
-* list-add-a-new-lru-list-type.patch
-* inode-convert-inode-lru-list-to-generic-lru-list-code.patch
-* inode-convert-inode-lru-list-to-generic-lru-list-code-inode-move-inode-to-a-different-list-inside-lock.patch
-* dcache-convert-to-use-new-lru-list-infrastructure.patch
-* list_lru-per-node-list-infrastructure.patch
-* list_lru-per-node-list-infrastructure-fix.patch
-* list_lru-per-node-list-infrastructure-fix-broken-lru_retry-behaviour.patch
-* list_lru-per-node-api.patch
-* list_lru-remove-special-case-function-list_lru_dispose_all.patch
-* shrinker-add-node-awareness.patch
-* vmscan-per-node-deferred-work.patch
-* fs-convert-inode-and-dentry-shrinking-to-be-node-aware.patch
-* xfs-convert-buftarg-lru-to-generic-code.patch
-* xfs-convert-buftarg-lru-to-generic-code-fix.patch
-* xfs-rework-buffer-dispose-list-tracking.patch
-* xfs-convert-dquot-cache-lru-to-list_lru.patch
-* xfs-convert-dquot-cache-lru-to-list_lru-fix.patch
-* xfs-convert-dquot-cache-lru-to-list_lru-fix-dquot-isolation-hang.patch
-* fs-convert-fs-shrinkers-to-new-scan-count-api.patch
-* fs-convert-fs-shrinkers-to-new-scan-count-api-fix.patch
-* fs-convert-fs-shrinkers-to-new-scan-count-api-fix-fix.patch
-* drivers-convert-shrinkers-to-new-count-scan-api.patch
-* drivers-convert-shrinkers-to-new-count-scan-api-fix.patch
-* drivers-convert-shrinkers-to-new-count-scan-api-fix-2.patch
-* i915-bail-out-earlier-when-shrinker-cannot-acquire-mutex.patch
-* shrinker-convert-remaining-shrinkers-to-count-scan-api.patch
-* shrinker-convert-remaining-shrinkers-to-count-scan-api-fix.patch
-* hugepage-convert-huge-zero-page-shrinker-to-new-shrinker-api.patch
-* hugepage-convert-huge-zero-page-shrinker-to-new-shrinker-api-fix.patch
-* shrinker-kill-old-shrink-api.patch
-* shrinker-kill-old-shrink-api-fix.patch
-* list_lru-dynamically-adjust-node-arrays.patch
-* list_lru-dynamically-adjust-node-arrays-super-fix-for-destroy-lrus.patch
-  debugging-keep-track-of-page-owners.patch
-  debugging-keep-track-of-page-owners-fix.patch
-  debugging-keep-track-of-page-owners-fix-2.patch
-  debugging-keep-track-of-page-owners-fix-2-fix.patch
-  debugging-keep-track-of-page-owners-fix-2-fix-fix.patch
-  debugging-keep-track-of-page-owners-fix-2-fix-fix-fix.patch
-  debugging-keep-track-of-page-owner-now-depends-on-stacktrace_support.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  kernel-forkc-export-kernel_thread-to-modules.patch
-  mutex-subsystem-synchro-test-module.patch
-  slab-leaks3-default-y.patch
-  put_bh-debug.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
-  single_open-seq_release-leak-diagnostics.patch
-  add-a-refcount-check-in-dput.patch
