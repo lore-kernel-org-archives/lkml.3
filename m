@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab3GRO6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:58:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2505 "EHLO mga03.intel.com"
+	id S932445Ab3GRPC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 11:02:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59905 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932074Ab3GRO6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:58:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,694,1367996400"; 
-   d="scan'208";a="367371783"
-Date: Thu, 18 Jul 2013 22:58:46 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, kbuild-all@01.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: [drm-intel:drm-intel-fixes 52/52] ERROR: Unrecognized email
- address: 'stable.]'
-Message-ID: <20130718145846.GB1196@localhost>
-References: <51e63ed0.zKgIdwWoDkYbRWqH%fengguang.wu@intel.com>
- <20130717091028.GA31187@localhost>
- <CAKMK7uEPs-J+vmbc9rqw1FdV2mWucs1EyBB5NBeuqFZU0zz8Qw@mail.gmail.com>
- <1374055298.1949.87.camel@joe-AO722>
+	id S1754625Ab3GRPC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 11:02:26 -0400
+Date: Thu, 18 Jul 2013 16:55:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Re: [RFC PATCH 3/4] tracing: Kill
+	tracing_open/release_generic_file
+Message-ID: <20130718145544.GA6588@redhat.com>
+References: <20130716185726.GA21200@redhat.com> <1374004295.6458.59.camel@gandalf.local.home> <20130717191917.GA14137@redhat.com> <51E7C9E3.1070506@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374055298.1949.87.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51E7C9E3.1070506@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe,
+On 07/18, Masami Hiramatsu wrote:
+>
+> (2013/07/18 4:19), Oleg Nesterov wrote:
+> > Once again, this is just RFC to know your and Masami's opinion. If
+> > you think this can work, I'll try to resend this series with the
+> > additional bits to cover instance_delete() too. _Afaics_ this needs
+> > some temporary uglifications "in between".
+>
+> I think your proposal goes a good direction, but it also requires
+> completeness, because, as I pointed, we have to take care of all
+> operations are correctly checked except for open/close.
+>
+> So, I agree with Steven, I'd like to see a complete patchset.
 
-> (It would have been nice to get the content that failes
->  instead of having to pull the tree)
+OK. In fact _I think_ it is almost complete, just this series should
+remove tracing_open_generic_file() in the last patch, after we change
+__trace_remove_event_dirs() to use invalidate_event_files().
 
-Good suggestion! I'll attach the git-format-patch result in the
-checkpatch.pl reports in future.
+I'll try to finish this series and resend, probably tomorrow.
 
-Thanks,
-Fengguang
+Oleg.
+
