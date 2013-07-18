@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab3GRAPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 20:15:22 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:38116 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522Ab3GRAPU (ORCPT
+	id S1757907Ab3GRARi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 20:17:38 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:45788 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757807Ab3GRARh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 20:15:20 -0400
-Date: Wed, 17 Jul 2013 17:15:29 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hugh Dickins <hughd@google.com>, Jeff Layton <jlayton@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Jim Cromie <jim.cromie@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 0/5] initmpfs v2: use tmpfs instead of ramfs for rootfs
-In-Reply-To: <20130717160602.4b225ac80b1cb6121cbb489c@linux-foundation.org>
-Message-ID: <alpine.LNX.2.00.1307171706050.4294@eggly.anvils>
-References: <20130715140135.0f896a584fec9f7861049b64@linux-foundation.org> <20130717160602.4b225ac80b1cb6121cbb489c@linux-foundation.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 17 Jul 2013 20:17:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130717234049.GC3572@sgi.com>
+References: <CA+55aFxiGXht8+Dox=C2ezYYf1yMaLAzMYr40j=+peP8j5Ha6w@mail.gmail.com>
+	<20130716060351.GE11674@dastard>
+	<20130716193332.GB3572@sgi.com>
+	<CA+55aFzTBUKStdZu1GhKoiYc2knybhiaUFr2By98QYew_STE=A@mail.gmail.com>
+	<20130716204335.GH11674@dastard>
+	<CA+55aFwHMQd-VDeTDh-gm3jyj+5+FSoAHOeU47mwU-mKtEj9RQ@mail.gmail.com>
+	<20130717040616.GI11674@dastard>
+	<CA+55aFz5xw9Qi9Q6mwoCSud5eQh5u-QZ-xrY+TqgZPoKOgn6ew@mail.gmail.com>
+	<20130717055103.GK11674@dastard>
+	<CA+55aFxdqzMY5VJoYaLmL=+=f2s1cbHHV-TjC3=taXpF-xov1w@mail.gmail.com>
+	<20130717234049.GC3572@sgi.com>
+Date: Wed, 17 Jul 2013 17:17:36 -0700
+X-Google-Sender-Auth: p9oBxSd30hGIUrJdx_nicD_D4SM
+Message-ID: <CA+55aFy-8QH4bTW7hU=381tuEWgHC=PUM6WP3qn-ooge=7M0QQ@mail.gmail.com>
+Subject: Re: splice vs execve lockdep trace.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ben Myers <bpm@sgi.com>
+Cc: Dave Chinner <david@fromorbit.com>, Peter Zijlstra <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, xfs@oss.sgi.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013, Andrew Morton wrote:
-> On Tue, 16 Jul 2013 08:31:13 -0700 (PDT) Rob Landley <rob@landley.net> wrote:
-> 
-> > Use tmpfs for rootfs when CONFIG_TMPFS=y and there's no root=.
-> > Specify rootfstype=ramfs to get the old initramfs behavior.
-> > 
-> > The previous initramfs code provided a fairly crappy root filesystem:
-> > didn't let you --bind mount directories out of it, reported zero
-> > size/usage so it didn't show up in "df" and couldn't run things like
-> > rpm that query available space before proceeding, would fill up all
-> > available memory and panic the system if you wrote too much to it...
-> 
-> The df problem and the mount --bind thing are ramfs issues, are they
-> not?  Can we fix them?  If so, that's a less intrusive change, and we
-> also get a fixed ramfs.
+On Wed, Jul 17, 2013 at 4:40 PM, Ben Myers <bpm@sgi.com> wrote:
+>>
+>> We're still talking at cross purposes then.
+>>
+>> How the hell do you handle mmap() and page faulting?
+>
+> __xfs_get_blocks serializes access to the block map with the i_lock on the
+> xfs_inode.  This appears to be racy with respect to hole punching.
 
-I'll leave others to comment on "mount --bind", but with regard to "df":
-yes, we could enhance ramfs with accounting such as tmpfs has, to allow
-it to support non-0 "df".  We could have done so years ago; but have
-always preferred to leave ramfs as minimal, than import tmpfs features
-into it one by one.
+Would it be possible to just make __xfs_get_blocks get the i_iolock
+(non-exclusively)?
 
-I prefer Rob's approach of making tmpfs usable for rootfs.
+Or, alternatively, do it in the readpage() function?
 
-Hugh
+That was what I thought you did anyway. Exactly because of the whole
+page faulting issue.
+
+                   Linus
