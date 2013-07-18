@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241Ab3GRQzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:55:21 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57546 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757578Ab3GRQzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:55:20 -0400
-Message-ID: <1374166518.1949.122.camel@joe-AO722>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-From: Joe Perches <joe@perches.com>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
-        nm@ti.com, rnayak@ti.com, balbi@ti.com
-Date: Thu, 18 Jul 2013 09:55:18 -0700
-In-Reply-To: <1374165830-6367-2-git-send-email-r.sricharan@ti.com>
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com>
-	 <1374165830-6367-2-git-send-email-r.sricharan@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759264Ab3GRQ4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:56:50 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:53365 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754625Ab3GRQ4t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 12:56:49 -0400
+From: Jerry <uulinux@gmail.com>
+To: akpm@linux-foundation.org
+Cc: zhuwei.lu@archermind.com, tianfu.huang@archermind.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jerry <uulinux@gmail.com>
+Subject: [PATCH] mm: negative left shift count when PAGE_SHIFT > 20
+Date: Fri, 19 Jul 2013 00:56:12 +0800
+Message-Id: <1374166572-7988-1-git-send-email-uulinux@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 22:13 +0530, Sricharan R wrote:
-> Some socs have a large number of interrupts/dma requests to service
-> the needs of its many peripherals and subsystems. All of the
-> requests lines from the subsystems are not needed at the same
-> time, so they have to be muxed to the controllers appropriately.
-> In such places a interrupt/dma controllers are preceded by an
-> IRQ/DMA CROSSBAR that provides flexibility in muxing the device
-> requests to the controller inputs.
-[]
-> diff --git a/drivers/misc/crossbar.c b/drivers/misc/crossbar.c
-[]
-> +int crossbar_unmap(struct device_node *cbdev_node, unsigned index)
-[]
-> +	list_for_each_entry(cbdev, &cb_devlist, node) {
-> +		if (strcmp(cbdev->name, tmp.cb_name))
-> +			continue;
-[]
-> +				dev_warn(cbdev->dev,
-> +					 "unmapped int_no %x mapped to cb %x\n",
-> +					 tmp.int_no, tmp.cb_no);
-> +				return 0;
-[]
-> +	dev_warn(cbdev->dev, "%s cb entry %d not found\n",
-> +		 __func__, tmp.cb_no);
-> +	return -ENOENT;
+When PAGE_SHIFT > 20, the result of "20 - PAGE_SHIFT" is negative. The
+calculating here will generate an unexpected result. In addition, if
+PAGE_SHIFT > 20, The memory size represented by numentries was already
+integral multiple of 1MB.
 
-Why does this function always emit a dev_warn
-before return?  Maybe the first should be dev_info?
+Signed-off-by: Jerry <uulinux@gmail.com>
+---
+ mm/page_alloc.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255..cd41797 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5745,9 +5745,11 @@ void *__init alloc_large_system_hash(const char *tablename,
+ 	if (!numentries) {
+ 		/* round applicable memory size up to nearest megabyte */
+ 		numentries = nr_kernel_pages;
+-		numentries += (1UL << (20 - PAGE_SHIFT)) - 1;
+-		numentries >>= 20 - PAGE_SHIFT;
+-		numentries <<= 20 - PAGE_SHIFT;
++		if (20 > PAGE_SHIFT) {
++			numentries += (1UL << (20 - PAGE_SHIFT)) - 1;
++			numentries >>= 20 - PAGE_SHIFT;
++			numentries <<= 20 - PAGE_SHIFT;
++		}
+ 
+ 		/* limit to 1 bucket per 2^scale bytes of low memory */
+ 		if (scale > PAGE_SHIFT)
+-- 
+1.8.1.5
 
