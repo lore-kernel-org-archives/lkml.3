@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758712Ab3GRMiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 08:38:25 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2989 "EHLO mms3.broadcom.com"
+	id S1758726Ab3GRMkQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 08:40:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9889 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756609Ab3GRMiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 08:38:24 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <51E7E1B7.6090104@broadcom.com>
-Date: Thu, 18 Jul 2013 14:38:15 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1757724Ab3GRMkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 08:40:14 -0400
+Date: Thu, 18 Jul 2013 14:39:40 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 08/23] perf tools: Introduce perf data file version CHECK
+ macro
+Message-ID: <20130718123940.GA1092@krava.brq.redhat.com>
+References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+ <1374083403-14591-9-git-send-email-jolsa@redhat.com>
+ <20130717194250.GB5127@infradead.org>
 MIME-Version: 1.0
-To: "Roger Quadros" <rogerq@ti.com>
-cc: tony@atomide.com, linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
- ethernet
-References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com>
- <51E7D080.6070401@broadcom.com> <51E7D1D2.1060006@ti.com>
-In-Reply-To: <51E7D1D2.1060006@ti.com>
-X-WSS-ID: 7DF900F32L849809654-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717194250.GB5127@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 01:30 PM, Roger Quadros wrote:
-> On 07/18/2013 02:24 PM, Arend van Spriel wrote:
->> On 07/18/2013 01:18 PM, Roger Quadros wrote:
->>> Hi Arend,
->>>
->>> On 07/18/2013 11:41 AM, Arend van Spriel wrote:
->>>> Hi Tony,
->>>>
->>>>
->>>> We are using the panda board (es variant) for testing our SDIO based chips. For this we have an adapter card connection to expansion connector A. As this adapter is not publicly available we had internally patched board-omap4panda.c. Also we follow the -rc releases and use TFTP to boot the kernel image which requires USB.
->>>>
->>>> Moving to 3.11-rc1 I found that the mentioned board file was removed by your commit:
->>>>
->>>> commit b42b918194c4791510ac049e3d507169a7de8544
->>>> Author: Tony Lindgren <tony@atomide.com>
->>>> Date:   Thu May 30 12:53:05 2013 -0700
->>>>
->>>>       ARM: OMAP2+: Remove board-omap4panda.c
->>>>
->>>> As our patches on that file are internal I do not hold it against you. This is no regression and we need to fix it.
->>>>
->>>> So my first step was to follow the recipe given in that commit. Beside that I noticed a thread about USB issue on LKML so I also applied the following commit:
->>>>
->>>> commit 352f573e59050c7a604c35c58b4bbfc51edebbee
->>>> Author: Roger Quadros <rogerq@ti.com>
->>>> Date:   Tue Jun 18 19:04:47 2013 +0300
->>>>
->>>>       ARM: OMAP2+: Provide alias to USB PHY clock
->>>>
->>>> The attached kernel log seems to suggest that the device tree is picked up by the kernel, but the USB does not seem very active. No ethernet connectivity. This does seem a regression to me. Is there some other patch that I need to get it going again?
->>>>
->>>
->>> I tried with your config and 3.11-rc1 kernel with the above commit on top and ethernet seems to
->>> work for me. My boot log is attached.
->>>
->>> Are you sure that you are building the DTB for panda-es and the bootloader is picking up the right file and
->>> not an outdated one?
->>
->> I appended the DTB to the kernel image thus avoiding the need to update u-boot (at least that is what I understood from Tony's commit).
->>
->
-> I understand this can be a little tedious at first.
->
-> This is my u-boot boot.txt
->
-> fatload mmc 0:1 0x825f0000 omap4-panda-es.dtb
-> fatload mmc 0:1 0x80300000 uImage
-> set fdt_high 0xffffffff
-> setenv bootargs console=ttyO2,115200n8 mem=1G@0x80000000 root=/dev/mmcblk0p2 rootwait
-> bootm 0x80300000 - 0x825f0000
->
-> You need to generate boot.scr from the above boot.txt and place it in SD card boot partition.
->
-> mkimage -A arm -T script -C none -n "Boot Image" -d boot.txt boot.scr
->
-> And of course copy the omap4-panda-es.dtb to SD card boot partition.
->
-> hope this helps.
+On Wed, Jul 17, 2013 at 04:42:50PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jul 17, 2013 at 07:49:48PM +0200, Jiri Olsa escreveu:
+> > Introducing perf data file version CHECK macro, so the check
+> > is easily extensible for new versions.
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > Cc: Andi Kleen <ak@linux.intel.com>
+> > Cc: David Ahern <dsahern@gmail.com>
+> > ---
+> >  tools/perf/util/header.c | 27 ++++++++++++++++-----------
+> >  1 file changed, 16 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> > index f558f83..4ebe4a1 100644
+> > --- a/tools/perf/util/header.c
+> > +++ b/tools/perf/util/header.c
+> > @@ -2493,18 +2493,23 @@ static int check_magic_endian(u64 magic, uint64_t hdr_sz,
+> >  	 * - encode endianness of file
+> >  	 */
+> >  
+> > -	/* check magic number with one endianness */
+> > -	if (magic == __perf_magic2)
+> > -		return 0;
+> > -
+> > -	/* check magic number with opposite endianness */
+> > -	if (magic != __perf_magic2_sw)
+> > -		return -1;
+> > +#define CHECK(__m, __v)						\
+> > +do {								\
+> > +	/* check magic number with one endianness */		\
+> > +	if (magic == __m)					\
+> > +		goto v ## __v;					\
+> > +	/* check magic number with opposite endianness */	\
+> > +	if (magic != __m ## _sw)				\
+> > +		break;						\
+> > +	ph->needs_swap = true;					\
+> > + v ## __v:							\
+> > +	ph->version = __v;					\
+> > +	return 0;						\
+> > +} while (0)
+> 
+> Ouch, why not:
+> 
+> #define PERF_CHECK_VERSION(__m, __v)
+> 	/* check magic number with one endianness */		\
+> 	if (magic == __m) {					\
+> 		ph->version = __v;				\
+> 		return 0;					\
+> 	/* check magic number with opposite endianness */	\
+> 	} else if (magic == __m ## _sw) {			\
+> 		ph->needs_swap = true;				\
+> 	}
 
-Thanks for sharing this.
+ok, will change
 
->>> Why is the version of SPL loader and u-boot different in your log?
->>> You need to use the MLO file generated by the u-boot build along with the uImage.
->>>
->>> Just to be sure we are on the same setup could you please try with latest u-boot release (2013-04). Thanks.
->>
->> I recall having difficulty with TFTP boot using a 2013 u-boot release, but that hurdle is for later. I will try.
->>
->
-> OK. We can figure this out as well.
-
-I tried with same SPL and u-boot version, but that did not work out. So 
-I moved to v2013.04 and the log looks better. I was especially 
-interested in this:
-
-[    2.807434] usb 1-1.1: new high-speed USB device number 3 using 
-ehci-omap
-[    2.932495] usb 1-1.1: New USB device found, idVendor=0424, 
-idProduct=ec00
-[    2.932495] usb 1-1.1: New USB device strings: Mfr=0, Product=0, 
-SerialNumbe0
-[    2.958770] smsc95xx v1.0.4 
-
-Starting logging: OK 
-
-Initializing random number generator... [    3.045806] smsc95xx 
-1-1.1:1.0 eth0
-
-Regards,
-Arend
-
-
+thanks,
+jirka
