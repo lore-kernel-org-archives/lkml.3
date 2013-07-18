@@ -1,151 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab3GRGyC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 02:54:02 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34237 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758334Ab3GRGrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 02:47:21 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>, <kyungmin.park@samsung.com>, <balbi@ti.com>,
-        <kishon@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>
-CC: <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
-        <swarren@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: [PATCH 02/15] usb: phy: omap-usb2: use the new generic PHY framework
-Date: Thu, 18 Jul 2013 12:16:11 +0530
-Message-ID: <1374129984-765-3-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1374129984-765-1-git-send-email-kishon@ti.com>
-References: <1374129984-765-1-git-send-email-kishon@ti.com>
+	id S1758437Ab3GRHBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 03:01:51 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:35149 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3GRHBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 03:01:50 -0400
+Date: Thu, 18 Jul 2013 09:01:45 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH v2] x86, tboot: iomem fixes
+Message-ID: <20130718070145.GB17622@gmail.com>
+References: <1374114943-5932-1-git-send-email-qiaowei.ren@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374114943-5932-1-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used the generic PHY framework API to create the PHY. Now the power off and
-power on are done in omap_usb_power_off and omap_usb_power_on respectively.
 
-However using the old USB PHY library cannot be completely removed
-because OTG is intertwined with PHY and moving to the new framework
-will break OTG. Once we have a separate OTG state machine, we
-can get rid of the USB PHY library.
+* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/phy/Kconfig         |    1 +
- drivers/usb/phy/phy-omap-usb2.c |   45 +++++++++++++++++++++++++++++++++++----
- 2 files changed, 42 insertions(+), 4 deletions(-)
+> Fixes for iomem annotations in arch/x86/kernel/tboot.c
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
+>  arch/x86/kernel/tboot.c |   21 ++++++++++++---------
+>  1 file changed, 12 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+> index 3ff42d2..afe8cf8 100644
+> --- a/arch/x86/kernel/tboot.c
+> +++ b/arch/x86/kernel/tboot.c
+> @@ -466,9 +466,12 @@ struct sinit_mle_data {
+>  	u32               vtd_dmars_off;
+>  } __packed;
+>  
+> +#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
+> +
+>  struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
+>  {
+> -	void *heap_base, *heap_ptr, *config;
+> +	void __iomem *heap_base, *heap_ptr, *config;
+> +	u32 dmar_tbl_off;
+>  
+>  	if (!tboot_enabled())
+>  		return dmar_tbl;
+> @@ -485,25 +488,25 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
+>  		return NULL;
+>  
+>  	/* now map TXT heap */
+> -	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
+> -			    *(u64 *)(config + TXTCR_HEAP_SIZE));
+> +	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
+> +			    readl(config + TXTCR_HEAP_SIZE));
+>  	iounmap(config);
+>  	if (!heap_base)
+>  		return NULL;
+>  
+>  	/* walk heap to SinitMleData */
+>  	/* skip BiosData */
+> -	heap_ptr = heap_base + *(u64 *)heap_base;
+> +	heap_ptr = heap_base + readq(heap_base);
+>  	/* skip OsMleData */
+> -	heap_ptr += *(u64 *)heap_ptr;
+> +	heap_ptr += readq(heap_ptr);
+>  	/* skip OsSinitData */
+> -	heap_ptr += *(u64 *)heap_ptr;
+> +	heap_ptr += readq(heap_ptr);
+>  	/* now points to SinitMleDataSize; set to SinitMleData */
+>  	heap_ptr += sizeof(u64);
+>  	/* get addr of DMAR table */
+> -	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
+> -		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
+> -		   sizeof(u64));
+> +	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
+> +	memcpy_fromio(dmar_tbl, heap_ptr + dmar_tbl_off - sizeof(u64),
+> +			sizeof(struct acpi_table_header));
 
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 3622fff..cc55993 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -75,6 +75,7 @@ config OMAP_CONTROL_USB
- config OMAP_USB2
- 	tristate "OMAP USB2 PHY Driver"
- 	depends on ARCH_OMAP2PLUS
-+	depends on GENERIC_PHY
- 	select OMAP_CONTROL_USB
- 	help
- 	  Enable this to support the transceiver that is part of SOC. This
-diff --git a/drivers/usb/phy/phy-omap-usb2.c b/drivers/usb/phy/phy-omap-usb2.c
-index 844ab68..751b30f 100644
---- a/drivers/usb/phy/phy-omap-usb2.c
-+++ b/drivers/usb/phy/phy-omap-usb2.c
-@@ -28,6 +28,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/delay.h>
- #include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/phy.h>
- 
- /**
-  * omap_usb2_set_comparator - links the comparator present in the sytem with
-@@ -119,10 +120,36 @@ static int omap_usb2_suspend(struct usb_phy *x, int suspend)
- 	return 0;
- }
- 
-+static int omap_usb_power_off(struct phy *x)
-+{
-+	struct omap_usb *phy = phy_get_drvdata(x);
-+
-+	omap_control_usb_phy_power(phy->control_dev, 0);
-+
-+	return 0;
-+}
-+
-+static int omap_usb_power_on(struct phy *x)
-+{
-+	struct omap_usb *phy = phy_get_drvdata(x);
-+
-+	omap_control_usb_phy_power(phy->control_dev, 1);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops ops = {
-+	.power_on	= omap_usb_power_on,
-+	.power_off	= omap_usb_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
- static int omap_usb2_probe(struct platform_device *pdev)
- {
- 	struct omap_usb			*phy;
-+	struct phy			*generic_phy;
- 	struct usb_otg			*otg;
-+	struct phy_provider		*phy_provider;
- 
- 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
- 	if (!phy) {
-@@ -144,6 +171,11 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
- 
-+	phy_provider = devm_of_phy_provider_register(phy->dev,
-+			of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
- 	phy->control_dev = omap_get_control_dev();
- 	if (IS_ERR(phy->control_dev)) {
- 		dev_dbg(&pdev->dev, "Failed to get control device\n");
-@@ -159,6 +191,15 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	otg->start_srp		= omap_usb_start_srp;
- 	otg->phy		= &phy->phy;
- 
-+	platform_set_drvdata(pdev, phy);
-+	pm_runtime_enable(phy->dev);
-+
-+	generic_phy = devm_phy_create(phy->dev, 0, &ops, "omap-usb2");
-+	if (IS_ERR(generic_phy))
-+		return PTR_ERR(generic_phy);
-+
-+	phy_set_drvdata(generic_phy, phy);
-+
- 	phy->wkupclk = devm_clk_get(phy->dev, "usb_phy_cm_clk32k");
- 	if (IS_ERR(phy->wkupclk)) {
- 		dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
-@@ -174,10 +215,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 
- 	usb_add_phy_dev(&phy->phy);
- 
--	platform_set_drvdata(pdev, phy);
--
--	pm_runtime_enable(phy->dev);
--
- 	return 0;
- }
- 
--- 
-1.7.10.4
+The changelog is not sufficient, as this change is clearly not just about 
+annotations: that memcpy_fromio() call is new.
 
+Please use the customary changelog style we use in the kernel:
+
+  " Current code does (A), this has a problem when (B).
+    We can improve this doing (C), because (D)."
+
+Thanks,
+
+        Ingo
