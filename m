@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758730Ab3GRMq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 08:46:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754283Ab3GRMqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 08:46:25 -0400
-Date: Thu, 18 Jul 2013 14:46:01 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 02/23] perf tools: Remove data_offset seek as it's not
- needed
-Message-ID: <20130718124601.GC1092@krava.brq.redhat.com>
-References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
- <1374083403-14591-3-git-send-email-jolsa@redhat.com>
- <87li54wcng.fsf@sejong.aot.lge.com>
+	id S1758900Ab3GRMsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 08:48:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:24210 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab3GRMsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 08:48:16 -0400
+Message-ID: <51E7E400.4070705@oracle.com>
+Date: Thu, 18 Jul 2013 20:48:00 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87li54wcng.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Heesub Shin <heesub.shin@samsung.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunae Seo <sunae.seo@samsung.com>, Heesub Shin <heesub@gmail.com>
+Subject: Re: [PATCH] mm: zbud: fix condition check on allocation size
+References: <1374071410-9337-1-git-send-email-heesub.shin@samsung.com>
+In-Reply-To: <1374071410-9337-1-git-send-email-heesub.shin@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 04:27:47PM +0900, Namhyung Kim wrote:
-> On Wed, 17 Jul 2013 19:49:42 +0200, Jiri Olsa wrote:
-> > Removing data_offset seek as it's not needed, because
-> > data are not read by syscall but mmaped instead.
+On 07/17/2013 10:30 PM, Heesub Shin wrote:
+> zbud_alloc() incorrectly verifies the size of allocation limit. It
+> should deny the allocation request greater than (PAGE_SIZE -
+> ZHDR_SIZE_ALIGNED - CHUNK_SIZE), not (PAGE_SIZE - ZHDR_SIZE_ALIGNED)
+> which has no remaining spaces for its buddy. There is no point in
+> spending the entire zbud page storing only a single page, since we don't
+> have any benefits.
 > 
-> Yes we do, but it's not mandatory, right?  I'd rather expect the file
-> offset remains at the beginning of data after calling
-> perf_session__read_header() instead of a random point (EOF?).
+> Signed-off-by: Heesub Shin <heesub.shin@samsung.com>
 
-well it's just useless, and I think it's better and more clear
-to set it properly before the reading anyway. Also AFAICS there's
-no other read after this seek even later.
+Looks good to me, although I'm thinking to make it more aggressive.
+eg. minus two or three times of CHUNK_SIZE.
 
-jirka
+> ---
+>  mm/zbud.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/zbud.c b/mm/zbud.c
+> index 9bb4710..ad1e781 100644
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -257,7 +257,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+>  
+>  	if (size <= 0 || gfp & __GFP_HIGHMEM)
+>  		return -EINVAL;
+> -	if (size > PAGE_SIZE - ZHDR_SIZE_ALIGNED)
+> +	if (size > PAGE_SIZE - ZHDR_SIZE_ALIGNED - CHUNK_SIZE)
+>  		return -ENOSPC;
+>  	chunks = size_to_chunks(size);
+>  	spin_lock(&pool->lock);
+> 
+
+-- 
+Regards,
+-Bob
