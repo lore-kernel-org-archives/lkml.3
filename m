@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab3GRHeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 03:34:46 -0400
-Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:43315 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751275Ab3GRHep (ORCPT
+	id S1753895Ab3GRHgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 03:36:44 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22388 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751088Ab3GRHgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 03:34:45 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: [PATCH v4 1/5] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare.
-Date: Thu, 18 Jul 2013 09:34:42 +0200
-Message-Id: <1374132882-15276-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
-References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11133742704259922028
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 18 Jul 2013 03:36:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX195NJT8xDYlEUqb7DVXQ6A2
+Date: Thu, 18 Jul 2013 00:36:39 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+Message-ID: <20130718073638.GP7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
+ <20130716090536.5541.36289.stgit@localhost>
+ <51E70B5D.6030802@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E70B5D.6030802@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
-avoid common clk framework warnings.
+* Stephen Warren <swarren@wwwdotorg.org> [130717 14:30]:
+> On 07/16/2013 03:05 AM, Tony Lindgren wrote:
+> > To toggle dynamic states, let's add the optional active state in
+> > addition to the static default state. Then if the optional active
+> > state is defined, we can require that idle and sleep states cover
+> > the same pingroups as the active state.
+> > 
+> > Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
+> > to use instead of pinctrl_select() to avoid breaking existing users.
+> > 
+> > With pinctrl_check_dynamic() we can check that idle and sleep states
+> > match the active state for pingroups during init, and don't need to
+> > do it during runtime.
+> > 
+> > Then with the states pre-validated, pinctrl_select_dynamic() can
+> > just toggle between the dynamic states without extra checks.
+> > 
+> > Note that pinctr_select_state() still has valid use cases, such as
+> > changing states when the pins can be shared between two drivers
+> > and don't necessarily cover the same pingroups. For dynamic runtime
+> > toggling of pin states, we should eventually always use just
+> > pinctrl_select_dynamic().
+> 
+> Something in this series should edit Documentation/pinctrl.txt to
+> explain the philosophy behind the static/dynamic state split. That
+> philosophy and/or semantics are more important to review than the code...
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clocksource/tcb_clksrc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Sure, I'll write up something on that.
+ 
+> Related to that, I'm worried that using pinctrl_select_state() and
+> pinctrl_select_dynamic() appear to be mutually-exclusive options here.
 
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 8a61872..229c019 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
- 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
- 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
--		clk_disable(tcd->clk);
-+		clk_disable_unprepare(tcd->clk);
- 	}
- 
- 	switch (m) {
-@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 	 * of oneshot, we get lower overhead and improved accuracy.
- 	 */
- 	case CLOCK_EVT_MODE_PERIODIC:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and restart */
- 		__raw_writel(timer_clock
-@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
- 		break;
- 
- 	case CLOCK_EVT_MODE_ONESHOT:
--		clk_enable(tcd->clk);
-+		clk_prepare_enable(tcd->clk);
- 
- 		/* slow clock, count up to RC, then irq and stop */
- 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
-@@ -275,7 +275,7 @@ static int __init tcb_clksrc_init(void)
- 	pdev = tc->pdev;
- 
- 	t0_clk = tc->clk[0];
--	clk_enable(t0_clk);
-+	clk_prepare_enable(t0_clk);
- 
- 	/* How fast will we be counting?  Pick something over 5 MHz.  */
- 	rate = (u32) clk_get_rate(t0_clk);
-@@ -313,7 +313,7 @@ static int __init tcb_clksrc_init(void)
- 		/* tclib will give us three clocks no matter what the
- 		 * underlying platform supports.
- 		 */
--		clk_enable(tc->clk[1]);
-+		clk_prepare_enable(tc->clk[1]);
- 		/* setup both channel 0 & 1 */
- 		tcb_setup_dual_chan(tc, best_divisor_idx);
- 	}
--- 
-1.7.9.5
+Not currently, but eventually I think that's a good idea. We should
+use pinctrl_select_state() only during init time eventually because
+of the diffing of states it does.
 
+> Why shouldn't e.g. a pinctrl-based I2C mux also be able to do runtime
+> PM? Does the mux setting select which states are used for runtime PM, or
+> does runtime PM override the basic mux setting, or must the pincrl-I2C
+> mux manually implement custom runtime-PM/pinctrl interaction since
+> there's no generic answer to those questions? How many more custom
+> exceptions will there be?
+
+The idea is that runtime PM will never touch the basic mux settings
+at all. The "default" state should be considered a static state
+that is claimed during driver probe, and released when the driver
+is unloaded. This is typically let's say 90% of the pins for any
+device.
+
+For runtime PM, we can just toggle the PM related pinctrl states as
+they have been verified to match the active state during init.
+
+So I don't see why pinctrl-I2C would have to do anything specific.
+All that is required is that the pins are grouped for the consumer
+driver, and we can provide some automated checks on the states for
+runtime PM.
+
+Regards,
+
+Tony
