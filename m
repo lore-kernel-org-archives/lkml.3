@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab3GROf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:35:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29052 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab3GROfz (ORCPT
+	id S1758072Ab3GROgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:36:17 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:41168 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab3GROgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:35:55 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=vg5It6jECHwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ew_GO8iv7i0A:10 a=3nbZYyFuAAAA:8 a=cBsI9TqyZyArO2IHqjIA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374158153.6458.235.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH V2] tracing/kprobe: Wait for disabling all running
- kprobe handlers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Date: Thu, 18 Jul 2013 10:35:53 -0400
-In-Reply-To: <51E7DA79.4060505@hitachi.com>
-References: <20130709082149.GK25631@dyad.programming.kicks-ass.net>
-	 <20130709093526.20138.93100.stgit@mhiramat-M0-7522>
-	 <20130715182012.GB18505@redhat.com> <51E7DA79.4060505@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Jul 2013 10:36:14 -0400
+MIME-Version: 1.0
+From: Dan Bolsun <dan.bolsun@gmail.com>
+Date: Thu, 18 Jul 2013 17:35:53 +0300
+Message-ID: <CAKs5=kS5nSN=-U6S-sBA1G-8ayB0GC2d5ZZeo8qSb_Gv9gKkUw@mail.gmail.com>
+Subject: [PATCH] usbserial: append Petatel NP10T device to GSM modems list
+To: Matthias Urlichs <smurf@smurf.noris.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 21:07 +0900, Masami Hiramatsu wrote:
-> (2013/07/16 3:20), Oleg Nesterov wrote:
-> > On 07/09, Masami Hiramatsu wrote:
-> >>
-> >> Wait for disabling all running kprobe handlers when a kprobe
-> >> event is disabled, since the caller, trace_remove_event_call()
-> >> supposes that a removing event is disabled completely by
-> >> disabling the event.
-> >> With this change, ftrace can ensure that there is no running
-> >> event handlers after disabling it.
-> >>
-> >> Changes in V2:
-> >>  - Comment (in code) for clarify why we need to wait there.
-> >>
-> >> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > 
-> > Agreed.
-> > 
-> > We need this change in any case, whatever we do in trace/trace_events.c
-> > and in unregister_trace_probe().
-> 
-> Steven, I think this patch is still needed anyway even if we are
-> discussing file handling bugs, because this fixes another timing bug.
+This patch was tested on 3.10.1 kernel.
 
-Sure, I'll pull that into my queue now.
+Same models of Petatel NP10T modems have different device IDs.
+Unfortunately they have no additional revision information on a board
+which may treat them as different devices. Currently I've seen only
+two NP10T devices with various IDs. Possibly Petatel NP10T list will
+be appended upon devices with new IDs will appear.
 
--- Steve
+--- linux-3.10.1/drivers/usb/serial/option.c    2013-07-01
+01:13:29.000000000 +0300
++++ linux-3.10.1.np10t/drivers/usb/serial/option.c      2013-07-18
+16:15:36.902600324 +0300
+@@ -446,7 +446,8 @@ static void option_instat_callback(struc
 
+ /* Hyundai Petatel Inc. products */
+ #define PETATEL_VENDOR_ID                      0x1ff4
+-#define PETATEL_PRODUCT_NP10T                  0x600e
++#define PETATEL_PRODUCT_NP10T_600A             0x600a
++#define PETATEL_PRODUCT_NP10T_600E             0x600e
 
+ /* TP-LINK Incorporated products */
+ #define TPLINK_VENDOR_ID                       0x2357
+@@ -1333,7 +1334,8 @@ static const struct usb_device_id option
+        { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x02, 0x01) },
+        { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+        { USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+-       { USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++       { USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600A) },
++       { USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600E) },
+        { USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+          .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+        { USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
+
+Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
