@@ -1,96 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab3GRTFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:05:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59404 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933317Ab3GRTFI (ORCPT
+	id S964915Ab3GRTGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:06:45 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:20957 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933119Ab3GRTGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:05:08 -0400
-Message-ID: <51E83C46.3040000@ti.com>
-Date: Thu, 18 Jul 2013 14:04:38 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Sricharan R <r.sricharan@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <balbi@ti.com>
-Subject: Re: [PATCH 2/3] ARM: dts: DRA: Add crossbar device binding
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-3-git-send-email-r.sricharan@ti.com>
-In-Reply-To: <1374165830-6367-3-git-send-email-r.sricharan@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Thu, 18 Jul 2013 15:06:43 -0400
+Message-ID: <1374174399.1792.42.camel@j-VirtualBox>
+Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
+ frequently
+From: Jason Low <jason.low2@hp.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
+Date: Thu, 18 Jul 2013 12:06:39 -0700
+In-Reply-To: <51E7D89A.8010009@redhat.com>
+References: <20130716202015.GX17211@twins.programming.kicks-ass.net>
+	 <1374014881.2332.21.camel@j-VirtualBox>
+	 <20130717072504.GY17211@twins.programming.kicks-ass.net>
+	 <1374048701.6000.21.camel@j-VirtualBox>
+	 <20130717093913.GP23818@dyad.programming.kicks-ass.net>
+	 <1374076741.7412.35.camel@j-VirtualBox>
+	 <20130717161815.GR23818@dyad.programming.kicks-ass.net>
+	 <51E6D9B7.1030705@redhat.com>
+	 <20130717180156.GS23818@dyad.programming.kicks-ass.net>
+	 <1374120144.1816.45.camel@j-VirtualBox>
+	 <20130718093218.GH27075@twins.programming.kicks-ass.net>
+	 <51E7D89A.8010009@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 11:43 AM, Sricharan R wrote:
-> This adds the irq/dma crossbar device nodes.
->
-> There is a IRQ and DMA crossbar device in the soc, which
-> maps the irq/dma requests from the peripherals to the
-> mpu/dsp/ipu/eve interrupt and sdma/edma controller's inputs.
-> The Peripheral irq/dma requests are connected to only one crossbar
-> input and the output of the crossbar is connected to only one
-> controller's input line. On POR, there are some mappings which
-> are done by default. Those peripherals which do not have a
-> mapping on POR, should be configured to route its requests
-> using the crossbar control registers.
->
+On Thu, 2013-07-18 at 07:59 -0400, Rik van Riel wrote:
+> On 07/18/2013 05:32 AM, Peter Zijlstra wrote:
+> > On Wed, Jul 17, 2013 at 09:02:24PM -0700, Jason Low wrote:
+> >
+> >> I ran a few AIM7 workloads for the 8 socket HT enabled case and I needed
+> >> to set N to more than 20 in order to get the big performance gains.
+> >>
+> >> One thing that I thought of was to have N be based on how often idle
+> >> balance attempts does not pull task(s).
+> >>
+> >> For example, N can be calculated based on the number of idle balance
+> >> attempts for the CPU  since the last "successful" idle balance attempt.
+> >> So if the previous 30 idle balance attempts resulted in no tasks moved,
+> >> then n = 30 / 5. So idle balance gets less time to run as the number of
+> >> unneeded idle balance attempts increases, and thus N will not be set too
+> >> high during situations where idle balancing is "successful" more often.
+> >> Any comments on this idea?
+> >
+> > It would be good to get a solid explanation for why we need such high N.
+> > But yes that might work.
+> 
+> I have some idea, though no proof :)
+> 
+> I suspect a lot of the idle balancing time is spent waiting for
+> and acquiring the runqueue locks of remote CPUs.
+> 
+> If we spend half our idle time causing contention to remote
+> runqueue locks, we could be a big factor in keeping those other
+> CPUs from getting work done.
 
-What is POR? Plan on Record? I supppose, we just love our TLA?
+I collected some perf samples when running fserver when N=1 and N=60.
 
-> The irq/dma mapping for some peripherals are
-> added with the crossbar nodes here.
->
-> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> ---
->   arch/arm/boot/dts/dra7.dtsi |   19 +++++++++++++++++++
->   1 file changed, 19 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-> index a5d9350..e6208b4 100644
-> --- a/arch/arm/boot/dts/dra7.dtsi
-> +++ b/arch/arm/boot/dts/dra7.dtsi
-> @@ -85,6 +85,25 @@
->   		ranges;
->   		ti,hwmods = "l3_main_1", "l3_main_2";
->
-> +		crossbar_mpu: mpuirq@4a002a48 {
-> +			compatible = "crossbar";
-> +			crossbar-name = "mpu-irq";
-> +			reg = <0x4a002a48 0x0130>;
-> +			reg-width = <16>;
-> +			crossbar-lines = "mpu-irq", "rtc-ss-alarm", <0x9f 0xd9 0x12c>,
-> +					 "mpu-irq", "mcasp3-arevt", <0x9e 0x96 0x12a>,
-> +					 "mpu-irq", "mcasp3-axevt", <0x9d 0x97 0x128>;
+N = 1
+-----
+19.21%  reaim  [k] __read_lock_failed                     
+14.79%  reaim  [k] mspin_lock                             
+12.19%  reaim  [k] __write_lock_failed                    
+7.87%   reaim  [k] _raw_spin_lock                          
+2.03%   reaim  [k] start_this_handle                       
+1.98%   reaim  [k] update_sd_lb_stats                      
+1.92%   reaim  [k] mutex_spin_on_owner                     
+1.86%   reaim  [k] update_cfs_rq_blocked_load              
+1.14%   swapper  [k] intel_idle                              
+1.10%   reaim  [.] add_long                                
+1.09%   reaim  [.] add_int                                 
+1.08%   reaim  [k] load_balance                            
 
-a) I'd like to use UART10. oh, let me guess: we dont map all cross bar 
-options here.. just "certain ones"
-b) I like to use random 6 uarts out of the available 10 uarts on the fly.
-c) I'd like to use IRQCROSS bar such that i use all the hardware block 
-instances that dont have default GIC IRQ mapping.
+N = 60
+------
+7.70%  reaim  [k] _raw_spin_lock                             
+7.25%  reaim  [k] mspin_lock                                 
+6.30%  reaim  [.] add_long                                   
+6.26%  reaim  [.] add_int                                    
+4.05%  reaim  [.] strncat                                    
+3.81%  reaim  [.] string_rtns_1                              
+3.66%  reaim  [.] div_long                                   
+3.44%  reaim  [k] mutex_spin_on_owner                        
+2.91%  reaim  [.] add_short                                  
+2.73%  swapper  [k] intel_idle                                 
+2.65%  reaim  [k] __read_lock_failed
 
+With idle_balance(), we get more contention in kernel functions such as
+update_sd_lb_stats(), load_balance(), and spin_lock() for the rq lock.
+Additionally, it increases the time spent in mutex's mspin_lock(),
+__read_lock_failed() and __write_lock_failed() by a lot.
 
-> +		};
-> +
-> +		crossbar_dma: dmareq@4a002b78 {
-> +			compatible = "crossbar";
-> +			crossbar-name = "dma-req";
-> +			reg = <0x4a002b78 0x0100>;
-> +			reg-width = <16>;
-> +			crossbar-lines = "dma-req", "mcasp3-rx", <0x7e 0x84 0xfc>,
-> +					 "dma-req", "mcasp3-tx", <0x7d 0x85 0xfa>;
-> +		};
-> +
->   		counter32k: counter@4ae04000 {
->   			compatible = "ti,omap-counter32k";
->   			reg = <0x4ae04000 0x40>;
->
+N needs to be large because avg_idle time is still a lot higher than the
+avg time spent in each load_balance() call per sched domain. Despite the
+high ratio of avg_idle time to time spent in load_balance(),
+load_balance() still increases the time spent in the kernel by quite a
+bit, probably because of how often it is being used.
+
+Jason
 
 
--- 
-Regards,
-Nishanth Menon
