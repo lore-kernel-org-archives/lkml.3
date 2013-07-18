@@ -1,57 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab3GRJm5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 05:42:57 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:32916 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965Ab3GRJms (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 05:42:48 -0400
+	id S1758023Ab3GRJpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 05:45:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35337 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756831Ab3GRJpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 05:45:09 -0400
+From: Oleksandr Kravchenko <x0199363@ti.com>
+To: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <jic23@cam.ac.uk>, <pmeerw@pmeerw.net>, <holler@ahsoftware.de>,
+        <srinivas.pandruvada@intel.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <grygorii.strashko@ti.com>,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: [PATCH 1/3] iio: core: implement devm_iio_device_alloc/devm_iio_device_free
+Date: Thu, 18 Jul 2013 12:44:42 +0300
+Message-ID: <1374140685-20549-1-git-send-email-x0199363@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1374078552-10528-1-git-send-email-standby24x7@gmail.com>
-References: <1374078552-10528-1-git-send-email-standby24x7@gmail.com>
-Date: Thu, 18 Jul 2013 15:12:47 +0530
-Message-ID: <CAK9yfHwXL31Cpm-1vtDMXED=geUa3L8+TCK+tqZ8AZ1mObRCVg@mail.gmail.com>
-Subject: Re: [PATCH] [trivial] doc: Fix typo in doucmentations
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rob@landley.net, linux-doc@vger.kernel.org,
-        trivial@kernel.org, rdunlap@xenotime.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think the patch title itself has a typo :)
+From: Grygorii Strashko <grygorii.strashko@ti.com>
 
-s/doucmentations/documentations
+Add a resource managed devm_iio_device_alloc()/devm_iio_device_free()
+to automatically clean up any allocations made by IIO drivers,
+thus leading to simplified IIO drivers code.
 
+In addition, this will allow IIO drivers to use other devm_*() API
+(like devm_request_irq) and don't care about the race between
+iio_device_free() and the release of resources by Device core
+during driver removing.
 
-On 17 July 2013 21:59, Masanari Iida <standby24x7@gmail.com> wrote:
-> Correct typo (double words) in documentations.
->
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  Documentation/arm/OMAP/omap_pm                                   | 2 +-
->  Documentation/block/cfq-iosched.txt                              | 2 +-
->  Documentation/devicetree/bindings/arm/vexpress-sysreg.txt        | 4 ++--
->  Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt | 2 +-
->  Documentation/dma-buf-sharing.txt                                | 2 +-
->  Documentation/fb/fbcon.txt                                       | 2 +-
->  Documentation/fb/viafb.txt                                       | 2 +-
->  Documentation/filesystems/ext4.txt                               | 2 +-
->  Documentation/filesystems/nfs/pnfs.txt                           | 2 +-
->  Documentation/filesystems/relay.txt                              | 2 +-
->  Documentation/filesystems/sysfs-tagging.txt                      | 2 +-
->  Documentation/i2c/upgrading-clients                              | 4 ++--
->  Documentation/rapidio/rapidio.txt                                | 2 +-
->  Documentation/sound/alsa/compress_offload.txt                    | 2 +-
->  Documentation/sysfs-rules.txt                                    | 2 +-
->  Documentation/virtual/kvm/api.txt                                | 2 +-
->  Documentation/x86/boot.txt                                       | 2 +-
->  17 files changed, 19 insertions(+), 19 deletions(-)
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+[o.v.kravchenko@globallogic.com: fix return value ib devm_iio_device_alloc
+in case if devres_alloc failed, remove unused variable "rc"]
+Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Tested-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+---
+ drivers/iio/industrialio-core.c |   47 +++++++++++++++++++++++++++++++++++++++
+ include/linux/iio/iio.h         |   25 +++++++++++++++++++++
+ 2 files changed, 72 insertions(+)
 
-
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index e145931..d56d122 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -912,6 +912,53 @@ void iio_device_free(struct iio_dev *dev)
+ }
+ EXPORT_SYMBOL(iio_device_free);
+ 
++static void devm_iio_device_release(struct device *dev, void *res)
++{
++	iio_device_free(*(struct iio_dev **)res);
++}
++
++static int devm_iio_device_match(struct device *dev, void *res, void *data)
++{
++	struct iio_dev **r = res;
++	if (!r || !*r) {
++		WARN_ON(!r || !*r);
++		return 0;
++	}
++	return *r == data;
++}
++
++struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv)
++{
++	struct iio_dev **ptr, *iio_dev;
++
++	ptr = devres_alloc(devm_iio_device_release, sizeof(*ptr),
++			   GFP_KERNEL);
++	if (!ptr)
++		return NULL;
++
++	/* use raw alloc_dr for kmalloc caller tracing */
++	iio_dev = iio_device_alloc(sizeof_priv);
++	if (iio_dev) {
++		*ptr = iio_dev;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return iio_dev;
++}
++EXPORT_SYMBOL_GPL(devm_iio_device_alloc);
++
++void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev)
++{
++	int rc;
++
++	rc = devres_release(dev, devm_iio_device_release,
++			    devm_iio_device_match, iio_dev);
++	WARN_ON(rc);
++}
++EXPORT_SYMBOL_GPL(devm_iio_device_free);
++
+ /**
+  * iio_chrdev_open() - chrdev file open for buffer access and ioctls
+  **/
+diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+index 8d171f4..f1d99f6 100644
+--- a/include/linux/iio/iio.h
++++ b/include/linux/iio/iio.h
+@@ -532,6 +532,31 @@ static inline struct iio_dev *iio_priv_to_dev(void *priv)
+ void iio_device_free(struct iio_dev *indio_dev);
+ 
+ /**
++ * devm_iio_device_alloc - Resource-managed iio_device_alloc()
++ * @dev: 		Device to allocate iio_dev for
++ * @sizeof_priv: 	Space to allocate for private structure.
++ *
++ * Managed iio_device_alloc.  iio_dev allocated with this function is
++ * automatically freed on driver detach.
++ *
++ * If an iio_dev allocated with this function needs to be freed separately,
++ * devm_iio_device_free() must be used.
++ *
++ * RETURNS:
++ * Pointer to allocated iio_dev on success, NULL on failure.
++ */
++struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv);
++
++/**
++ * devm_iio_device_free - Resource-managed iio_device_free()
++ * @dev:		Device this iio_dev belongs to
++ * @indio_dev: 		the iio_dev associated with the device
++ *
++ * Free indio_dev allocated with devm_iio_device_alloc().
++ */
++void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev);
++
++/**
+  * iio_buffer_enabled() - helper function to test if the buffer is enabled
+  * @indio_dev:		IIO device structure for device
+  **/
 -- 
-With warm regards,
-Sachin
+1.7.9.5
+
