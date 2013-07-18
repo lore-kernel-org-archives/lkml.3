@@ -1,69 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934512Ab3GRVbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:31:32 -0400
-Received: from science.horizon.com ([71.41.210.146]:39100 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933881Ab3GRVb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:31:28 -0400
-Date: 18 Jul 2013 17:31:26 -0400
-Message-ID: <20130718213126.12710.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dhowells@redhat.com, joe@perches.com, linux@horizon.com
-Subject: Re: [PATCH] Assoc_array: Drop leaf-type concept
-Cc: keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org
-In-Reply-To: <21160.1374153504@warthog.procyon.org.uk>
+	id S934453Ab3GRVfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:35:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64224 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759388Ab3GRVfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 17:35:14 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH 2/8] soft-offline: use migrate_pages() instead of migrate_huge_page()
+Date: Thu, 18 Jul 2013 17:34:26 -0400
+Message-Id: <1374183272-10153-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks cleaner.
+Currently migrate_huge_page() takes a pointer to a hugepage to be
+migrated as an argument, instead of taking a pointer to the list of
+hugepages to be migrated. This behavior was introduced in commit
+189ebff28 ("hugetlb: simplify migrate_huge_page()"), and was OK
+because until now hugepage migration is enabled only for soft-offlining
+which migrates only one hugepage in a single call.
 
-The larger issues that bother me:
+But the situation will change in the later patches in this series
+which enable other users of page migration to support hugepage migration.
+They can kick migration for both of normal pages and hugepages
+in a single call, so we need to go back to original implementation
+which uses linked lists to collect the hugepages to be migrated.
 
-1) The fact that the abstract daya type "index key" provides access to
-   a byte string "index key" is a bit confusing.  I'd describe it as
-   follows:  (Based on my current understanding.)
+With this patch, soft_offline_huge_page() switches to use migrate_pages(),
+and migrate_huge_page() is not used any more. So let's remove it.
 
+ChangeLog v3:
+ - Merged with another cleanup patch (4/10 in previous version)
 
-   Each object has an associated "index key" that is used for lookup.
-   The index key is a string of bits which is stored "inside" the object,
-   however all access to it is done through method functions, so it is
-   not necessary to explicitly store it anywhere.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ include/linux/migrate.h |  5 -----
+ mm/memory-failure.c     | 15 ++++++++++++---
+ mm/migrate.c            | 28 ++--------------------------
+ 3 files changed, 14 insertions(+), 34 deletions(-)
 
-   For example, it is possible to have the leading portion of the
-   index_key be a hash of the remainder.
+diff --git v3.11-rc1.orig/include/linux/migrate.h v3.11-rc1/include/linux/migrate.h
+index a405d3dc..6fe5214 100644
+--- v3.11-rc1.orig/include/linux/migrate.h
++++ v3.11-rc1/include/linux/migrate.h
+@@ -41,8 +41,6 @@ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *, enum migrate_mode);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason);
+-extern int migrate_huge_page(struct page *, new_page_t x,
+-		unsigned long private, enum migrate_mode mode);
+ 
+ extern int fail_migrate_page(struct address_space *,
+ 			struct page *, struct page *);
+@@ -62,9 +60,6 @@ static inline void putback_movable_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason)
+ 	{ return -ENOSYS; }
+-static inline int migrate_huge_page(struct page *page, new_page_t x,
+-		unsigned long private, enum migrate_mode mode)
+-	{ return -ENOSYS; }
+ 
+ static inline int migrate_prep(void) { return -ENOSYS; }
+ static inline int migrate_prep_local(void) { return -ENOSYS; }
+diff --git v3.11-rc1.orig/mm/memory-failure.c v3.11-rc1/mm/memory-failure.c
+index 2c13aa7..af6f61c 100644
+--- v3.11-rc1.orig/mm/memory-failure.c
++++ v3.11-rc1/mm/memory-failure.c
+@@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_head(page);
++	LIST_HEAD(pagelist);
+ 
+ 	/*
+ 	 * This double-check of PageHWPoison is to avoid the race with
+@@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	unlock_page(hpage);
+ 
+ 	/* Keep page count to indicate a given hugepage is isolated. */
+-	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+-				MIGRATE_SYNC);
+-	put_page(hpage);
++	list_move(&hpage->lru, &pagelist);
++	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
++				MIGRATE_SYNC, MR_MEMORY_FAILURE);
+ 	if (ret) {
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
++		/*
++		 * We know that soft_offline_huge_page() tries to migrate
++		 * only one hugepage pointed to by hpage, so we need not
++		 * run through the pagelist here.
++		 */
++		putback_active_hugepage(hpage);
++		if (ret > 0)
++			ret = -EIO;
+ 	} else {
+ 		set_page_hwpoison_huge_page(hpage);
+ 		dequeue_hwpoisoned_huge_page(hpage);
+diff --git v3.11-rc1.orig/mm/migrate.c v3.11-rc1/mm/migrate.c
+index b44a067..3ec47d3 100644
+--- v3.11-rc1.orig/mm/migrate.c
++++ v3.11-rc1/mm/migrate.c
+@@ -979,6 +979,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 
+ 	unlock_page(hpage);
+ out:
++	if (rc != -EAGAIN)
++		putback_active_hugepage(hpage);
+ 	put_page(new_hpage);
+ 	if (result) {
+ 		if (rc)
+@@ -1066,32 +1068,6 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+ 	return rc;
+ }
+ 
+-int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
+-		      unsigned long private, enum migrate_mode mode)
+-{
+-	int pass, rc;
+-
+-	for (pass = 0; pass < 10; pass++) {
+-		rc = unmap_and_move_huge_page(get_new_page, private,
+-						hpage, pass > 2, mode);
+-		switch (rc) {
+-		case -ENOMEM:
+-			goto out;
+-		case -EAGAIN:
+-			/* try again */
+-			cond_resched();
+-			break;
+-		case MIGRATEPAGE_SUCCESS:
+-			goto out;
+-		default:
+-			rc = -EIO;
+-			goto out;
+-		}
+-	}
+-out:
+-	return rc;
+-}
+-
+ #ifdef CONFIG_NUMA
+ /*
+  * Move a list of individual pages
+-- 
+1.8.3.1
 
-   Index keys may be variable-length, but must be self-delimiting.
-   Specifically, two different index keys must differ at some bit position
-   before the end of the shorter of the two.
-
-   Some index key methods take an isolated "const void *index_key"
-   argument, while others take an object pointer.
-
-2) The code does not look 32-bit safe.  In particular, keyring_get_key_chunk
-   assumes the hash is BITS_PER_LONG long, but keyring_diff_objects 
-   assumes it's 8*8 bits...
-
-3) I presume you looked at wider tries like Judy arrays and found that
-   a fan-out of 16 was better?
-
-4) There are 3/7 unused bytes in an assoc_array_node, after parent_slot.
-   Would it be worth storing 16/48 bits of index key and 3/4 bits of
-   number of levels to skip per assoc_array_node?
-   Since parent_slot is actually only 4 bits, you could store 4 bits
-   of nubmer of levels and 56 bits (up to 14 levels, plus the one
-   from the famout) of index key.
-
-   With 32-way fanout, you could fit 5 bits of parent index, 25/55 bits of
-   index key, and encode the number of levels to skip (0-5/11) more carefully.
-
-5) The big question: Why not use a hash table?  That's what people
-   usually expect when you say "associative array".  It would be simpler
-   and faster.
-
-   RCU-safe resizeable hash tables are tricky, but a solved problem,
-   There are universal hashing techniques for preventing hash collision
-   attacks.  
