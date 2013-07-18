@@ -1,102 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab3GRAzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 20:55:38 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:25933 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757972Ab3GRAzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 20:55:36 -0400
-From: T Makphaibulchoke <tmac@hp.com>
-To: viro@zeniv.linux.org.uk, tytso@mit.edu, adilger.kernel@dilger.ca,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, tmakph@gmail.com
-Cc: aswin@hp.com
-Subject: [PATCH 0/2] ext4: increase mbcache scalability
-Date: Wed, 17 Jul 2013 18:55:34 -0600
-Message-Id: <1374108934-50550-1-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.7.11.3
+	id S1758003Ab3GRA5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 20:57:10 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:53483 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757697Ab3GRA5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 20:57:08 -0400
+Date: Wed, 17 Jul 2013 17:57:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>, stable <stable@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Message-ID: <20130718005702.GJ4161@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1373991399.6458.6.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+ <51E59F79.1040903@zytor.com>
+ <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+ <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+ <20130717144043.GA16513@xanatos>
+ <20130717220258.GA990@roeck-us.net>
+ <51E71F73.9050204@infradead.org>
+ <20130717230831.GH4161@linux.vnet.ibm.com>
+ <20130717231934.GC2120@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717231934.GC2120@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071800-5806-0000-0000-00002218B669
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch intends to improve the scalability of an ext4 filesystem by
-introducing higher degree of parallelism to the usages of its mb_cache and
-mb_cache_entries.
+On Wed, Jul 17, 2013 at 04:19:34PM -0700, Guenter Roeck wrote:
+> On Wed, Jul 17, 2013 at 04:08:31PM -0700, Paul E. McKenney wrote:
+> > On Wed, Jul 17, 2013 at 03:49:23PM -0700, Randy Dunlap wrote:
+> > > On 07/17/13 15:02, Guenter Roeck wrote:
+> > > > On Wed, Jul 17, 2013 at 07:40:43AM -0700, Sarah Sharp wrote:
+> > > > 
+> > > > [ ... ]
+> > > >>
+> > > >> The result: 75% of their developers are women.  If you give a flying
+> > > >> fuck about diversity, and want to attract women to your open source
+> > > > 
+> > > > The f word is considered highly offensive in some cultures. Granted its use is
+> > > > now far more spread than it used to be, but it seems interesting to me that you
+> > > > of all people use a word which I personally would never use at all, much less
+> > > > in front of a woman. Sounds like a contradiction to me, especially when you use
+> > > > it while arguing for a more civil discussion.
+> > > > 
+> > > > Do you think you need to use that word to make a point ? If so, why do you want
+> > > > to take that right away from others ?
+> > > 
+> > > Thank you for your comment.  (seriously)
+> > > 
+> > > and Dave Miller's as well.
+> > 
+> > The USA social conventions have changed quite significantly over the past
+> > 50 years, haven't they?  But that is OK, the younger people on this list
+> > will likely have the opportunity to experience far greater changes over
+> > the next 50 years, especially given increasing fractions of people's
+> > life experiences being publicly recorded.  It would be interesting to
+> > see how they react, but I probably won't be around to witness it.  ;-)
+> > 
+> My kids use the word all the time, and look at me with an odd face if I point out
+> that it is not a nice word to use (for me). Several people I know and respect
+> seem to be unable to say a sentence without using it. So, yes, I am aware that
+> times are changing, and that my cultural context is different than that of the
+> culture I am living in. But that isn't the point here.
 
-Here are some of the benchmark results with the changes. 
+Heh!  If I were to ask each of the N participants in this thread what
+the point was, would I get fewer than N different answers?  ;-)
 
-On a 90 core machine:
-
-Here are the performance improvements in some of the aim7 workloads,
-
----------------------------
-|             | % increase |
----------------------------
-| custom      |     13.30  |
----------------------------
-| disk        |      5.00  |  
----------------------------
-| new_fserver |      6.73  |  
----------------------------
-| shared      |      7.12  |  
----------------------------
-
-For Swingbench dss workload,
-
--------------------------------------------------------------------------------
-| Users        | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  | 900  |
--------------------------------------------------------------------------------
-| % imprvoment | 9.14 | 9.26 | 19.9 | 5.31 | 7.79 | 0.23 |-4.39 |-4.48 |-4.36 |
--------------------------------------------------------------------------------
-
-For SPECjbb2013, composite run,
-
---------------------------------------------
-|               | max-jOPS | critical-jOPS |
---------------------------------------------
-| % improvement |   6.73   |     16.37     |
---------------------------------------------
-
-
-
-On an 80 core machine:
-
-Here are the improvments in some of the aim7 workloads,
- 
----------------------------
-|             | % increase |
----------------------------
-| fserver     |      6.47  |
----------------------------
-| new_fserver |      4.62  |  
----------------------------
-
-For Swingbench dss workload,
-
--------------------------------------------------------------------------------
-| Users        | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  | 900  |
--------------------------------------------------------------------------------
-| % imprvoment | 4.29 | 2.28 | 3.25 | 1.45 |-0.84 | 3.11 |-0.61 | 3.80 | 2.58 |
--------------------------------------------------------------------------------
-
-For SPECjbb2013, composite run,
-
---------------------------------------------
-|               | max-jOPS | critical-jOPS |
---------------------------------------------
-| % improvement |   0.49   |      3.21     |
---------------------------------------------
-
-The changes have been tested with ext4 xfstests to verify that no regression
-has been introduced.  
-
-
- fs/ext4/ext4.h          |   1 +
- fs/ext4/super.c         |   8 ++
- fs/ext4/xattr.c         |  41 +++++---
- fs/ext4/xattr.h         |   3 +
- fs/mbcache.c            | 432 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------
- include/linux/mbcache.h |   5 +
- 6 files changed, 385 insertions(+), 105 deletions(-)
+							Thanx, Paul
 
