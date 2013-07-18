@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759184Ab3GRQvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:51:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17651 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab3GRQvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:51:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,695,1367996400"; 
-   d="scan'208";a="372639856"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Ming Lei <tom.leiming@gmail.com>, Linda Walsh <lkml@tlinx.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
-Subject: RE: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
-Thread-Topic: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
-Thread-Index: AQHOfxrdPLmL8JP980CYV5tH00P+dJlhOAEQgAnqpoD//4vz4A==
-Date: Thu, 18 Jul 2013 16:51:48 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31C92B23@ORSMSX106.amr.corp.intel.com>
-References: <51D9EAF3.4050804@tlinx.org>
- <CACVXFVPRwakzB6vtqRqL49StHKdugCpxDyNvx3VzcDC7GggFMQ@mail.gmail.com>
- <20130712080428.GB359@x4> <20130712134115.GI24008@pd.tnic>
- <51E00B55.5070003@infradead.org> <20130712142106.GJ24008@pd.tnic>
- <20130712131340.1a371662.mchehab@infradead.org>
- <3908561D78D1C84285E8C5FCA982C28F31C7D83C@ORSMSX106.amr.corp.intel.com>
- <20130718164215.GC15992@pd.tnic>
-In-Reply-To: <20130718164215.GC15992@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1759230Ab3GRQxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:53:05 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:57864 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778Ab3GRQxC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 12:53:02 -0400
+From: Hubert Feurstein <h.feurstein@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hubert Feurstein <h.feurstein@gmail.com>
+Subject: [PATCH] serial/imx: fix custom-baudrate handling
+Date: Thu, 18 Jul 2013 18:52:49 +0200
+Message-Id: <1374166369-20342-1-git-send-email-h.feurstein@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6IGpvqG004638
 
-+	BUG_ON(mci->mc_idx >= EDAC_MAX_MCS);
+It was not possible to set custom-baudrates like 62500.
 
-Do we have to "BUG_ON()" here?  Couldn't we be gentler with something like:
+Signed-off-by: Hubert Feurstein <h.feurstein@gmail.com>
+---
+ drivers/tty/serial/imx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-	if (mci->mc_idx >= EDAC_MAX_MCS) {
-		printk_once(KERN_WARNING "Too many memory controllers\n");
-		return; /* probably need to make sure caller copes with this ... so more stuff there */
-	}
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 415cec6..a6671ed 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1020,6 +1020,11 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		 */
+ 		div = 1;
+ 	} else {
++		/* custom-baudrate handling */
++		div = sport->port.uartclk / (baud * 16);
++		if (baud == 38400 && quot != div)
++			baud = sport->port.uartclk / (quot * 16);
++
+ 		div = sport->port.uartclk / (baud * 16);
+ 		if (div > 7)
+ 			div = 7;
+-- 
+1.7.9.5
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
