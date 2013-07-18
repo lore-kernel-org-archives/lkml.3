@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab3GRJxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 05:53:36 -0400
-Received: from p01c12o141.mxlogic.net ([208.65.145.64]:55516 "EHLO
-	p01c12o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757383Ab3GRJxf convert rfc822-to-8bit (ORCPT
+	id S1758204Ab3GRJxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 05:53:55 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33571 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757383Ab3GRJxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 05:53:35 -0400
-X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Jul 2013 05:53:35 EDT
-X-MXL-Hash: 51e7bb1f79c8856d-dfc620cdf1b485d0aecb1c12d31fcd3944640d66
-X-MXL-Hash: 51e7b9167814dda0-44a78d47867dbfad4e540abfe837d0fdecccca16
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Thu, 18 Jul 2013 05:53:54 -0400
+Date: Thu, 18 Jul 2013 10:53:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20130718095337.GD22506@sirena.org.uk>
+References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
+ <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Subject: Please Reply to his private email: mervyn-king78@live.com
-Date: Thu, 18 Jul 2013 05:44:49 -0400
-Message-ID: <7FCDF39ECF183E4096909ECD3AC73714C0EB29@CITY-MAIL.wilmington.gov>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Please Reply to his private email: mervyn-king78@live.com
-Thread-Index: Ac6Dm2/6fKzfQp5mR7KPi2p0Rt053Q==
-From: "Alexandra M. Coppadge" <amcoppadge@wilmingtonde.gov>
-X-Processed-By: Rebuild v2.0-0
-X-AnalysisOut: [v=2.0 cv=DtjhDhD+ c=1 sm=1 a=KFzqkQofWQGDFnfvLTfioA==:17 a]
-X-AnalysisOut: [=9IX_uJwYtmMA:10 a=BLceEmwcHowA:10 a=8nJEP1OIZ-IA:10 a=Zk3]
-X-AnalysisOut: [OmFfbAAAA:8 a=EUnBjEBP7r0A:10 a=LBAzweCMJj2pfNOpMfgA:9 a=w]
-X-AnalysisOut: [PNLvfGTeEIA:10 a=eX4eeG6NxaMA:10 a=x46t9oslO7cA:10 a=cAlOB]
-X-AnalysisOut: [-vBdRgA:10 a=wpYfdua6HO0A:10 a=jhp6UtID-AjWHhee:21]
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
-X-MAIL-FROM: <amcoppadge@wilmingtonde.gov>
-X-SOURCE-IP: [76.12.9.57]
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Z2IdzX9mnvzeYuwT"
+Content-Disposition: inline
+In-Reply-To: <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 5/5] ASoC: atmel-ssc: remove clk_disable_unprepare
+ call from critical section
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Boss has instructed me to contact you with regards to a transaction worth £22.4million pounds to discuss with you. Reply to his private email: mervyn-king78@live.com <mailto:mervyn-king78@live.com>  for more information.
 
-Alexandra M. Coppadge
+--Z2IdzX9mnvzeYuwT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Thu, Jul 18, 2013 at 09:48:40AM +0200, Boris BREZILLON wrote:
+> clk_prepare/unprepare (and indirectly clk_prepare_enable/disable_unprepare)
+> may sleep and thus cannot be called in critical section.
 
+I'm missing patches 1-4?
 
+--Z2IdzX9mnvzeYuwT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This City of Wilmington e-mail, including any attachments, may contain
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-information that is privileged, confidential and exempt from applicable law.
+iQIcBAEBAgAGBQJR57seAAoJELSic+t+oim9aLgP+gO7MrB/96YV/rjr2xH+/DW/
+KaEKbn8wU1nm/ASlki1u4OE8KxW4yfGKAnU4UUbkUnsbPtZ3YuB1Os0Uwj7mAQUR
+On1hwrbHmpeTvEtSwEdzVCgoBWaGbgVjyh9BOsFm6/meEK0cgbI4r1RC1bgX1UJN
+uxLngjQIyM2/0K7jzLwojJcoNyfsgjRwf8lmdG8Kk/LSR1zQK2G/yN0K7Cb5DNZ8
+cKDJRO7txZzd8yczDPzyQqgs/d0E2CSqfVkwcOWAxsagn4CE04lI9KWn3zFSBZkn
+pmtyIPVNIrgSOFXDCZJZdgPHFHfVbmucml7/KEgzMTFXg7zwRK2Zr7tUF9yMUR1y
+KoEsXmnQlasuDq/bTlcf86KzPeRu4rHX8jyBl2dIw1RWtn2RcBTHNiydRkYJoHfS
+/RZ6yFO78KvwZIBQQkv77fAG7369hJ3I7446+i4yYTlvspclC0clpBGu22UMbLiP
+QsnHZGMisF5nv6ZklzatsplWY+5ThGV3h2FAmT2xB9SDHGn5pzd6Qs6SrEMeLzGw
+KSo6dEbCX0+at3G53GysXqMwagGQVaFvW8zZwWMOLjC+2yMGfFJOE6Hy/w9/Pypo
+xw1qiqiLRsRjBGXG2DXsSXMGBq59+fzA18VocmKYXCq9u9Y7/YaujcUQtucwo+gH
+hCy9HH13Wd1wzi/0Wugm
+=0VxO
+-----END PGP SIGNATURE-----
 
-This e-mail is intended to be reviewed by only the individual(s), or
-
-organization(s) to which it is addressed. If you are not the intended
-
-recipient, you are hereby notified that any dissemination, distribution or
-
-copying of this communication, including any attachments, is strictly
-
-prohibited. If you have received this e-mail in error, please immediately
-
-notify the sender by return e-mail and delete this e-mail from your system.
-
-Thank You.
+--Z2IdzX9mnvzeYuwT--
