@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758825Ab3GRL0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:26:00 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34581 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758182Ab3GRLZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:25:59 -0400
-Date: Thu, 18 Jul 2013 12:25:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20130718112538.GM22506@sirena.org.uk>
-References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
- <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com>
+	id S1758808Ab3GRLab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:30:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47027 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758286Ab3GRLaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 07:30:30 -0400
+Message-ID: <51E7D1D2.1060006@ti.com>
+Date: Thu, 18 Jul 2013 14:30:26 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0DcgAuOrObJpcAxl"
-Content-Disposition: inline
-In-Reply-To: <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 5/5] ASoC: atmel-ssc: remove clk_disable_unprepare
- call from critical section
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Arend van Spriel <arend@broadcom.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no ethernet
+References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com> <51E7D080.6070401@broadcom.com>
+In-Reply-To: <51E7D080.6070401@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/18/2013 02:24 PM, Arend van Spriel wrote:
+> On 07/18/2013 01:18 PM, Roger Quadros wrote:
+>> Hi Arend,
+>>
+>> On 07/18/2013 11:41 AM, Arend van Spriel wrote:
+>>> Hi Tony,
+>>>
+>>>
+>>> We are using the panda board (es variant) for testing our SDIO based chips. For this we have an adapter card connection to expansion connector A. As this adapter is not publicly available we had internally patched board-omap4panda.c. Also we follow the -rc releases and use TFTP to boot the kernel image which requires USB.
+>>>
+>>> Moving to 3.11-rc1 I found that the mentioned board file was removed by your commit:
+>>>
+>>> commit b42b918194c4791510ac049e3d507169a7de8544
+>>> Author: Tony Lindgren <tony@atomide.com>
+>>> Date:   Thu May 30 12:53:05 2013 -0700
+>>>
+>>>      ARM: OMAP2+: Remove board-omap4panda.c
+>>>
+>>> As our patches on that file are internal I do not hold it against you. This is no regression and we need to fix it.
+>>>
+>>> So my first step was to follow the recipe given in that commit. Beside that I noticed a thread about USB issue on LKML so I also applied the following commit:
+>>>
+>>> commit 352f573e59050c7a604c35c58b4bbfc51edebbee
+>>> Author: Roger Quadros <rogerq@ti.com>
+>>> Date:   Tue Jun 18 19:04:47 2013 +0300
+>>>
+>>>      ARM: OMAP2+: Provide alias to USB PHY clock
+>>>
+>>> The attached kernel log seems to suggest that the device tree is picked up by the kernel, but the USB does not seem very active. No ethernet connectivity. This does seem a regression to me. Is there some other patch that I need to get it going again?
+>>>
+>>
+>> I tried with your config and 3.11-rc1 kernel with the above commit on top and ethernet seems to
+>> work for me. My boot log is attached.
+>>
+>> Are you sure that you are building the DTB for panda-es and the bootloader is picking up the right file and
+>> not an outdated one?
+> 
+> I appended the DTB to the kernel image thus avoiding the need to update u-boot (at least that is what I understood from Tony's commit).
+> 
 
---0DcgAuOrObJpcAxl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I understand this can be a little tedious at first.
 
-On Thu, Jul 18, 2013 at 09:48:40AM +0200, Boris BREZILLON wrote:
-> clk_prepare/unprepare (and indirectly clk_prepare_enable/disable_unprepare)
-> may sleep and thus cannot be called in critical section.
+This is my u-boot boot.txt
 
-Applied, thanks.
+fatload mmc 0:1 0x825f0000 omap4-panda-es.dtb
+fatload mmc 0:1 0x80300000 uImage
+set fdt_high 0xffffffff
+setenv bootargs console=ttyO2,115200n8 mem=1G@0x80000000 root=/dev/mmcblk0p2 rootwait
+bootm 0x80300000 - 0x825f0000
 
---0DcgAuOrObJpcAxl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+You need to generate boot.scr from the above boot.txt and place it in SD card boot partition.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+mkimage -A arm -T script -C none -n "Boot Image" -d boot.txt boot.scr
 
-iQIcBAEBAgAGBQJR59CuAAoJELSic+t+oim9uD0P/Rizqwd6w1R1jav9/7eQU7s8
-obtlowQjYTn36dfgG2jiOB3+XkUxiJl7aEhqnZQNcEYfBY/Ri64awQgoUbgiNKl7
-p8wYyboC7NFRQAZ/Zs+hcHmz6jbJnOSbopgRooKi4qzBTBbO2XrmOqyRpRITYIiA
-0yaMet7BYQ5Qgs8yjK63wZHkwAejv5nwtcAKYbYMXLGAAUMd3T2ptEhFCZAgEfnt
-wHs5HYfq5R1EEumrIHiRMe97VGInn8WIdUFARu4Y8AjF6D0ZUs50oGr9RiK6jbK4
-IbElDdf1/lztXfI5GMUW3KBaW4ldjXStN3IdUzcNDB9ROwl7VqQ0dvU5n2Wp9WDb
-+9xoHfEsXF1SedGQqNAkEUx7O/cXd8lpuh49YxqhO15o0yuIXHEMRlzd7e9sYONJ
-JAabeoRZTYNfXLn5eN8sq7+VH05HtXPZ0MCCgdWf4gadZE0BlBr1FP6sNYXUUaXo
-gRtbntuluw2BZV0zlQCJIcz0wbYHzmd5sWUjsh4DhQYzLfEpDBkRAKIMZyDLY1rn
-nW8YAftPj3zuE/V+6fH8WDG20dxdfX2VnLmEbP7TTvCAzF/V3LL/cRojTHsa/T7s
-yikGqvRGNi1RFtYUs3iGi1/XvaK5uX0XchhvLSNywINH72xzJOAks+vBxZ8shEdJ
-UuyamAbMzV92EaUfi3Pz
-=xndv
------END PGP SIGNATURE-----
+And of course copy the omap4-panda-es.dtb to SD card boot partition.
 
---0DcgAuOrObJpcAxl--
+hope this helps.
+
+>> Why is the version of SPL loader and u-boot different in your log?
+>> You need to use the MLO file generated by the u-boot build along with the uImage.
+>>
+>> Just to be sure we are on the same setup could you please try with latest u-boot release (2013-04). Thanks.
+> 
+> I recall having difficulty with TFTP boot using a 2013 u-boot release, but that hurdle is for later. I will try.
+> 
+
+OK. We can figure this out as well.
+
+cheers,
+-roger
