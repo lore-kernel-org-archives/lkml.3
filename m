@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab3GRTSF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:18:05 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:46511 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759137Ab3GRTSD (ORCPT
+	id S964938Ab3GRTVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:21:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55081 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759317Ab3GRTVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:18:03 -0400
+	Thu, 18 Jul 2013 15:21:05 -0400
+Message-ID: <51E8401E.8040705@wwwdotorg.org>
+Date: Thu, 18 Jul 2013 13:21:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Date: Thu, 18 Jul 2013 12:18:01 -0700
-X-Google-Sender-Auth: dfglMJ2kIG8ZIQbjq3fxL373OZ0
-Message-ID: <CA+55aFxHKYevx0tCaZxZLHbf68n00t9rZqmSN2t5Gg5B=sE5AQ@mail.gmail.com>
-Subject: Ok, everybody back to work..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, CAI Qian <caiqian@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        "ksummit-2013-discuss@lists.linux-foundation.org" 
-	<ksummit-2013-discuss@lists.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tony Lindgren <tony@atomide.com>
+CC: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+References: <20130716090310.5541.36777.stgit@localhost> <20130716090536.5541.36289.stgit@localhost> <51E70953.1000601@wwwdotorg.org> <20130718072034.GO7656@atomide.com>
+In-Reply-To: <20130718072034.GO7656@atomide.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're over half-way through the first week after the merge window
-closed, and normally I'd be complaining to people about how much stuff
-you're all sending me, and chewing you out for having clearly sent me
-some seriously half-baked crap during the merge window, that should
-probably have waited until the next release.
+On 07/18/2013 01:25 AM, Tony Lindgren wrote:
+> * Stephen Warren <swarren@wwwdotorg.org> [130717 14:21]:
+>> On 07/16/2013 03:05 AM, Tony Lindgren wrote:
+>>> To toggle dynamic states, let's add the optional active state in
+>>> addition to the static default state. Then if the optional active
+>>> state is defined, we can require that idle and sleep states cover
+>>> the same pingroups as the active state.
+>>>
+>>> Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
+>>> to use instead of pinctrl_select() to avoid breaking existing users.
+>>>
+>>> With pinctrl_check_dynamic() we can check that idle and sleep states
+>>> match the active state for pingroups during init, and don't need to
+>>> do it during runtime.
+>>>
+>>> Then with the states pre-validated, pinctrl_select_dynamic() can
+>>> just toggle between the dynamic states without extra checks.
+>>>
+>>> Note that pinctr_select_state() still has valid use cases, such as
+>>> changing states when the pins can be shared between two drivers
+>>> and don't necessarily cover the same pingroups. For dynamic runtime
+>>> toggling of pin states, we should eventually always use just
+>>> pinctrl_select_dynamic().
 
-But no. Everybody has been gossiping around the water cooler instead,
-and I've had one or two pull requests per day from the people who are
-happily oblivious (or too smarter to get involved) about the whole
-flame fest.
+>>> @@ -1241,7 +1371,13 @@ static int pinctrl_pm_select_state(struct device *dev, struct pinctrl_state *sta
+>>>  		return 0;
+>>>  	if (IS_ERR(state))
+>>>  		return 0; /* No such state */
+>>> -	ret = pinctrl_select_state(pins->p, state);
+>>> +
+>>> +	/* Configured for proper dynamic muxing? */
+>>> +	if (!IS_ERR(dev->pins->active_state))
+>>> +		ret = pinctrl_select_dynamic(pins->p, state);
+>>> +	else
+>>> +		ret = pinctrl_select_state(pins->p, state);
+>>
+>> Hmmm. I'm not quite sure this is right... Surely this function should
+>> just do nothing if the dynamic states aren't defined? The system should
+>> just, and only, be in the "default" state and never do anything else.
+> 
+> This keeps the existing behaviour. We should be able to drop the
+> call to pinctrl_select_state() here after the existing use in
+> drivers has been fixed.
 
-I'm cantankerous, and hard to please. Send me too much and I yell, and
-send me too little and I yell.  Because I'm the Goldilocks of kernel
-development, and I want my pull requests "just right". And clearly all
-the energy has been going into arguing, not working.
+How many DT-based systems already have multiple of default/idle/sleep
+states defined in DT? Right now, since the kernel code uses
+pinctrl_select_state() to switch between those, the state definitions
+need to define /all/ pins used by those states, not just the dynamic
+ones. However, with this series in place, the default state should only
+include the static pins, and the active/idle/sleep states should only
+include the dynamic pins. That's a change to the DT bindings, since it
+changes how the DT must be written, and causes older DTs to be
+incompatible with newer kernels and vice-versa.
 
-Shoo, shoo. Back to your desks. Don't all congregate in the break room.
-
-                    Linus
-
-PS Or maybe you're just being professional and biding your time, and
-everybody is planning on sending me the work they when they clock out
-on Friday at 5PM. But that's not what it feels like.
+So, do we just ignore this DT ABI change again, or insist on doing it in
+some compatible way? DT ABI-ness is a PITA:-(
