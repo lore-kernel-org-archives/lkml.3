@@ -1,89 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965453Ab3GRVhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:37:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35356 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965344Ab3GRVhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:37:16 -0400
-Date: Thu, 18 Jul 2013 14:37:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
-Message-Id: <20130718143715.ce4bef65d01040fbbcd90f95@linux-foundation.org>
-In-Reply-To: <20130718130932.GA10419@quack.suse.cz>
-References: <1373994390-5479-1-git-send-email-jack@suse.cz>
-	<20130717161200.40a97074623be2685beb8156@linux-foundation.org>
-	<20130718130932.GA10419@quack.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934484Ab3GRVhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:37:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50366 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933385Ab3GRVfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 17:35:16 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH 3/8] migrate: add hugepage migration code to migrate_pages()
+Date: Thu, 18 Jul 2013 17:34:27 -0400
+Message-Id: <1374183272-10153-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Jul 2013 15:09:32 +0200 Jan Kara <jack@suse.cz> wrote:
+This patch extends check_range() to handle vma with VM_HUGETLB set.
+We will be able to migrate hugepage with migrate_pages(2) after
+applying the enablement patch which comes later in this series.
 
-> On Wed 17-07-13 16:12:00, Andrew Morton wrote:
-> > On Tue, 16 Jul 2013 19:06:30 +0200 Jan Kara <jack@suse.cz> wrote:
-> > 
-> > BUG_ON(in_interrupt()) :)
->   Or maybe WARN_ON()... But it's not so easy :) Currently radix tree code
-> assumes that if gfp_mask doesn't have __GFP_WAIT set caller has performed
-> radix_tree_preload(). Clearly this will stop working for in-interrupt users
-> of radix tree. So how do we propagate the information from the caller of
-> radix_tree_insert() down to radix_tree_node_alloc() whether the preload has
-> been performed or not? Will we rely on in_interrupt() or use some special
-> gfp_mask bit?
+Note that for larger hugepages (covered by pud entries, 1GB for
+x86_64 for example), we simply skip it now.
 
-Well, it won't stop working.  The interrupt-time
-radix_tree_node_alloc() call will try to grab a node from the cpu-local
-magazine and if that failed, will call kmem_cache_alloc().  Presumably
-the caller has passed in GFP_ATOMIC, so the kmem_cache_alloc() will use
-page reserves, which seems appropriate.
+Note that using pmd_huge/pud_huge assumes that hugepages are pointed to
+by pmd/pud. This is not true in some architectures implementing hugepage
+with other mechanisms like ia64, but it's OK because pmd_huge/pud_huge
+simply return 0 in such arch and page walker simply ignores such hugepages.
 
-This will mean that the interrupt-time node allocation will sometimes
-steal a preloaded node from process-context code.  In the absolutely
-worst case, the process-context code will then need to try
-kmem_cache_alloc(), which will probably succeed anyway.
+ChangeLog v3:
+ - revert introducing migrate_movable_pages
+ - use isolate_huge_page
 
-It's not perfect - we'd prefer that process-context node allocations
-not get stolen in this fashion.  That's easily fixed with
+ChangeLog v2:
+ - remove unnecessary extern
+ - fix page table lock in check_hugetlb_pmd_range
+ - updated description and renamed patch title
 
---- a/lib/radix-tree.c~a
-+++ a/lib/radix-tree.c
-@@ -207,7 +207,10 @@ radix_tree_node_alloc(struct radix_tree_
- 	struct radix_tree_node *ret = NULL;
- 	gfp_t gfp_mask = root_gfp_mask(root);
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/mempolicy.c | 39 ++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 34 insertions(+), 5 deletions(-)
+
+diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
+index 7431001..f3b65c0 100644
+--- v3.11-rc1.orig/mm/mempolicy.c
++++ v3.11-rc1/mm/mempolicy.c
+@@ -512,6 +512,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 	return addr != end;
+ }
  
--	if (!(gfp_mask & __GFP_WAIT)) {
-+	/*
-+	 * Lengthy comment goes here
-+	 */
-+	if (!(gfp_mask & __GFP_WAIT) && !in_interrupt()) {
- 		struct radix_tree_preload *rtp;
++static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
++		const nodemask_t *nodes, unsigned long flags,
++				    void *private)
++{
++#ifdef CONFIG_HUGETLB_PAGE
++	int nid;
++	struct page *page;
++
++	spin_lock(&vma->vm_mm->page_table_lock);
++	page = pte_page(huge_ptep_get((pte_t *)pmd));
++	nid = page_to_nid(page);
++	if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
++	    && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
++		|| flags & MPOL_MF_MOVE_ALL))
++		isolate_huge_page(page, private);
++	spin_unlock(&vma->vm_mm->page_table_lock);
++#else
++	BUG();
++#endif
++}
++
+ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 		unsigned long addr, unsigned long end,
+ 		const nodemask_t *nodes, unsigned long flags,
+@@ -523,6 +544,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
+ 		next = pmd_addr_end(addr, end);
++		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
++			check_hugetlb_pmd_range(vma, pmd, nodes,
++						flags, private);
++			continue;
++		}
+ 		split_huge_page_pmd(vma, addr, pmd);
+ 		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+ 			continue;
+@@ -544,6 +570,8 @@ static inline int check_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+ 	pud = pud_offset(pgd, addr);
+ 	do {
+ 		next = pud_addr_end(addr, end);
++		if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
++			continue;
+ 		if (pud_none_or_clear_bad(pud))
+ 			continue;
+ 		if (check_pmd_range(vma, pud, addr, next, nodes,
+@@ -635,9 +663,6 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 				return ERR_PTR(-EFAULT);
+ 		}
  
- 		/*
+-		if (is_vm_hugetlb_page(vma))
+-			goto next;
+-
+ 		if (flags & MPOL_MF_LAZY) {
+ 			change_prot_numa(vma, start, endvma);
+ 			goto next;
+@@ -986,7 +1011,11 @@ static void migrate_page_add(struct page *page, struct list_head *pagelist,
+ 
+ static struct page *new_node_page(struct page *page, unsigned long node, int **x)
+ {
+-	return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
++	if (PageHuge(page))
++		return alloc_huge_page_node(page_hstate(compound_head(page)),
++					node);
++	else
++		return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
+ }
+ 
+ /*
+@@ -1016,7 +1045,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+ 		err = migrate_pages(&pagelist, new_node_page, dest,
+ 					MIGRATE_SYNC, MR_SYSCALL);
+ 		if (err)
+-			putback_lru_pages(&pagelist);
++			putback_movable_pages(&pagelist);
+ 	}
+ 
+ 	return err;
+-- 
+1.8.3.1
 
-But I don't know if it's worth it.
-
-> Secondly, CFQ has this unpleasant property that some functions are
-> sometimes called from interrupt context and sometimes not. So these
-> functions would have to check in what context they are called and either
-> perform preload or not. That's doable but it's going to be a bit ugly and
-> has to match the check in radix_tree_node_alloc() whether preload should be
-> used or not. So leaving the checking to the users of radix tree looks
-> fragile.
-
-mm...  The CFQ code should be passing around a gfp_t anyway - GFP_NOIO
-or GFP_ATOMIC, depending on the calling context.  So don't call
-radix_tree_preload() if it's GFP_ATOMIC.
-
-> So maybe we could just silently exit from radix_tree_preload()
-> when we are in_interrupt()?
-
-Or that.
