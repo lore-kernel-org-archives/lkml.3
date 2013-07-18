@@ -1,120 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934236Ab3GRVZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:25:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43856 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933723Ab3GRVZv (ORCPT
+	id S934336Ab3GRV3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:29:46 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:44635 "HELO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933212Ab3GRV3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:25:51 -0400
-Message-ID: <51E85D55.9000501@kernel.dk>
-Date: Thu, 18 Jul 2013 15:25:41 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 18 Jul 2013 17:29:44 -0400
+Date: Fri, 19 Jul 2013 09:28:15 +1200
+From: Michael Cree <cree@waikato.ac.nz>
+To: Richard Henderson <rth@twiddle.net>
+Cc: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        linux-alpha@vger.kernel.org
+Subject: Re: [RFC PATCH 00/10] Alpha support for QEMU
+Message-ID: <20130718212815.GA32459@stolen.phys.waikato.ac.nz>
+References: <1373996058-13399-1-git-send-email-rth@twiddle.net>
+ <20130718011435.GA20007@stolen.phys.waikato.ac.nz>
+ <51E7EFC6.6070003@twiddle.net>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
-References: <1373994390-5479-1-git-send-email-jack@suse.cz> <20130717161200.40a97074623be2685beb8156@linux-foundation.org>
-In-Reply-To: <20130717161200.40a97074623be2685beb8156@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E7EFC6.6070003@twiddle.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2013 05:12 PM, Andrew Morton wrote:
-> On Tue, 16 Jul 2013 19:06:30 +0200 Jan Kara <jack@suse.cz> wrote:
+On Thu, Jul 18, 2013 at 06:38:14AM -0700, Richard Henderson wrote:
+> On 07/17/2013 06:14 PM, Michael Cree wrote:
+> > Tested the patch series applied against 3.10.1 on a 3-CPU ES45.  System came
+> > up fine but I noticed date was wrong and had been reset back to the start
+> > of the epoch (Jan 1 1970).  Appears it is not reading hardware clock
+> > correctly on boot.
 > 
->> With users of radix_tree_preload() run from interrupt (CFQ is one such
->> possible user), the following race can happen:
->>
->> radix_tree_preload()
->> ...
->> radix_tree_insert()
->>   radix_tree_node_alloc()
->>     if (rtp->nr) {
->>       ret = rtp->nodes[rtp->nr - 1];
->> <interrupt>
->> ...
->> radix_tree_preload()
->> ...
->> radix_tree_insert()
->>   radix_tree_node_alloc()
->>     if (rtp->nr) {
->>       ret = rtp->nodes[rtp->nr - 1];
->>
->> And we give out one radix tree node twice. That clearly results in radix
->> tree corruption with different results (usually OOPS) depending on which
->> two users of radix tree race.
->>
->> Fix the problem by disabling interrupts when working with rtp variable.
->> In-interrupt user can still deplete our preloaded nodes but at least we
->> won't corrupt radix trees.
->>
->> ...
->>
->>   There are some questions regarding this patch:
->> Do we really want to allow in-interrupt users of radix_tree_preload()?  CFQ
->> could certainly do this in older kernels but that particular call site where I
->> saw the bug hit isn't there anymore so I'm not sure this can really happen with
->> recent kernels.
+> Please scan the dmesg for the "Using epoch 2000 for rtc year 13" line,
+> and compare vs a similar message on the previous kernel.
+
+The kernel without the patch set has the "Using epoch 2000" line and
+the kernel with the patch set is missing the "Using epoch 2000" line.
+
+The differences in config between the two kernels are:
+
+diff /boot/config-3.10.1-titan-p1+ /boot/config-3.10.1-titan-rth2+ 
+25c25
+< CONFIG_LOCALVERSION="-titan-p1"
+---
+> CONFIG_LOCALVERSION="-titan-rth2"
+44c44,53
+< CONFIG_GENERIC_CMOS_UPDATE=y
+---
+> CONFIG_GENERIC_CLOCKEVENTS=y
+> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
 > 
-> Well, it was never anticipated that interrupt-time code would run
-> radix_tree_preload().  The whole point in the preloading was to be able
-> to perform GFP_KERNEL allocations before entering the spinlocked region
-> which needs to allocate memory.
+> #
+> # Timers subsystem
+> #
+> CONFIG_HZ_PERIODIC=y
+> # CONFIG_NO_HZ_IDLE is not set
+> # CONFIG_NO_HZ is not set
+> # CONFIG_HIGH_RES_TIMERS is not set
+253a263
+> # CONFIG_ALPHA_QEMU is not set
+277a288,293
+> # CONFIG_HZ_32 is not set
+> # CONFIG_HZ_64 is not set
+> # CONFIG_HZ_128 is not set
+> # CONFIG_HZ_256 is not set
+> CONFIG_HZ_1024=y
+> # CONFIG_HZ_1200 is not set
+
+
+> > I manually set the clock to the correct time but noticed it is running slow,
+> > indeed in a period of 60s the system clock incremented by 21s (+/-1s) so
+> > would appear clock is running slow by a factor given by the number of CPUs.
 > 
-> Doing all that from within an interrupt is daft, because the interrupt code
-> can't use GFP_KERNEL anyway.
+> That's curious.  I wonder if somehow I botched the smp changes, and I'm
+> not getting the timer interrupt either (1) enabled or (2) registered on
+> the secondary cpus...
 > 
->> Also it is actually harmful to do preloading if you are in interrupt context
->> anyway. The disadvantage of disallowing radix_tree_preload() in interrupt is
->> that we would need to tweak radix_tree_node_alloc() to somehow recognize
->> whether the caller wants it to use preloaded nodes or not and that callers
->> would have to get it right (although maybe some magic in radix_tree_preload()
->> could handle that).
->>
->> Opinions?
-> 
-> BUG_ON(in_interrupt()) :)
+> Perhaps /proc/interrupts will confirm or deny this?
 
-Good point Andrew, it'd be better to "document" the restriction (since
-the use is non-sensical). It's actually not CFQ code that does this,
-it's the io context management.
+On the kernel without the patch set the dummy-RTC timer interrupt received
+30876 interrupts in a 30s period which is within measurement uncertainty of
+the expected 30*1024 = 30720 interrupts.
 
-Excuse the crappy mailer, but something ala:
+On the kernel with the patch set the dummy-RTC timer interrupt received 14419 
+interrupts on CPU-1, 13935 interrupts on CPU-2 and 2619 interrupts on CPU-3
+over a 30s period.
 
-diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 9c4bb82..bcb9b17 100644
---- a/block/blk-ioc.c
-+++ b/block/blk-ioc.c
-@@ -366,7 +366,7 @@ struct io_cq *ioc_create_icq(struct io_context *ioc,
-struct
-        if (!icq)
-                return NULL;
-
--       if (radix_tree_preload(gfp_mask) < 0) {
-+       if ((gfp_mask & __GFP_WAIT) && radix_tree_preload(gfp_mask) < 0) {
-                kmem_cache_free(et->icq_cache, icq);
-                return NULL;
-        }
-@@ -394,7 +394,10 @@ struct io_cq *ioc_create_icq(struct io_context
-*ioc, struct
-
-        spin_unlock(&ioc->lock);
-        spin_unlock_irq(q->queue_lock);
--       radix_tree_preload_end();
-+
-+       if (gfp_mask & __GFP_WAIT)
-+               radix_tree_preload_end();
-+
-        return icq;
- }
-
-
-
--- 
-Jens Axboe
-
+Cheers
+Michael.
