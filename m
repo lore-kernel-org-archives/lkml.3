@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab3GRICc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:02:32 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:39845 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3GRIC2 (ORCPT
+	id S1756796Ab3GRIEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:04:31 -0400
+Received: from 14.mo5.mail-out.ovh.net ([188.165.51.82]:44391 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751485Ab3GRIE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:02:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <51E72752.9020206@zytor.com>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
-	<20130716004727.b60b2c96.akpm@linux-foundation.org>
-	<20130716005611.e4ccab02.akpm@linux-foundation.org>
-	<201307161008.07643.yann.morin.1998@free.fr>
-	<20130716180408.GA19863@merkur.ravnborg.org>
-	<20130717211649.GA5619@merkur.ravnborg.org>
-	<20130717223033.GF3385@free.fr>
-	<51E72752.9020206@zytor.com>
-Date: Thu, 18 Jul 2013 10:02:27 +0200
-X-Google-Sender-Auth: cKLzLhKDzr5A1dB4-CruWLhVI_g
-Message-ID: <CAMuHMdVo3rnTtXUZOZavdjJ4uHv4KYPA5g1Py6GTdZD3dPwFzQ@mail.gmail.com>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, Sam Ravnborg <sam@ravnborg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kyungsik Lee <kyungsik.lee@lge.com>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        hyojun.im@lge.com, chan.jeong@lge.com,
-        Andy Lee <raphael.andy.lee@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, Borislav Petkov <bp@alien8.de>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 18 Jul 2013 04:04:27 -0400
+X-Greylist: delayed 1909 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Jul 2013 04:04:27 EDT
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: [PATCH v4 1/5] ARM: at91/tc/clocksource: replace clk_enable/disable with clk_prepare_enable/disable_unprepare.
+Date: Thu, 18 Jul 2013 09:58:11 +0200
+Message-Id: <1374134291-27704-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
+References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 11530340947863304300
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrvdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 1:22 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> It is worth noting that one of the things that keep getting brought up
-> as something that need this is gcc/binutils support for a specific feature.
+Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+avoid common clk framework warnings.
 
-Yeah, then those tests would be run only once, at kconfig time. I guess we
-still run some of them many times, due to the use of recursive make?
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/clocksource/tcb_clksrc.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Note that these will end up in your .config --- which is not necesarily a bad
-thing --- but it does mean that if e.g. you sent me your .config,
-several options
-may change when I try to use it.
+diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+index 8a61872..229c019 100644
+--- a/drivers/clocksource/tcb_clksrc.c
++++ b/drivers/clocksource/tcb_clksrc.c
+@@ -100,7 +100,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+ 			|| tcd->clkevt.mode == CLOCK_EVT_MODE_ONESHOT) {
+ 		__raw_writel(0xff, regs + ATMEL_TC_REG(2, IDR));
+ 		__raw_writel(ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(2, CCR));
+-		clk_disable(tcd->clk);
++		clk_disable_unprepare(tcd->clk);
+ 	}
+ 
+ 	switch (m) {
+@@ -109,7 +109,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+ 	 * of oneshot, we get lower overhead and improved accuracy.
+ 	 */
+ 	case CLOCK_EVT_MODE_PERIODIC:
+-		clk_enable(tcd->clk);
++		clk_prepare_enable(tcd->clk);
+ 
+ 		/* slow clock, count up to RC, then irq and restart */
+ 		__raw_writel(timer_clock
+@@ -126,7 +126,7 @@ static void tc_mode(enum clock_event_mode m, struct clock_event_device *d)
+ 		break;
+ 
+ 	case CLOCK_EVT_MODE_ONESHOT:
+-		clk_enable(tcd->clk);
++		clk_prepare_enable(tcd->clk);
+ 
+ 		/* slow clock, count up to RC, then irq and stop */
+ 		__raw_writel(timer_clock | ATMEL_TC_CPCSTOP
+@@ -275,7 +275,7 @@ static int __init tcb_clksrc_init(void)
+ 	pdev = tc->pdev;
+ 
+ 	t0_clk = tc->clk[0];
+-	clk_enable(t0_clk);
++	clk_prepare_enable(t0_clk);
+ 
+ 	/* How fast will we be counting?  Pick something over 5 MHz.  */
+ 	rate = (u32) clk_get_rate(t0_clk);
+@@ -313,7 +313,7 @@ static int __init tcb_clksrc_init(void)
+ 		/* tclib will give us three clocks no matter what the
+ 		 * underlying platform supports.
+ 		 */
+-		clk_enable(tc->clk[1]);
++		clk_prepare_enable(tc->clk[1]);
+ 		/* setup both channel 0 & 1 */
+ 		tcb_setup_dual_chan(tc, best_divisor_idx);
+ 	}
+-- 
+1.7.9.5
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
