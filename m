@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab3GRXDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:03:52 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:55638 "EHLO smtp.outflux.net"
+	id S933581Ab3GRXEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:04:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16127 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab3GRXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:03:51 -0400
-Date: Thu, 18 Jul 2013 16:03:12 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Vikram Mulukutla <markivx@codeaurora.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH] panic: call panic handlers before kmsg_dump
-Message-ID: <20130718230312.GA22348@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S1759404Ab3GRXEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 19:04:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
+   d="scan'208";a="333573817"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, eranian@google.com
+Subject: [PATCH] perf, x86: Enable PEBS mode automatically for mem-{loads,stores} v3
+Date: Thu, 18 Jul 2013 16:03:39 -0700
+Message-Id: <1374188619-19220-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the panic handlers may produce additional information (via printk)
-for the kernel log, it should be reported as part of the panic output
-saved by kmsg_dump(). Without this re-ordering, nothing that adds
-information to a panic will show up in pstore's view when kmsg_dump
-runs, and is therefore not visible to crash reporting tools that examine
-pstore output.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+[The patch to enable this in the user tools has been sent separately]
+
+With the earlier patches to automatically try cpu// and add
+a precise sys attribute, we can now enable PEBS for the mem-loads,
+mem-stores events everywhere.
+
+This allows to use
+
+perf record -e mem-loads ...
+
+instead of
+
+perf record -e cpu/mem-loads/p ...
+
+Always use precise=2 even though it is costly pre-Haswell
+
+Cc: eranian@google.com
+v2: Different white space
+v3: Always use precise=2, as people seem to think overhead doesn't matter.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- kernel/panic.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 8018646..b6c482c 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -123,10 +123,14 @@ void panic(const char *fmt, ...)
- 	 */
- 	smp_send_stop();
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index fbc9210..ef9236b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -176,9 +176,12 @@ static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
+ 	EVENT_EXTRA_END
+ };
  
--	kmsg_dump(KMSG_DUMP_PANIC);
--
-+	/*
-+	 * Run any panic handlers, including those that might need to
-+	 * add information to the kmsg dump output.
-+	 */
- 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
+-EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
+-EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
+-EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
++EVENT_ATTR_STR(mem-loads, mem_ld_nhm,
++		"event=0x0b,umask=0x10,ldlat=3,precise=2");
++EVENT_ATTR_STR(mem-loads, mem_ld_snb,
++		"event=0xcd,umask=0x1,ldlat=3,precise=2");
++EVENT_ATTR_STR(mem-stores, mem_st_snb,
++		"event=0xcd,umask=0x2,precise=2");
  
-+	kmsg_dump(KMSG_DUMP_PANIC);
-+
- 	bust_spinlocks(0);
+ struct attribute *nhm_events_attrs[] = {
+ 	EVENT_PTR(mem_ld_nhm),
+@@ -2034,8 +2037,9 @@ static __init void intel_nehalem_quirk(void)
+ 	}
+ }
  
- 	if (!panic_blink)
+-EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
+-EVENT_ATTR_STR(mem-stores,     mem_st_hsw,     "event=0xd0,umask=0x82")
++EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,
++		"event=0xcd,umask=0x1,ldlat=3,precise=2");
++EVENT_ATTR_STR(mem-stores,     mem_st_hsw,  "event=0xd0,umask=0x82,precise=2")
+ 
+ static struct attribute *hsw_events_attrs[] = {
+ 	EVENT_PTR(mem_ld_hsw),
 -- 
-1.7.9.5
+1.8.1.4
 
-
--- 
-Kees Cook
-Chrome OS Security
