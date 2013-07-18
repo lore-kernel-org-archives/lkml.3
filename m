@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758686Ab3GROY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:24:57 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:53829 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab3GROY4 (ORCPT
+	id S1758956Ab3GROZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:25:29 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:44444 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758412Ab3GROZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:24:56 -0400
-Date: Thu, 18 Jul 2013 16:24:51 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 6/7] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130718142450.GB7398@somewhere>
-References: <20130709012934.GA26058@linux.vnet.ibm.com>
- <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1373333406-26979-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130717233119.GA2801@somewhere>
- <20130718004141.GI4161@linux.vnet.ibm.com>
- <20130718013259.GA7398@somewhere>
- <20130718033921.GL4161@linux.vnet.ibm.com>
+	Thu, 18 Jul 2013 10:25:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718033921.GL4161@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130718135650.GD29153@e106331-lin.cambridge.arm.com>
+References: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
+	<1374067396-30155-1-git-send-email-jonas.jensen@gmail.com>
+	<20130718095035.GA29153@e106331-lin.cambridge.arm.com>
+	<CACmBeS2SnpiUtiQD6j9qyaXZ5-chHSHVeo4c5=UhitVonvkKtw@mail.gmail.com>
+	<20130718110201.GB29153@e106331-lin.cambridge.arm.com>
+	<CACmBeS24smrJ4SLY7snv1_6SRcuXRkZ8t0PGMvBupUpKMMb43w@mail.gmail.com>
+	<20130718135650.GD29153@e106331-lin.cambridge.arm.com>
+Date: Thu, 18 Jul 2013 16:25:27 +0200
+Message-ID: <CACmBeS2rBTtyfzUgB41zXkDC5-DRcvArgeyjbqHQHXO5+QLvmA@mail.gmail.com>
+Subject: Re: [PATCH v3] clk: add MOXA ART SoCs clock driver
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 08:39:21PM -0700, Paul E. McKenney wrote:
-> On Thu, Jul 18, 2013 at 03:33:01AM +0200, Frederic Weisbecker wrote:
-> > So it's like:
-> > 
-> >     CPU 0                                              CPU 1
-> > 
-> >     read I                                             write I
-> >     smp_mb()                                           smp_mb()
-> >     cmpxchg S                                          read S
-> > 
-> > I still can't find what guarantees we don't read a value in CPU 1 that is way below
-> > what we want.
-> 
-> One key point is that there is a second cycle from LONG to FULL.
-> 
-> (Not saying that there is not a bug -- there might well be.  In fact,
-> I am starting to think that I need to do another Promela model...
+On 18 July 2013 15:56, Mark Rutland <mark.rutland@arm.com> wrote:
+> When you say look up the apb-clock node, I assume they find it via their
+> clocks property with of_clk_get or similar, rather than scanning the
+> tree for a "moxart,moxa-apb-clock" node specifically?
 
-Now I'm very confused :)
+Yes, all use of_clk_get(node, 0), which is fortunate because e.g.
+clocksource is already merged with linaro's clockevent drivers tree.
 
-I'm far from being a specialist on these matters but I would really love to
-understand this patchset. Is there any documentation somewhere I can read
-that could help, something about cycles of committed memory or something?
+That should mean I can get away with only changing the DT files :)
+
+> Given the above, I think it would make more sense to have core-clock
+> registered, and have it passed to the devices currently passed
+> apb-clock.
+
+OK, I'll return with an updated version.
 
 
-> 
-> > > Unfortunately, the reasoning in #2 above does not hold in the small-CPU
-> > > case because there is the possibility of both the timekeeping CPU and
-> > > the RCU grace-period kthread concurrently advancing the state machine.
-> > > This would be bad, good catch!!!
-> > 
-> > It's not like I spotted anything myself but you're welcome :)
-> 
-> I will take them any way I can get them.  ;-)
-> 
-> > > The patch below (untested) is an attempt to fix this.  If it actually
-> > > works, I will merge it in with 6/7.
-> > > 
-> > > Anything else I missed?  ;-)
-> > 
-> > Well I guess I'll wait one more night before trying to understand
-> > the below ;)
-> 
-> The key point is that the added check means that either the timekeeping
-> CPU is advancing the state machine (if there are few CPUs) or the
-> RCU grace-period kthread is (if there are many CPUs), but never both.
-> Or that is the intent, anyway!
-
-Yeah got that.
-
-Thanks!
+Best regards,
+Jonas
