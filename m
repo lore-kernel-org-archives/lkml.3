@@ -1,186 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964871Ab3GRSyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 14:54:53 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:56265 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759061Ab3GRSyw (ORCPT
+	id S933471Ab3GRS4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 14:56:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57810 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812Ab3GRS4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 14:54:52 -0400
-From: Alexander Z Lam <azl@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>
-Subject: [PATCH v3] tracing: Miscellaneous fixes for trace_array ref counting
-Date: Thu, 18 Jul 2013 11:18:44 -0700
-Message-Id: <1374171524-11948-1-git-send-email-azl@google.com>
-X-Mailer: git-send-email 1.8.3
+	Thu, 18 Jul 2013 14:56:47 -0400
+Message-ID: <51E83A4F.5080904@ti.com>
+Date: Thu, 18 Jul 2013 13:56:15 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <balbi@ti.com>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com>
+In-Reply-To: <1374165830-6367-2-git-send-email-r.sricharan@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some error paths did not handle ref counting properly, and some trace files need
-ref counting.
+On 07/18/2013 11:43 AM, Sricharan R wrote:
+> Some socs have a large number of interrupts/dma requests to service
+> the needs of its many peripherals and subsystems. All of the
+> requests lines from the subsystems are not needed at the same
+> time, so they have to be muxed to the controllers appropriately.
+> In such places a interrupt/dma controllers are preceded by an
+> IRQ/DMA CROSSBAR that provides flexibility in muxing the device
+> requests to the controller inputs.
+>
+> The Peripheral irq/dma requests are connected to one crossbar's input
+> and the output of the crossbar is connected to controller's input
+> line. On POR, there are some mappings which are done by default.
+> Those peripherals which do not have a mapping on POR, should be configured
+> to route its requests using the crossbar.
+>
+> The drivers identifies every controller's crossbar as individual devices.
+> The mappings can be specified from the DT crossbar nodes and those gets mapped
+> during the crossbar device's probe. The mappings can also be specified by adding
+> the crossbar lines to the peripheral device nodes and map it with
+> crossbar_map/unmap apis.
+>
+> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> ---
+>   .../devicetree/bindings/arm/omap/crossbar.txt      |   24 ++
+>   drivers/misc/Kconfig                               |    8 +
+>   drivers/misc/Makefile                              |    1 +
+>   drivers/misc/crossbar.c                            |  258 ++++++++++++++++++++
+>   include/linux/crossbar.h                           |   71 ++++++
+>   5 files changed, 362 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
+>   create mode 100644 drivers/misc/crossbar.c
+>   create mode 100644 include/linux/crossbar.h
+>
+> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+> new file mode 100644
+> index 0000000..02a8a28
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
+> @@ -0,0 +1,24 @@
+> +* TI - IRQ/DMA Crossbar
+> +
+> +This version is an implementation of the Crossbar IRQ/DMA IP
+> +
+> +Required properties:
+> +- compatible : Should be "ti,dra-crossbar"
+> +- crossbar-name: Name of the controller to which crossbar output is routed
+> +- reg:	Contains crossbar register address range
+> +- reg-width: Represents the width of the individual registers
+> +- crossbar-lines:  Default mappings.Should contain the crossbar-name
+> +		   device name, int/dma request number, crossbar number,
+> +		   register offset in the same order.
+> +
+> +Examples:
+> +		crossbar_mpu: mpuirq@4a002a48 {
+> +			compatible = "crossbar";
+> +			crossbar-name = "mpu-irq";
+> +			reg = <0x4a002a48 0x0130>;
+> +			reg-width = <16>;
+> +			crossbar-lines = "mpu-irq", "rtc-ss-alarm", <0x9f 0xd9 0x12c>,
+> +					 "mpu-irq", "mcasp3-arevt", <0x9e 0x96 0x12a>,
+> +					 "mpu-irq", "mcasp3-axevt", <0x9d 0x97 0x128>;
+> +		};
 
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Cc: Alexander Z Lam <lambchop468@gmail.com>
-Signed-off-by: Alexander Z Lam <azl@google.com>
----
- kernel/trace/trace.c        | 24 ++++++++++++++++++------
- kernel/trace/trace_events.c | 21 +++++++++++++++++++--
- 2 files changed, 37 insertions(+), 8 deletions(-)
+I carry forward my TI internal objection to this approach:
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 0cd500b..18f23b2 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3008,7 +3008,6 @@ static int tracing_release(struct inode *inode, struct file *file)
- 
- 	iter = m->private;
- 	tr = iter->tr;
--	trace_array_put(tr);
- 
- 	mutex_lock(&trace_types_lock);
- 
-@@ -3023,6 +3022,9 @@ static int tracing_release(struct inode *inode, struct file *file)
- 	if (!iter->snapshot)
- 		/* reenable tracing if it was previously enabled */
- 		tracing_start_tr(tr);
-+
-+	__trace_array_put(tr);
-+
- 	mutex_unlock(&trace_types_lock);
- 
- 	mutex_destroy(&iter->mutex);
-@@ -3447,6 +3449,7 @@ tracing_trace_options_write(struct file *filp, const char __user *ubuf,
- static int tracing_trace_options_open(struct inode *inode, struct file *file)
- {
- 	struct trace_array *tr = inode->i_private;
-+	int ret;
- 
- 	if (tracing_disabled)
- 		return -ENODEV;
-@@ -3454,7 +3457,11 @@ static int tracing_trace_options_open(struct inode *inode, struct file *file)
- 	if (trace_array_get(tr) < 0)
- 		return -ENODEV;
- 
--	return single_open(file, tracing_trace_options_show, inode->i_private);
-+	ret = single_open(file, tracing_trace_options_show, inode->i_private);
-+	if (ret < 0)
-+		trace_array_put(tr);
-+
-+	return ret;
- }
- 
- static const struct file_operations tracing_iter_fops = {
-@@ -3958,6 +3965,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
- 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
- 	if (!iter) {
- 		ret = -ENOMEM;
-+		__trace_array_put(tr);
- 		goto out;
- 	}
- 
-@@ -4704,21 +4712,24 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
- 			ret = PTR_ERR(iter);
- 	} else {
- 		/* Writes still need the seq_file to hold the private data */
-+		ret = -ENOMEM;
- 		m = kzalloc(sizeof(*m), GFP_KERNEL);
- 		if (!m)
--			return -ENOMEM;
-+			goto out;
- 		iter = kzalloc(sizeof(*iter), GFP_KERNEL);
- 		if (!iter) {
- 			kfree(m);
--			return -ENOMEM;
-+			goto out;
- 		}
-+		ret = 0;
-+
- 		iter->tr = tr;
- 		iter->trace_buffer = &tc->tr->max_buffer;
- 		iter->cpu_file = tc->cpu;
- 		m->private = iter;
- 		file->private_data = m;
- 	}
--
-+out:
- 	if (ret < 0)
- 		trace_array_put(tr);
- 
-@@ -5328,9 +5339,10 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
- }
- 
- static const struct file_operations tracing_stats_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_open_generic_tc,
- 	.read		= tracing_stats_read,
- 	.llseek		= generic_file_llseek,
-+	.release	= tracing_release_generic_tc,
- };
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 7d85429..7a75cb2 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1218,6 +1218,7 @@ show_header(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
- 
- static int ftrace_event_avail_open(struct inode *inode, struct file *file);
- static int ftrace_event_set_open(struct inode *inode, struct file *file);
-+static int ftrace_event_release(struct inode *inode, struct file *file);
- 
- static const struct seq_operations show_event_seq_ops = {
- 	.start = t_start,
-@@ -1245,7 +1246,7 @@ static const struct file_operations ftrace_set_event_fops = {
- 	.read = seq_read,
- 	.write = ftrace_event_write,
- 	.llseek = seq_lseek,
--	.release = seq_release,
-+	.release = ftrace_event_release,
- };
- 
- static const struct file_operations ftrace_enable_fops = {
-@@ -1323,6 +1324,15 @@ ftrace_event_open(struct inode *inode, struct file *file,
- 	return ret;
- }
- 
-+static int ftrace_event_release(struct inode *inode, struct file *file)
-+{
-+	struct trace_array *tr = inode->i_private;
-+
-+	trace_array_put(tr);
-+
-+	return seq_release(inode, file);
-+}
-+
- static int
- ftrace_event_avail_open(struct inode *inode, struct file *file)
- {
-@@ -1336,12 +1346,19 @@ ftrace_event_set_open(struct inode *inode, struct file *file)
- {
- 	const struct seq_operations *seq_ops = &show_set_event_seq_ops;
- 	struct trace_array *tr = inode->i_private;
-+	int ret;
-+
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
- 
- 	if ((file->f_mode & FMODE_WRITE) &&
- 	    (file->f_flags & O_TRUNC))
- 		ftrace_clear_events(tr);
- 
--	return ftrace_event_open(inode, file, seq_ops);
-+	ret = ftrace_event_open(inode, file, seq_ops);
-+	if (ret < 0)
-+		trace_array_put(tr);
-+	return ret;
- }
- 
- static struct event_subsystem *
+NAK.
+
+DRA7 uses a cross bar to map a line to GIC interrupt. Flow of interrupt 
+is as follows:
+hardware IP block -interrupt line-> IRQ Cross bar -> GIC IRQ line --> 
+MPU IRQ.
+
+
+What we have done today for DRA is to provide IRQ numbers as direct maps 
+from hardware IP block to GIC based on default IRQ cross bar mapping.
+
+Lets see what happens as a result of this:
+
+https://patchwork.kernel.org/patch/2825148/ (introducing DTS for DRA7)
+uart1 to uart6 is defined. while in fact 10 uarts exist on IP block.
+uart1: serial@4806a000 {
+<snip>
++			interrupts = <0 72 0x4>;
+Assumes that GIC interrupt by default mapping used.
+
+Now, think of a product that wants to use UART10 instead of UART1, SoC 
+design allows you do that by doing a remapping of GIC interrupt to 
+UART10 - which is awesome.
+
+Option 1: u-boot/bootloader
+mw.l IRQ_CROSSBAR_address with value to map uart10 to GIC IRQ for UART1,
+
+Option 2: in kernel do a raw_writel version of option 1.
+This patch does option 1 in kernel in a "fancy way" - why the heck would 
+I want to do that when u-boot allows me to do the same thing in uEnv.txt
+
+Option 3: map GIC interrupt to IRQ CROSS bar dynamically.
+a) Allows us to define every single IP available on DRA7 SoC.
+b) GIC allocation happens dynamically
+c) allow products use IPs as needed.
+
+Sorry, Conceptually option 3 is the right approach in my view.
+instead of doing
+uart1: serial@4806a000 {
+<snip>
++			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+
+we should be able to do the following:
+uart1: serial@4806a000 {
+<snip>
++			interrupts = <TI_IRQ_CROSSBAR 192 IRQ_TYPE_LEVEL_HIGH>;
+
+and not worry about the GIC interrupt number used
+
+
 -- 
-1.8.3
-
+Regards,
+Nishanth Menon
