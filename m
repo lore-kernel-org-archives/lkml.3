@@ -1,56 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab3GRA6H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 20:58:07 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:46292 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756626Ab3GRA6E (ORCPT
+	id S1758025Ab3GRBA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 21:00:26 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:49710 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757723Ab3GRBAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 20:58:04 -0400
-Date: Wed, 17 Jul 2013 17:58:13 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Dave Hansen <dave@sr71.net>
-cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] thp, mm: locking tail page is a bug
-In-Reply-To: <51E71E29.6030703@sr71.net>
-Message-ID: <alpine.LNX.2.00.1307171747210.23502@eggly.anvils>
-References: <1373885274-25249-1-git-send-email-kirill.shutemov@linux.intel.com> <1373885274-25249-6-git-send-email-kirill.shutemov@linux.intel.com> <20130717140953.7560e88e607f8f5df1b1fdd8@linux-foundation.org> <51E71E29.6030703@sr71.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 17 Jul 2013 21:00:23 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1395739.1IFp3cq75N@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan>
+	<3718119.FLASu5DBx8@vostro.rjw.lan>
+	<2366394.4EoP1MXmG2@vostro.rjw.lan>
+	<1395739.1IFp3cq75N@vostro.rjw.lan>
+Date: Wed, 17 Jul 2013 18:00:23 -0700
+X-Google-Sender-Auth: YY5CJZnNsGxz2n28jlAJBmW2DiI
+Message-ID: <CAE9FiQW-Hvi-_OrTZDXPvGajY9nDybwRbXRkiy1kp1YEeiDqKQ@mail.gmail.com>
+Subject: Re: [PATCH 1/30] ACPI / PCI: Make bus registration and unregistration symmetric
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013, Dave Hansen wrote:
-> On 07/17/2013 02:09 PM, Andrew Morton wrote:
-> > lock_page() is a pretty commonly called function, and I assume quite a
-> > lot of people run with CONFIG_DEBUG_VM=y.
-> > 
-> > Is the overhead added by this patch really worthwhile?
-> 
-> I always thought of it as a developer-only thing.  I don't think any of
-> the big distros turn it on by default.
+On Wed, Jul 17, 2013 at 4:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Since acpi_pci_slot_enumerate() and acpiphp_enumerate_slots() can get
+> the ACPI device handle they need from bus->bridge, it is not
+> necessary to pass that handle to them as an argument.
+>
+> Drop the second argument of acpi_pci_slot_enumerate() and
+> acpiphp_enumerate_slots(), rework them to obtain the ACPI handle
+> from bus->bridge and make acpi_pci_add_bus() and
+> acpi_pci_remove_bus() entirely symmetrical.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/pci_slot.c            |   14 +++++++++-----
+>  drivers/pci/hotplug/acpiphp_glue.c |    6 ++++--
+>  drivers/pci/pci-acpi.c             |   16 ++++------------
+>  include/linux/pci-acpi.h           |   10 ++++------
+>  4 files changed, 21 insertions(+), 25 deletions(-)
+>
+> Index: linux-pm/drivers/acpi/pci_slot.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/pci_slot.c
+> +++ linux-pm/drivers/acpi/pci_slot.c
+> @@ -159,12 +159,16 @@ register_slot(acpi_handle handle, u32 lv
+>         return AE_OK;
+>  }
+>
+> -void acpi_pci_slot_enumerate(struct pci_bus *bus, acpi_handle handle)
+> +void acpi_pci_slot_enumerate(struct pci_bus *bus)
+>  {
+> -       mutex_lock(&slot_list_lock);
+> -       acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
+> -                           register_slot, NULL, bus, NULL);
+> -       mutex_unlock(&slot_list_lock);
+> +       acpi_handle handle = ACPI_HANDLE(bus->bridge);
+> +
+> +       if (handle) {
+> +               mutex_lock(&slot_list_lock);
+> +               acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
+> +                                   register_slot, NULL, bus, NULL);
+> +               mutex_unlock(&slot_list_lock);
+> +       }
+>  }
+>
+>  void acpi_pci_slot_remove(struct pci_bus *bus)
+> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -1147,14 +1147,16 @@ static void handle_hotplug_event_func(ac
+>   * Create hotplug slots for the PCI bus.
+>   * It should always return 0 to avoid skipping following notifiers.
+>   */
+> -void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
+> +void acpiphp_enumerate_slots(struct pci_bus *bus)
+>  {
+> +       acpi_handle handle;
+>         struct acpiphp_bridge *bridge;
+>
+>         if (acpiphp_disabled)
+>                 return;
+>
+> -       if (detect_ejectable_slots(handle) <= 0)
+> +       handle = ACPI_HANDLE(bus->bridge);
+> +       if (!handle || detect_ejectable_slots(handle) <= 0)
+>                 return;
+>
+>         bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
+> Index: linux-pm/drivers/pci/pci-acpi.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/pci-acpi.c
+> +++ linux-pm/drivers/pci/pci-acpi.c
+> @@ -290,24 +290,16 @@ static struct pci_platform_pm_ops acpi_p
+>
+>  void acpi_pci_add_bus(struct pci_bus *bus)
+>  {
+> -       acpi_handle handle = NULL;
+> -
+> -       if (bus->bridge)
+> -               handle = ACPI_HANDLE(bus->bridge);
+> -       if (acpi_pci_disabled || handle == NULL)
+> +       if (acpi_pci_disabled || !bus->bridge)
+>                 return;
+>
+> -       acpi_pci_slot_enumerate(bus, handle);
+> -       acpiphp_enumerate_slots(bus, handle);
+> +       acpi_pci_slot_enumerate(bus);
+> +       acpiphp_enumerate_slots(bus);
+>  }
+>
+>  void acpi_pci_remove_bus(struct pci_bus *bus)
+>  {
+> -       /*
+> -        * bus->bridge->acpi_node.handle has already been reset to NULL
+> -        * when acpi_pci_remove_bus() is called, so don't check ACPI handle.
+> -        */
+> -       if (acpi_pci_disabled)
+> +       if (acpi_pci_disabled || !bus->bridge)
+>                 return;
 
-That's how I think of it too (and the problem is often that too few mm
-developers turn it on); but Dave Jones did confirm last November that
-Fedora turns it on.
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-I believe Fedora turns it on to help us all, and wouldn't mind a mere
-VM_BUG_ON(PageTail(page)) in __lock_page() if it's helpful to Kirill.
-
-But if VM_BUG_ONs become expensive, I do think it's for Fedora to
-turn off CONFIG_DEBUG_VM, rather than for mm developers to avoid it.
-
-Hugh
+>
+>         acpiphp_remove_slots(bus);
+> Index: linux-pm/include/linux/pci-acpi.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/pci-acpi.h
+> +++ linux-pm/include/linux/pci-acpi.h
+> @@ -47,24 +47,22 @@ void acpi_pci_remove_bus(struct pci_bus
+>
+>  #ifdef CONFIG_ACPI_PCI_SLOT
+>  void acpi_pci_slot_init(void);
+> -void acpi_pci_slot_enumerate(struct pci_bus *bus, acpi_handle handle);
+> +void acpi_pci_slot_enumerate(struct pci_bus *bus);
+>  void acpi_pci_slot_remove(struct pci_bus *bus);
+>  #else
+>  static inline void acpi_pci_slot_init(void) { }
+> -static inline void acpi_pci_slot_enumerate(struct pci_bus *bus,
+> -                                          acpi_handle handle) { }
+> +static inline void acpi_pci_slot_enumerate(struct pci_bus *bus) { }
+>  static inline void acpi_pci_slot_remove(struct pci_bus *bus) { }
+>  #endif
+>
+>  #ifdef CONFIG_HOTPLUG_PCI_ACPI
+>  void acpiphp_init(void);
+> -void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle);
+> +void acpiphp_enumerate_slots(struct pci_bus *bus);
+>  void acpiphp_remove_slots(struct pci_bus *bus);
+>  void acpiphp_check_host_bridge(acpi_handle handle);
+>  #else
+>  static inline void acpiphp_init(void) { }
+> -static inline void acpiphp_enumerate_slots(struct pci_bus *bus,
+> -                                          acpi_handle handle) { }
+> +static inline void acpiphp_enumerate_slots(struct pci_bus *bus) { }
+>  static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
+>  static inline void acpiphp_check_host_bridge(acpi_handle handle) { }
+>  #endif
+>
