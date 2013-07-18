@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab3GRTuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:50:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41334 "EHLO
+	id S1759376Ab3GRTuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:50:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41333 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759287Ab3GRTuP (ORCPT
+	with ESMTP id S1759256Ab3GRTuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@linaro.org>,
-        Robert Richter <rric@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        DavidAGilbert@uk.ibm.com, Jiri Olsa <jolsa@redhat.com>,
+        Maynard Johnson <mpjohn@us.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/76] perf tools: Use default include path notation for libtraceevent headers
-Date: Thu, 18 Jul 2013 16:48:53 -0300
-Message-Id: <1374177003-3706-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/76] perf top: Add --objdump option
+Date: Thu, 18 Jul 2013 16:48:49 -0300
+Message-Id: <1374177003-3706-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -24,152 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@linaro.org>
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-Header files of libtraceevent or no longer local headers. Thus, use
-default path notation for them. Also removing extra traceevent include
-path and instead handle this similar to liblk.
+perf: Add objdump option to 'perf top'
 
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Signed-off-by: Robert Richter <rric@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
+Like with 'perf annotate' add the --objdump option to perf top so users
+can specify an alternate path to the /usr/bin/objdump binary.
+
+Reported-by: David A. Gilbert <DavidAGilbert@uk.ibm.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: DavidAGilbert@uk.ibm.com
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Robert Richter <rric@kernel.org>
-Link: http://lkml.kernel.org/r/1370964558-8599-1-git-send-email-rric@kernel.org
+Cc: Maynard Johnson <mpjohn@us.ibm.com>
+Link: http://lkml.kernel.org/r/20130515055651.GA9985@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile               | 2 +-
- tools/perf/builtin-trace.c        | 2 +-
- tools/perf/config/Makefile        | 5 +++--
- tools/perf/tests/evsel-tp-sched.c | 2 +-
- tools/perf/util/evsel.c           | 8 ++++----
- tools/perf/util/session.c         | 2 +-
- tools/perf/util/trace-event.h     | 2 +-
- 7 files changed, 12 insertions(+), 11 deletions(-)
+ tools/perf/builtin-top.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 641fccd..5b7c6db 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -281,7 +281,7 @@ LIB_H += util/cpumap.h
- LIB_H += util/top.h
- LIB_H += $(ARCH_INCLUDE)
- LIB_H += util/cgroup.h
--LIB_H += $(TRACE_EVENT_DIR)event-parse.h
-+LIB_H += $(LIB_INCLUDE)traceevent/event-parse.h
- LIB_H += util/target.h
- LIB_H += util/rblist.h
- LIB_H += util/intlist.h
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index ab3ed4a..87fc7d0 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1,3 +1,4 @@
-+#include <traceevent/event-parse.h>
- #include "builtin.h"
- #include "util/color.h"
- #include "util/evlist.h"
-@@ -5,7 +6,6 @@
- #include "util/thread.h"
- #include "util/parse-options.h"
- #include "util/thread_map.h"
--#include "event-parse.h"
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e06c4f8..a237059 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -40,6 +40,7 @@
+ #include "util/xyarray.h"
+ #include "util/sort.h"
+ #include "util/intlist.h"
++#include "arch/common.h"
  
- #include <libaudit.h>
- #include <stdlib.h>
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index b5d9238..214e17e 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -46,6 +46,8 @@ ifneq ($(obj-perf),)
- obj-perf := $(abspath $(obj-perf))/
- endif
+ #include "util/debug.h"
  
-+LIB_INCLUDE := $(srctree)/tools/lib/
+@@ -939,6 +940,12 @@ static int __cmd_top(struct perf_top *top)
+ 	if (top->session == NULL)
+ 		return -ENOMEM;
+ 
++	if (!objdump_path) {
++		ret = perf_session_env__lookup_objdump(&top->session->header.env);
++		if (ret)
++			goto out_delete;
++	}
 +
- # include ARCH specific config
- -include $(src-perf)/arch/$(ARCH)/Makefile
- 
-@@ -121,8 +123,7 @@ endif
- 
- CFLAGS += -I$(src-perf)/util
- CFLAGS += -I$(src-perf)
--CFLAGS += -I$(TRACE_EVENT_DIR)
--CFLAGS += -I$(srctree)/tools/lib/
-+CFLAGS += -I$(LIB_INCLUDE)
- 
- CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- 
-diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
-index a5d2fcc..f79e7d0 100644
---- a/tools/perf/tests/evsel-tp-sched.c
-+++ b/tools/perf/tests/evsel-tp-sched.c
-@@ -1,6 +1,6 @@
-+#include <traceevent/event-parse.h>
- #include "evsel.h"
- #include "tests.h"
--#include "event-parse.h"
- 
- static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
- 				  int size, bool should_be_signed)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index c9c7494..a635461 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -9,17 +9,17 @@
- 
- #include <byteswap.h>
- #include <linux/bitops.h>
--#include "asm/bug.h"
- #include <lk/debugfs.h>
--#include "event-parse.h"
-+#include <traceevent/event-parse.h>
-+#include <linux/hw_breakpoint.h>
-+#include <linux/perf_event.h>
-+#include "asm/bug.h"
- #include "evsel.h"
- #include "evlist.h"
- #include "util.h"
- #include "cpumap.h"
- #include "thread_map.h"
- #include "target.h"
--#include <linux/hw_breakpoint.h>
--#include <linux/perf_event.h>
- #include "perf_regs.h"
- 
- static struct {
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index cf1fe01..ad47fb9 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1,4 +1,5 @@
- #include <linux/kernel.h>
-+#include <traceevent/event-parse.h>
- 
- #include <byteswap.h>
- #include <unistd.h>
-@@ -12,7 +13,6 @@
- #include "sort.h"
- #include "util.h"
- #include "cpumap.h"
--#include "event-parse.h"
- #include "perf_regs.h"
- #include "vdso.h"
- 
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 1978c39..11eb7fd 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -1,8 +1,8 @@
- #ifndef _PERF_UTIL_TRACE_EVENT_H
- #define _PERF_UTIL_TRACE_EVENT_H
- 
-+#include <traceevent/event-parse.h>
- #include "parse-events.h"
--#include "event-parse.h"
- #include "session.h"
- 
- struct machine;
+ 	ret = perf_top__setup_sample_type(top);
+ 	if (ret)
+ 		goto out_delete;
+@@ -1114,6 +1121,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Interleave source code with assembly code (default)"),
+ 	OPT_BOOLEAN(0, "asm-raw", &symbol_conf.annotate_asm_raw,
+ 		    "Display raw encoding of assembly instructions (default)"),
++	OPT_STRING(0, "objdump", &objdump_path, "path",
++		    "objdump binary to use for disassembly and annotations"),
+ 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
+ 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
 -- 
 1.8.1.4
 
