@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965219Ab3GRVfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:35:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35554 "EHLO mx1.redhat.com"
+	id S965381Ab3GRVf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:35:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18484 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759222Ab3GRVfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:35:14 -0400
+	id S965267Ab3GRVfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 17:35:20 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
@@ -16,76 +16,124 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v3 0/8] extend hugepage migration
-Date: Thu, 18 Jul 2013 17:34:24 -0400
-Message-Id: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 8/8] prepare to remove /proc/sys/vm/hugepages_treat_as_movable
+Date: Thu, 18 Jul 2013 17:34:32 -0400
+Message-Id: <1374183272-10153-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the 3rd version of hugepage migration patchset.
-I rebased it onto v3.11-rc1 and applied most of your feedbacks.
+Now hugepages are definitely movable. So allocating hugepages from
+ZONE_MOVABLE is natural and we have no reason to keep this parameter.
+In order to allow userspace to prepare for the removal, let's leave
+this sysctl handler as noop for a while.
 
-Some works referred to in previous discussion (shown below) are not included
-in this patchset, but likely to be done after this work.
- - using page walker in check_range
- - split page table lock for pmd/pud based hugepage (maybe applicable to thp)
+ChangeLog v3:
+ - use WARN_ON_ONCE
 
-Thanks,
-Naoya Horiguchi
+ChangeLog v2:
+ - shift to noop function instead of completely removing the parameter
+ - rename patch title
 
---- General Description (exactly same with previous post) ---
-
-Hugepage migration is now available only for soft offlining (moving
-data on the half corrupted page to another page to save the data).
-But it's also useful some other users of page migration, so this
-patchset tries to extend some of such users to support hugepage.
-
-The targets of this patchset are NUMA related system calls (i.e.
-migrate_pages(2), move_pages(2), and mbind(2)), and memory hotplug.
-This patchset does not extend page migration in memory compaction,
-because I think that users of memory compaction mainly expect to
-construct thp by arranging raw pages but hugepage migration doesn't
-help it.
-CMA, another user of page migration, can have benefit from hugepage
-migration, but is not enabled to support it now. This is because
-I've never used CMA and need to learn more to extend and/or test
-hugepage migration in CMA. I'll add this in later version if it
-becomes ready, or will post as a separate patchset.
-
-Hugepage migration of 1GB hugepage is not enabled for now, because
-I'm not sure whether users of 1GB hugepage really want it.
-We need to spare free hugepage in order to do migration, but I don't
-think that users want to 1GB memory to idle for that purpose
-(currently we can't expand/shrink 1GB hugepage pool after boot).
-
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
-GitHub:
-  git://github.com/Naoya-Horiguchi/linux.git extend_hugepage_migration.v3
+ Documentation/sysctl/vm.txt | 13 ++-----------
+ mm/hugetlb.c                | 17 ++++++-----------
+ 2 files changed, 8 insertions(+), 22 deletions(-)
 
-Test code:
-  git://github.com/Naoya-Horiguchi/test_hugepage_migration_extension.git
+diff --git v3.11-rc1.orig/Documentation/sysctl/vm.txt v3.11-rc1/Documentation/sysctl/vm.txt
+index 36ecc26..6e211a1 100644
+--- v3.11-rc1.orig/Documentation/sysctl/vm.txt
++++ v3.11-rc1/Documentation/sysctl/vm.txt
+@@ -200,17 +200,8 @@ fragmentation index is <= extfrag_threshold. The default value is 500.
+ 
+ hugepages_treat_as_movable
+ 
+-This parameter is only useful when kernelcore= is specified at boot time to
+-create ZONE_MOVABLE for pages that may be reclaimed or migrated. Huge pages
+-are not movable so are not normally allocated from ZONE_MOVABLE. A non-zero
+-value written to hugepages_treat_as_movable allows huge pages to be allocated
+-from ZONE_MOVABLE.
+-
+-Once enabled, the ZONE_MOVABLE is treated as an area of memory the huge
+-pages pool can easily grow or shrink within. Assuming that applications are
+-not running that mlock() a lot of memory, it is likely the huge pages pool
+-can grow to the size of ZONE_MOVABLE by repeatedly entering the desired value
+-into nr_hugepages and triggering page reclaim.
++This parameter is obsolete and planned to be removed. The value has no effect
++on kernel's behavior.
+ 
+ ==============================================================
+ 
+diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
+index 9575e8a..aab5aef 100644
+--- v3.11-rc1.orig/mm/hugetlb.c
++++ v3.11-rc1/mm/hugetlb.c
+@@ -34,7 +34,6 @@
+ #include "internal.h"
+ 
+ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+-static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
+ 
+ int hugetlb_max_hstate __read_mostly;
+@@ -546,7 +545,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ retry_cpuset:
+ 	cpuset_mems_cookie = get_mems_allowed();
+ 	zonelist = huge_zonelist(vma, address,
+-					htlb_alloc_mask, &mpol, &nodemask);
++					GFP_HIGHUSER_MOVABLE, &mpol, &nodemask);
+ 	/*
+ 	 * A child process with MAP_PRIVATE mappings created by their parent
+ 	 * have no page reserves. This check ensures that reservations are
+@@ -562,7 +561,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
+-		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
++		if (cpuset_zone_allowed_softwall(zone, GFP_HIGHUSER_MOVABLE)) {
+ 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+ 			if (page) {
+ 				if (!avoid_reserve)
+@@ -719,7 +718,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ 		return NULL;
+ 
+ 	page = alloc_pages_exact_node(nid,
+-		htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
++		GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
+ 						__GFP_REPEAT|__GFP_NOWARN,
+ 		huge_page_order(h));
+ 	if (page) {
+@@ -944,12 +943,12 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 	spin_unlock(&hugetlb_lock);
+ 
+ 	if (nid == NUMA_NO_NODE)
+-		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
++		page = alloc_pages(GFP_HIGHUSER_MOVABLE|__GFP_COMP|
+ 				   __GFP_REPEAT|__GFP_NOWARN,
+ 				   huge_page_order(h));
+ 	else
+ 		page = alloc_pages_exact_node(nid,
+-			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
++			GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
+ 			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
+ 
+ 	if (page && arch_prepare_hugepage(page)) {
+@@ -2128,11 +2127,7 @@ int hugetlb_treat_movable_handler(struct ctl_table *table, int write,
+ 			void __user *buffer,
+ 			size_t *length, loff_t *ppos)
+ {
+-	proc_dointvec(table, write, buffer, length, ppos);
+-	if (hugepages_treat_as_movable)
+-		htlb_alloc_mask = GFP_HIGHUSER_MOVABLE;
+-	else
+-		htlb_alloc_mask = GFP_HIGHUSER;
++	WARN_ON_ONCE("This knob is obsolete and has no effect. It is scheduled for removal.\n");
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.1
 
-Naoya Horiguchi (8):
-      migrate: make core migration code aware of hugepage
-      soft-offline: use migrate_pages() instead of migrate_huge_page()
-      migrate: add hugepage migration code to migrate_pages()
-      migrate: add hugepage migration code to move_pages()
-      mbind: add hugepage migration code to mbind()
-      migrate: remove VM_HUGETLB from vma flag check in vma_migratable()
-      memory-hotplug: enable memory hotplug to handle hugepage
-      prepare to remove /proc/sys/vm/hugepages_treat_as_movable
-
- Documentation/sysctl/vm.txt |  13 +----
- include/linux/hugetlb.h     |  15 +++++
- include/linux/mempolicy.h   |   2 +-
- include/linux/migrate.h     |   5 --
- mm/hugetlb.c                | 130 +++++++++++++++++++++++++++++++++++++++-----
- mm/memory-failure.c         |  15 ++++-
- mm/memory.c                 |  12 +++-
- mm/memory_hotplug.c         |  42 +++++++++++---
- mm/mempolicy.c              |  43 +++++++++++++--
- mm/migrate.c                |  51 ++++++++---------
- mm/page_alloc.c             |  12 ++++
- mm/page_isolation.c         |   5 ++
- 12 files changed, 267 insertions(+), 78 deletions(-)
