@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934611Ab3GRWn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:43:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22415 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933668Ab3GRWnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:43:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
-   d="scan'208";a="372640283"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        h.mitake@gmail.com, kirill.shutemov@linux.intel.com
-Subject: [PATCH] perf, tools, bench: Fix memcpy benchmark for large sizes v2
-Date: Thu, 18 Jul 2013 15:43:18 -0700
-Message-Id: <1374187398-14234-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1759277Ab3GRWpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:45:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36090 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab3GRWps (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:45:48 -0400
+Date: Thu, 18 Jul 2013 15:45:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Cc: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        koen@dominion.thruhere.net
+Subject: Re: [PATCH 01/15] MFD: ti_tscadc: disable TSC config registers in
+ adc mode
+Message-ID: <20130718224555.GA7116@kroah.com>
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1374186086-5015-2-git-send-email-zubair.lutfullah@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374186086-5015-2-git-send-email-zubair.lutfullah@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Jul 18, 2013 at 11:21:12PM +0100, Zubair Lutfullah wrote:
+> From: "Patil, Rachna" <rachna@ti.com>
+> 
+> AFE Pen Ctrl and TouchScreen transistors enabling is not
+> required when only ADC mode is being used, so check for availability of
+> TSC driver before accessing control register.
+> 
+> Signed-off-by: Patil, Rachna <rachna@ti.com>
 
-glibc calloc() has an optimization to not explicitely memset()
-very large calloc allocations that just came from mmap(),
-because they are known to be zero.
+Did Rachna really sign off on this, and the other, patches?  Or did they
+just author them and place them somewhere on the web?  You can't add
+other people's signed-off-by lines, that's not allowed for obvious
+reasons (read what Signed-off-by: means in the
+Documentation/SubmittingPatches file if you are curious.)
 
-This could result in the perf memcpy benchmark reading only from
-the zero page, which gives unrealistic results.
+thanks,
 
-Always call memset explicitly on the source area to avoid this problem.
-
-Cc: h.mitake@gmail.com
-Cc: kirill.shutemov@linux.intel.com
-v2: Actually memset the right area and also fix the NULL check before.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/bench/mem-memcpy.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 93c83e3..0887b46 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -115,8 +115,10 @@ static void alloc_mem(void **dst, void **src, size_t length)
- 		die("memory allocation failed - maybe length is too large?\n");
- 
- 	*src = zalloc(length);
--	if (!src)
-+	if (!*src)
- 		die("memory allocation failed - maybe length is too large?\n");
-+	/* Make sure to always replace the zero pages even if MMAP_THRESH is crossed */
-+	memset(*src, 0, length);
- }
- 
- static u64 do_memcpy_cycle(memcpy_t fn, size_t len, bool prefault)
--- 
-1.8.1.4
-
+greg k-h
