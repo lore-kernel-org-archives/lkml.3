@@ -1,249 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934446Ab3GRVwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:52:43 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:62041 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881Ab3GRVwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:52:40 -0400
-Message-ID: <51E863AC.3030202@cogentembedded.com>
-Date: Fri, 19 Jul 2013 01:52:44 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: phil.edworthy@renesas.com
-CC: Max Filippov <max.filippov@cogentembedded.com>, djbw@fb.com,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-sh-owner@vger.kernel.org, vinod.koul@intel.com
-Subject: Re: [PATCH] dma: add driver for R-Car HPB-DMAC
-References: <201306300015.50713.sergei.shtylyov@cogentembedded.com> <OF8D49C605.99A1CBE3-ON80257B9B.003FC397-80257B9B.004368CF@eu.necel.com>
-In-Reply-To: <OF8D49C605.99A1CBE3-ON80257B9B.003FC397-80257B9B.004368CF@eu.necel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759466Ab3GRVxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:53:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49953 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759308Ab3GRVxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 17:53:41 -0400
+Date: Fri, 19 Jul 2013 07:53:25 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PULL REQUEST] 3 md bug fixes for 3.11 (and 3.10.y)
+Message-ID: <20130719075325.5e5a9f80@notabene.brown>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/n55vc0732+H65odkXaw0pxW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+--Sig_/n55vc0732+H65odkXaw0pxW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 07/01/2013 04:16 PM, phil.edworthy@renesas.com wrote:
 
-> Hi Max, Sergei,
+Sorry boss, back at work now boss.  Here's them nice shiny patches ya wante=
+d.
+All nicely tagged and justified for -stable and everyfing.
 
-> Thanks for your work on this.
+[And to linux-raid people: please don't use 3.10, or 3.10.1.  The result
+ probably wouldn't be catastrophic, but it could be uncomfortable]
 
->> Add support for HPB-DMAC found in Renesas R-Car SoCs, using 'shdma-base' DMA
->> driver framework.
+NeilBrown
 
->> Based on the original patch by Phil Edworthy <phil.edworthy@renesas.com>.
 
->> Signed-off-by: Max Filippov <max.filippov@cogentembedded.com>
->> [Sergei: removed useless #include, sorted #include's, fixed HPB_DMA_TCR_MAX,
->> fixed formats and removed line breaks in the dev_dbg() calls, rephrased and
->> added IRQ # to the shdma_request_irq() failure message, added MODULE_AUTHOR(),
->> fixed guard macro name in the header file, fixed #define ASYNCRSTR_ASRST20,
->> added #define ASYNCRSTR_ASRST24, beautified some commets.]
->> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+The following changes since commit 47188d39b5deeebf41f87a02af1b3935866364cf:
 
-    Please don't quote the text you're not replying to, else it makes me 
-scroll and scroll and scroll in search of your remarks (and then remove the 
-unanswered text myself).
+  Merge tag 'ext4_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/g=
+it/tytso/ext4 (2013-07-14 21:47:51 -0700)
 
-[...]
->> Index: slave-dma/drivers/dma/sh/rcar-hpbdma.c
->> ===================================================================
->> --- /dev/null
->> +++ slave-dma/drivers/dma/sh/rcar-hpbdma.c
->> @@ -0,0 +1,623 @@
-[...]
->> +/* DMA channel registers */
->> +#define DSAR0      0x00
->> +#define DDAR0      0x04
->> +#define DTCR0      0x08
->> +#define DSAR1      0x0C
->> +#define DDAR1      0x10
->> +#define DTCR1      0x14
->
->> +#define DSASR      0x18
->> +#define DDASR      0x1C
->> +#define DTCSR      0x20
+are available in the git repository at:
 
-> These are not used.
 
-    So what? I think Max's purpose was to show the full register space here.
+  git://neil.brown.name/md tags/md-3.11-fixes
 
->> +#define DPTR      0x24
->> +#define DCR      0x28
->> +#define DCMDR      0x2C
->> +#define DSTPR      0x30
->> +#define DSTSR      0x34
+for you to fetch changes up to 30bc9b53878a9921b02e3b5bc4283ac1c6de102a:
 
->> +#define DDBGR      0x38
->> +#define DDBGR2      0x3C
+  md/raid1: fix bio handling problems in process_checks() (2013-07-18 14:18=
+:04 +1000)
 
-> These are not used.
+----------------------------------------------------------------
+3 bug fixes for md in 3.10
 
-    Likewise answer.
+3.10 wasn't a good release for md.  The bio changes left a couple of
+bugs, and an md "fix" created another one.
 
->> +#define HPB_CHAN(n)   (0x40 * (n))
->> +
->> +/* DMA command register (DCMDR) bits */
->> +#define DCMDR_BDOUT   BIT(7)
+These three patches appear to fix the issues and have been tagged for
+-stable.
 
-> This is not used
+----------------------------------------------------------------
+NeilBrown (3):
+      md/raid10: fix two problems with RAID10 resync.
+      md: Remove recent change which allows devices to skip recovery.
+      md/raid1: fix bio handling problems in process_checks()
 
-    Will remove.
+ drivers/md/md.c     | 14 --------------
+ drivers/md/raid1.c  | 53 ++++++++++++++++++++++++++++++-------------------=
+----
+ drivers/md/raid10.c | 11 +++++++++--
+ 3 files changed, 39 insertions(+), 39 deletions(-)
 
->> +#define DCMDR_DQSPD   BIT(6)
+--Sig_/n55vc0732+H65odkXaw0pxW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
->> +#define DCMDR_DQSPC   BIT(5)
->> +#define DCMDR_DMSPD   BIT(4)
->> +#define DCMDR_DMSPC   BIT(3)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-> These are not used.
+iQIVAwUBUehj1Tnsnt1WYoG5AQKePBAAmyYznoQZaO1pKYiWQ2DW7WvgMcLzkxr1
+h+t4vHAOQ12ct6+2d8HZnHZV1qB4CwTSuBKUbfe5gUP0Q+2bSk7gqDwUxUN5yUxn
+YNA369yem9SzQDDbg2JiRYayDawkqDWeqMXYl/BVbVSPMefppditHFP5+Kb71VqJ
+4YvS5WaARTSOk02tMu8vX8xiAJo/Lfx+O03Mn0rDnhWHvFJxeoQEdHTBQRZbsRxo
+E5WNN1vUG4E15uMIkfoO7vR7KsJVsHs4VW3yg1cHtu0PhvU0TOe0PHvc0qmiLV83
+cxmD8Lt+Z51Bn5ovxqH3/3NckpzVHZDg0CUNVpMhyLHGXfW2/ZzVf0Hdpoza1q41
+Ifzs4AlmYjrnP86NSQmRiiVfCyzLguVFPGzEjPJnT2WyQXhsZ3a48OHAhIuP02cK
+xsMF3I6Z6wwk5hjPSnqAx1RvWQIZG/U4R5U7f/PT0SavTz/IopjpxEmNFFjzUt7f
+2fp5J32e7siwk6etlytXcVvND4OJjtdnTjh1+kOzcMfTEBVDHrWtRn/04/2W+6Ml
+TPbrffOsSxrqwKTxqrLEgfE+lrw8sTH5TK69aKX4q0SDfqMFLxfvYcfVS06OVT5L
+F0QPd66oxBPKrsVgubT5urbIerxLJjPEebZwqRCQ3khhHebmMtF2WBetslDOIfEU
+QTj3AM9EC3U=
+=atVk
+-----END PGP SIGNATURE-----
 
-    Will remove. Though perhaps Max's intent was to show the full set of DCMDR 
-bits...
-
->> +#define DCMDR_DQEND   BIT(2)
->> +#define DCMDR_DNXT   BIT(1)
->> +#define DCMDR_DMEN   BIT(0)
->> +
->> +/* DMA forced stop register (DSTPR) bits */
->> +#define   DSTPR_DMSTP   BIT(0)
->> +
->> +/* DMA status register (DSTSR) bits */
->> +#define   DSTSR_DMSTS   BIT(0)
->> +
->> +/* DMA common registers */
->
->> +#define DTIMR      0x00
-
-> This is not used.
-
-    See above about full register space.
-
->> +#define DINTSR0      0x0C
->> +#define DINTSR1      0x10
->> +#define DINTCR0      0x14
->> +#define DINTCR1      0x18
->> +#define DINTMR0      0x1C
->> +#define DINTMR1      0x20
->
->> +#define DACTSR0      0x24
->> +#define DACTSR1      0x28
-
-> These are not used.
-
-    See above.
-
->> +#define HSRSTR(n)   (0x40 + (n) * 4)
-
->> +#define HPB_DMASPR(n)   (0x140 + (n) * 4)
->> +#define HPB_DMLVLR0   0x160
->> +#define HPB_DMLVLR1   0x164
->> +#define HPB_DMSHPT0   0x168
->> +#define HPB_DMSHPT1   0x16C
-
-> These are not used.
-
-    Likewise.
-
->> +static bool hpb_dmae_chan_irq(struct shdma_chan *schan, int irq)
->> +{
->> +   struct hpb_dmae_chan *chan = to_chan(schan);
->> +   struct hpb_dmae_device *hpbdev = to_dev(chan);
->> +   int ch = chan->cfg->dma_ch;
->> +
->> +   /* Check Complete DMA Transfer */
->> +   if (dintsr_read(hpbdev, ch)) {
->> +      /* Clear Interrupt status */
->> +      dintcr_write(hpbdev, ch);
->> +      return true;
->> +   }
->> +   return false;
->> +}
-
-> For some peripherals, e.g. MMC, there is only one physical DMA channel
-> available for both tx & rx. In this case, the MMC driver should request
-> two logical channels. So, the DMAC driver should map logical channels to
-> physical channels. When it comes to the interrupt handler, the only way to
-> tell if the tx or rx logical channel completed, as far as I can see, is to
-> check the settings in the DCR reg.
-
-    Hm, note taken.
-
->> Index: slave-dma/include/linux/platform_data/dma-rcar-hpbdma.h
->> ===================================================================
->> --- /dev/null
->> +++ slave-dma/include/linux/platform_data/dma-rcar-hpbdma.h
->> @@ -0,0 +1,103 @@
-[...]
->> +/* DMA control register (DCR) bits */
->> +#define   DCR_DTAMD   (1u << 26)
->> +#define   DCR_DTAC   (1u << 25)
->> +#define   DCR_DTAU   (1u << 24)
->> +#define   DCR_DTAU1   (1u << 23)
->> +#define   DCR_SWMD   (1u << 22)
->> +#define   DCR_BTMD   (1u << 21)
->> +#define   DCR_PKMD   (1u << 20)
->> +#define   DCR_CT      (1u << 18)
->> +#define   DCR_ACMD   (1u << 17)
->> +#define   DCR_DIP      (1u << 16)
->> +#define   DCR_SMDL   (1u << 13)
->> +#define   DCR_SPDAM   (1u << 12)
->> +#define   DCR_SDRMD_MASK   (3u << 10)
->> +#define   DCR_SDRMD_MOD   (0u << 10)
->> +#define   DCR_SDRMD_AUTO   (1u << 10)
->> +#define   DCR_SDRMD_TIMER   (2u << 10)
->> +#define   DCR_SPDS_MASK   (3u << 8)
->> +#define   DCR_SPDS_8BIT   (0u << 8)
->> +#define   DCR_SPDS_16BIT   (1u << 8)
->> +#define   DCR_SPDS_32BIT   (2u << 8)
->> +#define   DCR_DMDL   (1u << 5)
->> +#define   DCR_DPDAM   (1u << 4)
->> +#define   DCR_DDRMD_MASK   (3u << 2)
->> +#define   DCR_DDRMD_MOD   (0u << 2)
->> +#define   DCR_DDRMD_AUTO   (1u << 2)
->> +#define   DCR_DDRMD_TIMER   (2u << 2)
->> +#define   DCR_DPDS_MASK   (3u << 0)
->> +#define   DCR_DPDS_8BIT   (0u << 0)
->> +#define   DCR_DPDS_16BIT   (1u << 0)
->> +#define   DCR_DPDS_32BIT   (2u << 0)
->> +
->> +/* Asynchronous reset register (ASYNCRSTR) bits */
->> +#define   ASYNCRSTR_ASRST41   BIT(10)
->> +#define   ASYNCRSTR_ASRST40   BIT(9)
->> +#define   ASYNCRSTR_ASRST39   BIT(8)
->> +#define   ASYNCRSTR_ASRST27   BIT(7)
->> +#define   ASYNCRSTR_ASRST26   BIT(6)
->> +#define   ASYNCRSTR_ASRST25   BIT(5)
->> +#define   ASYNCRSTR_ASRST24   BIT(4)
->> +#define   ASYNCRSTR_ASRST23   BIT(3)
->> +#define   ASYNCRSTR_ASRST22   BIT(2)
->> +#define   ASYNCRSTR_ASRST21   BIT(1)
->> +#define   ASYNCRSTR_ASRST20   BIT(0)
-
-> If you replace this with a macro with an argument, you can simplify the
-> setup code.
-
-    That would be quite a complex macro considering a gap after bit 7.
-
-> I.e. since we already have .dma_ch in the slave config struct,
-> you won't need the .rstr field.
-
-    If you look at the platform code, you'll see that all peripheral channels 
-are reset every time, so not a single bit of .rstr is set but multiple. This
-actually surprised me too.
-
-> Similarly, looking at your patches to add SDHC DMA support, the .mdr and
-> .mdm fields do not need to be channel specific. All we really need to know
-> is if the channel needs async MD single and async BTMD burst. The
-> calculation for the bits required can be internal to the DMAC driver.
-
-    I'll see what can be done...
-
-WBR, Sergei
-
+--Sig_/n55vc0732+H65odkXaw0pxW--
