@@ -1,181 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab3GRTAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:00:41 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49674 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933460Ab3GRS7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 14:59:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH 2/30] ACPI / hotplug / PCI: Consolidate acpiphp_enumerate_slots()
-Date: Thu, 18 Jul 2013 21:09:39 +0200
-Message-ID: <2875178.oTVLArQBaT@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQXcLeNxjmh-6+jtpOmgC-NB3=Pwh1vZnb+DNLnoKzZQaQ@mail.gmail.com>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <10121200.vQGTlJqFtd@vostro.rjw.lan> <CAE9FiQXcLeNxjmh-6+jtpOmgC-NB3=Pwh1vZnb+DNLnoKzZQaQ@mail.gmail.com>
+	id S933562Ab3GRTAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:00:40 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:38208 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932770Ab3GRS7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 14:59:22 -0400
+Message-ID: <51E74143.4040709@gmail.com>
+Date: Thu, 18 Jul 2013 03:13:39 +0200
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrey Vagin <avagin@openvz.org>
+CC: Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org, criu@openvz.org
+Subject: Re: [PATCH 1/3] ptrace.2: place GETSIGINFO and SETSIGINFO near each
+ other
+References: <1373962773-2041-1-git-send-email-avagin@openvz.org> <1373962773-2041-2-git-send-email-avagin@openvz.org>
+In-Reply-To: <1373962773-2041-2-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 17, 2013 06:40:10 PM Yinghai Lu wrote:
-> On Wed, Jul 17, 2013 at 4:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > The acpiphp_enumerate_slots() function is now split into two parts,
-> > acpiphp_enumerate_slots() proper and init_bridge_misc() which is
-> > only called by the former.  If these functions are combined,
-> > it is possible to make the code easier to follow and to clean up
-> > the error handling (to prevent memory leaks on error from
-> > happening in particular), so do that.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/pci/hotplug/acpiphp_glue.c |   92 ++++++++++++++++++-------------------
-> >  1 file changed, 45 insertions(+), 47 deletions(-)
-> >
-> > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-> > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > @@ -353,46 +353,6 @@ static int detect_ejectable_slots(acpi_h
-> >         return found;
-> >  }
-> >
-> > -/* initialize miscellaneous stuff for both root and PCI-to-PCI bridge */
-> > -static void init_bridge_misc(struct acpiphp_bridge *bridge)
-> > -{
-> > -       acpi_status status;
-> > -
-> > -       /* must be added to the list prior to calling register_slot */
-> > -       mutex_lock(&bridge_mutex);
-> > -       list_add(&bridge->list, &bridge_list);
-> > -       mutex_unlock(&bridge_mutex);
-> > -
-> > -       /* register all slot objects under this bridge */
-> > -       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, bridge->handle, (u32)1,
-> > -                                    register_slot, NULL, bridge, NULL);
-> > -       if (ACPI_FAILURE(status)) {
-> > -               mutex_lock(&bridge_mutex);
-> > -               list_del(&bridge->list);
-> > -               mutex_unlock(&bridge_mutex);
-> > -               return;
-> > -       }
-> > -
-> > -       /* install notify handler for P2P bridges */
-> > -       if (!pci_is_root_bus(bridge->pci_bus)) {
-> > -               if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
-> > -                       status = acpi_remove_notify_handler(bridge->func->handle,
-> > -                                               ACPI_SYSTEM_NOTIFY,
-> > -                                               handle_hotplug_event_func);
-> > -                       if (ACPI_FAILURE(status))
-> > -                               err("failed to remove notify handler\n");
-> > -               }
-> > -               status = acpi_install_notify_handler(bridge->handle,
-> > -                                            ACPI_SYSTEM_NOTIFY,
-> > -                                            handle_hotplug_event_bridge,
-> > -                                            bridge);
-> > -
-> > -               if (ACPI_FAILURE(status)) {
-> > -                       err("failed to register interrupt notify handler\n");
-> > -               }
-> > -       }
-> > -}
-> > -
-> >
-> >  /* find acpiphp_func from acpiphp_bridge */
-> >  static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle)
-> > @@ -1149,8 +1109,9 @@ static void handle_hotplug_event_func(ac
-> >   */
-> >  void acpiphp_enumerate_slots(struct pci_bus *bus)
-> >  {
-> > -       acpi_handle handle;
-> >         struct acpiphp_bridge *bridge;
-> > +       acpi_handle handle;
-> > +       acpi_status status;
-> >
-> >         if (acpiphp_disabled)
-> >                 return;
-> > @@ -1178,14 +1139,51 @@ void acpiphp_enumerate_slots(struct pci_
-> >          */
-> >         get_device(&bus->dev);
-> >
-> > -       if (!pci_is_root_bus(bridge->pci_bus) &&
-> > -           acpi_has_method(bridge->handle, "_EJ0")) {
-> > -               dbg("found ejectable p2p bridge\n");
-> > -               bridge->flags |= BRIDGE_HAS_EJ0;
-> > -               bridge->func = acpiphp_bridge_handle_to_function(handle);
-> > +       /* must be added to the list prior to calling register_slot */
-> > +       mutex_lock(&bridge_mutex);
-> > +       list_add(&bridge->list, &bridge_list);
-> > +       mutex_unlock(&bridge_mutex);
-> > +
-> > +       /* register all slot objects under this bridge */
-> > +       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, bridge->handle, 1,
-> > +                                    register_slot, NULL, bridge, NULL);
-> > +       if (ACPI_FAILURE(status)) {
-> > +               acpi_handle_err(bridge->handle, "failed to register slots\n");
-> > +               goto err;
-> > +       }
-> > +
-> > +       if (pci_is_root_bus(bridge->pci_bus))
-> > +               return;
-> > +
-> > +       /* install notify handler for P2P bridges */
-> > +       status = acpi_install_notify_handler(bridge->handle, ACPI_SYSTEM_NOTIFY,
-> > +                                            handle_hotplug_event_bridge,
-> > +                                            bridge);
-> > +       if (ACPI_FAILURE(status)) {
-> > +               acpi_handle_err(bridge->handle,
-> > +                               "failed to register notify handler\n");
-> > +               goto err;
-> >         }
-> >
-> > -       init_bridge_misc(bridge);
-> > +       if (!acpi_has_method(bridge->handle, "_EJ0"))
-> > +               return;
-> > +
-> > +       dbg("found ejectable p2p bridge\n");
-> > +       bridge->flags |= BRIDGE_HAS_EJ0;
-> > +       bridge->func = acpiphp_bridge_handle_to_function(bridge->handle);
-> > +       if (bridge->func) {
-> > +               status = acpi_remove_notify_handler(bridge->func->handle,
-> > +                                                   ACPI_SYSTEM_NOTIFY,
-> > +                                                   handle_hotplug_event_func);
-> > +               if (ACPI_FAILURE(status))
-> > +                       acpi_handle_err(bridge->func->handle,
-> > +                                       "failed to remove notify handler\n");
-> > +       }
+Thanks Andrey. Applied.
+
+M
+
+
+On 07/16/13 10:19, Andrey Vagin wrote:
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+>  man2/ptrace.2 | 24 ++++++++++++------------
+>  1 file changed, 12 insertions(+), 12 deletions(-)
 > 
-> looks little weird that you change to install bridge notifier handler and remove
-> bridge func notifier handler.
-> actually these two handles is the same one.
+> diff --git a/man2/ptrace.2 b/man2/ptrace.2
+> index 0d77e3f..5fcac2b 100644
+> --- a/man2/ptrace.2
+> +++ b/man2/ptrace.2
+> @@ -255,18 +255,6 @@ On return, the kernel modifies
+>  .B iov.len
+>  to indicate the actual number of bytes returned.
+>  .TP
+> -.BR PTRACE_GETSIGINFO " (since Linux 2.3.99-pre6)"
+> -Retrieve information about the signal that caused the stop.
+> -Copy a
+> -.I siginfo_t
+> -structure (see
+> -.BR sigaction (2))
+> -from the tracee to the address
+> -.I data
+> -in the tracer.
+> -.RI ( addr
+> -is ignored.)
+> -.TP
+>  .BR PTRACE_SETREGS ", " PTRACE_SETFPREGS
+>  Modify the tracee's general-purpose or floating-point registers,
+>  respectively, from the address
+> @@ -301,6 +289,18 @@ and
+>  is analogous to
+>  .BR PTRACE_GETREGSET .
+>  .TP
+> +.BR PTRACE_GETSIGINFO " (since Linux 2.3.99-pre6)"
+> +Retrieve information about the signal that caused the stop.
+> +Copy a
+> +.I siginfo_t
+> +structure (see
+> +.BR sigaction (2))
+> +from the tracee to the address
+> +.I data
+> +in the tracer.
+> +.RI ( addr
+> +is ignored.)
+> +.TP
+>  .BR PTRACE_SETSIGINFO " (since Linux 2.3.99-pre6)"
+>  Set signal information:
+>  copy a
 > 
-> I would prefer to keeping the old sequence.
 
-First, it doesn't matter because one of the notifiers goes away in the
-subsequent patches and it would complicate those patches without any real
-reason if I did that.
-
-Second, it doesn't matter because there can be multiple notify handlers for the
-same handle and if one of the above two triggers, the second one won't really
-do anything.
-
-So no, I'm not going to do that, sorry.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
