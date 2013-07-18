@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab3GRVSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:18:47 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:61318 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab3GRVSq (ORCPT
+	id S1759472Ab3GRVVH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:21:07 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:64253 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759144Ab3GRVVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:18:46 -0400
-Date: Fri, 19 Jul 2013 00:18:07 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Yann Collet <yann.collet.73@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] LZ4: compression/decompression signedness mismatch
-Message-ID: <20130718211806.GB2394@swordfish>
-References: <20130712092400.GA2565@swordfish>
- <CADv+DGka4s1xc2UYqu+-EqHW8jA56JrtEE_sMsMOpc6NDmc6Zw@mail.gmail.com>
- <20130712094830.GA2257@swordfish.minsk.epam.com>
+	Thu, 18 Jul 2013 17:21:05 -0400
+Date: Thu, 18 Jul 2013 14:21:08 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, wni@nvidia.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, l.stach@pengutronix.de
+Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
+ zone build
+Message-ID: <20130718212108.GC4110@roeck-us.net>
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
+ <20130717220942.GB990@roeck-us.net>
+ <51E7F341.8020508@ti.com>
+ <51E8234D.1020607@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130712094830.GA2257@swordfish.minsk.epam.com>
+In-Reply-To: <51E8234D.1020607@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jul 18, 2013 at 11:18:05AM -0600, Stephen Warren wrote:
+> On 07/18/2013 07:53 AM, Eduardo Valentin wrote:
+> > Hello Guenter,
+> > 
+> > On 17-07-2013 18:09, Guenter Roeck wrote:
+> >> On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin
+> >> wrote:
+> >>> Hello all,
+> >>> 
+> >>> As you noticed, I am working in a way to represent thermal
+> >>> data using device tree [1]. Essentially, this should be a way
+> >>> to say what to do with a sensor and how to associate (cooling)
+> >>> actions with it.
+> >>> 
+> >> Seems to me that goes way beyond the supposed scope of devicetree
+> >> data. Devicetree data is supposed to describe hardware, not its
+> >> configuration or use. This is clearly a use case.
+> > 
+> > Thanks for rising your voice here. It is important to know what
+> > hwmon ppl think about this.
+> 
+> I meant to find time to read Guenter's original email where he
+> initially objected to putting data into DT, and determine exactly what
+> was being objected to. I still haven't:-( However, the arguments that
+> Eduardo stated in his email do make sense to me; I agree that
+> temperature limits really are a description of HW. Details of which
+> cooling methods to invoke when certain temperature limits are reached
+> is also part of the HW/system design, and hence I would tend to agree
+> that they're appropriate to include in DT. Anyway, that's just my 2
+> cents on the matter:-)
 
-On (07/12/13 12:48), Sergey Senozhatsky wrote:
-> On (07/12/13 11:28), Yann Collet wrote:
-> >    The reference implementation, hosted at :�
-> >    [1]https://code.google.com/p/lz4/
-> >    only proposes char* (signed) types as part of the interface contract.
-> >    I would recommend to keep it that way, to remain consistent.
-> >    Regards
-> 
-> Crypto lz4 accepts u8 * for both compression and decompression:
-> 
->  lz4_compress_crypto(struct crypto_tfm *tfm, const u8 *src,
->                             unsigned int slen, u8 *dst, unsigned int *dlen)
-> 
->  lz4_decompress_crypto(struct crypto_tfm *tfm, const u8 *src,
->                        unsigned int slen, u8 *dst, unsigned int *dlen)
-> 
-> 
-> Internally LZ4 may cast unsigned char* to signed char*, the same way you
-> already do with compression:
-> 
-> 	int lz4_compress(const unsigned char *src, size_t src_len,
-> 			unsigned char *dst, size_t *dst_len, void *wrkmem)
-> 
-> 		calls:
-> 			lz4_compressctx(void *ctx,
-> 				const char *source, char *dest,
-> 				int isize, int maxoutputsize)
-> 
+Many systems have multiple profiles for various use cases (high performance,
+low power etc), and limits are different based on the use case. If that means
+you are going to have multiple devicetree variants based on the profile,
+I would argue that you crossed the line. With thermal profiles it gets even more
+complicated, as those parameters may be played around with and changed
+multiple times to find the best settings to achieve optimal cooling.
+Does this describe hardware ? I don't think so, but, as I mentioned before,
+maybe I am wrong.
 
-
-+ lib/decompress_unlz4.c
- STATIC int INIT decompress(unsigned char *buf, int in_len,
-				int(*fill)(void*, unsigned int),
-				int(*flush)(void*, unsigned int),
-				unsigned char *output,
-				int *posp,
-				void(*error)(char *x)
-
-> 
-> At the moment API is a bit misaligned: unsiged char* for compression and signed char* for
-> decompression.
-> 
-> 
-> My 'real word' use case is, suppose:
-> 
-> 	struct foo {
-> 	[..]
-> 		int (*compress)(const unsigned char *src, size_t src_len,
-> 				unsigned char *dst, size_t *dst_len, void *wrkmem);
-> 		int (*decompress)(const unsigned char *src, size_t src_len,
-> 				unsigned char *dst, size_t *dst_len);
-> 	};
-> 
-> 
-> and (for example) module also provides sysfs attribute, so user can switch select
-> LZO or LZ4 compressions depending of his needs:
-> 
-> 	->compress = lzo1x_1_compress;
-> 	->decompress = lzo1x_decompress_safe;
-> 
-> to
-> 	->compress = lz4_compress;
-> 	->decompress = lz4_decompress_unknownoutputsize;
-> 
-> 
-> the last one produces unneccessary compilation warning.
-> 
-
-did you guys have a chance to review the patch? it does not change
-implementation/internals, just decompression exported symbols.
-
-
-	-ss
-
+Guenter
