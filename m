@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871Ab3GRPWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 11:22:41 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39909 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab3GRPWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 11:22:40 -0400
-Date: Thu, 18 Jul 2013 16:22:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
-        balbi@ti.com, rnayak@ti.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130718152214.GR22506@sirena.org.uk>
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
- <1374141687-10790-2-git-send-email-sourav.poddar@ti.com>
+	id S1758895Ab3GRP21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 11:28:27 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19818 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756756Ab3GRP2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 11:28:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,694,1367996400"; 
+   d="scan'208";a="270140454"
+Message-ID: <51E80973.9000308@intel.com>
+Date: Thu, 18 Jul 2013 08:27:47 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gb6VZqxBV+KJ1lA0"
-Content-Disposition: inline
-In-Reply-To: <1374141687-10790-2-git-send-email-sourav.poddar@ti.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC/PATCHv2 1/3] driver: spi: Modify core to compute the
- message length
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Toshi Kani <toshi.kani@hp.com>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/17/2013 02:45 PM, Toshi Kani wrote:
+> +CONFIG_ARCH_MEMORY_PROBE is supported on powerpc only. On x86, this config
+> +option is disabled by default since ACPI notifies a memory hotplug event to
+> +the kernel, which performs its hotplug operation as the result. Please
+> +enable this option if you need the "probe" interface on x86.
 
---gb6VZqxBV+KJ1lA0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+There's no prompt for this and no way to override what you've done here
+without hacking Kconfig/.config files.
 
-On Thu, Jul 18, 2013 at 03:31:25PM +0530, Sourav Poddar wrote:
-> Make spi core calculate the message length while
-> populating the other transfer parameters.
+It's also completely wrong to say "CONFIG_ARCH_MEMORY_PROBE is supported
+on powerpc only."  It works just fine on x86.  In fact, I was just using
+it today without ACPI being around.
 
-Applied, thanks.
-
---gb6VZqxBV+KJ1lA0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR6AgjAAoJELSic+t+oim9v4QP/0bmwo+Khybpw5bjzUVo3RIp
-/ZGRBntxX1krc2JW974r67fHrlbbV1tW/x8EN6xI4NK6HFOOlTI4kK9RtW0BLTD9
-QTy2OKe8AVh7Db6OXU2WGD1lQOFHbVAzoPDGZmBnfyhiWNVHlLBm9ZyHz98CpnDh
-9TFJnt89AhJ8vdIavRTARsojvolG7OmghnQM5vqgK6H3eZmwc6SGvckETpH+iqHK
-BhpZUim54YYe0+PZlYJ8vhYbOp5tG1nBFg7QNss8XgPaGKiQunbh7/cGRl2FuQAd
-4Ny8IeU6SWjLyLXIDGLB8w8qJjpTHAKWDOnlXmEUMmquAW2qZWkU8qvNUPXCBkDV
-s6ggkzD4EUqABqHoqEqBOSDBplmS3+rFnSrX0Mb1Iom8LB4byBbpV4LH2zaA8yOr
-1L0kCl3DLDaPwkieyw4m6VHJGvel6t9OGFSP6ols5ctiAFYngH1clXO70ryWulZ0
-MC5mYBkxxTJ912FjGNIThJk9lGAmZ2WJ6obU1Unek/rB42GUSgjdmW32wlmfY5t6
-9kw96SgHw9nRcOYeDj1BqvbLmHmJEQXFaApYKXfcr2xA2sudeCGi+DvHib0COl6y
-6dI8Rd5CG3RTeH0hDFpRYdVb3PtItQZo7/jfBUmCtOQjws5FGLNA8/gpyD24bCDr
-5WA5o1S6YGxZjR+PKH2g
-=DCcK
------END PGP SIGNATURE-----
-
---gb6VZqxBV+KJ1lA0--
+I'd really prefer you don't do this.  Do you really have random
+processes on your system poking at random sysfs files and then
+complaining when things break?
