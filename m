@@ -1,153 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab3GRITq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:19:46 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:28105 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100Ab3GRITJ (ORCPT
+	id S1757090Ab3GRIW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:22:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53439 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab3GRIW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:19:09 -0400
-X-Spam-Score: -100.8
-Message-ID: <51E7A4C1.4020309@asianux.com>
-Date: Thu, 18 Jul 2013 16:18:09 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 18 Jul 2013 04:22:56 -0400
+Date: Thu, 18 Jul 2013 11:22:40 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Felipe Balbi <balbi@ti.com>, Rong Wang <wr011235813@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <Rong.Wang@csr.com>
+Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
+Message-ID: <20130718082240.GD11251@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130717132736.GA7614@arwen.pp.htv.fi>
+ <Pine.LNX.4.44L0.1307171134530.1555-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: George Spelvin <linux@horizon.com>, reiserfs-devel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] reiserfs: check/extend buffer length for printing functions
-References: <51E65A68.8070009@asianux.com> <51E76ED7.303@asianux.com> <51E7994D.1060300@asianux.com> <20130718074316.GY4165@ZenIV.linux.org.uk> <51E79F24.2050504@asianux.com>
-In-Reply-To: <51E79F24.2050504@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VUDLurXRWRKrGuMn"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1307171134530.1555-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 03:54 PM, Chen Gang wrote:
-> On 07/18/2013 03:43 PM, Al Viro wrote:
->> On Thu, Jul 18, 2013 at 03:29:17PM +0800, Chen Gang wrote:
->>>> On 07/18/2013 12:28 PM, Chen Gang wrote:
->>>>>>  
->>>>>>>>  	strcpy(fmt1, fmt);
->>>>>>>> @@ -199,46 +214,51 @@ static void prepare_error_buf(const char *fmt, va_list args)
->>>>>>>>  	while ((k = is_there_reiserfs_struct(fmt1, &what)) != NULL) {
->>>>>>>>  		*k = 0;
->>>>>>>>  
->>>>>>>> -		p += vsprintf(p, fmt1, args);
->>>>>>>> +		p += vsnprintf(p, left, fmt1, args);
->>>>
->>>> At least, need use vscnprintf() instead of vsnprintf(), since we need
->>>> the real written length return.
->> 		n = vsnprintf(p, left, ....);
->> 		left -= n;
->> 		if (left <= 0) /* overflow */
->> 			break;	/* or whatever's suitable here */
->> 		p += n;
->>
->>
-> 
-> Yeah, it is really a better fix. :-)
-> 
-> 
-> And now I am just testing, and find another issue about it, I am just
-> analyzing it it.
+--VUDLurXRWRKrGuMn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
-even only change vsprintf() to vsnprintf(), it will report '<7' !!
+On Wed, Jul 17, 2013 at 11:37:35AM -0400, Alan Stern wrote:
+> On Wed, 17 Jul 2013, Felipe Balbi wrote:
+>=20
+> > On Wed, Jul 17, 2013 at 09:04:54PM +0800, Rong Wang wrote:
+> > > Hi Felipe,
+> > >=20
+> > > On Wed, Jul 17, 2013 at 3:57 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > > > Hi,
+> > > >
+> > > > On Mon, Jul 15, 2013 at 11:31:17PM -0700, Greg KH wrote:
+> > > >> > The question is since we default GADGET, so the g_mass_storage.k=
+o is
+> > > >> > installed early but connecting to a host PC
+> > > >> > is randomly, But the udev has no idea when a host PC connects ou=
+r device.
+> > > >> >
+> > > >> > So we consider it's reasonable to let the udev know the GADGET d=
+evice state.
+> > > >> > Is there any alternative to our question?
+> > > >>
+> > > >> I thought we already export events for gadget device states, have =
+you
+> > > >> looked for them?  I can't dig through the code at the moment, but =
+this
+> > > >> seems like a pretty common issue...
+> > > >>
+> > > >> Felipe, any ideas?
+> > > >
+> > > > we already expose that in sysfs. IIRC udev can act on sysfs changes,
+> > > > no ?
+> > >=20
+> > > I do not know if udev can polling sysfs file content change. I'll stu=
+dy this.
+> > >=20
+> > > But the change is triggered by calling usb_gadget_set_state, and I fi=
+nd
+> > > composite framework do not call this. Then we should do this common w=
+ork
+> > > in every udc driver?
+> >=20
+> > yes. Only the UDC driver knows when the controller is moving among those
+> > states.
+>=20
+> Not quite.  Only the gadget driver knows when the transition between=20
+> ADDRESS and CONFIGURED occurs.  This should be added to composite.c.
 
-----------------------------diff begin---------------------------------
+that's not entirely true :-) See how we handle that in dwc3:
 
-diff --git a/fs/reiserfs/prints.c b/fs/reiserfs/prints.c
-index c0b1112..9dd79be 100644
---- a/fs/reiserfs/prints.c
-+++ b/fs/reiserfs/prints.c
-@@ -238,7 +238,8 @@ static void prepare_error_buf(const char *fmt, va_list args)
- 		p += strlen(p);
- 		fmt1 = k + 2;
- 	}
--	vsprintf(p, fmt1, args);
-+
-+	vsnprintf(p, 13, fmt1, args);
- 	spin_unlock(&error_lock);
- 
- }
+| static int dwc3_ep0_set_config(struct dwc3 *dwc, struct usb_ctrlrequest *=
+ctrl)
+| {
+| 	enum usb_device_state state =3D dwc->gadget.state;
+| 	u32 cfg;
+| 	int ret;
+| 	u32 reg;
+|=20
+| 	dwc->start_config_issued =3D false;
+| 	cfg =3D le16_to_cpu(ctrl->wValue);
+|=20
+| 	switch (state) {
+| 	case USB_STATE_DEFAULT:
+| 		return -EINVAL;
+| 		break;
+|=20
+| 	case USB_STATE_ADDRESS:
+| 		ret =3D dwc3_ep0_delegate_req(dwc, ctrl);
+| 		/* if the cfg matches and the cfg is non zero */
+| 		if (cfg && (!ret || (ret =3D=3D USB_GADGET_DELAYED_STATUS))) {
+| 			usb_gadget_set_state(&dwc->gadget,
+| 					USB_STATE_CONFIGURED);
+|=20
+| 			/*
+| 			 * Enable transition to U1/U2 state when
+| 			 * nothing is pending from application.
+| 			 */
+| 			reg =3D dwc3_readl(dwc->regs, DWC3_DCTL);
+| 			reg |=3D (DWC3_DCTL_ACCEPTU1ENA | DWC3_DCTL_ACCEPTU2ENA);
+| 			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+|=20
+| 			dwc->resize_fifos =3D true;
+| 			dev_dbg(dwc->dev, "resize fifos flag SET\n");
+| 		}
+| 		break;
+|=20
+| 	case USB_STATE_CONFIGURED:
+| 		ret =3D dwc3_ep0_delegate_req(dwc, ctrl);
+| 		if (!cfg)
+| 			usb_gadget_set_state(&dwc->gadget,
+| 					USB_STATE_ADDRESS);
+| 		break;
+| 	default:
+| 		ret =3D -EINVAL;
+| 	}
+| 	return ret;
+| }
 
-----------------------------diff end-----------------------------------
+Also, until other gadget drivers add notifications to the other cases, I
+don't think it's wise to add a transition from NOTATTACHED to
+CONFIGURED.
 
-This patch seems related with this new issue.  So After I finish
-analyzing it (get root cause), then send the patch v2 for this patch.
+But I have one change I'll send for the gadget notifications, I'm just
+trying to get a new OMAP5 board to test because the FTDI chip on mine
+died and I have no console :-)
 
+--=20
+balbi
 
-Thanks.
+--VUDLurXRWRKrGuMn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 
-> For next-20130717, let reiserfs build-in, when "mount /dev/sda11
-> /mnt/sda11" (assume sda11 is reiserfs filesystem).
-> 
-> I modify the code like this (just only use vsnprintf instead of vsprintf):
-> 
-> --------------------------diff begin------------------------------
-> 
-> diff --git a/fs/reiserfs/prints.c b/fs/reiserfs/prints.c
-> index c0b1112..3a38a62 100644
-> --- a/fs/reiserfs/prints.c
-> +++ b/fs/reiserfs/prints.c
-> @@ -10,7 +10,7 @@
->  
->  #include <stdarg.h>
->  
-> -static char error_buf[1024];
-> +static char error_buf[13];
->  static char fmt_buf[1024];
->  static char off_buf[80];
->  
-> @@ -195,7 +195,7 @@ static void prepare_error_buf(const char *fmt, va_list args)
->  	spin_lock(&error_lock);
->  
->  	strcpy(fmt1, fmt);
-> -
-> +#if 0
->  	while ((k = is_there_reiserfs_struct(fmt1, &what)) != NULL) {
->  		*k = 0;
->  
-> @@ -238,7 +238,8 @@ static void prepare_error_buf(const char *fmt, va_list args)
->  		p += strlen(p);
->  		fmt1 = k + 2;
->  	}
-> -	vsprintf(p, fmt1, args);
-> +#endif
-> +	vsnprintf(p, 13, fmt1, args);
->  	spin_unlock(&error_lock);
->  
->  }
-> 
-> --------------------------diff end--------------------------------
-> 
-> 
-> The output has '<7>':
-> 
-> [root@dhcp122 ~]# dmesg
-> [   38.797073] REISERFS (device sda11): found reiser
-> [   38.797089] REISERFS warning (device sda11):  reiserfs_fill_super: CONFIG_REISE
-> [   38.797095] REISERFS warning (device sda11):  reiserfs_fill_super: - it is slow
-> [   38.797098] REISERFS (device sda11): using orderereiserfs: using flush barriers
-> [   38.800507] REISERFS (device sda11): journal para
-> [   38.801158] REISERFS (device sda11): checking tra<7>[   38.801165] REISERFS debug (device sda11): journal-1153
-> [   38.801405] REISERFS debug (device sda11): journal-1206
-> [   38.801410] REISERFS debug (device sda11): journal-1299
-> [   38.817621] REISERFS (device sda11): Using r5 has
-> [   38.817906] SELinux: initialized (dev sda11, type reiserfs), uses genfs_contexts
-> 
-> 
-> 
-> Welcome any suggestions or completions.
-> 
-> Thanks.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR56XQAAoJEIaOsuA1yqRE5k0QAKZBv22g673MEd00yfllK0JL
+ef6eVuNRZX6WRhwIksFVhFf8yrwhaXfwIGTPfIB2TA+luo0mC2mhtqGvZMrJibZy
+wYvWO3q0q54J5WglZw5Bf/94E3P04WScBrwpX1UG/v/9/so/RbZWW/nVbUfKN0qE
+BOOk39QOVGl5+0lkWLhyRO0cuipobXsRdMHRzR1rW/VFXAsToiTBhvCjZZojX7Rr
+FTne77b7Rb7Ks001qHllWo7zWpSBtA+6mxPkmPPMwnkAXT2ZhsI19StE3PCkxVU6
+/xlNAhpjU+nynXBxI/Bel2UU5gpQ+WXhqg8wd/GEZR4Hp/Yds43Oz6Mc8PzKT5h8
+hC1IGMtZkAn1E9IYniwoNKJ46QzuVAVuYzIA5XoTaE+pEdju6Xvq0nbiiee6l24d
+AXAzUMwqsWGepBzCjTQSySTtt392gFTQANhKvFN8DaJ3C/6V6MM0syjHTENDGJwc
+GO41jk1hNLnllIEJ4MrEF2XJE1ZdB+BKh+UFSwKCwahbBgZXUZEjdld2bSsRWyYA
+4eBTt9QExN/zhcXmFVJz/BIAC9MWGvyksIm30aPIdFjJviuDBawVnq22xnvx0Qd+
+CYsC4bKMDmE31Fx6R7J/At7cSefb75fqgyK8U38f6Cn8VcKH0MwpKqPcl15NTmDn
+71wXF8SSCcmezX8kLtRd
+=LFIO
+-----END PGP SIGNATURE-----
 
--- 
-Chen Gang
+--VUDLurXRWRKrGuMn--
