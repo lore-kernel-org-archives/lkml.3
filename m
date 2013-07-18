@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965204Ab3GSAAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:00:37 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:32929 "EHLO
+	id S965360Ab3GSAA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:00:58 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:32920 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759513Ab3GRX7h (ORCPT
+	with ESMTP id S1759440Ab3GRX7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:59:37 -0400
+	Thu, 18 Jul 2013 19:59:36 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>,
+        devicetree-discuss@lists.ozlabs.org,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: [PATCH v4 4/5] clocksource: arch_timer: Push the read/write wrappers deeper
-Date: Thu, 18 Jul 2013 16:59:31 -0700
-Message-Id: <1374191972-18015-5-git-send-email-sboyd@codeaurora.org>
+        Rob Herring <robherring2@gmail.com>
+Subject: [PATCH v4 2/5] Documentation: Add memory mapped ARM architected timer binding
+Date: Thu, 18 Jul 2013 16:59:29 -0700
+Message-Id: <1374191972-18015-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.3.754.g9c3c367
 In-Reply-To: <1374191972-18015-1-git-send-email-sboyd@codeaurora.org>
 References: <1374191972-18015-1-git-send-email-sboyd@codeaurora.org>
@@ -25,167 +27,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're going to introduce support to read and write the memory
-mapped timer registers in the next patch, so push the cp15
-read/write functions one level deeper. This simplifies the next
-patch and makes it clearer what's going on.
+Add a binding for the arm architected timer hardware's memory
+mapped interface. The mmio timer hardware is made up of one base
+frame and a collection of up to 8 timer frames, where each of the
+8 timer frames can have either one or two views. A frame
+typically maps to a privilege level (user/kernel, hypervisor,
+secure). The first view has full access to the registers within a
+frame, while the second view can be restricted to particular
+registers within a frame. Each frame must support a physical
+timer. It's optional for a frame to support a virtual timer.
 
-Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: devicetree-discuss@lists.ozlabs.org
 Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/include/asm/arch_timer.h    |  4 ++--
- arch/arm64/include/asm/arch_timer.h  |  4 ++--
- drivers/clocksource/arm_arch_timer.c | 46 ++++++++++++++++++++++++------------
- 3 files changed, 35 insertions(+), 19 deletions(-)
+ .../devicetree/bindings/arm/arch_timer.txt         | 59 ++++++++++++++++++++--
+ 1 file changed, 56 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-index aeb93f3..5560946 100644
---- a/arch/arm/include/asm/arch_timer.h
-+++ b/arch/arm/include/asm/arch_timer.h
-@@ -18,7 +18,7 @@ int arch_timer_arch_init(void);
-  * the code. At least it does so with a recent GCC (4.6.3).
-  */
- static __always_inline
--void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val)
-+void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
- {
- 	if (access == ARCH_TIMER_PHYS_ACCESS) {
- 		switch (reg) {
-@@ -44,7 +44,7 @@ void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val)
- }
+diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+index 20746e5..06fc760 100644
+--- a/Documentation/devicetree/bindings/arm/arch_timer.txt
++++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+@@ -1,10 +1,14 @@
+ * ARM architected timer
  
- static __always_inline
--u32 arch_timer_reg_read(int access, enum arch_timer_reg reg)
-+u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
- {
- 	u32 val = 0;
+-ARM cores may have a per-core architected timer, which provides per-cpu timers.
++ARM cores may have a per-core architected timer, which provides per-cpu timers,
++or a memory mapped architected timer, which provides up to 8 frames with a
++physical and optional virtual timer per frame.
  
-diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-index dbca771..7181e77 100644
---- a/arch/arm64/include/asm/arch_timer.h
-+++ b/arch/arm64/include/asm/arch_timer.h
-@@ -32,7 +32,7 @@
-  * the code.
-  */
- static __always_inline
--void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val)
-+void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
- {
- 	if (access == ARCH_TIMER_PHYS_ACCESS) {
- 		switch (reg) {
-@@ -58,7 +58,7 @@ void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val)
- }
+-The timer is attached to a GIC to deliver its per-processor interrupts.
++The per-core architected timer is attached to a GIC to deliver its
++per-processor interrupts via PPIs. The memory mapped timer is attached to a GIC
++to deliver its interrupts via SPIs.
  
- static __always_inline
--u32 arch_timer_reg_read(int access, enum arch_timer_reg reg)
-+u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
- {
- 	u32 val;
+-** Timer node properties:
++** CP15 Timer node properties:
  
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 7624ba5..a9ca284 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -43,14 +43,28 @@ static bool arch_timer_use_virtual = true;
-  * Architected system timer support.
-  */
- 
-+static __always_inline
-+void arch_timer_reg_write(int access, enum arch_timer_reg reg, u32 val,
-+		struct clock_event_device *clk)
-+{
-+	arch_timer_reg_write_cp15(access, reg, val);
-+}
+ - compatible : Should at least contain one of
+ 	"arm,armv7-timer"
+@@ -26,3 +30,52 @@ Example:
+ 			     <1 10 0xf08>;
+ 		clock-frequency = <100000000>;
+ 	};
 +
-+static __always_inline
-+u32 arch_timer_reg_read(int access, enum arch_timer_reg reg,
-+		struct clock_event_device *clk)
-+{
-+	return arch_timer_reg_read_cp15(access, reg);
-+}
++** Memory mapped timer node properties:
 +
- static __always_inline irqreturn_t timer_handler(const int access,
- 					struct clock_event_device *evt)
- {
- 	unsigned long ctrl;
--	ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL);
-+	ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL, evt);
- 	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
- 		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
--		arch_timer_reg_write(access, ARCH_TIMER_REG_CTRL, ctrl);
-+		arch_timer_reg_write(access, ARCH_TIMER_REG_CTRL, ctrl, evt);
- 		evt->event_handler(evt);
- 		return IRQ_HANDLED;
- 	}
-@@ -72,15 +86,16 @@ static irqreturn_t arch_timer_handler_phys(int irq, void *dev_id)
- 	return timer_handler(ARCH_TIMER_PHYS_ACCESS, evt);
- }
- 
--static __always_inline void timer_set_mode(const int access, int mode)
-+static __always_inline void timer_set_mode(const int access, int mode,
-+				  struct clock_event_device *clk)
- {
- 	unsigned long ctrl;
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_UNUSED:
- 	case CLOCK_EVT_MODE_SHUTDOWN:
--		ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL);
-+		ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL, clk);
- 		ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
--		arch_timer_reg_write(access, ARCH_TIMER_REG_CTRL, ctrl);
-+		arch_timer_reg_write(access, ARCH_TIMER_REG_CTRL, ctrl, clk);
- 		break;
- 	default:
- 		break;
-@@ -90,36 +105,37 @@ static __always_inline void timer_set_mode(const int access, int mode)
- static void arch_timer_set_mode_virt(enum clock_event_mode mode,
- 				     struct clock_event_device *clk)
- {
--	timer_set_mode(ARCH_TIMER_VIRT_ACCESS, mode);
-+	timer_set_mode(ARCH_TIMER_VIRT_ACCESS, mode, clk);
- }
- 
- static void arch_timer_set_mode_phys(enum clock_event_mode mode,
- 				     struct clock_event_device *clk)
- {
--	timer_set_mode(ARCH_TIMER_PHYS_ACCESS, mode);
-+	timer_set_mode(ARCH_TIMER_PHYS_ACCESS, mode, clk);
- }
- 
--static __always_inline void set_next_event(const int access, unsigned long evt)
-+static __always_inline void set_next_event(const int access, unsigned long evt,
-+				  struct clock_event_device *clk)
- {
- 	unsigned long ctrl;
--	ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL);
-+	ctrl = arch_timer_reg_read(access, ARCH_TIMER_REG_CTRL, clk);
- 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
- 	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
--	arch_timer_reg_write(access, ARCH_TIMER_REG_TVAL, evt);
--	arch_timer_reg_write(access, ARCH_TIMER_REG_CTRL, ctrl);
-+	arch_timer_reg_write(access, ARCH_TIMER_REG_TVAL, evt, clk);
-+	arch_timer_reg_write(access, ARCH_TIMER_REG_CTRL, ctrl, clk);
- }
- 
- static int arch_timer_set_next_event_virt(unsigned long evt,
--					  struct clock_event_device *unused)
-+					  struct clock_event_device *clk)
- {
--	set_next_event(ARCH_TIMER_VIRT_ACCESS, evt);
-+	set_next_event(ARCH_TIMER_VIRT_ACCESS, evt, clk);
- 	return 0;
- }
- 
- static int arch_timer_set_next_event_phys(unsigned long evt,
--					  struct clock_event_device *unused)
-+					  struct clock_event_device *clk)
- {
--	set_next_event(ARCH_TIMER_PHYS_ACCESS, evt);
-+	set_next_event(ARCH_TIMER_PHYS_ACCESS, evt, clk);
- 	return 0;
- }
- 
++- compatible : Should at least contain "arm,armv7-timer-mem".
++
++- clock-frequency : The frequency of the main counter, in Hz. Optional.
++
++- reg : The control frame base address.
++
++Note that #address-cells, #size-cells, and ranges shall be present to ensure
++the CPU can address a frame's registers.
++
++A timer node has up to 8 frame sub-nodes, each with the following properties:
++
++- frame-number: 0 to 7.
++
++- interrupts : Interrupt list for physical and virtual timers in that order.
++  The virtual timer interrupt is optional.
++
++- reg : The first and second view base addresses in that order. The second view
++  base address is optional.
++
++- status : "disabled" indicates the frame is not available for use. Optional.
++
++Example:
++
++	timer@f0000000 {
++		compatible = "arm,armv7-timer-mem";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		reg = <0xf0000000 0x1000>;
++		clock-frequency = <50000000>;
++
++		frame@f0001000 {
++			frame-number = <0>
++			interrupts = <0 13 0x8>,
++				     <0 14 0x8>;
++			reg = <0xf0001000 0x1000>,
++			      <0xf0002000 0x1000>;
++		};
++
++		frame@f0003000 {
++			frame-number = <1>
++			interrupts = <0 15 0x8>;
++			reg = <0xf0003000 0x1000>;
++			status = "disabled";
++		};
++	};
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
