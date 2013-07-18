@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab3GRHGB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 03:06:01 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:38406 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758264Ab3GRHF7 (ORCPT
+	id S1758525Ab3GRHNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 03:13:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47857 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756785Ab3GRHNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 03:05:59 -0400
-Date: Thu, 18 Jul 2013 09:05:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, PaX Team <pageexec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86: Make sure IDT is page aligned
-Message-ID: <20130718070555.GC17622@gmail.com>
-References: <20130716183441.GA14232@www.outflux.net>
- <tip-4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7@git.kernel.org>
- <CAE9FiQV86WdgN3+3FOSSTUvNJ6TgH4zbYkWOS7EPPHwO2Rf2TQ@mail.gmail.com>
- <51E6F73F.3000202@zytor.com>
+	Thu, 18 Jul 2013 03:13:05 -0400
+Date: Thu, 18 Jul 2013 00:12:40 -0700
+From: tip-bot for Sami Kerola <tipbot@zytor.com>
+Message-ID: <tip-8192f5bccf26968a1d78ef71890f7a27f824119f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        kerolasa@iki.fi, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, kerolasa@iki.fi
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/boot:
+  Add lz4 compressed file to .gitignore file
+Git-Commit-ID: 8192f5bccf26968a1d78ef71890f7a27f824119f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <51E6F73F.3000202@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 18 Jul 2013 00:12:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  8192f5bccf26968a1d78ef71890f7a27f824119f
+Gitweb:     http://git.kernel.org/tip/8192f5bccf26968a1d78ef71890f7a27f824119f
+Author:     Sami Kerola <kerolasa@iki.fi>
+AuthorDate: Wed, 17 Jul 2013 17:30:28 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 18 Jul 2013 09:03:33 +0200
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+x86/boot: Add lz4 compressed file to .gitignore file
 
-> On 07/17/2013 11:57 AM, Yinghai Lu wrote:
-> > 
-> > Hi, Peter,
-> > 
-> > Any reason for why following changelog get dropped?
-> > 
-> > ---
-> > v5:
-> >  - add comments to all IDTs about alignment reasoning, suggested by Linus
-> > v4:
-> >  - rework using __page_aligned_bss, suggested by Yinghai LU
-> >  - move all the other IDT variables as well, suggested by HPA
-> > v3:
-> >  - merge 32-bit and 64-bit idt_table definition
-> > v2:
-> >  - 32-bit was already aligned
-> > ---
-> > 
-> > That at least would help us to check if you apply the right version.
-> > 
-> 
-> Procedurally, the changelogs don't belong in commit messages.  I tend to
-> leave them in if they are particularly illustrative or if the commit
-> message only makes sense with the additional context, but neither of
-> those is really ideal.
-> 
-> Technically, because of the --- line which indicates the end of the
-> commit message.
+Signed-off-by: Sami Kerola <kerolasa@iki.fi>
+Link: http://lkml.kernel.org/n/tip-wjc5bf2MtnlqihpoMvzutwby@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/boot/compressed/.gitignore | 1 +
+ 1 file changed, 1 insertion(+)
 
-Furthermote, the -tip notification email will generally email-thread on 
-lkml to the patch submission that was applied.
-
-That is a more robust indication of which submission was applied than any 
-changelog detail.
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/boot/compressed/.gitignore b/arch/x86/boot/compressed/.gitignore
+index 4a46fab..a30c02e 100644
+--- a/arch/x86/boot/compressed/.gitignore
++++ b/arch/x86/boot/compressed/.gitignore
+@@ -1,5 +1,6 @@
+ relocs
+ vmlinux.bin.all
++vmlinux.bin.lz4
+ vmlinux.relocs
+ vmlinux.lds
+ mkpiggy
