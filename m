@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934135Ab3GRTyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:54:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41691 "EHLO
+	id S934289Ab3GRT4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:56:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41672 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759484Ab3GRTua (ORCPT
+	with ESMTP id S1759472Ab3GRTu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:50:30 -0400
+	Thu, 18 Jul 2013 15:50:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Greg Price <price@MIT.EDU>,
+        Greg Price <price@MIT.EDU>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Renninger <trenn@suse.de>,
+        Fengguang Wu <fengguang.wu@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 65/76] perf timechart: Remove event types framework only user
-Date: Thu, 18 Jul 2013 16:49:52 -0300
-Message-Id: <1374177003-3706-66-git-send-email-acme@infradead.org>
+Subject: [PATCH 50/76] perf report/top: Add option to collapse undesired parts of call graph
+Date: Thu, 18 Jul 2013 16:49:37 -0300
+Message-Id: <1374177003-3706-51-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,241 +28,323 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Greg Price <price@MIT.EDU>
 
-The only user of the event types data is 'perf timechart' command and
-uses this info to identify proper tracepoints based on its name.
+For example, in an application with an expensive function implemented
+with deeply nested recursive calls, the default call-graph presentation
+is dominated by the different callchains within that function.  By
+ignoring these callees, we can collect the callchains leading into the
+function and compactly identify what to blame for expensive calls.
 
-Switching this code to use tracepoint callbacks handlers same as another
-commands like builtin-{kmem,lock,sched}.c using the
-perf_session__set_tracepoints_handlers function.
+For example, in this report the callers of garbage_collect() are
+scattered across the tree:
 
-This way we get rid of the only event types user and can remove them
-completely in next patches.
+  $ perf report -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+      22.03%     ruby  [.] gc_mark
+                 --- gc_mark
+                    |--59.40%-- mark_keyvalue
+                    |          st_foreach
+                    |          gc_mark_children
+                    |          |--99.75%-- rb_gc_mark
+                    |          |          rb_vm_mark
+                    |          |          gc_mark_children
+                    |          |          gc_marks
+                    |          |          |--99.00%-- garbage_collect
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+If we ignore the callees of garbage_collect(), its callers are coalesced:
+
+  $ perf report --ignore-callees garbage_collect -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+      72.92%     ruby  [.] garbage_collect
+                 --- garbage_collect
+                     vm_xmalloc
+                    |--47.08%-- ruby_xmalloc
+                    |          st_insert2
+                    |          rb_hash_aset
+                    |          |--98.45%-- features_index_add
+                    |          |          rb_provide_feature
+                    |          |          rb_require_safe
+                    |          |          vm_call_method
+
+Signed-off-by: Greg Price <price@mit.edu>
+Tested-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Renninger <trenn@suse.de>
-Link: http://lkml.kernel.org/r/1373556513-3000-3-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/20130623031720.GW22203@biohazard-cafe.mit.edu
+Link: http://lkml.kernel.org/r/20130708115746.GO22203@biohazard-cafe.mit.edu
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+[ remove spaces at beginning of line, reported by Fengguang Wu ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-timechart.c | 155 ++++++++++++++++++++++++++---------------
- 1 file changed, 97 insertions(+), 58 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/Documentation/perf-top.txt    |  5 +++++
+ tools/perf/builtin-report.c              | 27 ++++++++++++++++++++++++---
+ tools/perf/builtin-top.c                 |  6 ++++--
+ tools/perf/util/machine.c                | 24 +++++++++++++++---------
+ tools/perf/util/machine.h                |  4 +++-
+ tools/perf/util/session.c                |  3 +--
+ tools/perf/util/sort.c                   |  2 ++
+ tools/perf/util/sort.h                   |  4 ++++
+ 9 files changed, 63 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index a512009..c2e0231 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -21,6 +21,7 @@
- #include "util/color.h"
- #include <linux/list.h>
- #include "util/cache.h"
-+#include "util/evlist.h"
- #include "util/evsel.h"
- #include <linux/rbtree.h>
- #include "util/symbol.h"
-@@ -462,6 +463,8 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 66dab74..747ff50 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -135,6 +135,11 @@ OPTIONS
+ --inverted::
+         alias for inverted caller based call graph.
+ 
++--ignore-callees=<regex>::
++        Ignore callees of the function(s) matching the given regex.
++        This has the effect of collecting the callers of each such
++        function into one place in the call-graph tree.
++
+ --pretty=<key>::
+         Pretty printing style.  key: normal, raw
+ 
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 7fdd190..58d6598 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -155,6 +155,11 @@ Default is to monitor all CPUS.
+ 
+ 	Default: fractal,0.5,callee.
+ 
++--ignore-callees=<regex>::
++        Ignore callees of the function(s) matching the given regex.
++        This has the effect of collecting the callers of each such
++        function into one place in the call-graph tree.
++
+ --percent-limit::
+ 	Do not show entries which have an overhead under that percent.
+ 	(Default: 0).
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index ee2ca3e..9a7e54d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -89,7 +89,7 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
+ 	if ((sort__has_parent || symbol_conf.use_callchain) &&
+ 	    sample->callchain) {
+ 		err = machine__resolve_callchain(machine, evsel, al->thread,
+-						 sample, &parent);
++						 sample, &parent, al);
+ 		if (err)
+ 			return err;
  	}
- }
- 
-+typedef int (*tracepoint_handler)(struct perf_evsel *evsel,
-+				  struct perf_sample *sample);
- 
- static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				union perf_event *event __maybe_unused,
-@@ -469,8 +472,6 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				struct perf_evsel *evsel,
- 				struct machine *machine __maybe_unused)
- {
--	struct trace_entry *te;
--
- 	if (evsel->attr.sample_type & PERF_SAMPLE_TIME) {
- 		if (!first_time || first_time > sample->time)
- 			first_time = sample->time;
-@@ -478,69 +479,90 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 			last_time = sample->time;
+@@ -180,7 +180,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+ 	if ((sort__has_parent || symbol_conf.use_callchain)
+ 	    && sample->callchain) {
+ 		err = machine__resolve_callchain(machine, evsel, al->thread,
+-						 sample, &parent);
++						 sample, &parent, al);
+ 		if (err)
+ 			return err;
  	}
+@@ -254,7 +254,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
  
--	te = (void *)sample->raw_data;
--	if ((evsel->attr.sample_type & PERF_SAMPLE_RAW) && sample->raw_size > 0) {
--		char *event_str;
--#ifdef SUPPORT_OLD_POWER_EVENTS
--		struct power_entry_old *peo;
--		peo = (void *)te;
--#endif
--		/*
--		 * FIXME: use evsel, its already mapped from id to perf_evsel,
--		 * remove perf_header__find_event infrastructure bits.
--		 * Mapping all these "power:cpu_idle" strings to the tracepoint
--		 * ID and then just comparing against evsel->attr.config.
--		 *
--		 * e.g.:
--		 *
--		 * if (evsel->attr.config == power_cpu_idle_id)
--		 */
--		event_str = perf_header__find_event(te->type);
--
--		if (!event_str)
--			return 0;
--
--		if (sample->cpu > numcpus)
--			numcpus = sample->cpu;
--
--		if (strcmp(event_str, "power:cpu_idle") == 0) {
--			struct power_processor_entry *ppe = (void *)te;
--			if (ppe->state == (u32)PWR_EVENT_EXIT)
--				c_state_end(ppe->cpu_id, sample->time);
--			else
--				c_state_start(ppe->cpu_id, sample->time,
--					      ppe->state);
--		}
--		else if (strcmp(event_str, "power:cpu_frequency") == 0) {
--			struct power_processor_entry *ppe = (void *)te;
--			p_state_change(ppe->cpu_id, sample->time, ppe->state);
--		}
-+	if (sample->cpu > numcpus)
-+		numcpus = sample->cpu;
-+
-+	if (evsel->handler.func != NULL) {
-+		tracepoint_handler f = evsel->handler.func;
-+		return f(evsel, sample);
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+process_sample_cpu_idle(struct perf_evsel *evsel __maybe_unused,
-+			struct perf_sample *sample)
-+{
-+	struct power_processor_entry *ppe = sample->raw_data;
-+
-+	if (ppe->state == (u32) PWR_EVENT_EXIT)
-+		c_state_end(ppe->cpu_id, sample->time);
-+	else
-+		c_state_start(ppe->cpu_id, sample->time, ppe->state);
-+	return 0;
-+}
-+
-+static int
-+process_sample_cpu_frequency(struct perf_evsel *evsel __maybe_unused,
-+			     struct perf_sample *sample)
-+{
-+	struct power_processor_entry *ppe = sample->raw_data;
-+
-+	p_state_change(ppe->cpu_id, sample->time, ppe->state);
-+	return 0;
-+}
- 
--		else if (strcmp(event_str, "sched:sched_wakeup") == 0)
--			sched_wakeup(sample->cpu, sample->time, sample->pid, te);
-+static int
-+process_sample_sched_wakeup(struct perf_evsel *evsel __maybe_unused,
-+			    struct perf_sample *sample)
-+{
-+	struct trace_entry *te = sample->raw_data;
- 
--		else if (strcmp(event_str, "sched:sched_switch") == 0)
--			sched_switch(sample->cpu, sample->time, te);
-+	sched_wakeup(sample->cpu, sample->time, sample->pid, te);
-+	return 0;
-+}
-+
-+static int
-+process_sample_sched_switch(struct perf_evsel *evsel __maybe_unused,
-+			    struct perf_sample *sample)
-+{
-+	struct trace_entry *te = sample->raw_data;
-+
-+	sched_switch(sample->cpu, sample->time, te);
-+	return 0;
-+}
- 
- #ifdef SUPPORT_OLD_POWER_EVENTS
--		if (use_old_power_events) {
--			if (strcmp(event_str, "power:power_start") == 0)
--				c_state_start(peo->cpu_id, sample->time,
--					      peo->value);
--
--			else if (strcmp(event_str, "power:power_end") == 0)
--				c_state_end(sample->cpu, sample->time);
--
--			else if (strcmp(event_str,
--					"power:power_frequency") == 0)
--				p_state_change(peo->cpu_id, sample->time,
--					       peo->value);
--		}
--#endif
--	}
-+static int
-+process_sample_power_start(struct perf_evsel *evsel __maybe_unused,
-+			   struct perf_sample *sample)
-+{
-+	struct power_entry_old *peo = sample->raw_data;
-+
-+	c_state_start(peo->cpu_id, sample->time, peo->value);
+ 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
+ 		err = machine__resolve_callchain(machine, evsel, al->thread,
+-						 sample, &parent);
++						 sample, &parent, al);
+ 		if (err)
+ 			return err;
+ 	}
+@@ -681,6 +681,24 @@ setup:
  	return 0;
  }
  
-+static int
-+process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
-+			 struct perf_sample *sample)
++int
++report_parse_ignore_callees_opt(const struct option *opt __maybe_unused,
++				const char *arg, int unset __maybe_unused)
 +{
-+	c_state_end(sample->cpu, sample->time);
-+	return 0;
-+}
-+
-+static int
-+process_sample_power_frequency(struct perf_evsel *evsel __maybe_unused,
-+			       struct perf_sample *sample)
-+{
-+	struct power_entry_old *peo = sample->raw_data;
-+
-+	p_state_change(peo->cpu_id, sample->time, peo->value);
-+	return 0;
-+}
-+#endif /* SUPPORT_OLD_POWER_EVENTS */
-+
- /*
-  * After the last sample we need to wrap up the current C/P state
-  * and close out each CPU for these.
-@@ -957,6 +979,17 @@ static int __cmd_timechart(const char *output_name)
- 		.sample		 = process_sample_event,
- 		.ordered_samples = true,
- 	};
-+	const struct perf_evsel_str_handler power_tracepoints[] = {
-+		{ "power:cpu_idle",		process_sample_cpu_idle },
-+		{ "power:cpu_frequency",	process_sample_cpu_frequency },
-+		{ "sched:sched_wakeup",		process_sample_sched_wakeup },
-+		{ "sched:sched_switch",		process_sample_sched_switch },
-+#ifdef SUPPORT_OLD_POWER_EVENTS
-+		{ "power:power_start",		process_sample_power_start },
-+		{ "power:power_end",		process_sample_power_end },
-+		{ "power:power_frequency",	process_sample_power_frequency },
-+#endif
-+	};
- 	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
- 							 0, false, &perf_timechart);
- 	int ret = -EINVAL;
-@@ -967,6 +1000,12 @@ static int __cmd_timechart(const char *output_name)
- 	if (!perf_session__has_traces(session, "timechart record"))
- 		goto out_delete;
- 
-+	if (perf_session__set_tracepoints_handlers(session,
-+						   power_tracepoints)) {
-+		pr_err("Initializing session tracepoint handlers failed\n");
-+		goto out_delete;
++	if (arg) {
++		int err = regcomp(&ignore_callees_regex, arg, REG_EXTENDED);
++		if (err) {
++			char buf[BUFSIZ];
++			regerror(err, &ignore_callees_regex, buf, sizeof(buf));
++			pr_err("Invalid --ignore-callees regex: %s\n%s", arg, buf);
++			return -1;
++		}
++		have_ignore_callees = 1;
 +	}
 +
- 	ret = perf_session__process_events(session, &perf_timechart);
++	return 0;
++}
++
+ static int
+ parse_branch_mode(const struct option *opt __maybe_unused,
+ 		  const char *str __maybe_unused, int unset)
+@@ -771,6 +789,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
+ 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
+ 		    "alias for inverted call graph"),
++	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
++		   "ignore callees of these functions in call graphs",
++		   report_parse_ignore_callees_opt),
+ 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+ 		   "only consider symbols in these dsos"),
+ 	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index a237059..bbf4635 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -773,8 +773,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 		    sample->callchain) {
+ 			err = machine__resolve_callchain(machine, evsel,
+ 							 al.thread, sample,
+-							 &parent);
+-
++							 &parent, &al);
+ 			if (err)
+ 				return;
+ 		}
+@@ -1109,6 +1108,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
+ 			     "mode[,dump_size]", record_callchain_help,
+ 			     &parse_callchain_opt, "fp"),
++	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
++		   "ignore callees of these functions in call graphs",
++		   report_parse_ignore_callees_opt),
+ 	OPT_BOOLEAN(0, "show-total-period", &symbol_conf.show_total_period,
+ 		    "Show a column with the sum of periods"),
+ 	OPT_STRING(0, "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 5dd5026..f9f9d63 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1058,11 +1058,10 @@ int machine__process_event(struct machine *machine, union perf_event *event)
+ 	return ret;
+ }
+ 
+-static bool symbol__match_parent_regex(struct symbol *sym)
++static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
+ {
+-	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
++	if (sym->name && !regexec(regex, sym->name, 0, NULL, 0))
+ 		return 1;
+-
+ 	return 0;
+ }
+ 
+@@ -1159,8 +1158,8 @@ struct branch_info *machine__resolve_bstack(struct machine *machine,
+ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					     struct thread *thread,
+ 					     struct ip_callchain *chain,
+-					     struct symbol **parent)
+-
++					     struct symbol **parent,
++					     struct addr_location *root_al)
+ {
+ 	u8 cpumode = PERF_RECORD_MISC_USER;
+ 	unsigned int i;
+@@ -1211,8 +1210,15 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					   MAP__FUNCTION, ip, &al, NULL);
+ 		if (al.sym != NULL) {
+ 			if (sort__has_parent && !*parent &&
+-			    symbol__match_parent_regex(al.sym))
++			    symbol__match_regex(al.sym, &parent_regex))
+ 				*parent = al.sym;
++			else if (have_ignore_callees && root_al &&
++			  symbol__match_regex(al.sym, &ignore_callees_regex)) {
++				/* Treat this symbol as the root,
++				   forgetting its callees. */
++				*root_al = al;
++				callchain_cursor_reset(&callchain_cursor);
++			}
+ 			if (!symbol_conf.use_callchain)
+ 				break;
+ 		}
+@@ -1237,13 +1243,13 @@ int machine__resolve_callchain(struct machine *machine,
+ 			       struct perf_evsel *evsel,
+ 			       struct thread *thread,
+ 			       struct perf_sample *sample,
+-			       struct symbol **parent)
+-
++			       struct symbol **parent,
++			       struct addr_location *root_al)
+ {
+ 	int ret;
+ 
+ 	ret = machine__resolve_callchain_sample(machine, thread,
+-						sample->callchain, parent);
++						sample->callchain, parent, root_al);
  	if (ret)
- 		goto out_delete;
+ 		return ret;
+ 
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index e49ba01..5bb6244 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -5,6 +5,7 @@
+ #include <linux/rbtree.h>
+ #include "map.h"
+ 
++struct addr_location;
+ struct branch_stack;
+ struct perf_evsel;
+ struct perf_sample;
+@@ -83,7 +84,8 @@ int machine__resolve_callchain(struct machine *machine,
+ 			       struct perf_evsel *evsel,
+ 			       struct thread *thread,
+ 			       struct perf_sample *sample,
+-			       struct symbol **parent);
++			       struct symbol **parent,
++			       struct addr_location *root_al);
+ 
+ /*
+  * Default guest kernel is defined by parameter --guestkallsyms
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 951a1cf..1eb58ee 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1406,9 +1406,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	if (symbol_conf.use_callchain && sample->callchain) {
+ 
+-
+ 		if (machine__resolve_callchain(machine, evsel, al.thread,
+-					       sample, NULL) != 0) {
++					       sample, NULL, NULL) != 0) {
+ 			if (verbose)
+ 				error("Failed to resolve callchain. Skipping\n");
+ 			return;
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 8deee19..cb2b108 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -7,6 +7,8 @@ const char	default_parent_pattern[] = "^sys_|^do_page_fault";
+ const char	*parent_pattern = default_parent_pattern;
+ const char	default_sort_order[] = "comm,dso,symbol";
+ const char	*sort_order = default_sort_order;
++regex_t		ignore_callees_regex;
++int		have_ignore_callees = 0;
+ int		sort__need_collapse = 0;
+ int		sort__has_parent = 0;
+ int		sort__has_sym = 0;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 45ac84c..a4a6d0b 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -29,6 +29,8 @@ extern const char *sort_order;
+ extern const char default_parent_pattern[];
+ extern const char *parent_pattern;
+ extern const char default_sort_order[];
++extern regex_t ignore_callees_regex;
++extern int have_ignore_callees;
+ extern int sort__need_collapse;
+ extern int sort__has_parent;
+ extern int sort__has_sym;
+@@ -183,4 +185,6 @@ int setup_sorting(void);
+ extern int sort_dimension__add(const char *);
+ void sort__setup_elide(FILE *fp);
+ 
++int report_parse_ignore_callees_opt(const struct option *opt, const char *arg, int unset);
++
+ #endif	/* __PERF_SORT_H */
 -- 
 1.8.1.4
 
