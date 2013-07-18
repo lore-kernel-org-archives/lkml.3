@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934330Ab3GRT4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:56:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41947 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934166Ab3GRT4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:56:21 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 52/76] perf tools: Centralize default columns init in perf_hpp__init
-Date: Thu, 18 Jul 2013 16:49:39 -0300
-Message-Id: <1374177003-3706-53-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
-References: <1374177003-3706-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S934386Ab3GRT4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:56:31 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49794 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934147Ab3GRT4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 15:56:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 4/30] ACPI / hotplug / PCI: Hotplug context objects for bridges and functions
+Date: Thu, 18 Jul 2013 22:06:16 +0200
+Message-ID: <2397558.EsSCoq8A3j@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <3688658.K73mT4hj2a@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <CAE9FiQWjzZ6b1aGgL9OjNZF00hvwaEZJb7ABxjaVbS5FwNwpSQ@mail.gmail.com> <3688658.K73mT4hj2a@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On Thursday, July 18, 2013 09:04:11 PM Rafael J. Wysocki wrote:
+> On Wednesday, July 17, 2013 07:00:33 PM Yinghai Lu wrote:
+> > On Wed, Jul 17, 2013 at 4:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > >
+> > > When either a new hotplug bridge or a new hotplug function is added
+> > > by the ACPI-based PCI hotplug (ACPIPHP) code, attach a context object
+> > > to its ACPI handle to store hotplug-related information in it.  To
+> > > start with, put the handle's bridge and function pointers into that
+> > > object.  Count references to the context objects and drop them when
+> > > they are not needed any more.
+> > >
+> > > First of all, this makes it possible to find out if the given bridge
+> > > has been registered as a function already in a much more
+> > > straightforward way and acpiphp_bridge_handle_to_function() can be
+> > > dropped (Yay!).
+> > >
+> > > This also will allow some more simplifications to be made going
+> > > forward.
+> > >
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > >  drivers/pci/hotplug/acpiphp.h      |   10 ++
+> > >  drivers/pci/hotplug/acpiphp_glue.c |  179 ++++++++++++++++++++++++++++---------
+> > >  2 files changed, 146 insertions(+), 43 deletions(-)
+> > 
+> > no, more lines are added.
+> 
+> Well, that's what 'quilt refresh --diffstat' tells me, quite consistently.
+> 
+> Have you actually counted them?
 
-Now when diff command is separated from other standard outputs,
-we can use perf_hpp__init to initialize all standard columns.
+Now I have done that (using "grep '^+' | wc -l") and that indeed turns out ot
+the right number.
 
-Moving PERF_HPP__OVERHEAD column init back to perf_hpp__init,
-and removing extra enable calls.
+What gives?
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-nj2xk89tj972tbqswfs498ex@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c    | 1 -
- tools/perf/ui/browsers/hists.c | 2 --
- tools/perf/ui/hist.c           | 2 ++
- tools/perf/ui/setup.c          | 1 -
- 4 files changed, 2 insertions(+), 4 deletions(-)
+Rafael
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 9a7e54d..188c265 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -861,7 +861,6 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		setup_browser(true);
- 	else {
- 		use_browser = 0;
--		perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 		perf_hpp__init();
- 	}
- 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 2cb3916..7ef36c3 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -703,8 +703,6 @@ __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us, NULL)
- 
- void hist_browser__init_hpp(void)
- {
--	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
--
- 	perf_hpp__init();
- 
- 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 5440d56..f45c97f 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -421,6 +421,8 @@ LIST_HEAD(perf_hpp__list);
- 
- void perf_hpp__init(void)
- {
-+	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
-+
- 	if (symbol_conf.show_cpu_utilization) {
- 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_SYS);
- 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_US);
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index ae6a789..47d9a57 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -30,7 +30,6 @@ void setup_browser(bool fallback_to_pager)
- 		if (fallback_to_pager)
- 			setup_pager();
- 
--		perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 		perf_hpp__init();
- 		break;
- 	}
+
 -- 
-1.8.1.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
