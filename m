@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934866Ab3GRXol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:44:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60203 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934601Ab3GRXok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:44:40 -0400
-Message-ID: <51E87DD4.3000907@zytor.com>
-Date: Thu, 18 Jul 2013 16:44:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S934876Ab3GRXrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:47:05 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:54020 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934780Ab3GRXrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 19:47:04 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-CC: Tim Chen <tim.c.chen@linux.intel.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, ak <ak@linux.intel.com>,
-        rjw@rjwysocki.net
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>  <1374098936.22432.322.camel@schen9-DESK>  <201307180347.r6I3l5e9077577@www262.sakura.ne.jp> <1374181200.22432.350.camel@schen9-DESK> <51E8696A.7090406@intel.com>
-In-Reply-To: <51E8696A.7090406@intel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130718143928.4f9b45807956e2fdb1ee3a22@linux-foundation.org>
+References: <1374166572-7988-1-git-send-email-uulinux@gmail.com>
+	<20130718143928.4f9b45807956e2fdb1ee3a22@linux-foundation.org>
+Date: Fri, 19 Jul 2013 07:47:02 +0800
+Message-ID: <CAAV+Mu7A5H_T2EroUDWaCSOs1j5_Z6hRNyzrwU2N1WPAOZ=JDw@mail.gmail.com>
+Subject: Re: [PATCH] mm: negative left shift count when PAGE_SHIFT > 20
+From: Jerry <uulinux@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: zhuwei.lu@archermind.com, tianfu.huang@archermind.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 03:17 PM, Rafael J. Wysocki wrote:
+2013/7/19 Andrew Morton <akpm@linux-foundation.org>:
+> On Fri, 19 Jul 2013 00:56:12 +0800 Jerry <uulinux@gmail.com> wrote:
+>
+>> When PAGE_SHIFT > 20, the result of "20 - PAGE_SHIFT" is negative. The
+>> calculating here will generate an unexpected result. In addition, if
+>> PAGE_SHIFT > 20, The memory size represented by numentries was already
+>> integral multiple of 1MB.
 >>
->> alias x86cpu:vendor:*:family:*:model:*:feature:*0081* crct10dif_pclmul
->>
->> This should cause udev to load the crct10dif_pclml module when cpu
->> support the PCLMULQDQ (feature code 0081).  I did my testing during
->> development on 3.10 and the module was indeed loaded.
->>
->> However, I found that the following commit under 3.11-rc1 broke
->> the mechanism after some bisection.
->>
->> commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
->> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> Date:   Fri May 3 00:26:22 2013 +0200
->>
->>      ACPI / processor: Use common hotplug infrastructure
->>           Split the ACPI processor driver into two parts, one that is
->>      non-modular, resides in the ACPI core and handles the enumeration
->>      and hotplug of processors and one that implements the rest of the
->>      existing processor driver functionality.
->>      Rafael, can you check and see if this can be fixed so those
->> optimized
->> crypto modules for Intel cpu that support them can be loaded?
-> 
-> I think this is an ordering issue between udev startup and the time when
-> devices are registered.
-> 
-> I wonder what happens if you put those modules into the initramfs image?
-> 
+>
+> If you tell me that you have a machine which has PAGE_SIZE=2MB and this
+> was the only problem which prevented Linux from running on that machine
+> then I'll apply the patch ;)
+>
 
-OK, this bothers me on some pretty deep level... a set of changes
-exclusively in drivers/acpi breaking functionality which had nothing to
-do with ACPI, specifically CPU-feature-based module loading.
+Hi Morton:
+I just "grep -rn "#define\s\+PAGE_SHIFT" arch/", and find the
+PAGE_SHIFT in some architecture is very big.
+such as the following in "arch/hexagon/include/asm/page.h"
+....
+#ifdef CONFIG_PAGE_SIZE_256KB
+#define PAGE_SHIFT 18
+#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_256KB
+#endif
 
-Please let me know what the investigation comes up with, or if I need to
-get more directly involved.
+#ifdef CONFIG_PAGE_SIZE_1MB
+#define PAGE_SHIFT 20
+#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_1MB
+#endif
+.....
 
-	-hpa
+Maybe the day of "A 2MB page" is not far. :-) I know it is just a
+latent issue. Even if it won't generate a error when PAGE_SIZE == 20,
+the calculating here is not necessary. In my mind, compiler would
+optimize the calculating at that situation. But it is a little tricky.
 
+In my patch, I think compiler would optimize "if (20 > PAGE_SIZE)", it
+won't generate any machine instruction. Just a guarantee.
+
+--
+I love linux!!!
