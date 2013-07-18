@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759092Ab3GRQkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:40:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12445 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758887Ab3GRQkc (ORCPT
+	id S1759183Ab3GRQlX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 12:41:23 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:46721 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759156Ab3GRQlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:40:32 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=OBo3vzDK1icA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=GDUt3bqODRQA:10 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=HmXPV2sSyQM2aKoY0MgA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374165631.6458.248.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/2] tracing: Fix error handling to ensure instances can
- always be removed
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexander Z Lam <azl@google.com>
-Cc: linux-kernel@vger.kernel.org, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>
-Date: Thu, 18 Jul 2013 12:40:31 -0400
-In-Reply-To: <1373502874-1706-2-git-send-email-azl@google.com>
-References: <1373502874-1706-1-git-send-email-azl@google.com>
-	 <1373502874-1706-2-git-send-email-azl@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Jul 2013 12:41:21 -0400
+Date: Thu, 18 Jul 2013 18:41:16 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, jolsa@redhat.com
+Subject: [PATCH] perf tools: Build docs with 'make all'
+Message-ID: <20130718164116.GM8731@rric.localhost>
+References: <1370964158-4135-1-git-send-email-rric@kernel.org>
+ <tip-107de3724eff5a6fa6474a4d2aa5460b63749ebf@git.kernel.org>
+ <20130712093909.GD8731@rric.localhost>
+ <20130716145036.GH8731@rric.localhost>
+ <20130717153118.GC2071@ghostprotocols.net>
+ <20130717154001.GA4454@pd.tnic>
+ <20130717161051.GJ8731@rric.localhost>
+ <20130718121924.GL8731@rric.localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718121924.GL8731@rric.localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-10 at 17:34 -0700, Alexander Z Lam wrote:
-> Remove debugfs directories for tracing instances during creation if an error
-> occurs causing the trace_array for that instance to not be added to
-> ftrace_trace_arrays. If the directory continues to exist after the error, it
-> cannot be removed because the respective trace_array is not in
-> ftrace_trace_arrays.
+Arnaldo,
 
-This patch is fine, I'll put it in now.
-
-Thanks,
-
--- Steve
-
+On 18.07.13 14:19:24, Robert Richter wrote:
+> No issues noticed, accept that doc is built when running the 'install'
+> target, not 'all'.
 > 
-> Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
-> Cc: David Sharp <dhsharp@google.com>
-> Cc: Alexander Z Lam <lambchop468@gmail.com>
-> Signed-off-by: Alexander Z Lam <azl@google.com>
-> ---
->  kernel/trace/trace.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index ca2743b..4ea9967 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -5985,8 +5985,10 @@ static int new_instance_create(const char *name)
->  		goto out_free_tr;
->  
->  	ret = event_trace_add_tracer(tr->dir, tr);
-> -	if (ret)
-> +	if (ret) {
-> +		debugfs_remove_recursive(tr->dir);
->  		goto out_free_tr;
-> +	}
->  
->  	init_tracer_debugfs(tr, tr->dir);
->  
+> Will look at this.
 
+see patch below that fixes the above.
+
+-Robert
+
+
+
+>From 3bf424ea33526fefbce9f95d4ccfaffd36016a21 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@linaro.org>
+Date: Thu, 18 Jul 2013 17:57:20 +0200
+Subject: [PATCH] perf tools: Build docs with 'make all'
+
+Build documentation with 'make all', not 'make install'. We use the
+new target try-man for this which is similar implemented as
+try-install-man. Thus, building the doc is skipped if tools for this
+are missing.
+
+Signed-off-by: Robert Richter <robert.richter@linaro.org>
+Signed-off-by: Robert Richter <rric@kernel.org>
+---
+ tools/perf/Documentation/Makefile | 6 ++++--
+ tools/perf/Makefile               | 7 +++++--
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
+index 5a37a7c..47df22d 100644
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -182,6 +182,8 @@ ifdef missing_tools
+ 	$(error "You need to install $(missing_tools) for man pages")
+ endif
+ 
++do-man: man
++
+ do-install-man: man
+ 	$(INSTALL) -d -m 755 $(DESTDIR)$(man1dir)
+ #	$(INSTALL) -d -m 755 $(DESTDIR)$(man5dir)
+@@ -192,11 +194,11 @@ do-install-man: man
+ 
+ install-man: check-man-tools man
+ 
+-try-install-man:
++try-install-man try-man:
+ ifdef missing_tools
+ 	$(warning Please install $(missing_tools) to have the man pages installed)
+ else
+-	$(MAKE) do-install-man
++	$(MAKE) $(patsubst try-%,do-%,$@)
+ endif
+ 
+ install-info: info
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 1d718a9..8781de7 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -522,7 +522,7 @@ export INSTALL SHELL_PATH
+ 
+ SHELL = $(SHELL_PATH)
+ 
+-all: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(OTHER_PROGRAMS)
++all: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(OTHER_PROGRAMS) try-man
+ 
+ please_set_SHELL_PATH_to_a_more_modern_shell:
+ 	@$$(:)
+@@ -710,9 +710,12 @@ endif
+ 
+ DOC_TARGETS := doc man html info pdf
+ 
+-INSTALL_DOC_TARGETS := $(patsubst %,install-%,$(DOC_TARGETS)) try-install-man
++INSTALL_DOC_TARGETS := $(patsubst %,install-%,$(DOC_TARGETS))
+ INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
+ 
++DOC_TARGETS	    += try-man
++INSTALL_DOC_TARGETS += try-install-man
++
+ # 'make doc' should call 'make -C Documentation all'
+ $(DOC_TARGETS):
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) $(@:doc=all)
+-- 
+1.8.3.2
 
