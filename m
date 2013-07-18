@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759472Ab3GRVVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:21:07 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:64253 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759144Ab3GRVVF (ORCPT
+	id S1759488Ab3GRVVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:21:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43769 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759144Ab3GRVVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:21:05 -0400
-Date: Thu, 18 Jul 2013 14:21:08 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, wni@nvidia.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, l.stach@pengutronix.de
-Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
- zone build
-Message-ID: <20130718212108.GC4110@roeck-us.net>
-References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
- <20130717220942.GB990@roeck-us.net>
- <51E7F341.8020508@ti.com>
- <51E8234D.1020607@wwwdotorg.org>
+	Thu, 18 Jul 2013 17:21:19 -0400
+Message-ID: <51E85C3F.8070509@kernel.dk>
+Date: Thu, 18 Jul 2013 15:21:03 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E8234D.1020607@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+References: <cover.1369155164.git.agordeev@redhat.com>  <20130521235003.GE6985@mtj.dyndns.org>  <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>  <20130522170305.GD9563@kernel.dk>  <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>  <1373583637.7397.370.camel@haakon3.risingtidesystems.com>  <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>  <1373692812.7397.625.camel@haakon3.risingtidesystems.com>  <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>  <1374010683.7397.880.camel@haakon3.risingtidesystems.com>  <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>  <1374173515.7397.948.camel@haakon3.risingtidesystems.com> <1374174891.7397.964.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1374174891.7397.964.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 11:18:05AM -0600, Stephen Warren wrote:
-> On 07/18/2013 07:53 AM, Eduardo Valentin wrote:
-> > Hello Guenter,
-> > 
-> > On 17-07-2013 18:09, Guenter Roeck wrote:
-> >> On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin
-> >> wrote:
-> >>> Hello all,
-> >>> 
-> >>> As you noticed, I am working in a way to represent thermal
-> >>> data using device tree [1]. Essentially, this should be a way
-> >>> to say what to do with a sensor and how to associate (cooling)
-> >>> actions with it.
-> >>> 
-> >> Seems to me that goes way beyond the supposed scope of devicetree
-> >> data. Devicetree data is supposed to describe hardware, not its
-> >> configuration or use. This is clearly a use case.
-> > 
-> > Thanks for rising your voice here. It is important to know what
-> > hwmon ppl think about this.
+On 07/18/2013 01:14 PM, Nicholas A. Bellinger wrote:
+> On Thu, 2013-07-18 at 11:51 -0700, Nicholas A. Bellinger wrote:
+>> On Wed, 2013-07-17 at 18:19 +0200, Alexander Gordeev wrote:
+>>> On Tue, Jul 16, 2013 at 02:38:03PM -0700, Nicholas A. Bellinger wrote:
+>>>> [    7.927818] scsi_execute(): Calling blk_mq_free_request >>>
+>>>> [    7.927826] scsi 0:0:0:0: Direct-Access     ATA      ST9500530NS      CC03 PQ: 0 ANSI: 5
+>>>>
+>>>> OK, so INQUIRY response payload is looking as expected here.
+>>>
+>>> Yep. It is not on the top of my head, but I remember something like INQUIRYs
+>>> are emulated and thus do not have payload.
+>>>
+>>>> [    7.927960] sd 0:0:0:0: [sda] Sector size 0 reported, assuming 512.
+>>>> [    7.927964] sd 0:0:0:0: [sda] 1 512-byte logical blocks: (512 B/512 B)
+>>>> [    7.927965] sd 0:0:0:0: [sda] 0-byte physical blocks
+>>>>
+>>>> Strange..  READ_CAPACITY appears to be returning a payload as zeros..?
+>>>
+>>> Yep. Because blk_execute_rq() does not put the proper callback and data do
+>>> not get copied from sg's to bounce buffer. That is why I tried to use
+>>> blk_mq_execute_rq() instead. Once I do that, data start getting read and
+>>> booting stops elsewhere.
+>>
+>> Mmmmmm.
+>>
+>> The call to blk_queue_bounce() exists within blk_mq_make_request(), but
+>> AFAICT this should still be getting invoked regardless of if the struct
+>> request is dispatched into blk-mq via the modified blk_execute_rq() ->
+>> blk_execute_rq_nowait() -> blk_mq_insert_request() codepath, or directly
+>> via blk_mq_execute_rq()..
+>>
+>> Jens..?
+>>
 > 
-> I meant to find time to read Guenter's original email where he
-> initially objected to putting data into DT, and determine exactly what
-> was being objected to. I still haven't:-( However, the arguments that
-> Eduardo stated in his email do make sense to me; I agree that
-> temperature limits really are a description of HW. Details of which
-> cooling methods to invoke when certain temperature limits are reached
-> is also part of the HW/system design, and hence I would tend to agree
-> that they're appropriate to include in DT. Anyway, that's just my 2
-> cents on the matter:-)
+> Actually sorry, your right.  A call to blk_mq_insert_request() for
+> REQ_TYPE_BLOCK_PC will not invoke blk_queue_bounce() located near the
+> top of blk_mq_execute_rq(), which means that only REQ_TYPE_FS is
+> currently using bounce buffers, if required.
+> 
+> Need to think a bit more about what to do here for REQ_TYPE_BLOCK_PC
+> bounce buffer special case with blk_execute_rq(), but I'm thinking that
+> blk_mq_execute_rq() should really not be used here..
+> 
+> Jens..?
 
-Many systems have multiple profiles for various use cases (high performance,
-low power etc), and limits are different based on the use case. If that means
-you are going to have multiple devicetree variants based on the profile,
-I would argue that you crossed the line. With thermal profiles it gets even more
-complicated, as those parameters may be played around with and changed
-multiple times to find the best settings to achieve optimal cooling.
-Does this describe hardware ? I don't think so, but, as I mentioned before,
-maybe I am wrong.
+It needs to be pre-bounced, blk-mq will only bounce incoming bios and
+not requests merely added to the queue(s). Might be useful to add an
+equiv blk_mq_make_request() for this.
 
-Guenter
+-- 
+Jens Axboe
+
