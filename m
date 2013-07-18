@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758360Ab3GRKTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:19:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59124 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291Ab3GRKTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:19:51 -0400
+	id S1758588Ab3GRKT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:19:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44423 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758489Ab3GRKTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:19:54 -0400
 From: Oleksandr Kravchenko <x0199363@ti.com>
 To: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
@@ -15,131 +14,39 @@ CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <srinivas.pandruvada@intel.com>, <devicetree-discuss@lists.ozlabs.org>,
         <grygorii.strashko@ti.com>,
         Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Subject: [PATCH 1/3] iio: core: implement devm_iio_device_alloc/devm_iio_device_free
-Date: Thu, 18 Jul 2013 13:19:24 +0300
-Message-ID: <1374142766-29736-1-git-send-email-x0199363@ti.com>
+Subject: [PATCH 2/3] of: Add Avago Technologies vendor prefix
+Date: Thu, 18 Jul 2013 13:19:25 +0300
+Message-ID: <1374142766-29736-2-git-send-email-x0199363@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374142766-29736-1-git-send-email-x0199363@ti.com>
+References: <1374142766-29736-1-git-send-email-x0199363@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 
-Add a resource managed devm_iio_device_alloc()/devm_iio_device_free()
-to automatically clean up any allocations made by IIO drivers,
-thus leading to simplified IIO drivers code.
+This commit adds a device tree vendor prefix for Avago Technologies.
 
-In addition, this will allow IIO drivers to use other devm_*() API
-(like devm_request_irq) and don't care about the race between
-iio_device_free() and the release of resources by Device core
-during driver removing.
-
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-[o.v.kravchenko@globallogic.com: fix return value ib devm_iio_device_alloc
-in case if devres_alloc failed, remove unused variable "rc"]
 Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Tested-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 ---
- drivers/iio/industrialio-core.c |   47 +++++++++++++++++++++++++++++++++++++++
- include/linux/iio/iio.h         |   25 +++++++++++++++++++++
- 2 files changed, 72 insertions(+)
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index e145931..d56d122 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -912,6 +912,53 @@ void iio_device_free(struct iio_dev *dev)
- }
- EXPORT_SYMBOL(iio_device_free);
- 
-+static void devm_iio_device_release(struct device *dev, void *res)
-+{
-+	iio_device_free(*(struct iio_dev **)res);
-+}
-+
-+static int devm_iio_device_match(struct device *dev, void *res, void *data)
-+{
-+	struct iio_dev **r = res;
-+	if (!r || !*r) {
-+		WARN_ON(!r || !*r);
-+		return 0;
-+	}
-+	return *r == data;
-+}
-+
-+struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv)
-+{
-+	struct iio_dev **ptr, *iio_dev;
-+
-+	ptr = devres_alloc(devm_iio_device_release, sizeof(*ptr),
-+			   GFP_KERNEL);
-+	if (!ptr)
-+		return NULL;
-+
-+	/* use raw alloc_dr for kmalloc caller tracing */
-+	iio_dev = iio_device_alloc(sizeof_priv);
-+	if (iio_dev) {
-+		*ptr = iio_dev;
-+		devres_add(dev, ptr);
-+	} else {
-+		devres_free(ptr);
-+	}
-+
-+	return iio_dev;
-+}
-+EXPORT_SYMBOL_GPL(devm_iio_device_alloc);
-+
-+void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev)
-+{
-+	int rc;
-+
-+	rc = devres_release(dev, devm_iio_device_release,
-+			    devm_iio_device_match, iio_dev);
-+	WARN_ON(rc);
-+}
-+EXPORT_SYMBOL_GPL(devm_iio_device_free);
-+
- /**
-  * iio_chrdev_open() - chrdev file open for buffer access and ioctls
-  **/
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index 8d171f4..f1d99f6 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -532,6 +532,31 @@ static inline struct iio_dev *iio_priv_to_dev(void *priv)
- void iio_device_free(struct iio_dev *indio_dev);
- 
- /**
-+ * devm_iio_device_alloc - Resource-managed iio_device_alloc()
-+ * @dev: 		Device to allocate iio_dev for
-+ * @sizeof_priv: 	Space to allocate for private structure.
-+ *
-+ * Managed iio_device_alloc.  iio_dev allocated with this function is
-+ * automatically freed on driver detach.
-+ *
-+ * If an iio_dev allocated with this function needs to be freed separately,
-+ * devm_iio_device_free() must be used.
-+ *
-+ * RETURNS:
-+ * Pointer to allocated iio_dev on success, NULL on failure.
-+ */
-+struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv);
-+
-+/**
-+ * devm_iio_device_free - Resource-managed iio_device_free()
-+ * @dev:		Device this iio_dev belongs to
-+ * @indio_dev: 		the iio_dev associated with the device
-+ *
-+ * Free indio_dev allocated with devm_iio_device_alloc().
-+ */
-+void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev);
-+
-+/**
-  * iio_buffer_enabled() - helper function to test if the buffer is enabled
-  * @indio_dev:		IIO device structure for device
-  **/
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index d5a79ca..8aab9c6 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -11,6 +11,7 @@ amcc	Applied Micro Circuits Corporation (APM, formally AMCC)
+ apm	Applied Micro Circuits Corporation (APM)
+ arm	ARM Ltd.
+ atmel	Atmel Corporation
++avago	Avago Technologies
+ bosch	Bosch Sensortec GmbH
+ brcm	Broadcom Corporation
+ cavium	Cavium, Inc.
 -- 
 1.7.9.5
 
