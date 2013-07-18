@@ -1,119 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934550Ab3GRWm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:42:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7826 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933531Ab3GRWmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:42:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
-   d="scan'208";a="372821146"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Increase the file descriptor limits
-Date: Thu, 18 Jul 2013 15:42:39 -0700
-Message-Id: <1374187359-14138-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S934427Ab3GRWmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:42:45 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:59423 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759089Ab3GRWmk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:42:40 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, gregkh@linuxfoundation.org,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paul.gortmaker@windriver.com, joe@perches.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH v5] power: new trace event to print device suspend and resume time
+Date: Thu, 18 Jul 2013 16:42:32 -0600
+Message-Id: <1374187352-3283-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+A new trace event is added to pm events to print time it takes to suspend and
+resume a device. It generates trace message that includes device, driver,
+parent information in addition to the type of pm ops invoked as well as the
+pm event and error status from the pm ops. Example trace below:
 
-perf stat -a needs 10 open file descriptors per logical CPU
-perf stat -a -dddd needs 20 open fds for each.
+bash-2239  [000] ....   290.883035: device_pm_report_time: backlight
+ acpi_video0 parent=0000:00:02.0 state=freeze ops=class nsecs=332 err=0
+bash-2239  [000] ....   290.883041: device_pm_report_time: rfkill rf
+kill3 parent=phy0 state=freeze ops=legacy class nsecs=216 err=0
+bash-2239  [001] ....   290.973892: device_pm_report_time: ieee80211
+ phy0 parent=0000:01:00.0 state=freeze ops=legacy class nsecs=90846477 err=0
 
-This implies that stat -a doesn't work on any system with the default
-ulimit -n 1024 which has more than ~100 CPUs and stat -a -dddd doesn't
-work on anything with more than 46 CPUs.
+bash-2239  [001] ....   293.660129: device_pm_report_time: ieee80211 phy0 parent=0000:01:00.0 state=restore ops=legacy class nsecs=101295162 err=0
+bash-2239  [001] ....   293.660147: device_pm_report_time: rfkill rfkill3 parent=phy0 state=restore ops=legacy class nsecs=1804 err=0
+bash-2239  [001] ....   293.660157: device_pm_report_time: backlight acpi_video0 parent=0000:00:02.0 state=restore ops=class nsecs=757 err=0
 
-Longer term there needs to be probably some way to lower the file
-descriptor requirements. This would need some changes in the
-kernel/user interface.
-
-But short term this patch just tries to increase the file
-descriptor limit in perf itself, when it runs into a EMFILE.
-
-It first sets it to the hard limit, and then tries to increase
-the hard limit.
-
-On Fedora systems the default seems to be soft limit 1024
-and hard limit 4*1024. So even non root can support 409
-or 186 CPUs respectively. root can go far higher.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- tools/perf/util/evsel.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/base/power/main.c    |   77 +++++++++++++++++++++++-------------------
+ include/trace/events/power.h |   35 +++++++++++++++++++
+ 2 files changed, 78 insertions(+), 34 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 07b1a3a..155fdaa 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -20,6 +20,7 @@
- #include "target.h"
- #include <linux/hw_breakpoint.h>
- #include <linux/perf_event.h>
-+#include <sys/resource.h>
- #include "perf_regs.h"
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 5a9b656..9f098a8 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -28,6 +28,7 @@
+ #include <linux/sched.h>
+ #include <linux/async.h>
+ #include <linux/suspend.h>
++#include <trace/events/power.h>
+ #include <linux/cpuidle.h>
+ #include "../base.h"
+ #include "power.h"
+@@ -56,6 +57,30 @@ static pm_message_t pm_transition;
  
- static struct {
-@@ -823,6 +824,7 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	int cpu, thread;
- 	unsigned long flags = 0;
- 	int pid = -1, err;
-+	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
+ static int async_error;
  
- 	if (evsel->fd == NULL &&
- 	    perf_evsel__alloc_fd(evsel, cpus->nr, threads->nr) < 0)
-@@ -850,6 +852,7 @@ retry_sample_id:
++static char *pm_verb(int event)
++{
++	switch (event) {
++	case PM_EVENT_SUSPEND:
++		return "suspend";
++	case PM_EVENT_RESUME:
++		return "resume";
++	case PM_EVENT_FREEZE:
++		return "freeze";
++	case PM_EVENT_QUIESCE:
++		return "quiesce";
++	case PM_EVENT_HIBERNATE:
++		return "hibernate";
++	case PM_EVENT_THAW:
++		return "thaw";
++	case PM_EVENT_RESTORE:
++		return "restore";
++	case PM_EVENT_RECOVER:
++		return "recover";
++	default:
++		return "(unknown PM event)";
++	}
++}
++
+ /**
+  * device_pm_sleep_init - Initialize system suspend-related device fields.
+  * @dev: Device object being initialized.
+@@ -172,16 +197,21 @@ static ktime_t initcall_debug_start(struct device *dev)
+ }
  
- 			group_fd = get_group_fd(evsel, cpu, thread);
+ static void initcall_debug_report(struct device *dev, ktime_t calltime,
+-				  int error)
++				  int error, pm_message_t state, char *info)
+ {
+-	ktime_t delta, rettime;
++	ktime_t rettime;
++	s64 nsecs;
++
++	rettime = ktime_get();
++	nsecs = (s64) ktime_to_ns(ktime_sub(rettime, calltime));
  
-+retry_open:
- 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
- 								     pid,
- 								     cpus->map[cpu],
-@@ -858,12 +861,37 @@ retry_sample_id:
- 				err = -errno;
- 				goto try_fallback;
- 			}
-+			set_rlimit = NO_CHANGE;
+ 	if (pm_print_times_enabled) {
+-		rettime = ktime_get();
+-		delta = ktime_sub(rettime, calltime);
+ 		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
+-			error, (unsigned long long)ktime_to_ns(delta) >> 10);
++			error, (unsigned long long)nsecs >> 10);
+ 	}
++
++	trace_device_pm_report_time(dev, info, nsecs, pm_verb(state.event),
++				    error);
+ }
+ 
+ /**
+@@ -309,30 +339,6 @@ static pm_callback_t pm_noirq_op(const struct dev_pm_ops *ops, pm_message_t stat
+ 	return NULL;
+ }
+ 
+-static char *pm_verb(int event)
+-{
+-	switch (event) {
+-	case PM_EVENT_SUSPEND:
+-		return "suspend";
+-	case PM_EVENT_RESUME:
+-		return "resume";
+-	case PM_EVENT_FREEZE:
+-		return "freeze";
+-	case PM_EVENT_QUIESCE:
+-		return "quiesce";
+-	case PM_EVENT_HIBERNATE:
+-		return "hibernate";
+-	case PM_EVENT_THAW:
+-		return "thaw";
+-	case PM_EVENT_RESTORE:
+-		return "restore";
+-	case PM_EVENT_RECOVER:
+-		return "recover";
+-	default:
+-		return "(unknown PM event)";
+-	}
+-}
+-
+ static void pm_dev_dbg(struct device *dev, pm_message_t state, char *info)
+ {
+ 	dev_dbg(dev, "%s%s%s\n", info, pm_verb(state.event),
+@@ -379,7 +385,7 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+ 	error = cb(dev);
+ 	suspend_report_result(cb, error);
+ 
+-	initcall_debug_report(dev, calltime, error);
++	initcall_debug_report(dev, calltime, error, state, info);
+ 
+ 	return error;
+ }
+@@ -1027,7 +1033,8 @@ EXPORT_SYMBOL_GPL(dpm_suspend_end);
+  * @cb: Suspend callback to execute.
+  */
+ static int legacy_suspend(struct device *dev, pm_message_t state,
+-			  int (*cb)(struct device *dev, pm_message_t state))
++			  int (*cb)(struct device *dev, pm_message_t state),
++			  char *info)
+ {
+ 	int error;
+ 	ktime_t calltime;
+@@ -1037,7 +1044,7 @@ static int legacy_suspend(struct device *dev, pm_message_t state,
+ 	error = cb(dev, state);
+ 	suspend_report_result(cb, error);
+ 
+-	initcall_debug_report(dev, calltime, error);
++	initcall_debug_report(dev, calltime, error, state, info);
+ 
+ 	return error;
+ }
+@@ -1097,7 +1104,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 			goto Run;
+ 		} else if (dev->class->suspend) {
+ 			pm_dev_dbg(dev, state, "legacy class ");
+-			error = legacy_suspend(dev, state, dev->class->suspend);
++			error = legacy_suspend(dev, state, dev->class->suspend,
++						"legacy class ");
+ 			goto End;
  		}
  	}
+@@ -1108,7 +1116,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 			callback = pm_op(dev->bus->pm, state);
+ 		} else if (dev->bus->suspend) {
+ 			pm_dev_dbg(dev, state, "legacy bus ");
+-			error = legacy_suspend(dev, state, dev->bus->suspend);
++			error = legacy_suspend(dev, state, dev->bus->suspend,
++						"legacy bus ");
+ 			goto End;
+ 		}
+ 	}
+diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+index 8e42410..4e62925 100644
+--- a/include/trace/events/power.h
++++ b/include/trace/events/power.h
+@@ -66,6 +66,41 @@ TRACE_EVENT(machine_suspend,
+ 	TP_printk("state=%lu", (unsigned long)__entry->state)
+ );
  
- 	return 0;
- 
- try_fallback:
-+	/*
-+	 * perf stat needs between 5 and 22 fds per CPU. When we run out
-+	 * of them try to increase the limits.
-+	 */
-+	if (err == -EMFILE && set_rlimit < INCREASED_MAX) {
-+		struct rlimit l;
-+		int old_errno = errno;
++TRACE_EVENT(device_pm_report_time,
 +
-+		if (getrlimit(RLIMIT_NOFILE, &l) == 0) {
-+			if (set_rlimit == NO_CHANGE)
-+				l.rlim_cur = l.rlim_max;
-+			else {
-+				l.rlim_cur = l.rlim_max + 1000;
-+				l.rlim_max = l.rlim_cur;
-+			}
-+			if (setrlimit(RLIMIT_NOFILE, &l) == 0) {
-+				set_rlimit++;
-+				errno = old_errno;
-+				goto retry_open;
-+			}
-+		}
-+		errno = old_errno;
-+	}
++	TP_PROTO(struct device *dev, const char *pm_ops, s64 ops_time,
++		 char *pm_event_str, int error),
 +
- 	if (err != -EINVAL || cpu > 0 || thread > 0)
- 		goto out_close;
++	TP_ARGS(dev, pm_ops, ops_time, pm_event_str, error),
++
++	TP_STRUCT__entry(
++		__string(device, dev_name(dev))
++		__string(driver, dev_driver_string(dev))
++		__string(parent, dev->parent ? dev_name(dev->parent) : "none")
++		__string(pm_ops, pm_ops ? pm_ops : "none ")
++		__string(pm_event_str, pm_event_str)
++		__field(s64, ops_time)
++		__field(int, error)
++	),
++
++	TP_fast_assign(
++		__assign_str(device, dev_name(dev));
++		__assign_str(driver, dev_driver_string(dev));
++		__assign_str(parent,
++				dev->parent ? dev_name(dev->parent) : "none");
++		__assign_str(pm_ops, pm_ops ? pm_ops : "none ");
++		__assign_str(pm_event_str, pm_event_str);
++		__entry->ops_time = ops_time;
++		__entry->error = error;
++	),
++
++	/* ops_str has an extra space at the end */
++	TP_printk("%s %s parent=%s state=%s ops=%snsecs=%lld err=%d",
++		__get_str(driver), __get_str(device), __get_str(parent),
++		__get_str(pm_event_str), __get_str(pm_ops),
++		__entry->ops_time, __entry->error)
++);
++
+ DECLARE_EVENT_CLASS(wakeup_source,
  
+ 	TP_PROTO(const char *name, unsigned int state),
 -- 
-1.8.1.4
+1.7.10.4
 
