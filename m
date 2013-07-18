@@ -1,207 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965372Ab3GRUL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:11:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41475 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759399Ab3GRTuV (ORCPT
+	id S934273Ab3GRULo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:11:44 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:34340 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933445Ab3GRULl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:50:21 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/76] perf util: Move debugfs/tracing helper functions to util.c
-Date: Thu, 18 Jul 2013 16:48:56 -0300
-Message-Id: <1374177003-3706-10-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
-References: <1374177003-3706-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 18 Jul 2013 16:11:41 -0400
+Message-ID: <1374178250.24916.131.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+From: Toshi Kani <toshi.kani@hp.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: Dave Hansen <dave.hansen@intel.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Date: Thu, 18 Jul 2013 14:10:50 -0600
+In-Reply-To: <51E83536.6070100@sr71.net>
+References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
+	  <51E80973.9000308@intel.com> <1374164815.24916.84.camel@misato.fc.hp.com>
+	 <51E83536.6070100@sr71.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Thu, 2013-07-18 at 11:34 -0700, Dave Hansen wrote:
+> On 07/18/2013 09:26 AM, Toshi Kani wrote:
+> > On Thu, 2013-07-18 at 08:27 -0700, Dave Hansen wrote:
+> >> I'd really prefer you don't do this.  Do you really have random
+> >> processes on your system poking at random sysfs files and then
+> >> complaining when things break?
+> > 
+> > I am afraid that the "probe" interface does not provide the level of
+> > quality suitable for regular users.  It takes any value and blindly
+> > extends the page table.
+> 
+> That's like saying that /dev/sda takes any value and blindly writes it
+> to the disk.
 
-Since they're generic helpers move them to util.c so that they can be
-used by others.
+I do not think so.  Using echo command to write a value to /dev/sda is
+not how it is instructed to use in the document.  I am not saying that
+we need to protect from a privileged user doing something crazy.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1372230862-15861-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/trace-event-info.c | 59 --------------------------------------
- tools/perf/util/util.c             | 59 ++++++++++++++++++++++++++++++++++++++
- tools/perf/util/util.h             |  3 ++
- 3 files changed, 62 insertions(+), 59 deletions(-)
+> > Also, we are not aware of the use of this
+> > interface on x86.  Would you elaborate why you need this interface on
+> > x86?  Is it for your testing, or is it necessary for end-users?  If the
+> > former, can you modify .config file to enable it?
+> 
+> For me, it's testing.  It allows testing of the memory hotplug software
+> stack without actual hardware, which is incredibly valuable.  That
+> includes testing on distribution kernels which I do not want to modify.
+>  I thought there were some hypervisor users which don't use ACPI for
+> hotplug event notifications too.
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 3917eb9..615c062 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -46,65 +46,6 @@
- static int output_fd;
- 
- 
--static const char *find_debugfs(void)
--{
--	const char *path = perf_debugfs_mount(NULL);
--
--	if (!path)
--		pr_debug("Your kernel does not support the debugfs filesystem");
--
--	return path;
--}
--
--/*
-- * Finds the path to the debugfs/tracing
-- * Allocates the string and stores it.
-- */
--static const char *find_tracing_dir(void)
--{
--	static char *tracing;
--	static int tracing_found;
--	const char *debugfs;
--
--	if (tracing_found)
--		return tracing;
--
--	debugfs = find_debugfs();
--	if (!debugfs)
--		return NULL;
--
--	tracing = malloc(strlen(debugfs) + 9);
--	if (!tracing)
--		return NULL;
--
--	sprintf(tracing, "%s/tracing", debugfs);
--
--	tracing_found = 1;
--	return tracing;
--}
--
--static char *get_tracing_file(const char *name)
--{
--	const char *tracing;
--	char *file;
--
--	tracing = find_tracing_dir();
--	if (!tracing)
--		return NULL;
--
--	file = malloc(strlen(tracing) + strlen(name) + 2);
--	if (!file)
--		return NULL;
--
--	sprintf(file, "%s/%s", tracing, name);
--	return file;
--}
--
--static void put_tracing_file(char *file)
--{
--	free(file);
--}
--
- int bigendian(void)
- {
- 	unsigned char str[] = { 0x1, 0x2, 0x3, 0x4, 0x0, 0x0, 0x0, 0x0};
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 59d868a..9a06584 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -269,3 +269,62 @@ void perf_debugfs_set_path(const char *mntpt)
- 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
- 	set_tracing_events_path(mntpt);
- }
-+
-+static const char *find_debugfs(void)
-+{
-+	const char *path = perf_debugfs_mount(NULL);
-+
-+	if (!path)
-+		fprintf(stderr, "Your kernel does not support the debugfs filesystem");
-+
-+	return path;
-+}
-+
-+/*
-+ * Finds the path to the debugfs/tracing
-+ * Allocates the string and stores it.
-+ */
-+const char *find_tracing_dir(void)
-+{
-+	static char *tracing;
-+	static int tracing_found;
-+	const char *debugfs;
-+
-+	if (tracing_found)
-+		return tracing;
-+
-+	debugfs = find_debugfs();
-+	if (!debugfs)
-+		return NULL;
-+
-+	tracing = malloc(strlen(debugfs) + 9);
-+	if (!tracing)
-+		return NULL;
-+
-+	sprintf(tracing, "%s/tracing", debugfs);
-+
-+	tracing_found = 1;
-+	return tracing;
-+}
-+
-+char *get_tracing_file(const char *name)
-+{
-+	const char *tracing;
-+	char *file;
-+
-+	tracing = find_tracing_dir();
-+	if (!tracing)
-+		return NULL;
-+
-+	file = malloc(strlen(tracing) + strlen(name) + 2);
-+	if (!file)
-+		return NULL;
-+
-+	sprintf(file, "%s/%s", tracing, name);
-+	return file;
-+}
-+
-+void put_tracing_file(char *file)
-+{
-+	free(file);
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 2732fad..cc1574e 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -80,6 +80,9 @@ extern char buildid_dir[];
- extern char tracing_events_path[];
- extern void perf_debugfs_set_path(const char *mountpoint);
- const char *perf_debugfs_mount(const char *mountpoint);
-+const char *find_tracing_dir(void);
-+char *get_tracing_file(const char *name);
-+void put_tracing_file(char *file);
- 
- /* On most systems <limits.h> would have given us this, but
-  * not on some systems (e.g. GNU/Hurd).
--- 
-1.8.1.4
+I think such hypervisor relies on a balloon driver and does not use this
+interface.
+
+> All that I'm asking is that you either leave it the way it is, or make a
+> Kconfig menu entry for it.
+> 
+> But, really, what's the problem that you're solving?  Has this caused
+> you issues somehow?  It's been there for, what, 10 years?  Surely it's
+> part of the ABI.
+
+The problem is that the probe interface is documented as one of the
+steps that may be necessary for memory hotplug.  A typical user may or
+may not know if his/her platform generates a hotplug notification to the
+kernel to decide if this step is necessary.  If the user performs this
+step on x86, it will likely mess up the system.  Since we do not need it
+on x86, a prudent approach to protect such user is to disable or remove
+the interface on x86 and document it accordingly.  We have not seen this
+issue yet because we do not have many platforms that support memory
+hotplug today.  Once memory hotplug support in KVM gets merged into the
+mainline, anyone can start using this feature on their systems.  At that
+time, their choice of a stable kernel may be 3.12.x.  This interface has
+been there for while, but we need to fix it before the memory hotplug
+feature becomes available for everyone.
+
+Does it make sense?  I understand that you are using this interface for
+your testing.  If I make a Kconfig menu entry, are you OK to disable
+this option by default?
+
+Motohiro, Yasuaki, do you have any suggestion?
+
+Thanks,
+-Toshi
 
