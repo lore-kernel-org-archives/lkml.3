@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759067Ab3GRPtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 11:49:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16107 "EHLO mga02.intel.com"
+	id S1759115Ab3GRPtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 11:49:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19324 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758607Ab3GRPtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 11:49:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,694,1367996400"; 
-   d="scan'208";a="372606346"
-Date: Thu, 18 Jul 2013 08:48:14 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        "Hohndel, Dirk" <dirk.hohndel@intel.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130718154814.GA5440@xanatos>
-References: <20130715155202.GC29526@xanatos>
- <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
- <20130715174659.GC15531@xanatos>
- <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
- <20130715180403.GD15531@xanatos>
- <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <alpine.DEB.2.02.1307172336410.4089@ionos.tec.linutronix.de>
+	id S1759093Ab3GRPti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 11:49:38 -0400
+Date: Thu, 18 Jul 2013 17:44:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] tracing: more list_empty(perf_events) checks
+Message-ID: <20130718154403.GA8416@redhat.com>
+References: <20130617170142.GA19780@redhat.com> <1374116446.6458.203.camel@gandalf.local.home> <20130718094237.GI27075@twins.programming.kicks-ass.net> <1374158349.6458.237.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307172336410.4089@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374158349.6458.237.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 02:42:16AM +0200, Thomas Gleixner wrote:
-> If you can point me to a single instance of Linus "abusing" someone
-> who is not one of his trusted persons, who really should be able to
-> deal with that, or someone who did not provoke him to go into rant
-> mode, then I'm all on your side.
+On 07/18, Steven Rostedt wrote:
+>
+> Oleg, did you update the change logs? These patches look the same as
+> what was in your mbox. Or did Peter have an issues with the change log
+> of another patch?
 
-Not that I think this link will sway you, and this thread *should*
-really die down so we can discuss this at KS instead:
+No, I didn't change them in any way, just resended.
 
-https://plus.google.com/+LinusTorvalds/posts/1vyfmNCYpi5
+To remind. 0/3 says "Compile tested only, not for inclusion yet" but
+I tried to test them after that, including the performance testing.
+However I did this under KVM so I am not sure if we can trust these
+numbers. But it seems that you got the similar results with
+perf-bench-sched-pipe: http://marc.info/?l=linux-kernel&m=137176685731120
 
-"So here's a plea: if you have anything to do with security in a distro,
-and think that my kids (replace "my kids" with "sales people on the
-road" if you think your main customers are businesses) need to have the
-root password to access some wireless network, or to be able to print
-out a paper, or to change the date-and-time settings, please just kill
-yourself now. The world will be a better place."
 
-Linus asked someone to go kill themselves.  That someone was anyone
-involved in distro security, specifically OpenSuse.  I think that
-qualifies as "not one of his trusted persons".  I'll leave it up to you
-whether you think that statement was justified or civil.
+Steven, I am starting to think that it would be better to resend this
+series (3-6 in mbox I sent) so that Peter and Frederic can take another
+look. And I'll try to update the changelogs. Will do a bit later today.
 
-I don't think someone in a position of power should be encouraging
-developers to commit suicide, even if they did make a mistake.  The
-Portland open source community has already had to deal with two
-developer suicides this year (Igal Koshevoy and Matthew):
+OK?
 
-http://stumptownsyndicate.org/2013/04/09/goodbye-igal/
+Oleg.
 
-I personally don't want to be responsible for anyone else contemplating
-suicide, even because of an obviously sarcastic "joke".  I don't joke
-about suicide.  I would appreciate it if other developers refrained from
-joking about it as well.
-
-Sarah Sharp
