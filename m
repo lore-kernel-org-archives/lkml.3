@@ -1,85 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab3GRCUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 22:20:50 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36285 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791Ab3GRCUt (ORCPT
+	id S1758028Ab3GRCj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 22:39:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59029 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab3GRCjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 22:20:49 -0400
-Message-ID: <51E750F4.5070200@hitachi.com>
-Date: Thu, 18 Jul 2013 11:20:36 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing event_file/call
- in inode->i_private
-References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com> <20130717145148.GB7358@redhat.com>
-In-Reply-To: <20130717145148.GB7358@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Jul 2013 22:39:24 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: arm@kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 0/3] Cleanup sched_clock.h users
+Date: Wed, 17 Jul 2013 19:39:18 -0700
+Message-Id: <1374115161-675-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.3.754.g9c3c367
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/17 23:51), Oleg Nesterov wrote:
-> On 07/17, Masami Hiramatsu wrote:
->>
->> (2013/07/16 3:16), Oleg Nesterov wrote:
->>> On 07/09, Masami Hiramatsu wrote:
->>>>
->>>> To avoid this, when opening events/*/*/enable, we have to ensure
->>>> the dentry of the file is not unlinked yet, under event_mutex
->>>> is locked.
->>>
->>> Probably this can work, but I am starting to think that this ref
->>> count becomes toooooo complex....
->>
->> Oleg, I agree that is a bit complex way to fix but it can fix.
->>
->> However, I think we should fix bugs first, because there are bugs.
->> I don't like to leave a bug in the kernel as it is, while we re-
->> start discussing new approach...
-> 
-> And I am trying to fix the same problems, just _I think_ there is
-> another and simpler approach.
+This patchset cleans up the last few stragglers using the sched_clock.h
+header file in asm and removes the asm header.
 
-I see.
-I also just feel uncomfortable with leaving obvious bugs, like as
-having ants in my pants :)
+A new one appeared in drivers/clocksource so I'm not sure who
+wants to take that one.
 
->> So, I'd like to suggest you getting these fixes into ftrace as
->> first-aid treatment, and discuss your new series.
-> 
-> Well, perhaps you are right... But this TRACE_EVENT_FL_REF_MASK code
-> is new too, it is not that we only need a small fixlets to finish it.
+Stephen Boyd (3):
+  clocksource: orion: Use linux/sched_clock.h
+  ARM: clps711x: Use linux/sched_clock.h
+  ARM: Remove temporary sched_clock.h header
 
-Would you mean that TRACE_EVENT_FL_REF_MASK may also have some problems?
-
-> So I think that it makes sense to discuss the alternatives before we
-> decide what exactly we should do.
-
-Your approach is also interesting for me, indeed. However, it is so
-different from current one. I think you should clarify what bug you
-would like to solve and how. And we should clarify what ants^H^H^H^H
-bugs we have found in ftrace too. ;)
-
-Thank you,
+ arch/arm/include/asm/sched_clock.h | 4 ----
+ arch/arm/mach-clps711x/common.c    | 2 +-
+ drivers/clocksource/time-orion.c   | 2 +-
+ 3 files changed, 2 insertions(+), 6 deletions(-)
+ delete mode 100644 arch/arm/include/asm/sched_clock.h
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
