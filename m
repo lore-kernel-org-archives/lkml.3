@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934284Ab3GRUMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:12:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41360 "EHLO
+	id S934359Ab3GRUMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:12:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41358 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759354Ab3GRTuR (ORCPT
+	with ESMTP id S1759348Ab3GRTuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:17 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -13,10 +13,11 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/76] perf evlist: Fix use of uninitialized variable
-Date: Thu, 18 Jul 2013 16:49:01 -0300
-Message-Id: <1374177003-3706-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/76] perf tools: Add methods for setting/retrieving priv element of thread struct
+Date: Thu, 18 Jul 2013 16:48:54 -0300
+Message-Id: <1374177003-3706-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -28,40 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Fixes valgrind complaint:
-==1870== Syscall param write(buf) points to uninitialised byte(s)
-==1870==    at 0x4E3F5B0: __write_nocancel (in /lib64/libpthread-2.14.90.so)
-==1870==    by 0x449D7C: perf_evlist__start_workload (evlist.c:846)
-==1870==    by 0x427BC1: cmd_record (builtin-record.c:561)
-==1870==    by 0x419D72: run_builtin (perf.c:319)
-==1870==    by 0x4195F2: main (perf.c:376)
-==1870==  Address 0x7feffcdd7 is on thread 1's stack
-
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1372793245-4136-3-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1370643734-9579-3-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/thread.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 4a901be..d8f34e0 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -838,7 +838,7 @@ out_close_ready_pipe:
- int perf_evlist__start_workload(struct perf_evlist *evlist)
- {
- 	if (evlist->workload.cork_fd > 0) {
--		char bf;
-+		char bf = 0;
- 		int ret;
- 		/*
- 		 * Remove the cork, let it rip!
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index eeb7ac6..5e7ba35 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -47,4 +47,14 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
+ 				u8 cpumode, enum map_type type, u64 addr,
+ 				struct addr_location *al,
+ 				symbol_filter_t filter);
++
++static inline void *thread__priv(struct thread *thread)
++{
++	return thread->priv;
++}
++
++static inline void thread__set_priv(struct thread *thread, void *p)
++{
++	thread->priv = p;
++}
+ #endif	/* __PERF_THREAD_H */
 -- 
 1.8.1.4
 
