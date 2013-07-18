@@ -1,71 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758925Ab3GROMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:12:33 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:37167 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757608Ab3GROMb (ORCPT
+	id S1758979Ab3GROTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:19:33 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:3949 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758196Ab3GROTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:12:31 -0400
-Message-ID: <51E7F7C8.9090506@de.ibm.com>
-Date: Thu, 18 Jul 2013 16:12:24 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 18 Jul 2013 10:19:30 -0400
+Message-ID: <51E7F95B.9050202@hp.com>
+Date: Thu, 18 Jul 2013 10:19:07 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Alexander Graf <agraf@suse.de>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] PF: Async page fault support on s390
-References: <1373461195-27628-1-git-send-email-dingel@linux.vnet.ibm.com> <1373461195-27628-5-git-send-email-dingel@linux.vnet.ibm.com> <20130711090411.GA8575@redhat.com> <51DE8BE1.8000902@de.ibm.com> <51E7F440.2010600@redhat.com>
-In-Reply-To: <51E7F440.2010600@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Weinberger <richard@nod.at>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock implementation
+References: <1373679249-27123-1-git-send-email-Waiman.Long@hp.com> <1373679249-27123-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1307151657540.11918@ionos.tec.linutronix.de> <51E49FA3.4030202@hp.com> <alpine.DEB.2.02.1307181210330.4089@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307181210330.4089@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071814-2966-0000-0000-0000082D8302
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/07/13 15:57, Paolo Bonzini wrote:
-> Il 11/07/2013 12:41, Christian Borntraeger ha scritto:
->> On 11/07/13 11:04, Gleb Natapov wrote:
->>> On Wed, Jul 10, 2013 at 02:59:55PM +0200, Dominik Dingel wrote:
->>>> This patch enables async page faults for s390 kvm guests.
->>>> It provides the userspace API to enable, disable or get the status of this
->>>> feature. Also it includes the diagnose code, called by the guest to enable
->>>> async page faults.
->>>>
->>>> The async page faults will use an already existing guest interface for this
->>>> purpose, as described in "CP Programming Services (SC24-6084)".
->>>>
->>>> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
->>> Christian, looks good now?
->>
->> Looks good, but I just had a  discussion with Dominik about several other cases 
->> (guest driven reboot, qemu driven reboot, life migration). This patch should 
->> allow all these cases (independent from this patch we need an ioctl to flush the
->> list of pending interrupts to do so, but reboot is currently broken in that
->> regard anyway - patch is currently being looked at)
->>
->> We are currently discussion if we should get rid of the APF_STATUS and let 
->> the kernel wait for outstanding page faults before returning from KVM_RUN
->> or if we go with this patch and let userspace wait for completion. 
->>
->> Will discuss this with Dominik, Conny and Alex. So lets defer that till next
->> week, ok?
-> 
-> Let us know if we should wait for a v5. :)
+On 07/18/2013 06:22 AM, Thomas Gleixner wrote:
+> Waiman,
+>
+> On Mon, 15 Jul 2013, Waiman Long wrote:
+>> On 07/15/2013 06:31 PM, Thomas Gleixner wrote:
+>>> On Fri, 12 Jul 2013, Waiman Long wrote:
+>>>> Apparently, the regular read/write lock performs even better than
+>>>> the queue read/write lock in some cases.  This is probably due to the
+>>> The regular rwlock performs better in most cases. This is the full
+>>> list comparing both against the ticket lock.
+>>>
+>>>       qrlock  	   rwlock
+>>>       +20.7  	   +44.4
+>>>       +30.1  	   +42.9
+>>>
+>>>       +56.3  	   +63.3
+>>>       +52.9  	   +48.8
+>>>
+>>>       +54.4  	   +65.1
+>>>       +49.2  	   +26.5
+>>>
+>>> So you try to sell that qrwlock as a replacement for ticket spinlocks,
+>>> while at the same time you omit the fact that we have an even better
+>>> implementation (except for the last test case) already in the
+>>> kernel. What's the point of this exercise?
+>> The main point is that the regular rwlock is not fair while the
+>> queue rwlock is close to as fair as the ticket spinlock. The LWN
+>> article http://lwn.net/Articles/364583/ mentioned about eliminating
+>> rwlock altogether precisely because of this unfairness as it can
+>> cause livelock in certain scenerio. I also saw slides to advise
+>> again using rwlock because of this.
+> I'm well aware of this. But that does not explain anything of what I
+> asked.
+>
+>>>> + * has the following advantages:
+>>>> + * 1. It is more deterministic. Even though there is a slight chance
+>>>> of
+>>> Why is it more deterministic than the existing implementation?
+>> Deterministic means that that a process can acquire a lock within a
+>> reasonable time period without being starved for a long time. The qrwlock
+>> grants lock in FIFO order in most cases. That is what I mean by being more
+>> deterministic.
+> That's exactly the kind of explanation we want to have in the code and
+> the changelog.
 
-Yes, there will be a v5
+Sometimes I may take things for granted without explaining them in more 
+details. Thank for reminding me and I will try to get more data in to 
+support my arguments.
 
+>>>> + *    stealing the lock if come at the right moment, the granting of
+>>>> the
+>>>> + *    lock is mostly in FIFO order.
+>>>> + * 2. It is faster in high contention situation.
+>>> Again, why is it faster?
+>> The current rwlock implementation suffers from a thundering herd problem.
+>> When many readers are waiting for the lock hold by a writer, they will all
+>> jump in more or less at the same time when the writer releases the lock.
+>> That is not the case with qrwlock. It has been shown in many cases that
+>> avoiding this thundering herd problem can lead to better performance.
+> That makes sense and wants to be documented as well. You could have
+> avoided a lot of the discussion if you had included these details
+> right away.
+>
+>>>> + * an increase in lock size is not an issue.
+>>> So is it faster in the general case or only for the high contention or
+>>> single thread operation cases?
+>>>
+>>> And you still miss to explain WHY it is faster. Can you please explain
+>>> proper WHY it is faster and WHY we can't apply that technique you
+>>> implemented for qrwlocks to writer only locks (aka spinlocks) with a
+>>> smaller lock size?
+>> I will try to collect more data to justify the usefulness of qrwlock.
+> And please provide a proper argument why we can't use the same
+> technique for spinlocks.
 
+Of course, we can use the same technique for spinlock. Since we only 
+need 1 bit for lock, we could combine the lock bit with the queue 
+address with a little bit more overhead in term of coding and speed.  
+That will make the new lock 4 bytes in size for 32-bit code & 8 bytes 
+for 64-bit code. That could solve a lot of performance problem that we 
+have with spinlock. However, I am aware that increasing the size of 
+spinlock (for 64-bit systems) may break a lot of inherent alignment in 
+many of the data structures. That is why I am not proposing such a 
+change right now. But if there is enough interest, we could certainly go 
+ahead and see how things go.
+
+>>> Aside of that, you are replacing all RW locks unconditionally by this
+>>> new fangled thing, but did you actually run tests which look at other
+>>> rwlock usage sites than the particular one you care about?
+>> Users have the choice of using the old rwlock or the queue rwlock by
+>> selecting or unselecting the QUEUE_RWLOCK config parameter. I am not
+>> forcing the unconditional replacement of rwlock by qrwlock.
+> Looking at patch 2/2:
+>
+> +config ARCH_QUEUE_RWLOCK
+> +       def_bool y
+>
+> What's conditional about that? Where is the choice?
+
+The queue read/write lock replaces the classic read/write lock in the 
+arch-dependent layer. We will need to make changes to each architecture 
+to make queue read/write lock work. The presence of ARCH_QUEUE_RWLOCK 
+just indicates that changes are made in that architecture to support the 
+use of queue read/write lock. It doesn't mean that it is enabled by 
+default. Users still need to choose it (QUEUE_RWLOCK) from the 
+configuration menu. The ARCH_QUEUE_RWLOCK does prevent the menu option 
+from even showing up for those architectures that have not been changed 
+to support this feature. As I don't have test machines for the other 
+architectures to verify the changes, my patch set only enables queue 
+read/write lock for x86 only.
+
+>>> You are optimizing for the high frequency writer case. And that's not
+>>> the primary use case for rwlocks. That's the special use case for the
+>>> jbd2 journal_state_lock which CANNOT be generalized for all other
+>>> rwlock usage sites.
+>> It is true that this lock is kind of optimized for writers. For
+>> reader heavy code, the performance may not be as good as the rwlock
+>> for uncontended cases. However, I do believe that the fairness
+>> attribute of the qrwlock far outweigh the slight performance
+>> overhead of read lock/unlock.  Furthermore, the lock/unlock sequence
+>> contributes only a very tiny percentage of total CPU time in
+>> uncontended cases. A slight increase may not really have a material
+>> impact on performance. Again, as promised, I will try to collect
+>> some more performance data for reader heavy usage cases.
+> Yes, please. We really need this information and if it turns out, that
+> it does not affect reader heavy sides, I have no objections against
+> the technology itself.
+
+I am collecting more performance data right now for the next revision of 
+the patch. I had optimized the fast path of the lock to make write lock 
+2/3 the time of a spinlock and the read lock is now 1.5X of the spinlock 
+time instead of 2X.
+
+Regards,
+Longman
