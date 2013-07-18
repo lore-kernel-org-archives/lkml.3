@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab3GRLqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:46:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60410 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398Ab3GRLqQ (ORCPT
+	id S1758769Ab3GRLu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:50:29 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:52516 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab3GRLu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:46:16 -0400
-Date: Thu, 18 Jul 2013 13:46:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, eranian@google.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH] perf, x86: Add Silvermont (22nm Atom) support
-Message-ID: <20130718114604.GN27075@twins.programming.kicks-ass.net>
-References: <1374125767-9411-1-git-send-email-zheng.z.yan@intel.com>
- <20130718082324.GA27075@twins.programming.kicks-ass.net>
- <51E7A6F3.10109@intel.com>
- <20130718090248.GF27075@twins.programming.kicks-ass.net>
- <51E7C7E6.4020200@intel.com>
+	Thu, 18 Jul 2013 07:50:28 -0400
+X-AuditID: 85900ec0-d56cbb900000151e-01-51e7d681cebf
+Subject: [PATCH -tip  0/3] kprobes,
+ x86: Move optprobe on top of int3-based instruction patching
+To: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
+Date: Thu, 18 Jul 2013 20:47:38 +0900
+Message-ID: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E7C7E6.4020200@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 06:48:06PM +0800, Yan, Zheng wrote:
-> ---
-> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-> index 8249df4..aa0d876 100644
-> --- a/arch/x86/include/asm/perf_event.h
-> +++ b/arch/x86/include/asm/perf_event.h
-> @@ -140,7 +140,6 @@ struct x86_pmu_capability {
->  /* CPU_CLK_Unhalted.Ref: */
->  #define MSR_ARCH_PERFMON_FIXED_CTR2	0x30b
->  #define INTEL_PMC_IDX_FIXED_REF_CYCLES	(INTEL_PMC_IDX_FIXED + 2)
-> -#define INTEL_PMC_MSK_FIXED_REF_CYCLES	(1ULL << INTEL_PMC_IDX_FIXED_REF_CYCLES)
->  
->  /*
->   * We model BTS tracing as another fixed-mode PMC.
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index e4bb30a..47ffb48 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -169,7 +169,6 @@ static struct event_constraint intel_slm_event_constraints[] __read_mostly =
->  	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
->  	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
->  	FIXED_EVENT_CONSTRAINT(0x013c, 2), /* CPU_CLK_UNHALTED.REF */
-> -	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* pseudo CPU_CLK_UNHALTED.REF */
->  	EVENT_CONSTRAINT_END
->  };
+Hi,
 
-Stephane, should we preserve the 0x0300 event as alias in this case? If
-so the below gets a little more complicated.
+Here is a series of kprobes and x86 patches for moving
+optprobe (jump optimized kprobe) onto the int3-based
+instruction patching (a.k.a. text_poke_bp, introduced by
+Jiri Kosina).
 
->  
-> @@ -2331,6 +2330,9 @@ __init int intel_pmu_init(void)
->  
->  		intel_pmu_lbr_init_atom();
->  
-> +		/* both event 0x013c and fixed counter2 count REF_CYCLES */
-> +		intel_perfmon_event_map[PERF_COUNT_HW_REF_CPU_CYCLES] = 0x013c;
-> +
->  		x86_pmu.event_constraints = intel_slm_event_constraints;
->  		x86_pmu.pebs_constraints = intel_slm_pebs_event_constraints;
->  		x86_pmu.extra_regs = intel_slm_extra_regs;
-> @@ -2486,12 +2488,12 @@ __init int intel_pmu_init(void)
->  
->  	if (x86_pmu.event_constraints) {
->  		/*
-> -		 * event on fixed counter2 (REF_CYCLES) only works on this
-> -		 * counter, so do not extend mask to generic counters
-> +		 * If only fixed counter2 can count event REF_CYCLES, we use
-> +		 * pseudo-code 0x0300 for REF_CYCLES.
->  		 */
->  		for_each_event_constraint(c, x86_pmu.event_constraints) {
-> -			if (c->cmask != FIXED_EVENT_FLAGS
-> -			    || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
-> +			if (c->cmask != FIXED_EVENT_FLAGS ||
-> +			    c->code == 0x0300) {
->  				continue;
->  			}
+Since this completely moves text_poke_smp* user to new
+text_poke_bp, I also remove the old text_poke_smp* code
+from alternative.c. As a side effect, it also fixes a
+Kconfig warning about CONFIG_STOP_MACHINE dependency
+confliction.
 
-Yeah, this looks basically OK, but now that I look at it we should
-probably have a symbolic name for the fake events. ISTR us having more,
-by virtue of this being umask=3 not 1. But I can't find them.
+Thank you,
 
-Stephane?
+---
+
+Masami Hiramatsu (3):
+      [CLEANUP] kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
+      kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
+      x86: Remove unused text_poke_smp and text_poke_smp_batch
 
 
+ arch/x86/Kconfig                   |    5 --
+ arch/x86/include/asm/alternative.h |   11 ----
+ arch/x86/kernel/alternative.c      |   98 +-------------------------------
+ arch/x86/kernel/kprobes/common.h   |    5 --
+ arch/x86/kernel/kprobes/core.c     |    2 -
+ arch/x86/kernel/kprobes/opt.c      |  110 +++++++-----------------------------
+ 6 files changed, 25 insertions(+), 206 deletions(-)
+
+-- 
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+IT Management Research Dept. and Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
