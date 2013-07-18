@@ -1,86 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758967Ab3GRNpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 09:45:13 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:42823 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab3GRNpL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 09:45:11 -0400
-Message-ID: <51E7F162.1060804@linaro.org>
-Date: Thu, 18 Jul 2013 15:45:06 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759012Ab3GRNqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 09:46:55 -0400
+Received: from smtp.multi.fi ([85.134.37.151]:41243 "EHLO smtp.multi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758247Ab3GRNqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 09:46:54 -0400
+Message-ID: <51E7F192.4000004@mageia.org>
+Date: Thu, 18 Jul 2013 16:45:54 +0300
+From: Thomas Backlund <tmb@mageia.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [GIT PULL] clocksource/clockevents : sun4i and cadence_ttc cleanups,
- new moxa driver
-Content-Type: text/plain; charset=UTF-8
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Kamal Mostafa <kamal@canonical.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        =?UTF-8?B?QXJrYWRpdXN6IE1pxZtraWV3aWN6?= <arekm@maven.pl>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: Re: [PATCH 089/145] iommu/vt-d: add quirk for broken interrupt remapping
+ on 55XX chipsets
+References: <1374101277-7915-1-git-send-email-kamal@canonical.com> <1374101277-7915-90-git-send-email-kamal@canonical.com> <51E7A0F8.9000308@mageia.org> <20130718103739.GA3626@hmsreliant.think-freely.org>
+In-Reply-To: <20130718103739.GA3626@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 19b0a1e5ac5a7f1dafd5ee2479a5db72b330246b:
+18.07.2013 13:37, Neil Horman skrev:
+> On Thu, Jul 18, 2013 at 11:02:00AM +0300, Thomas Backlund wrote:
+>> 18.07.2013 01:47, Kamal Mostafa skrev:
+>>> 3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
+>>>
+>>> ------------------
+>>>
+>>> From: Neil Horman <nhorman@tuxdriver.com>
+>>>
+>>> commit 03bbcb2e7e292838bb0244f5a7816d194c911d62 upstream.
+>>>
+>>> A few years back intel published a spec update:
+>>> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+>>>
+>>> For the 5520 and 5500 chipsets which contained an errata (specificially errata
+>>> 53), which noted that these chipsets can't properly do interrupt remapping, and
+>>> as a result the recommend that interrupt remapping be disabled in bios.  While
+>>> many vendors have a bios update to do exactly that, not all do, and of course
+>>> not all users update their bios to a level that corrects the problem.  As a
+>>> result, occasionally interrupts can arrive at a cpu even after affinity for that
+>>> interrupt has be moved, leading to lost or spurrious interrupts (usually
+>>> characterized by the message:
+>>> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+>>>
+>>> There have been several incidents recently of people seeing this error, and
+>>> investigation has shown that they have system for which their BIOS level is such
+>>> that this feature was not properly turned off.  As such, it would be good to
+>>> give them a reminder that their systems are vulnurable to this problem.  For
+>>> details of those that reported the problem, please see:
+>>> https://bugzilla.redhat.com/show_bug.cgi?id=887006
+>>>
+>>> [ Joerg: Removed CONFIG_IRQ_REMAP ifdef from early-quirks.c ]
+>>>
+>>> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+>>> CC: Prarit Bhargava <prarit@redhat.com>
+>>> CC: Don Zickus <dzickus@redhat.com>
+>>> CC: Don Dutile <ddutile@redhat.com>
+>>> CC: Bjorn Helgaas <bhelgaas@google.com>
+>>> CC: Asit Mallick <asit.k.mallick@intel.com>
+>>> CC: David Woodhouse <dwmw2@infradead.org>
+>>> CC: linux-pci@vger.kernel.org
+>>> CC: Joerg Roedel <joro@8bytes.org>
+>>> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>> CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
+>>> Signed-off-by: Joerg Roedel <joro@8bytes.org>
+>>> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+>>> ---
+>>>   arch/x86/include/asm/irq_remapping.h |  2 ++
+>>>   arch/x86/kernel/early-quirks.c       | 20 ++++++++++++++++++++
+>>>   drivers/iommu/intel_irq_remapping.c  | 10 ++++++++++
+>>>   drivers/iommu/irq_remapping.c        |  6 ++++++
+>>>   drivers/iommu/irq_remapping.h        |  2 ++
+>>>   5 files changed, 40 insertions(+)
+>>>
+>>
+>> This patch introduces this warning on 3.8 series kernels:
+>>
+>> In file included from arch/x86/kernel/early-quirks.c:21:0:
+>> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:46:10:
+>> varning: ”struct irq_data” deklarerad inuti parameterlista
+>> [aktiverat som standard]
+>> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:46:10:
+>> varning: dess scope-område är endast denna definition eller
+>> deklaration, vilket troligen inte är vad du vill. [aktiverat som
+>> standard]
+>> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:50:17:
+>> varning: ”struct msi_msg” deklarerad inuti parameterlista [aktiverat
+>> som standard]
+>>
+>>
+>> You need to add this upstream fix too:
+>>
+>> commit 35d3d814cbd46a85bed97cd74ba97fbbb51e0ccd
+>> Author: Joerg Roedel <joro@8bytes.org>
+>> Date:   Fri Apr 19 20:34:55 2013 +0200
+>>
+>>      iommu: Fix compile warnings with forward declarations
+>>
+> I submited a 3.9 backport that included that fix to -stable over a week ago, you
+> should just be able to use that if you want.
+> Neil
 
-  clocksource: orion: Use linux/sched_clock.h (2013-07-17 20:28:00 -0700)
+Almost, but not enough...
 
-are available in the git repository at:
+The patch you refer to was:
+[3.9 stable PATCH] iommu/vt-d: add quirk for broken interrupt remapping 
+on 55XX chipsets
 
-  git://git.linaro.org/people/dlezcano/clockevents.git
-timers/clockevents-next
+and got merged in 3.9.9.
 
-for you to fetch changes up to 07862c1cd6675cde2dd4bd64e64d704ea2185b79:
+And that added a missing: "#include <linux/irq.h>" in
+arch/x86/include/asm/irq_remapping.h
 
-  ARM: clocksource: Add support for MOXA ART SoCs (2013-07-18 15:27:47
-+0200)
+But using that patch it still spits out:
 
-----------------------------------------------------------------
-John Stultz (1):
-      MAINTAINERS: Add Daniel as maintainer for CLOCKSOURCE and
-CLOCKEVENT Drivers
+kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:50:17:
+ >> varning: ”struct msi_msg” deklarerad inuti parameterlista [aktiverat
+ >> som standard]
 
-Jonas Jensen (1):
-      ARM: clocksource: Add support for MOXA ART SoCs
 
-Maxime Ripard (10):
-      clocksource: sun4i: Use the BIT macros where possible
-      clocksource: sun4i: Wrap macros arguments in parenthesis
-      clocksource: sun4i: rename AUTORELOAD define to RELOAD
-      clocksource: sun4i: Add clocksource and sched clock drivers
-      clocksource: sun4i: Don't forget to enable the clock we use
-      clocksource: sun4i: Fix the next event code
-      clocksource: sun4i: Factor out some timer code
-      clocksource: sun4i: Remove TIMER_SCAL variable
-      clocksource: sun4i: Cleanup parent clock setup
-      clocksource: sun4i: Fix bug when switching from periodic to
-oneshot modes
+which is why the additional patch is still needed...
 
-Soren Brinkmann (2):
-      clocksource: cadence_ttc: Remove unused header
-      clocksource: cadence_ttc: Reuse clocksource as sched_clock
+--
 
- .../bindings/timer/moxa,moxart-timer.txt           |   17 ++
- MAINTAINERS                                        |   10 +-
- drivers/clocksource/Makefile                       |    1 +
- drivers/clocksource/cadence_ttc_timer.c            |   13 +-
- drivers/clocksource/moxart_timer.c                 |  164
-++++++++++++++++++++
- drivers/clocksource/sun4i_timer.c                  |  110 +++++++++----
- 6 files changed, 280 insertions(+), 35 deletions(-)
- create mode 100644
-Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt
- create mode 100644 drivers/clocksource/moxart_timer.c
+Thomas
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
