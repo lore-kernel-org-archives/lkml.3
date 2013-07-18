@@ -1,83 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab3GRP6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 11:58:50 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:43749 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605Ab3GRP6s (ORCPT
+	id S932998Ab3GRP6k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 11:58:40 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:22946 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757635Ab3GRP6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 11:58:48 -0400
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>, stable@vger.kernel.org,
-        dsmythies@telus.net
-Subject: [PATCH] cpufreq/intel_pstate: Change to scale off of max P-state
-Date: Thu, 18 Jul 2013 08:58:29 -0700
-Message-Id: <1374163109-3326-1-git-send-email-dirk.j.brandewie@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 18 Jul 2013 11:58:38 -0400
+Date: Thu, 18 Jul 2013 17:58:22 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: <linux@roeck-us.net>, <thierry.reding@gmail.com>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] hwmon: (lm90) add support to handle IRQ
+Message-ID: <20130718175822.62c358bf@endymion.delvare>
+In-Reply-To: <1373615287-18502-4-git-send-email-wni@nvidia.com>
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
+	<1373615287-18502-4-git-send-email-wni@nvidia.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Hi Wei,
 
-Change to using max P-state instead of max turbo P-state.  This change
-resolves two issues.
+On Fri, 12 Jul 2013 15:48:06 +0800, Wei Ni wrote:
+> When the temperature exceed the limit range value,
+> the driver can handle the interrupt.
+> 
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>  drivers/hwmon/lm90.c |   24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+> 
+> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+> index c90037f..1cc3d19 100644
+> --- a/drivers/hwmon/lm90.c
+> +++ b/drivers/hwmon/lm90.c
+> @@ -89,6 +89,7 @@
+>  #include <linux/err.h>
+>  #include <linux/mutex.h>
+>  #include <linux/sysfs.h>
+> +#include <linux/interrupt.h>
+>  
+>  /*
+>   * Addresses to scan
+> @@ -1460,6 +1461,17 @@ static bool lm90_is_tripped(struct i2c_client *client)
+>  	return true;
+>  }
+>  
+> +static irqreturn_t lm90_irq_thread(int irq, void *dev_id)
+> +{
+> +	struct lm90_data *data = dev_id;
+> +	struct i2c_client *client = to_i2c_client(data->hwmon_dev->parent);
 
-On a quiet system intel_pstate can fail to respond to a load change.
-   https://bugzilla.kernel.org/show_bug.cgi?id=59481
+Why are you passing data as the dev_id in the first place, instead of
+client? It's easier to get the data when you have the client
+(i2c_get_clientdata) than the other way around.
 
-On CPU SKUs that have a limited number of P-states and no turbo range
-intel_pstate fails to select the highest available P-state.
+> +
+> +	if (lm90_is_tripped(client))
+> +		return IRQ_HANDLED;
+> +	else
+> +		return IRQ_NONE;
+> +}
+> +
+>  static int lm90_probe(struct i2c_client *client,
+>  		      const struct i2c_device_id *id)
+>  {
+> @@ -1536,6 +1548,18 @@ static int lm90_probe(struct i2c_client *client,
+>  		goto exit_remove_files;
+>  	}
+>  
+> +	if (client->irq >= 0) {
 
-This change is suitable for stable v3.9+
+I though you had agreed to just check for (client->irq)?
 
-Reported-by: arjan@linux.intel.com
-Reported-by: dsmythies@telus.net
-Tested-by: arjan@linux.intel.com
-Tested-by: dsmythies@telus.net
+> +		dev_dbg(dev, "lm90 IRQ: %d\n", client->irq);
 
-CC: stable@vger.kernel.org
-CC: dsmythies@telus.net
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- drivers/cpufreq/intel_pstate.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+The "lm90" is redundant, dev_dbg will use the chip name as a prefix.
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 07f2840..6d6a0b4 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -103,10 +103,10 @@ struct pstate_adjust_policy {
- static struct pstate_adjust_policy default_policy = {
- 	.sample_rate_ms = 10,
- 	.deadband = 0,
--	.setpoint = 109,
--	.p_gain_pct = 17,
-+	.setpoint = 97,
-+	.p_gain_pct = 20,
- 	.d_gain_pct = 0,
--	.i_gain_pct = 4,
-+	.i_gain_pct = 0,
- };
- 
- struct perf_limits {
-@@ -468,12 +468,12 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
- static inline int intel_pstate_get_scaled_busy(struct cpudata *cpu)
- {
- 	int32_t busy_scaled;
--	int32_t core_busy, turbo_pstate, current_pstate;
-+	int32_t core_busy, max_pstate, current_pstate;
- 
- 	core_busy = int_tofp(cpu->samples[cpu->sample_ptr].core_pct_busy);
--	turbo_pstate = int_tofp(cpu->pstate.turbo_pstate);
-+	max_pstate = int_tofp(cpu->pstate.max_pstate);
- 	current_pstate = int_tofp(cpu->pstate.current_pstate);
--	busy_scaled = mul_fp(core_busy, div_fp(turbo_pstate, current_pstate));
-+	busy_scaled = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
- 
- 	return fp_toint(busy_scaled);
- }
+> +		err = devm_request_threaded_irq(dev, client->irq,
+> +						NULL, lm90_irq_thread,
+> +						IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+> +						"lm90", data);
+> +		if (err < 0) {
+> +			dev_err(dev, "cannot request interrupt\n");
+
+You should include the IRQ number in the error message, it is useful
+for investigating the issue. Not everyone will have the debugging
+message above enabled.
+
+> +			goto exit_remove_files;
+> +		}
+> +	}
+> +
+>  	return 0;
+>  
+>  exit_remove_files:
+
+That's it for the code. Now I'm not sure I understand what you are
+trying to do and what this is all good for.
+
+First of all, how is the chip wired on your system? You are using an
+NCT1008, right? Which output of the chip is connected to your interrupt
+line, THERM or ALERT/THERM2? ALERT is normally used for SMBus Alert but
+I suppose it could be used for an interrupt too. THERM and THERM2 OTOH
+are comparator outputs, they stay low as long as the temperature are
+above the therm limits. Reading the status register won't bring them
+back up as I understand it, and contrary to the ALERT output, they
+can't be masked. Won't this result in an interrupt flood if using
+IRQF_TRIGGER_LOW? Have you tested your code already?
+
+Also I don't think just logging an error message is the right thing to
+do in the case of overheating. The code to handle SMBus alerts is from
+me, and it does indeed just log the problems, but it was really only
+meant as a proof of concept when I first added support for SMBus Alert.
+Today we could do better than this, starting with issuing sysfs
+notifications to the relevant alarm files (several other hwmon drivers
+are doing that already.)
+
+For a real system, if the THERM output is connected to an interrupt line
+(instead of directly to a fan controller) I would expect the platform
+to provide a callback to handle thermal events and take whatever
+appropriate measure is needed (e.g. throttling.) Just logging the
+problem won't save the system, by the time someone looks at the log it
+might be too late.
+
 -- 
-1.8.3.1
-
+Jean Delvare
