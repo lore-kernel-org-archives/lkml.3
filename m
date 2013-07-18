@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab3GRPPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 11:15:11 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18246 "EHLO
+	id S932795Ab3GRPPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 11:15:20 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18687 "EHLO
 	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752845Ab3GRPPI (ORCPT
+	with ESMTP id S932590Ab3GRPPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 11:15:08 -0400
+	Thu, 18 Jul 2013 11:15:17 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 50.131.214.131
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18O5oy+Om4ofU1CRQdgVieS
-Subject: [PATCH 1/4] pinctrl: Remove duplicate code in
- pinctrl_pm_select_state functions
+X-MHO-User: U2FsdGVkX18gpymnv1Tkv6cnyG7u98Xj
+Subject: [PATCH 4/4] drivers: Add pinctrl handling for dynamic pin states
 To: linus.walleij@linaro.org
 From: Tony Lindgren <tony@atomide.com>
 Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Thu, 18 Jul 2013 08:15:04 -0700
-Message-ID: <20130718151504.30990.96819.stgit@localhost>
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 18 Jul 2013 08:15:14 -0700
+Message-ID: <20130718151514.30990.99907.stgit@localhost>
 In-Reply-To: <20130718151213.30990.45828.stgit@localhost>
 References: <20130718151213.30990.45828.stgit@localhost>
 User-Agent: StGit/0.16-1-ga54b
@@ -31,114 +31,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no need to duplicate essentially the same functions. Let's
-introduce static int pinctrl_pm_select_state() and make the other
-related functions call that.
+We want to have static pin states handled separately from
+dynamic pin states, so let's add optional state_active.
 
-This allows us to add support later on for multiple active states,
-and more optimized dynamic remuxing.
+Then if state_active is defined, let's check and make sure
+state_idle and state_sleep match state_active for the
+pin groups to avoid checking them during runtime as the
+active and idle pins may need to be toggled for many
+devices every time we enter and exit idle.
 
-Note that we still need to export the various pinctrl_pm_select
-functions as we want to keep struct pinctrl_state private to the
-pinctrl code, and cannot replace those with inline functions.
+See also Documentation/pinctrl.txt regarding runtime
+muxing of pins.
 
 Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>
 Cc: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/pinctrl/core.c |   55 ++++++++++++++++++++++++------------------------
- 1 file changed, 27 insertions(+), 28 deletions(-)
+ drivers/base/pinctrl.c |   39 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 37 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 5b272bf..a97b717 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1227,23 +1227,36 @@ EXPORT_SYMBOL_GPL(pinctrl_force_default);
+diff --git a/drivers/base/pinctrl.c b/drivers/base/pinctrl.c
+index 5fb74b4..49644ed 100644
+--- a/drivers/base/pinctrl.c
++++ b/drivers/base/pinctrl.c
+@@ -34,6 +34,7 @@ int pinctrl_bind_pins(struct device *dev)
+ 		goto cleanup_alloc;
+ 	}
+ 
++	/* Default static pins that don't need to change */
+ 	dev->pins->default_state = pinctrl_lookup_state(dev->pins->p,
+ 					PINCTRL_STATE_DEFAULT);
+ 	if (IS_ERR(dev->pins->default_state)) {
+@@ -48,23 +49,57 @@ int pinctrl_bind_pins(struct device *dev)
+ 		goto cleanup_get;
+ 	}
+ 
++	/* Optional runtime dynamic pins in addition to the static pins */
++	dev->pins->active_state = pinctrl_lookup_state(dev->pins->p,
++					PINCTRL_STATE_ACTIVE);
++	if (IS_ERR(dev->pins->active_state)) {
++		/* Not supplying this state is perfectly legal */
++		dev_dbg(dev, "no active pinctrl state\n");
++	} else {
++		ret = pinctrl_select_dynamic(dev->pins->p,
++				dev->pins->active_state);
++		if (ret) {
++			dev_dbg(dev, "failed to select active pinctrl state\n");
++			goto cleanup_get;
++		}
++	}
++
  #ifdef CONFIG_PM
+ 	/*
+ 	 * If power management is enabled, we also look for the optional
+ 	 * sleep and idle pin states, with semantics as defined in
+ 	 * <linux/pinctrl/pinctrl-state.h>
++	 *
++	 * Note that if active state is defined, sleep and idle states must
++	 * cover the same pin groups as active state.
+ 	 */
+ 	dev->pins->sleep_state = pinctrl_lookup_state(dev->pins->p,
+ 					PINCTRL_STATE_SLEEP);
+-	if (IS_ERR(dev->pins->sleep_state))
++	if (IS_ERR(dev->pins->sleep_state)) {
+ 		/* Not supplying this state is perfectly legal */
+ 		dev_dbg(dev, "no sleep pinctrl state\n");
++	} else if (!IS_ERR(dev->pins->active_state)) {
++		ret = pinctrl_check_dynamic(dev, dev->pins->active_state,
++					    dev->pins->sleep_state);
++		if (ret) {
++			dev_err(dev, "sleep state groups do not match active state\n");
++			dev->pins->sleep_state = ERR_PTR(-EINVAL);
++		}
++	}
  
- /**
-- * pinctrl_pm_select_default_state() - select default pinctrl state for PM
-+ * pinctrl_pm_select_state() - select pinctrl state for PM
-  * @dev: device to select default state for
-+ * @state: state to set
-  */
--int pinctrl_pm_select_default_state(struct device *dev)
-+static int pinctrl_pm_select_state(struct device *dev,
-+				   struct pinctrl_state *state)
- {
- 	struct dev_pin_info *pins = dev->pins;
- 	int ret;
- 
--	if (!pins)
--		return 0;
--	if (IS_ERR(pins->default_state))
--		return 0; /* No default state */
--	ret = pinctrl_select_state(pins->p, pins->default_state);
-+	if (IS_ERR(state))
-+		return 0; /* No such state */
-+	ret = pinctrl_select_state(pins->p, state);
- 	if (ret)
--		dev_err(dev, "failed to activate default pinctrl state\n");
-+		dev_err(dev, "failed to activate pinctrl state %s\n",
-+			state->name);
- 	return ret;
- }
-+
-+/**
-+ * pinctrl_pm_select_default_state() - select default pinctrl state for PM
-+ * @dev: device to select default state for
-+ */
-+int pinctrl_pm_select_default_state(struct device *dev)
-+{
-+	if (!dev->pins)
-+		return 0;
-+
-+	return pinctrl_pm_select_state(dev, dev->pins->default_state);
-+}
- EXPORT_SYMBOL_GPL(pinctrl_pm_select_default_state);
- 
- /**
-@@ -1252,17 +1265,10 @@ EXPORT_SYMBOL_GPL(pinctrl_pm_select_default_state);
-  */
- int pinctrl_pm_select_sleep_state(struct device *dev)
- {
--	struct dev_pin_info *pins = dev->pins;
--	int ret;
--
--	if (!pins)
-+	if (!dev->pins)
- 		return 0;
--	if (IS_ERR(pins->sleep_state))
--		return 0; /* No sleep state */
--	ret = pinctrl_select_state(pins->p, pins->sleep_state);
--	if (ret)
--		dev_err(dev, "failed to activate pinctrl sleep state\n");
--	return ret;
-+
-+	return pinctrl_pm_select_state(dev, dev->pins->sleep_state);
- }
- EXPORT_SYMBOL_GPL(pinctrl_pm_select_sleep_state);
- 
-@@ -1272,17 +1278,10 @@ EXPORT_SYMBOL_GPL(pinctrl_pm_select_sleep_state);
-  */
- int pinctrl_pm_select_idle_state(struct device *dev)
- {
--	struct dev_pin_info *pins = dev->pins;
--	int ret;
--
--	if (!pins)
-+	if (!dev->pins)
- 		return 0;
--	if (IS_ERR(pins->idle_state))
--		return 0; /* No idle state */
--	ret = pinctrl_select_state(pins->p, pins->idle_state);
--	if (ret)
--		dev_err(dev, "failed to activate pinctrl idle state\n");
--	return ret;
-+
-+	return pinctrl_pm_select_state(dev, dev->pins->idle_state);
- }
- EXPORT_SYMBOL_GPL(pinctrl_pm_select_idle_state);
+ 	dev->pins->idle_state = pinctrl_lookup_state(dev->pins->p,
+ 					PINCTRL_STATE_IDLE);
+-	if (IS_ERR(dev->pins->idle_state))
++	if (IS_ERR(dev->pins->idle_state)) {
+ 		/* Not supplying this state is perfectly legal */
+ 		dev_dbg(dev, "no idle pinctrl state\n");
++	} else if (!IS_ERR(dev->pins->active_state)) {
++		ret = pinctrl_check_dynamic(dev, dev->pins->active_state,
++					    dev->pins->idle_state);
++		if (ret) {
++			dev_err(dev, "idle state groups do not match active state\n");
++			dev->pins->idle_state = ERR_PTR(-EINVAL);
++		}
++	}
  #endif
+ 
+ 	return 0;
 
