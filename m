@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964974Ab3GRTIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:08:32 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:34235 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964817Ab3GRTIb (ORCPT
+	id S965008Ab3GRTJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:09:30 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:36510 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964817Ab3GRTJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:08:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
-	<1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
-Date: Thu, 18 Jul 2013 12:08:30 -0700
-Message-ID: <CA+7tXij7W_F0ZTQZ=YvK+qOLO+O-6WpTKxLerv8NXyrdydt7FA@mail.gmail.com>
-Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
-From: Trent Piepho <tpiepho@gmail.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: broonie@kernel.org, spi-devel-general@lists.sourceforge.net,
-        grant.likely@linaro.org, linux-omap@vger.kernel.org, rnayak@ti.com,
-        linux-kernel@vger.kernel.org, balbi@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Jul 2013 15:09:27 -0400
+Message-ID: <1374174891.7397.964.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi <linux-scsi@vger.kernel.org>
+Date: Thu, 18 Jul 2013 12:14:51 -0700
+In-Reply-To: <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+References: <cover.1369155164.git.agordeev@redhat.com>
+	 <20130521235003.GE6985@mtj.dyndns.org>
+	 <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
+	 <20130522170305.GD9563@kernel.dk>
+	 <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 3:01 AM, Sourav Poddar <sourav.poddar@ti.com> wrote:
-> +Required properties:
-> +- compatible : should be "ti,dra7xxx-qspi".
-> +- reg: Should contain QSPI registers location and length.
-> +- #address-cells, #size-cells : Must be present if the device has sub-nodes
-> +- ti,hwmods: Name of the hwmod associated to the QSPI
+On Thu, 2013-07-18 at 11:51 -0700, Nicholas A. Bellinger wrote:
+> On Wed, 2013-07-17 at 18:19 +0200, Alexander Gordeev wrote:
+> > On Tue, Jul 16, 2013 at 02:38:03PM -0700, Nicholas A. Bellinger wrote:
+> > > [    7.927818] scsi_execute(): Calling blk_mq_free_request >>>
+> > > [    7.927826] scsi 0:0:0:0: Direct-Access     ATA      ST9500530NS      CC03 PQ: 0 ANSI: 5
+> > > 
+> > > OK, so INQUIRY response payload is looking as expected here.
+> > 
+> > Yep. It is not on the top of my head, but I remember something like INQUIRYs
+> > are emulated and thus do not have payload.
+> > 
+> > > [    7.927960] sd 0:0:0:0: [sda] Sector size 0 reported, assuming 512.
+> > > [    7.927964] sd 0:0:0:0: [sda] 1 512-byte logical blocks: (512 B/512 B)
+> > > [    7.927965] sd 0:0:0:0: [sda] 0-byte physical blocks
+> > > 
+> > > Strange..  READ_CAPACITY appears to be returning a payload as zeros..?
+> > 
+> > Yep. Because blk_execute_rq() does not put the proper callback and data do
+> > not get copied from sg's to bounce buffer. That is why I tried to use
+> > blk_mq_execute_rq() instead. Once I do that, data start getting read and
+> > booting stops elsewhere.
+> 
+> Mmmmmm.
+> 
+> The call to blk_queue_bounce() exists within blk_mq_make_request(), but
+> AFAICT this should still be getting invoked regardless of if the struct
+> request is dispatched into blk-mq via the modified blk_execute_rq() ->
+> blk_execute_rq_nowait() -> blk_mq_insert_request() codepath, or directly
+> via blk_mq_execute_rq()..
+> 
+> Jens..?
+> 
 
-What is ti,hwmods?  It's not clear from the description.  It also
-doesn't appear to be used in the driver.  At least, I did not find any
-occurrence of "hwmods" in the driver code.
+Actually sorry, your right.  A call to blk_mq_insert_request() for
+REQ_TYPE_BLOCK_PC will not invoke blk_queue_bounce() located near the
+top of blk_mq_execute_rq(), which means that only REQ_TYPE_FS is
+currently using bounce buffers, if required.
 
-> +static inline unsigned long ti_qspi_readl_data(struct ti_qspi *qspi,
-> +               unsigned long reg, int wlen)
+Need to think a bit more about what to do here for REQ_TYPE_BLOCK_PC
+bounce buffer special case with blk_execute_rq(), but I'm thinking that
+blk_mq_execute_rq() should really not be used here..
 
-"readl" means read LONG.  That's what the L is for.  But this does
-different widths.
+Jens..?
 
-> +{
-> +       switch (wlen) {
-> +       case 8:
-> +               return readw(qspi->base + reg);
-> +               break;
-wlen == 8, but readw == 16 bit read?
+--nab
 
-The break after the return isn't necessary.
-
-> +       case 16:
-> +               return readb(qspi->base + reg);
-> +               break;
-wlen == 16, but readb == 8 bit read?
-
-> +       case 32:
-> +               return readl(qspi->base + reg);
-
-wlen == 32, readl == 32, this one makes sense, but....
-
-> +static inline void ti_qspi_writel_data(struct ti_qspi *qspi,
-> +               unsigned long val, unsigned long reg, int wlen)
-
-> +       case 32:
-> +               writeb(val, qspi->base + reg);
-> +               break;
-
-A 32 bit write uses an 8 bit write command, while read is 32 bits??
-
-This doesn't make a lot of sense.  If it's actually correct, there
-should be come kind of comment about it.
-
-> +
-> +static int ti_qspi_setup(struct spi_device *spi)
-> +{
-
-> +
-> +       clk_ctrl_reg = ti_qspi_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG);
-> +
-> +       clk_ctrl_reg &= ~QSPI_CLK_EN;
-> +
-> +       /* disable SCLK */
-> +       ti_qspi_writel(qspi, clk_ctrl_reg, QSPI_SPI_CLOCK_CNTRL_REG);
-
-Did you read this from Documentation/spi/spi-summary?
-                ** BUG ALERT:  for some reason the first version of
-                ** many spi_master drivers seems to get this wrong.
-                ** When you code setup(), ASSUME that the controller
-                ** is actively processing transfers for another device.
-
-> +static int ti_qspi_probe(struct platform_device *pdev)
-> +{
-> +
-> +       master->mode_bits = SPI_CPOL | SPI_CPHA;
-
-Does your device support full duplex?  It doesn't look like it does.
-You should set the SPI_MASER_HALF_DUPLEX flag in master->flags.
-
-> +
-> +       if (!of_property_read_u32(np, "ti,spi-num-cs", &num_cs))
-> +               master->num_chipselect = num_cs;
-
-You didn't document this property.  How is this different than the
-"num-cs" property already documented in spi-bus bindings?
-
-> +       qspi->base = devm_ioremap_resource(&pdev->dev, r);
-> +       if (IS_ERR(qspi->base)) {
-> +               ret = -ENOMEM;
-
-Shouldn't that be ret = PTR_ERR(qspi->base)
