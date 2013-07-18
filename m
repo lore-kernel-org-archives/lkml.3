@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670Ab3GRKxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:53:51 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62969 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758667Ab3GRKxu (ORCPT
+	id S1758766Ab3GRKyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:54:07 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45868 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758667Ab3GRKyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:53:50 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX194cOtaVPjwKgzhcjtTNIAw
-Date: Thu, 18 Jul 2013 03:53:46 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
-Message-ID: <20130718105345.GV7656@atomide.com>
-References: <20130716090310.5541.36777.stgit@localhost>
- <20130716090536.5541.36289.stgit@localhost>
- <51E70953.1000601@wwwdotorg.org>
- <20130718072034.GO7656@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718072034.GO7656@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Jul 2013 06:54:05 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Date: Thu, 18 Jul 2013 11:53:51 +0100
+Message-Id: <1374144831-25622-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.3.2
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: core: Use the power efficient workqueue for delayed powerdown
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [130718 00:31]:
-> * Stephen Warren <swarren@wwwdotorg.org> [130717 14:21]:
-> > On 07/16/2013 03:05 AM, Tony Lindgren wrote:
-> > > +int pinctrl_check_dynamic(struct device *dev, struct pinctrl_state *st1,
-> > > +			  struct pinctrl_state *st2)
-> > > +{
-> > > +	struct pinctrl_setting *s1, *s2;
-> > > +
-> > > +	list_for_each_entry(s1, &st1->settings, node) {
-> > ...
-> > > +		list_for_each_entry(s2, &st2->settings, node) {
-> > ...
-> > > +			if (pctldev1 != pctldev2) {
-> > > +				dev_dbg(dev, "pctldev must be the same for states\n");
-> > > +				return -EINVAL;
-> > > +			}
-> > 
-> > I don't think we should require that; it's perfectly legal at the moment
-> > for some device's pinctrl configuration to include settings from
-> > multiple different pin controllers.
-> 
-> Yes that's fine for pinctrl_select(), but let's not do that for
-> runtime muxing.
+From: Mark Brown <broonie@linaro.org>
 
-Hmm reading this again, you're right, there should not be anything
-preventing mixing multiple controllers as long as the states match.
+There is no need to use a normal per-CPU workqueue for delayed power downs
+as they're not timing or performance critical and waking up a core for them
+would defeat some of the point.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/regulator/core.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index b6efead..6ef476f 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1891,8 +1891,9 @@ int regulator_disable_deferred(struct regulator *regulator, int ms)
+ 	rdev->deferred_disables++;
+ 	mutex_unlock(&rdev->mutex);
  
-> > > +			for (i = 0; i < num_pins1; i++) {
-> > > +				int pin1 = pins1[i];
-> > > +
-> > > +				for (j = 0; j < num_pins2; j++) {
-> > > +					int pin2 = pins2[j];
-> > > +
-> > > +					if (pin1 == pin2) {
-> > > +						found++;
-> > > +						break;
-> > > +					}
-> > > +				}
-> > > +			}
-> > > +
-> > > +			if (found != num_pins1) {
-> > 
-> > I guess this make sure that every entry in the dynamic state is in the
-> > state state, but not vice-versa; the static state can affect more stuff
-> > than the dynamic state?
-> > 
-> > If so, shouldn't that check be if (found != num_pins2)?
-> 
-> The check is that idle_state and sleep_state pins must match the
-> active_state pins. This is intentionally different from the current
-> pinctrl_select() logic.
+-	ret = schedule_delayed_work(&rdev->disable_work,
+-				    msecs_to_jiffies(ms));
++	ret = queue_delayed_work(system_power_efficient_wq,
++				 &rdev->disable_work,
++				 msecs_to_jiffies(ms));
+ 	if (ret < 0)
+ 		return ret;
+ 	else
+-- 
+1.8.3.2
 
-And here things will get messed up if the order of settings is diffrent..
-So yes, pinctrl_check_dynamic() needs more work.
-
-Regards,
-
-Tony
