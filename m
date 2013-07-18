@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934363Ab3GRW7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:59:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5770 "EHLO mga01.intel.com"
+	id S1759298Ab3GRXDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:03:52 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55638 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932682Ab3GRW7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:59:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
-   d="scan'208";a="367595679"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf, tools: Move weight back to common sort keys
-Date: Thu, 18 Jul 2013 15:58:53 -0700
-Message-Id: <1374188333-17899-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1753211Ab3GRXDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 19:03:51 -0400
+Date: Thu, 18 Jul 2013 16:03:12 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Vikram Mulukutla <markivx@codeaurora.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH] panic: call panic handlers before kmsg_dump
+Message-ID: <20130718230312.GA22348@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Since the panic handlers may produce additional information (via printk)
+for the kernel log, it should be reported as part of the panic output
+saved by kmsg_dump(). Without this re-ordering, nothing that adds
+information to a panic will show up in pstore's view when kmsg_dump
+runs, and is therefore not visible to crash reporting tools that examine
+pstore output.
 
-This is a partial revert of Namhyung's patch
- afab87b91f3f331d55664172dad8e476e6ffca9d
- perf sort: Separate out memory-specific sort keys
-
-He wrote
-
- For global/local weights, I'm not entirely sure to place them into the
- memory dimension.  But it's the only user at this time.
-
-Well TSX is another (in fact the original) user of the flags,
-and it needs them to be common. So move local/global weight
-back to the common sort keys.
-
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- tools/perf/util/sort.c | 4 ++--
- tools/perf/util/sort.h | 6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/panic.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 313a5a7..5919480 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -872,6 +872,8 @@ static struct sort_dimension common_sort_dimensions[] = {
- 	DIM(SORT_PARENT, "parent", sort_parent),
- 	DIM(SORT_CPU, "cpu", sort_cpu),
- 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
-+	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
-+	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
- };
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 8018646..b6c482c 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -123,10 +123,14 @@ void panic(const char *fmt, ...)
+ 	 */
+ 	smp_send_stop();
  
- #undef DIM
-@@ -891,8 +893,6 @@ static struct sort_dimension bstack_sort_dimensions[] = {
- #define DIM(d, n, func) [d - __SORT_MEMORY_MODE] = { .name = n, .entry = &(func) }
+-	kmsg_dump(KMSG_DUMP_PANIC);
+-
++	/*
++	 * Run any panic handlers, including those that might need to
++	 * add information to the kmsg dump output.
++	 */
+ 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
  
- static struct sort_dimension memory_sort_dimensions[] = {
--	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
--	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
- 	DIM(SORT_MEM_DADDR_SYMBOL, "symbol_daddr", sort_mem_daddr_sym),
- 	DIM(SORT_MEM_DADDR_DSO, "dso_daddr", sort_mem_daddr_dso),
- 	DIM(SORT_MEM_LOCKED, "locked", sort_mem_locked),
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 45ac84c..2860d46 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -138,6 +138,8 @@ enum sort_type {
- 	SORT_PARENT,
- 	SORT_CPU,
- 	SORT_SRCLINE,
-+	SORT_LOCAL_WEIGHT,
-+	SORT_GLOBAL_WEIGHT,
++	kmsg_dump(KMSG_DUMP_PANIC);
++
+ 	bust_spinlocks(0);
  
- 	/* branch stack specific sort keys */
- 	__SORT_BRANCH_STACK,
-@@ -149,9 +151,7 @@ enum sort_type {
- 
- 	/* memory mode specific sort keys */
- 	__SORT_MEMORY_MODE,
--	SORT_LOCAL_WEIGHT = __SORT_MEMORY_MODE,
--	SORT_GLOBAL_WEIGHT,
--	SORT_MEM_DADDR_SYMBOL,
-+	SORT_MEM_DADDR_SYMBOL = __SORT_MEMORY_MODE,
- 	SORT_MEM_DADDR_DSO,
- 	SORT_MEM_LOCKED,
- 	SORT_MEM_TLB,
+ 	if (!panic_blink)
 -- 
-1.8.1.4
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
