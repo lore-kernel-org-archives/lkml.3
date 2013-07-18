@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab3GROzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:55:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56279 "EHLO bear.ext.ti.com"
+	id S932469Ab3GRO4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:56:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48436 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932074Ab3GROzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:55:19 -0400
-Message-ID: <51E801C9.60609@ti.com>
-Date: Thu, 18 Jul 2013 20:25:05 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S932074Ab3GRO4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 10:56:52 -0400
+Date: Thu, 18 Jul 2013 16:51:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
+        Jiri Olsa <jolsa@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing
+	event_file/call in inode->i_private
+Message-ID: <20130718145137.GA6014@redhat.com>
+References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com> <20130717145148.GB7358@redhat.com> <51E750F4.5070200@hitachi.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, <spi-devel-general@lists.sourceforge.net>,
-        <grant.likely@linaro.org>, <rnayak@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com> <1374141687-10790-3-git-send-email-sourav.poddar@ti.com> <20130718104233.GG22506@sirena.org.uk> <51E7D569.2010709@ti.com> <20130718131822.GN22506@sirena.org.uk> <20130718133158.GA1628@arwen.pp.htv.fi> <20130718144241.GO22506@sirena.org.uk>
-In-Reply-To: <20130718144241.GO22506@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E750F4.5070200@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-On Thursday 18 July 2013 08:12 PM, Mark Brown wrote:
-> On Thu, Jul 18, 2013 at 04:31:58PM +0300, Felipe Balbi wrote:
->> On Thu, Jul 18, 2013 at 02:18:22PM +0100, Mark Brown wrote:
->>> So why do we report that we handled the interrupt then?  Shouldn't we at
->>> least warn if we're getting spurious IRQs?
->> not spurious. OMAP has two sets of IRQ status registers. One is call
->> IRQSTATUS$n (n = 0, 1, ...) and IRQSTATUS_RAW$n.
->> IRQSTATUS$n will only enable the bits which fired IRQs and aren't
->> masked while IRQSTATUS_RAW$n will also enable the bits which are masked.
->> I could never come up with a use case where we would need to handle IRQs
->> which we decided to mask, but perhaps there might be some cases, I don't
->> know.
->> Based on that, I believe Sourav is reading IRQSTATUS_RAW$n, then he need
->> to clear the masked bits.
-> That's not the issue - the issue is that if none of the unmasked
-> interrupts are being asserted we shouldn't be in the interrupt handler
-> in the first place but the driver silently accepts that and reports that
-> it handled the interrupt.
-I believe this is what you hinted at doing..
+On 07/18, Masami Hiramatsu wrote:
+>
+> (2013/07/17 23:51), Oleg Nesterov wrote:
+> > Well, perhaps you are right... But this TRACE_EVENT_FL_REF_MASK code
+> > is new too, it is not that we only need a small fixlets to finish it.
+>
+> Would you mean that TRACE_EVENT_FL_REF_MASK may also have some problems?
 
-there is a QSPI_INTR_STATUS_ENABLED_CLEAR register, which indicated the 
-interrupt
-status.
-if nothing is set in the above register, I should return IRQ_NONE.
+It was you who initially pointed that it does have problems ;)
+
+And, _afaics_ your patch which tries to fix this problem is not
+exactly correct.
+
+It removes trace_array_get/put from tracing_open_generic_file() and
+tracing_release_generic_file(). This assumes that "call->flags++" is
+enough, but it is not.
+
+Yes, the next patch adds the "flags & TRACE_EVENT_FL_REF_MASK" check
+into trace_remove_event_call() path. But this is still racy wrt
+instance_delete() unless I missed something.
+
+IOW, I believe that either .open() should do trace_array_get(), or
+__trace_remove_event_dirs() needs another for-each-file loop which
+checks file->call->flags & TRACE_EVENT_FL_REF_MASK.
+
+
+> > So I think that it makes sense to discuss the alternatives before we
+> > decide what exactly we should do.
+>
+> Your approach is also interesting for me, indeed. However, it is so
+> different from current one. I think you should clarify what bug you
+> would like to solve and how.
+
+The same bugs which Steven's 1/4 tries to solve ;)
+
+Oleg.
+
