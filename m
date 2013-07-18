@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab3GRR75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 13:59:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3106 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759072Ab3GRR74 (ORCPT
+	id S933231Ab3GRSBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 14:01:45 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:48822 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759072Ab3GRSBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 13:59:56 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Yl0AzRYO7AIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=d6u8WKc2XIIA:10 a=ayC55rCoAAAA:8 a=kNqCl963W6Y3sKetRbMA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374170394.6458.252.camel@gandalf.local.home>
-Subject: Re: [PATCH v2] tracing: Miscellaneous fixes for trace_array ref
- counting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexander Z Lam <azl@google.com>
-Cc: linux-kernel@vger.kernel.org, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>
-Date: Thu, 18 Jul 2013 13:59:54 -0400
-In-Reply-To: <1374169621-31314-1-git-send-email-azl@google.com>
-References: <1374169621-31314-1-git-send-email-azl@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Jul 2013 14:01:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130718160633.GA16208@www.outflux.net>
+References: <20130718160633.GA16208@www.outflux.net>
+Date: Thu, 18 Jul 2013 20:01:43 +0200
+X-Google-Sender-Auth: xEe_VJvqYK0whwuIRxKL7wgrxI0
+Message-ID: <CAMuHMdVyyA43s=O_PoSKC75G49T71ZWLAQ2B1HKW1MSc=q5TZA@mail.gmail.com>
+Subject: Re: [PATCH] kconfig: switch to "long long" for sanity
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Michal Marek <mmarek@suse.cz>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 10:47 -0700, Alexander Z Lam wrote:
->  
->  static const struct file_operations tracing_iter_fops = {
-> @@ -3958,7 +3965,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
->  	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
->  	if (!iter) {
->  		ret = -ENOMEM;
-> -		goto out;
-> +		goto fail_iter;
->  	}
->  
->  	/*
-> @@ -3968,13 +3975,13 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
->  	iter->trace = kmalloc(sizeof(*iter->trace), GFP_KERNEL);
->  	if (!iter->trace) {
->  		ret = -ENOMEM;
-> -		goto fail;
-> +		goto fail_trace;
->  	}
->  	*iter->trace = *tr->current_trace;
->  
->  	if (!alloc_cpumask_var(&iter->started, GFP_KERNEL)) {
->  		ret = -ENOMEM;
-> -		goto fail;
-> +		goto fail_trace;
->  	}
->  
->  	/* trace pipe does not show start of buffer */
-> @@ -4001,9 +4008,10 @@ out:
->  	mutex_unlock(&trace_types_lock);
->  	return ret;
->  
-> -fail:
-> +fail_trace:
->  	kfree(iter->trace);
->  	kfree(iter);
-> +fail_iter:
->  	__trace_array_put(tr);
->  	mutex_unlock(&trace_types_lock);
->  	return ret;
+On Thu, Jul 18, 2013 at 6:06 PM, Kees Cook <keescook@chromium.org> wrote:
+> Instead of using "long" for kconfig "hex" and "range" values, which may
+> change in size depending on the host architecture, use "long long". This
+> will allow values greater than INT_MAX on 32-bit hosts when cross
+> compiling.
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+with one minor nit...
 
-You missed my comment about not adding the extra label. The only change
-to the code above should have been:
+>  static void sym_validate_range(struct symbol *sym)
+>  {
+>         struct property *prop;
+> -       long base, val, val2;
+> +       long long base, val, val2;
 
-	if (!iter) {
-		ret = -ENOMEM;
-+		__trace_array_put(tr);
-		goto out;
-	}
+strtoll() expects an "int" type for "base". This was changed to "long" in your
+previous patch.
 
-A one liner.
+Gr{oetje,eeting}s,
 
--- Steve
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
