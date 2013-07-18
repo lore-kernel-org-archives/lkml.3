@@ -1,75 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab3GRKSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:18:18 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4637 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754291Ab3GRKSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:18:17 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <51E7C0E1.5090705@broadcom.com>
-Date: Thu, 18 Jul 2013 12:18:09 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1758360Ab3GRKTx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:19:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59124 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab3GRKTv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:19:51 -0400
+From: Oleksandr Kravchenko <x0199363@ti.com>
+To: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <jic23@cam.ac.uk>, <pmeerw@pmeerw.net>, <holler@ahsoftware.de>,
+        <srinivas.pandruvada@intel.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <grygorii.strashko@ti.com>,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: [PATCH 1/3] iio: core: implement devm_iio_device_alloc/devm_iio_device_free
+Date: Thu, 18 Jul 2013 13:19:24 +0300
+Message-ID: <1374142766-29736-1-git-send-email-x0199363@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: "Tony Lindgren" <tony@atomide.com>
-cc: linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Roger Quadros" <rogerq@ti.com>
-Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
- ethernet
-References: <51E7AA24.6080600@broadcom.com>
- <20130718085951.GT7656@atomide.com>
-In-Reply-To: <20130718085951.GT7656@atomide.com>
-X-WSS-ID: 7DF961292L849765869-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 10:59 AM, Tony Lindgren wrote:
-> * Arend van Spriel <arend@broadcom.com> [130718 01:47]:
->> So my first step was to follow the recipe given in that commit.
->> Beside that I noticed a thread about USB issue on LKML so I also
->> applied the following commit:
->>
->> commit 352f573e59050c7a604c35c58b4bbfc51edebbee
->> Author: Roger Quadros <rogerq@ti.com>
->> Date:   Tue Jun 18 19:04:47 2013 +0300
->>
->>      ARM: OMAP2+: Provide alias to USB PHY clock
->>
->> The attached kernel log seems to suggest that the device tree is
->> picked up by the kernel, but the USB does not seem very active. No
->> ethernet connectivity. This does seem a regression to me. Is there
->> some other patch that I need to get it going again?
->
-> There are few .dts related patches missing for USB. Roger can
-> point you to the current versions that Benoit should be queueing
-> for the -rc series.
+From: Grygorii Strashko <grygorii.strashko@ti.com>
 
-Hope Roger or Benoit will chime in.
+Add a resource managed devm_iio_device_alloc()/devm_iio_device_free()
+to automatically clean up any allocations made by IIO drivers,
+thus leading to simplified IIO drivers code.
 
-> Then for the SDIO with device tree, take a look at the following
-> patches:
->
-> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
-> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
->
-> The wl12xx .dts changes for pandaboard are still missing too.
->
-> Then I'll be updating these soonish:
-> [PATCH 0/4] Updated omap_hsmmc SDIO and remuxing patches
->
-> Those are needed for the SDIO interrupt, SDIO will work also
-> without those.
+In addition, this will allow IIO drivers to use other devm_*() API
+(like devm_request_irq) and don't care about the race between
+iio_device_free() and the release of resources by Device core
+during driver removing.
 
-Thanks for the pointers,
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+[o.v.kravchenko@globallogic.com: fix return value ib devm_iio_device_alloc
+in case if devres_alloc failed, remove unused variable "rc"]
+Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Tested-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+---
+ drivers/iio/industrialio-core.c |   47 +++++++++++++++++++++++++++++++++++++++
+ include/linux/iio/iio.h         |   25 +++++++++++++++++++++
+ 2 files changed, 72 insertions(+)
 
-Arend
-
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index e145931..d56d122 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -912,6 +912,53 @@ void iio_device_free(struct iio_dev *dev)
+ }
+ EXPORT_SYMBOL(iio_device_free);
+ 
++static void devm_iio_device_release(struct device *dev, void *res)
++{
++	iio_device_free(*(struct iio_dev **)res);
++}
++
++static int devm_iio_device_match(struct device *dev, void *res, void *data)
++{
++	struct iio_dev **r = res;
++	if (!r || !*r) {
++		WARN_ON(!r || !*r);
++		return 0;
++	}
++	return *r == data;
++}
++
++struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv)
++{
++	struct iio_dev **ptr, *iio_dev;
++
++	ptr = devres_alloc(devm_iio_device_release, sizeof(*ptr),
++			   GFP_KERNEL);
++	if (!ptr)
++		return NULL;
++
++	/* use raw alloc_dr for kmalloc caller tracing */
++	iio_dev = iio_device_alloc(sizeof_priv);
++	if (iio_dev) {
++		*ptr = iio_dev;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return iio_dev;
++}
++EXPORT_SYMBOL_GPL(devm_iio_device_alloc);
++
++void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev)
++{
++	int rc;
++
++	rc = devres_release(dev, devm_iio_device_release,
++			    devm_iio_device_match, iio_dev);
++	WARN_ON(rc);
++}
++EXPORT_SYMBOL_GPL(devm_iio_device_free);
++
+ /**
+  * iio_chrdev_open() - chrdev file open for buffer access and ioctls
+  **/
+diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+index 8d171f4..f1d99f6 100644
+--- a/include/linux/iio/iio.h
++++ b/include/linux/iio/iio.h
+@@ -532,6 +532,31 @@ static inline struct iio_dev *iio_priv_to_dev(void *priv)
+ void iio_device_free(struct iio_dev *indio_dev);
+ 
+ /**
++ * devm_iio_device_alloc - Resource-managed iio_device_alloc()
++ * @dev: 		Device to allocate iio_dev for
++ * @sizeof_priv: 	Space to allocate for private structure.
++ *
++ * Managed iio_device_alloc.  iio_dev allocated with this function is
++ * automatically freed on driver detach.
++ *
++ * If an iio_dev allocated with this function needs to be freed separately,
++ * devm_iio_device_free() must be used.
++ *
++ * RETURNS:
++ * Pointer to allocated iio_dev on success, NULL on failure.
++ */
++struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv);
++
++/**
++ * devm_iio_device_free - Resource-managed iio_device_free()
++ * @dev:		Device this iio_dev belongs to
++ * @indio_dev: 		the iio_dev associated with the device
++ *
++ * Free indio_dev allocated with devm_iio_device_alloc().
++ */
++void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev);
++
++/**
+  * iio_buffer_enabled() - helper function to test if the buffer is enabled
+  * @indio_dev:		IIO device structure for device
+  **/
+-- 
+1.7.9.5
 
