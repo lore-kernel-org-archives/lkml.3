@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934580Ab3GRWVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:21:38 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:55209 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759049Ab3GRWVf (ORCPT
+	id S934638Ab3GRWVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:21:44 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:36311 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934600Ab3GRWVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:21:35 -0400
+	Thu, 18 Jul 2013 18:21:42 -0400
 From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 To: jic23@cam.ac.uk
 Cc: gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
-Subject: [PATCH 02/15] iio: ti_am335x_adc: Fix wrong samples received on 1st read
-Date: Thu, 18 Jul 2013 23:21:13 +0100
-Message-Id: <1374186086-5015-3-git-send-email-zubair.lutfullah@gmail.com>
+Subject: [PATCH 06/15] iio: ti_am335x_adc: Handle set to clear IRQENABLE
+Date: Thu, 18 Jul 2013 23:21:17 +0100
+Message-Id: <1374186086-5015-7-git-send-email-zubair.lutfullah@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
 References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
@@ -21,118 +21,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Patil, Rachna" <rachna@ti.com>
+From: Russ Dill <Russ.Dill@ti.com>
 
-Previously we tried to read data form ADC even before ADC sequencer
-finished sampling. This led to wrong samples.
-We now wait on ADC status register idle bit to be set.
+The driver is currently mishandling the IRQENABLE register. The driver
+should write a 1 for bits it wishes to set, and a zero for bits it does not
+wish to change. The read of the current register contents is not
+necessary.
 
-Signed-off-by: Patil, Rachna <rachna@ti.com>
+Write 0 = No action.
+Read 0 = Interrupt disabled (masked).
+Read 1 = Interrupt enabled.
+Write 1 = Enable interrupt.
+
+The current read/update/write method is currently not causing any
+problems, but could cause confusion in the future.
+
+Signed-off-by: Russ Dill <Russ.Dill@ti.com>
 Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 ---
- drivers/iio/adc/ti_am335x_adc.c      |   30 ++++++++++++++++++++++--------
- include/linux/mfd/ti_am335x_tscadc.h |   16 ++++++++++++++++
- 2 files changed, 38 insertions(+), 8 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 4427e8e..f73fee1 100644
+index c1b051c..b566e6a 100644
 --- a/drivers/iio/adc/ti_am335x_adc.c
 +++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -60,7 +60,6 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
- {
- 	unsigned int stepconfig;
- 	int i, steps;
--	u32 step_en;
+@@ -207,7 +207,7 @@ static void tiadc_poll_handler(struct work_struct *work_s)
+ 		container_of(work_s, struct tiadc_device, poll_work);
+ 	struct iio_dev *idev = iio_priv_to_dev(adc_dev);
+ 	struct iio_buffer *buffer = idev->buffer;
+-	unsigned int fifo1count, readx1, status;
++	unsigned int fifo1count, readx1;
+ 	int i;
+ 	u32 *inputbuffer;
  
- 	/*
- 	 * There are 16 configurable steps and 8 analog input
-@@ -86,8 +85,7 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
- 		adc_dev->channel_step[i] = steps;
- 		steps++;
+@@ -223,9 +223,8 @@ static void tiadc_poll_handler(struct work_struct *work_s)
  	}
--	step_en = get_adc_step_mask(adc_dev);
--	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
-+
+ 
+ 	buffer->access->store_to(buffer, (u8 *) inputbuffer);
+-	status = tiadc_readl(adc_dev, REG_IRQENABLE);
+ 	tiadc_writel(adc_dev, REG_IRQENABLE,
+-			(status | IRQENB_FIFO1THRES));
++			IRQENB_FIFO1THRES);
+ 
+ 	kfree(inputbuffer);
  }
- 
- static const char * const chan_name_ain[] = {
-@@ -142,10 +140,22 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 		int *val, int *val2, long mask)
+@@ -242,7 +241,7 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
  {
- 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
--	int i;
--	unsigned int fifo1count, read;
-+	int i, map_val;
-+	unsigned int fifo1count, read, stepid;
- 	u32 step = UINT_MAX;
- 	bool found = false;
-+	u32 step_en;
-+	unsigned long timeout = jiffies + usecs_to_jiffies
-+				(IDLE_TIMEOUT * adc_dev->channels);
-+	step_en = get_adc_step_mask(adc_dev);
-+	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
-+
-+	/* Wait for ADC sequencer to complete sampling */
-+	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
-+		if (time_after(jiffies, timeout))
-+			return -EAGAIN;
-+		}
-+	map_val = chan->channel + TOTAL_CHANNELS;
+ 	struct tiadc_device *adc_dev = iio_priv(idev);
+ 	struct iio_buffer *buffer = idev->buffer;
+-	unsigned int enb, status, fifo1count;
++	unsigned int enb, fifo1count;
+ 	int stepnum, i;
+ 	u8 bit;
  
- 	/*
- 	 * When the sub-system is first enabled,
-@@ -170,12 +180,16 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
- 	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
- 	for (i = 0; i < fifo1count; i++) {
- 		read = tiadc_readl(adc_dev, REG_FIFO1);
--		if (read >> 16 == step) {
--			*val = read & 0xfff;
-+		stepid = read & FIFOREAD_CHNLID_MASK;
-+		stepid = stepid >> 0x10;
-+
-+		if (stepid == map_val) {
-+			read = read & FIFOREAD_DATA_MASK;
- 			found = true;
-+			*val = read;
- 		}
- 	}
--	am335x_tsc_se_update(adc_dev->mfd_tscadc);
-+
- 	if (found == false)
- 		return -EBUSY;
- 	return IIO_VAL_INT;
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index 8d73fe2..db1791b 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -113,11 +113,27 @@
- #define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
- #define CNTRLREG_TSCENB		BIT(7)
+@@ -250,11 +249,10 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
+ 		pr_info("Data cannot be read continuously in one shot mode\n");
+ 		return -EINVAL;
+ 	} else {
+-		status = tiadc_readl(adc_dev, REG_IRQENABLE);
+ 		tiadc_writel(adc_dev, REG_IRQENABLE,
+-				(status | IRQENB_FIFO1THRES)|
+-				 IRQENB_FIFO1OVRRUN |
+-				 IRQENB_FIFO1UNDRFLW);
++				(IRQENB_FIFO1THRES |
++				IRQENB_FIFO1OVRRUN |
++				IRQENB_FIFO1UNDRFLW));
  
-+/* FIFO READ Register */
-+#define FIFOREAD_DATA_MASK (0xfff << 0)
-+#define FIFOREAD_CHNLID_MASK (0xf << 16)
-+
-+/* Sequencer Status */
-+#define SEQ_STATUS BIT(5)
-+
- #define ADC_CLK			3000000
- #define	MAX_CLK_DIV		7
- #define TOTAL_STEPS		16
- #define TOTAL_CHANNELS		8
- 
-+/*
-+* ADC runs at 3MHz, and it takes
-+* 15 cycles to latch one data output.
-+* Hence the idle time for ADC to
-+* process one sample data would be
-+* around 5 micro seconds.
-+*/
-+#define IDLE_TIMEOUT 5 /* microsec */
-+
- #define TSCADC_CELLS		2
- 
- struct ti_tscadc_dev {
+ 		fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+ 		for (i = 0; i < fifo1count; i++)
 -- 
 1.7.9.5
 
