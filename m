@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3GRIOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:14:18 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25196 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756847Ab3GRIOM (ORCPT
+	id S1756986Ab3GRISd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:18:33 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55364 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab3GRIS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:14:12 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18+HbxYhUhag1vVlRz2O3D0
-Date: Thu, 18 Jul 2013 01:14:06 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 2/3] ARM: OMAP2+: omap_device: add pinctrl handling
-Message-ID: <20130718081405.GS7656@atomide.com>
-References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com>
- <1374061312-25469-3-git-send-email-grygorii.strashko@ti.com>
- <20130717153838.GJ7656@atomide.com>
- <51E6CCB6.2000907@ti.com>
+	Thu, 18 Jul 2013 04:18:29 -0400
+Message-ID: <51E7A4CF.2050404@hitachi.com>
+Date: Thu, 18 Jul 2013 17:18:23 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E6CCB6.2000907@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] tracing: fix open/delete fixes
+References: <20130716185658.GA21167@redhat.com> <51E6032B.7070907@hitachi.com> <20130717144357.GA7358@redhat.com>
+In-Reply-To: <20130717144357.GA7358@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grygorii Strashko <grygorii.strashko@ti.com> [130717 10:11]:
-> On 07/17/2013 06:38 PM, Tony Lindgren wrote:
-> >* Grygorii Strashko <grygorii.strashko@ti.com> [130717 04:49]:
-> >>Before switching to DT pinctrl states of OMAP IPs have been handled by hwmod
-> >>framework. After switching to DT-boot the pinctrl handling was dropped from
-> >>hwmod framework and, as it was recommended, OMAP IP's drivers have to be updated
-> >>to handle pinctrl states by itself using pinctrl_pm_select_xx() helpers
-> >>(see http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173514.html)
-> >>
-> >>But this is not right for OMAP2+ SoC where real IPs state is controlled
-> >>by omap_device core which enables/disables modules & clocks actually.
-> >
-> >I'm not convinced we should try to handle this in a generic way
-> >as only some devices need dynamic remuxing of some pins.
-> >
-> >>For example, if OMAP I2C driver will handle pinctrl state during system wide
-> >>suspend the following issue may occure:
-> >>- suspend_noirq - I2C device can be still active because of PM auto-suspend
-> >>   |-_od_suspend_noirq
-> >>      |- omap_i2c_suspend_noirq
-> >>         |- PINs state set to SLEEP
-> >>   |- pm_generic_runtime_suspend
-> >>      |- omap_i2c_runtime_suspend()
-> >>         |- PINs state set to IDLE  <--- *oops* PINs state is IDLE and not SLEEP
-> >>   |- omap_device_idle()
-> >>      |- omap_hwmod_idle()
-> >>         |- _idle()
-> >>            |- disbale module (sysc&clocks)
-> >
-> >And in this example you are assuming that you need separate idle and
-> >sleep states, which is not true at least for most cases I've seen.
+(2013/07/17 23:43), Oleg Nesterov wrote:
+> On 07/17, Masami Hiramatsu wrote:
+>>
+>> At a glance, you're trying to change which operation will be
+>> failed. Currently, user can not remove an event while someone
+>> opens files which related to the event. And this approach
+>> changes that the someone can remove the event even if the
+>> files are opened (and read/write operation will be failed).
+>> Am I understand correctly?
 > 
-> I don't need both states (at least right now) :), but
-> - if any OMAP2+ driver will have two states defined: "idle" and "sleep"
-> - and if it will try to manage them from drivers callbacks only using
->   pure calls to pinctrl_pm_select_xx() helpers
+> Yes.
 > 
-> the "idle" state will be selected during suspend and *not* "sleep".
+> Once again, I am still not sure and I am asking for your review.
 
-But the drivers have separate calls for runtime PM and suspend/resume?
+OK,
 
-> >It is possible that am33xx needs separate idle and sleep states, but
-> >most likely only for some pins. For omap[345] we can get away with
-> >just the default state for most cases.
-> >
+> But to me this looks much better. To simplify the discussion, lets
+> consider ftrace_enable_fops in particular.
 > 
+> 	- Why should .open() block rmdir or unregister_uprobe_event?
+
+Because it is opened and under preparing for use. :)
+But, yeah, if we expect there is only one user using
+ftrace, accessing the removing event file is meaningless.
+It should be failed.
+
+> 	- Why do we need .open() at all? Whatever it can do to
+> 	  validate file/call/etc, .read/write can do the same.
+
+Currently, just for preparing and reserving.
+
+> 	- If we kill .open/release, we do not need the nontrivial
+> 	  refcounting. Everything becomes simple, no need to keep
+> 	  the state "in between".
+
+That also means to refrain checking existence under locking mutex
+in all operations. And we have to check it, which I actually concern.
+refcounting is not so small and itself is complex, but it just
+needs to inc/dec on open/close.
+
+
+> 	  We need event_mutex anyway (and note that other f_op's can
+> 	  also rely on other locks taken by trace_remove_event_call),
+> 	  the validation degrades to the trivial != NULL check.
 > 
-> In case, if only "default" state is defined for device - nothing will
->  be done by OMAP device framework for it (I mean any call to
-> pinctrl_pm_select_xx() will do nothing - it just checks that there is
-> no state and returns 0).
+> 	- This also simplifies trace_remove_event_call() paths, we
+> 	  know that once it takes event_mutex nobody can play with
+> 	  ftrace_event_file/ftrace_event_call we are going to free.
 
-If we want to automate something, it should be done at Linux generic
-level rather than at omap "bus" level. That sort of relates to drivers
-needing to know when they've lost context too, which should be
-implemented in Linux generic way.
+Hmm, it seems that we can remove only refcount check, or more?
 
-Regards,
+Thank you,
 
-Tony
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
