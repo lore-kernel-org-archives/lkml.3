@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965256Ab3GRUC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:02:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41616 "EHLO
+	id S965241Ab3GRUC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:02:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41620 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759446Ab3GRTu0 (ORCPT
+	with ESMTP id S1759447Ab3GRTu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/76] perf tests: Omit end of the symbol check failure for test 1
-Date: Thu, 18 Jul 2013 16:48:51 -0300
-Message-Id: <1374177003-3706-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 49/76] perf list: List kernel supplied event aliases
+Date: Thu, 18 Jul 2013 16:49:36 -0300
+Message-Id: <1374177003-3706-50-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,55 +23,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-Omitting end of the function check failure for test 1, since there's no
-way to get exact symbol end via kallsyms.
+List the kernel supplied pmu event aliases in perf list
 
-Leaving the debug message.
+It's better when the users can actually see them.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1370612223-19188-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1366480949-32292-2-git-send-email-andi@firstfloor.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/vmlinux-kallsyms.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ tools/perf/Documentation/perf-list.txt |  4 +-
+ tools/perf/builtin-list.c              |  3 ++
+ tools/perf/util/parse-events.c         |  5 ++-
+ tools/perf/util/pmu.c                  | 73 ++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h                  |  3 ++
+ 5 files changed, 86 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
-index 7b4c4d2..add1539 100644
---- a/tools/perf/tests/vmlinux-kallsyms.c
-+++ b/tools/perf/tests/vmlinux-kallsyms.c
-@@ -139,11 +139,18 @@ next_pair:
- 				 * _really_ have a problem.
- 				 */
- 				s64 skew = sym->end - pair->end;
--				if (llabs(skew) < page_size)
--					continue;
-+				if (llabs(skew) >= page_size)
-+					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
-+						 sym->start, sym->name, sym->end, pair->end);
-+
-+				/*
-+				 * Do not count this as a failure, because we
-+				 * could really find a case where it's not
-+				 * possible to get proper function end from
-+				 * kallsyms.
-+				 */
-+				continue;
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index d1e39dc..826f3d6 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
+ SYNOPSIS
+ --------
+ [verse]
+-'perf list' [hw|sw|cache|tracepoint|event_glob]
++'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
  
--				pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
--					 sym->start, sym->name, sym->end, pair->end);
- 			} else {
- 				struct rb_node *nnd;
- detour:
+ DESCRIPTION
+ -----------
+@@ -104,6 +104,8 @@ To limit the list use:
+   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
+   block, etc.
+ 
++. 'pmu' to print the kernel supplied PMU events.
++
+ . If none of the above is matched, it will apply the supplied glob to all
+   events, printing the ones that match.
+ 
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 1948ece..e79f423 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -13,6 +13,7 @@
+ 
+ #include "util/parse-events.h"
+ #include "util/cache.h"
++#include "util/pmu.h"
+ 
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			else if (strcmp(argv[i], "cache") == 0 ||
+ 				 strcmp(argv[i], "hwcache") == 0)
+ 				print_hwcache_events(NULL, false);
++			else if (strcmp(argv[i], "pmu") == 0)
++				print_pmu_events(NULL, false);
+ 			else if (strcmp(argv[i], "--raw-dump") == 0)
+ 				print_events(NULL, true);
+ 			else {
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index a5076f4..2c460ed 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1110,6 +1110,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
+ 		}
+ 	}
+ 
++	if (printed)
++		printf("\n");
+ 	return printed;
+ }
+ 
+@@ -1164,11 +1166,12 @@ void print_events(const char *event_glob, bool name_only)
+ 
+ 	print_hwcache_events(event_glob, name_only);
+ 
++	print_pmu_events(event_glob, name_only);
++
+ 	if (event_glob != NULL)
+ 		return;
+ 
+ 	if (!name_only) {
+-		printf("\n");
+ 		printf("  %-50s [%s]\n",
+ 		       "rNNN",
+ 		       event_type_descriptors[PERF_TYPE_RAW]);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 1d1862d..bc9d806 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -564,3 +564,76 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 	for (b = from; b <= to; b++)
+ 		set_bit(b, bits);
+ }
++
++static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
++			  struct perf_pmu_alias *alias)
++{
++	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
++	return buf;
++}
++
++static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
++			     struct perf_pmu_alias *alias)
++{
++	snprintf(buf, len, "%s OR %s/%s/", alias->name, pmu->name, alias->name);
++	return buf;
++}
++
++static int cmp_string(const void *a, const void *b)
++{
++	const char * const *as = a;
++	const char * const *bs = b;
++	return strcmp(*as, *bs);
++}
++
++void print_pmu_events(const char *event_glob, bool name_only)
++{
++	struct perf_pmu *pmu;
++	struct perf_pmu_alias *alias;
++	char buf[1024];
++	int printed = 0;
++	int len, j;
++	char **aliases;
++
++	pmu = NULL;
++	len = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry(alias, &pmu->aliases, list)
++			len++;
++	aliases = malloc(sizeof(char *) * len);
++	if (!aliases)
++		return;
++	pmu = NULL;
++	j = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry(alias, &pmu->aliases, list) {
++			char *name = format_alias(buf, sizeof(buf), pmu, alias);
++			bool is_cpu = !strcmp(pmu->name, "cpu");
++
++			if (event_glob != NULL &&
++			    !(strglobmatch(name, event_glob) ||
++			      (!is_cpu && strglobmatch(alias->name,
++						       event_glob))))
++				continue;
++			aliases[j] = name;
++			if (is_cpu && !name_only)
++				aliases[j] = format_alias_or(buf, sizeof(buf),
++							      pmu, alias);
++			aliases[j] = strdup(aliases[j]);
++			j++;
++		}
++	len = j;
++	qsort(aliases, len, sizeof(char *), cmp_string);
++	for (j = 0; j < len; j++) {
++		if (name_only) {
++			printf("%s ", aliases[j]);
++			continue;
++		}
++		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
++		free(aliases[j]);
++		printed++;
++	}
++	if (printed)
++		printf("\n");
++	free(aliases);
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index d17b565..6b2cbe2 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/bitops.h>
+ #include <linux/perf_event.h>
++#include <stdbool.h>
+ 
+ enum {
+ 	PERF_PMU_FORMAT_VALUE_CONFIG,
+@@ -40,5 +41,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
+ 
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
++void print_pmu_events(const char *event_glob, bool name_only);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
 1.8.1.4
 
