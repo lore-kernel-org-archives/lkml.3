@@ -1,132 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934364Ab3GRWNx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:13:53 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:39107 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759460Ab3GRWNv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:13:51 -0400
-Date: Fri, 19 Jul 2013 00:13:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 07/18] nohz: Selectively enable context tracking on full
- dynticks CPUs
-Message-ID: <20130718221346.GE7398@somewhere>
-References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
- <1374079471-3129-8-git-send-email-fweisbec@gmail.com>
- <1374085637.6458.170.camel@gandalf.local.home>
+	id S934523Ab3GRWRX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:17:23 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38782 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932956Ab3GRWRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:17:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,696,1367996400"; 
+   d="scan'208";a="333556320"
+Message-ID: <51E8696A.7090406@intel.com>
+Date: Fri, 19 Jul 2013 00:17:14 +0200
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374085637.6458.170.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, ak <ak@linux.intel.com>,
+        rjw@rjwysocki.net
+Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
+References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>  <1374098936.22432.322.camel@schen9-DESK>  <201307180347.r6I3l5e9077577@www262.sakura.ne.jp> <1374181200.22432.350.camel@schen9-DESK>
+In-Reply-To: <1374181200.22432.350.camel@schen9-DESK>
+Content-Type: text/plain; charset="utf-8"; format="flowed"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6IMHTOR006586
 
-On Wed, Jul 17, 2013 at 02:27:17PM -0400, Steven Rostedt wrote:
-> On Wed, 2013-07-17 at 18:44 +0200, Frederic Weisbecker wrote:
-> > The code is ready to do so in the context tracking subsystem, now
-> 
-> "do so"? Do what?
+On 7/18/2013 11:00 PM, Tim Chen wrote:
+> On Thu, 2013-07-18 at 12:47 +0900, Tetsuo Handa wrote:
+>> Tim Chen wrote:
+>>>>> Your approach is quite complicated.  I think something simpler like the
+>>>>> following will work:
+>>>> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
+>>>
+>>> The following code in crct10dif-pclmul_glue.c
+>>>
+>>> static const struct x86_cpu_id crct10dif_cpu_id[] = {
+>>>          X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
+>>>          {}
+>>> };
+>>> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+>>>
+>>> will put the module in the device table and get the module
+>>> loaded, as long as the cpu support PCLMULQDQ. So we should be able
+>>> to benefit.
+>> Excuse me, how can crct10dif-pclmul.ko get loaded automatically?
+>> Did you test CONFIG_CRYPTO_CRCT10DIF_PCLMUL=m with below debug message?
+> The code:
+>
+> static const struct x86_cpu_id crct10dif_cpu_id[] = {
+>           X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
+>           {}
+> };
+> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+>
+> causes the following line to be added to modules.alias file:
+>
+> alias x86cpu:vendor:*:family:*:model:*:feature:*0081* crct10dif_pclmul
+>
+> This should cause udev to load the crct10dif_pclml module when cpu
+> support the PCLMULQDQ (feature code 0081).  I did my testing during
+> development on 3.10 and the module was indeed loaded.
+>
+> However, I found that the following commit under 3.11-rc1 broke
+> the mechanism after some bisection.
+>
+> commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date:   Fri May 3 00:26:22 2013 +0200
+>
+>      ACPI / processor: Use common hotplug infrastructure
+>      
+>      Split the ACPI processor driver into two parts, one that is
+>      non-modular, resides in the ACPI core and handles the enumeration
+>      and hotplug of processors and one that implements the rest of the
+>      existing processor driver functionality.
+>      
+> Rafael, can you check and see if this can be fixed so those optimized
+> crypto modules for Intel cpu that support them can be loaded?
 
-It's referring to the patch title. The code is ready to selectively
-enable context tracking on the CPUs.
+I think this is an ordering issue between udev startup and the time when 
+devices are registered.
 
-I see many changelogs that use that kind of style where the title
-of the patch is considered as the 1st line of the changelog. That's
-convenient because it avoids the need to rephrase the title in the
-changelog.
+I wonder what happens if you put those modules into the initramfs image?
 
-But may be the reference to the title is not obvious. if you prefer
-I can expand the "do so" here.
+Rafael
 
-> 
-> > we just need to pass our cpu range selection to it from the
-> 
-> Pass cpu range selection to what?
-> 
-> Pronouns are evil in technical documentation.
 
-How about:
+> Herbert, we had a discussion earlier on a separate issue regarding the
+> module load order.  We wanted to load all supported crypto t10dif modules
+> before the crc-t10dif module.  You mentioned that the MODULE_ALIAS also
+> need some fixing and wonder if those changes have been merged into
+> 3.11-rc1?  See https://lkml.org/lkml/2013/5/21/216 .  Theoretically, that
+> fix should also get all the crypto modules support t10dif be loaded.
+>
+> Thanks.
+>
+> Tim
+>
+>> diff --git a/arch/x86/crypto/crct10dif-pclmul_glue.c b/arch/x86/crypto/crct10dif-pclmul_glue.c
+>> index 7845d7f..a8a95aa 100644
+>> --- a/arch/x86/crypto/crct10dif-pclmul_glue.c
+>> +++ b/arch/x86/crypto/crct10dif-pclmul_glue.c
+>> @@ -129,9 +129,10 @@ MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+>>   
+>>   static int __init crct10dif_intel_mod_init(void)
+>>   {
+>> +	printk(KERN_WARNING "********** Checking for X86_FEATURE_PCLMULQDQ\n");
+>>   	if (!x86_match_cpu(crct10dif_cpu_id))
+>>   		return -ENODEV;
+>> -
+>> +	printk(KERN_WARNING "********** Registering crct10dif-pclmul\n");
+>>   	return crypto_register_shash(&alg);
+>>   }
+>>
+>> As far as I tested, crct10dif-pclmul.ko will not be loaded unless manually
+>> adding "modprobe crct10dif-pclmul" to initramfs's /init or choosing
+>> CONFIG_CRYPTO_CRCT10DIF_PCLMUL=y.
+>>
+>>> So as long as the crct10dif.ko and crct10dif-pclmul.ko are loaded,
+>>> the pclmulqdq t10dif will have a higher priority and get allocated
+>>> and used.
+>> What I'm talking are
+>>
+>>    (1) Since mkinitramfs is unable to know that crct10dif-pclmul.ko has higher
+>>        priority than crct10dif.ko , mkinitramfs will not include
+>>        "modprobe crct10dif-pclmul" line in the generated initramfs.
+>>
+>>    (2) In order to get benefit from PCLMULQDQ, users have to manually make sure
+>>        that "modprobe crct10dif-pclmul" is called before crc-t10dif.ko (which is
+>>        loaded before sd_mod.ko is loaded) is loaded by their initramfs's /init
+>>        script.
+>>
+>>    (3) The cause of (1) is that crct10dif-pclmul.ko will not be loaded
+>>        automatically unless choosing CONFIG_CRYPTO_CRCT10DIF_PCLMUL=y.
+>>
+>>    (4) The cause of (3) is that modules.dep does not describe that users will
+>>        benefit by loading crct10dif-pclmul.ko before loading crc-t10dif.ko .
+>>
+>>    (5) Currently crct10dif-pclmul.ko cannot be loaded if PCLMULQDQ is not
+>>        supported. This leads to boot failure (since sd_mod.ko cannot be loaded)
+>>        if modules.dep says that "crct10dif-pclmul.ko is required by
+>>        crc-t10dif.ko".
+>>
+>>    (6) To solve (4) and (5), modules.dep should say "crct10dif-pclmul.ko is
+>>        preferred for crc-t10dif.ko but is not required by crc-t10dif.ko".
+>>        But there is no such mechanism. Thus, currently available choice is
+>>        "allow loading crct10dif-pclmul.ko even if PCLMULQDQ is not supported"
+>>        or "ignore errors by built-in the crct10dif-pclmul.ko module".
+>>
+>> My patch (b) seems to be complicated but is required in order to solve (4)
+>> without asking users to manually add "modprobe crct10dif-pclmul" into their
+>> initramfs. If we choose patch (b) rather than patch (a), we need to solve (5).
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-"""
-The code in the context tracking subsystem is ready to selectively
-enable its tracking on specificied CPU ranges instead of inconditionally
-force it on all CPUs.
+---------------------------------------------------------------------
+Intel Technology Poland sp. z o.o.
+z siedziba w Gdansku
+ul. Slowackiego 173
+80-298 Gdansk
 
-What we need to do now is to pass the desired CPU ranges to track from
-the full dynticks subsystem, according to the ranges specified in the
-"nohz_full=" boot option.
-""" 
+Sad Rejonowy Gdansk Polnoc w Gdansku, 
+VII Wydzial Gospodarczy Krajowego Rejestru Sadowego, 
+numer KRS 101882
 
-> > diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-> > index 12045ce..2c2b73aa 100644
-> > --- a/include/linux/context_tracking.h
-> > +++ b/include/linux/context_tracking.h
-> > @@ -34,6 +34,8 @@ static inline bool context_tracking_active(void)
-> >  	return __this_cpu_read(context_tracking.active);
-> >  }
-> >  
-> > +extern void context_tracking_cpu_set(int cpu);
-> > +
-> >  extern void user_enter(void);
-> >  extern void user_exit(void);
-> >  
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 247084b..914da3f 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -527,7 +527,7 @@ config RCU_USER_QS
-> >  config CONTEXT_TRACKING_FORCE
-> >  	bool "Force context tracking"
-> >  	depends on CONTEXT_TRACKING
-> > -	default CONTEXT_TRACKING
-> > +	default y if !NO_HZ_FULL
-> 
-> Why the if !NO_HZ_FULL?
-> 
-> That selects this anyway. Oh wait, you changed this.
+NIP 957-07-52-316
+Kapital zakladowy 200.000 zl
 
-Yeah that's probably confusing. Ok lets consider a system with:
-
-     CONTEXT_TRACKING=y
-
-By default it doesn't track any CPU, it's inactive unless you set:
-
-     CONTEXT_TRACKING_FORCE=y
-
-In this case, all CPUs are tracked.
-
-The full dynticks subsystem was supposed to pass its CPU range to context
-tracking such that it activates the tracking only on the relevant CPUs.
-
-But the context tracking code was merged before full dynticks. So nothing
-was there to enabled CPUs on context tracking initially. So we needed
-CONTEXT_TRACKING_FORCE for testing.
-
-Then later we merged full dynticks. But we got lazy and rushed and instead of
-selecting the CPUs to track on runtime from the full dynticks subsystem to
-the context tracking subsystem, we forced CONTEXT_TRACKING_FORCE=y when
-NO_HZ_FULL=y. Then using runtime selection became a TODO.
-
-Now these patches handle that TODO and full dynticks passes its range to
-contex tracking.
-
-Now one could argue why we keep CONTEXT_TRACKING_FORCE around, since we
-have full dynticks and NO_HZ_FULL_ALL for wide automated testing.
-
-This is because CONTEXT_TRACKING is not sufficient for NO_HZ_FULL alone.
-Especially because of the 64bits requirement that I need to drop after
-careful review of any use of cputime_t. But anyway, CONTEXT_TRACKING_FORCE
-is still handy to keep around for archs that want support for nohz full
-but don't yet meet all dependencies.
-
-Thanks.
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
