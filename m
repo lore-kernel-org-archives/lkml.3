@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965365Ab3GRUGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:06:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41527 "EHLO
+	id S965355Ab3GRUGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:06:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41528 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759416Ab3GRTuX (ORCPT
+	with ESMTP id S1759417Ab3GRTuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:23 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 28/76] perf util: Parse header_page to get proper long size
-Date: Thu, 18 Jul 2013 16:49:15 -0300
-Message-Id: <1374177003-3706-29-git-send-email-acme@infradead.org>
+Subject: [PATCH 31/76] perf util: Rename read_*() functions in trace-event-info.c
+Date: Thu, 18 Jul 2013 16:49:18 -0300
+Message-Id: <1374177003-3706-32-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -30,10 +30,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The header_page file describes the format of the ring buffer page
-which is used by ftrace (not perf).  And size of "commit" field (I
-guess it's older name was 'size') represents the real size of long
-type used for kernel.  So update the pevent's long size.
+It's confusing to have same name for two difference functions which does
+something opposite way.  Since what they do in this file is read *AND*
+writing some of tracing metadata files, rename them to record_*() looks
+better to me.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
@@ -43,52 +43,86 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1370323231-14022-12-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1370323231-14022-15-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event-read.c | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ tools/perf/util/trace-event-info.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index fa45fca..f211227 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -212,6 +212,7 @@ static int read_ftrace_printk(struct pevent *pevent)
- static int read_header_files(struct pevent *pevent)
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index a42624a..a800f2b 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -101,7 +101,7 @@ out:
+ 	return err;
+ }
+ 
+-static int read_header_files(void)
++static int record_header_files(void)
  {
- 	unsigned long long size;
-+	char *header_page;
- 	char buf[BUFSIZ];
- 	int ret = 0;
+ 	char *path;
+ 	struct stat st;
+@@ -240,7 +240,7 @@ out:
+ 	return err;
+ }
  
-@@ -224,7 +225,26 @@ static int read_header_files(struct pevent *pevent)
- 	}
+-static int read_ftrace_files(struct tracepoint_path *tps)
++static int record_ftrace_files(struct tracepoint_path *tps)
+ {
+ 	char *path;
+ 	int ret;
+@@ -269,7 +269,7 @@ static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
+ 	return false;
+ }
  
- 	size = read8(pevent);
--	skip(size);
-+
-+	header_page = malloc(size);
-+	if (header_page == NULL)
-+		return -1;
-+
-+	if (do_read(header_page, size) < 0) {
-+		pr_debug("did not read header page");
-+		free(header_page);
-+		return -1;
-+	}
-+
-+	if (!pevent_parse_header_page(pevent, header_page, size,
-+				      pevent_get_long_size(pevent))) {
-+		/*
-+		 * The commit field in the page is of type long,
-+		 * use that instead, since it represents the kernel.
-+		 */
-+		pevent_set_long_size(pevent, pevent->header_page_size_size);
-+	}
-+	free(header_page);
+-static int read_event_files(struct tracepoint_path *tps)
++static int record_event_files(struct tracepoint_path *tps)
+ {
+ 	struct dirent *dent;
+ 	struct stat st;
+@@ -344,7 +344,7 @@ out:
+ 	return err;
+ }
  
- 	if (do_read(buf, 13) < 0)
- 		return -1;
+-static int read_proc_kallsyms(void)
++static int record_proc_kallsyms(void)
+ {
+ 	unsigned int size;
+ 	const char *path = "/proc/kallsyms";
+@@ -362,7 +362,7 @@ static int read_proc_kallsyms(void)
+ 	return record_file(path, 4);
+ }
+ 
+-static int read_ftrace_printk(void)
++static int record_ftrace_printk(void)
+ {
+ 	unsigned int size;
+ 	char *path;
+@@ -539,19 +539,19 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 	err = tracing_data_header();
+ 	if (err)
+ 		goto out;
+-	err = read_header_files();
++	err = record_header_files();
+ 	if (err)
+ 		goto out;
+-	err = read_ftrace_files(tps);
++	err = record_ftrace_files(tps);
+ 	if (err)
+ 		goto out;
+-	err = read_event_files(tps);
++	err = record_event_files(tps);
+ 	if (err)
+ 		goto out;
+-	err = read_proc_kallsyms();
++	err = record_proc_kallsyms();
+ 	if (err)
+ 		goto out;
+-	err = read_ftrace_printk();
++	err = record_ftrace_printk();
+ 
+ out:
+ 	/*
 -- 
 1.8.1.4
 
