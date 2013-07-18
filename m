@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492Ab3GRSgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 14:36:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab3GRSgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 14:36:05 -0400
-Date: Thu, 18 Jul 2013 20:30:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] tracing/perf: expand TRACE_EVENT(sched_stat_runtime)
-Message-ID: <20130718183038.GA4061@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718183018.GA4043@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933544Ab3GRSqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 14:46:34 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:56381 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758785Ab3GRSqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 14:46:32 -0400
+Message-ID: <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi <linux-scsi@vger.kernel.org>
+Date: Thu, 18 Jul 2013 11:51:55 -0700
+In-Reply-To: <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+References: <cover.1369155164.git.agordeev@redhat.com>
+	 <20130521235003.GE6985@mtj.dyndns.org>
+	 <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
+	 <20130522170305.GD9563@kernel.dk>
+	 <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To simplify the review of the next patches:
+On Wed, 2013-07-17 at 18:19 +0200, Alexander Gordeev wrote:
+> On Tue, Jul 16, 2013 at 02:38:03PM -0700, Nicholas A. Bellinger wrote:
+> > [    7.927818] scsi_execute(): Calling blk_mq_free_request >>>
+> > [    7.927826] scsi 0:0:0:0: Direct-Access     ATA      ST9500530NS      CC03 PQ: 0 ANSI: 5
+> > 
+> > OK, so INQUIRY response payload is looking as expected here.
+> 
+> Yep. It is not on the top of my head, but I remember something like INQUIRYs
+> are emulated and thus do not have payload.
+> 
+> > [    7.927960] sd 0:0:0:0: [sda] Sector size 0 reported, assuming 512.
+> > [    7.927964] sd 0:0:0:0: [sda] 1 512-byte logical blocks: (512 B/512 B)
+> > [    7.927965] sd 0:0:0:0: [sda] 0-byte physical blocks
+> > 
+> > Strange..  READ_CAPACITY appears to be returning a payload as zeros..?
+> 
+> Yep. Because blk_execute_rq() does not put the proper callback and data do
+> not get copied from sg's to bounce buffer. That is why I tried to use
+> blk_mq_execute_rq() instead. Once I do that, data start getting read and
+> booting stops elsewhere.
 
-1. We are going to reimplent __perf_task/counter and embedd them
-   into TP_ARGS(). expand TRACE_EVENT(sched_stat_runtime) into
-   DECLARE_EVENT_CLASS() + DEFINE_EVENT(), this way they can use
-   different TP_ARGS's.
+Mmmmmm.
 
-2. Change perf_trace_##call() macro to do perf_fetch_caller_regs()
-   right before perf_trace_buf_prepare().
+The call to blk_queue_bounce() exists within blk_mq_make_request(), but
+AFAICT this should still be getting invoked regardless of if the struct
+request is dispatched into blk-mq via the modified blk_execute_rq() ->
+blk_execute_rq_nowait() -> blk_mq_insert_request() codepath, or directly
+via blk_mq_execute_rq()..
 
-   This way it evaluates TP_ARGS() asap, the next patch explores
-   this fact.
+Jens..?
 
-   Note: after 87f44bbc perf_trace_buf_prepare() doesn't need
-   "struct pt_regs *regs", perhaps it makes sense to remove this
-   argument. And perhaps we can teach perf_trace_buf_submit()
-   to accept regs == NULL and do fetch_caller_regs(CALLER_ADDR1)
-   in this case.
+> 
+> Of course, I was suspecting that change alone is not valid and wondered
+> about the status of scsi-mq in the first place, and if more changes are
+> coming.
 
-3. Cosmetic, but the typecast from "void*" buys nothing. It just
-   adds the noise, remove it.
+Most certainly.  ;)
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/trace/events/sched.h |    6 +++++-
- include/trace/ftrace.h       |    7 +++----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> So I it turns out "req->errors + req->resid_len" issue (you described
+> earlier) needs to be addressed before going forward with libata (only?).
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index e5586ca..249c024 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -372,7 +372,7 @@ DEFINE_EVENT(sched_stat_template, sched_stat_blocked,
-  * Tracepoint for accounting runtime (time the task is executing
-  * on a CPU).
-  */
--TRACE_EVENT(sched_stat_runtime,
-+DECLARE_EVENT_CLASS(sched_stat_runtime,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
- 
-@@ -401,6 +401,10 @@ TRACE_EVENT(sched_stat_runtime,
- 			(unsigned long long)__entry->vruntime)
- );
- 
-+DEFINE_EVENT(sched_stat_runtime, sched_stat_runtime,
-+	     TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
-+	     TP_ARGS(tsk, runtime, vruntime));
-+
- /*
-  * Tracepoint for showing priority inheritance modifying a tasks
-  * priority.
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index c162a57..aed594a 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -659,15 +659,14 @@ perf_trace_##call(void *__data, proto)					\
- 	int __data_size;						\
- 	int rctx;							\
- 									\
--	perf_fetch_caller_regs(&__regs);				\
--									\
- 	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
- 	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),\
- 			     sizeof(u64));				\
- 	__entry_size -= sizeof(u32);					\
- 									\
--	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
--		__entry_size, event_call->event.type, &__regs, &rctx);	\
-+	perf_fetch_caller_regs(&__regs);				\
-+	entry = perf_trace_buf_prepare(__entry_size,			\
-+			event_call->event.type, &__regs, &rctx);	\
- 	if (!entry)							\
- 		return;							\
- 									\
--- 
-1.5.5.1
+AFAICT, getting an initial conversion of libata up does not depend upon
+this specific issue being addressed first.  I could be wrong however..
+
+> 
+> > Not sure why yet some control CDBs are getting back the expected
+> > payload, while others are returning zeros..
+> 
+> Bio buffers do not get updated from callback.
+> 
+> > Also, looking at the included stack back-trace:
+> 
+> [...]
+> 
+> Thanks a lot for these and other your comments, Nicholas!
+> 
+
+Sure.  I should have a few extra cycles to hack on this over the
+weekend.
+
+Also, thinking about this some more, trying to convert ahci to scsi-mq
+first (using QEMU emulation), while keeping a rootfs on PIIX_IDE might
+make debugging slightly easier..
+
+--nab
 
