@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab3GRHsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 03:48:45 -0400
-Received: from mo5.mail-out.ovh.net ([178.32.228.5]:47126 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3GRHso (ORCPT
+	id S1756309Ab3GRHt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 03:49:28 -0400
+Received: from 15.mo5.mail-out.ovh.net ([178.33.107.29]:60417 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752094Ab3GRHt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 03:48:44 -0400
+	Thu, 18 Jul 2013 03:49:27 -0400
+X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Jul 2013 03:49:26 EDT
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: [PATCH v4 5/5] ASoC: atmel-ssc: remove clk_disable_unprepare call from critical section
-Date: Thu, 18 Jul 2013 09:48:40 +0200
-Message-Id: <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH v4 0/5] ARM: at91: prepare transition to common clk framework
+Date: Thu, 18 Jul 2013 09:32:33 +0200
+Message-Id: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
-References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11369900209700894828
+X-Ovh-Tracer-Id: 11097432431904127084
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -37,45 +32,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_prepare/unprepare (and indirectly clk_prepare_enable/disable_unprepare)
-may sleep and thus cannot be called in critical section.
+Hello,
 
-This patch fix a bug introduced by commit
-6f0d94790efe9f4481bbd7c174ef0e9b5e5db7c4 where clk_disable_unprepare was
-called with user_lock hold.
+This patch series prepares the transition to common clk framework by
+replacing all the clk_enable and clk_disable calls by clk_prepare_unable and
+clk_disable_unprepare to avoid common clock framework warnings.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/misc/atmel-ssc.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+Best Regards,
+Boris
 
-diff --git a/drivers/misc/atmel-ssc.c b/drivers/misc/atmel-ssc.c
-index f7b90661..e068a76 100644
---- a/drivers/misc/atmel-ssc.c
-+++ b/drivers/misc/atmel-ssc.c
-@@ -66,14 +66,19 @@ EXPORT_SYMBOL(ssc_request);
- 
- void ssc_free(struct ssc_device *ssc)
- {
-+	bool disable_clk = true;
-+
- 	spin_lock(&user_lock);
--	if (ssc->user) {
-+	if (ssc->user)
- 		ssc->user--;
--		clk_disable_unprepare(ssc->clk);
--	} else {
-+	else {
-+		disable_clk = false;
- 		dev_dbg(&ssc->pdev->dev, "device already free\n");
- 	}
- 	spin_unlock(&user_lock);
-+
-+	if (disable_clk)
-+		clk_disable_unprepare(ssc->clk);
- }
- EXPORT_SYMBOL(ssc_free);
- 
+Changes since v3:
+ - move usb clock config patches out of this series
+ - move clk_prepare/unprepare calls out of critical sections (ssc and
+   mci drivers)
+ - remove already applied spi clk_prepare patch 
+
+Changes since v2:
+ - add configuraton of usb clock in ohci and udc drivers
+ - add clk_prepare patch for usba udc driver
+ - add clk_prepare patch for spi driver
+ - remove already applied udc clk_prepare patch
+
+Changes since v1:
+ - remove unneeded clk_unprepare in mci driver
+ - remove already applied patches (ehci, ohci, dma and serial)
+
+Changes since common clk patch series:
+ - add clk_prepare_enable return check
+ - fix a deadlock in atmel-mci (missing spin_unlock)
+ - remove already applied patches (atmel-ssc and pwm-atmel-tcb)
+
+Boris BREZILLON (5):
+  ARM: at91/tc/clocksource: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  mmc: atmel-mci: prepare clk before calling enable
+  at91/avr32/atmel_lcdfb: prepare clk before calling enable
+  USB: gadget: atmel_usba: prepare clk before calling enable
+  ASoC: atmel-ssc: remove clk_disable_unprepare call from critical
+    section
+
+ drivers/clocksource/tcb_clksrc.c    |   10 +++++-----
+ drivers/misc/atmel-ssc.c            |   11 ++++++++---
+ drivers/mmc/host/atmel-mci.c        |   34 +++++++++++++++++++++++++++-------
+ drivers/usb/gadget/atmel_usba_udc.c |   28 +++++++++++++++++++++-------
+ drivers/video/atmel_lcdfb.c         |    8 ++++----
+ 5 files changed, 65 insertions(+), 26 deletions(-)
+
 -- 
 1.7.9.5
 
