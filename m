@@ -1,154 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab3GRCw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 22:52:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28528 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab3GRCw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 22:52:56 -0400
-Message-ID: <51E75874.8000307@redhat.com>
-Date: Thu, 18 Jul 2013 10:52:36 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net 2/2] macvtap: do not zerocopy if iov needs more pages
- than MAX_SKB_FRAGS
-References: <1374057131-39207-1-git-send-email-jasowang@redhat.com> <1374057131-39207-2-git-send-email-jasowang@redhat.com> <20130717110658.GA22599@redhat.com>
-In-Reply-To: <20130717110658.GA22599@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758121Ab3GRCxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 22:53:16 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:33196 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab3GRCxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 22:53:12 -0400
+Date: Thu, 18 Jul 2013 10:53:01 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: balajitk <balajitk@ti.com>
+Cc: cjb <cjb@laptop.org>, linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: About omap2 mmc host  close too long irq in irqaction.
+X-Priority: 3
+X-GUID: 5810326C-7B21-457E-8D85-26105C6C44B9
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201307181052572266628@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6I2rg5n032753
 
-On 07/17/2013 07:06 PM, Michael S. Tsirkin wrote:
-> On Wed, Jul 17, 2013 at 06:32:11PM +0800, Jason Wang wrote:
->> We try to linearize part of the skb when the number of iov is greater than
->> MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
->> one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
->> network.
->>
->> Solve this problem by calculate the pages needed for iov before trying to do
->> zerocopy and switch to use copy instead of zerocopy if it needs more than
->> MAX_SKB_FRAGS.
->>
->> This is done through introducing a new helper to count the pages for iov, and
->> call uarg->callback() manually when switching from zerocopy to copy to notify
->> vhost.
->>
->> We can do further optimization on top.
->>
->> This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
->> (macvtap: zerocopy: validate vectors before building skb).
->>
->> Cc: Michael S. Tsirkin <mst@redhat.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/net/macvtap.c |   58 +++++++++++++++++++++++++++++++-----------------
->>  1 files changed, 37 insertions(+), 21 deletions(-)
->>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index a7c5654..e200f11 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -698,6 +698,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
->>  	return 0;
->>  }
->>  
->> +static unsigned long iov_pages(const struct iovec *iv, int offset,
->> +			       unsigned long nr_segs)
->> +{
->> +	unsigned long seg, base;
->> +	int pages = 0, len, size;
->> +
->> +	while (nr_segs && (offset >= iv->iov_len)) {
->> +		offset -= iv->iov_len;
->> +		++iv;
->> +		--nr_segs;
->> +	}
->> +
->> +	for (seg = 0; seg < nr_segs; seg++) {
->> +		base = (unsigned long)iv[seg].iov_base + offset;
->> +		len = iv[seg].iov_len - offset;
->> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
->> +		pages += size;
->> +		offset = 0;
->> +	}
->> +
->> +	return pages;
->> +}
->>  
->>  /* Get packet from user space buffer */
->>  static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->> @@ -744,31 +766,19 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->>  	if (unlikely(count > UIO_MAXIOV))
->>  		goto err;
->>  
->> -	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
->> -		zerocopy = true;
->> -
->> -	if (zerocopy) {
->> +	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
->>  		/* Userspace may produce vectors with count greater than
->>  		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
->>  		 * to let the rest of data to be fit in the frags.
->>  		 */
-> We don't linearize parts to make them fit, we simply
-> fall back to data copy.
-> So this comment no longer applies, right?
+Hi all,
+	Now i worked on omp2 and met a probelm which someplace close_irq for 3.6second. 
+The kernel version is 2.6.37. I used trace to find in irq_action:omap_hsmmc_irq.
+This problem occured by removed the sdcard when there are io operations.
 
-Right, I forget to remove them. Will do it in V2.
->> -		if (count > MAX_SKB_FRAGS) {
->> -			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
->> -			if (copylen < vnet_hdr_len)
->> -				copylen = 0;
->> -			else
->> -				copylen -= vnet_hdr_len;
->> -		}
->> -		/* There are 256 bytes to be copied in skb, so there is enough
->> -		 * room for skb expand head in case it is used.
->> -		 * The rest buffer is mapped from userspace.
->> -		 */
->> -		if (copylen < vnet_hdr.hdr_len)
->> -			copylen = vnet_hdr.hdr_len;
->> -		if (!copylen)
->> -			copylen = GOODCOPY_LEN;
->> +		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
->>  		linear = copylen;
->> -	} else {
->> +		if (iov_pages(iv, vnet_hdr_len + copylen, count)
->> +		    <= MAX_SKB_FRAGS)
->> +			zerocopy = true;
->> +	}
->> +
->> +	if (!zerocopy) {
->>  		copylen = len;
->>  		linear = vnet_hdr.hdr_len;
->>  	}
->> @@ -780,9 +790,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->>  
->>  	if (zerocopy)
->>  		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
->> -	else
->> +	else {
->>  		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
->>  						   len);
->> +		if (!err && m && m->msg_control) {
->> +			struct ubuf_info *uarg = m->msg_control;
->> +			uarg->callback(uarg, false);
->> +		}
->> +	}
->> +
->>  	if (err)
->>  		goto err_kfree;
->>  
->> -- 
->> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I found the read problem is in omap_hsmmc_reset_controller_fsm.
+In omap_hsmmc_reset_controller_fsm:
+>static inline void omap_hsmmc_reset_controller_fsm(struct omap_hsmmc_host *host,
+>                                                   unsigned long bit)
+>{
+>        unsigned long i = 0; 
+>        unsigned long limit = (loops_per_jiffy *
+>                                msecs_to_jiffies(MMC_TIMEOUT_MS));
 
+>        OMAP_HSMMC_WRITE(host->base, SYSCTL,
+>                         OMAP_HSMMC_READ(host->base, SYSCTL) | bit);
+
+>        /*   
+>         * OMAP4 ES2 and greater has an updated reset logic.
+>         * Monitor a 0->1 transition first
+>         */
+>        if (mmc_slot(host).features & HSMMC_HAS_UPDATED_RESET) {
+>                while ((!(OMAP_HSMMC_READ(host->base, SYSCTL) & bit))
+>                                       && (i++ < limit))
+>                        cpu_relax();
+        }    
+ In func, it used loops_per_jiffy  in order to avoid do many time exceed MMC_TIMEOUT_MS.
+In face oops_per_jiify is like:
+while(i++ < loops_per_jiffy)
+	cpu_relax();
+But actually, it used as follow:
+>while ((!(OMAP_HSMMC_READ(host->base, SYSCTL) & bit))
+>                                      && (i++ < limit))
+it add some operations like: read regisger, &, &&.
+So the time may exceed MMC_TIMEOUT_MS.
+I used those code to test and found it's ok:
+for (i = 0 ; i < 10; i++){
+	if (!(OMAP_HSMMC_READ(host->base, SYSCTL) & bit))
+		  break;
+	j = limit/10;
+	while(j--)
+		cpu_relax();
+}
+
+Using this the problom can't occur.
+Am i missing something?
+
+Thanks!
+Jianpeng Maÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
