@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758858Ab3GRMYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 08:24:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41451 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757524Ab3GRMYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 08:24:47 -0400
-Message-ID: <51E7DE81.3010609@ti.com>
-Date: Thu, 18 Jul 2013 17:54:33 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1758514Ab3GRMf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 08:35:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33027 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab3GRMf6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 08:35:58 -0400
+Date: Thu, 18 Jul 2013 14:35:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>, Jason Low <jason.low2@hp.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
+Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
+ frequently
+Message-ID: <20130718123531.GO27075@twins.programming.kicks-ass.net>
+References: <1374048701.6000.21.camel@j-VirtualBox>
+ <20130717093913.GP23818@dyad.programming.kicks-ass.net>
+ <1374076741.7412.35.camel@j-VirtualBox>
+ <20130717161815.GR23818@dyad.programming.kicks-ass.net>
+ <51E6D9B7.1030705@redhat.com>
+ <20130717180156.GS23818@dyad.programming.kicks-ass.net>
+ <1374120144.1816.45.camel@j-VirtualBox>
+ <20130718093218.GH27075@twins.programming.kicks-ass.net>
+ <51E7D89A.8010009@redhat.com>
+ <20130718121546.GB3745@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
-        <grant.likely@linaro.org>, <rnayak@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com> <1374141687-10790-3-git-send-email-sourav.poddar@ti.com> <20130718102404.GH11251@arwen.pp.htv.fi> <51E7CF11.5030301@ti.com> <20130718112458.GJ11251@arwen.pp.htv.fi>
-In-Reply-To: <20130718112458.GJ11251@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718121546.GB3745@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 July 2013 04:54 PM, Felipe Balbi wrote:
-> On Thu, Jul 18, 2013 at 04:48:41PM +0530, Sourav Poddar wrote:
->>>> +static void qspi_write_msg(struct ti_qspi *qspi, struct spi_transfer *t)
->>>> +{
->>>> +	const u8 *txbuf;
->>>> +	int wlen, count;
->>>> +
->>>> +	count = t->len;
->>>> +	txbuf = t->tx_buf;
->>>> +	wlen = t->bits_per_word;
->>>> +
->>>> +	while (count--) {
->>>> +		dev_dbg(qspi->dev, "tx cmd %08x dc %08x data %02x\n",
->>>> +			qspi->cmd | QSPI_WR_SNGL, qspi->dc, *txbuf);
->>>> +		ti_qspi_writel_data(qspi, *txbuf++, QSPI_SPI_DATA_REG, wlen);
->>> you always increment by each byte. Here, if you used writel(), you wrote
->>> 4 bytes and should increment txbuf by 4.
->> hmm..got this point. Yes, my mistake, here I agree if wlen is not 8 bits
->> txbuf++ is not valid.
->>>   Same goes for read_data(),
->>> below. Another thing. Even though your wlen might be 8 bits, if you
->>> write 4 bytes to write, you can save a few CPU cycles by using writel().
->>>
->> Do you mean 4 words of 8 bits?
-> yeah. Say you have wlen = 8 but the transfer length is 8 bytes (64
-> bits). If you use writeb(), you will do 8 writes, if you use writel()
-> you'll do 2 writes.
->
-hmm.. I will check this out.
-If our wlen is 8, after every 8 bits there will be
-an interrupt. Will check that out, how that interrupt
-should be tackled if we desired to read 4 bytes in a single writel/readl.
->>>> +static int ti_qspi_start_transfer_one(struct spi_master *master,
->>>> +		struct spi_message *m)
->>>> +{
->>>> +	struct ti_qspi *qspi = spi_master_get_devdata(master);
->>>> +	struct spi_device *spi = m->spi;
->>>> +	struct spi_transfer *t;
->>>> +	int status = 0, ret;
->>>> +	int frame_length;
->>>> +
->>>> +	/* setup device control reg */
->>>> +	qspi->dc = 0;
->>>> +
->>>> +	if (spi->mode&   SPI_CPHA)
->>>> +		qspi->dc |= QSPI_CKPHA(spi->chip_select);
->>>> +	if (spi->mode&   SPI_CPOL)
->>>> +		qspi->dc |= QSPI_CKPOL(spi->chip_select);
->>>> +	if (spi->mode&   SPI_CS_HIGH)
->>>> +		qspi->dc |= QSPI_CSPOL(spi->chip_select);
->>>> +
->>>> +	frame_length = DIV_ROUND_UP(m->frame_length * spi->bits_per_word,
->>>> +				spi->bits_per_word);
->>> this calculation doesn't look correct.
->>>
->>> 	(m->frame_length * spi->bits_per_word) /
->>> 		spi->bits_per_word = m->frame_length
->>>
->>> What are you trying to achieve here ? frame_length should be counted in
->>> words right ? And we get that value in bytes. So what's the best
->>> calculation to convert bytes into words ? If you have 8 bits_per_word
->>> you don't need any calculation, but if you have 32 bits_per_word, you
->>> _do_ need something.
->>>
->> Yes, just derive this formulae with 8 bits per word in mind.
->> Will change.
->> It should be (m->frame_length * 8) / spi->bits_per_word
-> right on. To make sure this will execute a little faster (you never know
-> what several different versions of GCC will do), instead of multiplying
-> by 8, left shift by 3.
->
-Ok. Will do.
->>> How will you achieve the number you want ? (hint: 1 byte == 8 bits)
->>>
->>> And btw, all of these mistakes pretty much tell me that this driver
->>> hasn't been tested. How have you tested this driver ?
->> After bootup, I checked for deive detting enumerated as /proc/mtd.
->> After which I am using mtdutils(erase, dump and write utilied to
->> check for the communication with the flash device.)
-> alright, make that clear in your commit log.
->
-Ok.
+On Thu, Jul 18, 2013 at 05:45:46PM +0530, Srikar Dronamraju wrote:
+> We take locks if and only if we see imbalance and want to pull the
+> tasks.
+> However if the newly idle balance is not finding an imbalance then this
+> may not be an issue.
+> 
+> Probably /proc/schedstats will give a better picture.
+
+Right, so we're interested in move_tasks() calls that fail to 'deliver'.
+There's a few conditions in there that can cause us to not move a task,
+most of them not counted.
+
+The few that are; are from can_mirgrate_task():
+
+  se.statistics.nr_failed_migrations_affine
+  se.statistics.nr_failed_migrations_running
+  se.statistics.nr_failed_migrations_hot
+
+If we see significant increments on those we'll be taking locks. 
+
+The only one I can see a good way around is the hot one, we could ignore
+hotness in favour of newidle -- although I could see that being
+detrimental, we'll just have to try or so ;-)
+
+_running shouldn't be much of a problem since we don't bother if
+nr_running <= 1. And _affine is out of our reach anyway.
+
