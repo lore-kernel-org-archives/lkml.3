@@ -1,111 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab3GRWtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:49:15 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:29555 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759072Ab3GRWtO (ORCPT
+	id S933163Ab3GRWwD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:52:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8739 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab3GRWwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:49:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AssNADlw6FF5LK4r/2dsb2JhbABagwaDIrh1hS8EAYERF3SCJAEBBScTHCMQCAMOCgklDwUlAyETiA+2OxaOXIEdB4MObgOXXJFOgyQq
-Date: Fri, 19 Jul 2013 08:49:07 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Ben Myers <bpm@sgi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: splice vs execve lockdep trace.
-Message-ID: <20130718224907.GD13468@dastard>
-References: <CA+55aFwHMQd-VDeTDh-gm3jyj+5+FSoAHOeU47mwU-mKtEj9RQ@mail.gmail.com>
- <20130717040616.GI11674@dastard>
- <CA+55aFz5xw9Qi9Q6mwoCSud5eQh5u-QZ-xrY+TqgZPoKOgn6ew@mail.gmail.com>
- <20130717055103.GK11674@dastard>
- <CA+55aFxdqzMY5VJoYaLmL=+=f2s1cbHHV-TjC3=taXpF-xov1w@mail.gmail.com>
- <20130717234049.GC3572@sgi.com>
- <CA+55aFy-8QH4bTW7hU=381tuEWgHC=PUM6WP3qn-ooge=7M0QQ@mail.gmail.com>
- <20130718034203.GO11674@dastard>
- <20130718211632.GD3572@sgi.com>
- <20130718222117.GE3572@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718222117.GE3572@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Jul 2013 18:52:00 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BnuARR2adj4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=rGvCwB5G_vEA:10 a=GeQSUE6FanYepNqPAcUA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374187917.3356.6.camel@gandalf.local.home>
+Subject: Re: [PATCH 07/18] nohz: Selectively enable context tracking on full
+ dynticks CPUs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Date: Thu, 18 Jul 2013 18:51:57 -0400
+In-Reply-To: <20130718221346.GE7398@somewhere>
+References: <1374079471-3129-1-git-send-email-fweisbec@gmail.com>
+	 <1374079471-3129-8-git-send-email-fweisbec@gmail.com>
+	 <1374085637.6458.170.camel@gandalf.local.home>
+	 <20130718221346.GE7398@somewhere>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 05:21:17PM -0500, Ben Myers wrote:
-> Dave,
+On Fri, 2013-07-19 at 00:13 +0200, Frederic Weisbecker wrote:
+> On Wed, Jul 17, 2013 at 02:27:17PM -0400, Steven Rostedt wrote:
+> > On Wed, 2013-07-17 at 18:44 +0200, Frederic Weisbecker wrote:
+> > > The code is ready to do so in the context tracking subsystem, now
+> > 
+> > "do so"? Do what?
 > 
-> On Thu, Jul 18, 2013 at 04:16:32PM -0500, Ben Myers wrote:
-> > On Thu, Jul 18, 2013 at 01:42:03PM +1000, Dave Chinner wrote:
-> > > On Wed, Jul 17, 2013 at 05:17:36PM -0700, Linus Torvalds wrote:
-> > > > On Wed, Jul 17, 2013 at 4:40 PM, Ben Myers <bpm@sgi.com> wrote:
-> > > > >>
-> > > > >> We're still talking at cross purposes then.
-> > > > >>
-> > > > >> How the hell do you handle mmap() and page faulting?
-> > > > >
-> > > > > __xfs_get_blocks serializes access to the block map with the i_lock on the
-> > > > > xfs_inode.  This appears to be racy with respect to hole punching.
-> > > > 
-> > > > Would it be possible to just make __xfs_get_blocks get the i_iolock
-> > > > (non-exclusively)?
-> > > 
-> > > No. __xfs_get_blocks() operates on metadata (e.g. extent lists), and
-> > > as such is protected by the i_ilock (note: not the i_iolock).  i.e.
-> > > XFS has a multi-level locking strategy:
-> > > 
-> > > 	i_iolock is provided for *data IO serialisation*,
-> > > 	i_ilock is for *inode metadata serialisation*.
-> > 
-> > I think if __xfs_get_blocks has some way of knowing it is the mmap/page fault
-> > path, taking the iolock shared in addition to the ilock (in just that case)
-> > would prevent the mmap from being able to read stale data from disk.  You would
-> > see either the data before the punch or you would see the hole.  
-> > 
-> > Actually... I think that is wrong:  You'd have to take the iolock across the
-> > read itself (not just the access to the block map) for it to have the desired
-> > effect:
-> > 
-> > 1608 int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > ...
-> > 1704 page_not_uptodate:
-> > 1705         /*
-> > 1706          * Umm, take care of errors if the page isn't up-to-date.
-> > 1707          * Try to re-read it _once_. We do this synchronously,
-> > 1708          * because there really aren't any performance issues here
-> > 1709          * and we need to check for errors.
-> > 1710          */
-> > 1711         ClearPageError(page);
-> > 1712         error = mapping->a_ops->readpage(file, page);
-> > 1713         if (!error) {
-> > 1714                 wait_on_page_locked(page);
-> > 1715                 if (!PageUptodate(page))
-> > 1716                         error = -EIO;
-> > 1717         }
-> > 1718         page_cache_release(page);
-> > 
-> > Wouldn't you have to hold the iolock until after wait_on_page_locked returns?
+> It's referring to the patch title. The code is ready to selectively
+> enable context tracking on the CPUs.
 > 
-> Maybe like so (crappy/untested/probably wrong/fodder for ridicule/etc):
+> I see many changelogs that use that kind of style where the title
+> of the patch is considered as the 1st line of the changelog. That's
+> convenient because it avoids the need to rephrase the title in the
+> changelog.
+> 
+> But may be the reference to the title is not obvious. if you prefer
+> I can expand the "do so" here.
 
-Try running it with lockdep. You'll see pretty quickly why you can't
-take the i_iolock or i_mutex in the ->fault path - it is called
-with the mmap_sem held.
+Yeah, I've seen that too. But this was a bit too subtle to get it. The
+subject is a bit vague as well, which doesn't help the matter. What does
+"selectively enable context tracking" mean? How is it selective?
 
-The lock inversion that can deadlock is that the page fault might be
-occurring in the read path that is already holding the
-i_mutex/i_iolock....
+> 
+> > 
+> > > we just need to pass our cpu range selection to it from the
+> > 
+> > Pass cpu range selection to what?
+> > 
+> > Pronouns are evil in technical documentation.
+> 
+> How about:
+> 
+> """
+> The code in the context tracking subsystem is ready to selectively
+> enable its tracking on specificied CPU ranges instead of inconditionally
 
-Cheers,
+"specified" "unconditionally"
 
-Dave.
+> force it on all CPUs.
+> 
+> What we need to do now is to pass the desired CPU ranges to track from
+> the full dynticks subsystem, according to the ranges specified in the
+> "nohz_full=" boot option.
+> """ 
+> 
+> > > diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+> > > index 12045ce..2c2b73aa 100644
+> > > --- a/include/linux/context_tracking.h
+> > > +++ b/include/linux/context_tracking.h
+> > > @@ -34,6 +34,8 @@ static inline bool context_tracking_active(void)
+> > >  	return __this_cpu_read(context_tracking.active);
+> > >  }
+> > >  
+> > > +extern void context_tracking_cpu_set(int cpu);
+> > > +
+> > >  extern void user_enter(void);
+> > >  extern void user_exit(void);
+> > >  
+> > > diff --git a/init/Kconfig b/init/Kconfig
+> > > index 247084b..914da3f 100644
+> > > --- a/init/Kconfig
+> > > +++ b/init/Kconfig
+> > > @@ -527,7 +527,7 @@ config RCU_USER_QS
+> > >  config CONTEXT_TRACKING_FORCE
+> > >  	bool "Force context tracking"
+> > >  	depends on CONTEXT_TRACKING
+> > > -	default CONTEXT_TRACKING
+> > > +	default y if !NO_HZ_FULL
+> > 
+> > Why the if !NO_HZ_FULL?
+> > 
+> > That selects this anyway. Oh wait, you changed this.
+> 
+> Yeah that's probably confusing. Ok lets consider a system with:
+> 
+>      CONTEXT_TRACKING=y
+> 
+> By default it doesn't track any CPU, it's inactive unless you set:
+> 
+>      CONTEXT_TRACKING_FORCE=y
+> 
+> In this case, all CPUs are tracked.
+> 
+> The full dynticks subsystem was supposed to pass its CPU range to context
+> tracking such that it activates the tracking only on the relevant CPUs.
+> 
+> But the context tracking code was merged before full dynticks. So nothing
+> was there to enabled CPUs on context tracking initially. So we needed
+> CONTEXT_TRACKING_FORCE for testing.
+> 
+> Then later we merged full dynticks. But we got lazy and rushed and instead of
+> selecting the CPUs to track on runtime from the full dynticks subsystem to
+> the context tracking subsystem, we forced CONTEXT_TRACKING_FORCE=y when
+> NO_HZ_FULL=y. Then using runtime selection became a TODO.
+> 
+> Now these patches handle that TODO and full dynticks passes its range to
+> contex tracking.
+> 
+> Now one could argue why we keep CONTEXT_TRACKING_FORCE around, since we
+> have full dynticks and NO_HZ_FULL_ALL for wide automated testing.
+> 
+> This is because CONTEXT_TRACKING is not sufficient for NO_HZ_FULL alone.
+> Especially because of the 64bits requirement that I need to drop after
+> careful review of any use of cputime_t. But anyway, CONTEXT_TRACKING_FORCE
+> is still handy to keep around for archs that want support for nohz full
+> but don't yet meet all dependencies.
 
--- 
-Dave Chinner
-david@fromorbit.com
+OK, that needs a comment in the Kconfig. Perhaps something like:
+
+"CONTEXT_TRACKING is only needed by NO_HZ_FULL, but the user may want to
+test CONTEXT_TRACKING on systems that do not yet support NO_HZ_FULL, in
+which case we must keep the FORCE to enable it."
+
+Or something to that nature. That way people have a clue to why that's
+like that.
+
+-- Steve
+
+
