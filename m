@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369Ab3GRUJX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:09:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41515 "EHLO
+	id S965300Ab3GRUJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:09:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41519 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759411Ab3GRTuW (ORCPT
+	with ESMTP id S1759413Ab3GRTuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:22 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 33/76] perf util: Remove unused enum and macro in trace-event.h
-Date: Thu, 18 Jul 2013 16:49:20 -0300
-Message-Id: <1374177003-3706-34-git-send-email-acme@infradead.org>
+Subject: [PATCH 22/76] tools lib traceevent: Add page_size field to pevent
+Date: Thu, 18 Jul 2013 16:49:09 -0300
+Message-Id: <1374177003-3706-23-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -30,9 +30,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-They're internals of ftrace ring-buffer and not used in perf code
-directly.  As it now resides on libtraceevent/kbuffer.h, just get rid of
-them.
+The page size of traced system can be different than current system's
+because the recorded data file might be analyzed in a different machine.
+In this case we should use original page size of traced system when
+accessing the data file, so this information needs to be saved.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
@@ -42,33 +43,41 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1370323231-14022-17-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1370323231-14022-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event.h | 10 ----------
- 1 file changed, 10 deletions(-)
+ tools/lib/traceevent/event-parse.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index ed30c9c..669a64a 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -12,16 +12,6 @@ struct perf_tool;
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 39f0c1d..c37b202 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -400,6 +400,7 @@ struct pevent {
  
- extern struct pevent *perf_pevent;
+ 	int cpus;
+ 	int long_size;
++	int page_size;
  
--enum {
--	RINGBUF_TYPE_PADDING		= 29,
--	RINGBUF_TYPE_TIME_EXTEND	= 30,
--	RINGBUF_TYPE_TIME_STAMP		= 31,
--};
--
--#ifndef TS_SHIFT
--#define TS_SHIFT		27
--#endif
--
- int bigendian(void);
+ 	struct cmdline *cmdlines;
+ 	struct cmdline_list *cmdlist;
+@@ -621,6 +622,16 @@ static inline void pevent_set_long_size(struct pevent *pevent, int long_size)
+ 	pevent->long_size = long_size;
+ }
  
- struct pevent *read_trace_init(int file_bigendian, int host_bigendian);
++static inline int pevent_get_page_size(struct pevent *pevent)
++{
++	return pevent->page_size;
++}
++
++static inline void pevent_set_page_size(struct pevent *pevent, int _page_size)
++{
++	pevent->page_size = _page_size;
++}
++
+ static inline int pevent_is_file_bigendian(struct pevent *pevent)
+ {
+ 	return pevent->file_bigendian;
 -- 
 1.8.1.4
 
