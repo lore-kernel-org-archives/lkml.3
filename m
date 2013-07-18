@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934927Ab3GRXto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:49:44 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:44021 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933467Ab3GRXtm (ORCPT
+	id S1759495Ab3GRXyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:54:14 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:43131 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759147Ab3GRXyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:49:42 -0400
+	Thu, 18 Jul 2013 19:54:12 -0400
+Date: Thu, 18 Jul 2013 16:54:17 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, abbotti@mev.co.uk, oliver@schinagl.nl
+Subject: Re: [PATCH v3 01/10] Driver core and sysfs changes for attribute
+ groups
+Message-ID: <20130718235417.GA9538@roeck-us.net>
+References: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1337724574-2193-1-git-send-email-hdegoede@redhat.com>
-References: <1337724574-2193-1-git-send-email-hdegoede@redhat.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 18 Jul 2013 16:49:18 -0700
-X-Google-Sender-Auth: FzLaPErSvvR6mnFzE3C70plIwVI
-Message-ID: <CAB=NE6XHnBZW39bm7u=omHihQxiiwoGWNg9=MRgTLE8zE4Rm4w@mail.gmail.com>
-Subject: Re: [PATCH] device-core: Ensure drvdata = NULL when no driver is bound
-To: Hans de Goede <hdegoede@redhat.com>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, Julia Lawall <julia.lawall@lip6.fr>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373843160-3990-1-git-send-email-gregkh@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 3:09 PM, Hans de Goede <hdegoede@redhat.com> wrote:
-> 1) drvdata is for a driver to store a pointer to driver specific data
-> 2) If no driver is bound, there is no driver specific data associated with
->    the device
-> 3) Thus logically drvdata should be NULL if no driver is bound.
->
-> But many drivers don't clear drvdata on device_release, or set drvdata
-> early on in probe and leave it set on probe error. Both of which results
-> in a dangling pointer in drvdata.
->
-> This patch enforce for drvdata to be NULL after device_release or on probe
-> failure.
->
-> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-> ---
->  drivers/base/dd.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-> index 1b1cbb5..9a1e970 100644
-> --- a/drivers/base/dd.c
-> +++ b/drivers/base/dd.c
-> @@ -283,6 +283,7 @@ probe_failed:
->         devres_release_all(dev);
->         driver_sysfs_remove(dev);
->         dev->driver = NULL;
-> +       dev_set_drvdata(dev, NULL);
->
->         if (ret == -EPROBE_DEFER) {
->                 /* Driver requested deferred probing */
-> @@ -487,6 +488,7 @@ static void __device_release_driver(struct device *dev)
->                         drv->remove(dev);
->                 devres_release_all(dev);
->                 dev->driver = NULL;
-> +               dev_set_drvdata(dev, NULL);
->                 klist_remove(&dev->p->knode_driver);
->                 if (dev->bus)
->                         blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+On Sun, Jul 14, 2013 at 04:05:50PM -0700, Greg Kroah-Hartman wrote:
+> Hi all,
+> 
+> Here is the third iteration of the patchset to add better attribute
+> group support to the driver core and sysfs.
+> 
+> Others have now tested it, and we got 3 more patches fixing a warning
+> that was showing up when binary attributes were in a group with no
+> "normal" attributes, and some more helper macros were added and cleaned
+> up.
+> 
+> I've booted this successfully against 3.11-rc1 with no problems (am
+> sending these from that machine.)
+> 
+> Ian, I didn't add a DEVICE_PATTR() macro yet, that can come later.  I
+> considered it, but that would also mean a BUS_PATTR() and the like, which I
+> guess works, but I hate even a _hint_ of "Hungarian" notation, which this
+> implies.
+> 
+> Anyone else have a better name for this macro:
+> 	#define DEVICE_PATTR(_name)	&dev_attr_##_name.attr
+> that they can think of?  It will cut down on the typing done for
+> attribute lists.
+> 
+> changes from v3:
+> 	- tested by Guenter
+> 	- patches from Oliver added
+> 	- refreshed on 3.11-rc1 (minor fuzz)
+> 	- Ian glanced at them.
+> 
+> changes from v2:
+> 	- actually boots
+> 	- 7th patch added properly
+> 	- added BUS_ATTR, CLASS_ATTR, and DRIVER_ATTR RW and RO macros
+> 	  to help with converting code to use attributes properly.
+> 
+Hi Greg,
 
-Just as a heads up for backports:
+thanks a lot for this series of patches, and for pushing it upstream.
 
-Because of this patch a huge series of cleanups were made across the
-kernel removing redundant setting of the driver data to NULL that was
-spread out through the kernel. An example type patch is
-785ec305b26ee23e0efb834b5cd0dd24070ba1bf. This is an example type of
-collateral evolution that doesn't cause compilation issues if the
-upstream code is used but if not addressed could potentially cause an
-issue. That is the only way to catch these are by policing /
-proactively reviewing kernel changes.
+Do you by any chance have a repository for the cleanup patches depending on this
+series ? It looks like a good area to get involved with when I am tired/annoyed
+by my other work, but I would not want to duplicate your work.
 
-I'll post a patch that backports this to enable usage of the code
-as-is upstream on older kernels without having to put the code that
-was being removed for each driver specifically shortly.
-
-  Luis
+Thanks,
+Guenter
