@@ -1,141 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759012Ab3GRNqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 09:46:55 -0400
-Received: from smtp.multi.fi ([85.134.37.151]:41243 "EHLO smtp.multi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758247Ab3GRNqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 09:46:54 -0400
-Message-ID: <51E7F192.4000004@mageia.org>
-Date: Thu, 18 Jul 2013 16:45:54 +0300
-From: Thomas Backlund <tmb@mageia.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1758996Ab3GRNsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 09:48:13 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21059 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751709Ab3GRNsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 09:48:11 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18gytIU3ZBxd7dsifel54Zj
+Date: Thu, 18 Jul 2013 06:48:07 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linus.walleij@linaro.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] drivers: Add pinctrl handling for dynamic pin
+ states
+Message-ID: <20130718134806.GW7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
+ <20130716090539.5541.980.stgit@localhost>
+ <51E70ADF.8090805@wwwdotorg.org>
+ <20130718074508.GQ7656@atomide.com>
 MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: Kamal Mostafa <kamal@canonical.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        =?UTF-8?B?QXJrYWRpdXN6IE1pxZtraWV3aWN6?= <arekm@maven.pl>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: Re: [PATCH 089/145] iommu/vt-d: add quirk for broken interrupt remapping
- on 55XX chipsets
-References: <1374101277-7915-1-git-send-email-kamal@canonical.com> <1374101277-7915-90-git-send-email-kamal@canonical.com> <51E7A0F8.9000308@mageia.org> <20130718103739.GA3626@hmsreliant.think-freely.org>
-In-Reply-To: <20130718103739.GA3626@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718074508.GQ7656@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-18.07.2013 13:37, Neil Horman skrev:
-> On Thu, Jul 18, 2013 at 11:02:00AM +0300, Thomas Backlund wrote:
->> 18.07.2013 01:47, Kamal Mostafa skrev:
->>> 3.8.13.5 -stable review patch.  If anyone has any objections, please let me know.
->>>
->>> ------------------
->>>
->>> From: Neil Horman <nhorman@tuxdriver.com>
->>>
->>> commit 03bbcb2e7e292838bb0244f5a7816d194c911d62 upstream.
->>>
->>> A few years back intel published a spec update:
->>> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
->>>
->>> For the 5520 and 5500 chipsets which contained an errata (specificially errata
->>> 53), which noted that these chipsets can't properly do interrupt remapping, and
->>> as a result the recommend that interrupt remapping be disabled in bios.  While
->>> many vendors have a bios update to do exactly that, not all do, and of course
->>> not all users update their bios to a level that corrects the problem.  As a
->>> result, occasionally interrupts can arrive at a cpu even after affinity for that
->>> interrupt has be moved, leading to lost or spurrious interrupts (usually
->>> characterized by the message:
->>> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
->>>
->>> There have been several incidents recently of people seeing this error, and
->>> investigation has shown that they have system for which their BIOS level is such
->>> that this feature was not properly turned off.  As such, it would be good to
->>> give them a reminder that their systems are vulnurable to this problem.  For
->>> details of those that reported the problem, please see:
->>> https://bugzilla.redhat.com/show_bug.cgi?id=887006
->>>
->>> [ Joerg: Removed CONFIG_IRQ_REMAP ifdef from early-quirks.c ]
->>>
->>> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
->>> CC: Prarit Bhargava <prarit@redhat.com>
->>> CC: Don Zickus <dzickus@redhat.com>
->>> CC: Don Dutile <ddutile@redhat.com>
->>> CC: Bjorn Helgaas <bhelgaas@google.com>
->>> CC: Asit Mallick <asit.k.mallick@intel.com>
->>> CC: David Woodhouse <dwmw2@infradead.org>
->>> CC: linux-pci@vger.kernel.org
->>> CC: Joerg Roedel <joro@8bytes.org>
->>> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
->>> Signed-off-by: Joerg Roedel <joro@8bytes.org>
->>> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
->>> ---
->>>   arch/x86/include/asm/irq_remapping.h |  2 ++
->>>   arch/x86/kernel/early-quirks.c       | 20 ++++++++++++++++++++
->>>   drivers/iommu/intel_irq_remapping.c  | 10 ++++++++++
->>>   drivers/iommu/irq_remapping.c        |  6 ++++++
->>>   drivers/iommu/irq_remapping.h        |  2 ++
->>>   5 files changed, 40 insertions(+)
->>>
->>
->> This patch introduces this warning on 3.8 series kernels:
->>
->> In file included from arch/x86/kernel/early-quirks.c:21:0:
->> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:46:10:
->> varning: ”struct irq_data” deklarerad inuti parameterlista
->> [aktiverat som standard]
->> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:46:10:
->> varning: dess scope-område är endast denna definition eller
->> deklaration, vilket troligen inte är vad du vill. [aktiverat som
->> standard]
->> /kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:50:17:
->> varning: ”struct msi_msg” deklarerad inuti parameterlista [aktiverat
->> som standard]
->>
->>
->> You need to add this upstream fix too:
->>
->> commit 35d3d814cbd46a85bed97cd74ba97fbbb51e0ccd
->> Author: Joerg Roedel <joro@8bytes.org>
->> Date:   Fri Apr 19 20:34:55 2013 +0200
->>
->>      iommu: Fix compile warnings with forward declarations
->>
-> I submited a 3.9 backport that included that fix to -stable over a week ago, you
-> should just be able to use that if you want.
-> Neil
+* Tony Lindgren <tony@atomide.com> [130718 00:57]:
+> * Stephen Warren <swarren@wwwdotorg.org> [130717 14:28]:
+> > 
+> > Oh, I see you're trying to check that the set of pins in the active,
+> > sleep, and idle states are identical.
+> 
+> Right, that's to avoid any further checking during runtime for runtime PM.
+>  
+> > But I think that pinctrl_check_dynamic() only checks that one state is a
+> > subset of the other, not that the two states are equal. Instead, I think
+> > you want to comparison coded in pinctrl_check_dynamic() to be:
+> 
+> In pinctrl_check_dynamic() we check that the pins match between the
+> states, and the number of found pins matches the first set. I'll
+> take a look if we check the total pins between the two sets.
 
-Almost, but not enough...
+That that is a bit painful right now to check properly as we don't
+have any sorting, and we could use that elsewhere too for checks
+probably..
+  
+> > gen_group_list_of_pinctrl_state(s1, array1);
+> > gen_group_list_of_pinctrl_state(s2, array2);
+> > mismatch = memcmp(array1, array2, length);
+> 
+> Well we could allocate and sort the pins, but the number of pins
+> for runtime PM is typically very small for each pin consumer device.
+> Typically you just need to toggle RX pin to GPIO mode for idle. And
+> this check is only done during consumer driver probe time. So
+> optimizing it for larger sets could be done at any point later on
+> as needed.
 
-The patch you refer to was:
-[3.9 stable PATCH] iommu/vt-d: add quirk for broken interrupt remapping 
-on 55XX chipsets
+..so for now, let's just check the total number of pins for the sets
+like Felipe suggested. I think we're better off improving the pinctrl
+data first to make various checks easier.
 
-and got merged in 3.9.9.
+What you're suggesting with the mepcmp() can be done easily if we add
+something like device_get_pins() and have the pins sorted for the
+various states for a device at the device probe time.
 
-And that added a missing: "#include <linux/irq.h>" in
-arch/x86/include/asm/irq_remapping.h
+Regards,
 
-But using that patch it still spits out:
-
-kernel/linux-3.8.13.5/arch/x86/include/asm/irq_remapping.h:50:17:
- >> varning: ”struct msi_msg” deklarerad inuti parameterlista [aktiverat
- >> som standard]
-
-
-which is why the additional patch is still needed...
-
---
-
-Thomas
-
-
+Tony
