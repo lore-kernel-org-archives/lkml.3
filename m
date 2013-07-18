@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab3GROgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:36:17 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:41168 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab3GROgO (ORCPT
+	id S1758851Ab3GROjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:39:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31053 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab3GROjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:36:14 -0400
-MIME-Version: 1.0
-From: Dan Bolsun <dan.bolsun@gmail.com>
-Date: Thu, 18 Jul 2013 17:35:53 +0300
-Message-ID: <CAKs5=kS5nSN=-U6S-sBA1G-8ayB0GC2d5ZZeo8qSb_Gv9gKkUw@mail.gmail.com>
-Subject: [PATCH] usbserial: append Petatel NP10T device to GSM modems list
-To: Matthias Urlichs <smurf@smurf.noris.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Jul 2013 10:39:10 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=jG05uceuGy4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5uFaiv9cfuIA:10 a=dCrHwhn5Zh8xi4oE9DwA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374158349.6458.237.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/3] tracing: more list_empty(perf_events) checks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Jul 2013 10:39:09 -0400
+In-Reply-To: <20130718094237.GI27075@twins.programming.kicks-ass.net>
+References: <20130617170142.GA19780@redhat.com>
+	 <1374116446.6458.203.camel@gandalf.local.home>
+	 <20130718094237.GI27075@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch was tested on 3.10.1 kernel.
+On Thu, 2013-07-18 at 11:42 +0200, Peter Zijlstra wrote:
+> On Wed, Jul 17, 2013 at 11:00:46PM -0400, Steven Rostedt wrote:
+> > Peter,
+> > 
+> > These have been discussed, and they mostly live in the tracing
+> > directory, but are perf related. Can you give me your Acked-by on them.
+> 
+> I haven't looked in detail, but I trust Oleg. The only thing I can
+> remember is that I objected to the changelogs in that it wasn't at all
+> clear why we were doing these patches (Oleg did clarify in a separate
+> email, not sure the changelogs were ammended).
+> 
+> Other than that sure, go ahead.
 
-Same models of Petatel NP10T modems have different device IDs.
-Unfortunately they have no additional revision information on a board
-which may treat them as different devices. Currently I've seen only
-two NP10T devices with various IDs. Possibly Petatel NP10T list will
-be appended upon devices with new IDs will appear.
+Oleg, did you update the change logs? These patches look the same as
+what was in your mbox. Or did Peter have an issues with the change log
+of another patch?
 
---- linux-3.10.1/drivers/usb/serial/option.c    2013-07-01
-01:13:29.000000000 +0300
-+++ linux-3.10.1.np10t/drivers/usb/serial/option.c      2013-07-18
-16:15:36.902600324 +0300
-@@ -446,7 +446,8 @@ static void option_instat_callback(struc
+-- Steve
 
- /* Hyundai Petatel Inc. products */
- #define PETATEL_VENDOR_ID                      0x1ff4
--#define PETATEL_PRODUCT_NP10T                  0x600e
-+#define PETATEL_PRODUCT_NP10T_600A             0x600a
-+#define PETATEL_PRODUCT_NP10T_600E             0x600e
 
- /* TP-LINK Incorporated products */
- #define TPLINK_VENDOR_ID                       0x2357
-@@ -1333,7 +1334,8 @@ static const struct usb_device_id option
-        { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
-MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x02, 0x01) },
-        { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
-MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
-        { USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
--       { USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
-+       { USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600A) },
-+       { USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600E) },
-        { USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
-          .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-        { USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
-
-Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
