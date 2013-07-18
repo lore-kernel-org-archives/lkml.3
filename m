@@ -1,162 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758592Ab3GRKWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:22:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41862 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758029Ab3GRKWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:22:21 -0400
-Date: Thu, 18 Jul 2013 12:22:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Waiman Long <waiman.long@hp.com>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock
- implementation
-In-Reply-To: <51E49FA3.4030202@hp.com>
-Message-ID: <alpine.DEB.2.02.1307181210330.4089@ionos.tec.linutronix.de>
-References: <1373679249-27123-1-git-send-email-Waiman.Long@hp.com> <1373679249-27123-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1307151657540.11918@ionos.tec.linutronix.de> <51E49FA3.4030202@hp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758613Ab3GRKYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:24:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36951 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758029Ab3GRKYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:24:17 -0400
+Date: Thu, 18 Jul 2013 13:24:04 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>, <balbi@ti.com>, <rnayak@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
+Message-ID: <20130718102404.GH11251@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
+ <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ah9ph+G2cWRpKogL"
+Content-Disposition: inline
+In-Reply-To: <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Waiman,
+--Ah9ph+G2cWRpKogL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 15 Jul 2013, Waiman Long wrote:
-> On 07/15/2013 06:31 PM, Thomas Gleixner wrote:
-> > On Fri, 12 Jul 2013, Waiman Long wrote:
-> > > Apparently, the regular read/write lock performs even better than
-> > > the queue read/write lock in some cases.  This is probably due to the
-> > The regular rwlock performs better in most cases. This is the full
-> > list comparing both against the ticket lock.
-> > 
-> >      qrlock  	   rwlock
-> >      +20.7  	   +44.4
-> >      +30.1  	   +42.9
-> > 
-> >      +56.3  	   +63.3
-> >      +52.9  	   +48.8
-> > 
-> >      +54.4  	   +65.1
-> >      +49.2  	   +26.5
-> > 
-> > So you try to sell that qrwlock as a replacement for ticket spinlocks,
-> > while at the same time you omit the fact that we have an even better
-> > implementation (except for the last test case) already in the
-> > kernel. What's the point of this exercise?
-> 
-> The main point is that the regular rwlock is not fair while the
-> queue rwlock is close to as fair as the ticket spinlock. The LWN
-> article http://lwn.net/Articles/364583/ mentioned about eliminating
-> rwlock altogether precisely because of this unfairness as it can
-> cause livelock in certain scenerio. I also saw slides to advise
-> again using rwlock because of this.
+Hi,
 
-I'm well aware of this. But that does not explain anything of what I
-asked.
+it might be just me, but ...
 
-> > > + * has the following advantages:
-> > > + * 1. It is more deterministic. Even though there is a slight chance
-> > > of
-> > Why is it more deterministic than the existing implementation?
-> 
-> Deterministic means that that a process can acquire a lock within a
-> reasonable time period without being starved for a long time. The qrwlock
-> grants lock in FIFO order in most cases. That is what I mean by being more
-> deterministic.
+On Thu, Jul 18, 2013 at 03:31:26PM +0530, Sourav Poddar wrote:
+> +static inline unsigned long ti_qspi_readl_data(struct ti_qspi *qspi,
+> +		unsigned long reg, int wlen)
+> +{
+> +	switch (wlen) {
+> +	case 8:
+> +		return readw(qspi->base + reg);
+> +		break;
+> +	case 16:
+> +		return readb(qspi->base + reg);
+> +		break;
+> +	case 32:
+> +		return readl(qspi->base + reg);
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static inline void ti_qspi_writel_data(struct ti_qspi *qspi,
+> +		unsigned long val, unsigned long reg, int wlen)
+> +{
+> +	switch (wlen) {
+> +	case 8:
+> +		writew(val, qspi->base + reg);
+> +		break;
+> +	case 16:
+> +		writeb(val, qspi->base + reg);
+> +		break;
+> +	case 32:
+> +		writeb(val, qspi->base + reg);
+> +		break;
+> +	default:
+> +		dev_dbg(qspi->dev, "word lenght out of range");
+> +		break;
+> +	}
+> +}
 
-That's exactly the kind of explanation we want to have in the code and
-the changelog.
+because of these two functions you have the hability to read/write
+*more* than one byte, and yet ...
 
-> > 
-> > > + *    stealing the lock if come at the right moment, the granting of
-> > > the
-> > > + *    lock is mostly in FIFO order.
-> > > + * 2. It is faster in high contention situation.
-> > Again, why is it faster?
-> 
-> The current rwlock implementation suffers from a thundering herd problem.
-> When many readers are waiting for the lock hold by a writer, they will all
-> jump in more or less at the same time when the writer releases the lock.
-> That is not the case with qrwlock. It has been shown in many cases that
-> avoiding this thundering herd problem can lead to better performance.
+> +static void qspi_write_msg(struct ti_qspi *qspi, struct spi_transfer *t)
+> +{
+> +	const u8 *txbuf;
+> +	int wlen, count;
+> +
+> +	count =3D t->len;
+> +	txbuf =3D t->tx_buf;
+> +	wlen =3D t->bits_per_word;
+> +
+> +	while (count--) {
+> +		dev_dbg(qspi->dev, "tx cmd %08x dc %08x data %02x\n",
+> +			qspi->cmd | QSPI_WR_SNGL, qspi->dc, *txbuf);
+> +		ti_qspi_writel_data(qspi, *txbuf++, QSPI_SPI_DATA_REG, wlen);
 
-That makes sense and wants to be documented as well. You could have
-avoided a lot of the discussion if you had included these details
-right away.
+you always increment by each byte. Here, if you used writel(), you wrote
+4 bytes and should increment txbuf by 4. Same goes for read_data(),
+below. Another thing. Even though your wlen might be 8 bits, if you
+write 4 bytes to write, you can save a few CPU cycles by using writel().
 
-> > > + * an increase in lock size is not an issue.
-> > So is it faster in the general case or only for the high contention or
-> > single thread operation cases?
-> > 
-> > And you still miss to explain WHY it is faster. Can you please explain
-> > proper WHY it is faster and WHY we can't apply that technique you
-> > implemented for qrwlocks to writer only locks (aka spinlocks) with a
-> > smaller lock size?
-> 
-> I will try to collect more data to justify the usefulness of qrwlock.
+You only use writew() if you have exactly 2 bytes to write and writeb()
+if you have exactly 1 byte to write. 3 bytes we'll be left as an
+exercise.
 
-And please provide a proper argument why we can't use the same
-technique for spinlocks.
+> +static int ti_qspi_start_transfer_one(struct spi_master *master,
+> +		struct spi_message *m)
+> +{
+> +	struct ti_qspi *qspi =3D spi_master_get_devdata(master);
+> +	struct spi_device *spi =3D m->spi;
+> +	struct spi_transfer *t;
+> +	int status =3D 0, ret;
+> +	int frame_length;
+> +
+> +	/* setup device control reg */
+> +	qspi->dc =3D 0;
+> +
+> +	if (spi->mode & SPI_CPHA)
+> +		qspi->dc |=3D QSPI_CKPHA(spi->chip_select);
+> +	if (spi->mode & SPI_CPOL)
+> +		qspi->dc |=3D QSPI_CKPOL(spi->chip_select);
+> +	if (spi->mode & SPI_CS_HIGH)
+> +		qspi->dc |=3D QSPI_CSPOL(spi->chip_select);
+> +
+> +	frame_length =3D DIV_ROUND_UP(m->frame_length * spi->bits_per_word,
+> +				spi->bits_per_word);
 
-> > Aside of that, you are replacing all RW locks unconditionally by this
-> > new fangled thing, but did you actually run tests which look at other
-> > rwlock usage sites than the particular one you care about?
-> 
-> Users have the choice of using the old rwlock or the queue rwlock by
-> selecting or unselecting the QUEUE_RWLOCK config parameter. I am not
-> forcing the unconditional replacement of rwlock by qrwlock.
+this calculation doesn't look correct.
 
-Looking at patch 2/2:
+	(m->frame_length * spi->bits_per_word) /
+		spi->bits_per_word =3D m->frame_length
 
-+config ARCH_QUEUE_RWLOCK
-+       def_bool y
+What are you trying to achieve here ? frame_length should be counted in
+words right ? And we get that value in bytes. So what's the best
+calculation to convert bytes into words ? If you have 8 bits_per_word
+you don't need any calculation, but if you have 32 bits_per_word, you
+_do_ need something.
 
-What's conditional about that? Where is the choice?
+How will you achieve the number you want ? (hint: 1 byte =3D=3D 8 bits)
 
-> > You are optimizing for the high frequency writer case. And that's not
-> > the primary use case for rwlocks. That's the special use case for the
-> > jbd2 journal_state_lock which CANNOT be generalized for all other
-> > rwlock usage sites.
-> 
-> It is true that this lock is kind of optimized for writers. For
-> reader heavy code, the performance may not be as good as the rwlock
-> for uncontended cases. However, I do believe that the fairness
-> attribute of the qrwlock far outweigh the slight performance
-> overhead of read lock/unlock.  Furthermore, the lock/unlock sequence
-> contributes only a very tiny percentage of total CPU time in
-> uncontended cases. A slight increase may not really have a material
-> impact on performance. Again, as promised, I will try to collect
-> some more performance data for reader heavy usage cases.
+And btw, all of these mistakes pretty much tell me that this driver
+hasn't been tested. How have you tested this driver ? Is your spansion
+memory accessed with 8 bits_per_word only ? Is there anyway to use
+32 bits_per_word with that device ? That would uncover quite a few
+mistakes in $subject.
 
-Yes, please. We really need this information and if it turns out, that
-it does not affect reader heavy sides, I have no objections against
-the technology itself.
+--=20
+balbi
 
-Thanks,
+--Ah9ph+G2cWRpKogL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	tglx
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR58JDAAoJEIaOsuA1yqREd4IP/0hO3zH0hK2xkDrc35yIeMEt
+MEIXOLl4Qhj4rl1YSVqHV7OwUFeOqOng2PniJp9ui+WaB/SGCp9iMrIM32ragTQk
+XuF48EBgX+cxNVhBJJ2Bvhhbk5jkqPvZPxGoJlLtqC/yG7wRE6WRPzq5BbR8y4PS
+hpa21rpyWgwgjd2sqkIoWp2QcZCwAmc6z2awYB7KdHBBhOVX6oPokHlHDVWoPanr
+1MVB9c/QKBYeE1sXivA9TZ0IvYhXXePthQMN65xodcKg5C6Ag/xBYXQcOlFZl5DV
+FNBJ5eMlEcnp5BZOsackiOSbenXsJgTCLhNpzSJbnnMpZ5Ma2EpqRZIsb6AJ66s+
+COcq8WVUHCqH//J9726mcVnmpcy3ua9TZJ6cP+Og80xXNjoT4Vdm1PU29St+x06Z
+9UoKebcWaz0hvhQSUyGC3fcsst2VIm6GrOnyeZc3AMO0DTVr5+Kq7Kv9LPoC6dRF
+LZh1om2DyOWcCsFo7bO+WoZv2LLlildm9EM7+cBoQq75zfmekjiNFJyZlqZ841bP
+qjM1d4LAuN0S80DRj8htSUeSUvGXFWG7RMvqq9dcSYWtdXywjyhWj1EjDnlF/qVG
+TOKfZjOD9r9k6sPhZAXPG50bRK3IVRePrxyD0rTzZvr/xbOZdu/hKSd8As9E5NRG
+SNSxQ2QCAdai7Gm9H1wx
+=jHvY
+-----END PGP SIGNATURE-----
+
+--Ah9ph+G2cWRpKogL--
