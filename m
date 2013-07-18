@@ -1,92 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934273Ab3GRULo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:11:44 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:34340 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933445Ab3GRULl (ORCPT
+	id S1759393Ab3GRTuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:50:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41334 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759287Ab3GRTuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 16:11:41 -0400
-Message-ID: <1374178250.24916.131.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-From: Toshi Kani <toshi.kani@hp.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Dave Hansen <dave.hansen@intel.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Date: Thu, 18 Jul 2013 14:10:50 -0600
-In-Reply-To: <51E83536.6070100@sr71.net>
-References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
-	  <51E80973.9000308@intel.com> <1374164815.24916.84.camel@misato.fc.hp.com>
-	 <51E83536.6070100@sr71.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Jul 2013 15:50:15 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@linaro.org>,
+        Robert Richter <rric@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 06/76] perf tools: Use default include path notation for libtraceevent headers
+Date: Thu, 18 Jul 2013 16:48:53 -0300
+Message-Id: <1374177003-3706-7-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
+References: <1374177003-3706-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 11:34 -0700, Dave Hansen wrote:
-> On 07/18/2013 09:26 AM, Toshi Kani wrote:
-> > On Thu, 2013-07-18 at 08:27 -0700, Dave Hansen wrote:
-> >> I'd really prefer you don't do this.  Do you really have random
-> >> processes on your system poking at random sysfs files and then
-> >> complaining when things break?
-> > 
-> > I am afraid that the "probe" interface does not provide the level of
-> > quality suitable for regular users.  It takes any value and blindly
-> > extends the page table.
-> 
-> That's like saying that /dev/sda takes any value and blindly writes it
-> to the disk.
+From: Robert Richter <robert.richter@linaro.org>
 
-I do not think so.  Using echo command to write a value to /dev/sda is
-not how it is instructed to use in the document.  I am not saying that
-we need to protect from a privileged user doing something crazy.
+Header files of libtraceevent or no longer local headers. Thus, use
+default path notation for them. Also removing extra traceevent include
+path and instead handle this similar to liblk.
 
-> > Also, we are not aware of the use of this
-> > interface on x86.  Would you elaborate why you need this interface on
-> > x86?  Is it for your testing, or is it necessary for end-users?  If the
-> > former, can you modify .config file to enable it?
-> 
-> For me, it's testing.  It allows testing of the memory hotplug software
-> stack without actual hardware, which is incredibly valuable.  That
-> includes testing on distribution kernels which I do not want to modify.
->  I thought there were some hypervisor users which don't use ACPI for
-> hotplug event notifications too.
+Signed-off-by: Robert Richter <robert.richter@linaro.org>
+Signed-off-by: Robert Richter <rric@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Robert Richter <rric@kernel.org>
+Link: http://lkml.kernel.org/r/1370964558-8599-1-git-send-email-rric@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile               | 2 +-
+ tools/perf/builtin-trace.c        | 2 +-
+ tools/perf/config/Makefile        | 5 +++--
+ tools/perf/tests/evsel-tp-sched.c | 2 +-
+ tools/perf/util/evsel.c           | 8 ++++----
+ tools/perf/util/session.c         | 2 +-
+ tools/perf/util/trace-event.h     | 2 +-
+ 7 files changed, 12 insertions(+), 11 deletions(-)
 
-I think such hypervisor relies on a balloon driver and does not use this
-interface.
-
-> All that I'm asking is that you either leave it the way it is, or make a
-> Kconfig menu entry for it.
-> 
-> But, really, what's the problem that you're solving?  Has this caused
-> you issues somehow?  It's been there for, what, 10 years?  Surely it's
-> part of the ABI.
-
-The problem is that the probe interface is documented as one of the
-steps that may be necessary for memory hotplug.  A typical user may or
-may not know if his/her platform generates a hotplug notification to the
-kernel to decide if this step is necessary.  If the user performs this
-step on x86, it will likely mess up the system.  Since we do not need it
-on x86, a prudent approach to protect such user is to disable or remove
-the interface on x86 and document it accordingly.  We have not seen this
-issue yet because we do not have many platforms that support memory
-hotplug today.  Once memory hotplug support in KVM gets merged into the
-mainline, anyone can start using this feature on their systems.  At that
-time, their choice of a stable kernel may be 3.12.x.  This interface has
-been there for while, but we need to fix it before the memory hotplug
-feature becomes available for everyone.
-
-Does it make sense?  I understand that you are using this interface for
-your testing.  If I make a Kconfig menu entry, are you OK to disable
-this option by default?
-
-Motohiro, Yasuaki, do you have any suggestion?
-
-Thanks,
--Toshi
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 641fccd..5b7c6db 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -281,7 +281,7 @@ LIB_H += util/cpumap.h
+ LIB_H += util/top.h
+ LIB_H += $(ARCH_INCLUDE)
+ LIB_H += util/cgroup.h
+-LIB_H += $(TRACE_EVENT_DIR)event-parse.h
++LIB_H += $(LIB_INCLUDE)traceevent/event-parse.h
+ LIB_H += util/target.h
+ LIB_H += util/rblist.h
+ LIB_H += util/intlist.h
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index ab3ed4a..87fc7d0 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1,3 +1,4 @@
++#include <traceevent/event-parse.h>
+ #include "builtin.h"
+ #include "util/color.h"
+ #include "util/evlist.h"
+@@ -5,7 +6,6 @@
+ #include "util/thread.h"
+ #include "util/parse-options.h"
+ #include "util/thread_map.h"
+-#include "event-parse.h"
+ 
+ #include <libaudit.h>
+ #include <stdlib.h>
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index b5d9238..214e17e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -46,6 +46,8 @@ ifneq ($(obj-perf),)
+ obj-perf := $(abspath $(obj-perf))/
+ endif
+ 
++LIB_INCLUDE := $(srctree)/tools/lib/
++
+ # include ARCH specific config
+ -include $(src-perf)/arch/$(ARCH)/Makefile
+ 
+@@ -121,8 +123,7 @@ endif
+ 
+ CFLAGS += -I$(src-perf)/util
+ CFLAGS += -I$(src-perf)
+-CFLAGS += -I$(TRACE_EVENT_DIR)
+-CFLAGS += -I$(srctree)/tools/lib/
++CFLAGS += -I$(LIB_INCLUDE)
+ 
+ CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ 
+diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
+index a5d2fcc..f79e7d0 100644
+--- a/tools/perf/tests/evsel-tp-sched.c
++++ b/tools/perf/tests/evsel-tp-sched.c
+@@ -1,6 +1,6 @@
++#include <traceevent/event-parse.h>
+ #include "evsel.h"
+ #include "tests.h"
+-#include "event-parse.h"
+ 
+ static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
+ 				  int size, bool should_be_signed)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index c9c7494..a635461 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -9,17 +9,17 @@
+ 
+ #include <byteswap.h>
+ #include <linux/bitops.h>
+-#include "asm/bug.h"
+ #include <lk/debugfs.h>
+-#include "event-parse.h"
++#include <traceevent/event-parse.h>
++#include <linux/hw_breakpoint.h>
++#include <linux/perf_event.h>
++#include "asm/bug.h"
+ #include "evsel.h"
+ #include "evlist.h"
+ #include "util.h"
+ #include "cpumap.h"
+ #include "thread_map.h"
+ #include "target.h"
+-#include <linux/hw_breakpoint.h>
+-#include <linux/perf_event.h>
+ #include "perf_regs.h"
+ 
+ static struct {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index cf1fe01..ad47fb9 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1,4 +1,5 @@
+ #include <linux/kernel.h>
++#include <traceevent/event-parse.h>
+ 
+ #include <byteswap.h>
+ #include <unistd.h>
+@@ -12,7 +13,6 @@
+ #include "sort.h"
+ #include "util.h"
+ #include "cpumap.h"
+-#include "event-parse.h"
+ #include "perf_regs.h"
+ #include "vdso.h"
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 1978c39..11eb7fd 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -1,8 +1,8 @@
+ #ifndef _PERF_UTIL_TRACE_EVENT_H
+ #define _PERF_UTIL_TRACE_EVENT_H
+ 
++#include <traceevent/event-parse.h>
+ #include "parse-events.h"
+-#include "event-parse.h"
+ #include "session.h"
+ 
+ struct machine;
+-- 
+1.8.1.4
 
