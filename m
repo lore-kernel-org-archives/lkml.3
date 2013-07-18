@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934325Ab3GRT6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:58:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41964 "EHLO
+	id S934335Ab3GRT6a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:58:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41963 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934169Ab3GRT4X (ORCPT
+	with ESMTP id S934202Ab3GRT4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:56:23 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 46/76] perf tools: Validate perf event header size
-Date: Thu, 18 Jul 2013 16:49:33 -0300
-Message-Id: <1374177003-3706-47-git-send-email-acme@infradead.org>
+Subject: [PATCH 27/76] perf util: Skip reading header_event file
+Date: Thu, 18 Jul 2013 16:49:14 -0300
+Message-Id: <1374177003-3706-28-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -29,69 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The 'size' variable includes the header so must be at least
-'sizeof(struct perf_event_header)'.  Error out immediately if that is
-not the case.  Also don't byte-swap the header until it is actually
-"fetched" from the mmap region.
+It seems perf does not parse header_event file so we can skip it as we
+do for header_page file.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1372944040-32690-9-git-send-email-adrian.hunter@intel.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1370323231-14022-11-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ tools/perf/util/trace-event-read.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6b71b88..951a1cf 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1094,8 +1094,10 @@ more:
- 		perf_event_header__bswap(&event->header);
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index 0dd9fbd..fa45fca 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -212,7 +212,6 @@ static int read_ftrace_printk(struct pevent *pevent)
+ static int read_header_files(struct pevent *pevent)
+ {
+ 	unsigned long long size;
+-	char *header_event;
+ 	char buf[BUFSIZ];
+ 	int ret = 0;
  
- 	size = event->header.size;
--	if (size == 0)
--		size = 8;
-+	if (size < sizeof(struct perf_event_header)) {
-+		pr_err("bad event header size\n");
-+		goto out_err;
-+	}
+@@ -236,14 +235,8 @@ static int read_header_files(struct pevent *pevent)
+ 	}
  
- 	if (size > cur_size) {
- 		void *new = realloc(buf, size);
-@@ -1164,8 +1166,12 @@ fetch_mmaped_event(struct perf_session *session,
- 	if (session->header.needs_swap)
- 		perf_event_header__bswap(&event->header);
+ 	size = read8(pevent);
+-	header_event = malloc(size);
+-	if (header_event == NULL)
+-		return -1;
+-
+-	if (do_read(header_event, size) < 0)
+-		ret = -1;
++	skip(size);
  
--	if (head + event->header.size > mmap_size)
-+	if (head + event->header.size > mmap_size) {
-+		/* We're not fetching the event so swap back again */
-+		if (session->header.needs_swap)
-+			perf_event_header__bswap(&event->header);
- 		return NULL;
-+	}
- 
- 	return event;
+-	free(header_event);
+ 	return ret;
  }
-@@ -1245,7 +1251,7 @@ more:
  
- 	size = event->header.size;
- 
--	if (size == 0 ||
-+	if (size < sizeof(struct perf_event_header) ||
- 	    perf_session__process_event(session, event, tool, file_pos) < 0) {
- 		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
- 		       file_offset + head, event->header.size,
 -- 
 1.8.1.4
 
