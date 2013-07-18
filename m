@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933391Ab3GRRTc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 13:19:32 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:46871 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933216Ab3GRRTU (ORCPT
+	id S964835Ab3GRRUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 13:20:47 -0400
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:39330 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932540Ab3GRRUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 13:19:20 -0400
+	Thu, 18 Jul 2013 13:20:45 -0400
 X-SENDER-IP: [85.230.171.181]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap1bAGEi6FFV5qu1PGdsb2JhbABagwY1gm2+IQQBgREXAwEBAQE4NYIkAQEEAScTHCMQCAMYCSUPBSUKGhOICgoItiwWjlyBHQeDDm4Dl1yBKoUJg3CKPzo
+X-IronPort-Anti-Spam-Result: Ak5mAAgj6FFV5qu1PGdsb2JhbABagwaDIoUjuH4EAYERFwMBAQEBODWCJAEBBScTHBMBDxAIAxgJJQ8FJQoaE4gUtjQWjjUngR0Hg3wDl1yGM4NwiF6BYTqBLA
 X-IronPort-AV: E=Sophos;i="4.89,695,1367964000"; 
-   d="scan'208";a="361486792"
+   d="scan'208";a="287145566"
 From: rydberg@euromail.se
-Date: Thu, 18 Jul 2013 19:20:29 +0200
+Date: Thu, 18 Jul 2013 19:21:54 +0200
 To: Nick Dyer <nick.dyer@itdev.co.uk>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -23,94 +23,201 @@ Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
         Benson Leung <bleung@chromium.org>,
         Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH 37/51] Input: atmel_mxt_ts - Implement vector/orientation
+Subject: Re: [PATCH 39/51] Input: atmel_mxt_ts - Implement T63 Active Stylus
  support
-Message-ID: <20130718172029.GF32381@polaris.bitmath.org>
+Message-ID: <20130718172154.GG32381@polaris.bitmath.org>
 References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
- <1372337366-9286-38-git-send-email-nick.dyer@itdev.co.uk>
+ <1372337366-9286-40-git-send-email-nick.dyer@itdev.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372337366-9286-38-git-send-email-nick.dyer@itdev.co.uk>
+In-Reply-To: <1372337366-9286-40-git-send-email-nick.dyer@itdev.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 01:49:12PM +0100, Nick Dyer wrote:
-> The atmel touch messages contain orientation information as a byte in a packed
-> format which can be passed straight on to Android if the input device
-> configuration is correct, see
-> http://source.android.com/tech/input/touch-devices.html#touchorientationcalibration
-> 
-> This requires vector reports to be enabled in maXTouch config (zero DISVECT
-> bit in T9 CTRL field)
-> 
-> Android converts the format in frameworks/base/services/input/Input.cpp,
-> search for ORIENTATION_CALIBRATION_VECTOR.
-
-How does this compare to the input mt documentation?
-
-> 
+On Thu, Jun 27, 2013 at 01:49:14PM +0100, Nick Dyer wrote:
 > Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 > Acked-by: Benson Leung <bleung@chromium.org>
 > ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+>  drivers/input/touchscreen/atmel_mxt_ts.c |   95 +++++++++++++++++++++++++++++-
+>  1 file changed, 94 insertions(+), 1 deletion(-)
 > 
 > diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index 1c5e640..9188cf7 100644
+> index b63f227..2e6118a 100644
 > --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 > +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -716,6 +716,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
->  	int y;
->  	int area;
->  	int amplitude;
-> +	u8 vector;
+> @@ -78,6 +78,7 @@
+>  #define MXT_SPT_DIGITIZER_T43		43
+>  #define MXT_SPT_MESSAGECOUNT_T44	44
+>  #define MXT_SPT_CTECONFIG_T46		46
+> +#define MXT_PROCI_ACTIVE_STYLUS_T63	63
 >  
->  	/* do not report events if input device not yet registered */
->  	if (!data->enable_reporting)
-> @@ -734,9 +735,10 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
+>  /* MXT_GEN_MESSAGE_T5 object */
+>  #define MXT_RPTID_NOMSG		0xff
+> @@ -190,6 +191,19 @@ struct t9_range {
+>  /* Define for MXT_PROCI_TOUCHSUPPRESSION_T42 */
+>  #define MXT_T42_MSG_TCHSUP	(1 << 0)
 >  
->  	area = message[5];
->  	amplitude = message[6];
-> +	vector = message[7];
+> +/* T63 Stylus */
+> +#define MXT_T63_STYLUS_PRESS	(1 << 0)
+> +#define MXT_T63_STYLUS_RELEASE	(1 << 1)
+> +#define MXT_T63_STYLUS_MOVE		(1 << 2)
+> +#define MXT_T63_STYLUS_SUPPRESS	(1 << 3)
+> +
+> +#define MXT_T63_STYLUS_DETECT	(1 << 4)
+> +#define MXT_T63_STYLUS_TIP		(1 << 5)
+> +#define MXT_T63_STYLUS_ERASER	(1 << 6)
+> +#define MXT_T63_STYLUS_BARREL	(1 << 7)
+> +
+> +#define MXT_T63_STYLUS_PRESSURE_MASK	0x3F
+> +
+>  /* Delay times */
+>  #define MXT_BACKUP_TIME		50	/* msec */
+>  #define MXT_RESET_TIME		200	/* msec */
+> @@ -260,6 +274,7 @@ struct mxt_data {
+>  	bool update_input;
+>  	u8 last_message_count;
+>  	u8 num_touchids;
+> +	u8 num_stylusids;
 >  
->  	dev_dbg(dev,
-> -		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u\n",
-> +		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u vector: %02X\n",
->  		id,
->  		(status & MXT_T9_DETECT) ? 'D' : '.',
->  		(status & MXT_T9_PRESS) ? 'P' : '.',
-> @@ -746,7 +748,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
->  		(status & MXT_T9_AMP) ? 'A' : '.',
->  		(status & MXT_T9_SUPPRESS) ? 'S' : '.',
->  		(status & MXT_T9_UNGRIP) ? 'U' : '.',
-> -		x, y, area, amplitude);
-> +		x, y, area, amplitude, vector);
+>  	/* Cached parameters from object table */
+>  	u16 T5_address;
+> @@ -274,6 +289,8 @@ struct mxt_data {
+>  	u8 T42_reportid_max;
+>  	u16 T44_address;
+>  	u8 T48_reportid;
+> +	u8 T63_reportid_min;
+> +	u8 T63_reportid_max;
 >  
->  	input_mt_slot(input_dev, id);
+>  	/* for fw update in bootloader */
+>  	struct completion bl_completion;
+> @@ -823,6 +840,63 @@ static int mxt_proc_t48_messages(struct mxt_data *data, u8 *msg)
+>  	return 0;
+>  }
 >  
-> @@ -766,6 +768,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
->  		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
->  		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
->  		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
-> +		input_report_abs(input_dev, ABS_MT_ORIENTATION, vector);
->  	} else {
->  		/* Touch no longer active, close out slot */
->  		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
-> @@ -2100,6 +2103,8 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
->  			     0, data->max_y, 0, 0);
->  	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
+> +static void mxt_proc_t63_messages(struct mxt_data *data, u8 *msg)
+> +{
+> +	struct device *dev = &data->client->dev;
+> +	struct input_dev *input_dev = data->input_dev;
+> +	u8 id;
+> +	u16 x, y;
+> +	u8 pressure;
+> +
+> +	/* do not report events if input device not yet registered */
+> +	if (!data->enable_reporting)
+> +		return;
+> +
+> +	/* stylus slots come after touch slots */
+> +	id = data->num_touchids + (msg[0] - data->T63_reportid_min);
+> +
+> +	if (id < 0 || id > (data->num_touchids + data->num_stylusids)) {
+> +		dev_err(dev, "invalid stylus id %d, max slot is %d\n",
+> +			id, data->num_stylusids);
+> +		return;
+> +	}
+> +
+> +	x = msg[3] | (msg[4] << 8);
+> +	y = msg[5] | (msg[6] << 8);
+> +	pressure = msg[7] & MXT_T63_STYLUS_PRESSURE_MASK;
+> +
+> +	dev_dbg(dev,
+> +		"[%d] %c%c%c%c x: %d y: %d pressure: %d stylus:%c%c%c%c\n",
+> +		id,
+> +		(msg[1] & MXT_T63_STYLUS_SUPPRESS) ? 'S' : '.',
+> +		(msg[1] & MXT_T63_STYLUS_MOVE)     ? 'M' : '.',
+> +		(msg[1] & MXT_T63_STYLUS_RELEASE)  ? 'R' : '.',
+> +		(msg[1] & MXT_T63_STYLUS_PRESS)    ? 'P' : '.',
+> +		x, y, pressure,
+> +		(msg[2] & MXT_T63_STYLUS_BARREL) ? 'B' : '.',
+> +		(msg[2] & MXT_T63_STYLUS_ERASER) ? 'E' : '.',
+> +		(msg[2] & MXT_T63_STYLUS_TIP)    ? 'T' : '.',
+> +		(msg[2] & MXT_T63_STYLUS_DETECT) ? 'D' : '.');
+> +
+> +	input_mt_slot(input_dev, id);
+> +
+> +	if (msg[2] & MXT_T63_STYLUS_DETECT) {
+> +		input_mt_report_slot_state(input_dev, MT_TOOL_PEN, 1);
+> +		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
+> +		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
+> +		input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
+> +	} else {
+> +		input_mt_report_slot_state(input_dev, MT_TOOL_PEN, 0);
+> +	}
+> +
+> +	input_report_key(input_dev, BTN_STYLUS,
+> +			 (msg[2] & MXT_T63_STYLUS_ERASER));
+> +	input_report_key(input_dev, BTN_STYLUS2,
+> +			 (msg[2] & MXT_T63_STYLUS_BARREL));
+> +
+> +	mxt_input_sync(input_dev);
+> +}
+> +
+>  static int mxt_proc_message(struct mxt_data *data, u8 *message)
+>  {
+>  	u8 report_id = message[0];
+> @@ -838,6 +912,9 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
+>  	} else if (report_id == data->T19_reportid) {
+>  		mxt_input_button(data, message);
+>  		data->update_input = true;
+> +	} else if (report_id >= data->T63_reportid_min
+> +		   && report_id <= data->T63_reportid_max) {
+> +		mxt_proc_t63_messages(data, message);
+>  	} else if (report_id >= data->T42_reportid_min
+>  		   && report_id <= data->T42_reportid_max) {
+>  		mxt_proc_t42_messages(data, message);
+> @@ -1483,6 +1560,8 @@ static void mxt_free_object_table(struct mxt_data *data)
+>  	data->T42_reportid_max = 0;
+>  	data->T44_address = 0;
+>  	data->T48_reportid = 0;
+> +	data->T63_reportid_min = 0;
+> +	data->T63_reportid_max = 0;
+>  	data->max_reportid = 0;
+>  }
+>  
+> @@ -1563,6 +1642,12 @@ static int mxt_get_object_table(struct mxt_data *data)
+>  		case MXT_PROCG_NOISESUPPRESSION_T48:
+>  			data->T48_reportid = min_id;
+>  			break;
+> +		case MXT_PROCI_ACTIVE_STYLUS_T63:
+> +			data->T63_reportid_min = min_id;
+> +			data->T63_reportid_max = max_id;
+> +			data->num_stylusids = object->num_report_ids
+> +						* mxt_obj_instances(object);
+> +			break;
+>  		}
+>  
+>  		end_address = object->start_address
+> @@ -2103,7 +2188,7 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
 >  			     0, 255, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_MT_ORIENTATION,
-> +			     0, 255, 0, 0);
 >  
+>  	/* For multi touch */
+> -	num_mt_slots = data->T9_reportid_max - data->T9_reportid_min + 1;
+> +	num_mt_slots = data->num_touchids + data->num_stylusids;
+>  	error = input_mt_init_slots(input_dev, num_mt_slots, mt_flags);
+>  	if (error) {
+>  		dev_err(dev, "Error %d initialising slots\n", error);
+> @@ -2121,6 +2206,14 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
+>  	input_set_abs_params(input_dev, ABS_MT_ORIENTATION,
+>  			     0, 255, 0, 0);
+>  
+> +	/* For T63 active stylus */
+> +	if (data->T63_reportid_min) {
+> +		input_set_capability(input_dev, EV_KEY, BTN_STYLUS);
+> +		input_set_capability(input_dev, EV_KEY, BTN_STYLUS2);
+> +		input_set_abs_params(input_dev, ABS_MT_TOOL_TYPE,
+> +			0, MT_TOOL_MAX, 0, 0);
+> +	}
+> +
 >  	input_set_drvdata(input_dev, data);
 >  
+>  	error = input_register_device(input_dev);
 > -- 
 > 1.7.10.4
 > 
+
+    Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
 
 Thanks,
 Henrik
