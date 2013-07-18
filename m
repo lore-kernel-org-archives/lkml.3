@@ -1,83 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964938Ab3GRTVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:21:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55081 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759317Ab3GRTVF (ORCPT
+	id S933628Ab3GRTWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:22:37 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:51950 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759124Ab3GRTWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:21:05 -0400
-Message-ID: <51E8401E.8040705@wwwdotorg.org>
-Date: Thu, 18 Jul 2013 13:21:02 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
-References: <20130716090310.5541.36777.stgit@localhost> <20130716090536.5541.36289.stgit@localhost> <51E70953.1000601@wwwdotorg.org> <20130718072034.GO7656@atomide.com>
-In-Reply-To: <20130718072034.GO7656@atomide.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Jul 2013 15:22:35 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, gregkh@linuxfoundation.org,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paul.gortmaker@windriver.com, joe@perches.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH v4] power: new trace event to print device suspend and resume time
+Date: Thu, 18 Jul 2013 13:22:29 -0600
+Message-Id: <1374175349-3435-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 01:25 AM, Tony Lindgren wrote:
-> * Stephen Warren <swarren@wwwdotorg.org> [130717 14:21]:
->> On 07/16/2013 03:05 AM, Tony Lindgren wrote:
->>> To toggle dynamic states, let's add the optional active state in
->>> addition to the static default state. Then if the optional active
->>> state is defined, we can require that idle and sleep states cover
->>> the same pingroups as the active state.
->>>
->>> Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
->>> to use instead of pinctrl_select() to avoid breaking existing users.
->>>
->>> With pinctrl_check_dynamic() we can check that idle and sleep states
->>> match the active state for pingroups during init, and don't need to
->>> do it during runtime.
->>>
->>> Then with the states pre-validated, pinctrl_select_dynamic() can
->>> just toggle between the dynamic states without extra checks.
->>>
->>> Note that pinctr_select_state() still has valid use cases, such as
->>> changing states when the pins can be shared between two drivers
->>> and don't necessarily cover the same pingroups. For dynamic runtime
->>> toggling of pin states, we should eventually always use just
->>> pinctrl_select_dynamic().
+A new trace event is added to pm events to print time it takes to suspend and
+resume a device. It generates trace message that includes device, driver,
+parent information in addition to the type of pm ops invoked as well as the
+pm event and error status from the pm ops. Example trace below:
 
->>> @@ -1241,7 +1371,13 @@ static int pinctrl_pm_select_state(struct device *dev, struct pinctrl_state *sta
->>>  		return 0;
->>>  	if (IS_ERR(state))
->>>  		return 0; /* No such state */
->>> -	ret = pinctrl_select_state(pins->p, state);
->>> +
->>> +	/* Configured for proper dynamic muxing? */
->>> +	if (!IS_ERR(dev->pins->active_state))
->>> +		ret = pinctrl_select_dynamic(pins->p, state);
->>> +	else
->>> +		ret = pinctrl_select_state(pins->p, state);
->>
->> Hmmm. I'm not quite sure this is right... Surely this function should
->> just do nothing if the dynamic states aren't defined? The system should
->> just, and only, be in the "default" state and never do anything else.
-> 
-> This keeps the existing behaviour. We should be able to drop the
-> call to pinctrl_select_state() here after the existing use in
-> drivers has been fixed.
+bash-2239  [000] ....   290.883035: device_pm_report_time: backlight
+ acpi_video0 parent=0000:00:02.0 state=freeze ops=class nsecs=332 err=0
+bash-2239  [000] ....   290.883041: device_pm_report_time: rfkill rf
+kill3 parent=phy0 state=freeze ops=legacy class nsecs=216 err=0
+bash-2239  [001] ....   290.973892: device_pm_report_time: ieee80211
+ phy0 parent=0000:01:00.0 state=freeze ops=legacy class nsecs=90846477 err=0
 
-How many DT-based systems already have multiple of default/idle/sleep
-states defined in DT? Right now, since the kernel code uses
-pinctrl_select_state() to switch between those, the state definitions
-need to define /all/ pins used by those states, not just the dynamic
-ones. However, with this series in place, the default state should only
-include the static pins, and the active/idle/sleep states should only
-include the dynamic pins. That's a change to the DT bindings, since it
-changes how the DT must be written, and causes older DTs to be
-incompatible with newer kernels and vice-versa.
+bash-2239  [001] ....   293.660129: device_pm_report_time: ieee80211 phy0 parent=0000:01:00.0 state=restore ops=legacy class nsecs=101295162 err=0
+bash-2239  [001] ....   293.660147: device_pm_report_time: rfkill rfkill3 parent=phy0 state=restore ops=legacy class nsecs=1804 err=0
+bash-2239  [001] ....   293.660157: device_pm_report_time: backlight acpi_video0 parent=0000:00:02.0 state=restore ops=class nsecs=757 err=0
 
-So, do we just ignore this DT ABI change again, or insist on doing it in
-some compatible way? DT ABI-ness is a PITA:-(
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/base/power/main.c    |   33 +++++++++++++++++++++++----------
+ include/trace/events/power.h |   35 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 5a9b656..e7401c6 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -28,6 +28,7 @@
+ #include <linux/sched.h>
+ #include <linux/async.h>
+ #include <linux/suspend.h>
++#include <trace/events/power.h>
+ #include <linux/cpuidle.h>
+ #include "../base.h"
+ #include "power.h"
+@@ -56,6 +57,8 @@ static pm_message_t pm_transition;
+ 
+ static int async_error;
+ 
++static char *pm_verb(int);
++
+ /**
+  * device_pm_sleep_init - Initialize system suspend-related device fields.
+  * @dev: Device object being initialized.
+@@ -172,16 +175,23 @@ static ktime_t initcall_debug_start(struct device *dev)
+ }
+ 
+ static void initcall_debug_report(struct device *dev, ktime_t calltime,
+-				  int error)
++				  int error, pm_message_t state, char *info)
+ {
+-	ktime_t delta, rettime;
++	ktime_t rettime;
++	s64 nsecs;
++
++	rettime = ktime_get();
++	nsecs = (s64) ktime_to_ns(ktime_sub(rettime, calltime));
+ 
+ 	if (pm_print_times_enabled) {
+-		rettime = ktime_get();
+-		delta = ktime_sub(rettime, calltime);
+ 		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
+-			error, (unsigned long long)ktime_to_ns(delta) >> 10);
++			error, (unsigned long long)nsecs >> 10);
+ 	}
++
++	trace_device_pm_report_time(dev_name(dev), dev_driver_string(dev),
++				dev->parent ? dev_name(dev->parent) : "none",
++				info ? info : "none ",
++				nsecs, pm_verb(state.event), error);
+ }
+ 
+ /**
+@@ -379,7 +389,7 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+ 	error = cb(dev);
+ 	suspend_report_result(cb, error);
+ 
+-	initcall_debug_report(dev, calltime, error);
++	initcall_debug_report(dev, calltime, error, state, info);
+ 
+ 	return error;
+ }
+@@ -1027,7 +1037,8 @@ EXPORT_SYMBOL_GPL(dpm_suspend_end);
+  * @cb: Suspend callback to execute.
+  */
+ static int legacy_suspend(struct device *dev, pm_message_t state,
+-			  int (*cb)(struct device *dev, pm_message_t state))
++			  int (*cb)(struct device *dev, pm_message_t state),
++			  char *info)
+ {
+ 	int error;
+ 	ktime_t calltime;
+@@ -1037,7 +1048,7 @@ static int legacy_suspend(struct device *dev, pm_message_t state,
+ 	error = cb(dev, state);
+ 	suspend_report_result(cb, error);
+ 
+-	initcall_debug_report(dev, calltime, error);
++	initcall_debug_report(dev, calltime, error, state, info);
+ 
+ 	return error;
+ }
+@@ -1097,7 +1108,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 			goto Run;
+ 		} else if (dev->class->suspend) {
+ 			pm_dev_dbg(dev, state, "legacy class ");
+-			error = legacy_suspend(dev, state, dev->class->suspend);
++			error = legacy_suspend(dev, state, dev->class->suspend,
++						"legacy class ");
+ 			goto End;
+ 		}
+ 	}
+@@ -1108,7 +1120,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 			callback = pm_op(dev->bus->pm, state);
+ 		} else if (dev->bus->suspend) {
+ 			pm_dev_dbg(dev, state, "legacy bus ");
+-			error = legacy_suspend(dev, state, dev->bus->suspend);
++			error = legacy_suspend(dev, state, dev->bus->suspend,
++						"legacy bus ");
+ 			goto End;
+ 		}
+ 	}
+diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+index 8e42410..24afd22 100644
+--- a/include/trace/events/power.h
++++ b/include/trace/events/power.h
+@@ -66,6 +66,41 @@ TRACE_EVENT(machine_suspend,
+ 	TP_printk("state=%lu", (unsigned long)__entry->state)
+ );
+ 
++TRACE_EVENT(device_pm_report_time,
++
++	TP_PROTO(const char *device, const char *driver, const char *parent,
++		 const char *pm_ops, s64 ops_time, char *pm_event_str,
++		 int error),
++
++	TP_ARGS(device, driver, parent, pm_ops, ops_time, pm_event_str, error),
++
++	TP_STRUCT__entry(
++		__string(device, device)
++		__string(driver, driver)
++		__string(parent, parent)
++		__string(pm_ops, pm_ops)
++		__string(pm_event_str, pm_event_str)
++		__field(s64, ops_time)
++		__field(int, error)
++	),
++
++	TP_fast_assign(
++		__assign_str(device, device);
++		__assign_str(driver, driver);
++		__assign_str(parent, parent);
++		__assign_str(pm_ops, pm_ops);
++		__assign_str(pm_event_str, pm_event_str);
++		__entry->ops_time = ops_time;
++		__entry->error = error;
++	),
++
++	/* ops_str has an extra space at the end */
++	TP_printk("%s %s parent=%s state=%s ops=%snsecs=%lld err=%d",
++		__get_str(driver), __get_str(device), __get_str(parent),
++		__get_str(pm_event_str), __get_str(pm_ops),
++		__entry->ops_time, __entry->error)
++);
++
+ DECLARE_EVENT_CLASS(wakeup_source,
+ 
+ 	TP_PROTO(const char *name, unsigned int state),
+-- 
+1.7.10.4
+
