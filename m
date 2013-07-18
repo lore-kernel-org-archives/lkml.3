@@ -1,327 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab3GRAMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 20:12:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47969 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757792Ab3GRAMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 20:12:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-acpi@vger.kernel.org
-Cc: Matthew Garrett <matthew.garrett@nebula.com>, seth.forshee@canonical.com,
-        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        Aaron Lu <aaron.lu@intel.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: [PATCH 3/3] ACPI / video / i915: No ACPI backlight if firmware expects Windows 8
-Date: Thu, 18 Jul 2013 02:22:06 +0200
-Message-ID: <2144602.m0nUanLZuL@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1448863.3slS729B6b@vostro.rjw.lan>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1448863.3slS729B6b@vostro.rjw.lan>
+	id S1757878Ab3GRAPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 20:15:22 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:38116 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756522Ab3GRAPU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 20:15:20 -0400
+Date: Wed, 17 Jul 2013 17:15:29 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hugh Dickins <hughd@google.com>, Jeff Layton <jlayton@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Jim Cromie <jim.cromie@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 0/5] initmpfs v2: use tmpfs instead of ramfs for rootfs
+In-Reply-To: <20130717160602.4b225ac80b1cb6121cbb489c@linux-foundation.org>
+Message-ID: <alpine.LNX.2.00.1307171706050.4294@eggly.anvils>
+References: <20130715140135.0f896a584fec9f7861049b64@linux-foundation.org> <20130717160602.4b225ac80b1cb6121cbb489c@linux-foundation.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wed, 17 Jul 2013, Andrew Morton wrote:
+> On Tue, 16 Jul 2013 08:31:13 -0700 (PDT) Rob Landley <rob@landley.net> wrote:
+> 
+> > Use tmpfs for rootfs when CONFIG_TMPFS=y and there's no root=.
+> > Specify rootfstype=ramfs to get the old initramfs behavior.
+> > 
+> > The previous initramfs code provided a fairly crappy root filesystem:
+> > didn't let you --bind mount directories out of it, reported zero
+> > size/usage so it didn't show up in "df" and couldn't run things like
+> > rpm that query available space before proceeding, would fill up all
+> > available memory and panic the system if you wrote too much to it...
+> 
+> The df problem and the mount --bind thing are ramfs issues, are they
+> not?  Can we fix them?  If so, that's a less intrusive change, and we
+> also get a fixed ramfs.
 
-According to Matthew Garrett, "Windows 8 leaves backlight control up
-to individual graphics drivers rather than making ACPI calls itself.
-There's plenty of evidence to suggest that the Intel driver for
-Windows [8] doesn't use the ACPI interface, including the fact that
-it's broken on a bunch of machines when the OS claims to support
-Windows 8.  The simplest thing to do appears to be to disable the
-ACPI backlight interface on these systems".
+I'll leave others to comment on "mount --bind", but with regard to "df":
+yes, we could enhance ramfs with accounting such as tmpfs has, to allow
+it to support non-0 "df".  We could have done so years ago; but have
+always preferred to leave ramfs as minimal, than import tmpfs features
+into it one by one.
 
-There's a problem with that approach, however, because simply
-avoiding to register the ACPI backlight interface if the firmware
-calls _OSI for Windows 8 may not work in the following situations:
- (1) The ACPI backlight interface actually works on the given system
-     and the i915 driver is not loaded (e.g. another graphics driver
-     is used).
- (2) The ACPI backlight interface doesn't work on the given system,
-     but there is a vendor platform driver that will register its
-     own, equally broken, backlight interface if not prevented from
-     doing so by the ACPI subsystem.
-Therefore we need to allow the ACPI backlight interface to be
-registered until the i915 driver is loaded which then will unregister
-it if the firmware has called _OSI for Windows 8 (or will register
-the ACPI video driver without backlight support if not already
-present).
+I prefer Rob's approach of making tmpfs usable for rootfs.
 
-For this reason, introduce an alternative function for registering
-ACPI video, acpi_video_register_with_quirks(), that will check
-whether or not the ACPI video driver has already been registered
-and whether or not the backlight Windows 8 quirk has to be applied.
-If the quirk has to be applied, it will block the ACPI backlight
-support and either unregister the backlight interface if the ACPI
-video driver has already been registered, or register the ACPI
-video driver without the backlight interface otherwise.  Make
-the i915 driver use acpi_video_register_with_quirks() instead of
-acpi_video_register() in i915_driver_load().
-
-This change is based on earlier patches from Matthew Garrett,
-Chun-Yi Lee and Seth Forshee and includes a fix from Aaron Lu's.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=51231
-Tested-by: Aaron Lu <aaron.lu@intel.com>
-Tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Tested-by: Yves-Alexis Perez <corsac@debian.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Acked-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- drivers/acpi/internal.h         |   11 ++++++
- drivers/acpi/video.c            |   69 +++++++++++++++++++++++++++++++++++-----
- drivers/acpi/video_detect.c     |   21 ++++++++++++
- drivers/gpu/drm/i915/i915_dma.c |    2 -
- include/acpi/video.h            |   11 +++++-
- include/linux/acpi.h            |    1 
- 6 files changed, 105 insertions(+), 10 deletions(-)
-
-Index: linux-pm/drivers/acpi/video.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video.c
-+++ linux-pm/drivers/acpi/video.c
-@@ -44,6 +44,8 @@
- #include <linux/suspend.h>
- #include <acpi/video.h>
- 
-+#include "internal.h"
-+
- #define PREFIX "ACPI: "
- 
- #define ACPI_VIDEO_BUS_NAME		"Video Bus"
-@@ -887,7 +889,7 @@ static void acpi_video_device_find_cap(s
- 	if (acpi_video_init_brightness(device))
- 		return;
- 
--	if (acpi_video_backlight_support()) {
-+	if (acpi_video_verify_backlight_support()) {
- 		struct backlight_properties props;
- 		struct pci_dev *pdev;
- 		acpi_handle acpi_parent;
-@@ -1334,8 +1336,8 @@ acpi_video_switch_brightness(struct acpi
- 	unsigned long long level_current, level_next;
- 	int result = -EINVAL;
- 
--	/* no warning message if acpi_backlight=vendor is used */
--	if (!acpi_video_backlight_support())
-+	/* no warning message if acpi_backlight=vendor or a quirk is used */
-+	if (!acpi_video_verify_backlight_support())
- 		return 0;
- 
- 	if (!device->brightness)
-@@ -1837,6 +1839,46 @@ static int acpi_video_bus_remove(struct
- 	return 0;
- }
- 
-+static acpi_status video_unregister_backlight(acpi_handle handle, u32 lvl,
-+					      void *context, void **rv)
-+{
-+	struct acpi_device *acpi_dev;
-+	struct acpi_video_bus *video;
-+	struct acpi_video_device *dev, *next;
-+
-+	if (acpi_bus_get_device(handle, &acpi_dev))
-+		return AE_OK;
-+
-+	if (acpi_match_device_ids(acpi_dev, video_device_ids))
-+		return AE_OK;
-+
-+	video = acpi_driver_data(acpi_dev);
-+	if (!video)
-+		return AE_OK;
-+
-+	acpi_video_bus_stop_devices(video);
-+	mutex_lock(&video->device_list_lock);
-+	list_for_each_entry_safe(dev, next, &video->video_device_list, entry) {
-+		if (dev->backlight) {
-+			backlight_device_unregister(dev->backlight);
-+			dev->backlight = NULL;
-+			kfree(dev->brightness->levels);
-+			kfree(dev->brightness);
-+		}
-+		if (dev->cooling_dev) {
-+			sysfs_remove_link(&dev->dev->dev.kobj,
-+					  "thermal_cooling");
-+			sysfs_remove_link(&dev->cooling_dev->device.kobj,
-+					  "device");
-+			thermal_cooling_device_unregister(dev->cooling_dev);
-+			dev->cooling_dev = NULL;
-+		}
-+	}
-+	mutex_unlock(&video->device_list_lock);
-+	acpi_video_bus_start_devices(video);
-+	return AE_OK;
-+}
-+
- static int __init is_i740(struct pci_dev *dev)
- {
- 	if (dev->device == 0x00D1)
-@@ -1868,14 +1910,25 @@ static int __init intel_opregion_present
- 	return opregion;
- }
- 
--int acpi_video_register(void)
-+int __acpi_video_register(bool backlight_quirks)
- {
--	int result = 0;
-+	bool no_backlight;
-+	int result;
-+
-+	no_backlight = backlight_quirks ? acpi_video_backlight_quirks() : false;
-+
- 	if (register_count) {
- 		/*
--		 * if the function of acpi_video_register is already called,
--		 * don't register the acpi_vide_bus again and return no error.
-+		 * If acpi_video_register() has been called already, don't try
-+		 * to register acpi_video_bus, but unregister backlight devices
-+		 * if no backlight support is requested.
- 		 */
-+		if (no_backlight)
-+			acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-+					    ACPI_UINT32_MAX,
-+					    video_unregister_backlight,
-+					    NULL, NULL, NULL);
-+
- 		return 0;
- 	}
- 
-@@ -1891,7 +1944,7 @@ int acpi_video_register(void)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(acpi_video_register);
-+EXPORT_SYMBOL(__acpi_video_register);
- 
- void acpi_video_unregister(void)
- {
-Index: linux-pm/drivers/gpu/drm/i915/i915_dma.c
-===================================================================
---- linux-pm.orig/drivers/gpu/drm/i915/i915_dma.c
-+++ linux-pm/drivers/gpu/drm/i915/i915_dma.c
-@@ -1648,7 +1648,7 @@ int i915_driver_load(struct drm_device *
- 	if (INTEL_INFO(dev)->num_pipes) {
- 		/* Must be done after probing outputs */
- 		intel_opregion_init(dev);
--		acpi_video_register();
-+		acpi_video_register_with_quirks();
- 	}
- 
- 	if (IS_GEN5(dev))
-Index: linux-pm/include/acpi/video.h
-===================================================================
---- linux-pm.orig/include/acpi/video.h
-+++ linux-pm/include/acpi/video.h
-@@ -17,12 +17,21 @@ struct acpi_device;
- #define ACPI_VIDEO_DISPLAY_LEGACY_TV      0x0200
- 
- #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
--extern int acpi_video_register(void);
-+extern int __acpi_video_register(bool backlight_quirks);
-+static inline int acpi_video_register(void)
-+{
-+	return __acpi_video_register(false);
-+}
-+static inline int acpi_video_register_with_quirks(void)
-+{
-+	return __acpi_video_register(true);
-+}
- extern void acpi_video_unregister(void);
- extern int acpi_video_get_edid(struct acpi_device *device, int type,
- 			       int device_id, void **edid);
- #else
- static inline int acpi_video_register(void) { return 0; }
-+static inline int acpi_video_register_with_quirks(void) { return 0; }
- static inline void acpi_video_unregister(void) { return; }
- static inline int acpi_video_get_edid(struct acpi_device *device, int type,
- 				      int device_id, void **edid)
-Index: linux-pm/drivers/acpi/video_detect.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video_detect.c
-+++ linux-pm/drivers/acpi/video_detect.c
-@@ -38,6 +38,8 @@
- #include <linux/dmi.h>
- #include <linux/pci.h>
- 
-+#include "internal.h"
-+
- #define PREFIX "ACPI: "
- 
- ACPI_MODULE_NAME("video");
-@@ -231,6 +233,17 @@ static void acpi_video_caps_check(void)
- 		acpi_video_get_capabilities(NULL);
- }
- 
-+bool acpi_video_backlight_quirks(void)
-+{
-+	if (acpi_gbl_osi_data >= ACPI_OSI_WIN_8) {
-+		acpi_video_caps_check();
-+		acpi_video_support |= ACPI_VIDEO_SKIP_BACKLIGHT;
-+		return true;
-+	}
-+	return false;
-+}
-+EXPORT_SYMBOL(acpi_video_backlight_quirks);
-+
- /* Promote the vendor interface instead of the generic video module.
-  * This function allow DMI blacklists to be implemented by externals
-  * platform drivers instead of putting a big blacklist in video_detect.c
-@@ -275,6 +288,14 @@ int acpi_video_backlight_support(void)
- }
- EXPORT_SYMBOL(acpi_video_backlight_support);
- 
-+/* For the ACPI video driver use only. */
-+bool acpi_video_verify_backlight_support(void)
-+{
-+	return (acpi_video_support & ACPI_VIDEO_SKIP_BACKLIGHT) ?
-+		false : acpi_video_backlight_support();
-+}
-+EXPORT_SYMBOL(acpi_video_verify_backlight_support);
-+
- /*
-  * Use acpi_backlight=vendor/video to force that backlight switching
-  * is processed by vendor specific acpi drivers or video.ko driver.
-Index: linux-pm/include/linux/acpi.h
-===================================================================
---- linux-pm.orig/include/linux/acpi.h
-+++ linux-pm/include/linux/acpi.h
-@@ -191,6 +191,7 @@ extern bool wmi_has_guid(const char *gui
- #define ACPI_VIDEO_BACKLIGHT_DMI_VIDEO			0x0200
- #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VENDOR		0x0400
- #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VIDEO		0x0800
-+#define ACPI_VIDEO_SKIP_BACKLIGHT			0x1000
- 
- #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
- 
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -164,4 +164,15 @@ struct platform_device;
- int acpi_create_platform_device(struct acpi_device *adev,
- 				const struct acpi_device_id *id);
- 
-+/*--------------------------------------------------------------------------
-+					Video
-+  -------------------------------------------------------------------------- */
-+#if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
-+bool acpi_video_backlight_quirks(void);
-+bool acpi_video_verify_backlight_support(void);
-+#else
-+static inline bool acpi_video_backlight_quirks(void) { return false; }
-+static inline bool acpi_video_verify_backlight_support(void) { return false; }
-+#endif
-+
- #endif /* _ACPI_INTERNAL_H_ */
-
+Hugh
