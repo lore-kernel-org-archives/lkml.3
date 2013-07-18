@@ -1,182 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934523Ab3GRWRX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:17:23 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38782 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932956Ab3GRWRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:17:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,696,1367996400"; 
-   d="scan'208";a="333556320"
-Message-ID: <51E8696A.7090406@intel.com>
-Date: Fri, 19 Jul 2013 00:17:14 +0200
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S934535Ab3GRWV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:21:29 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54107 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932931Ab3GRWVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 18:21:25 -0400
+Date: Thu, 18 Jul 2013 17:21:17 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: splice vs execve lockdep trace.
+Message-ID: <20130718222117.GE3572@sgi.com>
+References: <20130716204335.GH11674@dastard>
+ <CA+55aFwHMQd-VDeTDh-gm3jyj+5+FSoAHOeU47mwU-mKtEj9RQ@mail.gmail.com>
+ <20130717040616.GI11674@dastard>
+ <CA+55aFz5xw9Qi9Q6mwoCSud5eQh5u-QZ-xrY+TqgZPoKOgn6ew@mail.gmail.com>
+ <20130717055103.GK11674@dastard>
+ <CA+55aFxdqzMY5VJoYaLmL=+=f2s1cbHHV-TjC3=taXpF-xov1w@mail.gmail.com>
+ <20130717234049.GC3572@sgi.com>
+ <CA+55aFy-8QH4bTW7hU=381tuEWgHC=PUM6WP3qn-ooge=7M0QQ@mail.gmail.com>
+ <20130718034203.GO11674@dastard>
+ <20130718211632.GD3572@sgi.com>
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, ak <ak@linux.intel.com>,
-        rjw@rjwysocki.net
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>  <1374098936.22432.322.camel@schen9-DESK>  <201307180347.r6I3l5e9077577@www262.sakura.ne.jp> <1374181200.22432.350.camel@schen9-DESK>
-In-Reply-To: <1374181200.22432.350.camel@schen9-DESK>
-Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718211632.GD3572@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6IMHTOR006586
 
-On 7/18/2013 11:00 PM, Tim Chen wrote:
-> On Thu, 2013-07-18 at 12:47 +0900, Tetsuo Handa wrote:
->> Tim Chen wrote:
->>>>> Your approach is quite complicated.  I think something simpler like the
->>>>> following will work:
->>>> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
->>>
->>> The following code in crct10dif-pclmul_glue.c
->>>
->>> static const struct x86_cpu_id crct10dif_cpu_id[] = {
->>>          X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
->>>          {}
->>> };
->>> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
->>>
->>> will put the module in the device table and get the module
->>> loaded, as long as the cpu support PCLMULQDQ. So we should be able
->>> to benefit.
->> Excuse me, how can crct10dif-pclmul.ko get loaded automatically?
->> Did you test CONFIG_CRYPTO_CRCT10DIF_PCLMUL=m with below debug message?
-> The code:
->
-> static const struct x86_cpu_id crct10dif_cpu_id[] = {
->           X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
->           {}
-> };
-> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
->
-> causes the following line to be added to modules.alias file:
->
-> alias x86cpu:vendor:*:family:*:model:*:feature:*0081* crct10dif_pclmul
->
-> This should cause udev to load the crct10dif_pclml module when cpu
-> support the PCLMULQDQ (feature code 0081).  I did my testing during
-> development on 3.10 and the module was indeed loaded.
->
-> However, I found that the following commit under 3.11-rc1 broke
-> the mechanism after some bisection.
->
-> commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
-> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Date:   Fri May 3 00:26:22 2013 +0200
->
->      ACPI / processor: Use common hotplug infrastructure
->      
->      Split the ACPI processor driver into two parts, one that is
->      non-modular, resides in the ACPI core and handles the enumeration
->      and hotplug of processors and one that implements the rest of the
->      existing processor driver functionality.
->      
-> Rafael, can you check and see if this can be fixed so those optimized
-> crypto modules for Intel cpu that support them can be loaded?
+Dave,
 
-I think this is an ordering issue between udev startup and the time when 
-devices are registered.
+On Thu, Jul 18, 2013 at 04:16:32PM -0500, Ben Myers wrote:
+> On Thu, Jul 18, 2013 at 01:42:03PM +1000, Dave Chinner wrote:
+> > On Wed, Jul 17, 2013 at 05:17:36PM -0700, Linus Torvalds wrote:
+> > > On Wed, Jul 17, 2013 at 4:40 PM, Ben Myers <bpm@sgi.com> wrote:
+> > > >>
+> > > >> We're still talking at cross purposes then.
+> > > >>
+> > > >> How the hell do you handle mmap() and page faulting?
+> > > >
+> > > > __xfs_get_blocks serializes access to the block map with the i_lock on the
+> > > > xfs_inode.  This appears to be racy with respect to hole punching.
+> > > 
+> > > Would it be possible to just make __xfs_get_blocks get the i_iolock
+> > > (non-exclusively)?
+> > 
+> > No. __xfs_get_blocks() operates on metadata (e.g. extent lists), and
+> > as such is protected by the i_ilock (note: not the i_iolock).  i.e.
+> > XFS has a multi-level locking strategy:
+> > 
+> > 	i_iolock is provided for *data IO serialisation*,
+> > 	i_ilock is for *inode metadata serialisation*.
+> 
+> I think if __xfs_get_blocks has some way of knowing it is the mmap/page fault
+> path, taking the iolock shared in addition to the ilock (in just that case)
+> would prevent the mmap from being able to read stale data from disk.  You would
+> see either the data before the punch or you would see the hole.  
+> 
+> Actually... I think that is wrong:  You'd have to take the iolock across the
+> read itself (not just the access to the block map) for it to have the desired
+> effect:
+> 
+> 1608 int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+> ...
+> 1704 page_not_uptodate:
+> 1705         /*
+> 1706          * Umm, take care of errors if the page isn't up-to-date.
+> 1707          * Try to re-read it _once_. We do this synchronously,
+> 1708          * because there really aren't any performance issues here
+> 1709          * and we need to check for errors.
+> 1710          */
+> 1711         ClearPageError(page);
+> 1712         error = mapping->a_ops->readpage(file, page);
+> 1713         if (!error) {
+> 1714                 wait_on_page_locked(page);
+> 1715                 if (!PageUptodate(page))
+> 1716                         error = -EIO;
+> 1717         }
+> 1718         page_cache_release(page);
+> 
+> Wouldn't you have to hold the iolock until after wait_on_page_locked returns?
 
-I wonder what happens if you put those modules into the initramfs image?
+Maybe like so (crappy/untested/probably wrong/fodder for ridicule/etc):
 
-Rafael
+Index: xfs/fs/xfs/xfs_aops.c
+===================================================================
+--- xfs.orig/fs/xfs/xfs_aops.c
++++ xfs/fs/xfs/xfs_aops.c
+@@ -1663,6 +1663,24 @@ xfs_vm_readpages(
+ 	return mpage_readpages(mapping, pages, nr_pages, xfs_get_blocks);
+ }
+ 
++void
++xfs_vm_fault_lock(
++	struct inode		*inode)
++{
++	struct xfs_inode	*ip = XFS_I(inode);
++
++	xfs_ilock(ip, XFS_IOLOCK_SHARED);
++}
++
++void
++xfs_vm_fault_unlock(
++	struct inode		*inode)
++{
++	struct xfs_inode	*ip = XFS_I(inode);
++
++	xfs_iunlock(ip, XFS_IOLOCK_SHARED);
++}
++
+ const struct address_space_operations xfs_address_space_operations = {
+ 	.readpage		= xfs_vm_readpage,
+ 	.readpages		= xfs_vm_readpages,
+@@ -1677,4 +1695,6 @@ const struct address_space_operations xf
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
+ 	.error_remove_page	= generic_error_remove_page,
++	.fault_lock		= xfs_vm_fault_lock,
++	.fault_unlock		= xfs_vm_fault_unlock,
+ };
+Index: xfs/mm/filemap.c
+===================================================================
+--- xfs.orig/mm/filemap.c
++++ xfs/mm/filemap.c
+@@ -1709,12 +1709,16 @@ page_not_uptodate:
+ 	 * and we need to check for errors.
+ 	 */
+ 	ClearPageError(page);
++	if (mapping->a_ops->fault_lock)
++		mapping->a_ops->fault_lock(inode);
+ 	error = mapping->a_ops->readpage(file, page);
+ 	if (!error) {
+ 		wait_on_page_locked(page);
+ 		if (!PageUptodate(page))
+ 			error = -EIO;
+ 	}
++	if (mapping->a_ops->fault_unlock)
++		mapping->a_ops->fault_unlock(inode);
+ 	page_cache_release(page);
+ 
+ 	if (!error || error == AOP_TRUNCATED_PAGE)
+Index: xfs/include/linux/fs.h
+===================================================================
+--- xfs.orig/include/linux/fs.h
++++ xfs/include/linux/fs.h
+@@ -388,6 +388,9 @@ struct address_space_operations {
+ 	int (*swap_activate)(struct swap_info_struct *sis, struct file *file,
+ 				sector_t *span);
+ 	void (*swap_deactivate)(struct file *file);
++
++	void (*fault_lock) (struct inode *inode);
++	void (*fault_unlock) (struct inode *inode);
+ };
+ 
+ extern const struct address_space_operations empty_aops;
 
-
-> Herbert, we had a discussion earlier on a separate issue regarding the
-> module load order.  We wanted to load all supported crypto t10dif modules
-> before the crc-t10dif module.  You mentioned that the MODULE_ALIAS also
-> need some fixing and wonder if those changes have been merged into
-> 3.11-rc1?  See https://lkml.org/lkml/2013/5/21/216 .  Theoretically, that
-> fix should also get all the crypto modules support t10dif be loaded.
->
-> Thanks.
->
-> Tim
->
->> diff --git a/arch/x86/crypto/crct10dif-pclmul_glue.c b/arch/x86/crypto/crct10dif-pclmul_glue.c
->> index 7845d7f..a8a95aa 100644
->> --- a/arch/x86/crypto/crct10dif-pclmul_glue.c
->> +++ b/arch/x86/crypto/crct10dif-pclmul_glue.c
->> @@ -129,9 +129,10 @@ MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
->>   
->>   static int __init crct10dif_intel_mod_init(void)
->>   {
->> +	printk(KERN_WARNING "********** Checking for X86_FEATURE_PCLMULQDQ\n");
->>   	if (!x86_match_cpu(crct10dif_cpu_id))
->>   		return -ENODEV;
->> -
->> +	printk(KERN_WARNING "********** Registering crct10dif-pclmul\n");
->>   	return crypto_register_shash(&alg);
->>   }
->>
->> As far as I tested, crct10dif-pclmul.ko will not be loaded unless manually
->> adding "modprobe crct10dif-pclmul" to initramfs's /init or choosing
->> CONFIG_CRYPTO_CRCT10DIF_PCLMUL=y.
->>
->>> So as long as the crct10dif.ko and crct10dif-pclmul.ko are loaded,
->>> the pclmulqdq t10dif will have a higher priority and get allocated
->>> and used.
->> What I'm talking are
->>
->>    (1) Since mkinitramfs is unable to know that crct10dif-pclmul.ko has higher
->>        priority than crct10dif.ko , mkinitramfs will not include
->>        "modprobe crct10dif-pclmul" line in the generated initramfs.
->>
->>    (2) In order to get benefit from PCLMULQDQ, users have to manually make sure
->>        that "modprobe crct10dif-pclmul" is called before crc-t10dif.ko (which is
->>        loaded before sd_mod.ko is loaded) is loaded by their initramfs's /init
->>        script.
->>
->>    (3) The cause of (1) is that crct10dif-pclmul.ko will not be loaded
->>        automatically unless choosing CONFIG_CRYPTO_CRCT10DIF_PCLMUL=y.
->>
->>    (4) The cause of (3) is that modules.dep does not describe that users will
->>        benefit by loading crct10dif-pclmul.ko before loading crc-t10dif.ko .
->>
->>    (5) Currently crct10dif-pclmul.ko cannot be loaded if PCLMULQDQ is not
->>        supported. This leads to boot failure (since sd_mod.ko cannot be loaded)
->>        if modules.dep says that "crct10dif-pclmul.ko is required by
->>        crc-t10dif.ko".
->>
->>    (6) To solve (4) and (5), modules.dep should say "crct10dif-pclmul.ko is
->>        preferred for crc-t10dif.ko but is not required by crc-t10dif.ko".
->>        But there is no such mechanism. Thus, currently available choice is
->>        "allow loading crct10dif-pclmul.ko even if PCLMULQDQ is not supported"
->>        or "ignore errors by built-in the crct10dif-pclmul.ko module".
->>
->> My patch (b) seems to be complicated but is required in order to solve (4)
->> without asking users to manually add "modprobe crct10dif-pclmul" into their
->> initramfs. If we choose patch (b) rather than patch (a), we need to solve (5).
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-
----------------------------------------------------------------------
-Intel Technology Poland sp. z o.o.
-z siedziba w Gdansku
-ul. Slowackiego 173
-80-298 Gdansk
-
-Sad Rejonowy Gdansk Polnoc w Gdansku, 
-VII Wydzial Gospodarczy Krajowego Rejestru Sadowego, 
-numer KRS 101882
-
-NIP 957-07-52-316
-Kapital zakladowy 200.000 zl
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
