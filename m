@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab3GRIyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:54:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39989 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757575Ab3GRIyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:54:00 -0400
+	id S1757754Ab3GRIyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:54:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54632 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757531Ab3GRIx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 04:53:58 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <benoit.cousson@linaro.org>
 CC: <p.zabel@pengutronix.de>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 5/6] ARM: dts: omap3-beagle-xm: Add USB Host support
-Date: Thu, 18 Jul 2013 11:53:09 +0300
-Message-ID: <1374137590-17865-6-git-send-email-rogerq@ti.com>
+Subject: [PATCH 6/6] ARM: dts: omap3-beagle: Make USB host pin naming consistent
+Date: Thu, 18 Jul 2013 11:53:10 +0300
+Message-ID: <1374137590-17865-7-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1374137590-17865-1-git-send-email-rogerq@ti.com>
 References: <1374137590-17865-1-git-send-email-rogerq@ti.com>
@@ -24,75 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide RESET controller and Power regulator for the USB PHY,
-the USB Host port mode and the PHY device. Provide
-pin multiplexer information for USB host pins.
-
-We also relocate omap3_pmx_core pin definations so that they
-are close to omap3_pmx_wkup pin definations.
+Use a common naming scheme "mode0name.modename flags" for the
+USB host pins to be consistent.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap3-beagle-xm.dts |   75 +++++++++++++++++++++++++++++----
- 1 files changed, 66 insertions(+), 9 deletions(-)
+ arch/arm/boot/dts/omap3-beagle.dts |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-index afdb164..2273c24 100644
---- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-+++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-@@ -69,6 +69,33 @@
- 		};
+diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+index 01fbad6..27aed65 100644
+--- a/arch/arm/boot/dts/omap3-beagle.dts
++++ b/arch/arm/boot/dts/omap3-beagle.dts
+@@ -100,18 +100,18 @@
  
- 	};
-+
-+	/* HS USB Port 2 RESET */
-+	hsusb2_reset: hsusb2_reset {
-+		compatible = "gpio-reset";
-+		reset-gpios = <&gpio5 19 GPIO_ACTIVE_LOW>; /* gpio_147 */
-+		reset-delay-us = <70000>;
-+		initially-in-reset;
-+		#reset-cells = <0>;
-+	};
-+
-+	/* HS USB Port 2 Power */
-+	hsusb2_power: hsusb2_power_reg {
-+		compatible = "regulator-fixed";
-+		regulator-name = "hsusb2_vbus";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
-+		startup-delay-us = <70000>;
-+	};
-+
-+	/* HS USB Host PHY on PORT 2 */
-+	hsusb2_phy: hsusb2_phy {
-+		compatible = "usb-nop-xceiv";
-+		resets = <&hsusb2_reset>;
-+		reset-names = "reset";
-+		vcc-supply = <&hsusb2_power>;
-+	};
- };
- 
- &omap3_pmx_wkup {
-@@ -79,6 +106,37 @@
- 	};
- };
- 
-+&omap3_pmx_core {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+			&hsusbb2_pins
-+	>;
-+
-+	uart3_pins: pinmux_uart3_pins {
-+		pinctrl-single,pins = <
-+			0x16e (PIN_INPUT | PIN_OFF_WAKEUPENABLE | MUX_MODE0) /* uart3_rx_irrx.uart3_rx_irrx */
-+			0x170 (PIN_OUTPUT | MUX_MODE0) /* uart3_tx_irtx.uart3_tx_irtx OUTPUT | MODE0 */
-+		>;
-+	};
-+
-+	hsusbb2_pins: pinmux_hsusbb2_pins {
-+		pinctrl-single,pins = <
+ 	hsusbb2_pins: pinmux_hsusbb2_pins {
+ 		pinctrl-single,pins = <
+-			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* usbb2_ulpitll_clk.usbb1_ulpiphy_clk */
+-			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* usbb2_ulpitll_clk.usbb1_ulpiphy_stp */
+-			0x5c4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dir */
+-			0x5c6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_nxt */
+-			0x5c8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat0 */
+-			0x5cA (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat1 */
+-			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat2 */
+-			0x1a6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat3 */
+-			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat4 */
+-			0x1aa (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat5 */
+-			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat6 */
+-			0x1ae (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* usbb2_ulpitll_clk.usbb1_ulpiphy_dat7 */
 +			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
 +			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
 +			0x5c4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
@@ -105,41 +65,9 @@ index afdb164..2273c24 100644
 +			0x1aa (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_somi.hsusb2_data5 */
 +			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs0.hsusb2_data6 */
 +			0x1ae (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
-+		>;
-+	};
-+};
-+
- &i2c1 {
- 	clock-frequency = <2600000>;
+ 		>;
+ 	};
  
-@@ -148,15 +206,6 @@
- 	power = <50>;
- };
- 
--&omap3_pmx_core {
--	uart3_pins: pinmux_uart3_pins {
--		pinctrl-single,pins = <
--			0x16e (PIN_INPUT | PIN_OFF_WAKEUPENABLE | MUX_MODE0) /* uart3_rx_irrx.uart3_rx_irrx */
--			0x170 (PIN_OUTPUT | MUX_MODE0) /* uart3_tx_irtx.uart3_tx_irtx OUTPUT | MODE0 */
--		>;
--	};
--};
--
- &uart3 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&uart3_pins>;
-@@ -166,3 +215,11 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&gpio1_pins>;
- };
-+
-+&usbhshost {
-+	port2-mode = "ehci-phy";
-+};
-+
-+&usbhsehci {
-+	phys = <0 &hsusb2_phy>;
-+};
 -- 
 1.7.4.1
 
