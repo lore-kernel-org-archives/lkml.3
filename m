@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab3GRFAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 01:00:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51651 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab3GRFAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 01:00:21 -0400
-Date: Thu, 18 Jul 2013 05:59:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, CAI Qian <caiqian@redhat.com>,
-        David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Message-ID: <20130718045959.GV4165@ZenIV.linux.org.uk>
-References: <51E5D7C8.5000306@gmail.com>
- <1374018809.2249.29.camel@leira.trondhjem.org>
- <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>
- <20130717144849.GB16513@xanatos>
- <1374073771.6458.143.camel@gandalf.local.home>
- <alpine.DEB.2.02.1307171759100.8258@kaball.uk.xensource.com>
- <CAMP44s1zvPPDwu=HdhxBm5PqrtyCfvE05=XdwrfPJ-yK2ZsVKA@mail.gmail.com>
- <alpine.DEB.2.02.1307171824020.8258@kaball.uk.xensource.com>
- <20130717184244.GU4165@ZenIV.linux.org.uk>
- <20130717222418.GG17906@xanatos>
+	id S1752336Ab3GRFEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 01:04:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47062 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626Ab3GRFEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 01:04:23 -0400
+Message-ID: <51E7772D.1050609@zytor.com>
+Date: Wed, 17 Jul 2013 22:03:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130717222418.GG17906@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: CAI Qian <caiqian@redhat.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+References: <20130715155202.GC29526@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <alpine.DEB.2.02.1307172336410.4089@ionos.tec.linutronix.de> <1368728064.2419741.1374117402465.JavaMail.root@redhat.com> <1374119254.6458.220.camel@gandalf.local.home> <305037674.2433057.1374120078349.JavaMail.root@redhat.com>
+In-Reply-To: <305037674.2433057.1374120078349.JavaMail.root@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 03:24:18PM -0700, Sarah Sharp wrote:
+On 07/17/2013 09:01 PM, CAI Qian wrote:
+> 
+> Please don't get me wrong. I did neither compare Linus to those child abusers
+> nor Thomas to those children. I simply pointed out there is also some common
+> sense need to consider.
+>
 
-> > > Abuse is never justified, I hope that's clear for everybody.
-> > 
-> > Depends on details of your definition of abuse.
-[snip]
-> http://outofthefog.net/CommonBehaviors/VerbalAbuse.html
+Actually, you did.
 
-"   "Always" and "Never" Statements - "Always" and "Never" Statements are
-   declarations containing the words "always" or "never". They are
-   commonly used but rarely true.
-"
+	-hpa
 
-See above...  And as far as I can see in this thread, there *is* a pattern
-of that by Stefano; should that be interpreted as verbal abuse?
 
-> Key ones that apply to LKML communications:  belittlement, demeaning
-> statements, hysteria, name-calling, raging and violent statements, and
-> mocking sarcasm.
 
-"   Targeted Humor, Mocking and Sarcasm - Targeted Humor is any sustained
-   pattern of joking, sarcasm or mockery which is designed to reduce
-   another individual's reputation in their own eyes or in the eyes of
-   others.
-"
-
-s/individual's reputation/appeal of a bad idea being proposed/ and you'll
-get something that is not only justified, but highly valuable.
