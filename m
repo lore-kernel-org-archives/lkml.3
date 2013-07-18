@@ -1,76 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab3GRKkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:40:16 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:47486 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758530Ab3GRKkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:40:12 -0400
-Date: Thu, 18 Jul 2013 12:40:04 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v7 0/5] kdump: Allow ELF header creation in new kernel
-Message-ID: <20130718124004.098b85f4@holzheu>
-In-Reply-To: <20130717214207.GB27633@redhat.com>
-References: <OF6010D9F0.5A45F2CF-ONC1257BAB.002B1F3E-C1257BAB.002B2812@de.ibm.com>
-	<20130717180049.3b9c6ec8@holzheu>
-	<20130717214207.GB27633@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071810-8372-0000-0000-0000069CC4D1
+	id S932182Ab3GRKgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:36:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56267 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757953Ab3GRKgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 06:36:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
+   d="scan'208";a="347700686"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V8 06/15] perf tools: remove unnecessary callchain validation
+Date: Thu, 18 Jul 2013 13:42:48 +0300
+Message-Id: <1374144177-24762-7-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013 17:42:07 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Jul 17, 2013 at 06:00:49PM +0200, Michael Holzheu wrote:
+Now that the sample parsing correctly checks data sizes
+there is no reason for it to be done again for callchains.
 
-[snip]
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/callchain.c |  8 --------
+ tools/perf/util/callchain.h |  5 -----
+ tools/perf/util/session.c   | 20 --------------------
+ 3 files changed, 33 deletions(-)
 
-> > But this is all additional effort now and would not be necessary if we
-> > integrate this patch series in 3.11.
-> > 
-> > Perhaps we should let Andrew decide here.
-> 
-> Hi Michael,
-> 
-> Given the fact that andrew too prefers a fix to get s390 working at this
-> stage can we modify s390 copy_from_oldmem() to be able to copy to 
-> vmalloc() memory area.
-> 
-> For mmap(), let us disable it on s390. And rest of the cleanups w.r.t
-> ELF header swap etc, let us now target that for 3.12.
-> 
-> Sounds reasonable?
-
-Hi Vivek,
-
-Ok this is not our preferred solution but we can't expect that life is
-always easy ;-)
-
-Our s390 kernel maintainer Martin Schwidefsky agreed to send the following
-two patches upstream for 3.11:
-
- * s390/kdump: Disable mmap for s390
- * s390/kdump: Allow copy_oldmem_page() copy to virtual memory
-
-@Andrew:
-
-Would you then take the "ELF header in new memory" patch series for 3.12?
-
-Regards,
-Michael
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 42b6a63..024162a 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -20,14 +20,6 @@
+ 
+ __thread struct callchain_cursor callchain_cursor;
+ 
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event)
+-{
+-	unsigned int chain_size = event->header.size;
+-	chain_size -= (unsigned long)&event->ip.__more_data - (unsigned long)event;
+-	return chain->nr * sizeof(u64) <= chain_size;
+-}
+-
+ #define chain_for_each_child(child, parent)	\
+ 	list_for_each_entry(child, &parent->children, siblings)
+ 
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 3ee9f67..988c1aa 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -103,11 +103,6 @@ int callchain_append(struct callchain_root *root,
+ int callchain_merge(struct callchain_cursor *cursor,
+ 		    struct callchain_root *dst, struct callchain_root *src);
+ 
+-struct ip_callchain;
+-union perf_event;
+-
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event);
+ /*
+  * Initialize a cursor before adding entries inside, but keep
+  * the previously allocated entries as a cache.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 708c72b..1b07d7a 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -889,22 +889,6 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 	}
+ }
+ 
+-static int perf_session__preprocess_sample(struct perf_session *session,
+-					   union perf_event *event, struct perf_sample *sample)
+-{
+-	if (event->header.type != PERF_RECORD_SAMPLE ||
+-	    !sample->callchain)
+-		return 0;
+-
+-	if (!ip_callchain__valid(sample->callchain, event)) {
+-		pr_debug("call-chain problem with event, skipping it.\n");
+-		++session->stats.nr_invalid_chains;
+-		session->stats.total_invalid_chains += sample->period;
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+ static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+ 					    struct perf_tool *tool, u64 file_offset)
+ {
+@@ -967,10 +951,6 @@ static int perf_session__process_event(struct perf_session *session,
+ 	if (ret)
+ 		return ret;
+ 
+-	/* Preprocess sample records - precheck callchains */
+-	if (perf_session__preprocess_sample(session, event, &sample))
+-		return 0;
+-
+ 	if (tool->ordered_samples) {
+ 		ret = perf_session_queue_event(session, event, &sample,
+ 					       file_offset);
+-- 
+1.7.11.7
 
