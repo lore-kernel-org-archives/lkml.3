@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab3GRMAu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 08:00:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27972 "EHLO mx1.redhat.com"
+	id S1758874Ab3GRMCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 08:02:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47198 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757183Ab3GRMAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 08:00:49 -0400
-Message-ID: <51E7D89A.8010009@redhat.com>
-Date: Thu, 18 Jul 2013 07:59:22 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1757578Ab3GRMCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 08:02:40 -0400
+Message-ID: <51E7D90D.6070101@ti.com>
+Date: Thu, 18 Jul 2013 15:01:17 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too frequently
-References: <20130716202015.GX17211@twins.programming.kicks-ass.net> <1374014881.2332.21.camel@j-VirtualBox> <20130717072504.GY17211@twins.programming.kicks-ass.net> <1374048701.6000.21.camel@j-VirtualBox> <20130717093913.GP23818@dyad.programming.kicks-ass.net> <1374076741.7412.35.camel@j-VirtualBox> <20130717161815.GR23818@dyad.programming.kicks-ass.net> <51E6D9B7.1030705@redhat.com> <20130717180156.GS23818@dyad.programming.kicks-ass.net> <1374120144.1816.45.camel@j-VirtualBox> <20130718093218.GH27075@twins.programming.kicks-ass.net>
-In-Reply-To: <20130718093218.GH27075@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 3/3] ARM: dts: omap4-sdp: add dynamic pin states for uart3/4
+References: <1374061312-25469-1-git-send-email-grygorii.strashko@ti.com> <1374061312-25469-4-git-send-email-grygorii.strashko@ti.com> <20130717153248.GI7656@atomide.com> <51E6C939.40208@ti.com> <20130718080953.GR7656@atomide.com> <51E7AD38.6010108@ti.com> <20130718090408.GU7656@atomide.com>
+In-Reply-To: <20130718090408.GU7656@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 05:32 AM, Peter Zijlstra wrote:
-> On Wed, Jul 17, 2013 at 09:02:24PM -0700, Jason Low wrote:
->
->> I ran a few AIM7 workloads for the 8 socket HT enabled case and I needed
->> to set N to more than 20 in order to get the big performance gains.
+Hi Tony,
+
+On 07/18/2013 12:04 PM, Tony Lindgren wrote:
+> * Grygorii Strashko <grygorii.strashko@ti.com> [130718 02:01]:
+>> On 07/18/2013 11:09 AM, Tony Lindgren wrote:
 >>
->> One thing that I thought of was to have N be based on how often idle
->> balance attempts does not pull task(s).
->>
->> For example, N can be calculated based on the number of idle balance
->> attempts for the CPU  since the last "successful" idle balance attempt.
->> So if the previous 30 idle balance attempts resulted in no tasks moved,
->> then n = 30 / 5. So idle balance gets less time to run as the number of
->> unneeded idle balance attempts increases, and thus N will not be set too
->> high during situations where idle balancing is "successful" more often.
->> Any comments on this idea?
+>> Don't think it's debug code - IO chain need to be rearmed after each
+>> PRCM IO IRQ - otherwise IO wakeup events may be lost (at least on
+>> OMAP4, OMAP5 requires more complex handling(( ).
 >
-> It would be good to get a solid explanation for why we need such high N.
-> But yes that might work.
+> Nope, only after the mux register changes. I've verified it on
+> am3730 with off-idle for both serial and wl12xx.
 
-I have some idea, though no proof :)
+Unfortunately, there is a possibility to lose wake up events in case if
+IO daisy chain will be rearmed (this will clean up all WAKEUPEVENT bits)
+while there is some pending  WAKEUP event present. In this case, 
+pcs_omap_handle_irq() will not call generic_handle_irq(wakeirq).
 
-I suspect a lot of the idle balancing time is spent waiting for
-and acquiring the runqueue locks of remote CPUs.
+The below patch contains explanation of such kind of issue we've solved
+in K3.4
+http://git.omapzoom.org/?p=kernel/omap.git;a=commit;h=5ff316db224a2c3c23bfe44261275d520b4f78bb
 
-If we spend half our idle time causing contention to remote
-runqueue locks, we could be a big factor in keeping those other
-CPUs from getting work done.
+Currently, in Mainline the same is possible on OMAP4 (which is SMP) if
+some Device will be switched to idle and rearm IO chain while there is
+pending WAKEUP event form USB for example. So, IO rearming need to be 
+delayed until PRCM irq will be served served and PRCM irq handler should 
+finally rearm IO daisy chain.
 
--- 
-All rights reversed
+
+>
+>> I didn't pick up your padconf patches yet -seems i need to be in sync :)
+>
+> Well you need those for proper wake-up event support..
+>
+>> Below the diff I used to verify IO wake up (It follows old IO daisy
+>> chain hanlding models in hwmod before DT):
+>
+> ..then these changes not needed with the pinctrl-single changes.
+>
+> Regards,
+>
+> Tony
+>
+
