@@ -1,152 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300Ab3GRRmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 13:42:44 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:42294 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758954Ab3GRRmm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 13:42:42 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Minchan Kim <minchan@kernel.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Cc: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: hugepage related lockdep trace.
-In-Reply-To: <20130718000901.GA31972@blaptop>
-References: <20130717153223.GD27731@redhat.com> <20130718000901.GA31972@blaptop>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 18 Jul 2013 23:12:24 +0530
-Message-ID: <87hafrdatb.fsf@linux.vnet.ibm.com>
+	id S1759311Ab3GRRu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 13:50:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44010 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759049Ab3GRRu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 13:50:27 -0400
+Date: Thu, 18 Jul 2013 19:50:25 +0200
+From: David Sterba <dsterba@suse.cz>
+To: chandan <chandan@linux.vnet.ibm.com>
+Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs_read_block_groups: Use enums to index
+ btrfs_space_info->block_groups.
+Message-ID: <20130718175024.GP24343@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz,
+	chandan <chandan@linux.vnet.ibm.com>,
+	Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1650034.SFcoKv6ShF@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071817-1618-0000-0000-0000044BE4C1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1650034.SFcoKv6ShF@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minchan Kim <minchan@kernel.org> writes:
+On Tue, Jul 16, 2013 at 03:03:12PM +0530, chandan wrote:
+> >From 33e376755b8a928610032a1cef024dcdd980aee3 Mon Sep 17 00:00:00 2001
+> From: chandan <chandan@linux.vnet.ibm.com>
+> Date: Tue, 16 Jul 2013 12:28:56 +0530
+> Subject: [PATCH] btrfs_read_block_groups: Use enums to index
+>  btrfs_space_info->block_groups.
+> 
+> The current code uses integer literals to index
+> btrfs_space_info->block_groups[] array. Instead use corresponding
+> enums from 'enum btrfs_raid_types'.
+> 
+> Signed-off-by: chandan <chandan@linux.vnet.ibm.com>
 
-> Ccing people get_maintainer says.
->
-> On Wed, Jul 17, 2013 at 11:32:23AM -0400, Dave Jones wrote:
->> [128095.470960] =================================
->> [128095.471315] [ INFO: inconsistent lock state ]
->> [128095.471660] 3.11.0-rc1+ #9 Not tainted
->> [128095.472156] ---------------------------------
->> [128095.472905] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
->> [128095.473650] kswapd0/49 [HC0[0]:SC0[0]:HE1:SE1] takes:
->> [128095.474373]  (&mapping->i_mmap_mutex){+.+.?.}, at: [<c114971b>] page_referenced+0x87/0x5e3
->> [128095.475128] {RECLAIM_FS-ON-W} state was registered at:
->> [128095.475866]   [<c10a6232>] mark_held_locks+0x81/0xe7
->> [128095.476597]   [<c10a8db3>] lockdep_trace_alloc+0x5e/0xbc
->> [128095.477322]   [<c112316b>] __alloc_pages_nodemask+0x8b/0x9b6
->> [128095.478049]   [<c1123ab6>] __get_free_pages+0x20/0x31
->> [128095.478769]   [<c1123ad9>] get_zeroed_page+0x12/0x14
->> [128095.479477]   [<c113fe1e>] __pmd_alloc+0x1c/0x6b
->> [128095.480138]   [<c1155ea7>] huge_pmd_share+0x265/0x283
->> [128095.480138]   [<c1155f22>] huge_pte_alloc+0x5d/0x71
->> [128095.480138]   [<c115612e>] hugetlb_fault+0x7c/0x64a
->> [128095.480138]   [<c114087c>] handle_mm_fault+0x255/0x299
->> [128095.480138]   [<c15bbab0>] __do_page_fault+0x142/0x55c
->> [128095.480138]   [<c15bbed7>] do_page_fault+0xd/0x16
->> [128095.480138]   [<c15b927c>] error_code+0x6c/0x74
->> [128095.480138] irq event stamp: 3136917
->> [128095.480138] hardirqs last  enabled at (3136917): [<c15b8139>] _raw_spin_unlock_irq+0x27/0x50
->> [128095.480138] hardirqs last disabled at (3136916): [<c15b7f4e>] _raw_spin_lock_irq+0x15/0x78
->> [128095.480138] softirqs last  enabled at (3136180): [<c1048e4a>] __do_softirq+0x137/0x30f
->> [128095.480138] softirqs last disabled at (3136175): [<c1049195>] irq_exit+0xa8/0xaa
->> [128095.480138] 
->> other info that might help us debug this:
->> [128095.480138]  Possible unsafe locking scenario:
->> 
->> [128095.480138]        CPU0
->> [128095.480138]        ----
->> [128095.480138]   lock(&mapping->i_mmap_mutex);
->> [128095.480138]   <Interrupt>
->> [128095.480138]     lock(&mapping->i_mmap_mutex);
->> [128095.480138] 
->>  *** DEADLOCK ***
->> 
->> [128095.480138] no locks held by kswapd0/49.
->> [128095.480138] 
->> stack backtrace:
->> [128095.480138] CPU: 1 PID: 49 Comm: kswapd0 Not tainted 3.11.0-rc1+ #9
->> [128095.480138] Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
->> [128095.480138]  c1d32630 00000000 ee39fb18 c15b001e ee395780 ee39fb54 c15acdcb c1751845
->> [128095.480138]  c1751bbf 00000031 00000000 00000000 00000000 00000000 00000001 00000001
->> [128095.480138]  c1751bbf 00000008 ee395c44 00000100 ee39fb88 c10a6130 00000008 0000d8fb
->> [128095.480138] Call Trace:
->> [128095.480138]  [<c15b001e>] dump_stack+0x4b/0x79
->> [128095.480138]  [<c15acdcb>] print_usage_bug+0x1d9/0x1e3
->> [128095.480138]  [<c10a6130>] mark_lock+0x1e0/0x261
->> [128095.480138]  [<c10a5878>] ? check_usage_backwards+0x109/0x109
->> [128095.480138]  [<c10a6cde>] __lock_acquire+0x623/0x17f2
->> [128095.480138]  [<c107aa43>] ? sched_clock_cpu+0xcd/0x130
->> [128095.480138]  [<c107a7e8>] ? sched_clock_local+0x42/0x12e
->> [128095.480138]  [<c10a84cf>] lock_acquire+0x7d/0x195
->> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
->> [128095.480138]  [<c15b3671>] mutex_lock_nested+0x6c/0x3a7
->> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
->> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
->> [128095.480138]  [<c11661d5>] ? mem_cgroup_charge_statistics.isra.24+0x61/0x9e
->> [128095.480138]  [<c114971b>] page_referenced+0x87/0x5e3
->> [128095.480138]  [<f8433030>] ? raid0_congested+0x26/0x8a [raid0]
->> [128095.480138]  [<c112b9c7>] shrink_page_list+0x3d9/0x947
->> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
->> [128095.480138]  [<c112c3cf>] shrink_inactive_list+0x155/0x4cb
->> [128095.480138]  [<c112cd07>] shrink_lruvec+0x300/0x5ce
->> [128095.480138]  [<c112d028>] shrink_zone+0x53/0x14e
->> [128095.480138]  [<c112e531>] kswapd+0x517/0xa75
->> [128095.480138]  [<c112e01a>] ? mem_cgroup_shrink_node_zone+0x280/0x280
->> [128095.480138]  [<c10661ff>] kthread+0xa8/0xaa
->> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
->> [128095.480138]  [<c15bf737>] ret_from_kernel_thread+0x1b/0x28
->> [128095.480138]  [<c1066157>] ? insert_kthread_work+0x63/0x63
->
-> IMHO, it's a false positive because i_mmap_mutex was held by kswapd
-> while one in the middle of fault path could be never on kswapd context.
->
-> It seems lockdep for reclaim-over-fs isn't enough smart to identify
-> between background and direct reclaim.
->
-> Wait for other's opinion.
-
-Is that reasoning correct ?. We may not deadlock because hugetlb pages
-cannot be reclaimed. So the fault path in hugetlb won't end up
-reclaiming pages from same inode. But the report is correct right ?
-
-
-Looking at the hugetlb code we have in huge_pmd_share
-
-out:
-	pte = (pte_t *)pmd_alloc(mm, pud, addr);
-	mutex_unlock(&mapping->i_mmap_mutex);
-	return pte;
-
-I guess we should move that pmd_alloc outside i_mmap_mutex. Otherwise
-that pmd_alloc can result in a reclaim which can call shrink_page_list ?
-
-Something like  ?
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 83aff0a..2cb1be3 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -3266,8 +3266,8 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 		put_page(virt_to_page(spte));
- 	spin_unlock(&mm->page_table_lock);
- out:
--	pte = (pte_t *)pmd_alloc(mm, pud, addr);
- 	mutex_unlock(&mapping->i_mmap_mutex);
-+	pte = (pte_t *)pmd_alloc(mm, pud, addr);
- 	return pte;
- }
- 
--aneesh
-
-
-
+Reviewed-by: David Sterba <dsterba@suse.cz>
