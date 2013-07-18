@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab3GRK65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:58:57 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48167 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770Ab3GRK64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:58:56 -0400
-Date: Thu, 18 Jul 2013 11:58:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: boris brezillon <b.brezillon@overkiz.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20130718105846.GJ22506@sirena.org.uk>
-References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
- <1374133720-27362-1-git-send-email-b.brezillon@overkiz.com>
- <20130718095337.GD22506@sirena.org.uk>
- <51E7C1B2.8000206@overkiz.com>
+	id S1758738Ab3GRLAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:00:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55486 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757770Ab3GRLAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 07:00:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
+   d="scan'208";a="347708597"
+Message-ID: <51E7CABD.3040105@intel.com>
+Date: Thu, 18 Jul 2013 19:00:13 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V9E4GD/88frki9uz"
-Content-Disposition: inline
-In-Reply-To: <51E7C1B2.8000206@overkiz.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 5/5] ASoC: atmel-ssc: remove clk_disable_unprepare
- call from critical section
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, eranian@google.com,
+        ak@linux.intel.com
+Subject: Re: [PATCH] perf, x86: Add Silvermont (22nm Atom) support
+References: <1374125767-9411-1-git-send-email-zheng.z.yan@intel.com> <51E77F90.3040007@intel.com> <20130718084249.GD27075@twins.programming.kicks-ass.net>
+In-Reply-To: <20130718084249.GD27075@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/18/2013 04:42 PM, Peter Zijlstra wrote:
+> On Thu, Jul 18, 2013 at 01:39:28PM +0800, Yan, Zheng wrote:
+>> On 07/18/2013 01:36 PM, Yan, Zheng wrote:
+>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>>
+>>> Compare to old atom, Silvermont has offcore and has more events
+>>> that support PEBS.
+>>>
+>>> Silvermont has two offcore response configuration MSRs, but the
+>>> event code for OFFCORE_RSP_1 is 0x02b7. To avoid complicating
+>>> intel_fixup_er(), use INTEL_UEVENT_EXTRA_REG to define offcore
+>>> MSRs. So intel_fixup_er() can find the code for OFFCORE_RSP_1
+>>> by x86_pmu.extra_regs[1].event.
+>>>
+>>
+>> Document is at http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-optimization-manual.pdf, but it has no PEBS event list.
+> 
+> Why isn't this in the regular SDM like all the other stuff?
+> 
 
---V9E4GD/88frki9uz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I don't know, probably they still haven't finished the document yet. (above PDF has no PEBS event list). 
 
-On Thu, Jul 18, 2013 at 12:21:38PM +0200, boris brezillon wrote:
-
-> I can send you the whole series if you want (already sent to LKML
-> and LAKML).
-
-> But I'd like to understand who I should send patches from this series to.
-
-When you send me patch 5/5 with no other information on the rest of the
-series I've no idea if there's any dependencies on the other code or
-anything like that.  The key thing here is to make sure the people
-getting the patch can understand the interdependencies somehow.
-
-If you're sending a bunch of unrelated changes with no dependencies
-you're better off sending them all separately rather than as a part of a
-series.
-
---V9E4GD/88frki9uz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR58piAAoJELSic+t+oim9rnIP/jrPFnmFAnocqH0df+CKoI6o
-oI7RDWuMcmusIi2qOqknVIRJoV9o5pWSQMA00LppcNjDJDD1DErb4JKFFInmoLYS
-0AnKepYXn7MoidjVymPbblZlVQILbpD1ryxsWd+NwmM24RGhB/wTXEKxtWzvlRk+
-FQ85AWpDkg9Ewp5oPOl7km2Xvfm42StjCuo61IgZaC1O+M+C6f986Oiv8CnnRzLW
-ChKBTk3k2gMiZHogbxaO+wMDkW3uUF0HFlBFwKRimoC2tImStEI1YcNzogfWZWMB
-fuygYPDa7s8WXsysdE0gpO7QK3jZdMmOcHdtEq+FfaUC4W+Q/rg4GKyADYzFLAam
-VW+cPqjhkGphA7xuvdmJ9dJGd+Cij2BROOdWFTzEkyz9JK5FXK/D89DTfrBsAY8V
-SBCJMsB6OuQKvA+P5Y2ckPPjfMnOopsCCaErtMtLgVbSjTEeoqd2OqmwU9qyDlM5
-tp7Gw51pKPQhLmMzQaWi1qSMD7IAKn2S7N8JT50DKCYTW/1FK3NJdGN6BHAc636l
-3s+mWUZ5Q6GTXwZlDp6H1CF8RyiyWxPim6lhrfCGfEfe0QLokEERyuRHszqhMJVO
-ekZ192YUTc+ygz8r0/WuiNndIYYRLpGOqZIfwt2XhrYB85U+1myXj+Xp2211PKGz
-M7yRVKM/hiqG22k+QdPH
-=yCaG
------END PGP SIGNATURE-----
-
---V9E4GD/88frki9uz--
