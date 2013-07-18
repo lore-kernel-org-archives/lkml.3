@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965290Ab3GRUDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:03:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41594 "EHLO
+	id S965252Ab3GRUDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:03:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41601 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759434Ab3GRTuZ (ORCPT
+	with ESMTP id S1759438Ab3GRTuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:25 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/76] perf tests: Make TEST_ASSERT_VAL global
-Date: Thu, 18 Jul 2013 16:48:52 -0300
-Message-Id: <1374177003-3706-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/76] perf tools: Do not elide parent symbol column
+Date: Thu, 18 Jul 2013 16:48:58 -0300
+Message-Id: <1374177003-3706-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -31,7 +31,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Making TEST_ASSERT_VAL global as it's used in multiple objects.
+I found the parent symbol column data interesting even
+if there's another sorting enabled. Switching it on.
+
+Previous behaviour:
+  $ perf report -i perf.data.delete -p perf_session__delete -x
+
+  +   3.60%  perf  perf               [.] __rb_change_child
+  +   1.89%  perf  perf               [.] rb_erase
+  +   1.89%  perf  perf               [.] rb_erase
+  +   1.83%  perf  perf               [.] free@plt
+
+Current behaviour:
+  $ perf report -i perf.data.delete -p perf_session__delete -x
+
+  +   3.60%  perf  perf               [.] __rb_change_child        perf_session__delete
+  +   1.89%  perf  perf               [.] rb_erase                 perf_session__delete_dead_threads
+  +   1.89%  perf  perf               [.] rb_erase                 perf_session__delete_threads
+  +   1.83%  perf  perf               [.] free@plt                 perf_session__delete
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Andi Kleen <ak@linux.intel.com>
@@ -42,71 +59,31 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1370612223-19188-3-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/n/tip-r79fn89bhqz16ixa5zmyflrd@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/dso-data.c     | 8 --------
- tools/perf/tests/parse-events.c | 8 --------
- tools/perf/tests/tests.h        | 8 ++++++++
- 3 files changed, 8 insertions(+), 16 deletions(-)
+ tools/perf/builtin-report.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 5eaffa2..dffe055 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -10,14 +10,6 @@
- #include "symbol.h"
- #include "tests.h"
- 
--#define TEST_ASSERT_VAL(text, cond) \
--do { \
--	if (!(cond)) { \
--		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
--		return -1; \
--	} \
--} while (0)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3662047..6ab49da 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -931,14 +931,6 @@ repeat:
+ 	if (parent_pattern != default_parent_pattern) {
+ 		if (sort_dimension__add("parent") < 0)
+ 			goto error;
 -
- static char *test_file(int size)
- {
- 	static char buf_templ[] = "/tmp/test-XXXXXX";
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 0275bab..ad950f5 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -7,14 +7,6 @@
- #include "tests.h"
- #include <linux/hw_breakpoint.h>
+-		/*
+-		 * Only show the parent fields if we explicitly
+-		 * sort that way. If we only use parent machinery
+-		 * for filtering, we don't want it.
+-		 */
+-		if (!strstr(sort_order, "parent"))
+-			sort_parent.elide = 1;
+ 	}
  
--#define TEST_ASSERT_VAL(text, cond) \
--do { \
--	if (!(cond)) { \
--		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
--		return -1; \
--	} \
--} while (0)
--
- #define PERF_TP_SAMPLE_TYPE (PERF_SAMPLE_RAW | PERF_SAMPLE_TIME | \
- 			     PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
- 
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index dd7feae..07a92f9 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -1,6 +1,14 @@
- #ifndef TESTS_H
- #define TESTS_H
- 
-+#define TEST_ASSERT_VAL(text, cond)					 \
-+do {									 \
-+	if (!(cond)) {							 \
-+		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
-+		return -1;						 \
-+	}								 \
-+} while (0)
-+
- enum {
- 	TEST_OK   =  0,
- 	TEST_FAIL = -1,
+ 	if (argc) {
 -- 
 1.8.1.4
 
