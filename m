@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758996Ab3GRNsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 09:48:13 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21059 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751709Ab3GRNsL (ORCPT
+	id S1758924Ab3GRNuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 09:50:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55492 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754140Ab3GRNuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 09:48:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18gytIU3ZBxd7dsifel54Zj
-Date: Thu, 18 Jul 2013 06:48:07 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linus.walleij@linaro.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] drivers: Add pinctrl handling for dynamic pin
- states
-Message-ID: <20130718134806.GW7656@atomide.com>
-References: <20130716090310.5541.36777.stgit@localhost>
- <20130716090539.5541.980.stgit@localhost>
- <51E70ADF.8090805@wwwdotorg.org>
- <20130718074508.GQ7656@atomide.com>
+	Thu, 18 Jul 2013 09:50:39 -0400
+Date: Thu, 18 Jul 2013 09:50:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Rong Wang <wr011235813@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Rong.Wang@csr.com>
+Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
+In-Reply-To: <20130718082240.GD11251@arwen.pp.htv.fi>
+Message-ID: <Pine.LNX.4.44L0.1307180946380.1245-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718074508.GQ7656@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [130718 00:57]:
-> * Stephen Warren <swarren@wwwdotorg.org> [130717 14:28]:
+On Thu, 18 Jul 2013, Felipe Balbi wrote:
+
+> > > yes. Only the UDC driver knows when the controller is moving among those
+> > > states.
 > > 
-> > Oh, I see you're trying to check that the set of pins in the active,
-> > sleep, and idle states are identical.
+> > Not quite.  Only the gadget driver knows when the transition between 
+> > ADDRESS and CONFIGURED occurs.  This should be added to composite.c.
 > 
-> Right, that's to avoid any further checking during runtime for runtime PM.
->  
-> > But I think that pinctrl_check_dynamic() only checks that one state is a
-> > subset of the other, not that the two states are equal. Instead, I think
-> > you want to comparison coded in pinctrl_check_dynamic() to be:
+> that's not entirely true :-) See how we handle that in dwc3:
 > 
-> In pinctrl_check_dynamic() we check that the pins match between the
-> states, and the number of found pins matches the first set. I'll
-> take a look if we check the total pins between the two sets.
+> | static int dwc3_ep0_set_config(struct dwc3 *dwc, struct usb_ctrlrequest *ctrl)
+> | {
+> | 	enum usb_device_state state = dwc->gadget.state;
+> | 	u32 cfg;
+> | 	int ret;
+> | 	u32 reg;
+> | 
+> | 	dwc->start_config_issued = false;
+> | 	cfg = le16_to_cpu(ctrl->wValue);
+> | 
+> | 	switch (state) {
+> | 	case USB_STATE_DEFAULT:
+> | 		return -EINVAL;
+> | 		break;
+> | 
+> | 	case USB_STATE_ADDRESS:
+> | 		ret = dwc3_ep0_delegate_req(dwc, ctrl);
+> | 		/* if the cfg matches and the cfg is non zero */
+> | 		if (cfg && (!ret || (ret == USB_GADGET_DELAYED_STATUS))) {
+> | 			usb_gadget_set_state(&dwc->gadget,
+> | 					USB_STATE_CONFIGURED);
 
-That that is a bit painful right now to check properly as we don't
-have any sorting, and we could use that elsewhere too for checks
-probably..
-  
-> > gen_group_list_of_pinctrl_state(s1, array1);
-> > gen_group_list_of_pinctrl_state(s2, array2);
-> > mismatch = memcmp(array1, array2, length);
-> 
-> Well we could allocate and sort the pins, but the number of pins
-> for runtime PM is typically very small for each pin consumer device.
-> Typically you just need to toggle RX pin to GPIO mode for idle. And
-> this check is only done during consumer driver probe time. So
-> optimizing it for larger sets could be done at any point later on
-> as needed.
+In theory, this should not occur until the gadget driver has finished 
+the transition to the CONFIGURED state, which doesn't occur until later 
+in the case of USB_GADGET_DELAYED_STATUS.
 
-..so for now, let's just check the total number of pins for the sets
-like Felipe suggested. I think we're better off improving the pinctrl
-data first to make various checks easier.
+> | 
+> | 			/*
+> | 			 * Enable transition to U1/U2 state when
+> | 			 * nothing is pending from application.
+> | 			 */
+> | 			reg = dwc3_readl(dwc->regs, DWC3_DCTL);
+> | 			reg |= (DWC3_DCTL_ACCEPTU1ENA | DWC3_DCTL_ACCEPTU2ENA);
+> | 			dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+> | 
+> | 			dwc->resize_fifos = true;
+> | 			dev_dbg(dwc->dev, "resize fifos flag SET\n");
+> | 		}
+> | 		break;
+> | 
+> | 	case USB_STATE_CONFIGURED:
+> | 		ret = dwc3_ep0_delegate_req(dwc, ctrl);
+> | 		if (!cfg)
+> | 			usb_gadget_set_state(&dwc->gadget,
+> | 					USB_STATE_ADDRESS);
 
-What you're suggesting with the mepcmp() can be done easily if we add
-something like device_get_pins() and have the pins sorted for the
-various states for a device at the device probe time.
+No check on the value of ret?  What if the request was rejected?
 
-Regards,
+> | 		break;
+> | 	default:
+> | 		ret = -EINVAL;
+> | 	}
+> | 	return ret;
+> | }
 
-Tony
+This illustrates the folly of exposing your code to public review.  :-)
+Nevertheless, I take your point.
+
+> Also, until other gadget drivers add notifications to the other cases, I
+> don't think it's wise to add a transition from NOTATTACHED to
+> CONFIGURED.
+
+Another good point.
+
+Alan Stern
+
