@@ -1,141 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484Ab3GRVhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:37:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50366 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933385Ab3GRVfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:35:16 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH 3/8] migrate: add hugepage migration code to migrate_pages()
-Date: Thu, 18 Jul 2013 17:34:27 -0400
-Message-Id: <1374183272-10153-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S934475Ab3GRVjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:39:10 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:34226 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759222Ab3GRVjI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 17:39:08 -0400
+Message-ID: <1374183496.24916.170.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+From: Toshi Kani <toshi.kani@hp.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Dave Hansen <dave@sr71.net>, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Date: Thu, 18 Jul 2013 15:38:16 -0600
+In-Reply-To: <51E85016.2090403@intel.com>
+References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>
+	   <51E80973.9000308@intel.com> <1374164815.24916.84.camel@misato.fc.hp.com>
+	  <51E83536.6070100@sr71.net> <1374178250.24916.131.camel@misato.fc.hp.com>
+	 <51E85016.2090403@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends check_range() to handle vma with VM_HUGETLB set.
-We will be able to migrate hugepage with migrate_pages(2) after
-applying the enablement patch which comes later in this series.
+On Thu, 2013-07-18 at 13:29 -0700, Dave Hansen wrote:
+> On 07/18/2013 01:10 PM, Toshi Kani wrote:
+> > On Thu, 2013-07-18 at 11:34 -0700, Dave Hansen wrote:
+> > I do not think so.  Using echo command to write a value to /dev/sda is
+> > not how it is instructed to use in the document.  I am not saying that
+> > we need to protect from a privileged user doing something crazy.
+> 
+> If the document is the issue, then let's fix the document.
 
-Note that for larger hugepages (covered by pud entries, 1GB for
-x86_64 for example), we simply skip it now.
+I will clarify the document as well.
 
-Note that using pmd_huge/pud_huge assumes that hugepages are pointed to
-by pmd/pud. This is not true in some architectures implementing hugepage
-with other mechanisms like ia64, but it's OK because pmd_huge/pud_huge
-simply return 0 in such arch and page walker simply ignores such hugepages.
+> >> All that I'm asking is that you either leave it the way it is, or make a
+> >> Kconfig menu entry for it.
+> >>
+> >> But, really, what's the problem that you're solving?  Has this caused
+> >> you issues somehow?  It's been there for, what, 10 years?  Surely it's
+> >> part of the ABI.
+> > 
+> > The problem is that the probe interface is documented as one of the
+> > steps that may be necessary for memory hotplug.  A typical user may or
+> > may not know if his/her platform generates a hotplug notification to the
+> > kernel to decide if this step is necessary.
+> 
+> A typical user will never see any of this stuff.  It's buried deep under
+> the covers.
 
-ChangeLog v3:
- - revert introducing migrate_movable_pages
- - use isolate_huge_page
+Users will need to use sysfs "memoryX/online" interface to online
+hot-added memory, which is located in the same directory as "probe".
+The name "probe" is also misleading that one would expect it checks if a
+given memory address is present on the system.
 
-ChangeLog v2:
- - remove unnecessary extern
- - fix page table lock in check_hugetlb_pmd_range
- - updated description and renamed patch title
+> > If the user performs this
+> > step on x86, it will likely mess up the system.  Since we do not need it
+> > on x86, a prudent approach to protect such user is to disable or remove
+> > the interface on x86 and document it accordingly.  We have not seen this
+> > issue yet because we do not have many platforms that support memory
+> > hotplug today.  Once memory hotplug support in KVM gets merged into the
+> > mainline, anyone can start using this feature on their systems.  At that
+> > time, their choice of a stable kernel may be 3.12.x.  This interface has
+> > been there for while, but we need to fix it before the memory hotplug
+> > feature becomes available for everyone.
+> 
+> It sounds like you're arguing that anyone using memory hotplug on x86
+> might be confused by the probe file.  There's been a lot of hardware out
+> there that's supported memory hotplug for many, many years.  I've never
+> heard a complaint about it in practice.  Are KVM users more apt to be
+> confused than folks running on bare-metal? :)
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/mempolicy.c | 39 ++++++++++++++++++++++++++++++++++-----
- 1 file changed, 34 insertions(+), 5 deletions(-)
+I know ia64 (which Kconfig does not have this option) and powerpc (which
+this interface is required, but I believe it is well-automated by LPAR
+mgmt tools) platforms support memory hotplug for many years, but I did
+not know it is also the case with x86 platforms.  The fact that ia64
+does not have this interface makes me wonder why we enabled it on x86.
 
-diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
-index 7431001..f3b65c0 100644
---- v3.11-rc1.orig/mm/mempolicy.c
-+++ v3.11-rc1/mm/mempolicy.c
-@@ -512,6 +512,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 	return addr != end;
- }
- 
-+static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
-+		const nodemask_t *nodes, unsigned long flags,
-+				    void *private)
-+{
-+#ifdef CONFIG_HUGETLB_PAGE
-+	int nid;
-+	struct page *page;
-+
-+	spin_lock(&vma->vm_mm->page_table_lock);
-+	page = pte_page(huge_ptep_get((pte_t *)pmd));
-+	nid = page_to_nid(page);
-+	if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
-+	    && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
-+		|| flags & MPOL_MF_MOVE_ALL))
-+		isolate_huge_page(page, private);
-+	spin_unlock(&vma->vm_mm->page_table_lock);
-+#else
-+	BUG();
-+#endif
-+}
-+
- static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 		unsigned long addr, unsigned long end,
- 		const nodemask_t *nodes, unsigned long flags,
-@@ -523,6 +544,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 	pmd = pmd_offset(pud, addr);
- 	do {
- 		next = pmd_addr_end(addr, end);
-+		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
-+			check_hugetlb_pmd_range(vma, pmd, nodes,
-+						flags, private);
-+			continue;
-+		}
- 		split_huge_page_pmd(vma, addr, pmd);
- 		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
- 			continue;
-@@ -544,6 +570,8 @@ static inline int check_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
- 	pud = pud_offset(pgd, addr);
- 	do {
- 		next = pud_addr_end(addr, end);
-+		if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
-+			continue;
- 		if (pud_none_or_clear_bad(pud))
- 			continue;
- 		if (check_pmd_range(vma, pud, addr, next, nodes,
-@@ -635,9 +663,6 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 				return ERR_PTR(-EFAULT);
- 		}
- 
--		if (is_vm_hugetlb_page(vma))
--			goto next;
--
- 		if (flags & MPOL_MF_LAZY) {
- 			change_prot_numa(vma, start, endvma);
- 			goto next;
-@@ -986,7 +1011,11 @@ static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 
- static struct page *new_node_page(struct page *page, unsigned long node, int **x)
- {
--	return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
-+	if (PageHuge(page))
-+		return alloc_huge_page_node(page_hstate(compound_head(page)),
-+					node);
-+	else
-+		return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
- }
- 
- /*
-@@ -1016,7 +1045,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
- 		err = migrate_pages(&pagelist, new_node_page, dest,
- 					MIGRATE_SYNC, MR_SYSCALL);
- 		if (err)
--			putback_lru_pages(&pagelist);
-+			putback_movable_pages(&pagelist);
- 	}
- 
- 	return err;
--- 
-1.8.3.1
+> > Does it make sense?  I understand that you are using this interface for
+> > your testing.  If I make a Kconfig menu entry, are you OK to disable
+> > this option by default?
+> 
+> I kinda wish you wouldn't mess with it.  But, sure, put it in the memory
+> debugging, and make sure it stays enabled on powerpc by default.
+
+I understand and I appreciate your flexibility.  Since it is defined in
+x86/Kconfig, the prompt will be under "Processor type and features".
+Yes, it stays enabled on powerpc as I won't touch powerpc/Kconfig.
+
+> Another method would be to just change the default permissions of the
+> file on x86 instead of disabling it completely:
+> 
+> 	# chmod u-w /sys/devices/system/memory/probe
+> 	# echo x > /sys/devices/system/memory/probe
+> 	bash: /sys/devices/system/memory/probe: Permission denied
+> 
+> That way folks can re-chmod it if they *really* want it back (me), and
+> they can still use it for testing.
+
+That's an interesting idea, but I'd prefer not to introduce #ifdef to
+the common code for this.
+
+Thanks,
+-Toshi
+
 
