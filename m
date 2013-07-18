@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934728Ab3GRX2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 19:28:09 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:53559 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933481Ab3GRX2H (ORCPT
+	id S934815Ab3GRXhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 19:37:10 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:37645 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934751Ab3GRXhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 19:28:07 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf record/top: handle ENODEV on default cycles event
-Date: Thu, 18 Jul 2013 17:27:59 -0600
-Message-Id: <1374190079-28507-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Thu, 18 Jul 2013 19:37:08 -0400
+Message-ID: <51E87C1F.1090301@hurleysoftware.com>
+Date: Thu, 18 Jul 2013 19:37:03 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        joseph.salisbury@canonical.com
+CC: Nestor Lopez Casado <nlopezcasad@logitech.com>, jkosina@suse.cz,
+        benjamin.tissoires@gmail.com, adlr@chromium.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying
+ device issue""
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com> <51E84FD1.4050400@hurleysoftware.com> <20130718220936.GA8025@xanatos>
+In-Reply-To: <20130718220936.GA8025@xanatos>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some systems (e.g., VMs on qemu-0.13 with the default vcpu model) report
-an unsupported CPU model:
+On 07/18/2013 06:09 PM, Sarah Sharp wrote:
+> On Thu, Jul 18, 2013 at 04:28:01PM -0400, Peter Hurley wrote:
+>> [ +cc Sarah Sharp, linux-usb ]
+>>
+>> On 07/18/2013 09:21 AM, Nestor Lopez Casado wrote:
+>>> This reverts commit 8af6c08830b1ae114d1a8b548b1f8b056e068887.
+>>>
+>>> This patch re-adds the workaround introduced by 596264082f10dd4
+>>> which was reverted by 8af6c08830b1ae114.
+>>>
+>>> The original patch 596264 was needed to overcome a situation where
+>>> the hid-core would drop incoming reports while probe() was being
+>>> executed.
+>>>
+>>> This issue was solved by c849a6143bec520af which added
+>>> hid_device_io_start() and hid_device_io_stop() that enable a specific
+>>> hid driver to opt-in for input reports while its probe() is being
+>>> executed.
+>>>
+>>> Commit a9dd22b730857347 modified hid-logitech-dj so as to use the
+>>> functionality added to hid-core. Having done that, workaround 596264
+>>> was no longer necessary and was reverted by 8af6c08.
+>>>
+>>> We now encounter a different problem that ends up 'again' thwarting
+>>> the Unifying receiver enumeration. The problem is time and usb controller
+>>> dependent. Ocasionally the reports sent to the usb receiver to start
+>>> the paired devices enumeration fail with -EPIPE and the receiver never
+>>> gets to enumerate the paired devices.
+>>>
+>>> With dcd9006b1b053c7b1c the problem was "hidden" as the call to the usb
+>>> driver became asynchronous and none was catching the error from the
+>>> failing URB.
+>>>
+>>> As the root cause for this failing SET_REPORT is not understood yet,
+>>> -possibly a race on the usb controller drivers or a problem with the
+>>> Unifying receiver- reintroducing this workaround solves the problem.
+>>
+>>
+>> Before we revert to using the workaround, I'd like to suggest that
+>> this new "hidden" problem may be an interaction with the xhci_hcd host
+>> controller driver only.
+>>
+>> Looking at the related bug, the OP indicates the machine only has
+>> USB3 ports. Additionally, comments #7, #100, and #104 of the original
+>> bug report [1] add additional information that would seem to confirm
+>> this suspicion.
+>
+> Question: does this USB device need a control transfer to reset its
+> endpoints when the endpoints are not actually halted?  If so, yes, that
+> is a known xHCI driver bug that needs to be fixed.  The xHCI host will
+> not accept a Reset Endpoint command when the endpoints are not actually
+> halted, but the USB core will send the control transfer to reset the
+> endpoint.  That means the device and host toggles will be out of sync,
+> and all messages will start to fail with -EPIPE.
+>
+> Can the OP capture a usbmon trace when the device starts failing?  That
+> will reveal whether this actually is the issue.  dmesg output with
+> CONFIG_USB_DEBUG and CONFIG_USB_XHCI_HCD_DEBUGGING turned on would also
+> be helpful.
 
-Performance Events: unsupported p6 CPU model 2 no PMU driver, software events only.
+Sarah,
 
-Subsequent invocations of perf fail with:
+I forwarded your usbmon capture request to the OP in the bug report
+(I don't have an email address for the reporter).
 
-The sys_perf_event_open() syscall returned with 19 (No such device) for event (cycles).
-/bin/dmesg may provide additional information.
-No CONFIG_PERF_EVENTS=y kernel support configured?
+As far as getting printk output from a custom kernel, I think that may
+be beyond the reporter's capability. Perhaps one of the Ubuntu devs
+triaging this bug could provide a test kernel for the OP with those
+options on.
 
-Add ENODEV to the list of errno's to fallback to cpu-clock.
+Joseph, would you be willing to do that?
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/evsel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index a635461..8bed0c1 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1482,7 +1482,7 @@ out:
- bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
- 			  char *msg, size_t msgsize)
- {
--	if ((err == ENOENT || err == ENXIO) &&
-+	if ((err == ENOENT || err == ENXIO || err == ENODEV) &&
- 	    evsel->attr.type   == PERF_TYPE_HARDWARE &&
- 	    evsel->attr.config == PERF_COUNT_HW_CPU_CYCLES) {
- 		/*
--- 
-1.7.10.1
-
+Regards,
+Peter Hurley
