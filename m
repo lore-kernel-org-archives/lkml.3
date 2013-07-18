@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab3GRISd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:18:33 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55364 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab3GRIS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:18:29 -0400
-Message-ID: <51E7A4CF.2050404@hitachi.com>
-Date: Thu, 18 Jul 2013 17:18:23 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/4] tracing: fix open/delete fixes
-References: <20130716185658.GA21167@redhat.com> <51E6032B.7070907@hitachi.com> <20130717144357.GA7358@redhat.com>
-In-Reply-To: <20130717144357.GA7358@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757045Ab3GRISy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:18:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43652 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab3GRISv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 04:18:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,691,1367996400"; 
+   d="scan'208";a="347647378"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH v3] x86, tboot: iomem fixes
+Date: Thu, 18 Jul 2013 16:07:54 +0800
+Message-Id: <1374134874-8161-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/17 23:43), Oleg Nesterov wrote:
-> On 07/17, Masami Hiramatsu wrote:
->>
->> At a glance, you're trying to change which operation will be
->> failed. Currently, user can not remove an event while someone
->> opens files which related to the event. And this approach
->> changes that the someone can remove the event even if the
->> files are opened (and read/write operation will be failed).
->> Am I understand correctly?
-> 
-> Yes.
-> 
-> Once again, I am still not sure and I am asking for your review.
+Current code doesn't use specific interface to access I/O space.
+So some potential bugs can be caused. We can fix this by using
+specific API.
 
-OK,
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+---
+ arch/x86/kernel/tboot.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-> But to me this looks much better. To simplify the discussion, lets
-> consider ftrace_enable_fops in particular.
-> 
-> 	- Why should .open() block rmdir or unregister_uprobe_event?
-
-Because it is opened and under preparing for use. :)
-But, yeah, if we expect there is only one user using
-ftrace, accessing the removing event file is meaningless.
-It should be failed.
-
-> 	- Why do we need .open() at all? Whatever it can do to
-> 	  validate file/call/etc, .read/write can do the same.
-
-Currently, just for preparing and reserving.
-
-> 	- If we kill .open/release, we do not need the nontrivial
-> 	  refcounting. Everything becomes simple, no need to keep
-> 	  the state "in between".
-
-That also means to refrain checking existence under locking mutex
-in all operations. And we have to check it, which I actually concern.
-refcounting is not so small and itself is complex, but it just
-needs to inc/dec on open/close.
-
-
-> 	  We need event_mutex anyway (and note that other f_op's can
-> 	  also rely on other locks taken by trace_remove_event_call),
-> 	  the validation degrades to the trivial != NULL check.
-> 
-> 	- This also simplifies trace_remove_event_call() paths, we
-> 	  know that once it takes event_mutex nobody can play with
-> 	  ftrace_event_file/ftrace_event_call we are going to free.
-
-Hmm, it seems that we can remove only refcount check, or more?
-
-Thank you,
-
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index 3ff42d2..afe8cf8 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -466,9 +466,12 @@ struct sinit_mle_data {
+ 	u32               vtd_dmars_off;
+ } __packed;
+ 
++#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
++
+ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
+ {
+-	void *heap_base, *heap_ptr, *config;
++	void __iomem *heap_base, *heap_ptr, *config;
++	u32 dmar_tbl_off;
+ 
+ 	if (!tboot_enabled())
+ 		return dmar_tbl;
+@@ -485,25 +488,25 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
+ 		return NULL;
+ 
+ 	/* now map TXT heap */
+-	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
+-			    *(u64 *)(config + TXTCR_HEAP_SIZE));
++	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
++			    readl(config + TXTCR_HEAP_SIZE));
+ 	iounmap(config);
+ 	if (!heap_base)
+ 		return NULL;
+ 
+ 	/* walk heap to SinitMleData */
+ 	/* skip BiosData */
+-	heap_ptr = heap_base + *(u64 *)heap_base;
++	heap_ptr = heap_base + readq(heap_base);
+ 	/* skip OsMleData */
+-	heap_ptr += *(u64 *)heap_ptr;
++	heap_ptr += readq(heap_ptr);
+ 	/* skip OsSinitData */
+-	heap_ptr += *(u64 *)heap_ptr;
++	heap_ptr += readq(heap_ptr);
+ 	/* now points to SinitMleDataSize; set to SinitMleData */
+ 	heap_ptr += sizeof(u64);
+ 	/* get addr of DMAR table */
+-	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
+-		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
+-		   sizeof(u64));
++	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
++	memcpy_fromio(dmar_tbl, heap_ptr + dmar_tbl_off - sizeof(u64),
++			sizeof(struct acpi_table_header));
+ 
+ 	/* don't unmap heap because dmar.c needs access to this */
+ 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.9.5
 
