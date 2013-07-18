@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965305Ab3GRUDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:03:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41582 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759433Ab3GRTuZ (ORCPT
+	id S965321Ab3GRUDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:03:42 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37804 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965307Ab3GRUDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:50:25 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 38/76] perf gtk/hists: Make column headers resizable
-Date: Thu, 18 Jul 2013 16:49:25 -0300
-Message-Id: <1374177003-3706-39-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
-References: <1374177003-3706-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 18 Jul 2013 16:03:38 -0400
+Date: Thu, 18 Jul 2013 13:03:35 -0700 (PDT)
+Message-Id: <20130718.130335.991768032324737210.davem@davemloft.net>
+To: paolo.valente@unimore.it
+Cc: jhs@mojatatu.com, shemminger@vyatta.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fchecconi@gmail.com, rizzo@iet.unipi.it
+Subject: Re: [PATCH BUGFIX] pkt_sched: sch_qfq: remove a source of high
+ packet delay/jitter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1373957550-10134-1-git-send-email-paolo.valente@unimore.it>
+References: <1373911942.2062.24.camel@joe-AO722>
+	<1373957550-10134-1-git-send-email-paolo.valente@unimore.it>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 18 Jul 2013 13:03:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Paolo Valente <paolo.valente@unimore.it>
+Date: Tue, 16 Jul 2013 08:52:30 +0200
 
-Sometimes it's annoying to see when some symbols have very wierd long
-names.  So it might be a good idea to make column size changable.
+ ...
+> This patch addresses this issue by just using the above
+> 'instantaneous' value of the weight sum, instead of the maximum
+> possible value, when updating the system virtual time.  After the
+> instantaneous weight sum is decreased, QFQ+ may deviate from the ideal
+> service for a time interval in the order of the time to serve one
+> maximum-size packet for each backlogged class. The worst-case extent
+> of the deviation exhibited by QFQ+ during this time interval [1] is
+> basically the same as of the deviation described above (but, without
+> this patch, QFQ+ suffers from such a deviation all the time). Finally,
+> this patch modifies the comment to the function qfq_slot_insert, to
+> make it coherent with the fact that the weight sum used by QFQ+ can
+> now be lower than the maximum possible value.
+> 
+> [1] P. Valente, "Extending WF2Q+ to support a dynamic traffic mix",
+> Proceedings of AAA-IDEA'05, June 2005.
+> 
+> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1370337737-30812-5-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/gtk/hists.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+Thank you for this amazing commit message.
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index fa9f8a0..b4a0dd2 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -250,11 +250,16 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 							    col_idx++, NULL);
- 	}
- 
--	if (symbol_conf.use_callchain && sort__has_sym) {
-+	for (col_idx = 0; col_idx < nr_cols; col_idx++) {
- 		GtkTreeViewColumn *column;
- 
--		column = gtk_tree_view_get_column(GTK_TREE_VIEW(view), sym_col);
--		gtk_tree_view_set_expander_column(GTK_TREE_VIEW(view), column);
-+		column = gtk_tree_view_get_column(GTK_TREE_VIEW(view), col_idx);
-+		gtk_tree_view_column_set_resizable(column, TRUE);
-+
-+		if (col_idx == sym_col) {
-+			gtk_tree_view_set_expander_column(GTK_TREE_VIEW(view),
-+							  column);
-+		}
- 	}
- 
- 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
--- 
-1.8.1.4
+Since you explained everything, even if I don't understand all of the
+details of QFQ/QFQ+ I can in fact be confident in your change.
 
+Applied and queued up for -stable, thanks!
