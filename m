@@ -1,119 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934424Ab3GRV37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:29:59 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:41907 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759369Ab3GRV35 convert rfc822-to-8bit (ORCPT
+	id S934467Ab3GRVai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:30:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43900 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933829Ab3GRVah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:29:57 -0400
+	Thu, 18 Jul 2013 17:30:37 -0400
+Message-ID: <51E85E73.608@kernel.dk>
+Date: Thu, 18 Jul 2013 15:30:27 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130718211806.GB2394@swordfish>
-References: <20130712092400.GA2565@swordfish>
-	<CADv+DGka4s1xc2UYqu+-EqHW8jA56JrtEE_sMsMOpc6NDmc6Zw@mail.gmail.com>
-	<20130712094830.GA2257@swordfish.minsk.epam.com>
-	<20130718211806.GB2394@swordfish>
-Date: Thu, 18 Jul 2013 23:29:57 +0200
-X-Google-Sender-Auth: quOuec8HETyCAOXOl5c6GeAko0k
-Message-ID: <CAMuHMdXCsRKpFQRwMTteQpBCbtuJVqmb9UvszHi3ffTS=RxJmw@mail.gmail.com>
-Subject: Re: [PATCH] LZ4: compression/decompression signedness mismatch
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jan Kara <jack@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
+References: <1373994390-5479-1-git-send-email-jack@suse.cz> <20130717161200.40a97074623be2685beb8156@linux-foundation.org> <20130718130932.GA10419@quack.suse.cz>
+In-Reply-To: <20130718130932.GA10419@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 11:18 PM, Sergey Senozhatsky
-<sergey.senozhatsky@gmail.com> wrote:
-> On (07/12/13 12:48), Sergey Senozhatsky wrote:
->> On (07/12/13 11:28), Yann Collet wrote:
->> >    The reference implementation, hosted at :�
->> >    [1]https://code.google.com/p/lz4/
->> >    only proposes char* (signed) types as part of the interface contract.
->> >    I would recommend to keep it that way, to remain consistent.
->> >    Regards
+On 07/18/2013 07:09 AM, Jan Kara wrote:
+> On Wed 17-07-13 16:12:00, Andrew Morton wrote:
+>> On Tue, 16 Jul 2013 19:06:30 +0200 Jan Kara <jack@suse.cz> wrote:
 >>
->> Crypto lz4 accepts u8 * for both compression and decompression:
+>>> With users of radix_tree_preload() run from interrupt (CFQ is one such
+>>> possible user), the following race can happen:
+>>>
+>>> radix_tree_preload()
+>>> ...
+>>> radix_tree_insert()
+>>>   radix_tree_node_alloc()
+>>>     if (rtp->nr) {
+>>>       ret = rtp->nodes[rtp->nr - 1];
+>>> <interrupt>
+>>> ...
+>>> radix_tree_preload()
+>>> ...
+>>> radix_tree_insert()
+>>>   radix_tree_node_alloc()
+>>>     if (rtp->nr) {
+>>>       ret = rtp->nodes[rtp->nr - 1];
+>>>
+>>> And we give out one radix tree node twice. That clearly results in radix
+>>> tree corruption with different results (usually OOPS) depending on which
+>>> two users of radix tree race.
+>>>
+>>> Fix the problem by disabling interrupts when working with rtp variable.
+>>> In-interrupt user can still deplete our preloaded nodes but at least we
+>>> won't corrupt radix trees.
+>>>
+>>> ...
+>>>
+>>>   There are some questions regarding this patch:
+>>> Do we really want to allow in-interrupt users of radix_tree_preload()?  CFQ
+>>> could certainly do this in older kernels but that particular call site where I
+>>> saw the bug hit isn't there anymore so I'm not sure this can really happen with
+>>> recent kernels.
 >>
->>  lz4_compress_crypto(struct crypto_tfm *tfm, const u8 *src,
->>                             unsigned int slen, u8 *dst, unsigned int *dlen)
+>> Well, it was never anticipated that interrupt-time code would run
+>> radix_tree_preload().  The whole point in the preloading was to be able
+>> to perform GFP_KERNEL allocations before entering the spinlocked region
+>> which needs to allocate memory.
 >>
->>  lz4_decompress_crypto(struct crypto_tfm *tfm, const u8 *src,
->>                        unsigned int slen, u8 *dst, unsigned int *dlen)
+>> Doing all that from within an interrupt is daft, because the interrupt code
+>> can't use GFP_KERNEL anyway.
+>   Fully agreed here.
+> 
+>>> Also it is actually harmful to do preloading if you are in interrupt context
+>>> anyway. The disadvantage of disallowing radix_tree_preload() in interrupt is
+>>> that we would need to tweak radix_tree_node_alloc() to somehow recognize
+>>> whether the caller wants it to use preloaded nodes or not and that callers
+>>> would have to get it right (although maybe some magic in radix_tree_preload()
+>>> could handle that).
+>>>
+>>> Opinions?
 >>
->>
->> Internally LZ4 may cast unsigned char* to signed char*, the same way you
->> already do with compression:
->>
->>       int lz4_compress(const unsigned char *src, size_t src_len,
->>                       unsigned char *dst, size_t *dst_len, void *wrkmem)
->>
->>               calls:
->>                       lz4_compressctx(void *ctx,
->>                               const char *source, char *dest,
->>                               int isize, int maxoutputsize)
->>
->
->
-> + lib/decompress_unlz4.c
->  STATIC int INIT decompress(unsigned char *buf, int in_len,
->                                 int(*fill)(void*, unsigned int),
->                                 int(*flush)(void*, unsigned int),
->                                 unsigned char *output,
->                                 int *posp,
->                                 void(*error)(char *x)
->
->>
->> At the moment API is a bit misaligned: unsiged char* for compression and signed char* for
->> decompression.
->>
->>
->> My 'real word' use case is, suppose:
->>
->>       struct foo {
->>       [..]
->>               int (*compress)(const unsigned char *src, size_t src_len,
->>                               unsigned char *dst, size_t *dst_len, void *wrkmem);
->>               int (*decompress)(const unsigned char *src, size_t src_len,
->>                               unsigned char *dst, size_t *dst_len);
->>       };
->>
->>
->> and (for example) module also provides sysfs attribute, so user can switch select
->> LZO or LZ4 compressions depending of his needs:
->>
->>       ->compress = lzo1x_1_compress;
->>       ->decompress = lzo1x_decompress_safe;
->>
->> to
->>       ->compress = lz4_compress;
->>       ->decompress = lz4_decompress_unknownoutputsize;
->>
->>
->> the last one produces unneccessary compilation warning.
->>
->
-> did you guys have a chance to review the patch? it does not change
-> implementation/internals, just decompression exported symbols.
+>> BUG_ON(in_interrupt()) :)
+>   Or maybe WARN_ON()... But it's not so easy :) Currently radix tree code
+> assumes that if gfp_mask doesn't have __GFP_WAIT set caller has performed
+> radix_tree_preload(). Clearly this will stop working for in-interrupt users
+> of radix tree. So how do we propagate the information from the caller of
+> radix_tree_insert() down to radix_tree_node_alloc() whether the preload has
+> been performed or not? Will we rely on in_interrupt() or use some special
+> gfp_mask bit?
 
-IMHO, all these memory buffers should be of type "(const) void *", cfr.
-e.g. read(2) and memcpy(3).
+Should have read the full thread... in_interrupt() is ugly to base
+decisions on, imho. I'd say just use __GFP_WAIT to signal this.
 
-This avoids casts in the callers.
+> Secondly, CFQ has this unpleasant property that some functions are
+> sometimes called from interrupt context and sometimes not. So these
+> functions would have to check in what context they are called and either
+> perform preload or not. That's doable but it's going to be a bit ugly and
+> has to match the check in radix_tree_node_alloc() whether preload should be
+> used or not. So leaving the checking to the users of radix tree looks
+> fragile.  So maybe we could just silently exit from radix_tree_preload()
+> when we are in_interrupt()?
 
-Gr{oetje,eeting}s,
+Which CFQ functions are these? Generally we get callbacks from the
+drivers on both queue and complete times that can be done at various
+contexts, so it's not something that is easily solvable. I'm assuming
+you are referring to the blk-ioc.c functions here, though?
 
-                        Geert
+-- 
+Jens Axboe
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
