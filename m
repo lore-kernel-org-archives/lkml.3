@@ -1,92 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab3GRHPb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 03:15:31 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:24763 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab3GRHP3 (ORCPT
+	id S1754887Ab3GRHUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 03:20:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55975 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab3GRHT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 03:15:29 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-50-51e7960ffbcd
-Message-id: <51E7960C.8050707@samsung.com>
-Date: Thu, 18 Jul 2013 09:15:24 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Pawel Osciak <pawel@osciak.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] videobuf2-dma-sg: Minimize the number of dma segments
-References: <1373880874-9270-1-git-send-email-ricardo.ribalda@gmail.com>
- <51E65577.7010403@samsung.com>
- <CAPybu_3Je7+0Qh2OdptncnxC12G15Scad+A3yUeF898sVWKo8w@mail.gmail.com>
- <51E69F49.10500@samsung.com>
- <CAPybu_0b9ADaUFFHuw=tKkVR4fiu9bGNJVgy4MGbuE-zAA9sZQ@mail.gmail.com>
-In-reply-to: <CAPybu_0b9ADaUFFHuw=tKkVR4fiu9bGNJVgy4MGbuE-zAA9sZQ@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBLMWRmVeSWpSXmKPExsVy+t/xq7r8054HGrR94bc42/SG3eLyrjls
-	Fj0btrJa7Dl6mN1iytuf7BZd3fOYHNg8ds66y+7x+NdLNo/3+66yefRtWcXo8XmTXABrFJdN
-	SmpOZllqkb5dAlfG6lMzWApe8FdsbLrH2sB4kaeLkYNDQsBEYtuzvC5GTiBTTOLCvfVsXYxc
-	HEICSxklDj7dxAiSEBJoZpJ4ftgXxOYV0JKY82QCE4jNIqAqsX7KdTCbTcBQouttFxuILSoQ
-	KjFtyQJGiHpBiR+T77GA2CIC5hKXP3SC1TALHGWUaJrKCmILC3hJvJjzmxli8TQmifVzn4M1
-	cwoES3yc/JoFosFM4lHLOmYIW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqmliYXFCel5xrq
-	FSfmFpfmpesl5+duYoSE9pcdjIuPWR1iFOBgVOLhNeR/HijEmlhWXJl7iFGCg1lJhLfcDCjE
-	m5JYWZValB9fVJqTWnyIkYmDU6qBkXlWltzcuQYVrTcDs8Qbl7QHbTQqjbrxXVlrOe9D9wmV
-	k/ReXmw7UMpr8pBjVtytGbXll57HvOrYpDDXWG9Sr/3v76c6Gy1Yn7QFPNg8/Zjdj7Wni+Jy
-	DViX/t7FL/JO9tRvXavLAktCbuy1utTvKmuopjUxzjT73aOKyRr2l5Rb+tbud7i/RomlOCPR
-	UIu5qDgRAGdCCpBLAgAA
+	Thu, 18 Jul 2013 03:19:58 -0400
+Date: Thu, 18 Jul 2013 00:20:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: kyungmin.park@samsung.com, balbi@ti.com, jg1.han@samsung.com,
+        s.nawrocki@samsung.com, kgene.kim@samsung.com, grant.likely@linaro.org,
+        tony@atomide.com, arnd@arndb.de, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+Message-ID: <20130718072004.GA16720@kroah.com>
+References: <1374129984-765-1-git-send-email-kishon@ti.com>
+ <1374129984-765-2-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374129984-765-2-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jul 18, 2013 at 12:16:10PM +0530, Kishon Vijay Abraham I wrote:
+> +struct phy_provider *__of_phy_provider_register(struct device *dev,
+> +	struct module *owner, struct phy * (*of_xlate)(struct device *dev,
+> +	struct of_phandle_args *args));
+> +struct phy_provider *__devm_of_phy_provider_register(struct device *dev,
+> +	struct module *owner, struct phy * (*of_xlate)(struct device *dev,
+> +	struct of_phandle_args *args))
+> +
+> +__of_phy_provider_register and __devm_of_phy_provider_register can be used to
+> +register the phy_provider and it takes device, owner and of_xlate as
+> +arguments. For the dt boot case, all PHY providers should use one of the above
+> +2 APIs to register the PHY provider.
 
-On 7/17/2013 4:20 PM, Ricardo Ribalda Delgado wrote:
-> Hello again Marek
->
-> In my system I am doing the scatter gather compaction on device
-> driver... But I agree that it would be better done on the vb2 layer.
->
-> For the oversize sglist we could do one of this two things.
->
-> If we want to have a simple pass processing we have to allocate an
-> structure A for the worts case, work on that structure. then allocate
-> a structure B for the exact size that we need, memcpy A to B, and
-> free(A).
->
-> Otherwise we need two passes. One to allocate the pages, and another
-> one to allocate the pages and find out the amount of sg, and another
-> to greate the sg structure.
->
-> What do you prefer?
+Why do you have __ for the prefix of a public function?  Is that really
+the way that OF handles this type of thing?
 
-I would prefer two passes approach. In the first pass you just fill the
-buf->pages array with order 0 entries and count the total number of memory
-chunks (adding support for max dma segment size at this point should be
-quite easy). In the second pass you just allocate the scatter list and
-fill it with previously allocated pages.
+> --- /dev/null
+> +++ b/drivers/phy/Kconfig
+> @@ -0,0 +1,13 @@
+> +#
+> +# PHY
+> +#
+> +
+> +menuconfig GENERIC_PHY
+> +	tristate "PHY Subsystem"
+> +	help
+> +	  Generic PHY support.
+> +
+> +	  This framework is designed to provide a generic interface for PHY
+> +	  devices present in the kernel. This layer will have the generic
+> +	  API by which phy drivers can create PHY using the phy framework and
+> +	  phy users can obtain reference to the PHY.
 
-I have also the following changes on my TODO list for vb2-dma-sg:
-- remove custom vb2_dma_sg_desc structure and replace it with common
-sg_table structure
-- move mapping of the scatter list from device driver to vb2-dma-sg module
-to simplify driver code and unify memory management across devices (so the
-driver just gets correctly mapped scatter list and only reads dma addresses
-of each memory chunk, no longer needs to track buffer state/ownership).
-The correct flow is to call dma_map_sg() at buffer allocation,
-dma_unmap_sg() at free and dma_sync_for_{device,cpu} in prepare/finish
-callbacks. The only problem here is the need to convert all existing users
-of vb2-dma-sg (marvell-ccic and solo6x10) to the new interface.
+Again, please reverse this.  The drivers that use it should select it,
+not depend on it, which will then enable this option.  I will never know
+if I need to enable it, and based on your follow-on patches, if I don't,
+drivers that were working just fine, now disappeared from my build,
+which isn't nice, and a pain to notice and fix up.
 
-However I have completely no time atm to do any of the above changes. Would
-You like to take any of the above tasks while playing with vb2-dma-sg?
+> +/**
+> + * phy_create() - create a new phy
+> + * @dev: device that is creating the new phy
+> + * @id: id of the phy
+> + * @ops: function pointers for performing phy operations
+> + * @label: label given to the phy
+> + *
+> + * Called to create a phy using phy framework.
+> + */
+> +struct phy *phy_create(struct device *dev, u8 id, const struct phy_ops *ops,
+> +	const char *label)
+> +{
+> +	int ret;
+> +	struct phy *phy;
+> +
+> +	if (!dev) {
+> +		dev_WARN(dev, "no device provided for PHY\n");
+> +		ret = -EINVAL;
+> +		goto err0;
+> +	}
+> +
+> +	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
+> +	if (!phy) {
+> +		ret = -ENOMEM;
+> +		goto err0;
+> +	}
+> +
+> +	device_initialize(&phy->dev);
+> +	mutex_init(&phy->mutex);
+> +
+> +	phy->dev.class = phy_class;
+> +	phy->dev.parent = dev;
+> +	phy->dev.of_node = dev->of_node;
+> +	phy->id = id;
+> +	phy->ops = ops;
+> +	phy->label = kstrdup(label, GFP_KERNEL);
+> +
+> +	ret = dev_set_name(&phy->dev, "%s.%d", dev_name(dev), id);
 
-Best regards
--- 
-Marek Szyprowski
-Samsung R&D Institute Poland
+Your naming is odd, no "phy" anywhere in it?  You rely on the sender to
+never send a duplicate name.id pair?  Why not create your own ids based
+on the number of phys in the system, like almost all other classes and
+subsystems do?
+
+> +static inline int phy_pm_runtime_get(struct phy *phy)
+> +{
+> +	if (WARN(IS_ERR(phy), "Invalid PHY reference\n"))
+> +		return -EINVAL;
+
+Why would phy ever not be valid and a error pointer?  And why dump the
+stack if that happens, that seems really extreme.
+
+> +
+> +	if (!pm_runtime_enabled(&phy->dev))
+> +		return -ENOTSUPP;
+> +
+> +	return pm_runtime_get(&phy->dev);
+> +}
+
+This, and the other inline functions in this .h file seem huge, why are
+they inline and not in the .c file?  There's no speed issues, and it
+should save space overall in the .c file.  Please move them.
 
 
+> +static inline int phy_init(struct phy *phy)
+> +{
+> +	int ret;
+> +
+> +	ret = phy_pm_runtime_get_sync(phy);
+> +	if (ret < 0 && ret != -ENOTSUPP)
+> +		return ret;
+> +
+> +	mutex_lock(&phy->mutex);
+> +	if (phy->init_count++ == 0 && phy->ops->init) {
+> +		ret = phy->ops->init(phy);
+> +		if (ret < 0) {
+> +			dev_err(&phy->dev, "phy init failed --> %d\n", ret);
+> +			goto out;
+> +		}
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&phy->mutex);
+> +	phy_pm_runtime_put(phy);
+> +	return ret;
+> +}
+> +
+> +static inline int phy_exit(struct phy *phy)
+> +{
+> +	int ret;
+> +
+> +	ret = phy_pm_runtime_get_sync(phy);
+> +	if (ret < 0 && ret != -ENOTSUPP)
+> +		return ret;
+> +
+> +	mutex_lock(&phy->mutex);
+> +	if (--phy->init_count == 0 && phy->ops->exit) {
+> +		ret = phy->ops->exit(phy);
+> +		if (ret < 0) {
+> +			dev_err(&phy->dev, "phy exit failed --> %d\n", ret);
+> +			goto out;
+> +		}
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&phy->mutex);
+> +	phy_pm_runtime_put(phy);
+> +	return ret;
+> +}
+> +
+> +static inline int phy_power_on(struct phy *phy)
+> +{
+> +	int ret = -ENOTSUPP;
+> +
+> +	ret = phy_pm_runtime_get_sync(phy);
+> +	if (ret < 0 && ret != -ENOTSUPP)
+> +		return ret;
+> +
+> +	mutex_lock(&phy->mutex);
+> +	if (phy->power_count++ == 0 && phy->ops->power_on) {
+> +		ret = phy->ops->power_on(phy);
+> +		if (ret < 0) {
+> +			dev_err(&phy->dev, "phy poweron failed --> %d\n", ret);
+> +			goto out;
+> +		}
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&phy->mutex);
+> +
+> +	return ret;
+> +}
+> +
+> +static inline int phy_power_off(struct phy *phy)
+> +{
+> +	int ret = -ENOTSUPP;
+> +
+> +	mutex_lock(&phy->mutex);
+> +	if (--phy->power_count == 0 && phy->ops->power_off) {
+> +		ret =  phy->ops->power_off(phy);
+> +		if (ret < 0) {
+> +			dev_err(&phy->dev, "phy poweroff failed --> %d\n", ret);
+> +			goto out;
+> +		}
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&phy->mutex);
+> +	phy_pm_runtime_put(phy);
+> +
+> +	return ret;
+> +}
+
+Look at those 3 functions, they are all "real" and not an inline
+function at all, please move them.
+
+thanks,
+
+greg k-h
