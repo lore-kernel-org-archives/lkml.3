@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab3GRTcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:32:20 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:36966 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754893Ab3GRTcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 15:32:18 -0400
-Message-ID: <51E83E32.9050306@cs.wisc.edu>
-Date: Thu, 18 Jul 2013 13:12:50 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759344Ab3GRTdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:33:51 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39038 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759083Ab3GRTdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 15:33:49 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org
+Subject: [CFP, RESEND] Kernel Summit 2013 Call for Topic Proposals
+Date: Thu, 18 Jul 2013 15:33:45 -0400
+Message-ID: <nsxehavaciu.fsf@lambda.thunk.org>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-References: <cover.1369155164.git.agordeev@redhat.com>  <20130521235003.GE6985@mtj.dyndns.org>  <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>  <20130522170305.GD9563@kernel.dk>  <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>  <1373583637.7397.370.camel@haakon3.risingtidesystems.com>  <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>  <1373692812.7397.625.camel@haakon3.risingtidesystems.com>  <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>  <1374010683.7397.880.camel@haakon3.risingtidesystems.com>  <20130717161909.GB21468@dhcp-26-207.brq.redhat.com> <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 12:51 PM, Nicholas A. Bellinger wrote:
-> On Wed, 2013-07-17 at 18:19 +0200, Alexander Gordeev wrote:
->> On Tue, Jul 16, 2013 at 02:38:03PM -0700, Nicholas A. Bellinger wrote:
->>> [    7.927818] scsi_execute(): Calling blk_mq_free_request >>>
->>> [    7.927826] scsi 0:0:0:0: Direct-Access     ATA      ST9500530NS      CC03 PQ: 0 ANSI: 5
->>>
->>> OK, so INQUIRY response payload is looking as expected here.
->>
->> Yep. It is not on the top of my head, but I remember something like INQUIRYs
->> are emulated and thus do not have payload.
->>
->>> [    7.927960] sd 0:0:0:0: [sda] Sector size 0 reported, assuming 512.
->>> [    7.927964] sd 0:0:0:0: [sda] 1 512-byte logical blocks: (512 B/512 B)
->>> [    7.927965] sd 0:0:0:0: [sda] 0-byte physical blocks
->>>
->>> Strange..  READ_CAPACITY appears to be returning a payload as zeros..?
->>
->> Yep. Because blk_execute_rq() does not put the proper callback and data do
->> not get copied from sg's to bounce buffer. That is why I tried to use
->> blk_mq_execute_rq() instead. Once I do that, data start getting read and
->> booting stops elsewhere.
-> 
-> Mmmmmm.
-> 
-> The call to blk_queue_bounce() exists within blk_mq_make_request(), but
-> AFAICT this should still be getting invoked regardless of if the struct
-> request is dispatched into blk-mq via the modified blk_execute_rq() ->
-> blk_execute_rq_nowait() -> blk_mq_insert_request() codepath, or directly
-> via blk_mq_execute_rq()..
-> 
 
-blk_mq_make_request is not called from the blk insert/execute paths.
-blk_mq_make_request takes a bio and tries to merge it with a request and
-adds it to the queue. It is only called when the make_request_fn is
-called like when generic_make_request is called.
+While everyone has been participating on the Thread That Would Not Die :-),
+hopefully folks have not overlooked the fact if you are interested
+in attending the Kernel Summit, we would appreciate it if you send a
+topic proposal to the ksummit-2013-discuss mailing list by the end of
+this week.
 
-blk_mq_insert_request adds a already formed request to the queue. It is
-already formed so that is why that path does not bounce bios. The
-bios/pages should already be added within the drivers restrictions. So
-for the read_cap path, the call to blk_rq_map_kern in scsi_execute does
-the blk_queue_bounce call.
+Thanks!!
 
-Just saw this while trying out iscsi with the scsi-mq stuff :)
+                                                - Ted
+
+
+The annual Kernel Summit for 2013 will be held October 23rd through
+the 25th in Edinburgh, overlapping with LinuxCon Europe (which will be
+held October 21th through the 23rd) at the Edinburgh International
+Conference Centre in the United Kingdom.
+
+The format of the Kernel Summit will be:
+
+* Wednesday: Break out sessions/workshops in parallel with LinuxCon Europe
+* Thursday: Core plenary sessions
+* Friday: Dual-track technical sessions
+
+
+As we did last year, we are issuing this general call for proposals
+to attend from which we'll select most of the Kernel Summit attendees.
+We will be trying to cap the attendance at around 80-100 for the last
+two days of the session, so please get your request in early!
+
+Suggestions for topics should be sent before July 19th, 2013.  Please
+send them to
+
+	ksummit-2013-discuss@lists.linuxfoundation.org
+
+Please summarize what expertise you will bring to the meeting, and
+what you'd like to discuss.  If there are people whom you believe
+would be important to have for your proposed topic, please include
+them.  Please also tag your e-mail with [ATTEND] so we can easily pick
+them out, and use separate e-mail messages for each proposed topic, so
+that mail threads for each topic can be kept separate.  Sending one or
+more [ATTEND] messages will be considered a request to attend the
+kernel summit.
+
+Requests to attend will be looked upon more favorably if you also
+participate in the discussion of topics at:
+
+	ksummit-2013-discuss@lists.linuxfoundation.org
+
+You can subscribe to the list using mailman:
+
+   https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
+
+
+The best topics for the kernel summit tend to focus on topics which
+are not appropriate for any of the subsystem-specific workshops or
+minisummits, and which can not be easily resolved using the normal
+e-mail and IRC channels.  These include issues about our overall
+development process, and topics which span multiple subsystems.
+
+
+For reference, previous years' kernel summit agendas can be found here:
+
+https://sites.google.com/site/kernelsummit2012/agenda
+https://sites.google.com/site/kernelsummit2011/agenda
 
