@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290Ab3GROIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 10:08:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55513 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757631Ab3GROIy (ORCPT
+	id S1758925Ab3GROMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 10:12:33 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:37167 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757608Ab3GROMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 10:08:54 -0400
-Date: Thu, 18 Jul 2013 10:08:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <tom.leiming@gmail.com>
-cc: Gioh Kim <gioh.kim@lge.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Mark Salter <msalter@redhat.com>,
-        <namhyung.kim@lge.com>, Minchan Kim <minchan.kim@lge.com>,
-        Chanho Min <chanho.min@lge.com>, Jong-Sung Kim <neidhard.kim@lge.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] [RFC] EHCI: add to memory barrier to updating hw_next
-In-Reply-To: <CACVXFVNV-hGZpcy2ANQaca1K5yXJ88EOq1PTkJUEHEkFk9Btvw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1307181004190.1245-100000@iolanthe.rowland.org>
+	Thu, 18 Jul 2013 10:12:31 -0400
+Message-ID: <51E7F7C8.9090506@de.ibm.com>
+Date: Thu, 18 Jul 2013 16:12:24 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Alexander Graf <agraf@suse.de>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] PF: Async page fault support on s390
+References: <1373461195-27628-1-git-send-email-dingel@linux.vnet.ibm.com> <1373461195-27628-5-git-send-email-dingel@linux.vnet.ibm.com> <20130711090411.GA8575@redhat.com> <51DE8BE1.8000902@de.ibm.com> <51E7F440.2010600@redhat.com>
+In-Reply-To: <51E7F440.2010600@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071814-2966-0000-0000-0000082D8302
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Jul 2013, Ming Lei wrote:
-
-> > I guess that HC could have a use-after-free problem like following situation.
-> >
-> > 1. A qtd which is not at the queue head should be removed in qh_completions().
-> > 2. The last->hw_next become be pointing at the next qtd but the hw_next value is delayed in write-buffer.
-> > 3. The qtd is removed in the list.
-> > 4. The qtd is freed into DMA pool and re-allocated for another urb.
-> > 5. HC try to process last->hw_next and it is pointing re-allocated qtd.
-> >
-> > What do you think about it? Is it possible?
+On 18/07/13 15:57, Paolo Bonzini wrote:
+> Il 11/07/2013 12:41, Christian Borntraeger ha scritto:
+>> On 11/07/13 11:04, Gleb Natapov wrote:
+>>> On Wed, Jul 10, 2013 at 02:59:55PM +0200, Dominik Dingel wrote:
+>>>> This patch enables async page faults for s390 kvm guests.
+>>>> It provides the userspace API to enable, disable or get the status of this
+>>>> feature. Also it includes the diagnose code, called by the guest to enable
+>>>> async page faults.
+>>>>
+>>>> The async page faults will use an already existing guest interface for this
+>>>> purpose, as described in "CP Programming Services (SC24-6084)".
+>>>>
+>>>> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+>>> Christian, looks good now?
+>>
+>> Looks good, but I just had a  discussion with Dominik about several other cases 
+>> (guest driven reboot, qemu driven reboot, life migration). This patch should 
+>> allow all these cases (independent from this patch we need an ioctl to flush the
+>> list of pending interrupts to do so, but reboot is currently broken in that
+>> regard anyway - patch is currently being looked at)
+>>
+>> We are currently discussion if we should get rid of the APF_STATUS and let 
+>> the kernel wait for outstanding page faults before returning from KVM_RUN
+>> or if we go with this patch and let userspace wait for completion. 
+>>
+>> Will discuss this with Dominik, Conny and Alex. So lets defer that till next
+>> week, ok?
 > 
-> I understand it might not be possible because:  when 'stopped' is set, that
-> said the HC might not advance the queue. But I don't understand why
-> 'last->hw_next' is patched here under 'stopped' situation.
+> Let us know if we should wait for a v5. :)
 
-It should not be possible.  When "stopped" is set, the QH gets unlinked 
-and relinked before it can start up again.  Relinking involves some 
-memory barriers, so the qTD will not be accessed again by the HC.
+Yes, there will be a v5
 
-last->hw_next gets patched because the qTD might belong to some URB in 
-the middle of the queue that is being unlinked.  The URBs before it and 
-after it will still be active, so the queue link has to be updated.
-
-> Even the 'stopped' case may be seldom triggered, do you know under
-> which condition the stopped is triggered in your problem?(stall, short read
-> or others)
-
-I was going to ask the same question.  This particular piece of code
-gets executed _only_ when an URB is unlinked.  Not during any other
-kind of error.
-
-Alan Stern
 
