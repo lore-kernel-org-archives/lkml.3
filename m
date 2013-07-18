@@ -1,86 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab3GRCqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 22:46:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6701 "EHLO mga11.intel.com"
+	id S1758085Ab3GRCw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 22:52:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28528 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757978Ab3GRCqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 22:46:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,689,1367996400"; 
-   d="scan'208";a="367065330"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v2] x86, tboot: iomem fixes
-Date: Thu, 18 Jul 2013 10:35:43 +0800
-Message-Id: <1374114943-5932-1-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752464Ab3GRCw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 22:52:56 -0400
+Message-ID: <51E75874.8000307@redhat.com>
+Date: Thu, 18 Jul 2013 10:52:36 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net 2/2] macvtap: do not zerocopy if iov needs more pages
+ than MAX_SKB_FRAGS
+References: <1374057131-39207-1-git-send-email-jasowang@redhat.com> <1374057131-39207-2-git-send-email-jasowang@redhat.com> <20130717110658.GA22599@redhat.com>
+In-Reply-To: <20130717110658.GA22599@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes for iomem annotations in arch/x86/kernel/tboot.c
+On 07/17/2013 07:06 PM, Michael S. Tsirkin wrote:
+> On Wed, Jul 17, 2013 at 06:32:11PM +0800, Jason Wang wrote:
+>> We try to linearize part of the skb when the number of iov is greater than
+>> MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
+>> one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
+>> network.
+>>
+>> Solve this problem by calculate the pages needed for iov before trying to do
+>> zerocopy and switch to use copy instead of zerocopy if it needs more than
+>> MAX_SKB_FRAGS.
+>>
+>> This is done through introducing a new helper to count the pages for iov, and
+>> call uarg->callback() manually when switching from zerocopy to copy to notify
+>> vhost.
+>>
+>> We can do further optimization on top.
+>>
+>> This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
+>> (macvtap: zerocopy: validate vectors before building skb).
+>>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/net/macvtap.c |   58 +++++++++++++++++++++++++++++++-----------------
+>>  1 files changed, 37 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+>> index a7c5654..e200f11 100644
+>> --- a/drivers/net/macvtap.c
+>> +++ b/drivers/net/macvtap.c
+>> @@ -698,6 +698,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+>>  	return 0;
+>>  }
+>>  
+>> +static unsigned long iov_pages(const struct iovec *iv, int offset,
+>> +			       unsigned long nr_segs)
+>> +{
+>> +	unsigned long seg, base;
+>> +	int pages = 0, len, size;
+>> +
+>> +	while (nr_segs && (offset >= iv->iov_len)) {
+>> +		offset -= iv->iov_len;
+>> +		++iv;
+>> +		--nr_segs;
+>> +	}
+>> +
+>> +	for (seg = 0; seg < nr_segs; seg++) {
+>> +		base = (unsigned long)iv[seg].iov_base + offset;
+>> +		len = iv[seg].iov_len - offset;
+>> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+>> +		pages += size;
+>> +		offset = 0;
+>> +	}
+>> +
+>> +	return pages;
+>> +}
+>>  
+>>  /* Get packet from user space buffer */
+>>  static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+>> @@ -744,31 +766,19 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+>>  	if (unlikely(count > UIO_MAXIOV))
+>>  		goto err;
+>>  
+>> -	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
+>> -		zerocopy = true;
+>> -
+>> -	if (zerocopy) {
+>> +	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
+>>  		/* Userspace may produce vectors with count greater than
+>>  		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+>>  		 * to let the rest of data to be fit in the frags.
+>>  		 */
+> We don't linearize parts to make them fit, we simply
+> fall back to data copy.
+> So this comment no longer applies, right?
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- arch/x86/kernel/tboot.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index 3ff42d2..afe8cf8 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -466,9 +466,12 @@ struct sinit_mle_data {
- 	u32               vtd_dmars_off;
- } __packed;
- 
-+#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
-+
- struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
- {
--	void *heap_base, *heap_ptr, *config;
-+	void __iomem *heap_base, *heap_ptr, *config;
-+	u32 dmar_tbl_off;
- 
- 	if (!tboot_enabled())
- 		return dmar_tbl;
-@@ -485,25 +488,25 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
- 		return NULL;
- 
- 	/* now map TXT heap */
--	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
--			    *(u64 *)(config + TXTCR_HEAP_SIZE));
-+	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
-+			    readl(config + TXTCR_HEAP_SIZE));
- 	iounmap(config);
- 	if (!heap_base)
- 		return NULL;
- 
- 	/* walk heap to SinitMleData */
- 	/* skip BiosData */
--	heap_ptr = heap_base + *(u64 *)heap_base;
-+	heap_ptr = heap_base + readq(heap_base);
- 	/* skip OsMleData */
--	heap_ptr += *(u64 *)heap_ptr;
-+	heap_ptr += readq(heap_ptr);
- 	/* skip OsSinitData */
--	heap_ptr += *(u64 *)heap_ptr;
-+	heap_ptr += readq(heap_ptr);
- 	/* now points to SinitMleDataSize; set to SinitMleData */
- 	heap_ptr += sizeof(u64);
- 	/* get addr of DMAR table */
--	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
--		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
--		   sizeof(u64));
-+	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
-+	memcpy_fromio(dmar_tbl, heap_ptr + dmar_tbl_off - sizeof(u64),
-+			sizeof(struct acpi_table_header));
- 
- 	/* don't unmap heap because dmar.c needs access to this */
- 
--- 
-1.7.9.5
+Right, I forget to remove them. Will do it in V2.
+>> -		if (count > MAX_SKB_FRAGS) {
+>> -			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
+>> -			if (copylen < vnet_hdr_len)
+>> -				copylen = 0;
+>> -			else
+>> -				copylen -= vnet_hdr_len;
+>> -		}
+>> -		/* There are 256 bytes to be copied in skb, so there is enough
+>> -		 * room for skb expand head in case it is used.
+>> -		 * The rest buffer is mapped from userspace.
+>> -		 */
+>> -		if (copylen < vnet_hdr.hdr_len)
+>> -			copylen = vnet_hdr.hdr_len;
+>> -		if (!copylen)
+>> -			copylen = GOODCOPY_LEN;
+>> +		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
+>>  		linear = copylen;
+>> -	} else {
+>> +		if (iov_pages(iv, vnet_hdr_len + copylen, count)
+>> +		    <= MAX_SKB_FRAGS)
+>> +			zerocopy = true;
+>> +	}
+>> +
+>> +	if (!zerocopy) {
+>>  		copylen = len;
+>>  		linear = vnet_hdr.hdr_len;
+>>  	}
+>> @@ -780,9 +790,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+>>  
+>>  	if (zerocopy)
+>>  		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
+>> -	else
+>> +	else {
+>>  		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
+>>  						   len);
+>> +		if (!err && m && m->msg_control) {
+>> +			struct ubuf_info *uarg = m->msg_control;
+>> +			uarg->callback(uarg, false);
+>> +		}
+>> +	}
+>> +
+>>  	if (err)
+>>  		goto err_kfree;
+>>  
+>> -- 
+>> 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
