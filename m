@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab3GRIdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 04:33:46 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:45978 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab3GRIdo (ORCPT
+	id S1757269Ab3GRIfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 04:35:17 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:16934 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316Ab3GRIfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 04:33:44 -0400
+	Thu, 18 Jul 2013 04:35:14 -0400
+Message-ID: <51E7A7DC.80108@huawei.com>
+Date: Thu, 18 Jul 2013 16:31:24 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130717132736.GA7614@arwen.pp.htv.fi>
-References: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
-	<20130715165209.GA6000@kroah.com>
-	<CA+k=oDzZ5sf_wFMUvE_vkkqRQaOV0P3vWP99tDpoZkrwMN7Q+A@mail.gmail.com>
-	<20130716063117.GA30320@kroah.com>
-	<20130717075706.GC5291@arwen.pp.htv.fi>
-	<CA+k=oDza-oN++KCYtVMD0V62xgkJ3ctUOmzNkaYYYhXuKtaWKQ@mail.gmail.com>
-	<20130717132736.GA7614@arwen.pp.htv.fi>
-Date: Thu, 18 Jul 2013 16:33:43 +0800
-Message-ID: <CA+k=oDy=_CWMCfcGfy=wbhn0BDm45Y8wS=wpe6SviPcnetntTw@mail.gmail.com>
-Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
-From: Rong Wang <wr011235813@gmail.com>
-To: balbi@ti.com
-Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rong.Wang@csr.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3 V2] tracing: guard tracing_selftest_disabled by CONFIG_FTRACE_STARTUP_TEST
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 9:27 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Jul 17, 2013 at 09:04:54PM +0800, Rong Wang wrote:
->> Hi Felipe,
->>
->> On Wed, Jul 17, 2013 at 3:57 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > Hi,
->> >
->> > On Mon, Jul 15, 2013 at 11:31:17PM -0700, Greg KH wrote:
->> >> > The question is since we default GADGET, so the g_mass_storage.ko is
->> >> > installed early but connecting to a host PC
->> >> > is randomly, But the udev has no idea when a host PC connects our device.
->> >> >
->> >> > So we consider it's reasonable to let the udev know the GADGET device state.
->> >> > Is there any alternative to our question?
->> >>
->> >> I thought we already export events for gadget device states, have you
->> >> looked for them?  I can't dig through the code at the moment, but this
->> >> seems like a pretty common issue...
->> >>
->> >> Felipe, any ideas?
->> >
->> > we already expose that in sysfs. IIRC udev can act on sysfs changes,
->> > no ?
->>
->> I do not know if udev can polling sysfs file content change. I'll study this.
->>
->> But the change is triggered by calling usb_gadget_set_state, and I find
->> composite framework do not call this. Then we should do this common work
->> in every udc driver?
->
-> yes. Only the UDC driver knows when the controller is moving among those
-> states.
+Variable tracing_selftest_disabled have not any sense when
+CONFIG_FTRACE_STARTUP_TEST is disabled.
 
-OK. I got that.
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+---
+ kernel/trace/trace.c        |    4 +++-
+ kernel/trace/trace.h        |    2 +-
+ kernel/trace/trace_events.c |    2 ++
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
-But I think it may be more reasonable for the udc driver to maintain a
-work queue
-to handle the state change since this operation mostly happen in ISR ?
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 41340c3..248a856 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -58,10 +58,12 @@ bool ring_buffer_expanded;
+  */
+ static bool __read_mostly tracing_selftest_running;
+
++#ifdef CONFIG_FTRACE_STARTUP_TEST
+ /*
+  * If a tracer is running, we do not want to run SELFTEST.
+  */
+ bool __read_mostly tracing_selftest_disabled;
++#endif
+
+ /* For tracers that don't implement custom flags */
+ static struct tracer_opt dummy_tracer_opt[] = {
+@@ -1093,9 +1095,9 @@ int register_tracer(struct tracer *type)
+ 	/* Do we want this tracer to start on bootup? */
+ 	tracing_set_tracer(type->name);
+ 	default_bootup_tracer = NULL;
++#ifdef CONFIG_FTRACE_STARTUP_TEST
+ 	/* disable other selftests, since this will break it. */
+ 	tracing_selftest_disabled = true;
+-#ifdef CONFIG_FTRACE_STARTUP_TEST
+ 	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
+ 	       type->name);
+ #endif
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 20572ed..532c2e3 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -658,10 +658,10 @@ extern int DYN_FTRACE_TEST_NAME(void);
+ extern int DYN_FTRACE_TEST_NAME2(void);
+
+ extern bool ring_buffer_expanded;
+-extern bool tracing_selftest_disabled;
+ DECLARE_PER_CPU(int, ftrace_cpu_disabled);
+
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
++extern bool tracing_selftest_disabled;
+ extern int trace_selftest_startup_function(struct tracer *trace,
+ 					   struct trace_array *tr);
+ extern int trace_selftest_startup_function_graph(struct tracer *trace,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 27963e2..5f694ce 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -2228,7 +2228,9 @@ static __init int setup_trace_event(char *str)
+ {
+ 	strlcpy(bootup_event_buf, str, COMMAND_LINE_SIZE);
+ 	ring_buffer_expanded = true;
++#ifdef CONFIG_FTRACE_STARTUP_TEST
+ 	tracing_selftest_disabled = true;
++#endif
+
+ 	return 1;
+ }
+-- 
+1.7.9.7
 
 
->
-> --
-> balbi
