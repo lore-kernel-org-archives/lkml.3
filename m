@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab3GRCBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Jul 2013 22:01:38 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45594 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606Ab3GRCBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Jul 2013 22:01:36 -0400
-Message-ID: <1374112865.19894.493.camel@pasglop>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML (was: [
- 00/19] 3.10.1-stable review)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: paulmck@linux.vnet.ibm.com, ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Thu, 18 Jul 2013 12:01:05 +1000
-In-Reply-To: <1374041689.2036.14.camel@dabdike.svoaero.ru>
-References: <20130715180403.GD15531@xanatos>
-	 <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
-	 <20130715184642.GE15531@xanatos>
-	 <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
-	 <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos>
-	 <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
-	 <1373926109.17876.221.camel@gandalf.local.home>
-	 <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com>
-	 <1373999229.2148.87.camel@dabdike>
-	 <20130716211830.GX16780@linux.vnet.ibm.com>
-	 <1374041689.2036.14.camel@dabdike.svoaero.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932533Ab3GRCHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Jul 2013 22:07:05 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:33237 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab3GRCHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Jul 2013 22:07:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1551099.EAQDd0lEcY@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan>
+	<3718119.FLASu5DBx8@vostro.rjw.lan>
+	<2366394.4EoP1MXmG2@vostro.rjw.lan>
+	<1551099.EAQDd0lEcY@vostro.rjw.lan>
+Date: Wed, 17 Jul 2013 19:07:02 -0700
+X-Google-Sender-Auth: 5QpzPyyHs7Ij6B7eUFZwdcP-FS4
+Message-ID: <CAE9FiQU99a=BeHCrt0FWSeNs8NORg85C4uwQyY7Ky+-nqaSfxg@mail.gmail.com>
+Subject: Re: [PATCH 5/30] ACPI / hotplug / PCI: Unified notify handler for
+ hotplug events
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-17 at 10:14 +0400, James Bottomley wrote:
-> > OK, I am stupid enough to take a stab at this...
-> > 
-> > 1.    Does the Linux kernel community's health depend on the occasional
-> >       rant?  [My guess is that we simply have no way of knowing.
-> >       That said, I would be interested in hearing specific examples
-> >       of open-source communities that are as doing as well as is the
-> >       Linux community and that live within stricter social mores.
-> >       Cue arguments about exactly what "doing well" means...]
+On Wed, Jul 17, 2013 at 4:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Using the hotplug context objects introduced previously rework the
+> ACPI-based PCI hotplug (ACPIPHP) core code so that all notifications
+> for ACPI device objects corresponding to the hotplug PCI devices are
+> handled by one function, handle_hotplug_event(), which recognizes
+> whether it has to handle a bridge or a function.
+>
+> In addition to code size reduction it allows some ugly pieces of code
+> where notify handlers have to be uninstalled and installed again to
+> go away.  Moreover, it fixes a theoretically possible race between
+> handle_hotplug_event() and free_bridge() tearing down data structures
+> for the same handle.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/pci/hotplug/acpiphp.h      |    1
+>  drivers/pci/hotplug/acpiphp_glue.c |  132 ++++++++++++++-----------------------
+>  2 files changed, 53 insertions(+), 80 deletions(-)
 
-My little personal opinion (that nobody probably cares about :-) is that
-the occasional Linus rant is a good thing. It keeps people like me in
-check :-)
+Can you put this patches in one temp branch ?
 
-More seriously, the rant when I screw up is generally deserved, and the
-"idea" of the possible rant (I prefer not using threat) is actually a
-strong motivator to get things right.
+Like to check final bits.
 
-Ie. It's a *very good* barrier against maintainers sliding into
-sloppyness. Really, it works. At least with me.
+Thanks
 
-It's easy to take things a bit too much for granted, especially when you
-maintain your own little corner of the world.
-
-Cheers,
-Ben.
-
-
+Yinghai
