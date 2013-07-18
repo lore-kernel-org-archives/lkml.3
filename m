@@ -1,242 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934118Ab3GRU1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:27:35 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50119 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933459Ab3GRU1d (ORCPT
+	id S934209Ab3GRU2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:28:09 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:37196 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933027Ab3GRU2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 16:27:33 -0400
-Message-ID: <51E84EDC.5090502@linux.vnet.ibm.com>
-Date: Fri, 19 Jul 2013 01:53:56 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 18 Jul 2013 16:28:07 -0400
+Message-ID: <51E84FD1.4050400@hurleysoftware.com>
+Date: Thu, 18 Jul 2013 16:28:01 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        bhelgaas@google.com
-Subject: Re: workqueue, pci: INFO: possible recursive locking detected
-References: <51E55B7D.2040209@linux.vnet.ibm.com> <51E66CCC.9010600@cn.fujitsu.com>
-In-Reply-To: <51E66CCC.9010600@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: Nestor Lopez Casado <nlopezcasad@logitech.com>
+CC: jkosina@suse.cz, benjamin.tissoires@gmail.com, adlr@chromium.org,
+        joseph.salisbury@canonical.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying
+ device issue""
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+In-Reply-To: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071820-8878-0000-0000-0000080473E6
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[ +cc Sarah Sharp, linux-usb ]
 
-On 07/17/2013 03:37 PM, Lai Jiangshan wrote:
-> On 07/16/2013 10:41 PM, Srivatsa S. Bhat wrote:
->> Hi,
->>
->> I have been seeing this warning every time during boot. I haven't
->> spent time digging through it though... Please let me know if
->> any machine-specific info is needed.
->>
->> Regards,
->> Srivatsa S. Bhat
->>
->>
->> ----------------------------------------------------
->>
->> =============================================
->> [ INFO: possible recursive locking detected ]
->> 3.11.0-rc1-lockdep-fix-a #6 Not tainted
->> ---------------------------------------------
->> kworker/0:1/142 is trying to acquire lock:
->>  ((&wfc.work)){+.+.+.}, at: [<ffffffff81077100>] flush_work+0x0/0xb0
->>
->> but task is already holding lock:
->>  ((&wfc.work)){+.+.+.}, at: [<ffffffff81075dd9>] process_one_work+0x169/0x610
->>
->> other info that might help us debug this:
->>  Possible unsafe locking scenario:
->>
->>        CPU0
->>        ----
->>   lock((&wfc.work));
->>   lock((&wfc.work));
-> 
+On 07/18/2013 09:21 AM, Nestor Lopez Casado wrote:
+> This reverts commit 8af6c08830b1ae114d1a8b548b1f8b056e068887.
 >
+> This patch re-adds the workaround introduced by 596264082f10dd4
+> which was reverted by 8af6c08830b1ae114.
+>
+> The original patch 596264 was needed to overcome a situation where
+> the hid-core would drop incoming reports while probe() was being
+> executed.
+>
+> This issue was solved by c849a6143bec520af which added
+> hid_device_io_start() and hid_device_io_stop() that enable a specific
+> hid driver to opt-in for input reports while its probe() is being
+> executed.
+>
+> Commit a9dd22b730857347 modified hid-logitech-dj so as to use the
+> functionality added to hid-core. Having done that, workaround 596264
+> was no longer necessary and was reverted by 8af6c08.
+>
+> We now encounter a different problem that ends up 'again' thwarting
+> the Unifying receiver enumeration. The problem is time and usb controller
+> dependent. Ocasionally the reports sent to the usb receiver to start
+> the paired devices enumeration fail with -EPIPE and the receiver never
+> gets to enumerate the paired devices.
+>
+> With dcd9006b1b053c7b1c the problem was "hidden" as the call to the usb
+> driver became asynchronous and none was catching the error from the
+> failing URB.
+>
+> As the root cause for this failing SET_REPORT is not understood yet,
+> -possibly a race on the usb controller drivers or a problem with the
+> Unifying receiver- reintroducing this workaround solves the problem.
 
 
-Hi Lai,
+Before we revert to using the workaround, I'd like to suggest that
+this new "hidden" problem may be an interaction with the xhci_hcd host
+controller driver only.
 
-Thanks for taking a look into this!
+Looking at the related bug, the OP indicates the machine only has
+USB3 ports. Additionally, comments #7, #100, and #104 of the original
+bug report [1] add additional information that would seem to confirm
+this suspicion.
 
-> 
-> This is false negative,
-
-I believe you meant false-positive...
-
-> the two "wfc"s are different, they are
-> both on stack. flush_work() can't be deadlock in such case:
-> 
-> void foo(void *)
-> {
-> 	...
-> 	if (xxx)
-> 		work_on_cpu(..., foo, ...);
-> 	...
-> }
-> 
-> bar()
-> {
-> 	work_on_cpu(..., foo, ...);
-> }
-> 
-> The complaint is caused by "work_on_cpu() uses a static lock_class_key".
-> we should fix work_on_cpu().
-> (but the caller should also be careful, the foo()/local_pci_probe() is re-entering)
-> 
-> But I can't find an elegant fix.
-> 
-> long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
-> {
-> 	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
-> 
-> +#ifdef CONFIG_LOCKDEP
-> +	static struct lock_class_key __key;
-> +	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-> +	lockdep_init_map(&wfc.work.lockdep_map, &wfc.work, &__key, 0);
-> +#else
-> 	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-> +#endif
-> 	schedule_work_on(cpu, &wfc.work);
-> 	flush_work(&wfc.work);
-> 	return wfc.ret;
-> }
-> 
-
-Unfortunately that didn't seem to fix it.. I applied the patch
-shown below, and I got the same old warning.
-
----
-
- kernel/workqueue.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+Let me add I have this USB device running on the uhci_hcd driver
+with or without this workaround on v3.10.
 
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f02c4a4..07d9a67 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4754,7 +4754,13 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
- {
- 	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
- 
-+#ifdef CONFIG_LOCKDEP
-+	static struct lock_class_key __key;
-+	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-+	lockdep_init_map(&wfc.work.lockdep_map, "&wfc.work", &__key, 0);
-+#else
- 	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-+#endif
- 	schedule_work_on(cpu, &wfc.work);
- 	flush_work(&wfc.work);
- 	return wfc.ret;
+> Overall what this workaround does is: If an input report from an
+> unknown device is received, then a (re)enumeration is performed.
+>
+> related bug:
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1194649
 
-
-
-Warning:
---------
-
-wmi: Mapper loaded
-be2net 0000:11:00.0: irq 102 for MSI/MSI-X
-be2net 0000:11:00.0: enabled 1 MSI-x vector(s)
-be2net 0000:11:00.0: created 0 RSS queue(s) and 1 default RX queue
-be2net 0000:11:00.0: created 1 TX queue(s)
-pci 0000:11:04.0: [19a2:0710] type 00 class 0x020000
-
-=============================================
-[ INFO: possible recursive locking detected ]
-3.11.0-rc1-wq-fix #10 Not tainted
----------------------------------------------
-kworker/0:1/126 is trying to acquire lock:
- (&wfc.work){+.+.+.}, at: [<ffffffff810770f0>] flush_work+0x0/0xb0
-
-but task is already holding lock:
- (&wfc.work){+.+.+.}, at: [<ffffffff81075dc9>] process_one_work+0x169/0x610
-
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(&wfc.work);
-  lock(&wfc.work);
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-3 locks held by kworker/0:1/126:
- #0:  (events){.+.+.+}, at: [<ffffffff81075dc9>] process_one_work+0x169/0x610
- #1:  (&wfc.work){+.+.+.}, at: [<ffffffff81075dc9>] process_one_work+0x169/0x610
- #2:  (&__lockdep_no_validate__){......}, at: [<ffffffff81398ada>] device_attach+0x2a/0xc0
-
-stack backtrace:
-CPU: 0 PID: 126 Comm: kworker/0:1 Not tainted 3.11.0-rc1-wq-fix #10
-Hardware name: IBM  -[8737R2A]-/00Y2738, BIOS -[B2E120RUS-1.20]- 11/30/2012
-Workqueue: events work_for_cpu_fn
- ffff881036887408 ffff881036889668 ffffffff81619059 0000000000000003
- ffff881036886a80 ffff881036889698 ffffffff810c1624 ffff881036886a80
- ffff881036887408 ffff881036886a80 0000000000000000 ffff8810368896f8
-Call Trace:
- [<ffffffff81619059>] dump_stack+0x59/0x80
- [<ffffffff810c1624>] print_deadlock_bug+0xf4/0x100
- [<ffffffff810c3104>] validate_chain+0x504/0x750
- [<ffffffff810c365d>] __lock_acquire+0x30d/0x580
- [<ffffffff810c3967>] lock_acquire+0x97/0x170
- [<ffffffff810770f0>] ? start_flush_work+0x220/0x220
- [<ffffffff81077138>] flush_work+0x48/0xb0
- [<ffffffff810770f0>] ? start_flush_work+0x220/0x220
- [<ffffffff810c2000>] ? mark_held_locks+0x80/0x130
- [<ffffffff81074ceb>] ? queue_work_on+0x4b/0xa0
- [<ffffffff810c2375>] ? trace_hardirqs_on_caller+0x105/0x1d0
- [<ffffffff810c244d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81077334>] work_on_cpu+0xa4/0xc0
- [<ffffffff8106f940>] ? wqattrs_hash+0x190/0x190
- [<ffffffff812d1ed0>] ? pci_pm_prepare+0x60/0x60
- [<ffffffff812d1ffa>] __pci_device_probe+0x9a/0xe0
- [<ffffffff8161ef90>] ? _raw_spin_unlock_irq+0x30/0x50
- [<ffffffff812d3302>] ? pci_dev_get+0x22/0x30
- [<ffffffff812d334a>] pci_device_probe+0x3a/0x60
- [<ffffffff8161ef90>] ? _raw_spin_unlock_irq+0x30/0x50
- [<ffffffff81398bdc>] really_probe+0x6c/0x320
- [<ffffffff81398ed7>] driver_probe_device+0x47/0xa0
- [<ffffffff81398fe0>] ? __driver_attach+0xb0/0xb0
- [<ffffffff81399033>] __device_attach+0x53/0x60
- [<ffffffff81396b24>] bus_for_each_drv+0x74/0xa0
- [<ffffffff81398b50>] device_attach+0xa0/0xc0
- [<ffffffff812c99f9>] pci_bus_add_device+0x39/0x60
- [<ffffffff812ed341>] virtfn_add+0x251/0x3e0
- [<ffffffff810c244d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff812ed9bf>] sriov_enable+0x22f/0x3d0
- [<ffffffff812edbad>] pci_enable_sriov+0x4d/0x60
- [<ffffffffa0127045>] be_vf_setup+0x175/0x410 [be2net]
- [<ffffffffa012d3ca>] be_setup+0x37a/0x4b0 [be2net]
- [<ffffffffa012dac0>] be_probe+0x5c0/0x820 [be2net]
- [<ffffffff812d1f1e>] local_pci_probe+0x4e/0x90
- [<ffffffff8106f958>] work_for_cpu_fn+0x18/0x30
- [<ffffffff81075e3a>] process_one_work+0x1da/0x610
- [<ffffffff81075dc9>] ? process_one_work+0x169/0x610
- [<ffffffff810764fc>] worker_thread+0x28c/0x3a0
- [<ffffffff81076270>] ? process_one_work+0x610/0x610
- [<ffffffff8107da5e>] kthread+0xee/0x100
- [<ffffffff8107d970>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff81628e5c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8107d970>] ? __init_kthread_worker+0x70/0x70
-be2net 0000:11:04.0: enabling device (0040 -> 0042)
-be2net 0000:11:04.0: Could not use PCIe error reporting
-be2net 0000:11:04.0: VF is not privileged to issue opcode 89-1
-be2net 0000:11:04.0: VF is not privileged to issue opcode 125-1
-
+I thought I saw someone reporting this problem recently on LKML;
+where is the Reported-by so that Sarah can follow-up with the
+reporter directly, if desired?
 
 Regards,
-Srivatsa S. Bhat
+Peter Hurley
+
+[1]
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1039143
+
+
+> Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+> ---
+>   drivers/hid/hid-logitech-dj.c |   45 +++++++++++++++++++++++++++++++++++++++++
+>   drivers/hid/hid-logitech-dj.h |    1 +
+>   2 files changed, 46 insertions(+)
+>
+> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+> index db3192b..0d13389 100644
+> --- a/drivers/hid/hid-logitech-dj.c
+> +++ b/drivers/hid/hid-logitech-dj.c
+> @@ -192,6 +192,7 @@ static struct hid_ll_driver logi_dj_ll_driver;
+>   static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
+>   					size_t count,
+>   					unsigned char report_type);
+> +static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev);
+>
+>   static void logi_dj_recv_destroy_djhid_device(struct dj_receiver_dev *djrcv_dev,
+>   						struct dj_report *dj_report)
+> @@ -232,6 +233,7 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
+>   	if (dj_report->report_params[DEVICE_PAIRED_PARAM_SPFUNCTION] &
+>   	    SPFUNCTION_DEVICE_LIST_EMPTY) {
+>   		dbg_hid("%s: device list is empty\n", __func__);
+> +		djrcv_dev->querying_devices = false;
+>   		return;
+>   	}
+>
+> @@ -242,6 +244,12 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
+>   		return;
+>   	}
+>
+> +	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
+> +		/* The device is already known. No need to reallocate it. */
+> +		dbg_hid("%s: device is already known\n", __func__);
+> +		return;
+> +	}
+> +
+>   	dj_hiddev = hid_allocate_device();
+>   	if (IS_ERR(dj_hiddev)) {
+>   		dev_err(&djrcv_hdev->dev, "%s: hid_allocate_device failed\n",
+> @@ -305,6 +313,7 @@ static void delayedwork_callback(struct work_struct *work)
+>   	struct dj_report dj_report;
+>   	unsigned long flags;
+>   	int count;
+> +	int retval;
+>
+>   	dbg_hid("%s\n", __func__);
+>
+> @@ -337,6 +346,25 @@ static void delayedwork_callback(struct work_struct *work)
+>   		logi_dj_recv_destroy_djhid_device(djrcv_dev, &dj_report);
+>   		break;
+>   	default:
+> +	/* A normal report (i. e. not belonging to a pair/unpair notification)
+> +	 * arriving here, means that the report arrived but we did not have a
+> +	 * paired dj_device associated to the report's device_index, this
+> +	 * means that the original "device paired" notification corresponding
+> +	 * to this dj_device never arrived to this driver. The reason is that
+> +	 * hid-core discards all packets coming from a device while probe() is
+> +	 * executing. */
+> +	if (!djrcv_dev->paired_dj_devices[dj_report.device_index]) {
+> +		/* ok, we don't know the device, just re-ask the
+> +		 * receiver for the list of connected devices. */
+> +		retval = logi_dj_recv_query_paired_devices(djrcv_dev);
+> +		if (!retval) {
+> +			/* everything went fine, so just leave */
+> +			break;
+> +		}
+> +		dev_err(&djrcv_dev->hdev->dev,
+> +			"%s:logi_dj_recv_query_paired_devices "
+> +			"error:%d\n", __func__, retval);
+> +		}
+>   		dbg_hid("%s: unexpected report type\n", __func__);
+>   	}
+>   }
+> @@ -367,6 +395,12 @@ static void logi_dj_recv_forward_null_report(struct dj_receiver_dev *djrcv_dev,
+>   	if (!djdev) {
+>   		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+>   			" is NULL, index %d\n", dj_report->device_index);
+> +		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
+> +
+> +		if (schedule_work(&djrcv_dev->work) == 0) {
+> +			dbg_hid("%s: did not schedule the work item, was already "
+> +			"queued\n", __func__);
+> +		}
+>   		return;
+>   	}
+>
+> @@ -397,6 +431,12 @@ static void logi_dj_recv_forward_report(struct dj_receiver_dev *djrcv_dev,
+>   	if (dj_device == NULL) {
+>   		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
+>   			" is NULL, index %d\n", dj_report->device_index);
+> +		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
+> +
+> +		if (schedule_work(&djrcv_dev->work) == 0) {
+> +			dbg_hid("%s: did not schedule the work item, was already "
+> +			"queued\n", __func__);
+> +		}
+>   		return;
+>   	}
+>
+> @@ -444,6 +484,10 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+>   	struct dj_report *dj_report;
+>   	int retval;
+>
+> +	/* no need to protect djrcv_dev->querying_devices */
+> +	if (djrcv_dev->querying_devices)
+> +		return 0;
+> +
+>   	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+>   	if (!dj_report)
+>   		return -ENOMEM;
+> @@ -455,6 +499,7 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+>   	return retval;
+>   }
+>
+> +
+>   static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+>   					  unsigned timeout)
+>   {
+> diff --git a/drivers/hid/hid-logitech-dj.h b/drivers/hid/hid-logitech-dj.h
+> index fd28a5e..4a40003 100644
+> --- a/drivers/hid/hid-logitech-dj.h
+> +++ b/drivers/hid/hid-logitech-dj.h
+> @@ -101,6 +101,7 @@ struct dj_receiver_dev {
+>   	struct work_struct work;
+>   	struct kfifo notif_fifo;
+>   	spinlock_t lock;
+> +	bool querying_devices;
+>   };
+>
+>   struct dj_device {
+>
 
