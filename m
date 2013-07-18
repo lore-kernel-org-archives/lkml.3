@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965321Ab3GRUDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:03:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37804 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965307Ab3GRUDi (ORCPT
+	id S965324Ab3GRUDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:03:55 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:65461 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965049Ab3GRUDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 16:03:38 -0400
-Date: Thu, 18 Jul 2013 13:03:35 -0700 (PDT)
-Message-Id: <20130718.130335.991768032324737210.davem@davemloft.net>
-To: paolo.valente@unimore.it
-Cc: jhs@mojatatu.com, shemminger@vyatta.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fchecconi@gmail.com, rizzo@iet.unipi.it
-Subject: Re: [PATCH BUGFIX] pkt_sched: sch_qfq: remove a source of high
- packet delay/jitter
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1373957550-10134-1-git-send-email-paolo.valente@unimore.it>
-References: <1373911942.2062.24.camel@joe-AO722>
-	<1373957550-10134-1-git-send-email-paolo.valente@unimore.it>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 18 Jul 2013 16:03:40 -0400
+Message-ID: <51E84A19.9010707@linaro.org>
+Date: Thu, 18 Jul 2013 13:03:37 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Zoran Markovic <zoran.markovic@linaro.org>
+CC: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>
+Subject: Re: [RFC PATCH] rtc: keep system awake until all expired RTC timers
+ are handled
+References: <1372288153-4731-1-git-send-email-zoran.markovic@linaro.org>
+In-Reply-To: <1372288153-4731-1-git-send-email-zoran.markovic@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 18 Jul 2013 13:03:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Valente <paolo.valente@unimore.it>
-Date: Tue, 16 Jul 2013 08:52:30 +0200
+On 06/26/2013 04:09 PM, Zoran Markovic wrote:
+> Current implementation of RTC interface allows for system suspend to
+> occur in the following cases:
+> (a) if a timer is set in the past and rtc_timer_do_work() is scheduled
+> to handle it, and
+> (b) if rtc_timer_do_work() is called to handle expired timers whose
+> handlers implement a preemption point.
+>
+> A pending suspend request may be honoured in the above cases causing
+> timer handling to be delayed until after the next resume. This is
+> undesirable since timer handlers may have time-critical code to execute.
+>
+> This patch makes sure that the system stays awake until all expired
+> timers are handled.
+>
+> Note that all calls to pm_stay_awake() are eventually paired with
+> the single pm_relax() call in rtc_timer_do_work(), which is launched
+> using schedule_work().
+>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Arve Hjonnevag <arve@android.com>
+> Cc: Todd Poynor <toddpoynor@google.com>
+> Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
 
- ...
-> This patch addresses this issue by just using the above
-> 'instantaneous' value of the weight sum, instead of the maximum
-> possible value, when updating the system virtual time.  After the
-> instantaneous weight sum is decreased, QFQ+ may deviate from the ideal
-> service for a time interval in the order of the time to serve one
-> maximum-size packet for each backlogged class. The worst-case extent
-> of the deviation exhibited by QFQ+ during this time interval [1] is
-> basically the same as of the deviation described above (but, without
-> this patch, QFQ+ suffers from such a deviation all the time). Finally,
-> this patch modifies the comment to the function qfq_slot_insert, to
-> make it coherent with the fact that the weight sum used by QFQ+ can
-> now be lower than the maximum possible value.
-> 
-> [1] P. Valente, "Extending WF2Q+ to support a dynamic traffic mix",
-> Proceedings of AAA-IDEA'05, June 2005.
-> 
-> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
+Haven't seen any objections here, so I'll queue this for 3.12.
 
-Thank you for this amazing commit message.
+thanks
+-john
 
-Since you explained everything, even if I don't understand all of the
-details of QFQ/QFQ+ I can in fact be confident in your change.
-
-Applied and queued up for -stable, thanks!
