@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738Ab3GRLAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:00:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55486 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757770Ab3GRLAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:00:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
-   d="scan'208";a="347708597"
-Message-ID: <51E7CABD.3040105@intel.com>
-Date: Thu, 18 Jul 2013 19:00:13 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1758760Ab3GRLC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:02:29 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48206 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756185Ab3GRLC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 07:02:28 -0400
+Date: Thu, 18 Jul 2013 12:02:03 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130718110203.GK22506@sirena.org.uk>
+References: <1374144831-25622-1-git-send-email-broonie@kernel.org>
+ <CAKohpo=VqJA7m_p7YSNZjkY6Se640RJEHSdJdX6BwY+VGSfAng@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, eranian@google.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH] perf, x86: Add Silvermont (22nm Atom) support
-References: <1374125767-9411-1-git-send-email-zheng.z.yan@intel.com> <51E77F90.3040007@intel.com> <20130718084249.GD27075@twins.programming.kicks-ass.net>
-In-Reply-To: <20130718084249.GD27075@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PsoQMlSWCswIFQyi"
+Content-Disposition: inline
+In-Reply-To: <CAKohpo=VqJA7m_p7YSNZjkY6Se640RJEHSdJdX6BwY+VGSfAng@mail.gmail.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Use the power efficient workqueue for
+ delayed powerdown
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 04:42 PM, Peter Zijlstra wrote:
-> On Thu, Jul 18, 2013 at 01:39:28PM +0800, Yan, Zheng wrote:
->> On 07/18/2013 01:36 PM, Yan, Zheng wrote:
->>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->>>
->>> Compare to old atom, Silvermont has offcore and has more events
->>> that support PEBS.
->>>
->>> Silvermont has two offcore response configuration MSRs, but the
->>> event code for OFFCORE_RSP_1 is 0x02b7. To avoid complicating
->>> intel_fixup_er(), use INTEL_UEVENT_EXTRA_REG to define offcore
->>> MSRs. So intel_fixup_er() can find the code for OFFCORE_RSP_1
->>> by x86_pmu.extra_regs[1].event.
->>>
->>
->> Document is at http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-optimization-manual.pdf, but it has no PEBS event list.
-> 
-> Why isn't this in the regular SDM like all the other stuff?
-> 
 
-I don't know, probably they still haven't finished the document yet. (above PDF has no PEBS event list). 
+--PsoQMlSWCswIFQyi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, Jul 18, 2013 at 04:26:22PM +0530, Viresh Kumar wrote:
+
+> Cool!! People have started to use this interface now :)
+
+It could do with a bit more publicity - the only reason I heard of it is
+that I queried what a version of it was doing in the middle of big.LITTLE=
+=20
+patches for the LSK and why it wasn't upstream.
+
+--PsoQMlSWCswIFQyi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR58soAAoJELSic+t+oim9oOgP/3omeNiJ7YwOivWgxAmJ/Vcl
+2bzuWsoJJ5sfccBYVf4KasaX8ntpxWciBFOaChv4TlmRFAOZr35LxAxg3Mt1bymg
+J6tI71sT+0YrlWFI4l6cPJgM7PSkLret3uADzWl8UPfPvBJ8qM86yJMEicl5PUEx
+2dNShXc5RBUCPy9qHoxViI1wbagI80pgViBQp7w6iGG/7Urn6MZj8y5nTRxhxEfL
+6/90lsFnSrmksd3Zrv+DGAvXTH8/kwYM0wojrcN3VlxN6T873LhyWlhyttCX15n7
+4Q68A9GAVIEOKZYmS404Lj5saNQ7EMb6VKTHKsSlx3fByCdTIJd/PayOMkIts759
+0J18PIhJk2MpoCqM0b4KHuxuSOdx+qF5oY+w7vSK19pv1YjqcAJfi+yikW9NU9o+
+/ay+wRDWgsYH34+t5cNj58/xiTyFR60hf+RPyT0vprGO6yvXcXsJ4gLYWaIyrEqJ
+mLJnJZUwW8iP/6gYz6rW5Q7LKscarjSjDMQl75E7d4XemDxI9Nq5D0Xl7hvJFXYr
+z2CbYzx73W0FXTXxT3q31442kHnlaOb4p2igBab2ajwU+wC7W/mqeSzPzkFa1J+S
+gZe7dIIBc/gOmiXmhObRMI4T8shmwHOTB5ryh8AUk0XNRqe4rt9Drp1cnUH0fFS+
+CncGYv1/mH2cFyjQI5aH
+=bhnf
+-----END PGP SIGNATURE-----
+
+--PsoQMlSWCswIFQyi--
