@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934705Ab3GRWYZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 18:24:25 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:61848 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934586Ab3GRWVk (ORCPT
+	id S934558Ab3GRWVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 18:21:35 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:53186 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932931Ab3GRWVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 18:21:40 -0400
+	Thu, 18 Jul 2013 18:21:31 -0400
 From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 To: jic23@cam.ac.uk
 Cc: gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
-Subject: [PATCH 05/15] MFD: ti_tscadc: ADC Clock check not required
-Date: Thu, 18 Jul 2013 23:21:16 +0100
-Message-Id: <1374186086-5015-6-git-send-email-zubair.lutfullah@gmail.com>
+Subject: [PATCH 00/15] iio: ti_am335x_adc: Add continuous mode take 2
+Date: Thu, 18 Jul 2013 23:21:11 +0100
+Message-Id: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
-References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Patil, Rachna" <rachna@ti.com>
+Patches now give correct authorship.
 
-ADC is ideally expected to work at a frequency of 3MHz.
-The present code had a check, which returned error if the frequency
-went below the threshold  value. But since AM335x supports various
-working frequencies, this check is not required.
-Now the code just uses the internal ADC clock divider to set the ADC
-frequency w.r.t the sys clock.
+and checkpatch.pl issues are checked for each patch.
 
-Signed-off-by: Patil, Rachna <rachna@ti.com>
-Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
----
- drivers/mfd/ti_am335x_tscadc.c       |    6 +-----
- include/linux/mfd/ti_am335x_tscadc.h |    1 -
- 2 files changed, 1 insertion(+), 6 deletions(-)
+I hope the actual code bashing can begin now.
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index 9f5c326..b8d7dfb 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -197,11 +197,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	clock_rate = clk_get_rate(clk);
- 	clk_put(clk);
- 	clk_value = clock_rate / ADC_CLK;
--	if (clk_value < MAX_CLK_DIV) {
--		dev_err(&pdev->dev, "clock input less than min clock requirement\n");
--		err = -EINVAL;
--		goto err_disable_clk;
--	}
-+
- 	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
- 	clk_value = clk_value - 1;
- 	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index 3058aef..136463b 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -127,7 +127,6 @@
- #define SEQ_STATUS BIT(5)
- 
- #define ADC_CLK			3000000
--#define	MAX_CLK_DIV		7
- #define TOTAL_STEPS		16
- #define TOTAL_CHANNELS		8
- #define FIFO1_THRESHOLD		19
+A series of patches that add continuous sampling support
+for the adc drivers for the am335x.
+
+These apply on top of mfd-next after the recent set of patches
+on this driver by Sebastian Andrzej Siewior
+
+Tested on the Beaglebone Black running 3.11
+
+Patil, Rachna (5):
+  MFD: ti_tscadc: disable TSC config registers in adc mode
+  iio: ti_am335x_adc: Fix wrong samples received on 1st read
+  input: ti_tsc: Enable shared IRQ for TSC
+  iio: mfd: input: ti_am335x_adc:Add support for continuous mode
+  MFD: ti_tscadc: ADC Clock check not required
+
+Russ Dill (10):
+  iio: ti_am335x_adc: Handle set to clear IRQENABLE
+  iio: ti_am335x_adc: Handle set to clear IRQSTATUS
+  iio: ti_am335x_adc: Handle overrun before threshold event
+  iio: ti_am335x_adc: Avoid double threshold event
+  iio: ti_am335x_adc: Also clear threshold event when clearing overrun
+    event
+  iio: ti_am335x_adc: Print error and handle short FIFO events
+  iio: ti_am335x_adc: Fix allocation count of FIFO buffer.
+  iio: ti_am335x_adc: Fix capture operation during resume
+  iio: ti_am335x_adc: Reset and clear overrun status before capture
+  iio: ti_am335x_adc: Properly handle out of memory situation.
+
+ drivers/iio/adc/ti_am335x_adc.c           |  354 +++++++++++++++++++++++++----
+ drivers/input/touchscreen/ti_am335x_tsc.c |   17 +-
+ drivers/mfd/ti_am335x_tscadc.c            |   30 ++-
+ include/linux/mfd/ti_am335x_tscadc.h      |   27 ++-
+ 4 files changed, 366 insertions(+), 62 deletions(-)
+
 -- 
 1.7.9.5
 
