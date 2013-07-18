@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965410Ab3GRVgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 17:36:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14765 "EHLO mx1.redhat.com"
+	id S934340Ab3GRVfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 17:35:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5877 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934458Ab3GRVfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 17:35:18 -0400
+	id S1759195Ab3GRVfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 17:35:14 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
@@ -16,101 +16,136 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH 5/8] mbind: add hugepage migration code to mbind()
-Date: Thu, 18 Jul 2013 17:34:29 -0400
-Message-Id: <1374183272-10153-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 1/8] migrate: make core migration code aware of hugepage
+Date: Thu, 18 Jul 2013 17:34:25 -0400
+Message-Id: <1374183272-10153-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends do_mbind() to handle vma with VM_HUGETLB set.
-We will be able to migrate hugepage with mbind(2) after
-applying the enablement patch which comes later in this series.
+Before enabling each user of page migration to support hugepage,
+this patch enables the list of pages for migration to link not only
+LRU pages, but also hugepages. As a result, putback_movable_pages()
+and migrate_pages() can handle both of LRU pages and hugepages.
 
 ChangeLog v3:
  - revert introducing migrate_movable_pages
- - added alloc_huge_page_noerr free from ERR_VALUE
+ - add isolate_huge_page
 
 ChangeLog v2:
- - updated description and renamed patch title
+ - move code removing VM_HUGETLB from vma_migratable check into a
+   separate patch
+ - hold hugetlb_lock in putback_active_hugepage
+ - update comment near the definition of hugetlb_lock
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- include/linux/hugetlb.h |  3 +++
- mm/hugetlb.c            | 14 ++++++++++++++
- mm/mempolicy.c          |  4 +++-
- 3 files changed, 20 insertions(+), 1 deletion(-)
+ include/linux/hugetlb.h |  6 ++++++
+ mm/hugetlb.c            | 32 +++++++++++++++++++++++++++++++-
+ mm/migrate.c            | 10 +++++++++-
+ 3 files changed, 46 insertions(+), 2 deletions(-)
 
 diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
-index 0b7a9e7..768ebbe 100644
+index c2b1801..0b7a9e7 100644
 --- v3.11-rc1.orig/include/linux/hugetlb.h
 +++ v3.11-rc1/include/linux/hugetlb.h
-@@ -267,6 +267,8 @@ struct huge_bootmem_page {
- };
+@@ -66,6 +66,9 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
+ 						vm_flags_t vm_flags);
+ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
+ int dequeue_hwpoisoned_huge_page(struct page *page);
++bool isolate_huge_page(struct page *page, struct list_head *l);
++void putback_active_hugepage(struct page *page);
++void putback_active_hugepages(struct list_head *l);
+ void copy_huge_page(struct page *dst, struct page *src);
  
- struct page *alloc_huge_page_node(struct hstate *h, int nid);
-+struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
-+				unsigned long addr, int avoid_reserve);
- 
- /* arch callback */
- int __init alloc_bootmem_huge_page(struct hstate *h);
-@@ -380,6 +382,7 @@ static inline pgoff_t basepage_index(struct page *page)
- #else	/* CONFIG_HUGETLB_PAGE */
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-+#define alloc_huge_page_noerr(v, a, r) NULL
- #define alloc_bootmem_huge_page(h) NULL
- #define hstate_file(f) NULL
- #define hstate_sizelog(s) NULL
-diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
-index 4c48a70..fab29a1 100644
---- v3.11-rc1.orig/mm/hugetlb.c
-+++ v3.11-rc1/mm/hugetlb.c
-@@ -1195,6 +1195,20 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	return page;
+ #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
+@@ -134,6 +137,9 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+ 	return 0;
  }
  
-+/*
-+ * alloc_huge_page()'s wrapper which simply returns the page if allocation
-+ * succeeds, otherwise NULL. This function is called from new_vma_page(),
-+ * where no ERR_VALUE is expected to be returned.
-+ */
-+struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
-+				unsigned long addr, int avoid_reserve)
++#define isolate_huge_page(p, l) false
++#define putback_active_hugepage(p)
++#define putback_active_hugepages(l)
+ static inline void copy_huge_page(struct page *dst, struct page *src)
+ {
+ }
+diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
+index 83aff0a..4c48a70 100644
+--- v3.11-rc1.orig/mm/hugetlb.c
++++ v3.11-rc1/mm/hugetlb.c
+@@ -48,7 +48,8 @@ static unsigned long __initdata default_hstate_max_huge_pages;
+ static unsigned long __initdata default_hstate_size;
+ 
+ /*
+- * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
++ * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
++ * free_huge_pages, and surplus_huge_pages.
+  */
+ DEFINE_SPINLOCK(hugetlb_lock);
+ 
+@@ -3431,3 +3432,32 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
+ 	return ret;
+ }
+ #endif
++
++bool isolate_huge_page(struct page *page, struct list_head *l)
 +{
-+	struct page *page = alloc_huge_page(vma, addr, avoid_reserve);
-+	if (IS_ERR(page))
-+		page = NULL;
-+	return page;
++	VM_BUG_ON(!PageHead(page));
++	if (!get_page_unless_zero(page))
++		return false;
++	spin_lock(&hugetlb_lock);
++	list_move_tail(&page->lru, l);
++	spin_unlock(&hugetlb_lock);
++	return true;
 +}
 +
- int __weak alloc_bootmem_huge_page(struct hstate *h)
- {
- 	struct huge_bootmem_page *m;
-diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
-index f3b65c0..d8ced3e 100644
---- v3.11-rc1.orig/mm/mempolicy.c
-+++ v3.11-rc1/mm/mempolicy.c
-@@ -1180,6 +1180,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
- 		vma = vma->vm_next;
- 	}
++void putback_active_hugepage(struct page *page)
++{
++	VM_BUG_ON(!PageHead(page));
++	spin_lock(&hugetlb_lock);
++	list_move_tail(&page->lru, &(page_hstate(page))->hugepage_activelist);
++	spin_unlock(&hugetlb_lock);
++	put_page(page);
++}
++
++void putback_active_hugepages(struct list_head *l)
++{
++	struct page *page;
++	struct page *page2;
++
++	list_for_each_entry_safe(page, page2, l, lru)
++		putback_active_hugepage(page);
++}
+diff --git v3.11-rc1.orig/mm/migrate.c v3.11-rc1/mm/migrate.c
+index 6f0c244..b44a067 100644
+--- v3.11-rc1.orig/mm/migrate.c
++++ v3.11-rc1/mm/migrate.c
+@@ -100,6 +100,10 @@ void putback_movable_pages(struct list_head *l)
+ 	struct page *page2;
  
-+	if (PageHuge(page))
-+		return alloc_huge_page_noerr(vma, address, 1);
- 	/*
- 	 * if !vma, alloc_page_vma() will use task or system default policy
- 	 */
-@@ -1290,7 +1292,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 					(unsigned long)vma,
- 					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
--				putback_lru_pages(&pagelist);
-+				putback_movable_pages(&pagelist);
- 		}
+ 	list_for_each_entry_safe(page, page2, l, lru) {
++		if (unlikely(PageHuge(page))) {
++			putback_active_hugepage(page);
++			continue;
++		}
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+@@ -1025,7 +1029,11 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+ 		list_for_each_entry_safe(page, page2, from, lru) {
+ 			cond_resched();
  
- 		if (nr_failed && (flags & MPOL_MF_STRICT))
+-			rc = unmap_and_move(get_new_page, private,
++			if (PageHuge(page))
++				rc = unmap_and_move_huge_page(get_new_page,
++						private, page, pass > 2, mode);
++			else
++				rc = unmap_and_move(get_new_page, private,
+ 						page, pass > 2, mode);
+ 
+ 			switch(rc) {
 -- 
 1.8.3.1
 
