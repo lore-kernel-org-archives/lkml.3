@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934381Ab3GRUjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 16:39:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40855 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933196Ab3GRUjq (ORCPT
+	id S934398Ab3GRUkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 16:40:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34603 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933559Ab3GRUkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 16:39:46 -0400
-Date: Thu, 18 Jul 2013 21:39:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Trent Piepho <tpiepho@gmail.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>,
-        spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
-        linux-omap@vger.kernel.org, rnayak@ti.com,
-        linux-kernel@vger.kernel.org, balbi@ti.com
-Message-ID: <20130718203934.GT22506@sirena.org.uk>
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
- <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
- <CA+7tXij7W_F0ZTQZ=YvK+qOLO+O-6WpTKxLerv8NXyrdydt7FA@mail.gmail.com>
+	Thu, 18 Jul 2013 16:40:42 -0400
+Date: Thu, 18 Jul 2013 13:40:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: rjw@sisk.pl, arjan@linux.intel.com, len.brown@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v00 1/1] PowerCap: Documentation
+Message-ID: <20130718204050.GA20750@kroah.com>
+References: <1374176055-23527-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+ <1374176055-23527-2-git-send-email-srinivas.pandruvada@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HjItbSCiIUf1YjO/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+7tXij7W_F0ZTQZ=YvK+qOLO+O-6WpTKxLerv8NXyrdydt7FA@mail.gmail.com>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <1374176055-23527-2-git-send-email-srinivas.pandruvada@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 18, 2013 at 12:34:15PM -0700, Srinivas Pandruvada wrote:
+> Added power cap framework documentation. This explains the use of power capping framework,
+> sys-fs and programming interface.
 
---HjItbSCiIUf1YjO/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Minor nit, it's called "sysfs" no '-' anywhere in the name please.
 
-On Thu, Jul 18, 2013 at 12:08:30PM -0700, Trent Piepho wrote:
-> On Thu, Jul 18, 2013 at 3:01 AM, Sourav Poddar <sourav.poddar@ti.com> wrote:
+> +Experimental implantation is using two options:
+> +Option 1: Use simple device model. Since we can't have duplicate file names under
+> +a class even if there parents are different (Unlike a Linux directory tree), each
+> +child will be named using their hierarchy in the tree. For example, a RAPL power
+> +zone such as a CPU package can be called intel-rapl-0, then its children will be
+> +named as intel-rapl-0:0, intel-rapl-0:1 etc.
+> +
+> +Option 2: Each controller is a device and zones and constraints under it are
+> +created using kobjects. Here exact names of power zones can be used in the sys-fs
+> +file names.
 
-> > +- ti,hwmods: Name of the hwmod associated to the QSPI
+Don't ever use "raw" kobjects in the device tree, that way is crazy,
+userspace can never see the devices, and you end up having to duplicate
+all of the logic that the driver core creates for you.
 
-> What is ti,hwmods?  It's not clear from the description.  It also
-> doesn't appear to be used in the driver.  At least, I did not find any
-> occurrence of "hwmods" in the driver code.
+In short, don't do that, as I will not accept such code into the kernel,
+sorry.  Work with the driver model, don't get hung up on the names not
+being able to be "the same", that restriction is there for a reason, as
+you found out (it is exactly like a Linux directory tree, unlike your
+statement above, as those names all end up in the same directory in
+sysfs, which is why the restriction is there.)
 
-It's a generic thing for all OMAPs which is handled by the core SoC
-support transparently on TI chips.
+hope this helps,
 
---HjItbSCiIUf1YjO/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR6FKDAAoJELSic+t+oim9GN8P/RWnj01XQmNXFQzqipgyVrP7
-LmVdQBBwRHaIlsY/6qqK2Nd0DzKbcUrJVZE2T6RYwT7cfgffOiSx2yj7ac9Sb6wt
-4rUzqjBcjWlf5nEeeAgfwzybIq610dHNMTzegiua8WlNEO1y4ecK/OCUBO8wWf4J
-oSgZIpiass68E0mMqRUmbUHqwTduNYJU4jMBhS1uH0RNXs9nQJwVge5KLL0C43U+
-xZHrJIRy6YJm38KZDStUuhU87ojaVEbXMySG8S3bLEnH90KvU3i4xWPhe+4Fba1/
-09cKL00sz+mleydmJbq4iSVpXnTB702ehG40TUQ6e7umI9DODFPHHdjiWBbfG+aM
-ezdMc8oBmi+s8Ht2nAY+DZwVkLpeM/QEXjrm2VPbSTfoXbhAWRvDOm3bHqwVYc25
-DENL0gczBMSIe5uzvrG7I7W35TqlFN7/Mcz2cDyhAWGnu4WiJnK8eKd9sbur6XBX
-wbOvYUncGt/gZo98rkJ80Lu78Q8YrnFSpUChJfjije93Sbw+laBajW/WQHXBCeTx
-c93PLi/PrzkNbwgRgzPD5YeyyrfscTwuwpXTflEiJvCI779KXKG2MYEZTNsZbiIy
-e5uTpL5KnVvPuUvUiEOVnCMgjOBm3O4KtVGLa9fWaHxKJhrJufDWF5irvaZRz/G3
-9MnWtc1VJyYMOTbE08mK
-=CjTo
------END PGP SIGNATURE-----
-
---HjItbSCiIUf1YjO/--
+greg k-h
