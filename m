@@ -1,115 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885Ab3GRMmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 08:42:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59011 "EHLO mga02.intel.com"
+	id S1758912Ab3GRMm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 08:42:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42220 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab3GRMmE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 08:42:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,692,1367996400"; 
-   d="scan'208";a="367316900"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wei, Gang" <gang.wei@intel.com>
-Subject: RE: [PATCH v3] x86, tboot: iomem fixes
-Thread-Topic: [PATCH v3] x86, tboot: iomem fixes
-Thread-Index: AQHOg4+GjeUz8TeQAkemboXWVaGEjZlpub2AgACf0QA=
-Date: Thu, 18 Jul 2013 12:42:00 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE013C8C77@SHSMSX102.ccr.corp.intel.com>
-References: <1374134874-8161-1-git-send-email-qiaowei.ren@intel.com>
- <20130718104223.GD23558@gmail.com>
-In-Reply-To: <20130718104223.GD23558@gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756746Ab3GRMmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 08:42:25 -0400
+Message-ID: <51E7E2AD.8020106@ti.com>
+Date: Thu, 18 Jul 2013 15:42:21 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: Arend van Spriel <arend@broadcom.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no ethernet
+References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com> <51E7D080.6070401@broadcom.com> <51E7D1D2.1060006@ti.com> <51E7E1B7.6090104@broadcom.com>
+In-Reply-To: <51E7E1B7.6090104@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-07-18, Ingo Molnar wrote:
+On 07/18/2013 03:38 PM, Arend van Spriel wrote:
+> On 07/18/2013 01:30 PM, Roger Quadros wrote:
+>> On 07/18/2013 02:24 PM, Arend van Spriel wrote:
+>>> On 07/18/2013 01:18 PM, Roger Quadros wrote:
+>>>> Hi Arend,
+>>>>
+>>>> On 07/18/2013 11:41 AM, Arend van Spriel wrote:
+>>>>> Hi Tony,
+>>>>>
+>>>>>
+>>>>> We are using the panda board (es variant) for testing our SDIO based chips. For this we have an adapter card connection to expansion connector A. As this adapter is not publicly available we had internally patched board-omap4panda.c. Also we follow the -rc releases and use TFTP to boot the kernel image which requires USB.
+>>>>>
+>>>>> Moving to 3.11-rc1 I found that the mentioned board file was removed by your commit:
+>>>>>
+>>>>> commit b42b918194c4791510ac049e3d507169a7de8544
+>>>>> Author: Tony Lindgren <tony@atomide.com>
+>>>>> Date:   Thu May 30 12:53:05 2013 -0700
+>>>>>
+>>>>>       ARM: OMAP2+: Remove board-omap4panda.c
+>>>>>
+>>>>> As our patches on that file are internal I do not hold it against you. This is no regression and we need to fix it.
+>>>>>
+>>>>> So my first step was to follow the recipe given in that commit. Beside that I noticed a thread about USB issue on LKML so I also applied the following commit:
+>>>>>
+>>>>> commit 352f573e59050c7a604c35c58b4bbfc51edebbee
+>>>>> Author: Roger Quadros <rogerq@ti.com>
+>>>>> Date:   Tue Jun 18 19:04:47 2013 +0300
+>>>>>
+>>>>>       ARM: OMAP2+: Provide alias to USB PHY clock
+>>>>>
+>>>>> The attached kernel log seems to suggest that the device tree is picked up by the kernel, but the USB does not seem very active. No ethernet connectivity. This does seem a regression to me. Is there some other patch that I need to get it going again?
+>>>>>
+>>>>
+>>>> I tried with your config and 3.11-rc1 kernel with the above commit on top and ethernet seems to
+>>>> work for me. My boot log is attached.
+>>>>
+>>>> Are you sure that you are building the DTB for panda-es and the bootloader is picking up the right file and
+>>>> not an outdated one?
+>>>
+>>> I appended the DTB to the kernel image thus avoiding the need to update u-boot (at least that is what I understood from Tony's commit).
+>>>
+>>
+>> I understand this can be a little tedious at first.
+>>
+>> This is my u-boot boot.txt
+>>
+>> fatload mmc 0:1 0x825f0000 omap4-panda-es.dtb
+>> fatload mmc 0:1 0x80300000 uImage
+>> set fdt_high 0xffffffff
+>> setenv bootargs console=ttyO2,115200n8 mem=1G@0x80000000 root=/dev/mmcblk0p2 rootwait
+>> bootm 0x80300000 - 0x825f0000
+>>
+>> You need to generate boot.scr from the above boot.txt and place it in SD card boot partition.
+>>
+>> mkimage -A arm -T script -C none -n "Boot Image" -d boot.txt boot.scr
+>>
+>> And of course copy the omap4-panda-es.dtb to SD card boot partition.
+>>
+>> hope this helps.
 > 
-> * Qiaowei Ren <qiaowei.ren@intel.com> wrote:
+> Thanks for sharing this.
 > 
->> Current code doesn't use specific interface to access I/O space.
->> So some potential bugs can be caused. We can fix this by using
->> specific API.
+>>>> Why is the version of SPL loader and u-boot different in your log?
+>>>> You need to use the MLO file generated by the u-boot build along with the uImage.
+>>>>
+>>>> Just to be sure we are on the same setup could you please try with latest u-boot release (2013-04). Thanks.
+>>>
+>>> I recall having difficulty with TFTP boot using a 2013 u-boot release, but that hurdle is for later. I will try.
+>>>
+>>
+>> OK. We can figure this out as well.
 > 
-> This is still very vague.
+> I tried with same SPL and u-boot version, but that did not work out. So I moved to v2013.04 and the log looks better. I was especially interested in this:
 > 
->> 
->> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
->> ---
->>  arch/x86/kernel/tboot.c |   21 ++++++++++++---------
->>  1 file changed, 12 insertions(+), 9 deletions(-)
->> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c index
->> 3ff42d2..afe8cf8 100644
->> --- a/arch/x86/kernel/tboot.c
->> +++ b/arch/x86/kernel/tboot.c
->> @@ -466,9 +466,12 @@ struct sinit_mle_data {
->>  	u32               vtd_dmars_off;
->>  } __packed;
->> +#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
->> +
->>  struct acpi_table_header *tboot_get_dmar_table(struct
->> acpi_table_header *dmar_tbl)  {
->> -	void *heap_base, *heap_ptr, *config;
->> +	void __iomem *heap_base, *heap_ptr, *config;
->> +	u32 dmar_tbl_off;
->> 
->>  	if (!tboot_enabled())
->>  		return dmar_tbl;
->> @@ -485,25 +488,25 @@ struct acpi_table_header
-> *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
->>  		return NULL;
->>  
->>  	/* now map TXT heap */
->> -	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
->> -			    *(u64 *)(config + TXTCR_HEAP_SIZE));
->> +	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
->> +			    readl(config + TXTCR_HEAP_SIZE));
->>  	iounmap(config);
->>  	if (!heap_base)
->>  		return NULL;
->>  
->>  	/* walk heap to SinitMleData */
->>  	/* skip BiosData */
->> -	heap_ptr = heap_base + *(u64 *)heap_base;
->> +	heap_ptr = heap_base + readq(heap_base);
->>  	/* skip OsMleData */
->> -	heap_ptr += *(u64 *)heap_ptr;
->> +	heap_ptr += readq(heap_ptr);
->>  	/* skip OsSinitData */
->> -	heap_ptr += *(u64 *)heap_ptr;
->> +	heap_ptr += readq(heap_ptr);
->>  	/* now points to SinitMleDataSize; set to SinitMleData */
->>  	heap_ptr += sizeof(u64);
->>  	/* get addr of DMAR table */
->> -	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
->> -		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
->> -		   sizeof(u64));
->> +	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
->> +	memcpy_fromio(dmar_tbl, heap_ptr + dmar_tbl_off - sizeof(u64),
->> +			sizeof(struct acpi_table_header));
-> 
-> That memcpy (or an equivalent of it) was not in the code before, AFAICS.
-> 
-> How can this be an 'interface fix'? It adds in new code...
-> 
-Sorry, current code only need to get addr of DMAR table, so memcpy_fromio may be removed, even though this will also work.
-So "memcpy_fromio" line will be changed to 
-	dmar_tbl = (struct acpi_table_header *)(heap_ptr + dmar_tbl_off + - sizeof(u64));
-If so, no new interface will be added, and the changelog at the beginning of this patch is engouch?
+> [    2.807434] usb 1-1.1: new high-speed USB device number 3 using ehci-omap
+> [    2.932495] usb 1-1.1: New USB device found, idVendor=0424, idProduct=ec00
+> [    2.932495] usb 1-1.1: New USB device strings: Mfr=0, Product=0, SerialNumbe0
+> [    2.958770] smsc95xx v1.0.4
+> Starting logging: OK
+> Initializing random number generator... [    3.045806] smsc95xx 1-1.1:1.0 eth0
 
-Thanks,
-Qiaowei
+Cool! :).
+
+FYI. I also tested tftpboot from u-boot and NFS root file system and it works fine.
+
+cheers,
+-roger
+
 
