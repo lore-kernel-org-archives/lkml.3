@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934226Ab3GRTy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 15:54:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41688 "EHLO
+	id S934189Ab3GRTy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 15:54:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41689 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759481Ab3GRTua (ORCPT
+	with ESMTP id S1759482Ab3GRTua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 15:50:30 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 55/76] perf hists: Marking dummy hists entries
-Date: Thu, 18 Jul 2013 16:49:42 -0300
-Message-Id: <1374177003-3706-56-git-send-email-acme@infradead.org>
+Subject: [PATCH 42/76] perf tools: Fix missing tool parameter
+Date: Thu, 18 Jul 2013 16:49:29 -0300
+Message-Id: <1374177003-3706-43-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374177003-3706-1-git-send-email-acme@infradead.org>
 References: <1374177003-3706-1-git-send-email-acme@infradead.org>
@@ -27,116 +29,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-It does not make sense to make some computation (ratio, wdiff), when the
-hist_entry is 'dummy' - added via hists__link.
+The 'inject' command expects to get a reference to 'struct perf_inject'
+from its 'tool' member.  For that to work, 'tool' needs to be a
+parameter of all tool callbacks.  Make it so.
 
-Adding dummy field to struct hist_entry which indicates that it was
-added by hists__link and avoiding some of the processing for such
-entries.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-g8bxml0n0pnqsrpyd98p0ird@git.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1372944040-32690-3-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/hist.c   | 21 ++++++++++++++-------
- tools/perf/util/hist.c |  1 +
- tools/perf/util/sort.h |  3 +++
- 3 files changed, 18 insertions(+), 7 deletions(-)
+ tools/perf/builtin-inject.c | 26 +++++++++++---------------
+ tools/perf/util/header.c    |  6 ++++--
+ tools/perf/util/header.h    |  6 ++++--
+ tools/perf/util/session.c   | 11 +++++++----
+ tools/perf/util/tool.h      |  9 ++++-----
+ 5 files changed, 30 insertions(+), 28 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 02313a9..a359b75 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -187,8 +187,11 @@ static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index f299ddf..c943513 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -73,22 +73,17 @@ static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
+ 	return perf_event__repipe_synth(tool, event);
+ }
+ 
+-static int perf_event__repipe_tracing_data_synth(union perf_event *event,
+-						 struct perf_session *session
+-						 __maybe_unused)
+-{
+-	return perf_event__repipe_synth(NULL, event);
+-}
+-
+-static int perf_event__repipe_attr(union perf_event *event,
+-				   struct perf_evlist **pevlist __maybe_unused)
++static int perf_event__repipe_attr(struct perf_tool *tool,
++				   union perf_event *event,
++				   struct perf_evlist **pevlist)
  {
- 	double percent = baseline_percent(he);
- 
--	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%",
--				      percent);
-+	if (!he->dummy)
-+		return percent_color_snprintf(hpp->buf, hpp->size,
-+					      " %6.2f%%", percent);
-+	else
-+		return scnprintf(hpp->buf, hpp->size, "        ");
- }
- 
- static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
-@@ -197,7 +200,10 @@ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
- 	double percent = baseline_percent(he);
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-+	if (!he->dummy)
-+		return scnprintf(hpp->buf, hpp->size, fmt, percent);
-+	else
-+		return scnprintf(hpp->buf, hpp->size, "            ");
- }
- 
- static int hpp__header_period_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
-@@ -251,8 +257,7 @@ static int hpp__entry_delta(struct perf_hpp_fmt *_fmt __maybe_unused,
- 			diff = he->diff.period_ratio_delta;
- 		else
- 			diff = perf_diff__compute_delta(he, pair);
--	} else
--		diff = perf_diff__period_percent(he, he->stat.period);
-+	}
- 
- 	if (fabs(diff) >= 0.01)
- 		scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
-@@ -282,7 +287,8 @@ static int hpp__entry_ratio(struct perf_hpp_fmt *_fmt __maybe_unused,
- 	char buf[32] = " ";
- 	double ratio = 0.0;
- 
--	if (pair) {
-+	/* No point for ratio number if we are dummy.. */
-+	if (!he->dummy && pair) {
- 		if (he->diff.computed)
- 			ratio = he->diff.period_ratio;
- 		else
-@@ -317,7 +323,8 @@ static int hpp__entry_wdiff(struct perf_hpp_fmt *_fmt __maybe_unused,
- 	char buf[32] = " ";
- 	s64 wdiff = 0;
- 
--	if (pair) {
-+	/* No point for wdiff number if we are dummy.. */
-+	if (!he->dummy && pair) {
- 		if (he->diff.computed)
- 			wdiff = he->diff.wdiff;
- 		else
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index b11a6cf..a9dd1b9 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -912,6 +912,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
- 		rb_link_node(&he->rb_node_in, parent, p);
- 		rb_insert_color(&he->rb_node_in, root);
- 		hists__inc_nr_entries(hists, he);
-+		he->dummy = true;
- 	}
- out:
- 	return he;
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index a4a6d0b..586022d 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -89,6 +89,9 @@ struct hist_entry {
- 
- 	struct hist_entry_diff	diff;
- 
-+	/* We are added by hists__add_dummy_entry. */
-+	bool			dummy;
+ 	int ret;
+-	ret = perf_event__process_attr(event, pevlist);
 +
- 	/* XXX These two should move to some tree widget lib */
- 	u16			row_offset;
- 	u16			nr_rows;
++	ret = perf_event__process_attr(tool, event, pevlist);
+ 	if (ret)
+ 		return ret;
+ 
+-	return perf_event__repipe_synth(NULL, event);
++	return perf_event__repipe_synth(tool, event);
+ }
+ 
+ static int perf_event__repipe(struct perf_tool *tool,
+@@ -147,13 +142,14 @@ static int perf_event__repipe_fork(struct perf_tool *tool,
+ 	return err;
+ }
+ 
+-static int perf_event__repipe_tracing_data(union perf_event *event,
++static int perf_event__repipe_tracing_data(struct perf_tool *tool,
++					   union perf_event *event,
+ 					   struct perf_session *session)
+ {
+ 	int err;
+ 
+-	perf_event__repipe_synth(NULL, event);
+-	err = perf_event__process_tracing_data(event, session);
++	perf_event__repipe_synth(tool, event);
++	err = perf_event__process_tracing_data(tool, event, session);
+ 
+ 	return err;
+ }
+@@ -407,7 +403,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.unthrottle	= perf_event__repipe,
+ 			.attr		= perf_event__repipe_attr,
+ 			.event_type	= perf_event__repipe_event_type_synth,
+-			.tracing_data	= perf_event__repipe_tracing_data_synth,
++			.tracing_data	= perf_event__repipe_op2_synth,
+ 			.build_id	= perf_event__repipe_op2_synth,
+ 		},
+ 		.input_name  = "-",
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index a4dafbe..d12d79c 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2922,7 +2922,8 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ 	return err;
+ }
+ 
+-int perf_event__process_attr(union perf_event *event,
++int perf_event__process_attr(struct perf_tool *tool __maybe_unused,
++			     union perf_event *event,
+ 			     struct perf_evlist **pevlist)
+ {
+ 	u32 i, ids, n_ids;
+@@ -3065,7 +3066,8 @@ int perf_event__synthesize_tracing_data(struct perf_tool *tool, int fd,
+ 	return aligned_size;
+ }
+ 
+-int perf_event__process_tracing_data(union perf_event *event,
++int perf_event__process_tracing_data(struct perf_tool *tool __maybe_unused,
++				     union perf_event *event,
+ 				     struct perf_session *session)
+ {
+ 	ssize_t size_read, padding, size = event->tracing_data.size;
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 16a3e83..2d1ca7d 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -130,7 +130,8 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
+ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ 				 struct perf_session *session,
+ 				 perf_event__handler_t process);
+-int perf_event__process_attr(union perf_event *event, struct perf_evlist **pevlist);
++int perf_event__process_attr(struct perf_tool *tool, union perf_event *event,
++			     struct perf_evlist **pevlist);
+ 
+ int perf_event__synthesize_event_type(struct perf_tool *tool,
+ 				      u64 event_id, char *name,
+@@ -145,7 +146,8 @@ int perf_event__process_event_type(struct perf_tool *tool,
+ int perf_event__synthesize_tracing_data(struct perf_tool *tool,
+ 					int fd, struct perf_evlist *evlist,
+ 					perf_event__handler_t process);
+-int perf_event__process_tracing_data(union perf_event *event,
++int perf_event__process_tracing_data(struct perf_tool *tool,
++				     union perf_event *event,
+ 				     struct perf_session *session);
+ 
+ int perf_event__synthesize_build_id(struct perf_tool *tool,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ad47fb9..6b71b88 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -193,7 +193,9 @@ void perf_session__delete(struct perf_session *self)
+ 	vdso__exit();
+ }
+ 
+-static int process_event_synth_tracing_data_stub(union perf_event *event
++static int process_event_synth_tracing_data_stub(struct perf_tool *tool
++						 __maybe_unused,
++						 union perf_event *event
+ 						 __maybe_unused,
+ 						 struct perf_session *session
+ 						__maybe_unused)
+@@ -202,7 +204,8 @@ static int process_event_synth_tracing_data_stub(union perf_event *event
+ 	return 0;
+ }
+ 
+-static int process_event_synth_attr_stub(union perf_event *event __maybe_unused,
++static int process_event_synth_attr_stub(struct perf_tool *tool __maybe_unused,
++					 union perf_event *event __maybe_unused,
+ 					 struct perf_evlist **pevlist
+ 					 __maybe_unused)
+ {
+@@ -921,7 +924,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
+ 	/* These events are processed right away */
+ 	switch (event->header.type) {
+ 	case PERF_RECORD_HEADER_ATTR:
+-		err = tool->attr(event, &session->evlist);
++		err = tool->attr(tool, event, &session->evlist);
+ 		if (err == 0)
+ 			perf_session__set_id_hdr_size(session);
+ 		return err;
+@@ -930,7 +933,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
+ 	case PERF_RECORD_HEADER_TRACING_DATA:
+ 		/* setup for reading amidst mmap */
+ 		lseek(session->fd, file_offset, SEEK_SET);
+-		return tool->tracing_data(event, session);
++		return tool->tracing_data(tool, event, session);
+ 	case PERF_RECORD_HEADER_BUILD_ID:
+ 		return tool->build_id(tool, event, session);
+ 	case PERF_RECORD_FINISHED_ROUND:
+diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
+index b0e1aad..88f8cbd 100644
+--- a/tools/perf/util/tool.h
++++ b/tools/perf/util/tool.h
+@@ -18,12 +18,11 @@ typedef int (*event_sample)(struct perf_tool *tool, union perf_event *event,
+ typedef int (*event_op)(struct perf_tool *tool, union perf_event *event,
+ 			struct perf_sample *sample, struct machine *machine);
+ 
+-typedef int (*event_attr_op)(union perf_event *event,
++typedef int (*event_attr_op)(struct perf_tool *tool,
++			     union perf_event *event,
+ 			     struct perf_evlist **pevlist);
+-typedef int (*event_simple_op)(struct perf_tool *tool, union perf_event *event);
+ 
+-typedef int (*event_synth_op)(union perf_event *event,
+-			      struct perf_session *session);
++typedef int (*event_simple_op)(struct perf_tool *tool, union perf_event *event);
+ 
+ typedef int (*event_op2)(struct perf_tool *tool, union perf_event *event,
+ 			 struct perf_session *session);
+@@ -39,7 +38,7 @@ struct perf_tool {
+ 			throttle,
+ 			unthrottle;
+ 	event_attr_op	attr;
+-	event_synth_op	tracing_data;
++	event_op2	tracing_data;
+ 	event_simple_op	event_type;
+ 	event_op2	finished_round,
+ 			build_id;
 -- 
 1.8.1.4
 
