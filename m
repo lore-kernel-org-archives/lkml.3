@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab3GRSel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 14:34:41 -0400
-Received: from www.sr71.net ([198.145.64.142]:33568 "EHLO blackbird.sr71.net"
+	id S933458Ab3GRSfu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 14:35:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36498 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759329Ab3GRSek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 14:34:40 -0400
-Message-ID: <51E83536.6070100@sr71.net>
-Date: Thu, 18 Jul 2013 11:34:30 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1752779Ab3GRSft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 14:35:49 -0400
+Date: Thu, 18 Jul 2013 20:30:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND 0/3] Teach perf_trace_##call() to check
+	hlist_empty(perf_events)
+Message-ID: <20130718183018.GA4043@redhat.com>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Dave Hansen <dave.hansen@intel.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-References: <1374097503-25515-1-git-send-email-toshi.kani@hp.com>  <51E80973.9000308@intel.com> <1374164815.24916.84.camel@misato.fc.hp.com>
-In-Reply-To: <1374164815.24916.84.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 09:26 AM, Toshi Kani wrote:
-> On Thu, 2013-07-18 at 08:27 -0700, Dave Hansen wrote:
->> I'd really prefer you don't do this.  Do you really have random
->> processes on your system poking at random sysfs files and then
->> complaining when things break?
-> 
-> I am afraid that the "probe" interface does not provide the level of
-> quality suitable for regular users.  It takes any value and blindly
-> extends the page table.
+Hello.
 
-That's like saying that /dev/sda takes any value and blindly writes it
-to the disk.
+The patches are the same, I only tried to update the changelogs a bit.
+I am also quoting my old email below, to explain what this hack tries
+to do.
 
-> Also, we are not aware of the use of this
-> interface on x86.  Would you elaborate why you need this interface on
-> x86?  Is it for your testing, or is it necessary for end-users?  If the
-> former, can you modify .config file to enable it?
+	Say, "perf record -e sched:sched_switch -p1".
 
-For me, it's testing.  It allows testing of the memory hotplug software
-stack without actual hardware, which is incredibly valuable.  That
-includes testing on distribution kernels which I do not want to modify.
- I thought there were some hypervisor users which don't use ACPI for
-hotplug event notifications too.
+	Every task except /sbin/init will do perf_trace_sched_switch() and
+	perf_trace_buf_prepare() + perf_trace_buf_submit for no reason(),
+	it doesn't have a counter.
 
-All that I'm asking is that you either leave it the way it is, or make a
-Kconfig menu entry for it.
+	So it makes sense to add the fast-path check at the start of
+	perf_trace_##call(),
 
-But, really, what's the problem that you're solving?  Has this caused
-you issues somehow?  It's been there for, what, 10 years?  Surely it's
-part of the ABI.
+		if (hlist_empty(event_call->perf_events))
+			return;
 
+	The problem is, we should not do this if __task != NULL (iow, if
+	DECLARE_EVENT_CLASS() uses __perf_task()), perf_tp_event() has the
+	additional code for this case.
+
+	So we should do
+
+		if (!__task && hlist_empty(event_call->perf_events))
+			return;
+
+	But __task is changed by "{ assign; }" block right before
+	perf_trace_buf_submit(). Too late for the fast-path check,
+	we already called perf_trace_buf_prepare/fetch_regs.
+
+	So. After 2/3 __perf_task() (and __perf_count/addr) is called
+	when ftrace_get_offsets_##call(args) evaluates the arguments,
+	and we can check !__task && hlist_empty() right after that.
+
+Oleg.
 
