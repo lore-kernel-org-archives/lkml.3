@@ -1,99 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab3GRKm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 06:42:29 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:40449 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab3GRKm1 (ORCPT
+	id S1758094Ab3GRKnD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 06:43:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58136 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944Ab3GRKnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 06:42:27 -0400
-Date: Thu, 18 Jul 2013 12:42:23 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
-Subject: Re: [PATCH v3] x86, tboot: iomem fixes
-Message-ID: <20130718104223.GD23558@gmail.com>
-References: <1374134874-8161-1-git-send-email-qiaowei.ren@intel.com>
+	Thu, 18 Jul 2013 06:43:00 -0400
+Date: Thu, 18 Jul 2013 11:42:33 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
+        balbi@ti.com, rnayak@ti.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130718104233.GG22506@sirena.org.uk>
+References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>
+ <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cMRp6r1K6JdiUiOM"
 Content-Disposition: inline
-In-Reply-To: <1374134874-8161-1-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1374141687-10790-3-git-send-email-sourav.poddar@ti.com>
+X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
+--cMRp6r1K6JdiUiOM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Current code doesn't use specific interface to access I/O space.
-> So some potential bugs can be caused. We can fix this by using
-> specific API.
+On Thu, Jul 18, 2013 at 03:31:26PM +0530, Sourav Poddar wrote:
 
-This is still very vague.
+> QSPI is a kind of spi module that allows single,
+> dual and quad read access to external spi devices. The module
+> has a memory mapped interface which provide direct interface
+> for accessing data form external spi devices.
 
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> ---
->  arch/x86/kernel/tboot.c |   21 ++++++++++++---------
->  1 file changed, 12 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-> index 3ff42d2..afe8cf8 100644
-> --- a/arch/x86/kernel/tboot.c
-> +++ b/arch/x86/kernel/tboot.c
-> @@ -466,9 +466,12 @@ struct sinit_mle_data {
->  	u32               vtd_dmars_off;
->  } __packed;
->  
-> +#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
+Have you seen the ongoing thread about SPI buses with extra data lines?
+How does this driver fit in with that?
+
+> --- a/drivers/spi/Makefile
+> +++ b/drivers/spi/Makefile
+> @@ -46,6 +46,7 @@ obj-$(CONFIG_SPI_OCTEON)		+= spi-octeon.o
+>  obj-$(CONFIG_SPI_OMAP_UWIRE)		+= spi-omap-uwire.o
+>  obj-$(CONFIG_SPI_OMAP_100K)		+= spi-omap-100k.o
+>  obj-$(CONFIG_SPI_OMAP24XX)		+= spi-omap2-mcspi.o
+> +obj-$(CONFIG_QSPI_DRA7xxx)              += spi-ti-qspi.o
+>  obj-$(CONFIG_SPI_ORION)			+= spi-orion.o
+>  obj-$(CONFIG_SPI_PL022)			+= spi-pl022.o
+>  obj-$(CONFIG_SPI_PPC4xx)		+= spi-ppc4xx.o
+
+Please use SPI_ like the other drivers.
+
+> +static int ti_qspi_prepare_xfer(struct spi_master *master)
+> +{
+> +	struct ti_qspi *qspi = spi_master_get_devdata(master);
+> +	int ret;
 > +
->  struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
->  {
-> -	void *heap_base, *heap_ptr, *config;
-> +	void __iomem *heap_base, *heap_ptr, *config;
-> +	u32 dmar_tbl_off;
->  
->  	if (!tboot_enabled())
->  		return dmar_tbl;
-> @@ -485,25 +488,25 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
->  		return NULL;
->  
->  	/* now map TXT heap */
-> -	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
-> -			    *(u64 *)(config + TXTCR_HEAP_SIZE));
-> +	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
-> +			    readl(config + TXTCR_HEAP_SIZE));
->  	iounmap(config);
->  	if (!heap_base)
->  		return NULL;
->  
->  	/* walk heap to SinitMleData */
->  	/* skip BiosData */
-> -	heap_ptr = heap_base + *(u64 *)heap_base;
-> +	heap_ptr = heap_base + readq(heap_base);
->  	/* skip OsMleData */
-> -	heap_ptr += *(u64 *)heap_ptr;
-> +	heap_ptr += readq(heap_ptr);
->  	/* skip OsSinitData */
-> -	heap_ptr += *(u64 *)heap_ptr;
-> +	heap_ptr += readq(heap_ptr);
->  	/* now points to SinitMleDataSize; set to SinitMleData */
->  	heap_ptr += sizeof(u64);
->  	/* get addr of DMAR table */
-> -	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
-> -		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
-> -		   sizeof(u64));
-> +	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
-> +	memcpy_fromio(dmar_tbl, heap_ptr + dmar_tbl_off - sizeof(u64),
-> +			sizeof(struct acpi_table_header));
+> +	ret = pm_runtime_get_sync(qspi->dev);
+> +	if (ret < 0) {
+> +		dev_err(qspi->dev, "pm_runtime_get_sync() failed\n");
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
 
-That memcpy (or an equivalent of it) was not in the code before, AFAICS.
+This is a very common pattern, it should probably be factored out into
+the core, probably not even as ops but rather as an actual feature.
 
-How can this be an 'interface fix'? It adds in new code...
+> +	list_for_each_entry(t, &m->transfers, transfer_list) {
+> +		qspi->cmd |= QSPI_WLEN(t->bits_per_word);
+> +		qspi->cmd |= QSPI_WC_CMD_INT_EN;
+> +
+> +		ret = qspi_transfer_msg(qspi, t);
+> +		if (ret) {
+> +			dev_dbg(qspi->dev, "transfer message failed\n");
+> +			return -EINVAL;
+> +		}
+> +
+> +		m->actual_length += t->len;
+> +
+> +		if (list_is_last(&t->transfer_list, &m->transfers))
+> +			goto out;
+> +	}
 
-Thanks,
+The use of list_is_last() here is *realy* strange - what's going on
+there?
 
-	Ingo
+> +static irqreturn_t ti_qspi_isr(int irq, void *dev_id)
+> +{
+> +	struct ti_qspi *qspi = dev_id;
+> +	u16 mask, stat;
+> +
+> +	irqreturn_t ret = IRQ_HANDLED;
+> +
+> +	spin_lock(&qspi->lock);
+> +
+> +	stat = ti_qspi_readl(qspi, QSPI_SPI_STATUS_REG);
+> +	mask = ti_qspi_readl(qspi, QSPI_INTR_ENABLE_SET_REG);
+> +
+> +	if (stat && mask)
+> +		ret = IRQ_WAKE_THREAD;
+> +
+> +	spin_unlock(&qspi->lock);
+> +
+> +	return ret;
+
+According to the above code we might interrupt for masked events...
+that's a bit worrying isn't it?
+
+> +	ret = devm_request_threaded_irq(&pdev->dev, irq, ti_qspi_isr,
+> +			ti_qspi_threaded_isr, IRQF_NO_SUSPEND | IRQF_ONESHOT,
+> +			dev_name(&pdev->dev), qspi);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "Failed to register ISR for IRQ %d\n",
+> +				irq);
+> +		goto free_master;
+> +	}
+
+Standard question about devm_request_threaded_irq() - how can we be
+certain it's safe to use during removal?
+
+--cMRp6r1K6JdiUiOM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR58aWAAoJELSic+t+oim9xJ4QAJm/Wqlsli/tSWF94XdIAfpk
+MXFm8VC9SYXBEsQKcsCeUddwOKlcnjRXOXv7KDPuvnfb8jmolCu0uy4HMSidMPgX
+1DE/1JwZv6A/OOKjJRM98qNdn7o06Cjv0Yra61ebxpDljGxlFegUSIo1Ey5PRLiN
+GhzJsjKunkVmrYDbUCSYUUJlZVykLX9s4ab1Y6XjCuz3lQmwikkQNrzMbESOX7gC
+ctZbHTB+L056egqEI+h4Pe9heAUnSmD/9N/3XIDemervD3a0lD0SNL06UNaMJe/i
+vvW4ISIzg/tt337nYiRE/BIrJc9O5hRhp0w02v+053uq0fQ+/d83UuPmrOf/xiuI
+HMs4CdDaHY7XiRMwZB4IJYhBqh9n/wL5Zy8iNoM1BS5tuZFz6tgf0JulpghfttLj
+2i/TQqtt8jrLxiq8WF4sjMqZSeF+GaX2gFegyxaC45YiJyfkwEsub3Fz9tIY+vot
+KpsBJfrCWPNIR4YbLX4EszECFwuFpO/iF0iHDA9bo3rZH4+Inb0G589PfLmPFc+i
+1Ksb50/G55/GPin784pUZzGdQ2OAL4BZLCmgdqIZPtWMIC3+b01+u7a4YsvrqJ8g
+Ue7Af2Y3oe/ONoRuXO3wCxNhXug0GImaBx2fcWZRM8sR9kHklM0dVryC6Ghj0602
+sXM6FFLI5bTZvvI7LFLC
+=li9c
+-----END PGP SIGNATURE-----
+
+--cMRp6r1K6JdiUiOM--
