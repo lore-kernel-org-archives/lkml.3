@@ -1,552 +1,494 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab3GRLSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 07:18:17 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:53651 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758772Ab3GRLSG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 07:18:06 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-df-51e7ceed093b
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: viresh.kumar@linaro.org, rjw@sisk.pl, linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 2/3 v6] cpufreq: stats: Add 'load_table' debugfs file to show
- accumulated data of CPUs
-Date: Thu, 18 Jul 2013 20:17:54 +0900
-Message-id: <1374146275-5758-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1374146275-5758-1-git-send-email-cw00.choi@samsung.com>
-References: <1374146275-5758-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsWyRsSkWPftueeBBncvc1o8bfrBbnH9y3NW
-	i7NNb9gtLu+aw2bxufcIo8XtxhVsFv0Le5ksNn71cODwuHNtD5tH35ZVjB6PFrcwenzeJBfA
-	EsVlk5Kak1mWWqRvl8CV8feEbMHzsor+tfsZGxhvJnYxcnJICJhItDy5xwxhi0lcuLeerYuR
-	i0NIYCmjxNMJp9hgijY++8AKkVjEKNG4ejkjSEJIoJFJYuapIBCbTUBLYv+LG2ANIgJuEmuv
-	fWIEaWAWmMIo0XxsE1CCg0NYIENi8g8/kBoWAVWJg/ebWUFsXgEXic/7XzBBLJOT+LDnETuI
-	zSngKrHpywE2iF0uEhdO9YNdJyEwj12if9NyZohBAhLfJh9iAZkvISArsekA1DeSEgdX3GCZ
-	wCi8gJFhFaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZgiJ/+92zCDsZ7B6wPMSYDjZvILCWa
-	nA+MkbySeENjMyMLUxNTYyNzSzPShJXEedVbrAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1
-	MC4RX8e/5pPCsejkozkcTxnmzzy31PSqQ/Sykker2M5av/OKapvH02fdc+W6o2HHodyFvZ+e
-	7/8UaveqP1En7plLRcO3GZMNfsgz7YtOcJ7v1bZT8tL7aWeY12y4VyveZtR+guGzpdAbyxnN
-	TPPeLH4dKybhvOPeQfE37w6lLjjyRCDyzrKZ+yOUWIozEg21mIuKEwGDu5ojhwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jAd03554HGnQetrZ42vSD3eL6l+es
-	Fmeb3rBbXN41h83ic+8RRovbjSvYLPoX9jJZbPzq4cDhcefaHjaPvi2rGD0eLW5h9Pi8SS6A
-	JaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6Awl
-	hbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bfE7IFz8sq+tfuZ2xgvJnY
-	xcjJISFgIrHx2QdWCFtM4sK99WxdjFwcQgKLGCUaVy9nBEkICTQyScw8FQRiswloSex/cYMN
-	xBYRcJNYe+0TI0gDs8AURonmY5uAEhwcwgIZEpN/+IHUsAioShy83wy2gFfAReLz/hdMEMvk
-	JD7secQOYnMKuEps+nKADWKXi8SFU/1sExh5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P
-	3cQIjqBnUjsYVzZYHGIU4GBU4uG9wfM8UIg1say4MvcQowQHs5II77d9QCHelMTKqtSi/Pii
-	0pzU4kOMyUBXTWSWEk3OB0Z3Xkm8obGJmZGlkbmhhZGxOWnCSuK8B1qtA4UE0hNLUrNTUwtS
-	i2C2MHFwSjUwbnnMKdzr7r9ibcmervJN3qt/c99bYPhG6vcnxuerF/je9dnrbZn6V3SqbSa3
-	4P/f5fMKJk5kv3ifxfxE5T37ibpmX9fs/Txd+EJZwXafDzPLPsn+Pp/DJ/X+1qm7gZOYBU3k
-	O/66uHxuitv6bvuf17kKdXEMPsaL0p9Z7HZ5mnxmntcz/VjFYiWW4oxEQy3mouJEALSpfYXk	AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1758850Ab3GRLSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 07:18:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46570 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758829Ab3GRLSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 07:18:16 -0400
+Message-ID: <51E7CEF3.5000408@ti.com>
+Date: Thu, 18 Jul 2013 14:18:11 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Arend van Spriel <arend@broadcom.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no ethernet
+References: <51E7AA24.6080600@broadcom.com>
+In-Reply-To: <51E7AA24.6080600@broadcom.com>
+Content-Type: multipart/mixed;
+	boundary="------------040709090507030003060303"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add new 'load_table' debugfs file to show previous accumulated data
-of CPUs load as following path and add CPUFREQ_LOADCHECK notification to
-CPUFREQ_TRANSITION_NOTIFIER notifier chain.
-- /sys/kernel/debug/cpufreq/cpuX/load_table
+--------------040709090507030003060303
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-When governor calculates CPUs load on dbs_check_cpu(), governor send
-CPUFREQ_LOADCHECK notification with CPUs load, so that cpufreq_stats
-accumulates calculated CPUs load on 'load_table' storage.
+Hi Arend,
 
-This debugfs file is used to judge the correct system state or determine
-suitable system resource according to current CPUs load on user-space.
+On 07/18/2013 11:41 AM, Arend van Spriel wrote:
+> Hi Tony,
+> 
+> 
+> We are using the panda board (es variant) for testing our SDIO based chips. For this we have an adapter card connection to expansion connector A. As this adapter is not publicly available we had internally patched board-omap4panda.c. Also we follow the -rc releases and use TFTP to boot the kernel image which requires USB.
+> 
+> Moving to 3.11-rc1 I found that the mentioned board file was removed by your commit:
+> 
+> commit b42b918194c4791510ac049e3d507169a7de8544
+> Author: Tony Lindgren <tony@atomide.com>
+> Date:   Thu May 30 12:53:05 2013 -0700
+> 
+>     ARM: OMAP2+: Remove board-omap4panda.c
+> 
+> As our patches on that file are internal I do not hold it against you. This is no regression and we need to fix it.
+> 
+> So my first step was to follow the recipe given in that commit. Beside that I noticed a thread about USB issue on LKML so I also applied the following commit:
+> 
+> commit 352f573e59050c7a604c35c58b4bbfc51edebbee
+> Author: Roger Quadros <rogerq@ti.com>
+> Date:   Tue Jun 18 19:04:47 2013 +0300
+> 
+>     ARM: OMAP2+: Provide alias to USB PHY clock
+> 
+> The attached kernel log seems to suggest that the device tree is picked up by the kernel, but the USB does not seem very active. No ethernet connectivity. This does seem a regression to me. Is there some other patch that I need to get it going again?
+> 
 
-This debugfs file include following data:
-- Measurement point of time
-- CPU frequency
-- Per-CPU load
+I tried with your config and 3.11-rc1 kernel with the above commit on top and ethernet seems to
+work for me. My boot log is attached.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
----
-Changes since v5:
-- Determine index value of policy->cpu_debugfs[] according to
-  cpumask_weight(policy->cpus) value
-- Bug fix, store 'policy->cpu' to 'freq->cpu' before notify
-  CPUFREQ_LOADCHECK notification
+Are you sure that you are building the DTB for panda-es and the bootloader is picking up the right file and
+not an outdated one?
 
-Changes since v4:
-- Reset the data of CPUs load when cpufreq governor is changed
-- Move code about creating debugfs directory to below first patch
-	: [PATCH 1/2] cpufreq: Add debugfs directory for cpufreq
+Why is the version of SPL loader and u-boot different in your log?
+You need to use the MLO file generated by the u-boot build along with the uImage.
 
-Changes since v3:
-- Extend a range of accumulated data (10 ~ 1000)
-- Add unit information of time/freq and align 'Time' field as left for readability
-- Use CONFIG_CPU_FREQ_STAT depdendency instead of CONFIG_CPU_FREQ_STAT_DETATILS
-- Initialize load of offline CPUx as zero(0)
-- Create/remove debugfs root directory on cpufreq_stats_init/exit() because
-  debugfs root is used on all CPUs.
+Just to be sure we are on the same setup could you please try with latest u-boot release (2013-04). Thanks.
 
-Changes since v2:
-- Code clean according to Viresh Kumar's comment
-- Show both old frequency and new frequency on 'load_table' debugfs file
-- Change debufs file patch as below
-  old: /sys/kernel/debugfs/cpufreq/load_table
-  new: /sys/kernel/debugfs/cpufreq/cpuX/load_table
+cheers,
+-roger
 
-Changes since v1:
-- Set maximum storage size to save CPUs load on Kconfig
-- Use spinlock to synchronize read/write operation for CPUs load
-- Use local variable instead of global variable(struct cpufreq_freqs *freqs)
-- Use pointer of data structure to get correct size of data structure
-  in sizeof() macro instead of structure name
-  : sizeof(struct cpufreq_freqs) -> sizeof(*stat->load_table)
-- Change time unit from nanosecond to microsecond
-- Remove unnecessary memory copy
+--------------040709090507030003060303
+Content-Type: text/x-log; name="panda-es-boot.log"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: attachment; filename="panda-es-boot.log"
 
- drivers/cpufreq/Kconfig            |   6 +
- drivers/cpufreq/cpufreq.c          |   4 +
- drivers/cpufreq/cpufreq_governor.c |  14 ++
- drivers/cpufreq/cpufreq_stats.c    | 258 +++++++++++++++++++++++++++++++++----
- include/linux/cpufreq.h            |   6 +
- 5 files changed, 264 insertions(+), 24 deletions(-)
+U-Boot SPL 2013.04 (Jul 18 2013 - 14:04:55)
+OMAP4460 ES1.1
+OMAP SD/MMC: 0
+reading u-boot.img
+reading u-boot.img
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 534fcb8..5c3f406 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -36,6 +36,12 @@ config CPU_FREQ_STAT
- 
- 	  If in doubt, say N.
- 
-+config NR_CPU_LOAD_STORAGE
-+	int "Maximum storage size to save CPU load (10-1000)"
-+	range 10 1000
-+	depends on CPU_FREQ_STAT
-+	default "10"
-+
- config CPU_FREQ_STAT_DETAILS
- 	bool "CPU frequency translation statistics details"
- 	depends on CPU_FREQ_STAT
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 924d654..cb68873 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -293,6 +293,10 @@ void __cpufreq_notify_transition(struct cpufreq_policy *policy,
- 		if (likely(policy) && likely(policy->cpu == freqs->cpu))
- 			policy->cur = freqs->new;
- 		break;
-+	case CPUFREQ_LOADCHECK:
-+		srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
-+				CPUFREQ_LOADCHECK, freqs);
-+		break;
- 	}
- }
- /**
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index dc9b72e..decabcb 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -87,6 +87,9 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
- 	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
- 	struct cpufreq_policy *policy;
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	struct cpufreq_freqs freq = {0};
-+#endif
- 	unsigned int max_load = 0;
- 	unsigned int ignore_nice;
- 	unsigned int j;
-@@ -148,6 +151,9 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 			continue;
- 
- 		load = 100 * (wall_time - idle_time) / wall_time;
-+#ifdef CONFIG_CPU_FREQ_STAT
-+		freq.load[j] = load;
-+#endif
- 
- 		if (dbs_data->cdata->governor == GOV_ONDEMAND) {
- 			int freq_avg = __cpufreq_driver_getavg(policy, j);
-@@ -161,6 +167,14 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 			max_load = load;
- 	}
- 
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	freq.time = ktime_to_ms(ktime_get());
-+	freq.old = policy->cur;
-+	freq.cpu = policy->cpu;
-+
-+	cpufreq_notify_transition(policy, &freq, CPUFREQ_LOADCHECK);
-+#endif
-+
- 	dbs_data->cdata->gov_check_cpu(cpu, max_load);
- }
- EXPORT_SYMBOL_GPL(dbs_check_cpu);
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index fb65dec..fd171ba 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -12,6 +12,7 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
-+#include <linux/debugfs.h>
- #include <linux/sysfs.h>
- #include <linux/cpufreq.h>
- #include <linux/module.h>
-@@ -36,6 +37,12 @@ struct cpufreq_stats {
- #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
- 	unsigned int *trans_table;
- #endif
-+
-+	/* Debugfs file for load_table */
-+	struct cpufreq_freqs *load_table;
-+	unsigned int load_last_index;
-+	unsigned int load_max_index;
-+	struct dentry *debugfs_load_table;
- };
- 
- static DEFINE_PER_CPU(struct cpufreq_stats *, cpufreq_stats_table);
-@@ -149,6 +156,181 @@ static struct attribute_group stats_attr_group = {
- 	.name = "stats"
- };
- 
-+#define MAX_LINE_SIZE		255
-+static ssize_t load_table_read(struct file *file, char __user *user_buf,
-+					size_t count, loff_t *ppos)
-+{
-+	struct cpufreq_policy *policy = file->private_data;
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
-+	struct cpufreq_freqs *load_table = stat->load_table;
-+	ssize_t len = 0;
-+	char *buf;
-+	int i, cpu, ret;
-+
-+	buf = kzalloc(MAX_LINE_SIZE * stat->load_max_index, GFP_KERNEL);
-+	if (!buf)
-+		return 0;
-+
-+	spin_lock(&cpufreq_stats_lock);
-+	len += sprintf(buf + len, "%-10s %-12s %-12s ", "Time(ms)",
-+						    "Old Freq(Hz)",
-+						    "New Freq(Hz)");
-+	for_each_cpu(cpu, policy->cpus)
-+		len += sprintf(buf + len, "%3s%d ", "CPU", cpu);
-+	len += sprintf(buf + len, "\n");
-+
-+	i = stat->load_last_index;
-+	do {
-+		len += sprintf(buf + len, "%-10lld %-12d %-12d ",
-+				load_table[i].time,
-+				load_table[i].old,
-+				load_table[i].new);
-+
-+		for_each_cpu(cpu, policy->cpus)
-+			len += sprintf(buf + len, "%-4d ",
-+					load_table[i].load[cpu]);
-+		len += sprintf(buf + len, "\n");
-+
-+		if (++i == stat->load_max_index)
-+			i = 0;
-+	} while (i != stat->load_last_index);
-+	spin_unlock(&cpufreq_stats_lock);
-+
-+	ret = simple_read_from_buffer(user_buf, count, ppos, buf, len);
-+	kfree(buf);
-+
-+	return ret;
-+}
-+
-+static const struct file_operations load_table_fops = {
-+	.read		= load_table_read,
-+	.open		= simple_open,
-+	.llseek		= no_llseek,
-+};
-+
-+static int cpufreq_stats_reset_debugfs(struct cpufreq_policy *policy)
-+{
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
-+	int size;
-+
-+	if (!stat)
-+		return -EINVAL;
-+
-+	if (stat->load_table)
-+		kfree(stat->load_table);
-+	stat->load_last_index = 0;
-+
-+	size = sizeof(*stat->load_table) * stat->load_max_index;
-+	stat->load_table = kzalloc(size, GFP_KERNEL);
-+	if (!stat->load_table)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int cpufreq_stats_create_debugfs(struct cpufreq_policy *policy)
-+{
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
-+	unsigned int idx, size;
-+	int ret = 0;
-+
-+	if (!stat)
-+		return -EINVAL;
-+
-+	if (!policy->cpu_debugfs)
-+		return -EINVAL;
-+
-+	stat->load_last_index = 0;
-+	stat->load_max_index = CONFIG_NR_CPU_LOAD_STORAGE;
-+
-+	/* Allocate memory for storage of CPUs load */
-+	size = sizeof(*stat->load_table) * stat->load_max_index;
-+	stat->load_table = kzalloc(size, GFP_KERNEL);
-+	if (!stat->load_table)
-+		return -ENOMEM;
-+
-+	/* Create debugfs directory and file for cpufreq */
-+	idx = cpumask_weight(policy->cpus) > 1 ? policy->cpu : 0;
-+	stat->debugfs_load_table = debugfs_create_file("load_table", S_IWUSR,
-+					policy->cpu_debugfs[idx],
-+					policy, &load_table_fops);
-+	if (!stat->debugfs_load_table) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	pr_debug("Creating debugfs file for CPU%d \n", policy->cpu);
-+
-+	return 0;
-+err:
-+	kfree(stat->load_table);
-+	return ret;
-+}
-+
-+/* should be called late in the CPU removal sequence so that the stats
-+ * memory is still available in case someone tries to use it.
-+ */
-+static void cpufreq_stats_free_load_table(unsigned int cpu)
-+{
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, cpu);
-+
-+	if (stat) {
-+		pr_debug("Free memory of load_table\n");
-+		kfree(stat->load_table);
-+	}
-+}
-+
-+/* must be called early in the CPU removal sequence (before
-+ * cpufreq_remove_dev) so that policy is still valid.
-+ */
-+static void cpufreq_stats_free_debugfs(unsigned int cpu)
-+{
-+	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, cpu);
-+
-+	if (stat) {
-+		pr_debug("Remove load_table debugfs file\n");
-+		debugfs_remove(stat->debugfs_load_table);
-+	}
-+}
-+
-+static void cpufreq_stats_store_load_table(struct cpufreq_freqs *freq,
-+					   unsigned long val)
-+{
-+	struct cpufreq_stats *stat;
-+	int cpu, last_idx;
-+
-+	stat = per_cpu(cpufreq_stats_table, freq->cpu);
-+	if (!stat)
-+		return;
-+
-+	spin_lock(&cpufreq_stats_lock);
-+
-+	switch (val) {
-+	case CPUFREQ_POSTCHANGE:
-+		if (!stat->load_last_index)
-+			last_idx = stat->load_max_index;
-+		else
-+			last_idx = stat->load_last_index - 1;
-+
-+		stat->load_table[last_idx].new = freq->new;
-+		break;
-+	case CPUFREQ_LOADCHECK:
-+		last_idx = stat->load_last_index;
-+
-+		stat->load_table[last_idx].time = freq->time;
-+		stat->load_table[last_idx].old = freq->old;
-+		stat->load_table[last_idx].new = freq->old;
-+		for_each_present_cpu(cpu)
-+			stat->load_table[last_idx].load[cpu] = freq->load[cpu];
-+
-+		if (++stat->load_last_index == stat->load_max_index)
-+			stat->load_last_index = 0;
-+		break;
-+	}
-+
-+	spin_unlock(&cpufreq_stats_lock);
-+}
-+
- static int freq_table_get_index(struct cpufreq_stats *stat, unsigned int freq)
- {
- 	int index;
-@@ -204,7 +386,7 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
- 	unsigned int alloc_size;
- 	unsigned int cpu = policy->cpu;
- 	if (per_cpu(cpufreq_stats_table, cpu))
--		return -EBUSY;
-+		return 0;
- 	stat = kzalloc(sizeof(struct cpufreq_stats), GFP_KERNEL);
- 	if ((stat) == NULL)
- 		return -ENOMEM;
-@@ -257,6 +439,14 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
- 	spin_lock(&cpufreq_stats_lock);
- 	stat->last_time = get_jiffies_64();
- 	stat->last_index = freq_table_get_index(stat, policy->cur);
-+
-+	ret = cpufreq_stats_create_debugfs(data);
-+	if (ret < 0) {
-+		spin_unlock(&cpufreq_stats_lock);
-+		ret = -EINVAL;
-+		goto error_out;
-+	}
-+
- 	spin_unlock(&cpufreq_stats_lock);
- 	cpufreq_cpu_put(data);
- 	return 0;
-@@ -297,11 +487,18 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
- 	if (val != CPUFREQ_NOTIFY)
- 		return 0;
- 	table = cpufreq_frequency_get_table(cpu);
--	if (!table)
--		return 0;
--	ret = cpufreq_stats_create_table(policy, table);
--	if (ret)
-+	if (table) {
-+		ret = cpufreq_stats_create_table(policy, table);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	ret = cpufreq_stats_reset_debugfs(policy);
-+	if (ret < 0) {
-+		pr_debug("Failed to reset CPUs data of debugfs\n");
- 		return ret;
-+	}
-+
- 	return 0;
- }
- 
-@@ -312,32 +509,40 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
- 	struct cpufreq_stats *stat;
- 	int old_index, new_index;
- 
--	if (val != CPUFREQ_POSTCHANGE)
--		return 0;
-+	switch (val) {
-+	case CPUFREQ_POSTCHANGE:
-+		stat = per_cpu(cpufreq_stats_table, freq->cpu);
-+		if (!stat)
-+			return 0;
- 
--	stat = per_cpu(cpufreq_stats_table, freq->cpu);
--	if (!stat)
--		return 0;
-+		old_index = stat->last_index;
-+		new_index = freq_table_get_index(stat, freq->new);
- 
--	old_index = stat->last_index;
--	new_index = freq_table_get_index(stat, freq->new);
-+		/* We can't do stat->time_in_state[-1]= .. */
-+		if (old_index == -1 || new_index == -1)
-+			return 0;
- 
--	/* We can't do stat->time_in_state[-1]= .. */
--	if (old_index == -1 || new_index == -1)
--		return 0;
-+		cpufreq_stats_update(freq->cpu);
- 
--	cpufreq_stats_update(freq->cpu);
-+		if (old_index == new_index)
-+			return 0;
- 
--	if (old_index == new_index)
--		return 0;
--
--	spin_lock(&cpufreq_stats_lock);
--	stat->last_index = new_index;
-+		spin_lock(&cpufreq_stats_lock);
-+		stat->last_index = new_index;
- #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
--	stat->trans_table[old_index * stat->max_state + new_index]++;
-+		stat->trans_table[old_index * stat->max_state + new_index]++;
- #endif
--	stat->total_trans++;
--	spin_unlock(&cpufreq_stats_lock);
-+		stat->total_trans++;
-+		spin_unlock(&cpufreq_stats_lock);
-+
-+		cpufreq_stats_store_load_table(freq, CPUFREQ_POSTCHANGE);
-+
-+		break;
-+	case CPUFREQ_LOADCHECK:
-+		cpufreq_stats_store_load_table(freq, CPUFREQ_LOADCHECK);
-+		break;
-+	}
-+
- 	return 0;
- }
- 
-@@ -352,12 +557,16 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-+		cpufreq_stats_free_debugfs(cpu);
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
-+		cpufreq_stats_free_load_table(cpu);
- 		cpufreq_stats_free_table(cpu);
- 		break;
- 	case CPU_UP_CANCELED_FROZEN:
-+		cpufreq_stats_free_debugfs(cpu);
-+		cpufreq_stats_free_load_table(cpu);
- 		cpufreq_stats_free_sysfs(cpu);
- 		cpufreq_stats_free_table(cpu);
- 		break;
-@@ -418,6 +627,7 @@ static void __exit cpufreq_stats_exit(void)
- 	unregister_hotcpu_notifier(&cpufreq_stat_cpu_notifier);
- 	for_each_online_cpu(cpu) {
- 		cpufreq_stats_free_table(cpu);
-+		cpufreq_stats_free_debugfs(cpu);
- 		cpufreq_stats_free_sysfs(cpu);
- 	}
- }
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 825f379..4d0a4fd 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -141,12 +141,18 @@ static inline bool policy_is_shared(struct cpufreq_policy *policy)
- #define CPUFREQ_POSTCHANGE	(1)
- #define CPUFREQ_RESUMECHANGE	(8)
- #define CPUFREQ_SUSPENDCHANGE	(9)
-+#define CPUFREQ_LOADCHECK	(10)
- 
- struct cpufreq_freqs {
- 	unsigned int cpu;	/* cpu nr */
- 	unsigned int old;
- 	unsigned int new;
- 	u8 flags;		/* flags of cpufreq_driver, see below. */
-+
-+#ifdef CONFIG_CPU_FREQ_STAT
-+	int64_t time;
-+	unsigned int load[NR_CPUS];
-+#endif
- };
- 
- 
--- 
-1.8.0
 
+U-Boot 2013.04 (Jul 18 2013 - 14:04:55)
+
+CPU  : OMAP4460 ES1.1
+Board: OMAP4 Panda
+I2C:   ready
+DRAM:  1 GiB
+MMC:   OMAP SD/MMC: 0
+Using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+Net:   No ethernet found.
+Hit any key to stop autoboot:  0 
+mmc0 is current device
+SD/MMC found on device 0
+reading boot.scr
+409 bytes read in 3 ms (132.8 KiB/s)
+Running bootscript from mmc0 ...
+## Executing script at 82000000
+reading omap4-panda.dtb
+18588 bytes read in 6 ms (3 MiB/s)
+reading uImage
+3947784 bytes read in 189 ms (19.9 MiB/s)
+## Booting kernel from Legacy Image at 80300000 ...
+   Image Name:   Linux-3.11.0-rc1-00001-g4861de4
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    3947720 Bytes = 3.8 MiB
+   Load Address: 80008000
+   Entry Point:  80008000
+   Verifying Checksum ... OK
+## Flattened Device Tree blob at 825f0000
+   Booting using the fdt blob at 0x825f0000
+   Loading Kernel Image ... OK
+OK
+   Using Device Tree in place at 825f0000, end 825f789b
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 3.11.0-rc1-00001-g4861de4 (roger@rockdesk) (gcc version 4.7.1 20120531 (prerelease) (crosstool-NG linaro-1.13.1-2012.06-20120625 - Linaro GCC 2012.06) ) #862 SMP Thu Jul 18 14:10:14 EEST 2013
+[    0.000000] CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c5387d
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] Machine: Generic OMAP4 (Flattened Device Tree), model: TI OMAP4 PandaBoard
+[    0.000000] Memory policy: ECC disabled, Data cache writealloc
+[    0.000000] On node 0 totalpages: 261888
+[    0.000000] free_area_init_node: node 0, pgdat c07b9500, node_mem_map c0d21000
+[    0.000000]   Normal zone: 1520 pages used for memmap
+[    0.000000]   Normal zone: 0 pages reserved
+[    0.000000]   Normal zone: 194560 pages, LIFO batch:31
+[    0.000000]   HighMem zone: 528 pages used for memmap
+[    0.000000]   HighMem zone: 67328 pages, LIFO batch:15
+[    0.000000] OMAP4460 ES1.1
+[    0.000000] PERCPU: Embedded 9 pages/cpu @c153b000 s14208 r8192 d14464 u36864
+[    0.000000] pcpu-alloc: s14208 r8192 d14464 u36864 alloc=9*4096
+[    0.000000] pcpu-alloc: [0] 0 [0] 1 
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 260368
+[    0.000000] Kernel command line: console=ttyO2,115200n8 mem=1G@0x80000000 root=/dev/mmcblk0p2 rootwait debug earlyprintk loglevel=8
+[    0.000000] PID hash table entries: 4096 (order: 2, 16384 bytes)
+[    0.000000] Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
+[    0.000000] Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
+[    0.000000] Memory: 1024916K/1047552K available (5122K kernel code, 558K rwdata, 1860K rodata, 345K init, 5515K bss, 22636K reserved, 269312K highmem)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+[    0.000000]     vmalloc : 0xf0000000 - 0xff000000   ( 240 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xef800000   ( 760 MB)
+[    0.000000]     pkmap   : 0xbfe00000 - 0xc0000000   (   2 MB)
+[    0.000000]     modules : 0xbf000000 - 0xbfe00000   (  14 MB)
+[    0.000000]       .text : 0xc0008000 - 0xc06d9cf0   (6984 kB)
+[    0.000000]       .init : 0xc06da000 - 0xc0730780   ( 346 kB)
+[    0.000000]       .data : 0xc0732000 - 0xc07bd800   ( 558 kB)
+[    0.000000]        .bss : 0xc07bd800 - 0xc0d20490   (5516 kB)
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000] NR_IRQS:16 nr_irqs:16 16
+[    0.000000] OMAP clockevent source: timer1 at 32768 Hz
+[    0.000000] sched_clock: 32 bits at 32kHz, resolution 30517ns, wraps every 131071999ms
+[    0.000000] OMAP clocksource: 32k_counter at 32768 Hz
+[    0.000000] smp_twd: clock not found -2
+[    0.000000] Console: colour dummy device 80x30
+[    0.000000] Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
+[    0.000000] ... MAX_LOCKDEP_SUBCLASSES:  8
+[    0.000000] ... MAX_LOCK_DEPTH:          48
+[    0.000000] ... MAX_LOCKDEP_KEYS:        8191
+[    0.000000] ... CLASSHASH_SIZE:          4096
+[    0.000000] ... MAX_LOCKDEP_ENTRIES:     16384
+[    0.000000] ... MAX_LOCKDEP_CHAINS:      32768
+[    0.000000] ... CHAINHASH_SIZE:          16384
+[    0.000000]  memory used by lock dependency info: 3695 kB
+[    0.000000]  per task-struct memory footprint: 1152 bytes
+[    0.001556] Calibrating delay loop... 1391.00 BogoMIPS (lpj=6955008)
+[    0.079681] pid_max: default: 32768 minimum: 301
+[    0.080230] Security Framework initialized
+[    0.080383] Mount-cache hash table entries: 512
+[    0.093414] CPU: Testing write buffer coherency: ok
+[    0.094818] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+[    0.094848] Calibrating local timer... 348.97MHz.
+[    0.149810] Setting up static identity map for 0xc04da590 - 0xc04da5e8
+[    0.149902] L310 cache controller enabled
+[    0.149932] l2x0: 16 ways, CACHE_ID 0x410000c7, AUX_CTRL 0x7e470000, Cache size: 1048576 B
+[    0.154083] CPU1: Booted secondary processor
+[    0.189636] CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
+[    0.190063] Brought up 2 CPUs
+[    0.190093] SMP: Total of 2 processors activated (2782.00 BogoMIPS).
+[    0.190093] CPU: All CPU(s) started in SVC mode.
+[    0.192443] devtmpfs: initialized
+[    0.268890] pinctrl core: initialized pinctrl subsystem
+[    0.271942] regulator-dummy: no parameters
+[    0.274017] NET: Registered protocol family 16
+[    0.275451] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.343749] gpiochip_add: registered GPIOs 0 to 31 on device: gpio
+[    0.344848] OMAP GPIO hardware version 0.1
+[    0.346374] gpiochip_add: registered GPIOs 32 to 63 on device: gpio
+[    0.348480] gpiochip_add: registered GPIOs 64 to 95 on device: gpio
+[    0.350585] gpiochip_add: registered GPIOs 96 to 127 on device: gpio
+[    0.352661] gpiochip_add: registered GPIOs 128 to 159 on device: gpio
+[    0.354766] gpiochip_add: registered GPIOs 160 to 191 on device: gpio
+[    0.356414] omap-gpmc 50000000.gpmc: error: clk_get
+[    0.356445] omap-gpmc: probe of 50000000.gpmc failed with error -2
+[    0.383697] No ATAGs?
+[    0.383728] hw-breakpoint: found 5 (+1 reserved) breakpoint and 1 watchpoint registers.
+[    0.383758] hw-breakpoint: maximum watchpoint size is 4 bytes.
+[    0.386596] OMAP DMA hardware revision 0.0
+[    0.427398] bio: create slab <bio-0> at 0
+[    0.479522] omap-dma-engine 4a056000.dma-controller: OMAP DMA engine driver
+[    0.480438] of_get_named_gpio_flags exited with status 62
+[    0.481231] hsusb1_reset: 3300 mV 
+[    0.481567] of_get_named_gpio_flags exited with status 1
+[    0.482086] hsusb1_vbus: 3300 mV 
+[    0.486206] SCSI subsystem initialized
+[    0.487640] usbcore: registered new interface driver usbfs
+[    0.487945] usbcore: registered new interface driver hub
+[    0.488342] usbcore: registered new device driver usb
+[    0.491210] omap_i2c 48070000.i2c: could not find pctldev for node /ocp/pinmux@4a100040/pinmux_i2c1_pins, deferring probe
+[    0.491241] platform 48070000.i2c: Driver omap_i2c requests probe deferral
+[    0.491302] omap_i2c 48072000.i2c: could not find pctldev for node /ocp/pinmux@4a100040/pinmux_i2c2_pins, deferring probe
+[    0.491333] platform 48072000.i2c: Driver omap_i2c requests probe deferral
+[    0.491394] omap_i2c 48060000.i2c: could not find pctldev for node /ocp/pinmux@4a100040/pinmux_i2c3_pins, deferring probe
+[    0.491424] platform 48060000.i2c: Driver omap_i2c requests probe deferral
+[    0.491485] omap_i2c 48350000.i2c: could not find pctldev for node /ocp/pinmux@4a100040/pinmux_i2c4_pins, deferring probe
+[    0.491485] platform 48350000.i2c: Driver omap_i2c requests probe deferral
+[    0.496887] Switched to clocksource 32k_counter
+[    0.594238] NET: Registered protocol family 2
+[    0.595886] TCP established hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.596191] TCP bind hash table entries: 8192 (order: 6, 294912 bytes)
+[    0.598846] TCP: Hash tables configured (established 8192 bind 8192)
+[    0.599090] TCP: reno registered
+[    0.599121] UDP hash table entries: 512 (order: 3, 40960 bytes)
+[    0.599456] UDP-Lite hash table entries: 512 (order: 3, 40960 bytes)
+[    0.600769] NET: Registered protocol family 1
+[    0.601806] RPC: Registered named UNIX socket transport module.
+[    0.601837] RPC: Registered udp transport module.
+[    0.601837] RPC: Registered tcp transport module.
+[    0.601837] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.605560] NetWinder Floating Point Emulator V0.97 (double precision)
+[    0.606048] hw perfevents: enabled with ARMv7 Cortex-A9 PMU driver, 7 counters available
+[    0.764770] bounce pool size: 64 pages
+[    0.765319] VFS: Disk quotas dquot_6.5.2
+[    0.765563] Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
+[    0.767883] NFS: Registering the id_resolver key type
+[    0.768218] Key type id_resolver registered
+[    0.768249] Key type id_legacy registered
+[    0.768371] jffs2: version 2.2. (NAND) (SUMMARY)  �© 2001-2006 Red Hat, Inc.
+[    0.768859] msgmni has been set to 1475
+[    0.772247] io scheduler noop registered
+[    0.772277] io scheduler deadline registered
+[    0.772369] io scheduler cfq registered (default)
+[    0.773895] pinctrl-single 4a100040.pinmux: 203 pins at pa fc100040 size 406
+[    0.774414] pinctrl-single 4a31e040.pinmux: 28 pins at pa fc31e040 size 56
+[    0.775512] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+[    0.780151] omap_uart 4806a000.serial: did not get pins for uart0 error: -19
+[    0.780975] 4806a000.serial: ttyO0 at MMIO 0x4806a000 (irq = 104) is a OMAP UART0
+[    0.782379] omap_uart 4806c000.serial: did not get pins for uart1 error: -19
+[    0.782714] 4806c000.serial: ttyO1 at MMIO 0x4806c000 (irq = 105) is a OMAP UART1
+[    0.783630] omap_uart 48020000.serial: did not get pins for uart2 error: -19
+[    0.783966] 48020000.serial: ttyO2 at MMIO 0x48020000 (irq = 106) is a OMAP UART2
+[    1.632232] console [ttyO2] enabled
+[    1.636779] omap_uart 4806e000.serial: did not get pins for uart3 error: -19
+[    1.644592] 4806e000.serial: ttyO3 at MMIO 0x4806e000 (irq = 102) is a OMAP UART3
+[    1.674072] brd: module loaded
+[    1.689697] loop: module loaded
+[    1.696960] mtdoops: mtd device (mtddev=name/number) must be supplied
+[    1.711608] usbcore: registered new interface driver asix
+[    1.717620] usbcore: registered new interface driver cdc_ether
+[    1.724060] usbcore: registered new interface driver r815x
+[    1.730194] usbcore: registered new interface driver smsc95xx
+[    1.736541] usbcore: registered new interface driver net1080
+[    1.742828] usbcore: registered new interface driver cdc_subset
+[    1.749359] usbcore: registered new interface driver zaurus
+[    1.755554] usbcore: registered new interface driver cdc_ncm
+[    1.762542] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    1.769470] ehci_hcd: block sizes: qh 64 qtd 96 itd 160 sitd 96
+[    1.775726] ehci-omap: OMAP-EHCI Host Controller driver
+[    1.851470] ehci-omap 4a064c00.ehci: failed to get phys phandle in /ocp/usbhshost@4a064000/ehci@4a064c00 node
+[    1.861999] ehci-omap 4a064c00.ehci: EHCI Host Controller
+[    1.869476] ehci-omap 4a064c00.ehci: new USB bus registered, assigned bus number 1
+[    1.877502] ehci-omap 4a064c00.ehci: reset hcs_params 0x1313 dbg=0 cc=1 pcc=3 ordered ports=3
+[    1.886505] ehci-omap 4a064c00.ehci: reset hcc_params 20016 thresh 1 uframes 256/512/1024 park LPM
+[    1.896240] ehci-omap 4a064c00.ehci: park 0
+[    1.900756] ehci-omap 4a064c00.ehci: reset command 0080b02  park=3 ithresh=8 period=1024 Reset HALT
+[    1.910369] ehci-omap 4a064c00.ehci: irq 109, io mem 0x4a064c00
+[    1.916625] ehci-omap 4a064c00.ehci: init command 0010005 (park)=0 ithresh=1 period=512 RUN
+[    1.936889] ehci-omap 4a064c00.ehci: USB 2.0 started, EHCI 1.00
+[    1.943725] usb usb1: default language 0x0409
+[    1.948425] usb usb1: udev 1, busnum 1, minor = 0
+[    1.953399] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+[    1.960571] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    1.968200] usb usb1: Product: EHCI Host Controller
+[    1.973358] usb usb1: Manufacturer: Linux 3.11.0-rc1-00001-g4861de4 ehci_hcd
+[    1.980804] usb usb1: SerialNumber: 4a064c00.ehci
+[    1.987426] usb usb1: usb_probe_device
+[    1.991363] usb usb1: configuration #1 chosen from 1 choice
+[    1.997711] usb usb1: adding 1-0:1.0 (config #1, interface 0)
+[    2.004516] hub 1-0:1.0: usb_probe_interface
+[    2.009063] hub 1-0:1.0: usb_probe_interface - got id
+[    2.014434] hub 1-0:1.0: USB hub found
+[    2.018524] hub 1-0:1.0: 3 ports detected
+[    2.022735] hub 1-0:1.0: standalone hub
+[    2.026855] hub 1-0:1.0: individual port power switching
+[    2.032440] hub 1-0:1.0: individual port over-current protection
+[    2.038787] hub 1-0:1.0: power on to power good time: 20ms
+[    2.044860] hub 1-0:1.0: local power source is good
+[    2.051025] hub 1-0:1.0: enabling power on all ports
+[    2.057922] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    2.064453] ohci_hcd: block sizes: ed 64 td 64
+[    2.069519] ohci-omap3 4a064800.ohci: OMAP3 OHCI Host Controller
+[    2.076507] ohci-omap3 4a064800.ohci: new USB bus registered, assigned bus number 2
+[    2.084625] ohci-omap3 4a064800.ohci: starting OHCI controller
+[    2.090942] ohci-omap3 4a064800.ohci: created debug files
+[    2.096679] ohci-omap3 4a064800.ohci: irq 108, io mem 0x4a064800
+[    2.147155] ehci-omap 4a064c00.ehci: GetStatus port:1 status 001803 0  ACK POWER sig=j CSC CONNECT
+[    2.156616] hub 1-0:1.0: port 1: status 0501 change 0001
+[    2.182525] ohci-omap3 4a064800.ohci: OHCI controller state
+[    2.188446] ohci-omap3 4a064800.ohci: OHCI 1.0, NO legacy support registers, rh state running
+[    2.197448] ohci-omap3 4a064800.ohci: control 0x283 RWC HCFS=operational CBSR=3
+[    2.205169] ohci-omap3 4a064800.ohci: cmdstatus 0x00000 SOC=0
+[    2.211242] ohci-omap3 4a064800.ohci: intrstatus 0x00000004 SF
+[    2.217407] ohci-omap3 4a064800.ohci: intrenable 0x8000005a MIE RHSC UE RD WDH
+[    2.225036] ohci-omap3 4a064800.ohci: hcca frame #003f
+[    2.230468] ohci-omap3 4a064800.ohci: roothub.a 0a000203 POTPGT=10 NPS NDP=3(3)
+[    2.238189] ohci-omap3 4a064800.ohci: roothub.b 00000000 PPCM=0000 DR=0000
+[    2.245452] ohci-omap3 4a064800.ohci: roothub.status 00008000 DRWE
+[    2.251983] ohci-omap3 4a064800.ohci: roothub.portstatus [0] 0x00000100 PPS
+[    2.259368] ohci-omap3 4a064800.ohci: roothub.portstatus [1] 0x00000100 PPS
+[    2.266693] ohci-omap3 4a064800.ohci: roothub.portstatus [2] 0x00000100 PPS
+[    2.274139] usb usb2: default language 0x0409
+[    2.278839] usb usb2: udev 1, busnum 2, minor = 128
+[    2.283966] usb usb2: New USB device found, idVendor=1d6b, idProduct=0001
+[    2.291137] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[    2.298797] usb usb2: Product: OMAP3 OHCI Host Controller
+[    2.304473] usb usb2: Manufacturer: Linux 3.11.0-rc1-00001-g4861de4 ohci_hcd
+[    2.311920] usb usb2: SerialNumber: 4a064800.ohci
+[    2.317169] hub 1-0:1.0: state 7 ports 3 chg 0002 evt 0000
+[    2.323028] hub 1-0:1.0: port 1, status 0501, change 0000, 480 Mb/s
+[    2.330657] usb usb2: usb_probe_device
+[    2.334625] usb usb2: configuration #1 chosen from 1 choice
+[    2.340606] usb usb2: adding 2-0:1.0 (config #1, interface 0)
+[    2.347198] hub 2-0:1.0: usb_probe_interface
+[    2.351715] hub 2-0:1.0: usb_probe_interface - got id
+[    2.357055] hub 2-0:1.0: USB hub found
+[    2.361053] hub 2-0:1.0: 3 ports detected
+[    2.365295] hub 2-0:1.0: standalone hub
+[    2.369354] hub 2-0:1.0: no power switching (usb 1.0)
+[    2.374664] hub 2-0:1.0: global over-current protection
+[    2.380187] hub 2-0:1.0: power on to power good time: 20ms
+[    2.386016] hub 2-0:1.0: local power source is good
+[    2.391204] hub 2-0:1.0: no over-current condition exists
+[    2.397125] ehci-omap 4a064c00.ehci: port 1 reset complete, port enabled
+[    2.397369] hub 2-0:1.0: trying to enable port power on non-switchable hub
+[    2.398529] usbcore: registered new interface driver cdc_wdm
+[    2.398925] usbcore: registered new interface driver usb-storage
+[    2.423706] ehci-omap 4a064c00.ehci: GetStatus port:1 status 001805 0  ACK POWER sig=j PE CONNECT
+[    2.434143] mousedev: PS/2 mouse device common for all mice
+[    2.442932] i2c /dev entries driver
+[    2.446929] Driver for 1-wire Dallas network protocol.
+[    2.455871] omap_wdt: OMAP Watchdog Timer Rev 0x01: initial timeout 60 sec
+[    2.465362] of_get_named_gpio_flags: can't parse gpios property
+[    2.471618] of_get_named_gpio_flags: can't parse gpios property
+[    2.478271] omap-dma-engine 4a056000.dma-controller: allocating channel for 62
+[    2.485931] omap-dma-engine 4a056000.dma-controller: allocating channel for 61
+[    2.486938] usb 1-1: new high-speed USB device number 2 using ehci-omap
+[    2.501037] omap_hsmmc 4809c000.mmc: vmmc regulator missing
+[    2.507202] omap-dma-engine 4a056000.dma-controller: freeing channel for 61
+[    2.514556] omap-dma-engine 4a056000.dma-controller: freeing channel for 62
+[    2.521972] platform 4809c000.mmc: Driver omap_hsmmc requests probe deferral
+[    2.529510] of_get_named_gpio_flags: can't parse gpios property
+[    2.535736] of_get_named_gpio_flags: can't parse gpios property
+[    2.542175] omap-dma-engine 4a056000.dma-controller: allocating channel for 60
+[    2.549865] omap-dma-engine 4a056000.dma-controller: allocating channel for 59
+[    2.557128] ehci-omap 4a064c00.ehci: port 1 reset complete, port enabled
+[    2.557128] ehci-omap 4a064c00.ehci: GetStatus port:1 status 001005 0  ACK POWER sig=se0 PE CONNECT
+[    2.574096] omap_hsmmc 480d5000.mmc: vmmc regulator missing
+[    2.580017] omap-dma-engine 4a056000.dma-controller: freeing channel for 59
+[    2.587402] omap-dma-engine 4a056000.dma-controller: freeing channel for 60
+[    2.595672] of_get_named_gpio_flags exited with status 110
+[    2.601501] of_get_named_gpio_flags exited with status 8
+[    2.607116] of_get_named_gpio_flags exited with status 110
+[    2.613800] of_get_named_gpio_flags exited with status 8
+[    2.621185] usbcore: registered new interface driver usbhid
+[    2.627105] usbhid: USB HID core driver
+[    2.632049] oprofile: using arm/armv7-ca9
+[    2.636901] TCP: cubic registered
+[    2.640380] Initializing XFRM netlink socket
+[    2.644989] NET: Registered protocol family 17
+[    2.649780] NET: Registered protocol family 15
+[    2.654693] usb 1-1: udev 2, busnum 1, minor = 1
+[    2.654815] Key type dns_resolver registered
+[    2.664031] VFP support v0.3: [    2.664093] usb 1-1: New USB device found, idVendor=0424, idProduct=9514
+[    2.664093] usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[    2.665100] usb 1-1: usb_probe_device
+[    2.665130] usb 1-1: configuration #1 chosen from 1 choice
+implementor 41 architecture 3 part 30 variant 9 rev 4
+[    2.691406] usb 1-1: adding 1-1:1.0 (config #1, interface 0)
+[    2.691925] hub 1-1:1.0: usb_probe_interface
+[    2.691925] hub 1-1:1.0: usb_probe_interface - got id
+[    2.691986] hub 1-1:1.0: USB hub found
+[    2.716125] hub 1-1:1.0: 5 ports detected
+[    2.720397] hub 1-1:1.0: compound device; port removable status: FRRRR
+[    2.727294] hub 1-1:1.0: individual port power switching
+[    2.727386] Power Management for TI OMAP4+ devices.
+[    2.727447] Power Management for TI OMAP4.
+[    2.727447] OMAP4 PM: u-boot >= v2012.07 is required for full PM support
+[    2.727600] ThumbEE CPU extension supported.
+[    2.727630] Registering SWP/SWPB emulation handler
+[    2.759155] hub 1-1:1.0: individual port over-current protection
+[    2.766204] hub 1-1:1.0: TT per port
+[    2.766906] hub 1-1:1.0: TT requires at most 8 FS bit times (666 ns)
+[    2.776855] hub 1-1:1.0: power on to power good time: 100ms
+[    2.783325] hub 1-1:1.0: local power source is good
+[    2.788543] hub 1-1:1.0: enabling power on all ports
+[    2.797088] hub 2-0:1.0: state 7 ports 3 chg 0000 evt 0000
+[    2.803131] hub 2-0:1.0: hub_suspend
+[    2.806976] usb usb2: bus auto-suspend, wakeup 1
+[    2.809997] omap_i2c 48070000.i2c: bus 0 rev0.11 at 400 kHz
+[    2.813385] Skipping twl internal clock init and using bootloader value (unknown osc rate)
+[    2.827423] ohci-omap3 4a064800.ohci: suspend root hub
+[    2.833465] twl 0-0048: PIH (irq 39) chaining IRQs 416..436
+[    2.841003] twl_rtc rtc.11: Power up reset detected.
+[    2.847351] twl_rtc rtc.11: Enabling TWL-RTC
+[    2.856262] twl_rtc rtc.11: rtc core: registered rtc.11 as rtc0
+[    2.864654] VAUX1_6030: 1000 <--> 3000 mV at 2800 mV 
+[    2.871978] VAUX2_6030: 1200 <--> 2800 mV at 1800 mV 
+[    2.879150] VAUX3_6030: 1000 <--> 3000 mV at 1200 mV 
+[    2.886444] VMMC: 1200 <--> 3000 mV at 3000 mV 
+[    2.893035] VPP: 1800 <--> 2500 mV at 1900 mV 
+[    2.899597] VUSIM: 1200 <--> 2900 mV at 1800 mV 
+[    2.906188] VDAC: 1800 mV 
+[    2.908050] hub 1-1:1.0: port 1: status 0101 change 0001
+[    2.916168] VANA: 2100 mV 
+[    2.920837] VCXIO: 1800 mV 
+[    2.925354] VUSB: 3300 mV 
+[    2.930053] V1V8: 1800 mV 
+[    2.934692] V2V1: 2100 mV 
+[    2.943328] omap_i2c 48072000.i2c: bus 1 rev0.11 at 400 kHz
+[    2.950775] omap_i2c 48060000.i2c: bus 2 rev0.11 at 100 kHz
+[    2.959197] omap_i2c 48350000.i2c: bus 3 rev0.11 at 400 kHz
+[    2.959197] of_get_named_gpio_flags: can't parse gpios property
+[    2.971710] of_get_named_gpio_flags: can't parse gpios property
+[    2.978271] omap-dma-engine 4a056000.dma-controller: allocating channel for 62
+[    2.981964] omap-dma-engine 4a056000.dma-controller: allocating channel for 61
+[    2.996551] omap_hsmmc 4809c000.mmc: pins are not configured from the driver
+[    3.006958] usb 1-1: link qh256-0001/eed6c400 start 1 [1/0 us]
+[    3.013275] hub 1-1:1.0: state 7 ports 5 chg 0002 evt 0000
+[    3.019287] hub 1-1:1.0: port 1, status 0101, change 0000, 12 Mb/s
+[    3.053314] twl_rtc rtc.11: setting system clock to 2000-01-01 00:00:00 UTC (946684800)
+[    3.065124] Waiting for root device /dev/mmcblk0p2...
+[    3.107788] usb 1-1.1: new high-speed USB device number 3 using ehci-omap
+[    3.300201] mmc0: host does not support reading read-only switch. assuming write-enable.
+[    3.310699] mmc0: new high speed SDHC card at address b368
+[    3.318450] mmcblk0: mmc0:b368 AF SD 7.51 GiB 
+[    3.323791] usb 1-1.1: udev 3, busnum 1, minor = 2
+[    3.328948] usb 1-1.1: New USB device found, idVendor=0424, idProduct=ec00
+[    3.336273] usb 1-1.1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[    3.344482]  mmcblk0: p1 p2
+[    3.348754] usb 1-1.1: usb_probe_device
+[    3.352844] usb 1-1.1: configuration #1 chosen from 1 choice
+[    3.362884] usb 1-1.1: adding 1-1.1:1.0 (config #1, interface 0)
+[    3.369781] smsc95xx 1-1.1:1.0: usb_probe_interface
+[    3.374999] smsc95xx 1-1.1:1.0: usb_probe_interface - got id
+[    3.381042] smsc95xx v1.0.4
+[    5.013549] smsc95xx 1-1.1:1.0 eth0: register 'smsc95xx' at usb-4a064c00.ehci-1.1, smsc95xx USB 2.0 Ethernet, 3a:e3:cb:1b:0e:02
+[    5.026184] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
+[    5.139648] kjournald starting.  Commit interval 5 seconds
+[    5.139648] EXT3-fs (mmcblk0p2): mounted filesystem with ordered data mode
+[    5.139648] VFS: Mounted root (ext3 filesystem) readonly on device 179:2.
+[    5.161193] devtmpfs: mounted
+[    5.161682] Freeing unused kernel memory: 344K (c06da000 - c0730000)
+INIT: version 2.88 booting
+[info] Using makefile-style concurrent boot in runlevel S.
+[....] Starting the hotplug events dispatcher: udevd[    6.236877] udevd[890]: starting version 175
+. ok 
+[....] Synthesizing the initial hotplug events...done.
+[....] Waiting for /dev to be fully populated...done.
+[....] Activating swap...done.
+[    8.382934] EXT3-fs (mmcblk0p2): using internal journal
+[....] Cleaning up temporary files... /tmp. ok 
+[....] Activating lvm and md swap...done.
+[....] Checking file systems...fsck from util-linux 2.20.1
+done.
+[....] Mounting local filesystems...done.
+[....] Activating swapfile swap...done.
+[....] Cleaning up temporary files.... ok 
+[....] Cleaning up temporary files.... ok 
+[....] Setting kernel variables ...done.
+INIT: Entering runlevel: 2
+[info] Using makefile-style concurrent boot in runlevel 2.
+
+Debian GNU/Linux 7.0 rockdesk ttyO2
+
+--------------040709090507030003060303--
