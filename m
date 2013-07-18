@@ -1,67 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759290Ab3GRQ5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 12:57:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39262 "EHLO mga02.intel.com"
+	id S933063Ab3GRRGU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 13:06:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29873 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759122Ab3GRQ5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 12:57:04 -0400
+	id S932394Ab3GRRGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 13:06:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,695,1367996400"; 
-   d="scan'208";a="367431758"
-Date: Thu, 18 Jul 2013 21:46:58 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Mark Jackson <mpfj-list@newflow.co.uk>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/3] dmaengine: add dma_get_slave_sg_limits()
-Message-ID: <20130718161658.GW16653@intel.com>
-References: <1374166001-31340-1-git-send-email-joelf@ti.com>
- <1374166001-31340-2-git-send-email-joelf@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374166001-31340-2-git-send-email-joelf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="333432148"
+Message-ID: <1374167156.4900.8.camel@envy.home>
+Subject: Re: [PATCH 3/3] pch_gbe: Add MinnowBoard support
+From: Darren Hart <dvhart@linux.intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        netdev@vger.kernel.org, stable@vger.kernel.org
+Date: Thu, 18 Jul 2013 10:05:56 -0700
+In-Reply-To: <1373877289.24799.242.camel@smile>
+References: <1373677087-7747-1-git-send-email-dvhart@linux.intel.com>
+	 <ad20133699c36bd8d183dd685f1b35f6d6b99005.1373676797.git.dvhart@linux.intel.com>
+	 <1373877289.24799.242.camel@smile>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 11:46:39AM -0500, Joel Fernandes wrote:
-> From: Matt Porter <mporter@ti.com>
+(resending as the original appears not to have made it past my sent box)
+
+On Mon, 2013-07-15 at 11:34 +0300, Andy Shevchenko wrote:
+> On Fri, 2013-07-12 at 17:58 -0700, Darren Hart wrote: 
+> > The MinnowBoard uses an AR803x PHY with the PCH GBE which requires
+> > special handling. Use the MinnowBoard PCI Subsystem ID to detect this
+> > and add a pci_device_id.driver_data structure and functions to handle
+> > platform setup.
+> > 
+> > The AR803x does not implement the RGMII 2ns TX clock delay in the trace
+> > routing nor via strapping. Add a detection method for the board and the
+> > PHY and enable the TX clock delay via the registers.
+> > 
+> > This PHY will hibernate without link for 10 seconds. Ensure the PHY is
+> > awake for probe and then disable hibernation. A future improvement would
+> > be to convert pch_gbe to using PHYLIB and making sure we can wake the
+> > PHY at the necessary times rather than permanently disabling it.
 > 
-> Add a dmaengine API to retrieve slave SG transfer limits.
+> Few comments below.
+
+Hi Andy,
+
+Thank you for taking the time to review...
+
 > 
-> The API is optionally implemented by dmaengine drivers and when
-> unimplemented will return a NULL pointer. A client driver using
-> this API provides the required dma channel, address width, and
-> burst size of the transfer. dma_get_slave_sg_limits() returns an
-> SG limits structure with the maximum number and size of SG segments
-> that the given channel can handle.
-Hi Joel,
+> > --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
+> > +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
+> > @@ -582,6 +582,19 @@ struct pch_gbe_hw_stats {
+> >  };
+> >  
+> >  /**
+> > + * struct pch_gbe_privdata - PCI Device ID driver data
+> > + * @phy_tx_clk_delay:		Bool, configure the PHY TX delay in software
+> > + * @phy_disable_hibernate:	Bool, disable PHY hibernation
+> > + * @platform_init:		Platform initialization callback, called from
+> > + *				probe, prio to PHY initialization.
+> > + */
+> > +struct pch_gbe_privdata {
+> > +	bool phy_tx_clk_delay;
+> > +	bool phy_disable_hibernate;
+> > +	int(*platform_init)(struct pci_dev *pdev);
+> 
+> I don't like the platform_init() approach here. 
+> I think here should be plain GPIO line number.
 
-I have already resurrected this and generalized the API to get the slave
-capablities. 
-https://lkml.org/lkml/2013/7/15/147
 
-Please start using this API
+I went around and around on this myself. I originally added several
+callback functions to this privdata, but ultimately felt it was more
+infrastructure than was necessary now, and if it became necessary (a
+big "if" in my opinion) I could always augment that as a follow-on
+patch.
 
-~Vinod
+
+> I'll explain below why.
+> 
+> > @@ -604,6 +617,7 @@ struct pch_gbe_hw_stats {
+> >   * @rx_buffer_len:	Receive buffer length
+> >   * @tx_queue_len:	Transmit queue length
+> >   * @have_msi:		PCI MSI mode flag
+> > + * @pch_gbe_privdata	PCI Device ID driver_data
+> 
+> Missed colon.
+
+
+Ack, thanks.
+
+
+> > --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+> > +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+> 
+> 
+> > @@ -2635,6 +2638,9 @@ static int pch_gbe_probe(struct pci_dev *pdev,
+> >  	adapter->pdev = pdev;
+> >  	adapter->hw.back = adapter;
+> >  	adapter->hw.reg = pcim_iomap_table(pdev)[PCH_GBE_PCI_BAR];
+> > +	adapter->pdata = (struct pch_gbe_privdata *)pci_id->driver_data;
+> > +	if (adapter->pdata && adapter->pdata->platform_init)
+> > +		adapter->pdata->platform_init(pdev);
+> 
+> Here perhaps you check pdata and GPIO line number (let's say != -1) and
+> call GPIO request helper.
+
+
+I was doing exactly this in local previous version, but I decided
+against it for a few reasons:
+
+o If I specific GPIO, I should also specify GPIO flags, GPIO label,
+GPIO assertion level, GPIO reset and rest timings (and that is assuming
+it's just a set, release, wait cycle).
+
+o Setting all this in pdata makes very specific to resetting this
+specific PHY, while others may have any number of other methods or
+procedures. It also excludes other sorts of platform initialization
+which might necessary. Specifying GPIO here makes the interface overly
+specific in my opinion.
+
+
+> > @@ -2720,9 +2730,47 @@ err_free_netdev:
+> >  	return ret;
+> >  }
+> >  
+> > +/* The AR803X PHY on the MinnowBoard requires a physical pin to be toggled to
+> > + * ensure it is awake for probe and init. Request the line and reset the PHY.
+> > + */
+> > +static int pch_gbe_minnow_platform_init(struct pci_dev *pdev)
+> > +{
+> > +	int ret = 0;
+> > +	int flags = GPIOF_DIR_OUT | GPIOF_INIT_HIGH | GPIOF_EXPORT;
+> > +	int gpio = MINNOW_PHY_RESET_GPIO;
+> > +
+> > +	ret = gpio_request_one(gpio, flags, "minnow_phy_reset");
+> > +	if (ret){
+> > +		dev_err(&pdev->dev,
+> > +			"ERR: Can't request PHY reset GPIO line '%d'\n", gpio);
+> > +		return ret;
+> > +	}
+> > +
+> > +	gpio_set_value(gpio, 0);
+> > +	usleep_range(1250, 1500);
+> > +	gpio_set_value(gpio, 1);
+> > +	usleep_range(1250, 1500);
+> 
+> First of all, who is going to release gpio? Perhaps
+> devm_gpio_request_one?
+
+
+Oh right, thanks for catching that. I'll need to think on that, there
+is no direct way to know I need to release it on module exit in this
+implementation.
+
+
+> Next is the name of the function, since you are resetting PHY, what if
+> you call it like pch_gbe_reset_by_gpio ?
+
+We would need to include PHY in here as we are not resetting the MAC,
+we are resetting the PHY. I think specifying it as being by gpio is
+also overly restrictive. If you look at my two new functions (for tx
+clock delay and hibernate) you can see an example of how we might go
+about such a function (which indeed I had in a previous version as
+pch_gbe_phy_physical_reset()). I dropped this as I felt it required too
+many fields to be added to the pdata and I was better off with platform
+specific init routines.
+
+You've presented an alternative approach, but it isn't clear to me what
+your reservations are with the one I took here. What are the problems
+with it?
+
+> 
+> > +
+> > +	return ret;
+> > +}
+> 
+> And most important one is the ACPI case. As far as I understand Minnow
+> board supports / will support ACPI5 variant of device enumeration. In
+> such case the GPIO line will come in the ACPI resources. Moreover, you
+> will have no struct pci_dev. I highly recommend to rewrite this as a
+> generic helper, which takes GPIO line number as an input parameter and
+> does the job.
+
+While the MinnowBoard will be expanding its use of ACPI, we do not
+intend to rewrite existing drivers (such as this one) or firmware
+platform code. We are looking only to describe the Lure's (daughter
+cards) with additional tables.
+
+...
+
+> > +int pch_gbe_phy_tx_clk_delay(struct pch_gbe_hw *hw)
+> > +{
+> > +	/* The RGMII interface requires a ~2ns TX clock delay. This is typically
+> > +	 * done in layout with a longer trace or via PHY strapping, but can also
+> > +	 * be done via PHY configuration registers.
+> > +	 */
+> > +	struct pch_gbe_adapter *adapter = pch_gbe_hw_to_adapter(hw);
+> > +	u16 mii_reg;
+> > +	int ret = 0;
+> 
+> No need to assign. Are you trying to shut (sparse?) warning?
+
+
+Personal preference I guess. When it comes to return codes I prefer an
+explicit assignment.
+
+
+Thank you for taking the time to review!
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
+
