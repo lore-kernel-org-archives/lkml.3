@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab3GRGrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 02:47:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49244 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab3GRGr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 02:47:27 -0400
+	id S932499Ab3GRGrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 02:47:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34683 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753850Ab3GRGri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 02:47:38 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <kyungmin.park@samsung.com>, <balbi@ti.com>,
         <kishon@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
@@ -19,9 +18,9 @@ CC: <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
         <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
         <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
         <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: [PATCH 03/15] usb: phy: twl4030: use the new generic PHY framework
-Date: Thu, 18 Jul 2013 12:16:12 +0530
-Message-ID: <1374129984-765-4-git-send-email-kishon@ti.com>
+Subject: [PATCH 05/15] ARM: dts: omap: update usb_otg_hs data
+Date: Thu, 18 Jul 2013 12:16:14 +0530
+Message-ID: <1374129984-765-6-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1374129984-765-1-git-send-email-kishon@ti.com>
 References: <1374129984-765-1-git-send-email-kishon@ti.com>
@@ -31,132 +30,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used the generic PHY framework API to create the PHY. For powering on
-and powering off the PHY, power_on and power_off ops are used. Once the
-MUSB OMAP glue is adapted to the new framework, the suspend and resume
-ops of usb phy library will be removed.
-
-However using the old usb phy library cannot be completely removed
-because otg is intertwined with phy and moving to the new
-framework completely will break otg. Once we have a separate otg state machine,
-we can get rid of the usb phy library.
+Updated the usb_otg_hs dt data to include the *phy* and *phy-names*
+binding in order for the driver to use the new generic PHY framework.
+Also updated the Documentation to include the binding information.
+The PHY binding information can be found at
+Documentation/devicetree/bindings/phy/phy-bindings.txt
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 Acked-by: Felipe Balbi <balbi@ti.com>
 Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 ---
- drivers/usb/phy/phy-twl4030-usb.c |   50 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 49 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/usb/omap-usb.txt |    5 +++++
+ Documentation/devicetree/bindings/usb/usb-phy.txt  |    6 ++++++
+ arch/arm/boot/dts/omap3-beagle-xm.dts              |    2 ++
+ arch/arm/boot/dts/omap3-evm.dts                    |    2 ++
+ arch/arm/boot/dts/omap3-overo.dtsi                 |    2 ++
+ arch/arm/boot/dts/omap4.dtsi                       |    3 +++
+ arch/arm/boot/dts/twl4030.dtsi                     |    1 +
+ 7 files changed, 21 insertions(+)
 
-diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl4030-usb.c
-index 8f78d2d..9051756 100644
---- a/drivers/usb/phy/phy-twl4030-usb.c
-+++ b/drivers/usb/phy/phy-twl4030-usb.c
-@@ -33,6 +33,7 @@
- #include <linux/io.h>
- #include <linux/delay.h>
- #include <linux/usb/otg.h>
-+#include <linux/phy/phy.h>
- #include <linux/usb/musb-omap.h>
- #include <linux/usb/ulpi.h>
- #include <linux/i2c/twl.h>
-@@ -431,6 +432,14 @@ static void twl4030_phy_suspend(struct twl4030_usb *twl, int controller_off)
- 	dev_dbg(twl->dev, "%s\n", __func__);
- }
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index 57e71f6..825790d 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -19,6 +19,9 @@ OMAP MUSB GLUE
+  - power : Should be "50". This signifies the controller can supply up to
+    100mA when operating in host mode.
+  - usb-phy : the phandle for the PHY device
++ - phys : the phandle for the PHY device (used by generic PHY framework)
++ - phy-names : the names of the PHY corresponding to the PHYs present in the
++   *phy* phandle.
  
-+static int twl4030_phy_power_off(struct phy *phy)
-+{
-+	struct twl4030_usb *twl = phy_get_drvdata(phy);
-+
-+	twl4030_phy_suspend(twl, 0);
-+	return 0;
-+}
-+
- static void __twl4030_phy_resume(struct twl4030_usb *twl)
- {
- 	twl4030_phy_power(twl, 1);
-@@ -459,6 +468,14 @@ static void twl4030_phy_resume(struct twl4030_usb *twl)
- 	}
- }
+ Optional properties:
+  - ctrl-module : phandle of the control module this glue uses to write to
+@@ -33,6 +36,8 @@ usb_otg_hs: usb_otg_hs@4a0ab000 {
+ 	num-eps = <16>;
+ 	ram-bits = <12>;
+ 	ctrl-module = <&omap_control_usb>;
++	phys = <&usb2_phy>;
++	phy-names = "usb2-phy";
+ };
  
-+static int twl4030_phy_power_on(struct phy *phy)
-+{
-+	struct twl4030_usb *twl = phy_get_drvdata(phy);
-+
-+	twl4030_phy_resume(twl);
-+	return 0;
-+}
-+
- static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
- {
- 	/* Enable writing to power configuration registers */
-@@ -602,13 +619,22 @@ static int twl4030_usb_phy_init(struct usb_phy *phy)
- 	status = twl4030_usb_linkstat(twl);
- 	twl->linkstat = status;
+ Board specific device node entry
+diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/usb/usb-phy.txt
+index 61496f5..c0245c8 100644
+--- a/Documentation/devicetree/bindings/usb/usb-phy.txt
++++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
+@@ -5,6 +5,8 @@ OMAP USB2 PHY
+ Required properties:
+  - compatible: Should be "ti,omap-usb2"
+  - reg : Address and length of the register set for the device.
++ - #phy-cells: determine the number of cells that should be given in the
++   phandle while referencing this phy.
  
--	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID)
-+	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID) {
- 		omap_musb_mailbox(twl->linkstat);
-+		twl4030_phy_resume(twl);
-+	}
+ Optional properties:
+  - ctrl-module : phandle of the control module used by PHY driver to power on
+@@ -16,6 +18,7 @@ usb2phy@4a0ad080 {
+ 	compatible = "ti,omap-usb2";
+ 	reg = <0x4a0ad080 0x58>;
+ 	ctrl-module = <&omap_control_usb>;
++	#phy-cells = <0>;
+ };
  
- 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
- 	return 0;
- }
+ OMAP USB3 PHY
+@@ -25,6 +28,8 @@ Required properties:
+  - reg : Address and length of the register set for the device.
+  - reg-names: The names of the register addresses corresponding to the registers
+    filled in "reg".
++ - #phy-cells: determine the number of cells that should be given in the
++   phandle while referencing this phy.
  
-+static int twl4030_phy_init(struct phy *phy)
-+{
-+	struct twl4030_usb *twl = phy_get_drvdata(phy);
-+
-+	return twl4030_usb_phy_init(&twl->phy);
-+}
-+
- static int twl4030_set_suspend(struct usb_phy *x, int suspend)
- {
- 	struct twl4030_usb *twl = phy_to_twl(x);
-@@ -646,13 +672,22 @@ static int twl4030_set_host(struct usb_otg *otg, struct usb_bus *host)
- 	return 0;
- }
+ Optional properties:
+  - ctrl-module : phandle of the control module used by PHY driver to power on
+@@ -39,4 +44,5 @@ usb3phy@4a084400 {
+ 	      <0x4a084c00 0x40>;
+ 	reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+ 	ctrl-module = <&omap_control_usb>;
++	#phy-cells = <0>;
+ };
+diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+index afdb164..533b2da 100644
+--- a/arch/arm/boot/dts/omap3-beagle-xm.dts
++++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+@@ -144,6 +144,8 @@
+ &usb_otg_hs {
+ 	interface-type = <0>;
+ 	usb-phy = <&usb2_phy>;
++	phys = <&usb2_phy>;
++	phy-names = "usb2-phy";
+ 	mode = <3>;
+ 	power = <50>;
+ };
+diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
+index 7d4329d..4134dd0 100644
+--- a/arch/arm/boot/dts/omap3-evm.dts
++++ b/arch/arm/boot/dts/omap3-evm.dts
+@@ -70,6 +70,8 @@
+ &usb_otg_hs {
+ 	interface-type = <0>;
+ 	usb-phy = <&usb2_phy>;
++	phys = <&usb2_phy>;
++	phy-names = "usb2-phy";
+ 	mode = <3>;
+ 	power = <50>;
+ };
+diff --git a/arch/arm/boot/dts/omap3-overo.dtsi b/arch/arm/boot/dts/omap3-overo.dtsi
+index 8f1abec..a461d2f 100644
+--- a/arch/arm/boot/dts/omap3-overo.dtsi
++++ b/arch/arm/boot/dts/omap3-overo.dtsi
+@@ -76,6 +76,8 @@
+ &usb_otg_hs {
+ 	interface-type = <0>;
+ 	usb-phy = <&usb2_phy>;
++	phys = <&usb2_phy>;
++	phy-names = "usb2-phy";
+ 	mode = <3>;
+ 	power = <50>;
+ };
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 22d9f2b..1e8e2fe 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -520,6 +520,7 @@
+ 				compatible = "ti,omap-usb2";
+ 				reg = <0x4a0ad080 0x58>;
+ 				ctrl-module = <&omap_control_usb>;
++				#phy-cells = <0>;
+ 			};
+ 		};
  
-+static const struct phy_ops ops = {
-+	.init		= twl4030_phy_init,
-+	.power_on	= twl4030_phy_power_on,
-+	.power_off	= twl4030_phy_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
- static int twl4030_usb_probe(struct platform_device *pdev)
- {
- 	struct twl4030_usb_data *pdata = pdev->dev.platform_data;
- 	struct twl4030_usb	*twl;
-+	struct phy		*phy;
- 	int			status, err;
- 	struct usb_otg		*otg;
- 	struct device_node	*np = pdev->dev.of_node;
-+	struct phy_provider	*phy_provider;
+@@ -658,6 +659,8 @@
+ 			interrupt-names = "mc", "dma";
+ 			ti,hwmods = "usb_otg_hs";
+ 			usb-phy = <&usb2_phy>;
++			phys = <&usb2_phy>;
++			phy-names = "usb2-phy";
+ 			multipoint = <1>;
+ 			num-eps = <16>;
+ 			ram-bits = <12>;
+diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
+index b3034da..ce4cd6f 100644
+--- a/arch/arm/boot/dts/twl4030.dtsi
++++ b/arch/arm/boot/dts/twl4030.dtsi
+@@ -80,6 +80,7 @@
+ 		usb1v8-supply = <&vusb1v8>;
+ 		usb3v1-supply = <&vusb3v1>;
+ 		usb_mode = <1>;
++		#phy-cells = <0>;
+ 	};
  
- 	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
- 	if (!twl)
-@@ -689,6 +724,19 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	otg->set_host		= twl4030_set_host;
- 	otg->set_peripheral	= twl4030_set_peripheral;
- 
-+	phy_provider = devm_of_phy_provider_register(twl->dev,
-+		of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	phy = devm_phy_create(twl->dev, 0, &ops, "twl4030");
-+	if (IS_ERR(phy)) {
-+		dev_dbg(&pdev->dev, "Failed to create PHY\n");
-+		return PTR_ERR(phy);
-+	}
-+
-+	phy_set_drvdata(phy, twl);
-+
- 	/* init spinlock for workqueue */
- 	spin_lock_init(&twl->lock);
- 
+ 	twl_pwm: pwm {
 -- 
 1.7.10.4
 
