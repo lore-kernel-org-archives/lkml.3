@@ -1,63 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935084Ab3GSCex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:34:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37708 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934891Ab3GSCXk (ORCPT
+	id S935257Ab3GSCfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:35:22 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41213 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934310Ab3GSCfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joachim Eastwood <manabian@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [ 06/18] pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
-Date: Thu, 18 Jul 2013 19:23:21 -0700
-Message-Id: <20130719021049.399305741@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
-References: <20130719021048.965829361@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 18 Jul 2013 22:35:19 -0400
+Date: Thu, 18 Jul 2013 19:35:09 -0700 (PDT)
+Message-Id: <20130718.193509.1259783040844404673.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 18 Jul 2013 19:35:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+A couple interesting SKB fragment handling fixes, please the usual
+small bits here and there:
 
-From: Joachim Eastwood <manabian@gmail.com>
+1) Fix 64-bit divide build failure on 32-bit platforms in mlx5, from
+   Tim Gardner.
 
-commit e39506b466edcda2a7e9d0174d7987ae654137b7 upstream.
+2) Get rid of a stupid reimplementation on "%*phC" in our sysfs MAC
+   address printing helper.
 
-Commit 80af9e6d (pcmcia at91_cf: fix raw gpio number usage) forgot
-to change the parameter in gpio_get_value after adding gpio
-validation.
+3) Fix NETIF_F_SG capability advertisement in hyperv driver, if the
+   device can't do checksumming offloads then it shouldn't say it can
+   do SG either.  From Haiyang Zhang.
 
-Signed-off-by: Joachim Eastwood <manabian@gmail.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+4) bgmac needs to depend on PHYLIB, from Hauke Mehrtens.
 
----
- drivers/pcmcia/at91_cf.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+5) Don't leak DMA mappings on mapping failures, from Neil Horman.
 
---- a/drivers/pcmcia/at91_cf.c
-+++ b/drivers/pcmcia/at91_cf.c
-@@ -99,9 +99,9 @@ static int at91_cf_get_status(struct pcm
- 		int vcc	= cf->board->vcc_pin;
- 
- 		*sp = SS_DETECT | SS_3VCARD;
--		if (!rdy || gpio_get_value(rdy))
-+		if (!rdy || gpio_get_value(cf->board->irq_pin))
- 			*sp |= SS_READY;
--		if (!vcc || gpio_get_value(vcc))
-+		if (!vcc || gpio_get_value(cf->board->vcc_pin))
- 			*sp |= SS_POWERON;
- 	} else
- 		*sp = 0;
+6) We need to reset the transport header of SKBs in ipv4 before we
+   attempt to perform early socket demux, just like ipv6 does.  From
+   Eric Dumazet.
+
+7) Add missing locking on vxlan device removal, from Stephen
+   Hemminger.
+
+8) xen-netfront has to make two passes over an SKB to prepare it for
+   transfer.  One pass calculates the number of slots needed, the
+   second massages the SKB and fills the slots.  Unfortunately, the
+   first pass doesn't calculate the number of slots properly so we can
+   end up trying to build a MAX_SKB_FRAGS + 1 SKB which doesn't work
+   out so well.  Fix from Jan Beulich with help and discussion with
+   several others.
+
+9) Fix a similar problem in tun and macvtap, which have to split up
+   scatter-gather elements at PAGE_SIZE boundaries.  Don't do zerocopy
+   if it would result in a > MAX_SKB_FRAGS skb.  Fixes from Jason
+   Wang.
+
+10) On receive, once we've decoded the VLAN state completely, clear
+    skb->vlan_tci.  Otherwise demuxed tunnels underneath can trigger
+    the VLAN code again, corrupting the packet.  Fix from Eric
+    Dumazet.
+
+Please pull, thanks a lot!
+
+The following changes since commit 47188d39b5deeebf41f87a02af1b3935866364cf:
+
+  Merge tag 'ext4_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-07-14 21:47:51 -0700)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 3e3aac497513c669e1c62c71e1d552ea85c1d974:
+
+  vlan: fix a race in egress prio management (2013-07-18 13:07:13 -0700)
+
+----------------------------------------------------------------
+Daniel Baluta (1):
+      ndisc: bool initializations should use true and false
+
+David S. Miller (1):
+      net: Fix sysfs_format_mac() code duplication.
+
+Dragos Foianu (2):
+      ethtool: fixed trailing statements in ethtool
+      net/irda: fixed style issues in irlan_eth
+
+Eric Dumazet (3):
+      ipv4: set transport header earlier
+      vlan: mask vlan prio bits
+      vlan: fix a race in egress prio management
+
+Haiyang Zhang (1):
+      hyperv: Fix the NETIF_F_SG flag setting in netvsc
+
+Hauke Mehrtens (1):
+      bgmac: add dependency to phylib
+
+Jan Beulich (1):
+      xen-netfront: pull on receive skb may need to happen earlier
+
+Jason Wang (4):
+      macvtap: fix the missing ret value of TUNSETQUEUE
+      macvtap: do not assume 802.1Q when send vlan packets
+      tuntap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
+      macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
+
+Neil Horman (1):
+      atl1e: unmap partially mapped skb on dma error and free skb
+
+Paolo Valente (1):
+      pkt_sched: sch_qfq: remove a source of high packet delay/jitter
+
+Sarveshwar Bandi (1):
+      be2net: Fix to avoid hardware workaround when not needed
+
+Tim Gardner (1):
+      mlx5 core: Fix __udivdi3 when compiling for 32 bit arches
+
+stephen hemminger (1):
+      vxlan: add necessary locking on device removal
+
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c   | 24 ++++++++++++++++++-
+ drivers/net/ethernet/broadcom/Kconfig             |  1 +
+ drivers/net/ethernet/emulex/benet/be_main.c       | 14 +++++++----
+ drivers/net/ethernet/mellanox/mlx5/core/debugfs.c |  2 +-
+ drivers/net/hyperv/netvsc_drv.c                   |  4 ++--
+ drivers/net/macvtap.c                             | 65 ++++++++++++++++++++++++++++++---------------------
+ drivers/net/tun.c                                 | 62 ++++++++++++++++++++++++++++++-------------------
+ drivers/net/vxlan.c                               |  6 +++++
+ drivers/net/xen-netfront.c                        | 31 +++++++++++--------------
+ include/linux/if_vlan.h                           |  3 +--
+ net/8021q/vlan_core.c                             |  2 +-
+ net/8021q/vlan_dev.c                              |  7 ++++++
+ net/core/dev.c                                    | 11 +++++++--
+ net/core/ethtool.c                                | 30 ++++++++++++++++--------
+ net/ethernet/eth.c                                | 21 +----------------
+ net/ipv4/ip_input.c                               |  7 +++---
+ net/ipv6/ndisc.c                                  |  6 ++---
+ net/irda/irlan/irlan_eth.c                        | 31 +++++++++++--------------
+ net/sched/sch_qfq.c                               | 85 ++++++++++++++++++++++++++++++++++++++++++++-----------------------
+ 19 files changed, 248 insertions(+), 164 deletions(-)
