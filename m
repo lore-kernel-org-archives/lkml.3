@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965592Ab3GSFqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:46:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39658 "EHLO
+	id S965426Ab3GSFWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:22:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39395 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965559Ab3GSF00 (ORCPT
+	with ESMTP id S965391Ab3GSFWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:26 -0400
+	Fri, 19 Jul 2013 01:22:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 13/72] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
-Date: Thu, 18 Jul 2013 22:25:30 -0700
-Message-Id: <20130719052600.765063000@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [ 30/38] ext4: fix data offset overflow on 32-bit archs in ext4_inline_data_fiemap()
+Date: Thu, 18 Jul 2013 22:21:46 -0700
+Message-Id: <20130719052049.933148744@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
-References: <20130719052559.852627424@linuxfoundation.org>
+In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
+References: <20130719052047.858393825@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+From: Jan Kara <jack@suse.cz>
 
-commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
+commit eaf3793728d07d995f1e74250b2d0005f7ae98b5 upstream.
 
-Without this memory barrier, the file-storage thread may fail to
-escape from the following while loop, because it may observe new
-common->thread_wakeup_needed and old bh->state which are updated by
-the callback functions.
+On 32-bit archs when sector_t is defined as 32-bit the logic computing
+data offset in ext4_inline_data_fiemap(). Fix that by properly typing
+the shifted value.
 
-	/* Wait for the CBW to arrive */
-	while (bh->state != BUF_STATE_FULL) {
-		rc = sleep_thread(common);
-		if (rc)
-			return rc;
-	}
-
-Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_mass_storage.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ext4/inline.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -413,6 +413,7 @@ static int fsg_set_halt(struct fsg_dev *
- /* Caller must hold fsg->lock */
- static void wakeup_thread(struct fsg_common *common)
- {
-+	smp_wmb();	/* ensure the write of bh->state is complete */
- 	/* Tell the main thread that something has happened */
- 	common->thread_wakeup_needed = 1;
- 	if (common->thread_task)
-@@ -632,6 +633,7 @@ static int sleep_thread(struct fsg_commo
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	common->thread_wakeup_needed = 0;
-+	smp_rmb();	/* ensure the latest bh->state is visible */
- 	return rc;
- }
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -1702,7 +1702,7 @@ int ext4_inline_data_fiemap(struct inode
+ 	if (error)
+ 		goto out;
  
+-	physical = iloc.bh->b_blocknr << inode->i_sb->s_blocksize_bits;
++	physical = (__u64)iloc.bh->b_blocknr << inode->i_sb->s_blocksize_bits;
+ 	physical += (char *)ext4_raw_inode(&iloc) - iloc.bh->b_data;
+ 	physical += offsetof(struct ext4_inode, i_block);
+ 	length = i_size_read(inode);
 
 
