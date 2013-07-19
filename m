@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760081Ab3GSJLm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 05:11:42 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56335 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab3GSJLk (ORCPT
+	id S1760055Ab3GSJNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 05:13:54 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.16]:27287 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751456Ab3GSJNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 05:11:40 -0400
-Message-ID: <51E901F3.8010203@linux.vnet.ibm.com>
-Date: Fri, 19 Jul 2013 14:38:03 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 19 Jul 2013 05:13:51 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-11.tower-29.messagelabs.com!1374225229!23329061!1
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+From: Hector Palacios <hector.palacios@digi.com>
+To: <linux-iio@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <marex@denx.de>, <alexandre.belloni@free-electrons.com>,
+        <jic23@kernel.org>, <lars@metafoo.de>, <fabio.estevam@freescale.com>,
+        <hector.palacios@digi.com>
+Subject: [PATCH v2 1/5] iio: mxs-lradc: change the realbits to 12
+Date: Fri, 19 Jul 2013 11:13:24 +0200
+Message-ID: <1374225208-28940-2-git-send-email-hector.palacios@digi.com>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1374225208-28940-1-git-send-email-hector.palacios@digi.com>
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        netdev@vger.kernel.org
-Subject: Re: mod_timer: list_add corruption: WARNING: CPU: 1 PID: 0 at lib/list_debug.c:33
- __list_add+0xbe/0xd0()
-References: <51E557C0.2060602@linux.vnet.ibm.com> <51E8F759.4060202@linux.vnet.ibm.com>
-In-Reply-To: <51E8F759.4060202@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071908-0260-0000-0000-000003563EB9
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 01:52 PM, Srivatsa S. Bhat wrote:
-> On 07/16/2013 07:55 PM, Srivatsa S. Bhat wrote:
->> Hi,
->>
->> I happened to hit these warnings on an idle system shortly after
->> boot. And the machine locked up and sent NMIs to all CPUs, some of
->> which have been captured below.
->>
->> Kernel version: v3.11-rc1 + 3 unrelated local cpufreq patches.
->> Options set in .config (which are of interest here):
->>
->> CONFIG_TICK_ONESHOT=y
->> CONFIG_NO_HZ_COMMON=y
->> # CONFIG_HZ_PERIODIC is not set
->> # CONFIG_NO_HZ_IDLE is not set
->> CONFIG_NO_HZ_FULL=y
->> CONFIG_NO_HZ_FULL_ALL=y
->> CONFIG_NO_HZ=y
->> CONFIG_HIGH_RES_TIMERS=y
->>
->> CONFIG_TREE_RCU=y
->> # CONFIG_PREEMPT_RCU is not set
->> CONFIG_RCU_STALL_COMMON=y
->> CONFIG_CONTEXT_TRACKING=y
->> CONFIG_RCU_USER_QS=y
->> CONFIG_CONTEXT_TRACKING_FORCE=y
->> CONFIG_RCU_FANOUT=64
->> CONFIG_RCU_FANOUT_LEAF=16
->> # CONFIG_RCU_FANOUT_EXACT is not set
->> CONFIG_RCU_FAST_NO_HZ=y
->> # CONFIG_TREE_RCU_TRACE is not set
->> CONFIG_RCU_NOCB_CPU=y
->> CONFIG_RCU_NOCB_CPU_ALL=y
->>
->>
-> 
-> Today I hit the same warnings, even without NO_HZ_FULL enabled.
-> I've attached my .config with this mail.
->
+The LRADC virtual channels have an 18 bit field to store the sum of up
+to 2^5 accumulated samples. The read_raw function however only operates
+over a single sample (12 bit resolution).
+In order to use this field for scaling operations, we need it to be the
+exact resolution value of the LRADC.
+Besides, the driver was using an 18 bit mask (LRADC_CH_VALUE_MASK) to
+report touch coordinates to userland. A 12 bit mask should be used instead
+or else the touch libraries will expect a coordinates range between 0
+and 0x3ffff (18 bits), instead of between 0 and 0xfff (12 bits).
 
-Adding netdev mailing list to CC.
+Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+---
+ drivers/staging/iio/adc/mxs-lradc.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-I had posted the warnings here:
-http://marc.info/?l=linux-kernel&m=137398492701587&w=2
-
-Regards,
-Srivatsa S. Bhat
-
+diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
+index d92c97a..91282dc 100644
+--- a/drivers/staging/iio/adc/mxs-lradc.c
++++ b/drivers/staging/iio/adc/mxs-lradc.c
+@@ -225,6 +225,9 @@ struct mxs_lradc {
+ #define	LRADC_CTRL4_LRADCSELECT_MASK(n)		(0xf << ((n) * 4))
+ #define	LRADC_CTRL4_LRADCSELECT_OFFSET(n)	((n) * 4)
+ 
++#define LRADC_RESOLUTION			12
++#define LRADC_SINGLE_SAMPLE_MASK		((1 << LRADC_RESOLUTION) - 1)
++
+ /*
+  * Raw I/O operations
+  */
+@@ -547,9 +550,10 @@ static int mxs_lradc_ts_register(struct mxs_lradc *lradc)
+ 	__set_bit(EV_ABS, input->evbit);
+ 	__set_bit(EV_KEY, input->evbit);
+ 	__set_bit(BTN_TOUCH, input->keybit);
+-	input_set_abs_params(input, ABS_X, 0, LRADC_CH_VALUE_MASK, 0, 0);
+-	input_set_abs_params(input, ABS_Y, 0, LRADC_CH_VALUE_MASK, 0, 0);
+-	input_set_abs_params(input, ABS_PRESSURE, 0, LRADC_CH_VALUE_MASK, 0, 0);
++	input_set_abs_params(input, ABS_X, 0, LRADC_SINGLE_SAMPLE_MASK, 0, 0);
++	input_set_abs_params(input, ABS_Y, 0, LRADC_SINGLE_SAMPLE_MASK, 0, 0);
++	input_set_abs_params(input, ABS_PRESSURE, 0, LRADC_SINGLE_SAMPLE_MASK,
++			     0, 0);
+ 
+ 	lradc->ts_input = input;
+ 	input_set_drvdata(input, lradc);
+@@ -821,7 +825,7 @@ static const struct iio_buffer_setup_ops mxs_lradc_buffer_ops = {
+ 	.channel = (idx),					\
+ 	.scan_type = {						\
+ 		.sign = 'u',					\
+-		.realbits = 18,					\
++		.realbits = LRADC_RESOLUTION,			\
+ 		.storagebits = 32,				\
+ 	},							\
+ }
