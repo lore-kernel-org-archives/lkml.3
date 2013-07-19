@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935014Ab3GSA6o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:58:44 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:34938 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934998Ab3GSA6m (ORCPT
+	id S934999Ab3GSBEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 21:04:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40590 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934119Ab3GSBEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:58:42 -0400
-Date: Fri, 19 Jul 2013 09:17:33 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: kernel BUG at fs/ext4/namei.c:2572!
-Message-ID: <20130719011733.GC21615@gmail.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <20130717161944.GA19405@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130717161944.GA19405@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Jul 2013 21:04:30 -0400
+Date: Fri, 19 Jul 2013 11:04:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: cpuinit tree (Was: Re: linux-next: manual merge of the cpuinit tree
+ with the hwmon-staging tree)
+Message-Id: <20130719110416.3046a799149465f33c41c47f@canb.auug.org.au>
+In-Reply-To: <CAP=VYLr7fL4a8VTHdgX=GWT9kApP7e2NLHtftTL4_v9VJ097ng@mail.gmail.com>
+References: <20130716152737.507bc6f1cc7cfe069e97d245@canb.auug.org.au>
+	<CAP=VYLr7fL4a8VTHdgX=GWT9kApP7e2NLHtftTL4_v9VJ097ng@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Jul_2013_11_04_16_+1000_uu=ykntWEOGfWRRN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+--Signature=_Fri__19_Jul_2013_11_04_16_+1000_uu=ykntWEOGfWRRN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for reporting this.
+Hi Paul,
 
-On Wed, Jul 17, 2013 at 12:19:44PM -0400, Dave Jones wrote:
-> Seen while fuzzing..
-> 
-> kernel BUG at fs/ext4/namei.c:2572!
-> invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> Modules linked in: dlci bridge stp hidp cmtp kernelcapi l2tp_ppp l2tp_netlink l2tp_core sctp libcrc32c rfcomm tun fuse nfnetli
-> nk can_raw ipt_ULOG can_bcm x25 scsi_transport_iscsi ipx p8023 p8022 appletalk phonet psnap vmw_vsock_vmci_transport af_key vmw_vmci rose vsock atm can netrom ax25 af_rxrpc ir
-> da pppoe pppox ppp_generic slhc bluetooth nfc rfkill rds caif_socket caif crc_ccitt af_802154 llc2 llc snd_hda_codec_realtek snd_hda_intel snd_hda_codec serio_raw snd_pcm pcsp
-> kr edac_core snd_page_alloc snd_timer snd soundcore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
-> CPU: 1 PID: 1812571 Comm: trinity-child2 Not tainted 3.11.0-rc1+ #12
-> Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
-> task: ffff88007dfe69a0 ti: ffff88010f7b6000 task.ti: ffff88010f7b6000
-> RIP: 0010:[<ffffffff8125ce69>]  [<ffffffff8125ce69>] ext4_orphan_add+0x299/0x2b0
-> RSP: 0018:ffff88010f7b7cf8  EFLAGS: 00010202
-> RAX: 0000000000000000 RBX: ffff8800966d3020 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: ffff88007dfe70b8 RDI: 0000000000000001
-> RBP: ffff88010f7b7d40 R08: ffff880126a3c4e0 R09: ffff88010f7b7ca0
-> R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801271fd668
-> R13: ffff8800966d2f78 R14: ffff88011d7089f0 R15: ffff88007dfe69a0
-> FS:  00007f70441a3740(0000) GS:ffff88012a800000(0000) knlGS:00000000f77c96c0
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 0000000002834000 CR3: 0000000107964000 CR4: 00000000000007e0
-> DR0: 0000000000780000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> Stack:
->  0000000000002000 00000020810b6dde 0000000000000000 ffff88011d46db00
->  ffff8800966d3020 ffff88011d7089f0 ffff88009c7f4c10 ffff88010f7b7f2c
->  ffff88007dfe69a0 ffff88010f7b7da8 ffffffff8125cfac ffff880100000004
-> Call Trace:
->  [<ffffffff8125cfac>] ext4_tmpfile+0x12c/0x180
->  [<ffffffff811cba78>] path_openat+0x238/0x700
->  [<ffffffff8100afc4>] ? native_sched_clock+0x24/0x80
->  [<ffffffff811cc647>] do_filp_open+0x47/0xa0
->  [<ffffffff811db73f>] ? __alloc_fd+0xaf/0x200
->  [<ffffffff811ba2e4>] do_sys_open+0x124/0x210
->  [<ffffffff81010725>] ? syscall_trace_enter+0x25/0x290
->  [<ffffffff811ba3ee>] SyS_open+0x1e/0x20
->  [<ffffffff816ca8d4>] tracesys+0xdd/0xe2
->  [<ffffffff81001001>] ? start_thread_common.constprop.6+0x1/0xa0
-> Code: 04 00 00 00 89 04 24 31 c0 e8 c4 77 04 00 e9 43 fe ff ff 66 25 00 d0 66 3d 00 80 0f 84 0e fe ff ff 83 7b 48 00 0f 84 04 fe ff ff <0f> 0b 49 8b 8c 24 50 07 00 00 e9 88 fe ff ff 0f 1f 84 00 00 00 
-> 
-> 
-> 2571         J_ASSERT((S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-> 2572                   S_ISLNK(inode->i_mode)) || inode->i_nlink == 0);
+On Thu, 18 Jul 2013 20:47:45 -0400 Paul Gortmaker <paul.gortmaker@windriver=
+.com> wrote:
+>
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+>=20
+> As the cpuinit tree was merged today, can you drop it from the
+> linux-next process?   Thanks again for your help in testing this
+> and dealing with the patch queue like an akpm/mmotm source.
 
-I guess that is because we need to call drop_nlink to let ->i_nlink == 0
-before adding this inode into orphan list in ext4_tmpfile().  I will try
-to fix it later.
+No worries - it wasn't as problematic as I feared it might be.  Consider
+it dropped.
 
-Regards,
-                                                - Zheng
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--Signature=_Fri__19_Jul_2013_11_04_16_+1000_uu=ykntWEOGfWRRN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR6JCUAAoJEECxmPOUX5FE3XAP/RMWSKxeywsccOAWkUZs9pyh
+cOMzsXzgTTPjLDeY5JC/7GQ/XCDfXx9UVf9rjVDGIDbP3bxoCNkW827uC2Jg1FD3
+u++j7Vtw6uoSIt9czZgx9uZODwx7I12LQfy8BueVRuSTcsYFB684jknYcSGVryYw
+xy4dgO7n26rUZBy/BEPLZnVl7USfv7sdZOMrfI0wENX8y+V6iX5pi1FHw3VICn+z
+8jtOYyF2exhob9nkwpsYa/r/jTSxMxTw3p3xiwUrzrTXGu4N4X+k3fOj4EBmzpeL
+j8lc5Er0Qk4NOgRowHjfsou4ZCm0HvM8JlPzL2+LnX58zgIeEISgfm4u43RERQ3h
+xVntn0477bKC7+vlhub/yfdict79jZ3ffgPmsvaZcQoAKsEaSSS0yXnxqGzYGlbK
+tN3tsz0pxeIp4eo9cM+XSaHJ6QBRa3cEewQxuSk5QCiVP4mW+9XhLJntvrxO/Pmo
+JFDowU4rVHXFIXqrBZ33DchMQ9DpGlQUhftNf6QiUoKhR9uXafuFnXh8CgdURE15
+9Yu9F4MS4CY6QeQKDwLmikmO66j9qLRYlghWcT7hOxvbB3woWl9HuvUTsGCIrRGF
+BcWGmP7fqcvQS50xLhBESaZqJDT4Yl4iu7WczO6+SYmgWPyXNULkAc8fM5SJFUk6
+BKzOVOBYGmWarmDuokcZ
+=H+Vv
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Jul_2013_11_04_16_+1000_uu=ykntWEOGfWRRN--
