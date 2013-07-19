@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761175Ab3GSTFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:05:24 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:58802 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753334Ab3GSTFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:05:22 -0400
-Message-ID: <51E98DF2.3050608@sgi.com>
-Date: Fri, 19 Jul 2013 14:05:22 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1761137Ab3GSTHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:07:53 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:42456 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab3GSTHw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 15:07:52 -0400
 MIME-Version: 1.0
-To: Holger Hans Peter Freyther <holger@freyther.de>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: /proc/timer_list and weird behavior with dropbear
-References: <20130719152800.GA20792@xiaoyu.lan> <51E95F0B.6080703@sgi.com> <20130719170354.GE5902@xiaoyu.lan>
-In-Reply-To: <20130719170354.GE5902@xiaoyu.lan>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.140]
+In-Reply-To: <51E967B6.8010305@gmail.com>
+References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
+ <51E88AEF.8040701@gmail.com> <CALCETrXnVBPNGGTQQoXnpEmjXHxbhiWx+4RuMVQLRG5sfMpofA@mail.gmail.com>
+ <51E893BC.6070400@gmail.com> <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
+ <51E967B6.8010305@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 19 Jul 2013 12:07:31 -0700
+Message-ID: <CALCETrUgOURSxEdXdyOQpdEfEVnxqw5oGq5aaHhzwj+osVh6DA@mail.gmail.com>
+Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 12:03 PM, Holger Hans Peter Freyther wrote:
-> On Fri, Jul 19, 2013 at 10:45:15AM -0500, Nathan Zimmer wrote:
+On Fri, Jul 19, 2013 at 9:22 AM, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 07/18/2013 08:29 PM, Andy Lutomirski wrote:
+>>
+>> Other way around: a *library* that wants to use exception handling
+>> can't do so safely without the cooperation, or at least understanding,
+>> of the main program and every other library that wants to do something
+>> similar.  Suppose my library installs a SIGFPE handler and throws
+>> my_sigfpe_exception and your library installs a SIGFPE handler and
+>> throws your_sigfpe_exception.  The result: one wins and the other
+>> crashes due to an unhandled exception.
+>>
+>> In my particular usecase, I have code (known to the main program) that
+>> catches all kinds of fatal signals to log nice error messages before
+>> dying.  That means that I can't use a library that handles signals for
+>> any other purpose.  Right now I want to have a small snippet of code
+>> handle SIGBUS, but now I need to coordinate it with everything else.
+>>
+>> If this stuff were unified, then everything would just work.
 >
->> I hadn't noticed anything.
->> Let me try your program and see what I may have missed.
-> Hi,
 >
-> I neither know the semantics of the timer_list nor how to use
-> seq_file correctly. What happens is that timer_list_next will only
-> be called once. This means that iter->cpu will never be increased.
+> That's right.  But I think the Linux kernel already supplies all the needed
+> functionality to do this.  It is really a matter of choosing a userspace
+> implementation and standardizing your entire system around it.  In the realm
+> of GNU/GLibc/Linux, it is really more of social/political exercise rather
+> than a technical problem.
 >
-> This just moves to the next CPU when stop is called (e.g. nothing
-> was added once the print_tickdevice was printed). Do you think
-> this could be correct?
->
->
->
-> diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-> index 3bdf283..8d36a3d 100644
-> --- a/kernel/time/timer_list.c
-> +++ b/kernel/time/timer_list.c
-> @@ -327,8 +327,10 @@ static void *timer_list_next(struct seq_file *file, void *v, loff_t *offset)
->   	return timer_list_start(file, offset);
->   }
->   
-> -static void timer_list_stop(struct seq_file *seq, void *v)
-> +static void timer_list_stop(struct seq_file *file, void *v)
->   {
-> +	struct timer_list_iter *iter = file->private;
-> +	iter->cpu = cpumask_next(iter->cpu, cpu_online_mask);
->   }
->   
->   static const struct seq_operations timer_list_sops = {
 
-That certainly does make the issue go away.
-I think a better solution would be to have an increment in the 
-timer_list_start.
+The social problem could be solved by glibc (or maybe ld.so)
+installing the relevant handlers automatically and taking advantage of
+its sigaction wrapper to keep everything working.  But this has
+technical problems:
 
+1. Semantic changes: things like kill(pid, SIGSEGV) will no longer
+result in a fatal signal, which would be a regression (albeit probably
+harmless).  The results from /proc/pid/status might look a bit odd.
+Separating out signals resulting from faulting instructions (vs other
+causes) might be tricky.  I'm also not sure whether the ignored states
+of SIGSEGV and SIGFPE are preserved across exec, but, if they are,
+glibc will have trouble emulating this.
+
+2. Unhandled signals: if SIGSEGV is handled (by, say, glibc) but there
+is no exception handler that claims the signal, then there's currently
+no way to tell the kernel to do everything it normally does on an
+unhandled fatal signal (e.g. logging, dumping core correctly,
+notifying ptracers, sending the right failure code to waitid).
+
+--Andy
