@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965664Ab3GSF0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:26:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39712 "EHLO
+	id S965703Ab3GSF0w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:26:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39902 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965630Ab3GSF0h (ORCPT
+	with ESMTP id S965686Ab3GSF0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:37 -0400
+	Fri, 19 Jul 2013 01:26:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [ 26/72] parisc: optimize mtsp(0,sr) inline assembly
-Date: Thu, 18 Jul 2013 22:25:43 -0700
-Message-Id: <20130719052601.655272428@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>
+Subject: [ 06/72] jbd2: move superblock checksum calculation to jbd2_write_superblock()
+Date: Thu, 18 Jul 2013 22:25:23 -0700
+Message-Id: <20130719052600.295853884@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,37 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 92b59929825d67db575043a76651865d16873b36 upstream.
+commit fe52d17cdd343ac43c85cf72940a58865b9d3bfb upstream.
 
-If the value which should be moved into a space register is zero, we can
-optimize the inline assembly to become "mtsp %r0,%srX".
+Some of the functions which modify the jbd2 superblock were not
+updating the checksum before calling jbd2_write_superblock().  Move
+the call to jbd2_superblock_csum_set() to jbd2_write_superblock(), so
+that the checksum is calculated consistently.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Darrick J. Wong <darrick.wong@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/special_insns.h |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ fs/jbd2/journal.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/parisc/include/asm/special_insns.h
-+++ b/arch/parisc/include/asm/special_insns.h
-@@ -32,9 +32,12 @@ static inline void set_eiem(unsigned lon
- 	cr;				\
- })
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1318,6 +1318,7 @@ static int journal_reset(journal_t *jour
+ static void jbd2_write_superblock(journal_t *journal, int write_op)
+ {
+ 	struct buffer_head *bh = journal->j_sb_buffer;
++	journal_superblock_t *sb = journal->j_superblock;
+ 	int ret;
  
--#define mtsp(gr, cr) \
--	__asm__ __volatile__("mtsp %0,%1" \
-+#define mtsp(val, cr) \
-+	{ if (__builtin_constant_p(val) && ((val) == 0)) \
-+	 __asm__ __volatile__("mtsp %%r0,%0" : : "i" (cr) : "memory"); \
-+	else \
-+	 __asm__ __volatile__("mtsp %0,%1" \
- 		: /* no outputs */ \
--		: "r" (gr), "i" (cr) : "memory")
-+		: "r" (val), "i" (cr) : "memory"); }
+ 	trace_jbd2_write_superblock(journal, write_op);
+@@ -1339,6 +1340,7 @@ static void jbd2_write_superblock(journa
+ 		clear_buffer_write_io_error(bh);
+ 		set_buffer_uptodate(bh);
+ 	}
++	jbd2_superblock_csum_set(journal, sb);
+ 	get_bh(bh);
+ 	bh->b_end_io = end_buffer_write_sync;
+ 	ret = submit_bh(write_op, bh);
+@@ -1435,7 +1437,6 @@ void jbd2_journal_update_sb_errno(journa
+ 	jbd_debug(1, "JBD2: updating superblock error (errno %d)\n",
+ 		  journal->j_errno);
+ 	sb->s_errno    = cpu_to_be32(journal->j_errno);
+-	jbd2_superblock_csum_set(journal, sb);
+ 	read_unlock(&journal->j_state_lock);
  
- #endif /* __PARISC_SPECIAL_INSNS_H */
+ 	jbd2_write_superblock(journal, WRITE_SYNC);
 
 
