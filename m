@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3GSUXr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:23:47 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59536 "EHLO
+	id S1752136Ab3GSUXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:23:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51355 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab3GSUXG (ORCPT
+	with ESMTP id S1751531Ab3GSUXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 16:23:06 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
@@ -14,125 +14,190 @@ Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 12/15] ARM: shmobile: r8a7740: add DT nodes and clock aliases for three DMAC instances
-Date: Fri, 19 Jul 2013 22:22:53 +0200
-Message-Id: <1374265376-30777-3-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v2 11/15] ARM: shmobile: r8a7740: switch DMAC controllers to using device ID data
+Date: Fri, 19 Jul 2013 22:22:52 +0200
+Message-Id: <1374265376-30777-2-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:FtlRrUIrhmMsFMc8xH8P/zDoSIE5so60W5vspntI+X7
- fJoIMjlCHO+dnFQu3VduTQA7Hcl2nX6+Vxb/3yyg/WJiMHiiOx
- TnH6USvNCqeufW0NgphuuAvHBzgQ2JynZgr9IfLDTyqYIIbkdW
- N2ibf91numT8IUUtK2/1XV+Q4ADg2xzweKW0YLj2bX2xFdRl0S
- 7JfALtJfKewrc9DUNyP/eg2wgBmPhU3LqIxp7+Wdz7SCDJNCTP
- fvDaO/2FuxF1XwGaHr062XQSmd+8wbnvTFrGgBm9WBRJuA/uyO
- +vqFOVLKMQ+UW1mS4A4Wp/R7ogkhT2kch+iLCQK9m68WGPN2mC
- xtKDlzaxMDM6in9lqT+swFap4zBwTWryDFxMPmAfqHH56i4LZk
- vrL/wYYZ4tqIg==
+X-Provags-ID: V02:K0:KXlrJWCMmVbOazOGOjdqU4/niKHoljaGIDP1C+mKaa4
+ MBH/chWgYaszIC0LxGMrAZ+5LGc9PoyPZUcw/5IaFgTVSv/Ys/
+ DrgqJWE+IJqpKhlrYZkW8SJOoXnFUFIQgM2sCAv0f9n97LYMhs
+ rDDrjPf56Du/ZLk2pDItdPOlUy2/j36s1zTYANDp+lc3lPSBEY
+ gukcF2bWRC6Zf8uZ6pBiNgbf6/RGzIWwqSSIPF4bdKetYovEAs
+ lmaeCQBfQqT5NZi/BFyn14zNfkaqBHtyuHSVHtKuWeOKYtMoRX
+ O/dA67rhCM3OJ37dxQqUbPbUu0Ez01EkaCbr69qZG74Ab7KTTl
+ 5SI3pqcbiLLwjOx/f+MR2MIz4BgHYYir0PuRw2mUk1D/IF52dw
+ i/9MSXIxtehSg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Device Tree support for the three generic DMA controller
-instances on r8a7740 in a DMA multiplexer node.
+This patch removes DMAC platform data on r8a7740 and switches to using
+device ID data.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
+ arch/arm/mach-shmobile/clock-r8a7740.c |    6 +-
+ arch/arm/mach-shmobile/setup-r8a7740.c |  106 +-------------------------------
+ 2 files changed, 6 insertions(+), 106 deletions(-)
 
-v2: Use "dma-controller" for DMA controller DT nodes
-
- arch/arm/boot/dts/r8a7740.dtsi         |   61 ++++++++++++++++++++++++++++++++
- arch/arm/mach-shmobile/clock-r8a7740.c |    3 ++
- 2 files changed, 64 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
-index e18a195..4797f1e 100644
---- a/arch/arm/boot/dts/r8a7740.dtsi
-+++ b/arch/arm/boot/dts/r8a7740.dtsi
-@@ -116,6 +116,67 @@
- 			      0 149 0x4>;
- 	};
- 
-+	dmac: dma-multiplexer@0 {
-+		compatible = "renesas,shdma-mux";
-+		#dma-cells = <1>;
-+		dma-channels = <6>;
-+		dma-requests = <256>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		dma0: dma-controller@fe008020 {
-+			compatible = "renesas,shdma-r8a7740";
-+			reg = <0xfe008020 0x270>,
-+				<0xfe009000 0xc>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 34 4
-+					0 28 4
-+					0 29 4
-+					0 30 4
-+					0 31 4
-+					0 32 4
-+					0 33 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5";
-+		};
-+
-+		dma1: dma-controller@fe018020 {
-+			compatible = "renesas,shdma-r8a7740";
-+			reg = <0xfe018020 0x270>,
-+				<0xfe019000 0xc>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 41 4
-+					0 35 4
-+					0 36 4
-+					0 37 4
-+					0 38 4
-+					0 39 4
-+					0 40 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5";
-+		};
-+
-+		dma2: dma-controller@fe028020 {
-+			compatible = "renesas,shdma-r8a7740";
-+			reg = <0xfe028020 0x270>,
-+				<0xfe029000 0xc>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 48 4
-+					0 42 4
-+					0 43 4
-+					0 44 4
-+					0 45 4
-+					0 46 4
-+					0 47 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5";
-+		};
-+	};
-+
- 	i2c0: i2c@fff20000 {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
 diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
-index 62b86f9..4e76fb8 100644
+index de10fd7..62b86f9 100644
 --- a/arch/arm/mach-shmobile/clock-r8a7740.c
 +++ b/arch/arm/mach-shmobile/clock-r8a7740.c
-@@ -576,8 +576,11 @@ static struct clk_lookup lookups[] = {
+@@ -575,9 +575,9 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("sh-sci.5",		&mstp_clks[MSTP207]),
  	CLKDEV_DEV_ID("e6cb0000.sci",		&mstp_clks[MSTP207]),
  	CLKDEV_DEV_ID("sh-dma-engine.3",	&mstp_clks[MSTP214]),
- 	CLKDEV_DEV_ID("shdma-r8a7740.2",	&mstp_clks[MSTP216]),
-+	CLKDEV_DEV_ID("fe028020.dma-controller",&mstp_clks[MSTP216]),
- 	CLKDEV_DEV_ID("shdma-r8a7740.1",	&mstp_clks[MSTP217]),
-+	CLKDEV_DEV_ID("fe018020.dma-controller",&mstp_clks[MSTP217]),
- 	CLKDEV_DEV_ID("shdma-r8a7740.0",	&mstp_clks[MSTP218]),
-+	CLKDEV_DEV_ID("fe008020.dma-controller",&mstp_clks[MSTP218]),
+-	CLKDEV_DEV_ID("sh-dma-engine.2",	&mstp_clks[MSTP216]),
+-	CLKDEV_DEV_ID("sh-dma-engine.1",	&mstp_clks[MSTP217]),
+-	CLKDEV_DEV_ID("sh-dma-engine.0",	&mstp_clks[MSTP218]),
++	CLKDEV_DEV_ID("shdma-r8a7740.2",	&mstp_clks[MSTP216]),
++	CLKDEV_DEV_ID("shdma-r8a7740.1",	&mstp_clks[MSTP217]),
++	CLKDEV_DEV_ID("shdma-r8a7740.0",	&mstp_clks[MSTP218]),
  	CLKDEV_DEV_ID("sh-sci.7",		&mstp_clks[MSTP222]),
  	CLKDEV_DEV_ID("e6cd0000.sci",		&mstp_clks[MSTP222]),
  	CLKDEV_DEV_ID("sh-sci.6",		&mstp_clks[MSTP230]),
+diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
+index 84c5bb6..01dcb3b 100644
+--- a/arch/arm/mach-shmobile/setup-r8a7740.c
++++ b/arch/arm/mach-shmobile/setup-r8a7740.c
+@@ -542,97 +542,6 @@ static struct platform_device *r8a7740_early_devices[] __initdata = {
+ };
+ 
+ /* DMA */
+-static const struct sh_dmae_slave_config r8a7740_dmae_slaves[] = {
+-	{
+-		.slave_id	= SHDMA_SLAVE_SDHI0_TX,
+-		.addr		= 0xe6850030,
+-		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xc1,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI0_RX,
+-		.addr		= 0xe6850030,
+-		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xc2,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI1_TX,
+-		.addr		= 0xe6860030,
+-		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xc9,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI1_RX,
+-		.addr		= 0xe6860030,
+-		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xca,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI2_TX,
+-		.addr		= 0xe6870030,
+-		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xcd,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI2_RX,
+-		.addr		= 0xe6870030,
+-		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xce,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_FSIA_TX,
+-		.addr		= 0xfe1f0024,
+-		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xb1,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_FSIA_RX,
+-		.addr		= 0xfe1f0020,
+-		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xb2,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_FSIB_TX,
+-		.addr		= 0xfe1f0064,
+-		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xb5,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_MMCIF_TX,
+-		.addr		= 0xe6bd0034,
+-		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xd1,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_MMCIF_RX,
+-		.addr		= 0xe6bd0034,
+-		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xd2,
+-	},
+-};
+-
+-#define DMA_CHANNEL(a, b, c)			\
+-{						\
+-	.offset		= a,			\
+-	.dmars		= b,			\
+-	.dmars_bit	= c,			\
+-	.chclr_offset	= (0x220 - 0x20) + a	\
+-}
+-
+-static const struct sh_dmae_channel r8a7740_dmae_channels[] = {
+-	DMA_CHANNEL(0x00, 0, 0),
+-	DMA_CHANNEL(0x10, 0, 8),
+-	DMA_CHANNEL(0x20, 4, 0),
+-	DMA_CHANNEL(0x30, 4, 8),
+-	DMA_CHANNEL(0x50, 8, 0),
+-	DMA_CHANNEL(0x60, 8, 8),
+-};
+-
+-static struct sh_dmae_pdata dma_platform_data = {
+-	.slave		= r8a7740_dmae_slaves,
+-	.slave_num	= ARRAY_SIZE(r8a7740_dmae_slaves),
+-	.channel	= r8a7740_dmae_channels,
+-	.channel_num	= ARRAY_SIZE(r8a7740_dmae_channels),
+-	.ts_low_shift	= TS_LOW_SHIFT,
+-	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
+-	.ts_high_shift	= TS_HI_SHIFT,
+-	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
+-	.ts_shift	= dma_ts_shift,
+-	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
+-	.dmaor_init	= DMAOR_DME,
+-	.chclr_present	= 1,
+-};
+-
+ /* Resource order important! */
+ static struct resource r8a7740_dmae0_resources[] = {
+ 	{
+@@ -718,33 +627,24 @@ static struct resource r8a7740_dmae2_resources[] = {
+ };
+ 
+ static struct platform_device dma0_device = {
+-	.name		= "sh-dma-engine",
++	.name		= "shdma-r8a7740",
+ 	.id		= 0,
+ 	.resource	= r8a7740_dmae0_resources,
+ 	.num_resources	= ARRAY_SIZE(r8a7740_dmae0_resources),
+-	.dev		= {
+-		.platform_data	= &dma_platform_data,
+-	},
+ };
+ 
+ static struct platform_device dma1_device = {
+-	.name		= "sh-dma-engine",
++	.name		= "shdma-r8a7740",
+ 	.id		= 1,
+ 	.resource	= r8a7740_dmae1_resources,
+ 	.num_resources	= ARRAY_SIZE(r8a7740_dmae1_resources),
+-	.dev		= {
+-		.platform_data	= &dma_platform_data,
+-	},
+ };
+ 
+ static struct platform_device dma2_device = {
+-	.name		= "sh-dma-engine",
++	.name		= "shdma-r8a7740",
+ 	.id		= 2,
+ 	.resource	= r8a7740_dmae2_resources,
+ 	.num_resources	= ARRAY_SIZE(r8a7740_dmae2_resources),
+-	.dev		= {
+-		.platform_data	= &dma_platform_data,
+-	},
+ };
+ 
+ /* USB-DMAC */
 -- 
 1.7.2.5
 
