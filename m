@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965918Ab3GSFdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:33:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39988 "EHLO
+	id S965796Ab3GSFdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:33:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965763Ab3GSF1D (ORCPT
+	with ESMTP id S965440Ab3GSF1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:27:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 43/72] iwlwifi: pcie: fix race in queue unmapping
-Date: Thu, 18 Jul 2013 22:26:00 -0700
-Message-Id: <20130719052602.809372947@linuxfoundation.org>
+Subject: [ 44/72] iwlwifi: pcie: wake the queue if stopped when being unmapped
+Date: Thu, 18 Jul 2013 22:26:01 -0700
+Message-Id: <20130719052602.876093802@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -29,58 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit b967613d7e7c7bad176f5627c55e2d8c5aa2480e upstream.
+commit 8a487b1a7432b20ff3f82387a8ce7555a964b44e upstream.
 
-When a queue is disabled, it frees all its entries. Later,
-the op_mode might still get notifications from the firmware
-that triggers to free entries in the tx queue. The transport
-should be prepared for these races and know to ignore
-reclaim calls on queues that have been disabled and whose
-entries have been freed.
+When the queue is unmapped while it was so loaded that
+mac80211's was stopped, we need to wake the queue after
+having freed all the packets in the queue.
+Not doing so can result in weird stuff like:
+
+* run lots of traffic (mac80211's queue gets stopped)
+* RFKILL
+* de-assert RFKILL
+* no traffic
 
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/tx.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/iwlwifi/pcie/tx.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/drivers/net/wireless/iwlwifi/pcie/tx.c
 +++ b/drivers/net/wireless/iwlwifi/pcie/tx.c
-@@ -576,9 +576,12 @@ static void iwl_pcie_txq_unmap(struct iw
- 
- 	spin_lock_bh(&txq->lock);
- 	while (q->write_ptr != q->read_ptr) {
-+		IWL_DEBUG_TX_REPLY(trans, "Q %d Free %d\n",
-+				   txq_id, q->read_ptr);
- 		iwl_pcie_txq_free_tfd(trans, txq);
- 		q->read_ptr = iwl_queue_inc_wrap(q->read_ptr, q->n_bd);
+@@ -583,6 +583,9 @@ static void iwl_pcie_txq_unmap(struct iw
  	}
-+	txq->active = false;
+ 	txq->active = false;
  	spin_unlock_bh(&txq->lock);
- }
- 
-@@ -927,6 +930,12 @@ void iwl_trans_pcie_reclaim(struct iwl_t
- 
- 	spin_lock_bh(&txq->lock);
- 
-+	if (!txq->active) {
-+		IWL_DEBUG_TX_QUEUES(trans, "Q %d inactive - ignoring idx %d\n",
-+				    txq_id, ssn);
-+		goto out;
-+	}
 +
- 	if (txq->q.read_ptr == tfd_num)
- 		goto out;
- 
-@@ -1103,6 +1112,7 @@ void iwl_trans_pcie_txq_enable(struct iw
- 		       (fifo << SCD_QUEUE_STTS_REG_POS_TXF) |
- 		       (1 << SCD_QUEUE_STTS_REG_POS_WSL) |
- 		       SCD_QUEUE_STTS_REG_MSK);
-+	trans_pcie->txq[txq_id].active = true;
- 	IWL_DEBUG_TX_QUEUES(trans, "Activate queue %d on FIFO %d WrPtr: %d\n",
- 			    txq_id, fifo, ssn & 0xff);
++	/* just in case - this queue may have been stopped */
++	iwl_wake_queue(trans, txq);
  }
+ 
+ /*
 
 
