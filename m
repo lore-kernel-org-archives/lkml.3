@@ -1,246 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760390Ab3GSNj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:39:27 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57013 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759989Ab3GSNjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:39:25 -0400
-Message-ID: <51E9413C.2080007@ti.com>
-Date: Fri, 19 Jul 2013 09:38:04 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1760528Ab3GSNkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:40:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49740 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760509Ab3GSNkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:40:45 -0400
+Date: Fri, 19 Jul 2013 15:40:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        netdev@vger.kernel.org
+Subject: Re: mod_timer: list_add corruption: WARNING: CPU: 1 PID: 0 at
+ lib/list_debug.c:33 __list_add+0xbe/0xd0()
+In-Reply-To: <51E92769.7090106@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1307191523050.4089@ionos.tec.linutronix.de>
+References: <51E557C0.2060602@linux.vnet.ibm.com> <alpine.DEB.2.02.1307191323150.4089@ionos.tec.linutronix.de> <51E92769.7090106@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <wni@nvidia.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <l.stach@pengutronix.de>
-Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
- zone build
-References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com> <20130717220942.GB990@roeck-us.net> <51E7F341.8020508@ti.com> <20130718211154.GB4110@roeck-us.net>
-In-Reply-To: <20130718211154.GB4110@roeck-us.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2BFWIVTNOWNEEFQNLGFHB"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2BFWIVTNOWNEEFQNLGFHB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, 19 Jul 2013, Srivatsa S. Bhat wrote:
+> On 07/19/2013 04:55 PM, Thomas Gleixner wrote:
+> > On Tue, 16 Jul 2013, Srivatsa S. Bhat wrote:
+> >> ------------[ cut here ]------------
+> >> WARNING: CPU: 1 PID: 0 at lib/list_debug.c:33 __list_add+0xbe/0xd0()
+> >> list_add corruption. prev->next should be next (ffff8810396b5568), but was           (null). (prev=ffff88102c1344c0).
+> > 
+> > Can you please enable debugobjects?
+> > 
+> 
+> Sure Thomas, please find the new traces below, with
+> debug objects enabled.
+> Regards,
+> Srivatsa S. Bhat
+> 
+> 
+> ------------[ cut here ]------------
+> WARNING: CPU: 1 PID: 0 at lib/debugobjects.c:260 debug_print_object+0x8e/0xb0()
+> ODEBUG: init active (active state 0) object type: timer_list hint: br_multicast_group_expired+0x0/0x110 [bridge]
 
-On 18-07-2013 17:11, Guenter Roeck wrote:
-> On Thu, Jul 18, 2013 at 09:53:05AM -0400, Eduardo Valentin wrote:
->> Hello Guenter,
->>
->> On 17-07-2013 18:09, Guenter Roeck wrote:
->>> On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin wrote:
->>>> Hello all,
->>>>
->>>> As you noticed, I am working in a way to represent thermal data
->>>> using device tree [1]. Essentially, this should be a way to say
->>>> what to do with a sensor and how to associate (cooling) actions
->>>> with it.
->>>>
->>> Seems to me that goes way beyond the supposed scope of devicetree dat=
-a.
->>> Devicetree data is supposed to describe hardware, not its configurati=
-on or use.
->>> This is clearly a use case.
->>
->> Thanks for rising your voice here. It is important to know what hwmon
->> ppl think about this.
->>
-> Sorry, I don't know what ppl stands for.
->=20
->>>
->>> Guenter
->>
->> As your answers to the series are giving same argument, I chose to
->> answer on patch 0. I would be happier if you could elaborate a bit mor=
-e
->> on your concern, specially if you take hwmon cap here, and give your
->> view with that perspective.
->>
->> I also considered that this work could be abusing of DT purposes. But
->> let me explain why I still think it makes sense to have it.
->>
-> Ultimately, you are making my point here. If you considered it, did you=
- ask
-> devicetree experts for an opinion ? Did you discuss the subject on the
-> devicetree-discuss mailing list ? If so, what was the result ?
+So an active enqueued timer gets reinitialized. Not so pretty :)
 
-Although I have asked, I didn't get any feedback.
-https://lkml.org/lkml/2013/4/11/760
+>  [<ffffffff812b5aee>] debug_print_object+0x8e/0xb0
+>  [<ffffffffa04247f0>] ? br_multicast_free_pg+0x20/0x20 [bridge]
+>  [<ffffffff812b65e2>] ? __debug_object_init+0x42/0x3f0
+>  [<ffffffff812b67bf>] __debug_object_init+0x21f/0x3f0
+>  [<ffffffff812b69df>] debug_object_init+0x1f/0x30
+>  [<ffffffff81060ea9>] init_timer_key+0x39/0x100
+>  [<ffffffffa0425ec5>] br_ip4_multicast_query+0x155/0x380 [bridge]
 
-But now I am requesting feedback in a formal (patch) way.
+Here is the offending call site. I leave that to the network wizards.
 
-Consider this patch series as official request for (devicetree experts
-and everyone involved) opinions.
+> [<ffffffffa0427eef>] br_multicast_ipv4_rcv+0x2cf/0x3d0 [bridge]
+> [<ffffffff8162140b>] ? _raw_spin_unlock+0x2b/0x50
+> [<ffffffffa0419a9b>] ? br_fdb_update+0x1db/0x2b0 [bridge]
+> [<ffffffffa04284b5>] br_multicast_rcv+0x45/0x60 [bridge]
+> [<ffffffffa041bdfe>] br_handle_frame_finish+0x16e/0x3c0 [bridge]
+> [<ffffffffa041bac8>] br_handle_frame+0x238/0x400 [bridge]
+> [<ffffffffa041b890>] ? br_del_bridge+0x80/0x80 [bridge]
+> [<ffffffff81539ca7>] __netif_receive_skb_core+0x237/0x960
+> [<ffffffff81539ade>] ? __netif_receive_skb_core+0x6e/0x960
+> [<ffffffff8153a3f7>] __netif_receive_skb+0x27/0x70
+> [<ffffffff8153c6fd>] netif_receive_skb+0x2d/0x210
+> [<ffffffff81527e65>] ? __netdev_alloc_skb+0xa5/0x110
+> [<ffffffffa0129a0f>] be_rx_compl_process+0xef/0x140 [be2net]
+> [<ffffffffa0129dc2>] be_process_rx+0xe2/0x1a0 [be2net]
+> [<ffffffffa0129fbd>] be_poll+0x13d/0x1d0 [be2net]
+> [<ffffffff8153dab8>] net_rx_action+0xd8/0x2a0
+> [<ffffffff81058e19>] __do_softirq+0x149/0x400
+> [<ffffffff8105922d>] irq_exit+0xed/0x100
+> [<ffffffff8162d206>] do_IRQ+0x66/0xe0
 
->=20
->> First thing is that this series intend to describe the thermal data
->> required for a specific board. That means, considering your board
->> layout, mechanics, power dissipation and composition of your ICs, etc,=
+Thanks,
 
->> that will impose thermal requirements on your system. That is not
->> configuration, but part of your board design and non-functional
->> requirement. To me, configuration would be something like saying you
->> want to use a specific keyboard layout, or defining your wifi card
->> channel, or display size, etc.
->>
->> Here what is described and setup may get confused with configuration,
->> but it is not because what goes in DT in this case must be actually
->> derived from your HW needs. Putting a sensor  close to your battery ha=
-s
->> a strong meaning behind. Same if you put a sensor close to your
->> processor. For instance, we have cases we need to consider external he=
-at
->> in order to properly determine our CPU hotspot level, using a board
->> sensor. That is what I mean by HW requirement/need.
->>
->> Again, just to refresh our minds, this is about protecting your board
->> and ICs from operating out of their spec and extending their lifetime.=
-
->> This is not about configuring something just because user has chosen t=
-o.
->> That is definitely not a configuration.
->>
->> Being a use case, well, these new DT nodes can still be seen as a use
->> case, yes. But depends on your understanding of use case. Because a
->> sensor device may be used on different needs, composing different use
->> cases. But still here we are talking about HW needs and composition. A=
-nd
->> yes, if you take that perspective, there are use cases already describ=
-ed
->> in DT.
->>
->> For instance, just because you use an LDO to power a MMC, does it mean=
-
->> you always will use it to power MMC on all boards. Would that be a use=
-
->> case? And in that example, because your MMC requires 2.8V, if you have=
- a
->> DT property to say that, does it mean it is  configuration? Well, yes,=
-
->> but that is based on HW needs, otherwise it wont operate properly. Sam=
-e
->> thing here, leave your hw operating out of temperature specs and you
->> will see what is the outcome.
->>
->> Similar example would be cpufreq, or OPPs for opp layer. Defining an O=
-PP
->> in DT could be considered a configuration?  Well in theory yes, one ca=
-n
->> pick what ever configuration for your (D)PLL then match with a
->> minimalist voltage level. And in theory, a voltage level can sustain
->> more than one frequency level. An OPP is still a virtual concept, and =
-we
->> still describe it in DT. Why? To me is because it is a HW need, becaus=
-e
->> HW folks have actually validated that configuration of PLL (frequency)=
-
->> and voltage level. Sometimes they have even optimized it (for low powe=
-r
->> consumption for instance), as one may achieve same OPP with different
->> configuration. Then why thermal data, which is again, a 'HW
->> configuration' that has been optimized by HW folks, known to be a HW
->> requirement, cannot be described in DT?
->>
->> Similar argument goes to the fact that one may think this is subsystem=
-
->> specific. Again, describing your OPPs is not OPP layer specific?
->> Besides, one can still read the device tree nodes I have written for
->> describing thermal data and implement the HW requirement elsewhere, if=
-
->> wanted (say in user land). I don't see as subsystem specific.
->>
->> Keep in mind that these very same concepts are actually derived from
->> ACPI specification. They don't come from nowhere. And just because you=
-r
->> system does not have ACPI support, does not mean it won't have a need =
-to
->> describe thermal?
->>
->> So, because with this work (i) we are describing something that is
->> required for properly usage of your HW (and not choice of the user),
->> because (ii) same data is used on different specification (that is use=
-d
->> on different OSes too), because (iii) you don't need thermal fw to rea=
-d
->> this data and you could implement the HW requirement elsewhere, becaus=
-e
->> (iv) there are other similar requirements already implemented via DT; =
-I
->> still think this work is within DT scope. And that is based on evidenc=
-e
->> of existing work not because DT is nice and I would want to use it.
->>
->> Hope that clarifies.
->>
->> Of course it is always welcome to hear ppl opinion. I would be really
->> interested to know what ppl from OF think about this topic.
->>
-> Yes, me too, or more widely the devicetree community. This is exactly
-> why I brought it up.
-
-And that is why I copied them.
-
->=20
->> If still, this does not fit DT, I would like to understand a proper
->> argument. Better than, this is configuration/use case.
->>
->=20
-> I am not a devicetree expert. One of the complaints by the devicetree
-> folks is that much is added to devicetree which should not be there.
-> I find this use case questionable. Maybe I am wrong and it isn't,
-
-ok..
-
-> which may well be. But you thought about it as well, so I don't think
-> I am that far off track.
-
-Well, what I meant was more like, yes, I considered DT requirements
-before writing this code.
-
->=20
-> This needs to be discussed and determined by devicetree experts, not me=
-=2E
-> I'll be happy with your patch series if you get an agreement or an Ack
-> by the devicetree maintainer for your patch series.
-
-Ok. Thanks for your review and taking the time to express your judgment,
-Guenter. Let s wait for Grant and dt folks to express their too.
-
->=20
-> Guenter
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
-------enig2BFWIVTNOWNEEFQNLGFHB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlHpQUEACgkQCXcVR3XQvP1TxwEAx7Ak/u30tKm9nqVV0PzUE68o
-XUn99nKbW+ufbAgvyb8A/jq3ZIkSybbjSFU0OH0dA5qQ3Vz/zcIu/Ns+rGNgP+jT
-=6KhV
------END PGP SIGNATURE-----
-
-------enig2BFWIVTNOWNEEFQNLGFHB--
+	tglx
