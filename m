@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965945Ab3GSFij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:38:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39892 "EHLO
+	id S965996Ab3GSFi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:38:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39880 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965431Ab3GSF0q (ORCPT
+	with ESMTP id S965672Ab3GSF0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:46 -0400
+	Fri, 19 Jul 2013 01:26:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tobias Kluge <zielscheibe@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 03/72] rtlwifi: rtl8192cu: Add new USB ID for TP-Link TL-WN8200ND
-Date: Thu, 18 Jul 2013 22:25:20 -0700
-Message-Id: <20130719052600.089745148@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 32/72] ACPI: Add CMOS RTC Operation Region handler support
+Date: Thu, 18 Jul 2013 22:25:49 -0700
+Message-Id: <20130719052602.066455677@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -28,31 +27,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit c4d827c5ccc3a49227dbf9d4b248a2e86f388023 upstream.
+commit 2fa97feb4406c546b52e35b6b6c50cb8f63425d2 upstream.
 
-This is a new device for this driver.
+On HP Folio 13-2000, the BIOS defines a CMOS RTC Operation Region and
+the EC's _REG methord accesses that region.  Thus an appropriate
+address space handler must be registered for that region before the
+EC driver is loaded.
 
-Reported-by: Tobias Kluge <zielscheibe@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Tobias Kluge <zielscheibe@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Introduce a mechanism for adding CMOS RTC address space handlers.
+Register an ACPI scan handler for CMOS RTC devices such that, when
+a device of that kind is detected during an ACPI namespace scan, a
+common CMOS RTC operation region address space handler will be
+installed for it.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=54621
+Reported-and-tested-by: Stefan Nagy <public@stefan-nagy.at>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/Makefile        |    1 
+ drivers/acpi/acpi_cmos_rtc.c |   92 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/internal.h      |    5 ++
+ drivers/acpi/scan.c          |    1 
+ 4 files changed, 99 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -359,6 +359,7 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(0x2001, 0x330a, rtl92cu_hal_cfg)}, /*D-Link-Alpha*/
- 	{RTL_USB_DEVICE(0x2019, 0xab2b, rtl92cu_hal_cfg)}, /*Planex -Abocom*/
- 	{RTL_USB_DEVICE(0x20f4, 0x624d, rtl92cu_hal_cfg)}, /*TRENDNet*/
-+	{RTL_USB_DEVICE(0x2357, 0x0100, rtl92cu_hal_cfg)}, /*TP-Link WN8200ND*/
- 	{RTL_USB_DEVICE(0x7392, 0x7822, rtl92cu_hal_cfg)}, /*Edimax -Edimax*/
- 	{}
- };
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -43,6 +43,7 @@ acpi-y				+= acpi_platform.o
+ acpi-y				+= power.o
+ acpi-y				+= event.o
+ acpi-y				+= sysfs.o
++acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
+ acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
+ acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
+ acpi-$(CONFIG_ACPI_PROCFS_POWER) += cm_sbs.o
+--- /dev/null
++++ b/drivers/acpi/acpi_cmos_rtc.c
+@@ -0,0 +1,92 @@
++/*
++ * ACPI support for CMOS RTC Address Space access
++ *
++ * Copyright (C) 2013, Intel Corporation
++ * Authors: Lan Tianyu <tianyu.lan@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/acpi.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <asm-generic/rtc.h>
++
++#include "internal.h"
++
++#define PREFIX "ACPI: "
++
++ACPI_MODULE_NAME("cmos rtc");
++
++static const struct acpi_device_id acpi_cmos_rtc_ids[] = {
++	{ "PNP0B00" },
++	{ "PNP0B01" },
++	{ "PNP0B02" },
++	{}
++};
++
++static acpi_status
++acpi_cmos_rtc_space_handler(u32 function, acpi_physical_address address,
++		      u32 bits, u64 *value64,
++		      void *handler_context, void *region_context)
++{
++	int i;
++	u8 *value = (u8 *)&value64;
++
++	if (address > 0xff || !value64)
++		return AE_BAD_PARAMETER;
++
++	if (function != ACPI_WRITE && function != ACPI_READ)
++		return AE_BAD_PARAMETER;
++
++	spin_lock_irq(&rtc_lock);
++
++	for (i = 0; i < DIV_ROUND_UP(bits, 8); ++i, ++address, ++value)
++		if (function == ACPI_READ)
++			*value = CMOS_READ(address);
++		else
++			CMOS_WRITE(*value, address);
++
++	spin_unlock_irq(&rtc_lock);
++
++	return AE_OK;
++}
++
++static int acpi_install_cmos_rtc_space_handler(struct acpi_device *adev,
++		const struct acpi_device_id *id)
++{
++	acpi_status status;
++
++	status = acpi_install_address_space_handler(adev->handle,
++			ACPI_ADR_SPACE_CMOS,
++			&acpi_cmos_rtc_space_handler,
++			NULL, NULL);
++	if (ACPI_FAILURE(status)) {
++		pr_err(PREFIX "Error installing CMOS-RTC region handler\n");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static void acpi_remove_cmos_rtc_space_handler(struct acpi_device *adev)
++{
++	if (ACPI_FAILURE(acpi_remove_address_space_handler(adev->handle,
++			ACPI_ADR_SPACE_CMOS, &acpi_cmos_rtc_space_handler)))
++		pr_err(PREFIX "Error removing CMOS-RTC region handler\n");
++}
++
++static struct acpi_scan_handler cmos_rtc_handler = {
++	.ids = acpi_cmos_rtc_ids,
++	.attach = acpi_install_cmos_rtc_space_handler,
++	.detach = acpi_remove_cmos_rtc_space_handler,
++};
++
++void __init acpi_cmos_rtc_init(void)
++{
++	acpi_scan_add_handler(&cmos_rtc_handler);
++}
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -50,6 +50,11 @@ void acpi_memory_hotplug_init(void);
+ #else
+ static inline void acpi_memory_hotplug_init(void) {}
+ #endif
++#ifdef CONFIG_X86
++void acpi_cmos_rtc_init(void);
++#else
++static inline void acpi_cmos_rtc_init(void) {}
++#endif
+ 
+ void acpi_sysfs_add_hotplug_profile(struct acpi_hotplug_profile *hotplug,
+ 				    const char *name);
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -2040,6 +2040,7 @@ int __init acpi_scan_init(void)
+ 	acpi_pci_link_init();
+ 	acpi_platform_init();
+ 	acpi_lpss_init();
++	acpi_cmos_rtc_init();
+ 	acpi_container_init();
+ 	acpi_memory_hotplug_init();
+ 	acpi_dock_init();
 
 
