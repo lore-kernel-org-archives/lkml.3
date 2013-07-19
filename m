@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965943Ab3GSFjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:39:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39798 "EHLO
+	id S965648Ab3GSF0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:26:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965471Ab3GSF0l (ORCPT
+	with ESMTP id S965471Ab3GSF0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:41 -0400
+	Fri, 19 Jul 2013 01:26:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjarni Ingi Gislason <bjarniig@rhi.hi.is>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, 709647@bugs.debian.org
-Subject: [ 30/72] genirq: Fix can_request_irq() for IRQs without an action
-Date: Thu, 18 Jul 2013 22:25:47 -0700
-Message-Id: <20130719052601.928895559@linuxfoundation.org>
+        Christoph Lameter <cl@linux.com>,
+        Tetsuo Handa <penguin-kernel@I-Love.SAKURA.ne.jp>,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 23/72] slab: fix init_lock_keys
+Date: Thu, 18 Jul 2013 22:25:40 -0700
+Message-Id: <20130719052601.448402333@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -28,44 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Christoph Lameter <cl@linux.com>
 
-commit 2779db8d37d4b542d9ca2575f5f178dbeaca6c86 upstream.
+commit 0f8f8094d28eb53368ac09186ea6b3a324cc7d44 upstream.
 
-Commit 02725e7471b8 ('genirq: Use irq_get/put functions'),
-inadvertently changed can_request_irq() to return 0 for IRQs that have
-no action.  This causes pcibios_lookup_irq() to select only IRQs that
-already have an action with IRQF_SHARED set, or to fail if there are
-none.  Change can_request_irq() to return 1 for IRQs that have no
-action (if the first two conditions are met).
+Some architectures (e.g. powerpc built with CONFIG_PPC_256K_PAGES=y
+CONFIG_FORCE_MAX_ZONEORDER=11) get PAGE_SHIFT + MAX_ORDER > 26.
 
-Reported-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is>
-Tested-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is> (against 3.2)
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: 709647@bugs.debian.org
-Link: http://bugs.debian.org/709647
-Link: http://lkml.kernel.org/r/1372383630.23847.40.camel@deadeye.wl.decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+In 3.10 kernels, CONFIG_LOCKDEP=y with PAGE_SHIFT + MAX_ORDER > 26 makes
+init_lock_keys() dereference beyond kmalloc_caches[26].
+This leads to an unbootable system (kernel panic at initializing SLAB)
+if one of kmalloc_caches[26...PAGE_SHIFT+MAX_ORDER-1] is not NULL.
+
+Fix this by making sure that init_lock_keys() does not dereference beyond
+kmalloc_caches[26] arrays.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Reported-by: Tetsuo Handa <penguin-kernel@I-Love.SAKURA.ne.jp>
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/manage.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/slab.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -555,9 +555,9 @@ int can_request_irq(unsigned int irq, un
- 		return 0;
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -565,7 +565,7 @@ static void init_node_lock_keys(int q)
+ 	if (slab_state < UP)
+ 		return;
  
- 	if (irq_settings_can_request(desc)) {
--		if (desc->action)
--			if (irqflags & desc->action->flags & IRQF_SHARED)
--				canrequest =1;
-+		if (!desc->action ||
-+		    irqflags & desc->action->flags & IRQF_SHARED)
-+			canrequest = 1;
- 	}
- 	irq_put_desc_unlock(desc, flags);
- 	return canrequest;
+-	for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
++	for (i = 1; i <= KMALLOC_SHIFT_HIGH; i++) {
+ 		struct kmem_cache_node *n;
+ 		struct kmem_cache *cache = kmalloc_caches[i];
+ 
 
 
