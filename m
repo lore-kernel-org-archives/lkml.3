@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030293Ab3GSHyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:54:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35923 "EHLO
+	id S1030303Ab3GSHyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:54:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35944 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030239Ab3GSHyK (ORCPT
+	with ESMTP id S1030239Ab3GSHyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:54:10 -0400
-Date: Fri, 19 Jul 2013 00:53:42 -0700
-From: tip-bot for Robert Richter <tipbot@zytor.com>
-Message-ID: <tip-ab4ecda5205b56cb3b8b44f2c18ffdefb24313a2@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, bp@alien8.de, jolsa@redhat.com,
-        robert.richter@linaro.org, tglx@linutronix.de, rric@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, bp@alien8.de, jolsa@redhat.com,
-        robert.richter@linaro.org, tglx@linutronix.de, rric@kernel.org
-In-Reply-To: <20130716145036.GH8731@rric.localhost>
-References: <20130716145036.GH8731@rric.localhost>
+	Fri, 19 Jul 2013 03:54:35 -0400
+Date: Fri, 19 Jul 2013 00:54:11 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-d4339569a6f8bb1e703337175dcd4fd4bcd5d891@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        ak@linux.intel.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, ak@linux.intel.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1374083403-14591-2-git-send-email-jolsa@redhat.com>
+References: <1374083403-14591-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix 'make tools/perf'
-Git-Commit-ID: ab4ecda5205b56cb3b8b44f2c18ffdefb24313a2
+Subject: [tip:perf/core] perf session: Use session->
+ fd instead of passing fd as argument
+Git-Commit-ID: d4339569a6f8bb1e703337175dcd4fd4bcd5d891
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,73 +34,122 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:53:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:54:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ab4ecda5205b56cb3b8b44f2c18ffdefb24313a2
-Gitweb:     http://git.kernel.org/tip/ab4ecda5205b56cb3b8b44f2c18ffdefb24313a2
-Author:     Robert Richter <rric@kernel.org>
-AuthorDate: Tue, 16 Jul 2013 16:50:36 +0200
+Commit-ID:  d4339569a6f8bb1e703337175dcd4fd4bcd5d891
+Gitweb:     http://git.kernel.org/tip/d4339569a6f8bb1e703337175dcd4fd4bcd5d891
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 17 Jul 2013 19:49:41 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Jul 2013 10:40:02 -0300
+CommitDate: Wed, 17 Jul 2013 16:46:07 -0300
 
-perf tools: Fix 'make tools/perf'
+perf session: Use session->fd instead of passing fd as argument
 
-Boris just raised another variant of building perf tools which is
-broken:
+Using session->fd instead of passing fd as argument because it's always
+session->fd that's passed as fd argument.
 
- $ make tools/perf
- ...
-     LINK /home/robert/cx/linux/tools/perf/perf
- gcc: error: ../linux/tools/lib/lk/liblk.a: No such file or directory
-
-The variant wasn't considered by:
-
- 107de37 perf tools: Fix build errors with O and DESTDIR make vars set
-
-There are other variant of building perf too:
-
- $ make -C tools perf
- $ make -C tools/perf
-
-Plus variants with O= and DESTDIR set.
-
-This patch fixes the above and was tested with the following:
-
- $ make O=... DESTDIR=... tools/perf
- $ make O=... DESTDIR=... -C tools/ perf
- $ make O=... DESTDIR=... -C tools/perf
- $ make tools/perf
- $ make -C tools/ perf
- $ make -C tools/perf
-
-Reported-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Signed-off-by: Robert Richter <rric@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-tip-commits@vger.kernel.org
-Link: http://lkml.kernel.org/r/20130716145036.GH8731@rric.localhost
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1374083403-14591-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/header.c  | 11 +++++------
+ tools/perf/util/header.h  |  2 +-
+ tools/perf/util/session.c |  4 ++--
+ 3 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 5b7c6db..2a69026 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -124,7 +124,7 @@ strip-libs = $(filter-out -l%,$(1))
- ifneq ($(OUTPUT),)
-   TE_PATH=$(OUTPUT)
- ifneq ($(subdir),)
--  LK_PATH=$(objtree)/lib/lk/
-+  LK_PATH=$(OUTPUT)/../lib/lk/
- else
-   LK_PATH=$(OUTPUT)
- endif
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index b28a65e..b3f253f 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2619,19 +2619,17 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+ 	return 0;
+ }
+ 
+-static int perf_header__read_pipe(struct perf_session *session, int fd)
++static int perf_header__read_pipe(struct perf_session *session)
+ {
+ 	struct perf_header *header = &session->header;
+ 	struct perf_pipe_file_header f_header;
+ 
+-	if (perf_file_header__read_pipe(&f_header, header, fd,
++	if (perf_file_header__read_pipe(&f_header, header, session->fd,
+ 					session->repipe) < 0) {
+ 		pr_debug("incompatible file format\n");
+ 		return -EINVAL;
+ 	}
+ 
+-	session->fd = fd;
+-
+ 	return 0;
+ }
+ 
+@@ -2725,20 +2723,21 @@ static int perf_evlist__prepare_tracepoint_events(struct perf_evlist *evlist,
+ 	return 0;
+ }
+ 
+-int perf_session__read_header(struct perf_session *session, int fd)
++int perf_session__read_header(struct perf_session *session)
+ {
+ 	struct perf_header *header = &session->header;
+ 	struct perf_file_header	f_header;
+ 	struct perf_file_attr	f_attr;
+ 	u64			f_id;
+ 	int nr_attrs, nr_ids, i, j;
++	int fd = session->fd;
+ 
+ 	session->evlist = perf_evlist__new();
+ 	if (session->evlist == NULL)
+ 		return -ENOMEM;
+ 
+ 	if (session->fd_pipe)
+-		return perf_header__read_pipe(session, fd);
++		return perf_header__read_pipe(session);
+ 
+ 	if (perf_file_header__read(&f_header, header, fd) < 0)
+ 		return -EINVAL;
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 669fda5..0bacb2d 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -96,7 +96,7 @@ struct perf_header {
+ struct perf_evlist;
+ struct perf_session;
+ 
+-int perf_session__read_header(struct perf_session *session, int fd);
++int perf_session__read_header(struct perf_session *session);
+ int perf_session__write_header(struct perf_session *session,
+ 			       struct perf_evlist *evlist,
+ 			       int fd, bool at_exit);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d0d9f94..272c9cf 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -24,7 +24,7 @@ static int perf_session__open(struct perf_session *self, bool force)
+ 		self->fd_pipe = true;
+ 		self->fd = STDIN_FILENO;
+ 
+-		if (perf_session__read_header(self, self->fd) < 0)
++		if (perf_session__read_header(self) < 0)
+ 			pr_err("incompatible file format (rerun with -v to learn more)");
+ 
+ 		return 0;
+@@ -56,7 +56,7 @@ static int perf_session__open(struct perf_session *self, bool force)
+ 		goto out_close;
+ 	}
+ 
+-	if (perf_session__read_header(self, self->fd) < 0) {
++	if (perf_session__read_header(self) < 0) {
+ 		pr_err("incompatible file format (rerun with -v to learn more)");
+ 		goto out_close;
+ 	}
