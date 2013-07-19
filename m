@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab3GSIVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:21:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37976 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab3GSIVu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:21:50 -0400
-Message-ID: <51E8F70D.9040001@canonical.com>
-Date: Fri, 19 Jul 2013 03:21:33 -0500
-From: Dave Chiluk <chiluk@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1759953Ab3GSIWR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:22:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6304 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab3GSIWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:22:13 -0400
+X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
+   d="scan'208";a="7947719"
+Message-ID: <51E8F65F.9040007@cn.fujitsu.com>
+Date: Fri, 19 Jul 2013 16:18:39 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org
-Subject: Re: [ATTEND] How to act on LKML
-References: <20130715155202.GC29526@xanatos> <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com> <20130715174659.GC15531@xanatos> <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com> <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home> <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com>
-In-Reply-To: <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] f2fs: add the missing delection of orphan inode entry in
+ write_orphan_inodes()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/19 16:20:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/19 16:20:18,
+	Serialize complete at 2013/07/19 16:20:18
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2013 05:38 PM, Linus Torvalds wrote:
-> A small panel discussion with a few people (fiveish?) that have very
-> different viewpoints, along with baskets of rotten fruit set out on
-> the tables?
+After writing orphan inode entry in jornal block, we need to delete each
+entry from the orphan entry list, and release them.
 
-As I think the purpose of this discussion was to improve linux by
-attracting and growing new talent, may I suggest that you include a
-greenhorn submitter on such a panel.
 
-Dave.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/checkpoint.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 66a6b85..290db04 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -337,6 +337,10 @@ static void write_orphan_inodes(struct f2fs_sb_info *sbi, block_t start_blk)
+ 		memset(orphan_blk, 0, sizeof(*orphan_blk));
+ page_exist:
+ 		orphan_blk->ino[nentries++] = cpu_to_le32(orphan->ino);
++
++		list_del(&orphan->list);
++		kmem_cache_free(orphan_entry_slab, orphan);
++		sbi->n_orphans--;
+ 	}
+ 	if (!page)
+ 		goto end;
+-- 
+1.7.7
 
