@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761002Ab3GSSmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:42:13 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:53436 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab3GSSmL (ORCPT
+	id S1761106Ab3GSSmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:42:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51200 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3GSSmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:42:11 -0400
+	Fri, 19 Jul 2013 14:42:35 -0400
+Message-ID: <51E98897.6050105@linutronix.de>
+Date: Fri, 19 Jul 2013 20:42:31 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130719120841.GH26716@gmail.com>
-References: <1373944014.17876.255.camel@gandalf.local.home>
-	<51E4BFA9.1030600@zytor.com>
-	<alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-	<1373991399.6458.6.camel@gandalf.local.home>
-	<alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-	<51E59F79.1040903@zytor.com>
-	<alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
-	<CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
-	<20130717144043.GA16513@xanatos>
-	<CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
-	<20130719120841.GH26716@gmail.com>
-Date: Fri, 19 Jul 2013 13:42:06 -0500
-Message-ID: <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
-Subject: Re: [ATTEND] How to act on LKML
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset=UTF-8
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
+        balbi@ti.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, kishon@ti.com
+Subject: Re: [PATCH v2 3/4] arm: dts: Add USB phy nodes for AM33XX
+References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-4-git-send-email-george.cherian@ti.com> <51E94571.8080805@cogentembedded.com> <51E94B30.9070805@linutronix.de> <51E98663.2040308@cogentembedded.com>
+In-Reply-To: <51E98663.2040308@cogentembedded.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 7:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+On 07/19/2013 08:33 PM, Sergei Shtylyov wrote:
+> Hello.
 
->> As Linus already pointed out, not everybody has to work with everybody.
->
-> That's not the point though, the point is to potentially roughly double
-> the creative brain capacity of the Linux kernel project.
+Hello,
 
-Unfortunately that's impossible; we all know there aren't as many
-women programmers as there are men. So there's absolutely *nothing*
-the Linux kernel can do to double the creative brain capacity of the
-Linux kernel project (at least with respect to women).
+>> usb: usb@47400000 {
+>>     compatible = "ti,am33xx-usb";
+>>     
+>>     usb0_phy: phy@47401300 {
+>>         compatible = "ti,am335x-usb-phy";
+>>     }
+>>     usb0: usb@47401000 {
+>>         musb0: usb@47401400 {
+>>             compatible = "mg,musbmhdrc";
+>>         }
+>>     }
+>>     usb1_phy: phy@47402300 {
+>>         compatible = "ti,am335x-usb-phy";
+>>     }
+>>     usb1: usb@47402000 {
+>>         musb1: usb@47402400 {
+>>             compatible = "mg,musbmhdrc";
+>>         }
+>>     }
+>> }
+> 
+>> And you want usb0_phy to be child of usb0? In the TRM they are all in
+>> the same block.
+> 
+>    Ah, the fact that PHYs didn't have the "reg" property got me muddled,
+> I didn't pay attention to the address part of the node names... BTW,
+> where is the "reg" prop?
 
-At best that is a societal/academic/professional issue, not a Linux issue.
+I skipped it for the general idea. I planned to repost is today but I
+messed up dsps and need to get it working first…
 
-> Even if you don't care about gender fairness, that kind of bona fide
-> benefit to the project is worth a try or two I think ...
+> I see PHYs share the address space with
+> "omap-control-usb@44e10620" device -- what's the point with this?
 
-I think the Linux kernel is perfectly gender-fair, in fact, you don't
-even need to state you gender; you would be treated the same either
-way.
+I decided to get rid of this. Both phys have 8 bytes (2 registers)
+which are exclusive for them.
+There is one register for the wakeup which is shared by both.
+I changed this to limit it only to the 8bytes per phy. I care about
+wakeup later - hopefully George will take care of this :)
 
-But you are avoiding the question as well; do you think there's
-something fundamentally different about the female brain that makes
-them more susceptible to personal attacks? If yes, where is the
-scientific evidence? If there's no evidence, then it's merely an
-opinion that is not shared by others (e.g. me), and if no, then
-whatever the men can take, the women can take as well, so nothing
-needs to change.
-
--- 
-Felipe Contreras
+> 
+>> Sebastian
+> 
+> WBR, Sergei
+> 
+Sebastian
