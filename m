@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965640Ab3GSKgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:36:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53121 "EHLO mx1.redhat.com"
+	id S965768Ab3GSKg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:36:59 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2617 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965089Ab3GSKgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:36:15 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: gleb@redhat.com, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Vadim Rozenfeld <vrozenfe@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH] x86: properly handle KVM emulation of hyperv
-Date: Fri, 19 Jul 2013 18:25:05 +0800
-Message-Id: <1374229505-19470-1-git-send-email-jasowang@redhat.com>
+	id S965356Ab3GSKg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 06:36:57 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <51E916C0.8080206@broadcom.com>
+Date: Fri, 19 Jul 2013 12:36:48 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Tony Lindgren" <tony@atomide.com>
+cc: linux-omap@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Roger Quadros" <rogerq@ti.com>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
+ ethernet
+References: <51E7AA24.6080600@broadcom.com>
+ <20130718085951.GT7656@atomide.com>
+In-Reply-To: <20130718085951.GT7656@atomide.com>
+X-WSS-ID: 7DF7CAD11R045924264-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent kvm has some basic support of hyperv, this will cause the guest to
-identify itself running on top of hyperv instead of kvm which will disable kvm
-pv functionality. Solve this by check kvm para platform first and also check
-KVM_CPUID_SIGNATURE_NEXT which were set when kvm emulate hyperv.
+On 07/18/2013 10:59 AM, Tony Lindgren wrote:
+> Then for the SDIO with device tree, take a look at the following
+> patches:
+>
+> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
+> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
 
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Vadim Rozenfeld <vrozenfe@redhat.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- arch/x86/include/asm/kvm_para.h      |   25 +++++++++++++++++--------
- arch/x86/include/uapi/asm/kvm_para.h |    1 +
- arch/x86/kernel/cpu/hypervisor.c     |    2 +-
- 3 files changed, 19 insertions(+), 9 deletions(-)
+I have been looking at the pandaboard patch in the series above and I do 
+have a question. Among other things the patch adds these dt entries.
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 695399f..aa8f3a7 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -85,22 +85,31 @@ static inline long kvm_hypercall4(unsigned int nr, unsigned long p1,
- 	return ret;
- }
- 
--static inline bool kvm_para_available(void)
-+static inline bool kvm_para_available_function(unsigned int function)
- {
- 	unsigned int eax, ebx, ecx, edx;
- 	char signature[13];
- 
-+	cpuid(function, &eax, &ebx, &ecx, &edx);
-+	memcpy(signature + 0, &ebx, 4);
-+	memcpy(signature + 4, &ecx, 4);
-+	memcpy(signature + 8, &edx, 4);
-+	signature[12] = 0;
-+
-+	if (strcmp(signature, "KVMKVMKVM") == 0)
-+		return true;
-+
-+	return false;
-+}
-+
-+static inline bool kvm_para_available(void)
-+{
- 	if (boot_cpu_data.cpuid_level < 0)
- 		return false;	/* So we don't blow up on old processors */
- 
- 	if (cpu_has_hypervisor) {
--		cpuid(KVM_CPUID_SIGNATURE, &eax, &ebx, &ecx, &edx);
--		memcpy(signature + 0, &ebx, 4);
--		memcpy(signature + 4, &ecx, 4);
--		memcpy(signature + 8, &edx, 4);
--		signature[12] = 0;
--
--		if (strcmp(signature, "KVMKVMKVM") == 0)
-+		if (kvm_para_available_function(KVM_CPUID_SIGNATURE) ||
-+		    kvm_para_available_function(KVM_CPUID_SIGNATURE_NEXT))
- 			return true;
- 	}
- 
-diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-index 06fdbd9..4e3ffd8 100644
---- a/arch/x86/include/uapi/asm/kvm_para.h
-+++ b/arch/x86/include/uapi/asm/kvm_para.h
-@@ -8,6 +8,7 @@
-  * should be used to determine that a VM is running under KVM.
-  */
- #define KVM_CPUID_SIGNATURE	0x40000000
-+#define KVM_CPUID_SIGNATURE_NEXT	0x40000100
- 
- /* This CPUID returns a feature bitmap in eax.  Before enabling a particular
-  * paravirtualization, the appropriate feature bit should be checked.
-diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-index 8727921..3e149b6 100644
---- a/arch/x86/kernel/cpu/hypervisor.c
-+++ b/arch/x86/kernel/cpu/hypervisor.c
-@@ -36,10 +36,10 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
- 	&x86_hyper_xen_hvm,
- #endif
- 	&x86_hyper_vmware,
--	&x86_hyper_ms_hyperv,
- #ifdef CONFIG_KVM_GUEST
- 	&x86_hyper_kvm,
- #endif
-+	&x86_hyper_ms_hyperv,
- };
- 
- const struct hypervisor_x86 *x86_hyper;
--- 
-1.7.1
++			0x108 0x118	/* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP | MODE0 */
++			0x10a 0x118	/* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP | MODE0 */
+
+If I look at the similar names in the deceased board-omap4panda.c:
+
+board-omap4panda.c:	OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 | 
+OMAP_PIN_INPUT_PULLUP),
+board-omap4panda.c:	OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 | 
+OMAP_PIN_INPUT_PULLUP),
+
+and in mux44xx.h:
+
+mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET	0x0148
+mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET	0x014a
+
+So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is 
+probably an explanation to it and it would help my understanding to know 
+where this difference comes from. Hope you can help me out here.
+
+Below are the definitions that I need to move into a dts.
+
+Regards,
+Arend
+
+	/* MMC2 Mux for extension board */
+	/* MMC2 CMD */
+	OMAP4_MUX(GPMC_NWE, OMAP_MUX_MODE1 | OMAP_PIN_INPUT_PULLUP),
+	/* MMC2 CLK */
+	OMAP4_MUX(GPMC_NOE, OMAP_MUX_MODE1 | OMAP_PIN_INPUT_PULLUP),
+	/* MMC2 DAT 0-7 */
+	OMAP4_MUX(GPMC_AD0, OMAP_MUX_MODE1 | OMAP_PIN_INPUT_PULLUP),
+	OMAP4_MUX(GPMC_AD1, OMAP_MUX_MODE1 | OMAP_PIN_INPUT_PULLUP),
+	OMAP4_MUX(GPMC_AD2, OMAP_MUX_MODE1 | OMAP_PIN_INPUT_PULLUP),
+	OMAP4_MUX(GPMC_AD3, OMAP_MUX_MODE1 | OMAP_PIN_INPUT_PULLUP),
 
