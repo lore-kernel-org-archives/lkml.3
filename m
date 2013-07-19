@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965190Ab3GSFWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:22:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39319 "EHLO
+	id S966059Ab3GSFvt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:51:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39337 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964940Ab3GSFV7 (ORCPT
+	with ESMTP id S965138Ab3GSFWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:21:59 -0400
+	Fri, 19 Jul 2013 01:22:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-pci@vger.kernel.org
-Subject: [ 16/38] xen/pcifront: Deal with toolstack missing XenbusStateClosing state.
-Date: Thu, 18 Jul 2013 22:21:32 -0700
-Message-Id: <20130719052048.995477903@linuxfoundation.org>
+        David Disseldorp <ddiss@suse.de>, Steve French <smfrench@gmail.com>
+Subject: [ 01/38] CIFS use sensible file nlink values if unprovided
+Date: Thu, 18 Jul 2013 22:21:17 -0700
+Message-Id: <20130719052047.974456539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -28,91 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Steve French <smfrench@gmail.com>
 
-commit 098b1aeaf4d6149953b8f1f8d55c21d85536fbff upstream.
+commit 6658b9f70ebca5fc0795b1d6d733996af1e2caa7 upstream.
 
-There are two tool-stack that can instruct the Xen PCI frontend
-and backend to change states: 'xm' (Python code with a daemon),
-and 'xl' (C library - does not keep state changes).
+Certain servers may not set the NumberOfLinks field in query file/path
+info responses. In such a case, cifs_inode_needs_reval() assumes that
+all regular files are hardlinks and triggers revalidation, leading to
+excessive and unnecessary network traffic.
 
-With the 'xm', the path to disconnect a single PCI device (xm pci-detach
-<guest> <BDF>) is:
+This change hardcodes cf_nlink (and subsequently i_nlink) when not
+returned by the server, similar to what already occurs in cifs_mkdir().
 
-4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)->5(Closing*).
-
-The * is for states that the tool-stack sets. For 'xl', it is similar:
-
-4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
-
-Both of them also tear down the XenBus structure, so the backend
-state ends up going in the 3(Initialised) and calls pcifront_xenbus_remove.
-
-When a PCI device is plugged back in (xm pci-attach <guest> <BDF>)
-both of them follow the same pattern:
-
-2(InitWait*), 3(Initialized*), 4(Connected*)->4(Connected).
-
-[xen-pcifront ignores the 2,3 state changes and only acts when
-4 (Connected) has been reached]
-
-Note that this is for a _single_ PCI device. If there were two
-PCI devices and only one was disconnected 'xm' would show the same
-state changes.
-
-The problem is that git commit 3d925320e9e2de162bd138bf97816bda8c3f71be
-("xen/pcifront: Use Xen-SWIOTLB when initting if required") introduced
-a mechanism to initialize the SWIOTLB when the Xen PCI front moves to
-Connected state. It also had some aggressive seatbelt code check that
-would warn the user if one tried to change to Connected state without
-hitting first the Closing state:
-
- pcifront pci-0: PCI frontend already installed!
-
-However, that code can be relaxed and we can continue on working
-even if the frontend is instructed to be the 'Connected' state with
-no devices and then gets tickled to be in 'Connected' state again.
-
-In other words, this 4(Connected)->5(Closing)->4(Connected) state
-was expected, while 4(Connected)->.... anything but 5(Closing)->4(Connected)
-was not. This patch removes that aggressive check and allows
-Xen pcifront to work with the 'xl' toolstack (for one or more
-PCI devices) and with 'xm' toolstack (for more than two PCI
-devices).
-
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org
-[v2: Added in the description about two PCI devices]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: David Disseldorp <ddiss@suse.de>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/xen-pcifront.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ fs/cifs/inode.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -678,10 +678,9 @@ static int pcifront_connect_and_init_dma
- 	if (!pcifront_dev) {
- 		dev_info(&pdev->xdev->dev, "Installing PCI frontend\n");
- 		pcifront_dev = pdev;
--	} else {
--		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
-+	} else
- 		err = -EEXIST;
--	}
-+
- 	spin_unlock(&pcifront_dev_lock);
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -556,6 +556,11 @@ cifs_all_info_to_fattr(struct cifs_fattr
+ 			fattr->cf_mode &= ~(S_IWUGO);
  
- 	if (!err && !swiotlb_nr_tbl()) {
-@@ -848,7 +847,7 @@ static int pcifront_try_connect(struct p
- 		goto out;
+ 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
++		if (fattr->cf_nlink < 1) {
++			cifs_dbg(1, "replacing bogus file nlink value %u\n",
++				fattr->cf_nlink);
++			fattr->cf_nlink = 1;
++		}
+ 	}
  
- 	err = pcifront_connect_and_init_dma(pdev);
--	if (err) {
-+	if (err && err != -EEXIST) {
- 		xenbus_dev_fatal(pdev->xdev, err,
- 				 "Error setting up PCI Frontend");
- 		goto out;
+ 	fattr->cf_uid = cifs_sb->mnt_uid;
 
 
