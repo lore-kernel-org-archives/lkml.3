@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760016Ab3GSIrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:47:13 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:52056 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab3GSIrH (ORCPT
+	id S1760027Ab3GSIsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:48:35 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:36454 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759869Ab3GSIsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:47:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130718192416.GA526@polaris.bitmath.org>
-References: <1373620101-16113-1-git-send-email-benjamin.tissoires@redhat.com>
-	<20130718192416.GA526@polaris.bitmath.org>
-Date: Fri, 19 Jul 2013 10:47:05 +0200
-Message-ID: <CAN+gG=G6jw0BkJejZ=Rb+Vzzey1=JdqiiYmMonwjt9G1R779Tg@mail.gmail.com>
-Subject: Re: [PATCH] HID: multitouch: do not init reports for multitouch devices
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Jul 2013 04:48:32 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: linux-media@vger.kernel.org
+Cc: alipowski@interia.pl, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel@vger.kernel.org, srinivas.kandagatla@gmail.com,
+        srinivas.kandagatla@st.com, sean@mess.org
+Subject: [PATCH v1 0/2] Allow rc device to open from lirc
+Date: Fri, 19 Jul 2013 09:38:52 +0100
+Message-Id: <1374223132-4924-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-On Thu, Jul 18, 2013 at 9:24 PM,  <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
->> Some multitouch screens do not like to be polled for input reports.
->> However, the Win8 spec says that all touches should be sent during
->> each report, making the initialization of reports unnecessary.
->> The Win7 spec is less precise, but we can safely assume that when
->> the module is loaded (at boot), no one is touching the screen.
->>
->> Add the quirk HID_QUIRK_NO_INIT_REPORTS so that we do not have to
->> introduce a quirk for each problematic device.
->
-> I assume you have tested thoroughly for regressions? How about odd
-> eGalax devices, for instance? Changes affecting existing hardware
-> makes me nervous. Is it so bad to add this quirk on a per-device
-> basis? Or perhaps turned on by default for win8 devices only?
+Thankyou for providing comments on RFC patch.
 
-Aargh, I forgot the eGalax... (I don't have it anymore on my desk). I
-was pretty confident because Win [7-8] is not doing any quirks for the
-multitouch devices, and I had in mind that it did not asked for the
-reports at startup (at least, I am sure about it for HID/I2C). I'm not
-sure win 8 devices is a sufficient denominator, because this init
-sequence is not mentioned anywhere in the Win 8 spec. It's true that
-we are going to see fewer Win 7 devices, but I would say it's the
-exact same problem for win 7 and 8. Moreover, asking this for Win 8
-devices only will forces us to detect it in core before hid-multitouch
-is loaded because the init reports is called before the parsing.
+This patchset adds new members to rc_device structure to open rc device from
+code other than rc-main. In the current code rc-device is only opened via input
+driver. In cases where rc device is using lirc protocol, it will never be opened
+as there is no input driver associated with lirc.
 
-If I capture the Win 7 & Win 8 initialization events and I observe
-that they do not retrieve the reports, will it be sufficient as a
-guarantee to include this patch even if it is not widely tested under
-Linux?
+Thes patch set add fix to allow use cases like this to open rc device directly.
 
-Cheers,
-Benjamin
+Thanks,
+srini
+
+Srinivas Kandagatla (2):
+  media: rc: Add user count to rc dev.
+  media: lirc: Allow lirc dev to talk to rc device
+
+ drivers/media/rc/ir-lirc-codec.c |    1 +
+ drivers/media/rc/lirc_dev.c      |   16 ++++++++++++++++
+ drivers/media/rc/rc-main.c       |   11 +++++++++--
+ include/media/lirc_dev.h         |    1 +
+ include/media/rc-core.h          |    1 +
+ 5 files changed, 28 insertions(+), 2 deletions(-)
+
+-- 
+1.7.6.5
+
