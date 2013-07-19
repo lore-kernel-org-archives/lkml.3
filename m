@@ -1,221 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab3GSUcF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:32:05 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39193 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab3GSUcC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:32:02 -0400
-Message-ID: <51E9A240.3000108@kernel.org>
-Date: Fri, 19 Jul 2013 21:32:00 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751928Ab3GSUd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:33:26 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:44547 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab3GSUdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 16:33:25 -0400
+Date: Fri, 19 Jul 2013 15:33:24 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Holger Hans Peter Freyther <holger@freyther.de>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, linux-kernel@vger.kernel.org
+Subject: Re: /proc/timer_list and weird behavior with dropbear
+Message-ID: <20130719203323.GA129438@asylum.americas.sgi.com>
+References: <20130719152800.GA20792@xiaoyu.lan> <51E95F0B.6080703@sgi.com> <20130719170354.GE5902@xiaoyu.lan>
 MIME-Version: 1.0
-To: Hector Palacios <hector.palacios@digi.com>
-CC: Marek Vasut <marex@denx.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify
- scale
-References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <1374225208-28940-6-git-send-email-hector.palacios@digi.com> <201307191639.01240.marex@denx.de> <51E95BEC.5080703@digi.com>
-In-Reply-To: <51E95BEC.5080703@digi.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130719170354.GE5902@xiaoyu.lan>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 04:31 PM, Hector Palacios wrote:
-> Dear Marek,
+On Fri, Jul 19, 2013 at 07:03:54PM +0200, Holger Hans Peter Freyther wrote:
+> On Fri, Jul 19, 2013 at 10:45:15AM -0500, Nathan Zimmer wrote:
 > 
-> On 07/19/2013 04:39 PM, Marek Vasut wrote:
->> Dear Hector Palacios,
->>
->>> Added write_raw function to manipulate the optional divider_by_two
->>> through the scaling attribute out of the available scales.
->>>
->>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
->>> ---
->>>   drivers/staging/iio/adc/mxs-lradc.c | 55
->>> ++++++++++++++++++++++++++++++++++++- 1 file changed, 54 insertions(+), 1
->>> deletion(-)
->>>
->>> diff --git a/drivers/staging/iio/adc/mxs-lradc.c
->>> b/drivers/staging/iio/adc/mxs-lradc.c index c929733..286cde2 100644
->>> --- a/drivers/staging/iio/adc/mxs-lradc.c
->>> +++ b/drivers/staging/iio/adc/mxs-lradc.c
->>> @@ -144,6 +144,7 @@ struct mxs_lradc {
->>>
->>>       uint32_t        vref_mv[LRADC_MAX_TOTAL_CHANS];
->>>       unsigned int        scale_avail[LRADC_MAX_TOTAL_CHANS][2][2];
->>> +    unsigned int        is_divided[LRADC_MAX_TOTAL_CHANS];
->>
->> Why not use bitfield ? ;-)
+> > I hadn't noticed anything.
+> > Let me try your program and see what I may have missed.
 > 
-> This is used in some math below and an unsigned int looked more appropriate:
+> Hi,
 > 
->     case IIO_CHAN_INFO_SCALE:
->         *val = lradc->vref_mv[chan->channel];
->         *val2 = chan->scan_type.realbits -
->             lradc->is_divided[chan->channel];
->         ret = IIO_VAL_FRACTIONAL_LOG2;
->         break;
+> I neither know the semantics of the timer_list nor how to use
+> seq_file correctly. What happens is that timer_list_next will only
+> be called once. This means that iter->cpu will never be increased.
 > 
->>
->>>       /*
->>>        * Touchscreen LRADC channels receives a private slot in the CTRL4
->>> @@ -202,6 +203,7 @@ struct mxs_lradc {
->>>   #define    LRADC_CTRL1_LRADC_IRQ_OFFSET        0
->>>
->>>   #define    LRADC_CTRL2                0x20
->>> +#define    LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET    24
->>>   #define    LRADC_CTRL2_TEMPSENSE_PWD        (1 << 15)
->>>
->>>   #define    LRADC_STATUS                0x40
->>> @@ -310,7 +312,8 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->>>           break;
->>>       case IIO_CHAN_INFO_SCALE:
->>>           *val = lradc->vref_mv[chan->channel];
->>> -        *val2 = chan->scan_type.realbits;
->>> +        *val2 = chan->scan_type.realbits -
->>> +            lradc->is_divided[chan->channel];
->>>           ret = IIO_VAL_FRACTIONAL_LOG2;
->>>           break;
->>>       default:
->>> @@ -323,6 +326,54 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->>>       return ret;
->>>   }
->>>
->>> +static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
->>> +                   const struct iio_chan_spec *chan,
->>> +                   int val, int val2, long m)
->>> +{
->>> +    struct mxs_lradc *lradc = iio_priv(iio_dev);
->>> +    int ret;
->>> +
->>> +    ret = mutex_trylock(&lradc->lock);
->>> +    if (!ret)
->>> +        return -EBUSY;
->>> +
->>> +    switch (m) {
->>> +    case IIO_CHAN_INFO_SCALE:
->>> +        ret = -EINVAL;
->>> +        if (val == lradc->scale_avail[chan->channel][0][0] &&
->>> +            val2 == lradc->scale_avail[chan->channel][0][1]) {
->>> +            /* [0] -> divider by two disabled */
->>
->> This comment is confusing, you use [0] in different dimensions of the array. So
->> is the stuff below.
->>
->> Still, how does this even work, can you show me and example how to set the
->> divider from userland ? Sorry, I'm a bit confused with this 3D-business here,
->> even if the comment in previous patch made it a bit clearer. Actually you can
->> use some #define to specify if you're accessing div/2 or div/1 portion of the
->> array to make it more readable.
->>
->> Like ... scale_avail[chan->channel][LRADC_DIV_BY_2][LRADC_DECIMAL_PART] ...
->> would by nice.
+> This just moves to the next CPU when stop is called (e.g. nothing
+> was added once the print_tickdevice was printed). Do you think
+> this could be correct?
 > 
-> Agreed.
-Could even make the int + nano part a structure then you could have
-scale_avail[chan->channel][LRADC_DIV_BY_2].integer / .nano
+> 
+> 
+> diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+> index 3bdf283..8d36a3d 100644
+> --- a/kernel/time/timer_list.c
+> +++ b/kernel/time/timer_list.c
+> @@ -327,8 +327,10 @@ static void *timer_list_next(struct seq_file *file, void *v, loff_t *offset)
+>  	return timer_list_start(file, offset);
+>  }
+>  
+> -static void timer_list_stop(struct seq_file *seq, void *v)
+> +static void timer_list_stop(struct seq_file *file, void *v)
+>  {
+> +	struct timer_list_iter *iter = file->private;
+> +	iter->cpu = cpumask_next(iter->cpu, cpu_online_mask);
+>  }
+>  
+>  static const struct seq_operations timer_list_sops = {
 
-might not be worth the hassel though for the slight gain in readability.
 
-I'm happy either way.
-> 
-> How it works:
-> # cd /sys/devices/80000000.apb/80040000.apbx/80050000.lradc/iio:device0
-> 
-> Here you have three entries per channel:
-> in_voltageX_raw        -> the sample raw value
-> in_voltageX_scale    -> the scale to multiply the raw value to get the voltage in mV
-> in_voltageX_scale_available -> lists the available scales of the channel
-> 
-> For example for channel 0:
-> 
-> # cat in_voltage0_scale_available
-> 0.451660156 0.903320312    (two scales available, first with divider by two disabled, second with divider by two enabled)
-> 
-> # cat in_voltage0_scale
-> 0.451660156            (divider by two is currently disabled)
-> 
-> # cat in_voltage0_raw        (shows measured value)
-> 1000
-> 
-> If you multiply the value by the scale you get: 1000 * 0.451660156 = 451.6 mV
-> 
-> # echo 0.903320312 > in_voltage0_scale    (enables the divider by two)
-> 
-> # cat in_voltage0_raw        (shows measured value)
-> 500
-> 
-> Voltage at channel is the same but now measured value is applying the scale so it shows half the value than before. Now
-> if you multiply: 500 * 0.903320312 = 451.6 mV (the same voltage but you now have a bigger scale and can measure up to
-> 3.7V).
-> 
-> Other channels (like 10 on the MX28) will show different scales because of fixed predividers.
-> The multi-dimension array is needed to store the big decimal number.
-> 
->>> +            writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
->>> +                   lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
->>> +            lradc->is_divided[chan->channel] = 0;
->>> +            ret = 0;
->>> +        } else if (val == lradc->scale_avail[chan->channel][1][0] &&
->>> +               val2 == lradc->scale_avail[chan->channel][1][1]) {
->>> +            /* [1] -> divider by two enabled */
->>> +            writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
->>> +                   lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
->>> +            lradc->is_divided[chan->channel] = 1;
->>> +            ret = 0;
->>> +        }
->>> +
->>> +        break;
->>> +    default:
->>> +        ret = -EINVAL;
->>> +        break;
->>> +    }
->>> +
->>> +    mutex_unlock(&lradc->lock);
->>> +
->>> +    return ret;
->>> +}
->>> +
->>> +static int mxs_lradc_write_raw_get_fmt(struct iio_dev *iio_dev,
->>> +                       const struct iio_chan_spec *chan,
->>> +                       long m)
->>> +{
->>> +    return IIO_VAL_INT_PLUS_NANO;
->>> +}
->>> +
->>>   static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
->>>           struct device_attribute *attr,
->>>           char *buf,
->>> @@ -400,6 +451,8 @@ static const struct attribute_group
->>> mxs_lradc_attribute_group = { static const struct iio_info
->>> mxs_lradc_iio_info = {
->>>       .driver_module        = THIS_MODULE,
->>>       .read_raw        = mxs_lradc_read_raw,
->>> +    .write_raw        = mxs_lradc_write_raw,
->>> +    .write_raw_get_fmt    = &mxs_lradc_write_raw_get_fmt,
->>
->> Is this & needed here ?
-> 
-> No it isn't.
-> Thanks.
-> 
-> Best regards,
-> -- 
-> Hector Palacios
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I think this would be an acceptable fix.
+It work file locally.  Could you check it out to see if it behaves?
+
+Nate
