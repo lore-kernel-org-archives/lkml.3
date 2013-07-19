@@ -1,263 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3GSUXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:23:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52662 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab3GSUXF (ORCPT
+	id S1751849Ab3GSU1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:27:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25240 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab3GSU1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:23:05 -0400
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 14/15] ARM: shmobile: sh73a0: switch DMAC controllers to using device ID data
-Date: Fri, 19 Jul 2013 22:22:55 +0200
-Message-Id: <1374265376-30777-5-git-send-email-g.liakhovetski@gmx.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:LNvvsZxtQXSWLqRCSCux9kjMh/c9DpC9Ps3sdXhuCG2
- bOG6fa5EDMoMyuvMWsWOY3F7s3RId6IYBZwybKXpCEuHyz6qG4
- SCGM7X1h6QG+vfn4uy+IuE683GD2JVwo9lz9pv1sq75p2lLXNW
- yU2MZ8KrySFRJ3VJk8ln3kyj4o3W+Qr0aKpXZ9SsmnerfH12pj
- zwH/vpXyrUfgzp7ZwwFUsHgSdpJT13O3YPPGifEXMOMMf0wFqc
- X59OZzgjYbu7IFSuCKM95I1KbWreKZBOI1fSvh8FAk18GdGi8H
- E6vQjGXk39zIHwe6BZYqAVimpmvhj3lWmO6LWs7i90T+ZerKHH
- hZ1LC2FPfuMMdO8RXMc8XZjcuimYjN2pNYnBD2Sy6wTz6Shrkw
- bW6yzkuLAY/GA==
+	Fri, 19 Jul 2013 16:27:24 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=RlVDF7lzNMQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=R1XAcQrJXZkA:10 a=20KFwNOVAAAA:8 a=ayC55rCoAAAA:8 a=uo9KpuxPFzrzqbvv0iYA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=q9mC2fbAJx8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374265641.3356.31.camel@gandalf.local.home>
+Subject: Re: [PATCH RESEND 0/3] Teach perf_trace_##call() to check
+ hlist_empty(perf_events)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 19 Jul 2013 16:27:21 -0400
+In-Reply-To: <20130719074339.GA22597@gmail.com>
+References: <20130718183018.GA4043@redhat.com>
+	 <20130719074339.GA22597@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes DMAC platform data on sh73a0 and switches to using
-device ID data.
+On Fri, 2013-07-19 at 09:43 +0200, Ingo Molnar wrote:
+> * Oleg Nesterov <oleg@redhat.com> wrote:
+> 
+> > Hello.
+> > 
+> > The patches are the same, I only tried to update the changelogs a bit.
+> > I am also quoting my old email below, to explain what this hack tries
+> > to do.
+> > 
+> > 	Say, "perf record -e sched:sched_switch -p1".
+> > 
+> > 	Every task except /sbin/init will do perf_trace_sched_switch() and
+> > 	perf_trace_buf_prepare() + perf_trace_buf_submit for no reason(),
+> > 	it doesn't have a counter.
+> > 
+> > 	So it makes sense to add the fast-path check at the start of
+> > 	perf_trace_##call(),
+> > 
+> > 		if (hlist_empty(event_call->perf_events))
+> > 			return;
+> > 
+> > 	The problem is, we should not do this if __task != NULL (iow, if
+> > 	DECLARE_EVENT_CLASS() uses __perf_task()), perf_tp_event() has the
+> > 	additional code for this case.
+> > 
+> > 	So we should do
+> > 
+> > 		if (!__task && hlist_empty(event_call->perf_events))
+> > 			return;
+> > 
+> > 	But __task is changed by "{ assign; }" block right before
+> > 	perf_trace_buf_submit(). Too late for the fast-path check,
+> > 	we already called perf_trace_buf_prepare/fetch_regs.
+> > 
+> > 	So. After 2/3 __perf_task() (and __perf_count/addr) is called
+> > 	when ftrace_get_offsets_##call(args) evaluates the arguments,
+> > 	and we can check !__task && hlist_empty() right after that.
+> > 
+> > Oleg.
+> 
+> Nice improvement.
+> 
+> Peter, Steve, any objections?
+> 
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
- arch/arm/mach-shmobile/clock-sh73a0.c |    2 +-
- arch/arm/mach-shmobile/setup-sh73a0.c |  182 +--------------------------------
- 2 files changed, 2 insertions(+), 182 deletions(-)
+Yep, agreed.
 
-diff --git a/arch/arm/mach-shmobile/clock-sh73a0.c b/arch/arm/mach-shmobile/clock-sh73a0.c
-index d9fd033..04a32fc 100644
---- a/arch/arm/mach-shmobile/clock-sh73a0.c
-+++ b/arch/arm/mach-shmobile/clock-sh73a0.c
-@@ -645,7 +645,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("e6820000.i2c", &mstp_clks[MSTP116]), /* I2C0 */
- 	CLKDEV_DEV_ID("sh_mobile_lcdc_fb.0", &mstp_clks[MSTP100]), /* LCDC0 */
- 	CLKDEV_DEV_ID("sh-sci.7", &mstp_clks[MSTP219]), /* SCIFA7 */
--	CLKDEV_DEV_ID("sh-dma-engine.0", &mstp_clks[MSTP218]), /* SY-DMAC */
-+	CLKDEV_DEV_ID("shdma-sh73a0.0", &mstp_clks[MSTP218]), /* SY-DMAC */
- 	CLKDEV_DEV_ID("sh-dma-engine.1", &mstp_clks[MSTP217]), /* MP-DMAC */
- 	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP207]), /* SCIFA5 */
- 	CLKDEV_DEV_ID("sh-sci.8", &mstp_clks[MSTP206]), /* SCIFB */
-diff --git a/arch/arm/mach-shmobile/setup-sh73a0.c b/arch/arm/mach-shmobile/setup-sh73a0.c
-index 516c239..2e9f3cc 100644
---- a/arch/arm/mach-shmobile/setup-sh73a0.c
-+++ b/arch/arm/mach-shmobile/setup-sh73a0.c
-@@ -396,183 +396,6 @@ static struct platform_device i2c4_device = {
- 	.num_resources	= ARRAY_SIZE(i2c4_resources),
- };
- 
--static const struct sh_dmae_slave_config sh73a0_dmae_slaves[] = {
--	{
--		.slave_id	= SHDMA_SLAVE_SCIF0_TX,
--		.addr		= 0xe6c40020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x21,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF0_RX,
--		.addr		= 0xe6c40024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x22,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF1_TX,
--		.addr		= 0xe6c50020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x25,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF1_RX,
--		.addr		= 0xe6c50024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x26,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF2_TX,
--		.addr		= 0xe6c60020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x29,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF2_RX,
--		.addr		= 0xe6c60024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x2a,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF3_TX,
--		.addr		= 0xe6c70020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x2d,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF3_RX,
--		.addr		= 0xe6c70024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x2e,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF4_TX,
--		.addr		= 0xe6c80020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x39,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF4_RX,
--		.addr		= 0xe6c80024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x3a,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF5_TX,
--		.addr		= 0xe6cb0020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x35,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF5_RX,
--		.addr		= 0xe6cb0024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x36,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF6_TX,
--		.addr		= 0xe6cc0020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x1d,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF6_RX,
--		.addr		= 0xe6cc0024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x1e,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF7_TX,
--		.addr		= 0xe6cd0020,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x19,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF7_RX,
--		.addr		= 0xe6cd0024,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x1a,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF8_TX,
--		.addr		= 0xe6c30040,
--		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x3d,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SCIF8_RX,
--		.addr		= 0xe6c30060,
--		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
--		.mid_rid	= 0x3e,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI0_TX,
--		.addr		= 0xee100030,
--		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xc1,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI0_RX,
--		.addr		= 0xee100030,
--		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xc2,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI1_TX,
--		.addr		= 0xee120030,
--		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xc9,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI1_RX,
--		.addr		= 0xee120030,
--		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xca,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI2_TX,
--		.addr		= 0xee140030,
--		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xcd,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI2_RX,
--		.addr		= 0xee140030,
--		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xce,
--	}, {
--		.slave_id	= SHDMA_SLAVE_MMCIF_TX,
--		.addr		= 0xe6bd0034,
--		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
--		.mid_rid	= 0xd1,
--	}, {
--		.slave_id	= SHDMA_SLAVE_MMCIF_RX,
--		.addr		= 0xe6bd0034,
--		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
--		.mid_rid	= 0xd2,
--	},
--};
--
--#define DMAE_CHANNEL(_offset)					\
--	{							\
--		.offset         = _offset - 0x20,		\
--		.dmars          = _offset - 0x20 + 0x40,	\
--	}
--
--static const struct sh_dmae_channel sh73a0_dmae_channels[] = {
--	DMAE_CHANNEL(0x8000),
--	DMAE_CHANNEL(0x8080),
--	DMAE_CHANNEL(0x8100),
--	DMAE_CHANNEL(0x8180),
--	DMAE_CHANNEL(0x8200),
--	DMAE_CHANNEL(0x8280),
--	DMAE_CHANNEL(0x8300),
--	DMAE_CHANNEL(0x8380),
--	DMAE_CHANNEL(0x8400),
--	DMAE_CHANNEL(0x8480),
--	DMAE_CHANNEL(0x8500),
--	DMAE_CHANNEL(0x8580),
--	DMAE_CHANNEL(0x8600),
--	DMAE_CHANNEL(0x8680),
--	DMAE_CHANNEL(0x8700),
--	DMAE_CHANNEL(0x8780),
--	DMAE_CHANNEL(0x8800),
--	DMAE_CHANNEL(0x8880),
--	DMAE_CHANNEL(0x8900),
--	DMAE_CHANNEL(0x8980),
--};
--
--static struct sh_dmae_pdata sh73a0_dmae_platform_data = {
--	.slave          = sh73a0_dmae_slaves,
--	.slave_num      = ARRAY_SIZE(sh73a0_dmae_slaves),
--	.channel        = sh73a0_dmae_channels,
--	.channel_num    = ARRAY_SIZE(sh73a0_dmae_channels),
--	.ts_low_shift   = TS_LOW_SHIFT,
--	.ts_low_mask    = TS_LOW_BIT << TS_LOW_SHIFT,
--	.ts_high_shift  = TS_HI_SHIFT,
--	.ts_high_mask   = TS_HI_BIT << TS_HI_SHIFT,
--	.ts_shift       = dma_ts_shift,
--	.ts_shift_num   = ARRAY_SIZE(dma_ts_shift),
--	.dmaor_init     = DMAOR_DME,
--};
--
- static struct resource sh73a0_dmae_resources[] = {
- 	DEFINE_RES_MEM(0xfe000020, 0x89e0),
- 	{
-@@ -590,13 +413,10 @@ static struct resource sh73a0_dmae_resources[] = {
- };
- 
- static struct platform_device dma0_device = {
--	.name		= "sh-dma-engine",
-+	.name		= "shdma-sh73a0",
- 	.id		= 0,
- 	.resource	= sh73a0_dmae_resources,
- 	.num_resources	= ARRAY_SIZE(sh73a0_dmae_resources),
--	.dev		= {
--		.platform_data	= &sh73a0_dmae_platform_data,
--	},
- };
- 
- /* MPDMAC */
--- 
-1.7.2.5
+
+The whole series...
+
+Reviewed-and-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
 
