@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761224Ab3GSTP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:15:26 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:12635 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616Ab3GSTPX (ORCPT
+	id S1761245Ab3GSTQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:16:45 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:35668 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761230Ab3GSTQl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:15:23 -0400
-Message-ID: <1374261318.1830.6.camel@j-VirtualBox>
-Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
- frequently
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+	Fri, 19 Jul 2013 15:16:41 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
-Date: Fri, 19 Jul 2013 12:15:18 -0700
-In-Reply-To: <20130719183717.GP27075@twins.programming.kicks-ass.net>
-References: <1374048701.6000.21.camel@j-VirtualBox>
-	 <20130717093913.GP23818@dyad.programming.kicks-ass.net>
-	 <1374076741.7412.35.camel@j-VirtualBox>
-	 <20130717161815.GR23818@dyad.programming.kicks-ass.net>
-	 <51E6D9B7.1030705@redhat.com>
-	 <20130717180156.GS23818@dyad.programming.kicks-ass.net>
-	 <1374120144.1816.45.camel@j-VirtualBox>
-	 <20130718093218.GH27075@twins.programming.kicks-ass.net>
-	 <51E7D89A.8010009@redhat.com> <1374174399.1792.42.camel@j-VirtualBox>
-	 <20130719183717.GP27075@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: mistakes in code vs. maintainer flow mistakes (was: [ 00/19] 3.10.1-stable review)
+Date: Fri, 19 Jul 2013 21:16:38 +0200
+Message-ID: <5288295.7WB1v5y4LW@merkaba>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc1-tp520+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130719190127.GA12990@xanatos>
+References: <20130715180403.GD15531@xanatos> <20130719092256.GC25784@gmail.com> <20130719190127.GA12990@xanatos>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 20:37 +0200, Peter Zijlstra wrote:
-> On Thu, Jul 18, 2013 at 12:06:39PM -0700, Jason Low wrote:
+Am Freitag, 19. Juli 2013, 12:01:27 schrieb Sarah Sharp:
+> On Fri, Jul 19, 2013 at 11:22:56AM +0200, Ingo Molnar wrote:
+> > * Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+[…]
+> "Respect" means different things to different people.  Here's a list of
+> potentially disrespectful behaviors:
 > 
-> > N = 1
-> > -----
-> > 19.21%  reaim  [k] __read_lock_failed                     
-> > 14.79%  reaim  [k] mspin_lock                             
-> > 12.19%  reaim  [k] __write_lock_failed                    
-> > 7.87%   reaim  [k] _raw_spin_lock                          
-> > 2.03%   reaim  [k] start_this_handle                       
-> > 1.98%   reaim  [k] update_sd_lb_stats                      
-> > 1.92%   reaim  [k] mutex_spin_on_owner                     
-> > 1.86%   reaim  [k] update_cfs_rq_blocked_load              
-> > 1.14%   swapper  [k] intel_idle                              
-> > 1.10%   reaim  [.] add_long                                
-> > 1.09%   reaim  [.] add_int                                 
-> > 1.08%   reaim  [k] load_balance                            
+>  * cussing
+>  * belittling statements
+>  * demeaning sarcasm
+>  * telling someone to SHUT THE FUCK UP
+>  * overuse of ALL CAPS to prove a point
+>  * encouraging suicide (telling someone to go kill themselves)
+>  * hysteria (inappropriate over-reaction to a bad situation)
+>  * name calling (calling someone stupid, a moron, etc)
+>  * insulting someone's technical skills
+>  * making people feel inferior
+>  * rewriting someone's code and submitting it without credit to them
+>  * ...and not apologizing for these behaviors when someone proves you
+>    are wrong about the situation, or over-reacting.
 > 
-> But but but but.. wth is causing this? The only thing we do more of with
-> N=1 is idle_balance(); where would that cause __{read,write}_lock_failed
-> and or mspin_lock() contention like that.
-> 
-> There shouldn't be a rwlock_t in the entire scheduler; those things suck
-> worse than quicksand.
-> 
-> If, as Rik thought, we'd have more rq->lock contention, then I'd
-> expected _raw_spin_lock to be up highest.
+> When these behaviors are combined with giving negative feedback on
+> someone's behavior, some developers may perceive the email as a personal
+> attack.  That's why I advocate minimizing these behaviors in
+> communications between Linus and his lieutenants about their bad
+> behavior as maintainers.
 
-For this particular fserver workload, that mutex was acquired in the
-function calls from ext4_orphan_add() and ext4_orphan_del(). Those read
-and write lock calls were from start_this_handle(). 
+I have one note about what you wrote and I see similar wording in other mails 
+as I read the thread with interest (but without having much to add to what I 
+wrote in my one mail before):
 
-Although these functions are not called within the idle_balance() code
-path, update_sd_lb_stats(), tg_load_down(), idle_cpu(), spin_lock(),
-ect... increases the time spent in the kernel and that appears to be
-indirectly causing more time to be spent acquiring those other kernel
-locks.
+Linus and his lieutenants?
+
+I heard the word "benevolent dictator" in conjunction with Linus, dunno, 
+whether he said it or someone else said it or whatnot, but still:
+
+Is the kernel developer community a *military* organisation?
+
+Just wanted to raise awareness to this wording.
+
+As you pointed out repeatedly: Words make a difference.
+
+A huge one, I think.
+
+> Just please, let me do my job as a kernel maintainer, and please stop
+> replying to this conversation.  I can only write so many long emails a
+> day without it cutting into my time for writing code and debugging USB
+> issues.
+> 
+> Move on, agree to disagree, and let's discuss this at KS.
+
+This however is clearly *your* decision. Its is absolutely and completely your 
+decision whether you reply to a mail or not. So I won´t accept any 
+responsibility for that and I am fully aware that I have no power to not let 
+you do your job as a kernel maintainer. :)
 
 Thanks,
-Jason
-
-
-
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
