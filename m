@@ -1,124 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965356Ab3GSKzE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:55:04 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:53371 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759712Ab3GSKzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:55:01 -0400
-Date: Fri, 19 Jul 2013 12:54:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, CAI Qian <caiqian@redhat.com>,
-        David Lang <david@lang.hm>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Olivier Galibert <galibert@pobox.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-Message-ID: <20130719105456.GC26716@gmail.com>
-References: <20130716224357.GK4994@xanatos>
- <1374015299.6458.76.camel@gandalf.local.home>
- <20130716231217.GL4994@xanatos>
- <51E5D7C8.5000306@gmail.com>
- <1374018809.2249.29.camel@leira.trondhjem.org>
- <1000066089.1803398.1374046596236.JavaMail.root@redhat.com>
- <20130717144849.GB16513@xanatos>
- <1374073771.6458.143.camel@gandalf.local.home>
- <20130717185138.GC17906@xanatos>
- <1374089368.6458.191.camel@gandalf.local.home>
+	id S1760184Ab3GSK5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:57:14 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1381 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab3GSK5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 06:57:12 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <51E91B80.1050609@broadcom.com>
+Date: Fri, 19 Jul 2013 12:57:04 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374089368.6458.191.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Roger Quadros" <rogerq@ti.com>
+cc: "Tony Lindgren" <tony@atomide.com>, linux-omap@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
+ ethernet
+References: <51E7AA24.6080600@broadcom.com>
+ <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com>
+ <51E919CA.8060805@ti.com>
+In-Reply-To: <51E919CA.8060805@ti.com>
+X-WSS-ID: 7DF7C5911R045929920-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/19/2013 12:49 PM, Roger Quadros wrote:
+> On 07/19/2013 01:36 PM, Arend van Spriel wrote:
+>> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
+>>> Then for the SDIO with device tree, take a look at the following
+>>> patches:
+>>>
+>>> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
+>>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
+>>
+>> I have been looking at the pandaboard patch in the series above and I do have a question. Among other things the patch adds these dt entries.
+>>
+>> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP | MODE0 */
+>> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP | MODE0 */
+>>
+>> If I look at the similar names in the deceased board-omap4panda.c:
+>>
+>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
+>> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
+>>
+>> and in mux44xx.h:
+>>
+>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
+>> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
+>>
+>> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is probably an explanation to it and it would help my understanding to know where this difference comes from. Hope you can help me out here.
+>>
+>
+> If you see omap4.dtsi, omap4_pmx_core starts at register address 0x4a100040.
+>
+> So, you need to subtract 0x40 from the offsets defined in mux44xx.h for pmx_core registers.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+That was what I was looking for. Thanks!
 
-> On Wed, 2013-07-17 at 11:51 -0700, Sarah Sharp wrote:
-> 
-> > > I have to ask. How much verbal abuse have you received in LKML? And I
-> > > don't mean in this thread.
-> > 
-> > I assume you also want me to exclude the verbal abuse and personal
-> > threats I've received via email and my blog because of this thread.
-> > But, just for reference, I'll post them here as well.
-> 
-> That's the nastiness of the Internet, a different topic than LKML
-> development. And I don't consider this thread really a LKML thread, as
-> it's about social behavior and nothing about the Linux kernel itself.
-> 
-> > 
-> > Here's a gem from a senior software developer at Nvidia:
-> > https://picasaweb.google.com/116960357493251979546/Trolls#5901298464591248626
-> > 
-> > And another email from a software developer in Portland, where I live:
-> > https://picasaweb.google.com/116960357493251979546/Trolls#5901288095984358098
-> 
-> Both are cowardly trolls that didn't post publicly.
-> 
-> > 
-> > On my blog, here's some choice comments, mostly asking me to quit kernel
-> > development, along with more than a few misogynist comments:
-> > 
-> > "You volunteered to help out on the Linux journey. He never volunteered
-> > to care for your feelings, nor did anyone else. It???s an opt-in community
-> > and you can always opt out at any time. Caveat emptor."
-> > 
-> > "You???re no one compared to Linus. Start being Alan Cox or Theodore T???so
-> > first to criticize him for his behaviour."
-> > 
-> > "Drama Queen"
-> > 
-> > "The LKML is not a place for easily offended girls to be. Get over
-> > yourself."
-> > 
-> > "shit, just what we need ??? a bitch running around crying about how hurt
-> > her feelings are."
-> > 
-> > "Oy vey you poor goyi???girl. You need to teach these sexist boys that
-> > being racist is wrong. Think of the wonderful things that womyn have
-> > done in the IT field. Clearly Linus is a rape apologist who fosters
-> > negative views of minorities."
-> > 
-> > "This is why women are viewed as pathetic jokes, especially in the tech
-> > world ??? because you???re weak and ineffectual, insufferable pansies who
-> > expect the world to cater and accommodate your thin skin and easily
-> > offended hyper-sensibilities. Grow the fuck up bitch. It???s real cute how
-> > you???ve tried to paint yourself as some gallant Joan of Arc, crusading
-> > against ???muh bigotry??? and ???muh intolerance.??? You???re a feminist joke, one
-> > in a very long line."
-> 
-> Again, this is the Internet social media, which is not an environment 
-> for productivity, but a cesspool of filth. Off topic to what I asked.
-> 
-> > Speaking out about this has made the crazies come out of the woodwork.
-> 
-> And what did you expect? The Internet if filled with assholes.
+> NOTE: omap4_pmx_wkup starts at a different address. Those are for wakeup domain
+> control registers.
 
-It's worse than that: being an asshole appears to also be correlated with 
-the likelihood of speaking up on forums! So assholes are overrepresented, 
-especially on forums that are semi-anonymous.
+Will keep that in mind.
 
-Sarah, you should see some of the hateful comments I got over past 
-scheduler maintenance decisions... [Or rather, you should not.]
+Regards,
+Arend
 
-When being involved in polarizing discussions, especially if you yourself 
-frame it as polarizing, you should expect to receive a wide spectrum of 
-opinion and outright trolling.
 
-The hateful, despicable, abhorrent trolling you cited should not be 
-projected over to your opponent in the discussion, unless your opponent 
-voices it as well ...
-
-Thanks,
-
-	Ingo
