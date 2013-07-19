@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759714Ab3GSJEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 05:04:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54007 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750822Ab3GSJEb (ORCPT
+	id S1759906Ab3GSJF1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 05:05:27 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35761 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab3GSJFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 05:04:31 -0400
-Date: Fri, 19 Jul 2013 10:03:28 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: John Stultz <john.stultz@linaro.org>,
+	Fri, 19 Jul 2013 05:05:23 -0400
+Date: Fri, 19 Jul 2013 12:04:46 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Kyungsik Lee <kyungsik.lee@lge.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>
-Subject: Re: [PATCH v4 02/17] sched_clock: Use seqcount instead of rolling
- our own
-Message-ID: <20130719090328.GA18139@mudshark.cambridge.arm.com>
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
- <1374189690-10810-3-git-send-email-sboyd@codeaurora.org>
+        hyojun.im@lge.com, chan.jeong@lge.com
+Subject: Re: [PATCH] LZ4: compression/decompression signedness mismatch
+Message-ID: <20130719090445.GA2275@swordfish>
+References: <20130712092400.GA2565@swordfish>
+ <CADv+DGka4s1xc2UYqu+-EqHW8jA56JrtEE_sMsMOpc6NDmc6Zw@mail.gmail.com>
+ <20130712094830.GA2257@swordfish.minsk.epam.com>
+ <20130718211806.GB2394@swordfish>
+ <CAMuHMdXCsRKpFQRwMTteQpBCbtuJVqmb9UvszHi3ffTS=RxJmw@mail.gmail.com>
+ <20130719082710.GA11597@hulk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1374189690-10810-3-git-send-email-sboyd@codeaurora.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130719082710.GA11597@hulk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 12:21:15AM +0100, Stephen Boyd wrote:
-> We're going to increase the cyc value to 64 bits in the near
-> future. Doing that is going to break the custom seqcount
-> implementation in the sched_clock code because 64 bit numbers
-> aren't guaranteed to be atomic. Replace the cyc_copy with a
-> seqcount to avoid this problem.
+On (07/19/13 17:27), Kyungsik Lee wrote:
+> > >> On (07/12/13 11:28), Yann Collet wrote:
+> > >> >    The reference implementation, hosted at :�
+> > >> >    [1]https://code.google.com/p/lz4/
+> > >> >    only proposes char* (signed) types as part of the interface contract.
+> > >> >    I would recommend to keep it that way, to remain consistent.
+> > >> >    Regards
+> > >>
+> > >> Crypto lz4 accepts u8 * for both compression and decompression:
+> > >>
+> > >>  lz4_compress_crypto(struct crypto_tfm *tfm, const u8 *src,
+> > >>                             unsigned int slen, u8 *dst, unsigned int *dlen)
+> > >>
+> > >>  lz4_decompress_crypto(struct crypto_tfm *tfm, const u8 *src,
+> > >>                        unsigned int slen, u8 *dst, unsigned int *dlen)
+> > >>
+> > >>
+> > >> Internally LZ4 may cast unsigned char* to signed char*, the same way you
+> > >> already do with compression:
+> > >>
+> > >>       int lz4_compress(const unsigned char *src, size_t src_len,
+> > >>                       unsigned char *dst, size_t *dst_len, void *wrkmem)
+> > >>
+> > >>               calls:
+> > >>                       lz4_compressctx(void *ctx,
+> > >>                               const char *source, char *dest,
+> > >>                               int isize, int maxoutputsize)
+> > >>
+> > >
+> > >
+> > > + lib/decompress_unlz4.c
+> > >  STATIC int INIT decompress(unsigned char *buf, int in_len,
+> > >                                 int(*fill)(void*, unsigned int),
+> > >                                 int(*flush)(void*, unsigned int),
+> > >                                 unsigned char *output,
+> > >                                 int *posp,
+> > >                                 void(*error)(char *x)
+> > >
+> > >>
+> > >> At the moment API is a bit misaligned: unsiged char* for compression and signed char* for
+> > >> decompression.
+> > >>
+> > >>
+> > >> My 'real word' use case is, suppose:
+> > >>
+> > >>       struct foo {
+> > >>       [..]
+> > >>               int (*compress)(const unsigned char *src, size_t src_len,
+> > >>                               unsigned char *dst, size_t *dst_len, void *wrkmem);
+> > >>               int (*decompress)(const unsigned char *src, size_t src_len,
+> > >>                               unsigned char *dst, size_t *dst_len);
+> > >>       };
+> > >>
+> > >>
+> > >> and (for example) module also provides sysfs attribute, so user can switch select
+> > >> LZO or LZ4 compressions depending of his needs:
+> > >>
+> > >>       ->compress = lzo1x_1_compress;
+> > >>       ->decompress = lzo1x_decompress_safe;
+> > >>
+> > >> to
+> > >>       ->compress = lz4_compress;
+> > >>       ->decompress = lz4_decompress_unknownoutputsize;
+> > >>
+> > >>
+> > >> the last one produces unneccessary compilation warning.
+> > >>
+> > >
+> > > did you guys have a chance to review the patch? it does not change
+> > > implementation/internals, just decompression exported symbols.
+> > 
+> > IMHO, all these memory buffers should be of type "(const) void *", cfr.
+> > e.g. read(2) and memcpy(3).
+> > 
+> > This avoids casts in the callers.
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  kernel/time/sched_clock.c | 27 ++++++++-------------------
->  1 file changed, 8 insertions(+), 19 deletions(-)
+> How about using "const unsigned char *" for the exported symbols in the
+> patch?
 
-Looks good to me. The current scheme would be very fiddly to extend to
-64-bit values on 32-bit architectures without cheap atomic doubleword
-accesses.
+will resend shortly.
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+> It is OK unless the patch changes the internal implementation.
+> 
 
-Will
+it doesn't.
+
+thanks,
+	-ss
+
