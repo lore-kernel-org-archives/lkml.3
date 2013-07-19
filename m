@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab3GSMZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:25:36 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52425 "EHLO
+	id S1760285Ab3GSM0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:26:16 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52467 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab3GSMZd (ORCPT
+	with ESMTP id S1751149Ab3GSM0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:25:33 -0400
-Message-ID: <51E93039.7010805@hitachi.com>
-Date: Fri, 19 Jul 2013 21:25:29 +0900
+	Fri, 19 Jul 2013 08:26:14 -0400
+Message-ID: <51E93062.4090405@hitachi.com>
+Date: Fri, 19 Jul 2013 21:26:10 +0900
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Organization: Hitachi, Ltd., Japan
 User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
@@ -20,10 +20,10 @@ Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
         stable@vger.kernel.org, virtualization@lists.linux-foundation.org,
         Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH V2 1/2] [BUGFIX] virtio/console: Quit from splice_write
- if pipe->nrbufs is 0
-References: <20130719091951.9698.95194.stgit@yunodevel> <20130719091954.9698.84901.stgit@yunodevel>
-In-Reply-To: <20130719091954.9698.84901.stgit@yunodevel>
+Subject: Re: [PATCH V2 2/2] [BUGFIX] virtio/console: Add pipe_lock/unlock
+ for splice_write
+References: <20130719091951.9698.95194.stgit@yunodevel> <20130719091956.9698.30207.stgit@yunodevel>
+In-Reply-To: <20130719091956.9698.30207.stgit@yunodevel>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,64 +31,79 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 (2013/07/19 18:19), Yoshihiro YUNOMAE wrote:
-> Quit from splice_write if pipe->nrbufs is 0 for avoiding oops in virtio-serial.
+> Add pipe_lock/unlock for splice_write to avoid oops by following competition:
 > 
-> When an application was doing splice from a kernel buffer to virtio-serial on
-> a guest, the application received signal(SIGINT). This situation will normally
-> happen, but the kernel executed a kernel panic by oops as follows:
+> (1) An application gets fds of a trace buffer, virtio-serial, pipe.
+> (2) The application does fork()
+> (3) The processes execute splice_read(trace buffer) and
+>     splice_write(virtio-serial) via same pipe.
 > 
->  BUG: unable to handle kernel paging request at ffff882071c8ef28
->  IP: [<ffffffff812de48f>] sg_init_table+0x2f/0x50
->  PGD 1fac067 PUD 0
+>         <parent>                   <child>
+>   get fds of a trace buffer,
+>          virtio-serial, pipe
+>           |
+>         fork()----------create--------+
+>           |                           |
+>       splice(read)                    |           ---+
+>       splice(write)                   |              +-- no competition
+>           |                       splice(read)       |
+>           |                       splice(write)   ---+
+>           |                           |
+>       splice(read)                    |
+>       splice(write)               splice(read)    ------ competition
+>           |                       splice(write)
+> 
+> Two processes share a pipe_inode_info structure. If the child execute
+> splice(read) when the parent tries to execute splice(write), the
+> structure can be broken. Existing virtio-serial driver does not get
+> lock for the structure in splice_write, so this competition will induce
+> oops.
+> 
+> <oops messages>
+>  BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+>  IP: [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+>  PGD 7223e067 PUD 72391067 PMD 0
 >  Oops: 0000 [#1] SMP
->  Modules linked in: lockd sunrpc bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd microcode virtio_balloon virtio_net pcspkr soundcore i2c_piix4 i2c_core uinput floppy
->  CPU: 1 PID: 908 Comm: trace-cmd Not tainted 3.10.0+ #49
+>  Modules linked in: lockd bnep bluetooth rfkill sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr virtio_net virtio_balloon i2c_piix4 i2c_core microcode uinput floppy
+>  CPU: 0 PID: 1072 Comm: compete-test Not tainted 3.10.0ws+ #55
 >  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
->  task: ffff880071c64650 ti: ffff88007bf24000 task.ti: ffff88007bf24000
->  RIP: 0010:[<ffffffff812de48f>]  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
->  RSP: 0018:ffff88007bf25dd8  EFLAGS: 00010286
->  RAX: 0000001fffffffe0 RBX: ffff882071c8ef28 RCX: 0000000000000000
->  RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880071c8ef48
->  RBP: ffff88007bf25de8 R08: ffff88007fd15d40 R09: ffff880071c8ef48
->  R10: ffffea0001c71040 R11: ffffffff8139c555 R12: 0000000000000000
->  R13: ffff88007506a3c0 R14: ffff88007c862500 R15: ffff880071c8ef00
->  FS:  00007f0a3646c740(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->  CR2: ffff882071c8ef28 CR3: 000000007acbb000 CR4: 00000000000006e0
+>  task: ffff880071b98000 ti: ffff88007b55e000 task.ti: ffff88007b55e000
+>  RIP: 0010:[<ffffffff811a6b5f>]  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+>  RSP: 0018:ffff88007b55fd78  EFLAGS: 00010287
+>  RAX: 0000000000000000 RBX: ffff88007b55fe20 RCX: 0000000000000000
+>  RDX: 0000000000001000 RSI: ffff88007a95ba30 RDI: ffff880036f9e6c0
+>  RBP: ffff88007b55fda8 R08: 00000000000006ec R09: ffff880077626708
+>  R10: 0000000000000003 R11: ffffffff8139ca59 R12: ffff88007a95ba30
+>  R13: 0000000000000000 R14: ffffffff8139dd00 R15: ffff880036f9e6c0
+>  FS:  00007f2e2e3a0740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>  CR2: 0000000000000018 CR3: 0000000071bd1000 CR4: 00000000000006f0
 >  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
 >  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
 >  Stack:
->   ffff880071c8ef48 ffff88007bf25e20 ffff88007bf25e88 ffffffff8139d6fa
->   ffff88007bf25e28 ffffffff8127a3f4 0000000000000000 0000000000000000
->   ffff880071c8ef48 0000100000000000 0000000000000003 ffff88007bf25e08
+>   ffffffff8139ca59 ffff88007b55fe20 ffff880036f9e6c0 ffffffff8139dd00
+>   ffff8800776266c0 ffff880077626708 ffff88007b55fde8 ffffffff811a6e8e
+>   ffff88007b55fde8 ffffffff8139ca59 ffff880036f9e6c0 ffff88007b55fe20
 >  Call Trace:
->   [<ffffffff8139d6fa>] port_fops_splice_write+0xaa/0x130
+>   [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+>   [<ffffffff8139dd00>] ? virtcons_restore+0x100/0x100
+>   [<ffffffff811a6e8e>] __splice_from_pipe+0x7e/0x90
+>   [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+>   [<ffffffff8139d739>] port_fops_splice_write+0xe9/0x140
 >   [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
 >   [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
 >   [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
 >   [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
->   [<ffffffff8161f8c2>] system_call_fastpath+0x16/0x1b
->  Code: c1 e2 05 48 89 e5 48 83 ec 10 4c 89 65 f8 41 89 f4 31 f6 48 89 5d f0 48 89 fb e8 8d ce ff ff 41 8d 44 24 ff 48 c1 e0 05 48 01 c3 <48> 8b 03 48 83 e0 fe 48 83 c8 02 48 89 03 48 8b 5d f0 4c 8b 65
->  RIP  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
->   RSP <ffff88007bf25dd8>
->  CR2: ffff882071c8ef28
->  ---[ end trace 86323505eb42ea8f ]---
+>   [<ffffffff8161facf>] tracesys+0xdd/0xe2
+>  Code: 49 8b 87 80 00 00 00 4c 8d 24 d0 8b 53 04 41 8b 44 24 0c 4d 8b 6c 24 10 39 d0 89 03 76 02 89 13 49 8b 44 24 10 4c 89 e6 4c 89 ff <ff> 50 18 85 c0 0f 85 aa 00 00 00 48 89 da 4c 89 e6 4c 89 ff 41
+>  RIP  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+>   RSP <ffff88007b55fd78>
+>  CR2: 0000000000000018
+>  ---[ end trace 24572beb7764de59 ]---
 > 
-> It seems to induce pagefault in sg_init_tabel() when pipe->nrbufs is equal to
-> zero. This may happen in a following situation:
-> 
-> (1) The application normally does splice(read) from a kernel buffer, then does
->     splice(write) to virtio-serial.
-> (2) The application receives SIGINT when is doing splice(read), so splice(read)
->     is failed by EINTR. However, the application does not finish the operation.
-> (3) The application tries to do splice(write) without pipe->nrbufs.
-> (4) The virtio-console driver tries to touch scatterlist structure sgl in
->     sg_init_table(), but the region is out of bound.
-> 
-> To avoid the case, a kernel should check whether pipe->nrbufs is empty or not
-> when splice_write is executed in the virtio-console driver.
+> V2: Fix a locking problem for error
 
-Thank you for fixing it :)
+Thanks, this looks good for me.
 
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
@@ -98,27 +113,58 @@ Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > Cc: Arnd Bergmann <arnd@arndb.de>
 > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > ---
->  drivers/char/virtio_console.c |    7 +++++++
->  1 file changed, 7 insertions(+)
+>  drivers/char/virtio_console.c |   20 +++++++++++++++-----
+>  1 file changed, 15 insertions(+), 5 deletions(-)
 > 
 > diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index 1b456fe..8722656 100644
+> index 8722656..8a15af3 100644
 > --- a/drivers/char/virtio_console.c
 > +++ b/drivers/char/virtio_console.c
-> @@ -932,6 +932,13 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
->  	if (is_rproc_serial(port->out_vq->vdev))
->  		return -EINVAL;
+> @@ -936,16 +936,21 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+>  	 * pipe->nrbufs == 0 means there are no data to transfer,
+>  	 * so this returns just 0 for no data.
+>  	 */
+> -	if (!pipe->nrbufs)
+> -		return 0;
+> +	pipe_lock(pipe);
+> +	if (!pipe->nrbufs) {
+> +		ret = 0;
+> +		goto error_out;
+> +	}
 >  
-> +	/*
-> +	 * pipe->nrbufs == 0 means there are no data to transfer,
-> +	 * so this returns just 0 for no data.
-> +	 */
-> +	if (!pipe->nrbufs)
-> +		return 0;
-> +
 >  	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
 >  	if (ret < 0)
->  		return ret;
+> -		return ret;
+> +		goto error_out;
+>  
+>  	buf = alloc_buf(port->out_vq, 0, pipe->nrbufs);
+> -	if (!buf)
+> -		return -ENOMEM;
+> +	if (!buf) {
+> +		ret = -ENOMEM;
+> +		goto error_out;
+> +	}
+>  
+>  	sgl.n = 0;
+>  	sgl.len = 0;
+> @@ -953,12 +958,17 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+>  	sgl.sg = buf->sg;
+>  	sg_init_table(sgl.sg, sgl.size);
+>  	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
+> +	pipe_unlock(pipe);
+>  	if (likely(ret > 0))
+>  		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
+>  
+>  	if (unlikely(ret <= 0))
+>  		free_buf(buf, true);
+>  	return ret;
+> +
+> +error_out:
+> +	pipe_unlock(pipe);
+> +	return ret;
+>  }
+>  
+>  static unsigned int port_fops_poll(struct file *filp, poll_table *wait)
 > 
 > 
 
