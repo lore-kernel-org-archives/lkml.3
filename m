@@ -1,72 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3GSXQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 19:16:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52819 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab3GSXQX (ORCPT
+	id S1753298Ab3GSXQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 19:16:53 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:21352 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab3GSXQv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 19:16:23 -0400
-Date: Fri, 19 Jul 2013 16:16:30 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ak <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module
- dependency.
-Message-ID: <20130719231630.GC1701@kroah.com>
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp>
- <2493652.fjZLqTL8IF@vostro.rjw.lan>
- <1374257329.22432.382.camel@schen9-DESK>
- <4295105.1txhDL4OOg@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4295105.1txhDL4OOg@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Jul 2013 19:16:51 -0400
+X-AuditID: cbfec37a-b7fc36d0000050de-13-51e9c8e12985
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/72] 3.10.2-stable review
+Thread-topic: [ 00/72] 3.10.2-stable review
+Thread-index: AQHOhJUx+Zg2iQCPiU6jixKTKeTZ9g==
+Date: Fri, 19 Jul 2013 23:16:47 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E6174690B@sisaex01sj>
+References: <20130719052559.852627424@linuxfoundation.org>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e+wn+6jEy8DDV4fZLSYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugStjRc9O5oILYhUvZq1gb2C8I9TFyMkhIWAisWX6FSYIW0ziwr31bF2MXBxCAssYJVad
+	3sgK4fQySSxatBwqM59RYu7V6cwgLWwC6hKfX+9gB7FFBIwl+s/OArOZBY4xSXR0lnUxcnAI
+	C2hJtL0PBTFFBLQlnj/MhajWk3i3+yPYFBYBVYm7j3eygti8AvYSK/cdBosLCVhJvP7/ng3E
+	ZgQ67vupNUwQ08UlmltvskAcLSCxZM95ZghbVOLl43+sIKskBBQltq+2gijXk/j45zYjhK0t
+	8eTdBahVghI/Jt9jmcAoNgvJ1FlIWmYhaZmFpGUBI8sqRrHS4uSC4qT01ApDveLE3OLSvHS9
+	5PzcTYyQuKvawXjnq80hRgEORiUe3gsrXgYKsSaWFVfmHmKU4GBWEuEtSAMK8aYkVlalFuXH
+	F5XmpBYfYmTi4JRqYIyO/PbNwb9os8Lzu8LX1svuttr3VbioTZunIXSF93P/ObNiM9xKMry1
+	tr8P3v33/lT/763Sv4w++1mpKT6eKRs6afNUQSGOggip7zeb7fsWOrvMjyw8WB8WanG/QzTm
+	Td/j1THb37LPd9uy73Rn+Nv7fV+niIrJzuufb5pz8rfWVrujJjfOWyqxFGckGmoxFxUnAgA6
+	9OUGmQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 11:38:04PM +0200, Rafael J. Wysocki wrote:
-> Alas, this is not the one I'd like to apply.
-> 
-> With that patch applied, new device objects are created to avoid binding the
-> processor driver directly to the cpu system device objects, because that
-> apparently confuses udev and it starts to ignore the cpu modalias once the
-> driver has been bound to any of those objects.
-> 
-> I've verified in the meantime that this indeed is the case.
-> 
-> A link to the patch in question: https://patchwork.kernel.org/patch/2830561/
-> 
-> Greg, I asked you some time ago whether or not it was possible for udev to stop
-> autoloading modules that matched the cpu modalias after a driver had been bound
-> to the cpu system device objects and you said "no".  However, this time I can
-> say with certainty that that really is the case.  So, the question now is
-> whether or not we can do anything in the kernel to avoid that confusion in udev
-> instead of applying the patch linked above (which is beyond ugly in my not so
-> humble opinion)?
+On 07/19/2013 09:32 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.2 release.
+> There are 72 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Jul 21 05:25:08 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.2-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-udev isn't doing any module loading, 'modprobe' is just being called for
-any new module alias that shows up in the system, and all of the drivers
-that match it then get loaded.
+Patches applied cleanly to 3.0.86, 3.4.54, 3.9.10, and 3.10.1
 
-How is it a problem if a module is attempted to be loaded that is
-already loaded?  How is it a problem if a different module is loaded for
-a device already bound to a driver?  Both of those should be total
-"no-ops" for the kernel.
+3.9.11-rc1 patch failed to build:
+x64-64, mipsel, mips, powerpc, and tile: build failed with the following 
+error:
 
-But, I don't know anything about the cpu code, how is loading a module
-causing problems?  That sounds like it needs to be fixes, as any root
-user can load modules whenever they want, you can't protect the kernel
-from doing that.
+    LD      ipc/built-in.o
+    CC [M]  fs/cifs/inode.o
+fs/cifs/inode.c: In function ‘cifs_all_info_to_fattr’:
+fs/cifs/inode.c:560:4: error: implicit declaration of function
+‘cifs_dbg’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[2]: *** [fs/cifs/inode.o] Error 1
+make[1]: *** [fs/cifs] Error 2
+make: *** [fs] Error 2
+make: *** Waiting for unfinished jobs....
+    CC      security/selinux/hooks.o
 
-thanks,
+I have CONFIG_CIFS=m in my config and CONFIG_CIFS_DEBUG is disabled.
+cifs_dbg() is not defined.
 
-greg k-h
+Compiled and booted on the following systems:
+
+Samsung Series 9 900X4C Intel Corei5:
+     (3.4.54-rc1, 3.9.10-rc1, 3.10.2-rc2)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+     (3.0.87-rc1, 3.4.54-rc1, 3.9.10-rc1?, and 3.10.2-rc2)
+
+dmesgs for all releases look good. No regressions compared to the 
+previous dmesgs for each of these releases. dmesg emerg, crit, alert, 
+err are clean. No regressions in warn.
+
+Cross-compile testing:
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+     (3.0.87-rc1, 3.4.54-rc1, 3.9.10-rc1?, and 3.10.2-rc2)
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.9.y, and 3.10.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, 3.9.y, and 3.10.y
+mips: defconfig passed on all, except 3.9.10
+mipsel: defconfig passed on all, except 3.9.10
+powerpc: wii_defconfig passed on all, except 3.9.10
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all, except 3.9.10
+
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
