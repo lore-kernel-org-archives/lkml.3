@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935262Ab3GSC3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:29:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37809 "EHLO
+	id S935250Ab3GSC3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:29:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935107Ab3GSCZD (ORCPT
+	with ESMTP id S935110Ab3GSCZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 22:25:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tobias Kluge <zielscheibe@gmail.com>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 02/24] rtlwifi: rtl8192cu: Add new USB ID for TP-Link TL-WN8200ND
-Date: Thu, 18 Jul 2013 19:24:34 -0700
-Message-Id: <20130719022404.183261258@linuxfoundation.org>
+Subject: [ 03/24] rtlwifi: rtl8192cu: Fix duplicate if test
+Date: Thu, 18 Jul 2013 19:24:35 -0700
+Message-Id: <20130719022404.249810033@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -30,29 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit c4d827c5ccc3a49227dbf9d4b248a2e86f388023 upstream.
+commit 10d0b9030a3f86e1e26c710c7580524d7787d688 upstream.
 
-This is a new device for this driver.
+A typo causes routine rtl92cu_phy_rf6052_set_cck_txpower() to test the
+same condition twice. The problem was found using cppcheck-1.49, and the
+proper fix was verified against the pre-mac80211 version of the code.
 
-Reported-by: Tobias Kluge <zielscheibe@gmail.com>
+This patch was originally included as commit 1288aa4, but was accidentally
+reverted in a later patch.
+
+Reported-by: David Binderman <dcb314@hotmail.com> [original report]
+Reported-by: Andrea Morello <andrea.merello@gmail.com> [report of accidental reversion]
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Tobias Kluge <zielscheibe@gmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -357,6 +357,7 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(0x2001, 0x330a, rtl92cu_hal_cfg)}, /*D-Link-Alpha*/
- 	{RTL_USB_DEVICE(0x2019, 0xab2b, rtl92cu_hal_cfg)}, /*Planex -Abocom*/
- 	{RTL_USB_DEVICE(0x20f4, 0x624d, rtl92cu_hal_cfg)}, /*TRENDNet*/
-+	{RTL_USB_DEVICE(0x2357, 0x0100, rtl92cu_hal_cfg)}, /*TP-Link WN8200ND*/
- 	{RTL_USB_DEVICE(0x7392, 0x7822, rtl92cu_hal_cfg)}, /*Edimax -Edimax*/
- 	{}
- };
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
+@@ -104,7 +104,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
+ 			tx_agc[RF90_PATH_A] = 0x10101010;
+ 			tx_agc[RF90_PATH_B] = 0x10101010;
+ 		} else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
+-			   TXHIGHPWRLEVEL_LEVEL1) {
++			   TXHIGHPWRLEVEL_LEVEL2) {
+ 			tx_agc[RF90_PATH_A] = 0x00000000;
+ 			tx_agc[RF90_PATH_B] = 0x00000000;
+ 		} else{
 
 
