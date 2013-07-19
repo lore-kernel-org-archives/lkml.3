@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760680Ab3GSQ3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:29:10 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:47902 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab3GSQ3I (ORCPT
+	id S1760814Ab3GSQ32 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:29:28 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:41532 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab3GSQ30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:29:08 -0400
-Date: Fri, 19 Jul 2013 18:29:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 1/3] nohz: Kconfig: remove redundant 64-bit dependency
-Message-ID: <20130719162903.GC21752@somewhere>
-References: <1372876601-23881-1-git-send-email-khilman@linaro.org>
- <1372876601-23881-2-git-send-email-khilman@linaro.org>
+	Fri, 19 Jul 2013 12:29:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372876601-23881-2-git-send-email-khilman@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130719154648.GA23116@kroah.com>
+References: <1374245148-24031-1-git-send-email-alexj@rosedu.org>
+	<CAOJsxLGEmjY6wTp99DKQ4ZKO2oXq6102MczbjCHTUReuCTq-fw@mail.gmail.com>
+	<CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
+	<CAOJsxLFw4t-jwO4vDuMYfZA4uqH59h1c66xVPPFDO037OvGKSg@mail.gmail.com>
+	<CAPhGq=Y30i0RWJTcomt5sRdKX6RDzdGHBo5L9D6coH8O0ej6kA@mail.gmail.com>
+	<20130719154648.GA23116@kroah.com>
+Date: Fri, 19 Jul 2013 19:29:25 +0300
+Message-ID: <CAEnQRZBa5DNir15GK0mWsWTFu7yu1jyn=M2h76agbaXeszuy-w@mail.gmail.com>
+Subject: Re: [PATCH] lustre:libcfs: remove redundant code.
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexandru Juncu <alexj@rosedu.org>, Pekka Enberg <penberg@kernel.org>,
+        "andreas.dilger" <andreas.dilger@intel.com>,
+        "tao.peng" <tao.peng@emc.com>, driverdev <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>, pebolle@tiscali.nl
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 11:36:39AM -0700, Kevin Hilman wrote:
-> The current 64-bit dependency is on VIRT_CPU_ACCOUNTING_GEN, which already
-> has its own dependency on 64-bit.  Remove it from NO_HZ_FULL.
+On Fri, Jul 19, 2013 at 6:46 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, Jul 19, 2013 at 06:29:34PM +0300, Alexandru Juncu wrote:
+>> On 19 July 2013 18:21, Pekka Enberg <penberg@kernel.org> wrote:
+>> > On Fri, Jul 19, 2013 at 6:13 PM, Alexandru Juncu <alexj@rosedu.org> wrote:
+>> >> I was thinking the same thing, but I hesitated because I didn't know
+>> >> how used it was and I didn't want to break something.
+>> >
+>> > "git grep cfs_strdup" suggests that nobody uses it so you could just
+>> > remove it completely...
+>>
+>> Did a grep on the tree and yes, it's not used. But It's in a staging
+>> directory so maybe the rest of the code has not been pushed in yet.
+>
+> Doesn't matter, if there are no users, please just remove it.
 
-It's not exactly redundant. It's a necessary dependency inheritance.
-When we select NO_HZ_FULL, TICK_CPU_ACCOUNTING and VIRT_CPU_ACCOUNTING_NATIVE
-disappear such that only VIRT_CPU_ACCOUNTING_GEN can be selected. But if we
-don't have CONFIG_64bits, then VIRT_CPU_ACCOUNTING_GEN is not possible either.
-So we end up with nothing for the accounting (or whatever random reaction
-from Kconfig against that situation) and that's a bug. So we need to inherit the
-64 bits dependency on NO_HZ_FULL to prevent that.
+Hi Greg,
 
-We can remove this dependency from NO_HZ_FULL, but only once we remove it
-from VIRT_CPU_ACCOUNTING_GEN, not the other way around otherwise this
-breaks bisection.
+There is already a similar patch for this https://lkml.org/lkml/2013/7/17/742,
+already reviewed by Andreas Dilger.
 
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> ---
->  kernel/time/Kconfig | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-> index 70f27e8..b78760f 100644
-> --- a/kernel/time/Kconfig
-> +++ b/kernel/time/Kconfig
-> @@ -99,8 +99,6 @@ config NO_HZ_FULL
->  	depends on SMP
->  	# RCU_USER_QS dependency
->  	depends on HAVE_CONTEXT_TRACKING
-> -	# VIRT_CPU_ACCOUNTING_GEN dependency
-> -	depends on 64BIT
->  	select NO_HZ_COMMON
->  	select RCU_USER_QS
->  	select RCU_NOCB_CPU
-> -- 
-> 1.8.3
-> 
+thanks,
+Daniel.
