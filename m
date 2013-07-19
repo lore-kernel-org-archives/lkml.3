@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760704Ab3GSOVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:21:52 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:58353 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759426Ab3GSON6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:13:58 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 02/13] ARM: ux500: Remove Snowball DTS entry for National Semiconductor LP5521 LED chip
-Date: Fri, 19 Jul 2013 15:13:38 +0100
-Message-Id: <1374243229-8585-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374243229-8585-1-git-send-email-lee.jones@linaro.org>
-References: <1374243229-8585-1-git-send-email-lee.jones@linaro.org>
+	id S1759098Ab3GSOZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:25:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab3GSOZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 10:25:38 -0400
+Date: Fri, 19 Jul 2013 16:20:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tracing: Kill trace_array->waiter
+Message-ID: <20130719142036.GA1594@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't exist on the Snowball development board.
+Trivial. trace_array->waiter has no users since 6eaaa5d5
+"tracing/core: use appropriate waiting on trace_pipe".
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/arm/boot/dts/snowball.dts | 8 --------
- 1 file changed, 8 deletions(-)
+ kernel/trace/trace.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-index 16c2b23..a5d6317 100644
---- a/arch/arm/boot/dts/snowball.dts
-+++ b/arch/arm/boot/dts/snowball.dts
-@@ -173,14 +173,6 @@
- 		};
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4a4f6e1..f849e85 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -214,7 +214,6 @@ struct trace_array {
+ 	struct dentry		*event_dir;
+ 	struct list_head	systems;
+ 	struct list_head	events;
+-	struct task_struct	*waiter;
+ 	int			ref;
+ };
  
- 		i2c@80128000 {
--			lp5521@33 {
--				// compatible = "lp5521";
--				reg = <0x33>;
--			};
--			lp5521@34 {
--				// compatible = "lp5521";
--				reg = <0x34>;
--			};
- 			bh1780@29 {
- 				// compatible = "rohm,bh1780gli";
- 				reg = <0x33>;
 -- 
-1.8.1.2
+1.5.5.1
+
 
