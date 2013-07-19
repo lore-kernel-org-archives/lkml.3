@@ -1,80 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759656Ab3GSDxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 23:53:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41901 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759616Ab3GSDxG (ORCPT
+	id S1759412Ab3GSD5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 23:57:30 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:36613 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754625Ab3GSD51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 23:53:06 -0400
-Date: Fri, 19 Jul 2013 13:52:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (sound-asoc
- tree related)
-Message-Id: <20130719135253.2689f6c0e42838f330b60df9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg"
+	Thu, 18 Jul 2013 23:57:27 -0400
+Message-ID: <51E8B923.5090201@gmail.com>
+Date: Thu, 18 Jul 2013 21:57:23 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer
+ Aspire S5
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com> <1372860295-8306-7-git-send-email-mika.westerberg@linux.intel.com> <1444243.g9GbxN3NM0@vostro.rjw.lan>
+In-Reply-To: <1444243.g9GbxN3NM0@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/03/2013 03:40 PM, Rafael J. Wysocki wrote:
+> On Wednesday, July 03, 2013 05:04:53 PM Mika Westerberg wrote:
+>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>>
+>> Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+>> PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+>> deeper in hierarchy:
+>>
+>> Device (RP05)
+>> {
+>>     // ...
+>>     Device (HRUP)
+>>     {
+>>         // ...
+>>         Device (HRDN)
+>>         {
+>>             // ...
+>>             Device (EPUP)
+>>             {
+>>                 // ...
+>>                 Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+>>                 {
+>>                     Return (One)
+>>                 }
+>>             }
+>>         }
+>>     }
+>> }
+>>
+>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> ---
+>>   drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
+>>   1 file changed, 13 insertions(+)
+>>
+>> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+>> index 2a47e82..d92ebfb 100644
+>> --- a/drivers/pci/hotplug/acpi_pcihp.c
+>> +++ b/drivers/pci/hotplug/acpi_pcihp.c
+>> @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+>>   	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+>>   	if (ACPI_SUCCESS(status) && removable)
+>>   		return 1;
+>> +
+>> +	/*
+>> +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
+>> +	 *
+>> +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+>> +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
+>> +	 * deeper in hierarchy.
+>> +	 */
+>> +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+>> +			&removable);
+>
+> Well, calling stuff like this directly from a general function is kind of ugly.
+>
+> Can we use something like a quirk instead?  A DMI check or something?
 
-Hi all,
+Presumably this device functions under Windows so clearly Windows is 
+capable of dealing with this case, so we should too.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+There are way too many of these silly DMI checks in the kernel - we 
+should be way more hesitant to add more of them. They're almost 
+guaranteed to be incomplete. I would say they should be avoided whenever 
+possible unless there's some reason why a general workaround can't be used.
 
-sound/soc/fsl/fsl_ssi.c: In function 'fsl_ssi_isr':
-sound/soc/fsl/fsl_ssi.c:181:2: error: implicit declaration of function 'rea=
-d_ssi' [-Werror=3Dimplicit-function-declaration]
-  sisr =3D read_ssi(&ssi->sisr) & SIER_FLAGS;
-  ^
-sound/soc/fsl/fsl_ssi.c:296:3: error: implicit declaration of function 'wri=
-te_ssi' [-Werror=3Dimplicit-function-declaration]
-   write_ssi(sisr2, &ssi->sisr);
-   ^
-sound/soc/fsl/fsl_ssi.c: In function 'fsl_ssi_startup':
-sound/soc/fsl/fsl_ssi.c:331:3: error: implicit declaration of function 'wri=
-te_ssi_mask' [-Werror=3Dimplicit-function-declaration]
-   write_ssi_mask(&ssi->scr, CCSR_SSI_SCR_SSIEN, 0);
-   ^
+>
+>> +	if (ACPI_SUCCESS(status) && removable)
+>> +		return 1;
+>> +
+>>   	return 0;
+>>   }
+>
+> Rafael
+>
+>
 
-Caused by commit a1df5c2b310f ("ASoC: imx: Enable COMPILE_TEST builds").
-
-I have reverted that commit for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR6LgaAAoJEECxmPOUX5FE7T4P/RxSQE22DSRtlcQ+FGLiXwEw
-570Tud3KlOvpUw2Uc6vt8wXEzQqUfrX9akUlHLZY3SfCZnsgH2njmVyqW3iprUKl
-jMgPvLVRLhs9syTwFNBwclu0HpOwx24TfYEFVzXxlcOqXTXmnPLUOV13fMNbQhBv
-jBtuDTtE4ZPe+ja2Qt7MlmbOputs1ZZ1S77cV9zWrIUHnkEQK9HkO4UoEYfwKwDP
-LoINr0YkjqxtkbIqKxwNCkBK5bmO/3bzDf3TO+r+Yy5oSBnYhxpzELi/7blE7j6C
-12OmehgCqek7OP1ZEZgT6A5HoSZ9f6Z6REeBr2eiBhKFinkp7bEt/EzNnI9rvpsZ
-HlgDFjhy9pTUdxQ3lJVS6cfMLvUYMWViUWNBe98v+R5xSH+PNlPdJ18OykDGwZic
-dZeWSvIYaNVRc44Fj3GNVnYbeFZIDL+J1DuwgRwDlBROMWvfVZaJnuSFGqn38Jl1
-55YkqJi3YgfQgZBKOBs732aFfpJ/12R9qXQrEVTx9i2/C74zfM8UyHT4s56+OX7n
-eFsKhfQK6bZX3NlSMOpM4PPgkMMkz2NIaoGi1+h0ugjYbwEsIUhahO34puQMonnW
-bdODOcRilgqOvvkwBoPkiG90m/Wg6W8sDDS7CqaLCzD4p4p73Wt8NixZzTgFIGGz
-NT4p4imYkn5Uv8sDsBh/
-=rieu
------END PGP SIGNATURE-----
-
---Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg--
