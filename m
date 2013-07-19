@@ -1,78 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759757Ab3GSHLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:11:13 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:31315 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab3GSHLL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:11:11 -0400
-X-AuditID: cbfee68e-b7f276d000002279-7f-51e8e68d25b4
-From: Jingoo Han <jg1.han@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] firmware: google: replace strict_strtoul() with kstrtoul()
-Date: Fri, 19 Jul 2013 16:11:09 +0900
-Message-id: <001001ce844f$24aaa8d0$6dfffa70$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6ETvSpZ8Mv/6giSV2zG3W929Zlpw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zQ93eZy8CDd7t0rGYs34Nm8XlhZdY
-	LS7vmsPmwOxxYsZvFo++LasYPT5vkgtgjuKySUnNySxLLdK3S+DK+P7nKFPBFtaKTTceMjYw
-	7mDpYuTkkBAwkWi+NZcNwhaTuHBvPZDNxSEksIxRov3DPFaYohdve8AahASmM0q82WsAYf9i
-	lOj64QhiswmoSXz5cpgdxBYR0JVY9XwXM4jNLOAk8XPLTLBeYQFviY4Xa5lAbBYBVYlDPw6C
-	2bwClhJ/p71ghbAFJX5MvscC0aslsX7ncSYIW15i85q3zBD3KEjsOPuaEWKXnsSrnutQu0Qk
-	9r14xwjygITAPHaJZy+WsEEsE5D4NvkQ0FAOoISsxKYDUHMkJQ6uuMEygVFsFpLVs5CsnoVk
-	9SwkKxYwsqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93ECImovh2MNw9YH2JMBlo/kVlKNDkf
-	GJF5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamD0
-	6t/QGHPL+gjHru9G5sIPpH5sfSB5czbLpYl/A7x7uCIbJ2vliTX0vVql7NQw4/j0y5+Lz0pq
-	O81myjrk7mfS/E9tr+qS1rrO8qsTVqtZmxhedL9a1q7sHH1P3JJTWeJHbuH022fPGLltm2N3
-	xkBa4wnfZV9Dzq4fratmBT6KURF5nPZxr5MSS3FGoqEWc1FxIgDssYISvgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xoG7vsxeBBidfaVjMWb+GzeLywkus
-	Fpd3zWFzYPY4MeM3i0ffllWMHp83yQUwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
-	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
-	ZIAGEtYxZnz/c5SpYAtrxaYbDxkbGHewdDFyckgImEi8eNsDZYtJXLi3ng3EFhKYzijxZq8B
-	hP2LUaLrhyOIzSagJvHly2F2EFtEQFdi1fNdzCA2s4CTxM8tM8HmCAt4S3S8WMsEYrMIqEoc
-	+nEQzOYVsJT4O+0FK4QtKPFj8j0WiF4tifU7jzNB2PISm9e8ZYa4R0Fix9nXjBC79CRe9VyH
-	2iUise/FO8YJjAKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMj
-	OF6fSe1gXNlgcYhRgINRiYf3wZfngUKsiWXFlbmHGCU4mJVEeH8lvwgU4k1JrKxKLcqPLyrN
-	SS0+xJgM9OlEZinR5HxgKskriTc0NjEzsjQyszAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoR
-	zBYmDk6pBkamORMDooPsTgRf4Jm32F9683rZaZeWWebkvrzmy6oadO6ijMvu2ZHWd93aH247
-	L/nOLLlvQavtgYWHWjZabWopt/WS7G7bM5HxlvHENKOy0nuPl/wPX/h9jo1MzRThTJVWDqkl
-	V5krS39Hztswa6KV/O8bS1fm5D5msCt+LBhaqeR+T3Gv3W4lluKMREMt5qLiRABFnLG6GwMA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1759763Ab3GSHO0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:14:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:33938 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751460Ab3GSHOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 03:14:25 -0400
+Date: Fri, 19 Jul 2013 17:14:32 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH] hugepage: allow parallelization of the hugepage fault
+ path
+Message-ID: <20130719071432.GB19634@voom.fritz.box>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+ <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+ <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+ <20130715072432.GA28053@voom.fritz.box>
+ <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+ <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
+ <20130718084235.GA9761@lge.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
+Content-Disposition: inline
+In-Reply-To: <20130718084235.GA9761@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usage of strict_strtoul() is not preferred, because
-strict_strtoul() is obsolete. Thus, kstrtoul() should be
-used.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/firmware/google/gsmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--DKU6Jbt7q3WqK7+M
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/firmware/google/gsmi.c b/drivers/firmware/google/gsmi.c
-index acba0b9..6eb535f 100644
---- a/drivers/firmware/google/gsmi.c
-+++ b/drivers/firmware/google/gsmi.c
-@@ -525,7 +525,7 @@ static ssize_t gsmi_clear_eventlog_store(struct kobject *kobj,
- 		u32 data_type;
- 	} param;
- 
--	rc = strict_strtoul(buf, 0, &val);
-+	rc = kstrtoul(buf, 0, &val);
- 	if (rc)
- 		return rc;
- 
--- 
-1.7.10.4
+On Thu, Jul 18, 2013 at 05:42:35PM +0900, Joonsoo Kim wrote:
+> On Wed, Jul 17, 2013 at 12:50:25PM -0700, Davidlohr Bueso wrote:
+> > From: David Gibson <david@gibson.dropbear.id.au>
+> >=20
+> > At present, the page fault path for hugepages is serialized by a
+> > single mutex. This is used to avoid spurious out-of-memory conditions
+> > when the hugepage pool is fully utilized (two processes or threads can
+> > race to instantiate the same mapping with the last hugepage from the
+> > pool, the race loser returning VM_FAULT_OOM).  This problem is
+> > specific to hugepages, because it is normal to want to use every
+> > single hugepage in the system - with normal pages we simply assume
+> > there will always be a few spare pages which can be used temporarily
+> > until the race is resolved.
+> >=20
+> > Unfortunately this serialization also means that clearing of hugepages
+> > cannot be parallelized across multiple CPUs, which can lead to very
+> > long process startup times when using large numbers of hugepages.
+> >=20
+> > This patch improves the situation by replacing the single mutex with a
+> > table of mutexes, selected based on a hash, which allows us to know
+> > which page in the file we're instantiating. For shared mappings, the
+> > hash key is selected based on the address space and file offset being f=
+aulted.
+> > Similarly, for private mappings, the mm and virtual address are used.
+> >=20
+>=20
+> Hello.
+>=20
+> With this table mutex, we cannot protect region tracking structure.
+> See below comment.
+>=20
+> /*
+>  * Region tracking -- allows tracking of reservations and instantiated pa=
+ges
+>  *                    across the pages in a mapping.
+>  *
+>  * The region data structures are protected by a combination of the mmap_=
+sem
+>  * and the hugetlb_instantion_mutex.  To access or modify a region the ca=
+ller
+>  * must either hold the mmap_sem for write, or the mmap_sem for read and
+>  * the hugetlb_instantiation mutex:
+>  *
+>  *      down_write(&mm->mmap_sem);
+>  * or
+>  *      down_read(&mm->mmap_sem);
+>  *      mutex_lock(&hugetlb_instantiation_mutex);
+>  */
 
+Ugh.  Who the hell added that.  I guess you'll need to split of
+another mutex for that purpose, afaict there should be no interaction
+with the actual, intended purpose of the instantiation mutex.
 
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--DKU6Jbt7q3WqK7+M
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iEYEARECAAYFAlHo51gACgkQaILKxv3ab8Zn9wCdHYvc1EFMgILPkcigkxwZ5JDG
+0PcAn1iauHw+cLwCGVDnPjgpTfw/vHRe
+=AG8T
+-----END PGP SIGNATURE-----
+
+--DKU6Jbt7q3WqK7+M--
