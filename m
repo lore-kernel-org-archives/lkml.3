@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030248Ab3GSHwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:52:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35814 "EHLO
+	id S1030262Ab3GSHw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:52:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35825 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965772Ab3GSHwm (ORCPT
+	with ESMTP id S1030234Ab3GSHwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:52:42 -0400
-Date: Fri, 19 Jul 2013 00:52:25 -0700
+	Fri, 19 Jul 2013 03:52:53 -0400
+Date: Fri, 19 Jul 2013 00:52:34 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-mpmm8l71mnlp7139voba3aak@git.kernel.org>
+Message-ID: <tip-l7dvhgt0azm7yiqg3fbn4dxw@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
@@ -19,8 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
         tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf diff: Making compute functions static
-Git-Commit-ID: ef358e6dcaba76d1c00dba5fc6cd4cde1d1a2f13
+Subject: [tip:perf/core] perf diff:
+  Add generic order option for compute sorting
+Git-Commit-ID: 5f3f8d3b1207cba3664d57a33de43f5ee11c8a06
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,22 +30,25 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:52:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:52:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ef358e6dcaba76d1c00dba5fc6cd4cde1d1a2f13
-Gitweb:     http://git.kernel.org/tip/ef358e6dcaba76d1c00dba5fc6cd4cde1d1a2f13
+Commit-ID:  5f3f8d3b1207cba3664d57a33de43f5ee11c8a06
+Gitweb:     http://git.kernel.org/tip/5f3f8d3b1207cba3664d57a33de43f5ee11c8a06
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sun, 21 Oct 2012 23:31:51 +0200
+AuthorDate: Sun, 25 Nov 2012 23:10:20 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:54:14 -0300
+CommitDate: Fri, 12 Jul 2013 13:54:16 -0300
 
-perf diff: Making compute functions static
+perf diff: Add generic order option for compute sorting
 
-All compute functions are now local to the diff command, making them
-static.
+Adding option 'o' to allow sorting based on the input file number. By
+default (without -o option) the output is sorted on baseline.
+
+Also removing '+' sorting support from -c option, because it's not
+needed anymore.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Reviewed-by: Namhyung Kim <namhyung@kernel.org>
@@ -53,131 +57,202 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-mpmm8l71mnlp7139voba3aak@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-l7dvhgt0azm7yiqg3fbn4dxw@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 30 +++++++++++++++---------------
- tools/perf/util/hist.h    |  7 -------
- 2 files changed, 15 insertions(+), 22 deletions(-)
+ tools/perf/Documentation/perf-diff.txt |  6 ++-
+ tools/perf/builtin-diff.c              | 95 +++++++++++++++++++++++-----------
+ 2 files changed, 70 insertions(+), 31 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index 2d134f3..fdfceee 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -75,8 +75,6 @@ OPTIONS
+ -c::
+ --compute::
+         Differential computation selection - delta,ratio,wdiff (default is delta).
+-        If '+' is specified as a first character, the output is sorted based
+-        on the computation results.
+         See COMPARISON METHODS section for more info.
+ 
+ -p::
+@@ -87,6 +85,10 @@ OPTIONS
+ --formula::
+         Show formula for given computation.
+ 
++-o::
++--order::
++       Specify compute sorting column number.
++
+ COMPARISON
+ ----------
+ The comparison is governed by the baseline file. The baseline perf.data
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index cc7bf4f..f2fbf69 100644
+index f2fbf69..93de3ac 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -224,23 +224,23 @@ static int setup_compute(const struct option *opt, const char *str,
- 	return -EINVAL;
- }
+@@ -64,7 +64,7 @@ static bool force;
+ static bool show_period;
+ static bool show_formula;
+ static bool show_baseline_only;
+-static bool sort_compute;
++static unsigned int sort_compute;
  
--double perf_diff__period_percent(struct hist_entry *he, u64 period)
-+static double period_percent(struct hist_entry *he, u64 period)
- {
- 	u64 total = he->hists->stats.total_period;
- 	return (period * 100.0) / total;
- }
+ static s64 compute_wdiff_w1;
+ static s64 compute_wdiff_w2;
+@@ -188,13 +188,6 @@ static int setup_compute(const struct option *opt, const char *str,
+ 		return 0;
+ 	}
  
--double perf_diff__compute_delta(struct hist_entry *he, struct hist_entry *pair)
-+static double compute_delta(struct hist_entry *he, struct hist_entry *pair)
- {
--	double old_percent = perf_diff__period_percent(he, he->stat.period);
--	double new_percent = perf_diff__period_percent(pair, pair->stat.period);
-+	double old_percent = period_percent(he, he->stat.period);
-+	double new_percent = period_percent(pair, pair->stat.period);
- 
- 	pair->diff.period_ratio_delta = new_percent - old_percent;
- 	pair->diff.computed = true;
- 	return pair->diff.period_ratio_delta;
- }
- 
--double perf_diff__compute_ratio(struct hist_entry *he, struct hist_entry *pair)
-+static double compute_ratio(struct hist_entry *he, struct hist_entry *pair)
- {
- 	double old_period = he->stat.period ?: 1;
- 	double new_period = pair->stat.period;
-@@ -250,7 +250,7 @@ double perf_diff__compute_ratio(struct hist_entry *he, struct hist_entry *pair)
- 	return pair->diff.period_ratio;
- }
- 
--s64 perf_diff__compute_wdiff(struct hist_entry *he, struct hist_entry *pair)
-+static s64 compute_wdiff(struct hist_entry *he, struct hist_entry *pair)
- {
- 	u64 old_period = he->stat.period;
- 	u64 new_period = pair->stat.period;
-@@ -292,8 +292,8 @@ static int formula_wdiff(struct hist_entry *he, struct hist_entry *pair,
- 		  new_period, compute_wdiff_w2, old_period, compute_wdiff_w1);
- }
- 
--int perf_diff__formula(struct hist_entry *he, struct hist_entry *pair,
--		       char *buf, size_t size)
-+static int formula_fprintf(struct hist_entry *he, struct hist_entry *pair,
-+			   char *buf, size_t size)
- {
- 	switch (compute) {
- 	case COMPUTE_DELTA:
-@@ -421,13 +421,13 @@ static void hists__precompute(struct hists *hists)
- 
- 		switch (compute) {
- 		case COMPUTE_DELTA:
--			perf_diff__compute_delta(he, pair);
-+			compute_delta(he, pair);
- 			break;
- 		case COMPUTE_RATIO:
--			perf_diff__compute_ratio(he, pair);
-+			compute_ratio(he, pair);
- 			break;
- 		case COMPUTE_WEIGHTED_DIFF:
--			perf_diff__compute_wdiff(he, pair);
-+			compute_wdiff(he, pair);
- 			break;
- 		default:
- 			BUG_ON(1);
-@@ -744,7 +744,7 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
- 		if (pair->diff.computed)
- 			diff = pair->diff.period_ratio_delta;
- 		else
--			diff = perf_diff__compute_delta(he, pair);
-+			diff = compute_delta(he, pair);
- 
- 		if (fabs(diff) >= 0.01)
- 			scnprintf(buf, size, "%+4.2F%%", diff);
-@@ -758,7 +758,7 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
- 		if (pair->diff.computed)
- 			ratio = pair->diff.period_ratio;
- 		else
--			ratio = perf_diff__compute_ratio(he, pair);
-+			ratio = compute_ratio(he, pair);
- 
- 		if (ratio > 0.0)
- 			scnprintf(buf, size, "%14.6F", ratio);
-@@ -772,14 +772,14 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
- 		if (pair->diff.computed)
- 			wdiff = pair->diff.wdiff;
- 		else
--			wdiff = perf_diff__compute_wdiff(he, pair);
-+			wdiff = compute_wdiff(he, pair);
- 
- 		if (wdiff != 0)
- 			scnprintf(buf, size, "%14ld", wdiff);
- 		break;
- 
- 	case PERF_HPP_DIFF__FORMULA:
--		perf_diff__formula(he, pair, buf, size);
-+		formula_fprintf(he, pair, buf, size);
- 		break;
- 
- 	case PERF_HPP_DIFF__PERIOD:
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 79681f6..bfcbb11 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -242,11 +242,4 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
- #endif
- 
- unsigned int hists__sort_list_width(struct hists *self);
+-	if (*str == '+') {
+-		sort_compute = true;
+-		cstr = (char *) ++str;
+-		if (!*str)
+-			return 0;
+-	}
 -
--double perf_diff__compute_delta(struct hist_entry *he, struct hist_entry *pair);
--double perf_diff__compute_ratio(struct hist_entry *he, struct hist_entry *pair);
--s64 perf_diff__compute_wdiff(struct hist_entry *he, struct hist_entry *pair);
--int perf_diff__formula(struct hist_entry *he, struct hist_entry *pair,
--		       char *buf, size_t size);
--double perf_diff__period_percent(struct hist_entry *he, u64 period);
- #endif	/* __PERF_HIST_H */
+ 	option = strchr(str, ':');
+ 	if (option) {
+ 		unsigned len = option++ - str;
+@@ -378,6 +371,29 @@ static void perf_evlist__collapse_resort(struct perf_evlist *evlist)
+ 	}
+ }
+ 
++static struct hist_entry*
++get_pair_data(struct hist_entry *he, struct data__file *d)
++{
++	if (hist_entry__has_pairs(he)) {
++		struct hist_entry *pair;
++
++		list_for_each_entry(pair, &he->pairs.head, pairs.node)
++			if (pair->hists == d->hists)
++				return pair;
++	}
++
++	return NULL;
++}
++
++static struct hist_entry*
++get_pair_fmt(struct hist_entry *he, struct diff_hpp_fmt *dfmt)
++{
++	void *ptr = dfmt - dfmt->idx;
++	struct data__file *d = container_of(ptr, struct data__file, fmt);
++
++	return get_pair_data(he, d);
++}
++
+ static void hists__baseline_only(struct hists *hists)
+ {
+ 	struct rb_root *root;
+@@ -412,10 +428,12 @@ static void hists__precompute(struct hists *hists)
+ 
+ 	next = rb_first(root);
+ 	while (next != NULL) {
+-		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node_in);
+-		struct hist_entry *pair = hist_entry__next_pair(he);
++		struct hist_entry *he, *pair;
+ 
++		he   = rb_entry(next, struct hist_entry, rb_node_in);
+ 		next = rb_next(&he->rb_node_in);
++
++		pair = get_pair_data(he, &data__files[sort_compute]);
+ 		if (!pair)
+ 			continue;
+ 
+@@ -446,7 +464,7 @@ static int64_t cmp_doubles(double l, double r)
+ }
+ 
+ static int64_t
+-hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
++__hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+ 			int c)
+ {
+ 	switch (c) {
+@@ -478,6 +496,36 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+ 	return 0;
+ }
+ 
++static int64_t
++hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
++			int c)
++{
++	bool pairs_left  = hist_entry__has_pairs(left);
++	bool pairs_right = hist_entry__has_pairs(right);
++	struct hist_entry *p_right, *p_left;
++
++	if (!pairs_left && !pairs_right)
++		return 0;
++
++	if (!pairs_left || !pairs_right)
++		return pairs_left ? -1 : 1;
++
++	p_left  = get_pair_data(left,  &data__files[sort_compute]);
++	p_right = get_pair_data(right, &data__files[sort_compute]);
++
++	if (!p_left && !p_right)
++		return 0;
++
++	if (!p_left || !p_right)
++		return p_left ? -1 : 1;
++
++	/*
++	 * We have 2 entries of same kind, let's
++	 * make the data comparison.
++	 */
++	return __hist_entry__cmp_compute(p_left, p_right, c);
++}
++
+ static void insert_hist_entry_by_compute(struct rb_root *root,
+ 					 struct hist_entry *he,
+ 					 int c)
+@@ -680,6 +728,7 @@ static const struct option options[] = {
+ 		   "columns '.' is reserved."),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
++	OPT_UINTEGER('o', "order", &sort_compute, "Specify compute sorting."),
+ 	OPT_END()
+ };
+ 
+@@ -791,28 +840,11 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
+ 	};
+ }
+ 
+-static struct hist_entry *get_pair(struct hist_entry *he,
+-				   struct diff_hpp_fmt *dfmt)
+-{
+-	void *ptr = dfmt - dfmt->idx;
+-	struct data__file *d = container_of(ptr, struct data__file, fmt);
+-
+-	if (hist_entry__has_pairs(he)) {
+-		struct hist_entry *pair;
+-
+-		list_for_each_entry(pair, &he->pairs.head, pairs.node)
+-			if (pair->hists == d->hists)
+-				return pair;
+-	}
+-
+-	return NULL;
+-}
+-
+ static void
+ __hpp__entry_global(struct hist_entry *he, struct diff_hpp_fmt *dfmt,
+ 		    char *buf, size_t size)
+ {
+-	struct hist_entry *pair = get_pair(he, dfmt);
++	struct hist_entry *pair = get_pair_fmt(he, dfmt);
+ 	int idx = dfmt->idx;
+ 
+ 	/* baseline is special */
+@@ -972,6 +1004,11 @@ static int data_init(int argc, const char **argv)
+ 		defaults[1] = "perf.data.guest";
+ 	}
+ 
++	if (sort_compute >= (unsigned int) data__files_cnt) {
++		pr_err("Order option out of limit.\n");
++		return -EINVAL;
++	}
++
+ 	data__files = zalloc(sizeof(*data__files) * data__files_cnt);
+ 	if (!data__files)
+ 		return -ENOMEM;
