@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030271Ab3GSHxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:53:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35837 "EHLO
+	id S966132Ab3GSHxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:53:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35869 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030211Ab3GSHxC (ORCPT
+	with ESMTP id S965772Ab3GSHxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:53:02 -0400
-Date: Fri, 19 Jul 2013 00:52:44 -0700
+	Fri, 19 Jul 2013 03:53:20 -0400
+Date: Fri, 19 Jul 2013 00:52:53 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-ah8ms343h8xygt20iqz91kz4@git.kernel.org>
+Message-ID: <tip-c85cffa5894fad8ad7c8051ccf7dd73a3a3f92b6@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+        dsahern@gmail.com, trenn@suse.de, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+        dsahern@gmail.com, tglx@linutronix.de, trenn@suse.de,
+        cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1373556513-3000-2-git-send-email-jolsa@redhat.com>
+References: <1373556513-3000-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Move hist_entry__period_snprintf into stdio code
-Git-Commit-ID: be0e6d105d31a5818608ae243411aef5c976147a
+Subject: [tip:perf/core] perf timechart:
+  Use traceevent lib event-parse.h include
+Git-Commit-ID: c85cffa5894fad8ad7c8051ccf7dd73a3a3f92b6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,151 +34,74 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:52:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:53:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  be0e6d105d31a5818608ae243411aef5c976147a
-Gitweb:     http://git.kernel.org/tip/be0e6d105d31a5818608ae243411aef5c976147a
+Commit-ID:  c85cffa5894fad8ad7c8051ccf7dd73a3a3f92b6
+Gitweb:     http://git.kernel.org/tip/c85cffa5894fad8ad7c8051ccf7dd73a3a3f92b6
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 4 Feb 2013 16:33:19 +0100
+AuthorDate: Thu, 11 Jul 2013 17:28:29 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:54:18 -0300
+CommitDate: Mon, 15 Jul 2013 16:09:07 -0300
 
-perf tools: Move hist_entry__period_snprintf into stdio code
+perf timechart: Use traceevent lib event-parse.h include
 
-Moving hist_entry__period_snprintf function into stdio code and making
-it static, as it's no longer used anywhere else.
+Adding traceevent lib event-parse.h include to timechart command and
+removing duplicated local 'enum trace_flag_type' definition.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-ah8ms343h8xygt20iqz91kz4@git.kernel.org
+Cc: Thomas Renninger <trenn@suse.de>
+Link: http://lkml.kernel.org/r/1373556513-3000-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/hist.c       | 40 ----------------------------------------
- tools/perf/ui/stdio/hist.c | 41 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h     |  2 --
- 3 files changed, 41 insertions(+), 42 deletions(-)
+ tools/perf/builtin-timechart.c | 21 ++-------------------
+ 1 file changed, 2 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index dc900d7..0a19328 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -236,46 +236,6 @@ void perf_hpp__column_enable(unsigned col)
- 	perf_hpp__column_register(&perf_hpp__format[col]);
- }
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 4536a92..a512009 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -12,6 +12,8 @@
+  * of the License.
+  */
  
--static inline void advance_hpp(struct perf_hpp *hpp, int inc)
--{
--	hpp->buf  += inc;
--	hpp->size -= inc;
--}
--
--int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
--				bool color)
--{
--	const char *sep = symbol_conf.field_sep;
--	struct perf_hpp_fmt *fmt;
--	char *start = hpp->buf;
--	int ret;
--	bool first = true;
--
--	if (symbol_conf.exclude_other && !he->parent)
--		return 0;
--
--	perf_hpp__for_each_format(fmt) {
--		/*
--		 * If there's no field_sep, we still need
--		 * to display initial '  '.
--		 */
--		if (!sep || !first) {
--			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
--			advance_hpp(hpp, ret);
--		} else
--			first = false;
--
--		if (color && fmt->color)
--			ret = fmt->color(fmt, hpp, he);
--		else
--			ret = fmt->entry(fmt, hpp, he);
--
--		advance_hpp(hpp, ret);
--	}
--
--	return hpp->buf - start;
--}
--
- int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
- 			      struct hists *hists)
- {
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index ee70372..5b4fb33 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -308,6 +308,47 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
- 	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
- }
++#include <traceevent/event-parse.h>
++
+ #include "builtin.h"
  
-+static inline void advance_hpp(struct perf_hpp *hpp, int inc)
-+{
-+	hpp->buf  += inc;
-+	hpp->size -= inc;
-+}
-+
-+static int hist_entry__period_snprintf(struct perf_hpp *hpp,
-+				       struct hist_entry *he,
-+				       bool color)
-+{
-+	const char *sep = symbol_conf.field_sep;
-+	struct perf_hpp_fmt *fmt;
-+	char *start = hpp->buf;
-+	int ret;
-+	bool first = true;
-+
-+	if (symbol_conf.exclude_other && !he->parent)
-+		return 0;
-+
-+	perf_hpp__for_each_format(fmt) {
-+		/*
-+		 * If there's no field_sep, we still need
-+		 * to display initial '  '.
-+		 */
-+		if (!sep || !first) {
-+			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
-+			advance_hpp(hpp, ret);
-+		} else
-+			first = false;
-+
-+		if (color && fmt->color)
-+			ret = fmt->color(fmt, hpp, he);
-+		else
-+			ret = fmt->entry(fmt, hpp, he);
-+
-+		advance_hpp(hpp, ret);
-+	}
-+
-+	return hpp->buf - start;
-+}
-+
- static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 			       struct hists *hists, FILE *fp)
- {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index bfcbb11..1329b6b 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -174,8 +174,6 @@ enum {
- void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
--int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
--				bool color);
+ #include "util/util.h"
+@@ -328,25 +330,6 @@ struct wakeup_entry {
+ 	int   success;
+ };
  
- struct perf_evlist;
- 
+-/*
+- * trace_flag_type is an enumeration that holds different
+- * states when a trace occurs. These are:
+- *  IRQS_OFF            - interrupts were disabled
+- *  IRQS_NOSUPPORT      - arch does not support irqs_disabled_flags
+- *  NEED_RESCED         - reschedule is requested
+- *  HARDIRQ             - inside an interrupt handler
+- *  SOFTIRQ             - inside a softirq handler
+- */
+-enum trace_flag_type {
+-	TRACE_FLAG_IRQS_OFF		= 0x01,
+-	TRACE_FLAG_IRQS_NOSUPPORT	= 0x02,
+-	TRACE_FLAG_NEED_RESCHED		= 0x04,
+-	TRACE_FLAG_HARDIRQ		= 0x08,
+-	TRACE_FLAG_SOFTIRQ		= 0x10,
+-};
+-
+-
+-
+ struct sched_switch {
+ 	struct trace_entry te;
+ 	char prev_comm[TASK_COMM_LEN];
