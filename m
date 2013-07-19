@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965963Ab3GSFhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:37:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39896 "EHLO
+	id S965949Ab3GSFha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:37:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39899 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965679Ab3GSF0q (ORCPT
+	with ESMTP id S965681Ab3GSF0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:26:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
-        =?UTF-8?q?Axel=20K=C3=B6llhofer?= <AxelKoellhofer@web.de>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 04/72] rtlwifi: rtl8723ae: Fix typo in firmware names
-Date: Thu, 18 Jul 2013 22:25:21 -0700
-Message-Id: <20130719052600.160480733@linuxfoundation.org>
+Subject: [ 05/72] rtlwifi: rtl8192cu: Fix duplicate if test
+Date: Thu, 18 Jul 2013 22:25:22 -0700
+Message-Id: <20130719052600.228464013@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,41 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 73e088ed17c2880a963cc760a78af8a06d4a4d9d upstream.
+commit 10d0b9030a3f86e1e26c710c7580524d7787d688 upstream.
 
-The driver loads its firmware from files rtlwifi/rtl8723fw*.bin, but the
-MODULE_FIRMWARE macros refer to rtlwifi/RTL8723aefw*.bin.
+A typo causes routine rtl92cu_phy_rf6052_set_cck_txpower() to test the
+same condition twice. The problem was found using cppcheck-1.49, and the
+proper fix was verified against the pre-mac80211 version of the code.
 
+This patch was originally included as commit 1288aa4, but was accidentally
+reverted in a later patch.
+
+Reported-by: David Binderman <dcb314@hotmail.com> [original report]
+Reported-by: Andrea Morello <andrea.merello@gmail.com> [report of accidental reversion]
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Axel Köllhofer <AxelKoellhofer@web.de>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8723ae/sw.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
-@@ -251,7 +251,7 @@ static struct rtl_hal_cfg rtl8723ae_hal_
- 	.bar_id = 2,
- 	.write_readback = true,
- 	.name = "rtl8723ae_pci",
--	.fw_name = "rtlwifi/rtl8723aefw.bin",
-+	.fw_name = "rtlwifi/rtl8723fw.bin",
- 	.ops = &rtl8723ae_hal_ops,
- 	.mod_params = &rtl8723ae_mod_params,
- 	.maps[SYS_ISO_CTRL] = REG_SYS_ISO_CTRL,
-@@ -353,8 +353,8 @@ MODULE_AUTHOR("Realtek WlanFAE	<wlanfae@
- MODULE_AUTHOR("Larry Finger	<Larry.Finger@lwfinger.net>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Realtek 8723E 802.11n PCI wireless");
--MODULE_FIRMWARE("rtlwifi/rtl8723aefw.bin");
--MODULE_FIRMWARE("rtlwifi/rtl8723aefw_B.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8723fw.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8723fw_B.bin");
- 
- module_param_named(swenc, rtl8723ae_mod_params.sw_crypto, bool, 0444);
- module_param_named(debug, rtl8723ae_mod_params.debug, int, 0444);
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
+@@ -104,7 +104,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
+ 			tx_agc[RF90_PATH_A] = 0x10101010;
+ 			tx_agc[RF90_PATH_B] = 0x10101010;
+ 		} else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
+-			   TXHIGHPWRLEVEL_LEVEL1) {
++			   TXHIGHPWRLEVEL_LEVEL2) {
+ 			tx_agc[RF90_PATH_A] = 0x00000000;
+ 			tx_agc[RF90_PATH_B] = 0x00000000;
+ 		} else{
 
 
