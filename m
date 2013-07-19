@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760312Ab3GSMxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:53:42 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57568 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751401Ab3GSMxk (ORCPT
+	id S1760377Ab3GSMyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:54:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52306 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760353Ab3GSMyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:53:40 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, ak <ak@linux.intel.com>
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
-Date: Fri, 19 Jul 2013 15:03:36 +0200
-Message-ID: <3364013.pHWIsx89Eq@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1374188894.22432.354.camel@schen9-DESK>
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <51E8696A.7090406@intel.com> <1374188894.22432.354.camel@schen9-DESK>
+	Fri, 19 Jul 2013 08:54:53 -0400
+Message-ID: <51E93704.8010208@pengutronix.de>
+Date: Fri, 19 Jul 2013 14:54:28 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: Wolfgang Grandegger <wg@grandegger.com>,
+        Bernd Krumboeck <krumboeck@universalnet.at>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH] can: usb_8dev: fix urb leak on failure path in usb_8dev_start()
+References: <1374096033-28981-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1374096033-28981-1-git-send-email-khoroshilov@ispras.ru>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2DVGJUTWSQJWSHLSWPGSO"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 18, 2013 04:08:14 PM Tim Chen wrote:
-> On Fri, 2013-07-19 at 00:17 +0200, Rafael J. Wysocki wrote:
-> > On 7/18/2013 11:00 PM, Tim Chen wrote:
-> > > On Thu, 2013-07-18 at 12:47 +0900, Tetsuo Handa wrote:
-> > >> Tim Chen wrote:
-> > >>>>> Your approach is quite complicated.  I think something simpler like the
-> > >>>>> following will work:
-> > >>>> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
-> > >>>
-> > >>> The following code in crct10dif-pclmul_glue.c
-> > >>>
-> > >>> static const struct x86_cpu_id crct10dif_cpu_id[] = {
-> > >>>          X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
-> > >>>          {}
-> > >>> };
-> > >>> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
-> > >>>
-> > >>> will put the module in the device table and get the module
-> > >>> loaded, as long as the cpu support PCLMULQDQ. So we should be able
-> > >>> to benefit.
-> > >> Excuse me, how can crct10dif-pclmul.ko get loaded automatically?
-> > >> Did you test CONFIG_CRYPTO_CRCT10DIF_PCLMUL=m with below debug message?
-> > > The code:
-> > >
-> > > static const struct x86_cpu_id crct10dif_cpu_id[] = {
-> > >           X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
-> > >           {}
-> > > };
-> > > MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
-> > >
-> > > causes the following line to be added to modules.alias file:
-> > >
-> > > alias x86cpu:vendor:*:family:*:model:*:feature:*0081* crct10dif_pclmul
-> > >
-> > > This should cause udev to load the crct10dif_pclml module when cpu
-> > > support the PCLMULQDQ (feature code 0081).  I did my testing during
-> > > development on 3.10 and the module was indeed loaded.
-> > >
-> > > However, I found that the following commit under 3.11-rc1 broke
-> > > the mechanism after some bisection.
-> > >
-> > > commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
-> > > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > Date:   Fri May 3 00:26:22 2013 +0200
-> > >
-> > >      ACPI / processor: Use common hotplug infrastructure
-> > >      
-> > >      Split the ACPI processor driver into two parts, one that is
-> > >      non-modular, resides in the ACPI core and handles the enumeration
-> > >      and hotplug of processors and one that implements the rest of the
-> > >      existing processor driver functionality.
-> > >      
-> > > Rafael, can you check and see if this can be fixed so those optimized
-> > > crypto modules for Intel cpu that support them can be loaded?
-> > 
-> > I think this is an ordering issue between udev startup and the time when 
-> > devices are registered.
-> 
-> Something that can be fixed?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2DVGJUTWSQJWSHLSWPGSO
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I'm sure it can be fixes, but I'm not sure whether it's a udev bug or real
-breakage in the kernel yet.  I need to figure out that part.
+On 07/17/2013 11:20 PM, Alexey Khoroshilov wrote:
+> If usb_8dev_start() fails to submit urb,
+> it unanchors the urb but forgets to free it.
+>=20
+> Found by Linux Driver Verification project (linuxtesting.org).
+>=20
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-> > I wonder what happens if you put those modules into the initramfs image?
-> 
-> Under initramfs image's /lib/modules/3.11.0-rc1/kernel/arch/x86/crypto
-> directory?  Any files in /lib/modules/3.11.0-rc1/modules.* need to be
-> modified?
+Thanks, added to can/fixes-for-3.11
 
-No, you shouldn't need to modify any files, just please try to make your
-mkinitrd (or whatever else you use) put the modules you'd like to be
-autoloaded into the image.
+Marc
 
-That's only something I'd like to know at this point, though, not a
-"workaround" or something like that.
-
-Thanks,
-Rafael
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+------enig2DVGJUTWSQJWSHLSWPGSO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlHpNwUACgkQjTAFq1RaXHMPEQCfS4rpvy1qOf+x5FkrJl11uN/3
+1SMAoIwF5db06bhxA3jRcISZDjnQq+yg
+=34Hf
+-----END PGP SIGNATURE-----
+
+------enig2DVGJUTWSQJWSHLSWPGSO--
