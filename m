@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760271Ab3GSNfv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:35:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56262 "EHLO mx1.redhat.com"
+	id S1760183Ab3GSNit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:38:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48346 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759431Ab3GSNfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:35:50 -0400
-Date: Fri, 19 Jul 2013 09:35:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v7 0/5] kdump: Allow ELF header creation in new kernel
-Message-ID: <20130719133518.GB19997@redhat.com>
-References: <OF6010D9F0.5A45F2CF-ONC1257BAB.002B1F3E-C1257BAB.002B2812@de.ibm.com>
- <20130717180049.3b9c6ec8@holzheu>
- <20130717214207.GB27633@redhat.com>
- <20130718124004.098b85f4@holzheu>
- <20130718124754.7453756e@mschwide>
- <20130718133541.GB785@redhat.com>
- <20130719085020.28daef68@mschwide>
+	id S1752517Ab3GSNis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:38:48 -0400
+Date: Fri, 19 Jul 2013 15:33:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
+        Jiri Olsa <jolsa@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing
+	event_file/call in inode->i_private
+Message-ID: <20130719133327.GA21278@redhat.com>
+References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com> <20130717145148.GB7358@redhat.com> <51E750F4.5070200@hitachi.com> <20130718145137.GA6014@redhat.com> <51E8CCC0.7030404@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130719085020.28daef68@mschwide>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51E8CCC0.7030404@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 08:50:20AM +0200, Martin Schwidefsky wrote:
-> On Thu, 18 Jul 2013 09:35:41 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > On Thu, Jul 18, 2013 at 12:47:54PM +0200, Martin Schwidefsky wrote:
-> > > On Thu, 18 Jul 2013 12:40:04 +0200
-> > > Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > On Wed, 17 Jul 2013 17:42:07 -0400
-> > > > Vivek Goyal <vgoyal@redhat.com> wrote:
-> > > > > On Wed, Jul 17, 2013 at 06:00:49PM +0200, Michael Holzheu wrote:
-> > > > 
-> > > > [snip]
-> > > > 
-> > > > > > But this is all additional effort now and would not be necessary if we
-> > > > > > integrate this patch series in 3.11.
-> > > > > > 
-> > > > > > Perhaps we should let Andrew decide here.
-> > > > > 
-> > > > > Hi Michael,
-> > > > > 
-> > > > > Given the fact that andrew too prefers a fix to get s390 working at this
-> > > > > stage can we modify s390 copy_from_oldmem() to be able to copy to 
-> > > > > vmalloc() memory area.
-> > > > > 
-> > > > > For mmap(), let us disable it on s390. And rest of the cleanups w.r.t
-> > > > > ELF header swap etc, let us now target that for 3.12.
-> > > > > 
-> > > > > Sounds reasonable?
-> > > > 
-> > > > Hi Vivek,
-> > > > 
-> > > > Ok this is not our preferred solution but we can't expect that life is
-> > > > always easy ;-)
-> > > > 
-> > > > Our s390 kernel maintainer Martin Schwidefsky agreed to send the following
-> > > > two patches upstream for 3.11:
-> > > > 
-> > > >  * s390/kdump: Disable mmap for s390
-> > > >  * s390/kdump: Allow copy_oldmem_page() copy to virtual memory
-> > > 
-> > > Patches have been added to 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git features
-> > > 
-> > > They will go upstream with my next pull request.
-> > > 
-> > 
-> > If everything related to crash dump is going through Andrew, wouldn't
-> > it make sense that even these fixes go through him?
-> > 
-> > https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=5a74953ff56aa870d6913ef4d81934f5c620c59d
-> > 
-> > https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=191a2fa0a8d2bbb64c98f9b1976fcb37ee5eae6b
-> 
-> Most of the architecture specific kdump patches for s390 have gone through me,
-> and these two fall into that category. If you insist we can route them over
-> Andrew, it just seems easier to me via the s390 tree.
-> 
+On 07/19, Masami Hiramatsu wrote:
+>
+> (2013/07/18 23:51), Oleg Nesterov wrote:
+> > It removes trace_array_get/put from tracing_open_generic_file() and
+> > tracing_release_generic_file(). This assumes that "call->flags++" is
+> > enough, but it is not.
+>
+> No, it replaces trace_array_get/put with ftrace_event_file_get/put
+> which calls trace_array_get/put inside.
 
-In this case one patch is modifying proc/vmcore.c and that's not arch
-specific change only.
+Ah, I didn't notice your patch adds "file->tr->ref++" into
+ftrace_event_file_get...
 
-Secondly, in this specific instance, these changes are in the context
-of mmap() related changes which just were pushed. I find it easier
-if fixes flow through same channel where previous big set of patches
-flowed through.
+So I was wrong in any case, thanks for correcting me.
 
-Hence, I was expecting that Michael will route these fixes through
-Andrew. But I am not too particular about it, so go ahead and
-push it to Linus.
+But,
 
-Thanks
-Vivek
+> (Just one point, previous ftrace_event_file_get has a racy point
+> when it does tr->ref++, it should be fixed.)
+
+Not sure what do you mean, but unless I missed something again this
+"tr->ref++" above still looks racy. instance_delete() checks tr->ref
+first, then it takes event_mutex and removes/kfrees event_files.
+
+But this doesn't really matter even if I am right, surely this can
+be fixed. My only point, imho this is more complex than necessary.
+
+In particular,
+
+> > IOW, I believe that either .open() should do trace_array_get(), or
+> > __trace_remove_event_dirs() needs another for-each-file loop which
+> > checks file->call->flags & TRACE_EVENT_FL_REF_MASK.
+>
+> Agreed :)
+
+Yes ;) and this makes the ref-counting even more complex, we use
+different methods to avoid the races with rmdir and event_remove().
+
+> > The same bugs which Steven's 1/4 tries to solve ;)
+>
+> OK, let me confirm that, would you mean we still need 2/4 - 4/4?
+
+Yes, yes.
+
+Oleg.
+
