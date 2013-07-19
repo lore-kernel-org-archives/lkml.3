@@ -1,59 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3GSENP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 00:13:15 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:51803 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab3GSENN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 00:13:13 -0400
-Message-ID: <51E8BCD0.8050101@ozlabs.ru>
-Date: Fri, 19 Jul 2013 14:13:04 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 00/10 v6] KVM: PPC: IOMMU in-kernel handling
-References: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>
-In-Reply-To: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset=KOI8-R
+	id S1752611Ab3GSEOP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 00:14:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56974 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751131Ab3GSEOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 00:14:14 -0400
+Date: Fri, 19 Jul 2013 00:13:44 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Message-ID: <1374207224-agckpfwt-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <CAJd=RBB8D0YgEPwRKTB5+OXMEX9kfpFM5gXdWekrjfQ66EXrgA@mail.gmail.com>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1374183272-10153-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <CAJd=RBB8D0YgEPwRKTB5+OXMEX9kfpFM5gXdWekrjfQ66EXrgA@mail.gmail.com>
+Subject: Re: [PATCH 3/8] migrate: add hugepage migration code to
+ migrate_pages()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <CAJd=RBB8D0YgEPwRKTB5+OXMEX9kfpFM5gXdWekrjfQ66EXrgA@mail.gmail.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2013 10:53 AM, Alexey Kardashevskiy wrote:
-> The changes are:
-> 1. rebased on v3.11-rc1 so the capability numbers changed again
-> 2. fixed multiple comments from maintainers
-> 3. "KVM: PPC: Add support for IOMMU in-kernel handling" is split into
-> 2 patches, the new one is "powerpc/iommu: rework to support realmode".
-> 4. IOMMU_API is now always enabled for KVM_BOOK3S_64.
+On Fri, Jul 19, 2013 at 11:05:37AM +0800, Hillf Danton wrote:
+> On Fri, Jul 19, 2013 at 5:34 AM, Naoya Horiguchi
+> <n-horiguchi@ah.jp.nec.com> wrote:
+> > This patch extends check_range() to handle vma with VM_HUGETLB set.
+> > We will be able to migrate hugepage with migrate_pages(2) after
+> > applying the enablement patch which comes later in this series.
+> >
+> > Note that for larger hugepages (covered by pud entries, 1GB for
+> > x86_64 for example), we simply skip it now.
+> >
+> > Note that using pmd_huge/pud_huge assumes that hugepages are pointed to
+> > by pmd/pud. This is not true in some architectures implementing hugepage
+> > with other mechanisms like ia64, but it's OK because pmd_huge/pud_huge
+> > simply return 0 in such arch and page walker simply ignores such hugepages.
+> >
+> > ChangeLog v3:
+> >  - revert introducing migrate_movable_pages
+> >  - use isolate_huge_page
+> >
+> > ChangeLog v2:
+> >  - remove unnecessary extern
+> >  - fix page table lock in check_hugetlb_pmd_range
+> >  - updated description and renamed patch title
+> >
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  mm/mempolicy.c | 39 ++++++++++++++++++++++++++++++++++-----
+> >  1 file changed, 34 insertions(+), 5 deletions(-)
+> >
+> > diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
+> > index 7431001..f3b65c0 100644
+> > --- v3.11-rc1.orig/mm/mempolicy.c
+> > +++ v3.11-rc1/mm/mempolicy.c
+> > @@ -512,6 +512,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+> >         return addr != end;
+> >  }
+> >
+> > +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
+> > +               const nodemask_t *nodes, unsigned long flags,
+> > +                                   void *private)
+> > +{
+> > +#ifdef CONFIG_HUGETLB_PAGE
+> > +       int nid;
+> > +       struct page *page;
+> > +
+> > +       spin_lock(&vma->vm_mm->page_table_lock);
+> > +       page = pte_page(huge_ptep_get((pte_t *)pmd));
+> > +       nid = page_to_nid(page);
 > 
-> MOre details in the individual patch comments.
-> 
-> Depends on "hashtable: add hash_for_each_possible_rcu_notrace()",
-> posted a while ago.
-> 
-> 
-> Alexey Kardashevskiy (10):
->   KVM: PPC: reserve a capability number for multitce support
->   KVM: PPC: reserve a capability and ioctl numbers for realmode VFIO
+> Can you please add a brief comment for the if block?
 
+Hmm, honestly saying, I just copied this complex if-condition from
+check_pte_range() and opened migrate_page_add(), and refactored.
+But this refactoring might not be good considering readability.
+I will factorize duplicated logic into a single function and
+add some comment to make it more readable.
 
+Thanks,
+Naoya
 
-Alex, could you please pull these 2 patches or tell what is wrong with
-them? Having them sooner in the kernel would let me ask for a headers
-update for QEMU and then I would try pushing miltiple TCE and VFIO support
-in QEMU. Thanks.
-
-
-
-
--- 
-Alexey
+> > +       if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
+> > +           && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
+> > +               || flags & MPOL_MF_MOVE_ALL))
+> > +               isolate_huge_page(page, private);
+> > +       spin_unlock(&vma->vm_mm->page_table_lock);
+> > +#else
+> > +       BUG();
+> > +#endif
+> > +}
+> > +
+> >  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+> >                 unsigned long addr, unsigned long end,
+> >                 const nodemask_t *nodes, unsigned long flags,
