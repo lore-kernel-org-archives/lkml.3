@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966072Ab3GSHvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:51:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35726 "EHLO
+	id S1030205Ab3GSHvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:51:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35738 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965772Ab3GSHvb (ORCPT
+	with ESMTP id S965772Ab3GSHvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:51:31 -0400
-Date: Fri, 19 Jul 2013 00:51:10 -0700
+	Fri, 19 Jul 2013 03:51:40 -0400
+Date: Fri, 19 Jul 2013 00:51:19 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-981q265sf6h05zuu8fnvw842@git.kernel.org>
+Message-ID: <tip-cklmt2o4j87i9viz900245ae@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
@@ -20,8 +20,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf diff:
-  Introducing diff_data object to hold files
-Git-Commit-ID: ec308426ea743469ec6c2b0e06e20b3671546e8f
+  Switching the base hists to be pairs head
+Git-Commit-ID: 9af303e22a317d1cc6f440e08f72428830708b37
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,22 +30,27 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:51:16 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:51:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ec308426ea743469ec6c2b0e06e20b3671546e8f
-Gitweb:     http://git.kernel.org/tip/ec308426ea743469ec6c2b0e06e20b3671546e8f
+Commit-ID:  9af303e22a317d1cc6f440e08f72428830708b37
+Gitweb:     http://git.kernel.org/tip/9af303e22a317d1cc6f440e08f72428830708b37
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 25 Mar 2013 00:02:01 +0100
+AuthorDate: Sat, 1 Dec 2012 21:15:40 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:54:00 -0300
+CommitDate: Fri, 12 Jul 2013 13:54:02 -0300
 
-perf diff: Introducing diff_data object to hold files
+perf diff: Switching the base hists to be pairs head
 
-Introducing struct diff_data to hold data file specifics.  It will be
-handy when dealing with more than 2 data files.
+Making the baseline hists to act as a pairs head.
+
+So far we don't care which hists act as a pairs head, because we have
+only 2 files to deal with and any of them is suitable to do the job.
+
+But if we want to process more files, we need to pick up one hists to
+act as pairs head, and the baseline hists is the most suitable.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Reviewed-by: Namhyung Kim <namhyung@kernel.org>
@@ -54,204 +59,178 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-981q265sf6h05zuu8fnvw842@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-cklmt2o4j87i9viz900245ae@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 143 ++++++++++++++++++++++++++++++----------------
- 1 file changed, 95 insertions(+), 48 deletions(-)
+ tools/perf/builtin-diff.c | 60 +++++++++++++++++++++++------------------------
+ tools/perf/ui/hist.c      | 25 ++++----------------
+ 2 files changed, 35 insertions(+), 50 deletions(-)
 
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 0aac5f3..015ca2d 100644
+index 015ca2d..0cfe99e 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -19,10 +19,24 @@
+@@ -167,34 +167,34 @@ double perf_diff__period_percent(struct hist_entry *he, u64 period)
  
- #include <stdlib.h>
+ double perf_diff__compute_delta(struct hist_entry *he, struct hist_entry *pair)
+ {
+-	double new_percent = perf_diff__period_percent(he, he->stat.period);
+-	double old_percent = perf_diff__period_percent(pair, pair->stat.period);
++	double old_percent = perf_diff__period_percent(he, he->stat.period);
++	double new_percent = perf_diff__period_percent(pair, pair->stat.period);
  
--static char const *input_old = "perf.data.old",
--		  *input_new = "perf.data";
--static char	  diff__default_sort_order[] = "dso,symbol";
--static bool  force;
-+struct data__file {
-+	struct perf_session	*session;
-+	const char		*file;
-+	int			 idx;
-+};
-+
-+static struct data__file *data__files;
-+static int data__files_cnt;
-+
-+#define data__for_each_file_start(i, d, s)	\
-+	for (i = s, d = &data__files[s];	\
-+	     i < data__files_cnt;		\
-+	     i++, d = &data__files[i])
-+
-+#define data__for_each_file(i, d) data__for_each_file_start(i, d, 0)
-+
-+static char diff__default_sort_order[] = "dso,symbol";
-+static bool force;
- static bool show_period;
- static bool show_formula;
- static bool show_baseline_only;
-@@ -467,56 +481,62 @@ static void hists__process(struct hists *old, struct hists *new)
- 	hists__fprintf(new, true, 0, 0, 0, stdout);
+-	he->diff.period_ratio_delta = new_percent - old_percent;
+-	he->diff.computed = true;
+-	return he->diff.period_ratio_delta;
++	pair->diff.period_ratio_delta = new_percent - old_percent;
++	pair->diff.computed = true;
++	return pair->diff.period_ratio_delta;
  }
  
--static int __cmd_diff(void)
-+static void data_process(void)
+ double perf_diff__compute_ratio(struct hist_entry *he, struct hist_entry *pair)
  {
--	int ret, i;
--#define older (session[0])
--#define newer (session[1])
--	struct perf_session *session[2];
--	struct perf_evlist *evlist_new, *evlist_old;
--	struct perf_evsel *evsel;
-+	struct perf_evlist *evlist_old = data__files[0].session->evlist;
-+	struct perf_evlist *evlist_new = data__files[1].session->evlist;
-+	struct perf_evsel *evsel_old;
- 	bool first = true;
+-	double new_period = he->stat.period;
+-	double old_period = pair->stat.period;
++	double old_period = he->stat.period ?: 1;
++	double new_period = pair->stat.period;
  
--	older = perf_session__new(input_old, O_RDONLY, force, false,
--				  &tool);
--	newer = perf_session__new(input_new, O_RDONLY, force, false,
--				  &tool);
--	if (session[0] == NULL || session[1] == NULL)
--		return -ENOMEM;
-+	list_for_each_entry(evsel_old, &evlist_old->entries, node) {
-+		struct perf_evsel *evsel_new;
+-	he->diff.computed = true;
+-	he->diff.period_ratio = new_period / old_period;
+-	return he->diff.period_ratio;
++	pair->diff.computed = true;
++	pair->diff.period_ratio = new_period / old_period;
++	return pair->diff.period_ratio;
+ }
  
--	for (i = 0; i < 2; ++i) {
--		ret = perf_session__process_events(session[i], &tool);
--		if (ret)
--			goto out_delete;
+ s64 perf_diff__compute_wdiff(struct hist_entry *he, struct hist_entry *pair)
+ {
+-	u64 new_period = he->stat.period;
+-	u64 old_period = pair->stat.period;
++	u64 old_period = he->stat.period;
++	u64 new_period = pair->stat.period;
+ 
+-	he->diff.computed = true;
+-	he->diff.wdiff = new_period * compute_wdiff_w2 -
+-			 old_period * compute_wdiff_w1;
++	pair->diff.computed = true;
++	pair->diff.wdiff = new_period * compute_wdiff_w2 -
++			   old_period * compute_wdiff_w1;
+ 
+-	return he->diff.wdiff;
++	return pair->diff.wdiff;
+ }
+ 
+ static int formula_delta(struct hist_entry *he, struct hist_entry *pair,
+@@ -203,15 +203,15 @@ static int formula_delta(struct hist_entry *he, struct hist_entry *pair,
+ 	return scnprintf(buf, size,
+ 			 "(%" PRIu64 " * 100 / %" PRIu64 ") - "
+ 			 "(%" PRIu64 " * 100 / %" PRIu64 ")",
+-			  he->stat.period, he->hists->stats.total_period,
+-			  pair->stat.period, pair->hists->stats.total_period);
++			  pair->stat.period, pair->hists->stats.total_period,
++			  he->stat.period, he->hists->stats.total_period);
+ }
+ 
+ static int formula_ratio(struct hist_entry *he, struct hist_entry *pair,
+ 			 char *buf, size_t size)
+ {
+-	double new_period = he->stat.period;
+-	double old_period = pair->stat.period;
++	double old_period = he->stat.period;
++	double new_period = pair->stat.period;
+ 
+ 	return scnprintf(buf, size, "%.0F / %.0F", new_period, old_period);
+ }
+@@ -219,8 +219,8 @@ static int formula_ratio(struct hist_entry *he, struct hist_entry *pair,
+ static int formula_wdiff(struct hist_entry *he, struct hist_entry *pair,
+ 			 char *buf, size_t size)
+ {
+-	u64 new_period = he->stat.period;
+-	u64 old_period = pair->stat.period;
++	u64 old_period = he->stat.period;
++	u64 new_period = pair->stat.period;
+ 
+ 	return scnprintf(buf, size,
+ 		  "(%" PRIu64 " * " "%" PRId64 ") - (%" PRIu64 " * " "%" PRId64 ")",
+@@ -462,23 +462,23 @@ static void hists__compute_resort(struct hists *hists)
+ 	}
+ }
+ 
+-static void hists__process(struct hists *old, struct hists *new)
++static void hists__process(struct hists *base, struct hists *new)
+ {
+-	hists__match(new, old);
++	hists__match(base, new);
+ 
+ 	if (show_baseline_only)
+-		hists__baseline_only(new);
++		hists__baseline_only(base);
+ 	else
+-		hists__link(new, old);
++		hists__link(base, new);
+ 
+ 	if (sort_compute) {
+-		hists__precompute(new);
+-		hists__compute_resort(new);
++		hists__precompute(base);
++		hists__compute_resort(base);
+ 	} else {
+-		hists__output_resort(new);
++		hists__output_resort(base);
+ 	}
+ 
+-	hists__fprintf(new, true, 0, 0, 0, stdout);
++	hists__fprintf(base, true, 0, 0, 0, stdout);
+ }
+ 
+ static void data_process(void)
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index f45c97f..02313a9 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -178,18 +178,8 @@ static int hpp__width_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+ 
+ static double baseline_percent(struct hist_entry *he)
+ {
+-	struct hist_entry *pair = hist_entry__next_pair(he);
+-	struct hists *pair_hists = pair ? pair->hists : NULL;
+-	double percent = 0.0;
+-
+-	if (pair) {
+-		u64 total_period = pair_hists->stats.total_period;
+-		u64 base_period  = pair->stat.period;
+-
+-		percent = 100.0 * base_period / total_period;
 -	}
-+		evsel_new = evsel_match(evsel_old, evlist_new);
-+		if (!evsel_new)
-+			continue;
- 
--	evlist_old = older->evlist;
--	evlist_new = newer->evlist;
-+		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
-+			perf_evsel__name(evsel_old));
- 
--	perf_evlist__collapse_resort(evlist_old);
--	perf_evlist__collapse_resort(evlist_new);
-+		first = false;
- 
--	list_for_each_entry(evsel, &evlist_new->entries, node) {
--		struct perf_evsel *evsel_old;
-+		hists__process(&evsel_old->hists, &evsel_new->hists);
-+	}
-+}
- 
--		evsel_old = evsel_match(evsel, evlist_old);
--		if (!evsel_old)
--			continue;
-+static int __cmd_diff(void)
-+{
-+	struct data__file *d;
-+	int ret = -EINVAL, i;
-+
-+	data__for_each_file(i, d) {
-+		d->session = perf_session__new(d->file, O_RDONLY, force,
-+					       false, &tool);
-+		if (!d->session) {
-+			pr_err("Failed to open %s\n", d->file);
-+			ret = -ENOMEM;
-+			goto out_delete;
-+		}
- 
--		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
--			perf_evsel__name(evsel));
-+		ret = perf_session__process_events(d->session, &tool);
-+		if (ret) {
-+			pr_err("Failed to process %s\n", d->file);
-+			goto out_delete;
-+		}
- 
--		first = false;
-+		perf_evlist__collapse_resort(d->session->evlist);
-+	}
-+
-+	data_process();
- 
--		hists__process(&evsel_old->hists, &evsel->hists);
-+ out_delete:
-+	data__for_each_file(i, d) {
-+		if (d->session)
-+			perf_session__delete(d->session);
- 	}
- 
--out_delete:
--	for (i = 0; i < 2; ++i)
--		perf_session__delete(session[i]);
-+	free(data__files);
- 	return ret;
--#undef older
--#undef newer
+-
+-	return percent;
++	struct hists *hists = he->hists;
++	return 100.0 * he->stat.period / hists->stats.total_period;
  }
  
- static const char * const diff_usage[] = {
-@@ -589,27 +609,54 @@ static void ui_init(void)
- 	}
- }
- 
--int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
-+static int data_init(int argc, const char **argv)
+ static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
+@@ -197,10 +187,8 @@ static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
  {
--	sort_order = diff__default_sort_order;
--	argc = parse_options(argc, argv, options, diff_usage, 0);
-+	struct data__file *d;
-+	static const char *defaults[] = {
-+		"perf.data.old",
-+		"perf.data",
-+	};
-+	int i;
-+
-+	data__files_cnt = 2;
-+
- 	if (argc) {
- 		if (argc > 2)
- 			usage_with_options(diff_usage, options);
- 		if (argc == 2) {
--			input_old = argv[0];
--			input_new = argv[1];
-+			defaults[0] = argv[0];
-+			defaults[1] = argv[1];
- 		} else
--			input_new = argv[0];
-+			defaults[1] = argv[0];
- 	} else if (symbol_conf.default_guest_vmlinux_name ||
- 		   symbol_conf.default_guest_kallsyms) {
--		input_old = "perf.data.host";
--		input_new = "perf.data.guest";
-+		defaults[0] = "perf.data.host";
-+		defaults[1] = "perf.data.guest";
- 	}
+ 	double percent = baseline_percent(he);
  
-+	data__files = zalloc(sizeof(*data__files) * data__files_cnt);
-+	if (!data__files)
-+		return -ENOMEM;
-+
-+	data__for_each_file(i, d) {
-+		d->file = defaults[i];
-+		d->idx  = i;
-+	}
-+
-+	return 0;
-+}
-+
-+int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	sort_order = diff__default_sort_order;
-+	argc = parse_options(argc, argv, options, diff_usage, 0);
-+
- 	if (symbol__init() < 0)
- 		return -1;
+-	if (hist_entry__has_pairs(he) || symbol_conf.field_sep)
+-		return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
+-	else
+-		return scnprintf(hpp->buf, hpp->size, "        ");
++	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%",
++				      percent);
+ }
  
-+	if (data_init(argc, argv) < 0)
-+		return -1;
-+
- 	ui_init();
+ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+@@ -209,10 +197,7 @@ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
+ 	double percent = baseline_percent(he);
+ 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
  
- 	if (setup_sorting() < 0)
+-	if (hist_entry__has_pairs(he) || symbol_conf.field_sep)
+-		return scnprintf(hpp->buf, hpp->size, fmt, percent);
+-	else
+-		return scnprintf(hpp->buf, hpp->size, "            ");
++	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_period_baseline(struct perf_hpp_fmt *_fmt __maybe_unused,
