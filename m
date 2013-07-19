@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966045Ab3GSFvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:51:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39356 "EHLO
+	id S965190Ab3GSFWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:22:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965274Ab3GSFWJ (ORCPT
+	with ESMTP id S964940Ab3GSFV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:09 -0400
+	Fri, 19 Jul 2013 01:21:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Clements <paul.clements@steeleye.com>,
-        Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 23/38] nbd: correct disconnect behavior
-Date: Thu, 18 Jul 2013 22:21:39 -0700
-Message-Id: <20130719052049.466159804@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-pci@vger.kernel.org
+Subject: [ 16/38] xen/pcifront: Deal with toolstack missing XenbusStateClosing state.
+Date: Thu, 18 Jul 2013 22:21:32 -0700
+Message-Id: <20130719052048.995477903@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -29,73 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Clements <paul.clements@steeleye.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit c378f70adbc1bbecd9e6db145019f14b2f688c7c upstream.
+commit 098b1aeaf4d6149953b8f1f8d55c21d85536fbff upstream.
 
-Currently, when a disconnect is requested by the user (via NBD_DISCONNECT
-ioctl) the return from NBD_DO_IT is undefined (it is usually one of
-several error codes).  This means that nbd-client does not know if a
-manual disconnect was performed or whether a network error occurred.
-Because of this, nbd-client's persist mode (which tries to reconnect after
-error, but not after manual disconnect) does not always work correctly.
+There are two tool-stack that can instruct the Xen PCI frontend
+and backend to change states: 'xm' (Python code with a daemon),
+and 'xl' (C library - does not keep state changes).
 
-This change fixes this by causing NBD_DO_IT to always return 0 if a user
-requests a disconnect.  This means that nbd-client can correctly either
-persist the connection (if an error occurred) or disconnect (if the user
-requested it).
+With the 'xm', the path to disconnect a single PCI device (xm pci-detach
+<guest> <BDF>) is:
 
-Signed-off-by: Paul Clements <paul.clements@steeleye.com>
-Acked-by: Rob Landley <rob@landley.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)->5(Closing*).
+
+The * is for states that the tool-stack sets. For 'xl', it is similar:
+
+4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
+
+Both of them also tear down the XenBus structure, so the backend
+state ends up going in the 3(Initialised) and calls pcifront_xenbus_remove.
+
+When a PCI device is plugged back in (xm pci-attach <guest> <BDF>)
+both of them follow the same pattern:
+
+2(InitWait*), 3(Initialized*), 4(Connected*)->4(Connected).
+
+[xen-pcifront ignores the 2,3 state changes and only acts when
+4 (Connected) has been reached]
+
+Note that this is for a _single_ PCI device. If there were two
+PCI devices and only one was disconnected 'xm' would show the same
+state changes.
+
+The problem is that git commit 3d925320e9e2de162bd138bf97816bda8c3f71be
+("xen/pcifront: Use Xen-SWIOTLB when initting if required") introduced
+a mechanism to initialize the SWIOTLB when the Xen PCI front moves to
+Connected state. It also had some aggressive seatbelt code check that
+would warn the user if one tried to change to Connected state without
+hitting first the Closing state:
+
+ pcifront pci-0: PCI frontend already installed!
+
+However, that code can be relaxed and we can continue on working
+even if the frontend is instructed to be the 'Connected' state with
+no devices and then gets tickled to be in 'Connected' state again.
+
+In other words, this 4(Connected)->5(Closing)->4(Connected) state
+was expected, while 4(Connected)->.... anything but 5(Closing)->4(Connected)
+was not. This patch removes that aggressive check and allows
+Xen pcifront to work with the 'xl' toolstack (for one or more
+PCI devices) and with 'xm' toolstack (for more than two PCI
+devices).
+
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org
+[v2: Added in the description about two PCI devices]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/nbd.c |    7 ++++++-
- include/linux/nbd.h |    1 +
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/pci/xen-pcifront.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -623,8 +623,10 @@ static int __nbd_ioctl(struct block_devi
- 		if (!nbd->sock)
- 			return -EINVAL;
- 
-+		nbd->disconnect = 1;
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -678,10 +678,9 @@ static int pcifront_connect_and_init_dma
+ 	if (!pcifront_dev) {
+ 		dev_info(&pdev->xdev->dev, "Installing PCI frontend\n");
+ 		pcifront_dev = pdev;
+-	} else {
+-		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
++	} else
+ 		err = -EEXIST;
+-	}
 +
- 		nbd_send_req(nbd, &sreq);
--                return 0;
-+		return 0;
- 	}
-  
- 	case NBD_CLEAR_SOCK: {
-@@ -654,6 +656,7 @@ static int __nbd_ioctl(struct block_devi
- 				nbd->sock = SOCKET_I(inode);
- 				if (max_part > 0)
- 					bdev->bd_invalidated = 1;
-+				nbd->disconnect = 0; /* we're connected now */
- 				return 0;
- 			} else {
- 				fput(file);
-@@ -743,6 +746,8 @@ static int __nbd_ioctl(struct block_devi
- 		set_capacity(nbd->disk, 0);
- 		if (max_part > 0)
- 			ioctl_by_bdev(bdev, BLKRRPART, 0);
-+		if (nbd->disconnect) /* user requested, ignore socket errors */
-+			return 0;
- 		return nbd->harderror;
- 	}
+ 	spin_unlock(&pcifront_dev_lock);
  
---- a/include/linux/nbd.h
-+++ b/include/linux/nbd.h
-@@ -41,6 +41,7 @@ struct nbd_device {
- 	u64 bytesize;
- 	pid_t pid; /* pid of nbd-client, if attached */
- 	int xmit_timeout;
-+	int disconnect; /* a disconnect has been requested by user */
- };
+ 	if (!err && !swiotlb_nr_tbl()) {
+@@ -848,7 +847,7 @@ static int pcifront_try_connect(struct p
+ 		goto out;
  
- #endif
+ 	err = pcifront_connect_and_init_dma(pdev);
+-	if (err) {
++	if (err && err != -EEXIST) {
+ 		xenbus_dev_fatal(pdev->xdev, err,
+ 				 "Error setting up PCI Frontend");
+ 		goto out;
 
 
