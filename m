@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935246Ab3GSCca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:32:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37747 "EHLO
+	id S935077Ab3GSCc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:32:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935011Ab3GSCXp (ORCPT
+	with ESMTP id S935015Ab3GSCXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 22:23:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [ 16/18] ext4: fix overflow when counting used blocks on 32-bit architectures
-Date: Thu, 18 Jul 2013 19:23:31 -0700
-Message-Id: <20130719021050.070524340@linuxfoundation.org>
+        Jed Davis <jld@mozilla.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 17/18] ARM: 7765/1: perf: Record the user-mode PC in the call chain.
+Date: Thu, 18 Jul 2013 19:23:32 -0700
+Message-Id: <20130719021050.137138539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -26,43 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jed Davis <jld@mozilla.com>
 
-commit 8af8eecc1331dbf5e8c662022272cf667e213da5 upstream.
+commit c5f927a6f62196226915f12194c9d0df4e2210d7 upstream.
 
-The arithmetics adding delalloc blocks to the number of used blocks in
-ext4_getattr() can easily overflow on 32-bit archs as we first multiply
-number of blocks by blocksize and then divide back by 512. Make the
-arithmetics more clever and also use proper type (unsigned long long
-instead of unsigned long).
+With this change, we no longer lose the innermost entry in the user-mode
+part of the call chain.  See also the x86 port, which includes the ip.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+It's possible to partially work around this problem by post-processing
+the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
+wasn't in the kernel when the sample was taken.
+
+Signed-off-by: Jed Davis <jld@mozilla.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/perf_event.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5481,7 +5481,7 @@ int ext4_getattr(struct vfsmount *mnt, s
- 		 struct kstat *stat)
- {
- 	struct inode *inode;
--	unsigned long delalloc_blocks;
-+	unsigned long long delalloc_blocks;
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -741,6 +741,7 @@ perf_callchain_user(struct perf_callchai
+ 	struct frame_tail __user *tail;
  
- 	inode = dentry->d_inode;
- 	generic_fillattr(inode, stat);
-@@ -5498,7 +5498,7 @@ int ext4_getattr(struct vfsmount *mnt, s
- 	 */
- 	delalloc_blocks = EXT4_I(inode)->i_reserved_data_blocks;
  
--	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
-+	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
- 	return 0;
- }
++	perf_callchain_store(entry, regs->ARM_pc);
+ 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
  
+ 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
 
 
