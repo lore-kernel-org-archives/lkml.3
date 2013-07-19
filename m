@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965780Ab3GSFf2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:35:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39947 "EHLO
+	id S965677Ab3GSF0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:26:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39906 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965720Ab3GSF04 (ORCPT
+	with ESMTP id S965490Ab3GSF0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:56 -0400
+	Fri, 19 Jul 2013 01:26:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Schmidt <list.btrfs@jan-o-sch.net>,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 51/72] Btrfs: only do the tree_mod_log_free_eb if this is our last ref
-Date: Thu, 18 Jul 2013 22:26:08 -0700
-Message-Id: <20130719052603.346629617@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 07/72] jbd2: fix theoretical race in jbd2__journal_restart
+Date: Thu, 18 Jul 2013 22:25:24 -0700
+Message-Id: <20130719052600.363125882@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,37 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 7fb7d76f96bfcbea25007d190ba828b18e13d29d upstream.
+commit 39c04153fda8c32e85b51c96eb5511a326ad7609 upstream.
 
-There is another bug in the tree mod log stuff in that we're calling
-tree_mod_log_free_eb every single time a block is cow'ed.  The problem with this
-is that if this block is shared by multiple snapshots we will call this multiple
-times per block, so if we go to rewind the mod log for this block we'll BUG_ON()
-in __tree_mod_log_rewind because we try to rewind a free twice.  We only want to
-call tree_mod_log_free_eb if we are actually freeing the block.  With this patch
-I no longer hit the panic in __tree_mod_log_rewind.  Thanks,
+Once we decrement transaction->t_updates, if this is the last handle
+holding the transaction from closing, and once we release the
+t_handle_lock spinlock, it's possible for the transaction to commit
+and be released.  In practice with normal kernels, this probably won't
+happen, since the commit happens in a separate kernel thread and it's
+unlikely this could all happen within the space of a few CPU cycles.
 
-Reviewed-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+On the other hand, with a real-time kernel, this could potentially
+happen, so save the tid found in transaction->t_tid before we release
+t_handle_lock.  It would require an insane configuration, such as one
+where the jbd2 thread was set to a very high real-time priority,
+perhaps because a high priority real-time thread is trying to read or
+write to a file system.  But some people who use real-time kernels
+have been known to do insane things, including controlling
+laser-wielding industrial robots.  :-)
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ctree.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/jbd2/transaction.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -1089,7 +1089,8 @@ static noinline int __btrfs_cow_block(st
- 		btrfs_set_node_ptr_generation(parent, parent_slot,
- 					      trans->transid);
- 		btrfs_mark_buffer_dirty(parent);
--		tree_mod_log_free_eb(root->fs_info, buf);
-+		if (last_ref)
-+			tree_mod_log_free_eb(root->fs_info, buf);
- 		btrfs_free_tree_block(trans, root, buf, parent_start,
- 				      last_ref);
- 	}
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -517,10 +517,10 @@ int jbd2__journal_restart(handle_t *hand
+ 		   &transaction->t_outstanding_credits);
+ 	if (atomic_dec_and_test(&transaction->t_updates))
+ 		wake_up(&journal->j_wait_updates);
++	tid = transaction->t_tid;
+ 	spin_unlock(&transaction->t_handle_lock);
+ 
+ 	jbd_debug(2, "restarting handle %p\n", handle);
+-	tid = transaction->t_tid;
+ 	need_to_start = !tid_geq(journal->j_commit_request, tid);
+ 	read_unlock(&journal->j_state_lock);
+ 	if (need_to_start)
 
 
