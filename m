@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3GSXtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 19:49:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53133 "EHLO
+	id S1752258Ab3GSXto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 19:49:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab3GSXtj (ORCPT
+	with ESMTP id S1751253Ab3GSXtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 19:49:39 -0400
-Date: Fri, 19 Jul 2013 16:44:48 -0700
+	Fri, 19 Jul 2013 19:49:42 -0400
+Date: Fri, 19 Jul 2013 16:47:23 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Shuah Khan <shuah.kh@samsung.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -15,45 +15,80 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/72] 3.10.2-stable review
-Message-ID: <20130719234448.GA3264@kroah.com>
-References: <20130719052559.852627424@linuxfoundation.org>
- <B8EFE96D1287C24090BAD9D858E15E6174690B@sisaex01sj>
+Subject: Re: [ 00/38] 3.9.11-stable review
+Message-ID: <20130719234723.GA11456@kroah.com>
+References: <20130719052047.858393825@linuxfoundation.org>
+ <B8EFE96D1287C24090BAD9D858E15E6174192D@sisaex01sj>
+ <20130719192524.GB2428@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6174690B@sisaex01sj>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130719192524.GB2428@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 11:16:47PM +0000, Shuah Khan wrote:
-> On 07/19/2013 09:32 AM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.10.2 release.
-> > There are 72 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Sun Jul 21 05:25:08 UTC 2013.
-> > Anything received after that time might be too late.
-> >
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.2-rc1.gz
-> > and the diffstat can be found below.
-> >
-> > thanks,
-> >
-> > greg k-h
-> >
+On Fri, Jul 19, 2013 at 12:25:24PM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Jul 19, 2013 at 04:45:25PM +0000, Shuah Khan wrote:
+> > On 07/19/2013 09:34 AM, Greg Kroah-Hartman wrote:
+> > > ---------------
+> > > Note, this is the LAST 3.9-stable kernel release that I will be doing.
+> > > Please move to the 3.10-stable branch as soon as possible.
+> > > ---------------
+> > >
+> > > This is the start of the stable review cycle for the 3.9.11 release.
+> > > There are 38 patches in this series, all will be posted as a response
+> > > to this one.  If anyone has any issues with these being applied, please
+> > > let me know.
+> > >
+> > > Responses should be made by Sun Jul 21 05:20:01 UTC 2013.
+> > > Anything received after that time might be too late.
+> > >
+> > > The whole patch series can be found in one patch at:
+> > > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc1.gz
+> > > and the diffstat can be found below.
+> > >
+> > > thanks,
+> > >
+> > > greg k-h
+> > >
+> > 
+> > Greg,
+> > 
+> > Build failed with the following error:
+> > 
+> >    LD      ipc/built-in.o
+> >    CC [M]  fs/cifs/inode.o
+> > fs/cifs/inode.c: In function ‘cifs_all_info_to_fattr’:
+> > fs/cifs/inode.c:560:4: error: implicit declaration of function 
+> > ‘cifs_dbg’ [-Werror=implicit-function-declaration]
+> > cc1: some warnings being treated as errors
+> > make[2]: *** [fs/cifs/inode.o] Error 1
+> > make[1]: *** [fs/cifs] Error 2
+> > make: *** [fs] Error 2
+> > make: *** Waiting for unfinished jobs....
+> >    CC      security/selinux/hooks.o
+> > 
+> > I have CONFIG_CIFS=m in my config and CONFIG_CIFS_DEBUG is disabled. 
+> > cifs_dbg() is not defined.
 > 
-> Patches applied cleanly to 3.0.86, 3.4.54, 3.9.10, and 3.10.1
-> 
-> 3.9.11-rc1 patch failed to build:
-> x64-64, mipsel, mips, powerpc, and tile: build failed with the following 
-> error:
+> Ugh, I thought I fixed that one...  I did it for the 3.4 and other
+> trees, I'll go see what I did wrong...
 
-Thanks for testing and sending the results.  I've fixed the 3.9 build
-issue and will push a new patch out in a bit.
+Ok, I've now fixed this, I don't know how it got through my tests, when
+I tried it again, it failed.  Before it wasn't, odd...
+
+Anyway, there is a new -rc2 kernel patch at:
+ 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc2.gz
+
+If you could test that out, I would appreciate it, to ensure I didn't do
+anything stupid with this one too.
+
+Ick, handling 4 kernels at once really takes its toll on me, this was
+not a good review cycle...
+
+thanks,
 
 greg k-h
