@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935157Ab3GSC2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:28:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37828 "EHLO
+	id S935167Ab3GSC2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:28:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935121Ab3GSCZF (ORCPT
+	with ESMTP id S935117Ab3GSCZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 22:25:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 07/24] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
-Date: Thu, 18 Jul 2013 19:24:39 -0700
-Message-Id: <20130719022404.517193108@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>
+Subject: [ 06/24] USB: option,qcserial: move Novatel Gobi1K IDs to qcserial
+Date: Thu, 18 Jul 2013 19:24:38 -0700
+Message-Id: <20130719022404.450684356@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -27,48 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+From: Dan Williams <dcbw@redhat.com>
 
-commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
+commit a254810a86aaaac4ac6ba44fa934558b042a17a7 upstream.
 
-Without this memory barrier, the file-storage thread may fail to
-escape from the following while loop, because it may observe new
-common->thread_wakeup_needed and old bh->state which are updated by
-the callback functions.
+These devices are all Gobi1K devices (according to the Windows INF
+files) and should be handled by qcserial instead of option.  Their
+network port is handled by qmi_wwan.
 
-	/* Wait for the CBW to arrive */
-	while (bh->state != BUF_STATE_FULL) {
-		rc = sleep_thread(common);
-		if (rc)
-			return rc;
-	}
-
-Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_mass_storage.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/option.c   |    4 ----
+ drivers/usb/serial/qcserial.c |    8 +++++++-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -511,6 +511,7 @@ static int fsg_set_halt(struct fsg_dev *
- /* Caller must hold fsg->lock */
- static void wakeup_thread(struct fsg_common *common)
- {
-+	smp_wmb();	/* ensure the write of bh->state is complete */
- 	/* Tell the main thread that something has happened */
- 	common->thread_wakeup_needed = 1;
- 	if (common->thread_task)
-@@ -730,6 +731,7 @@ static int sleep_thread(struct fsg_commo
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	common->thread_wakeup_needed = 0;
-+	smp_rmb();	/* ensure the latest bh->state is visible */
- 	return rc;
- }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -159,8 +159,6 @@ static void option_instat_callback(struc
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
+ #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
+ #define NOVATELWIRELESS_PRODUCT_E362		0x9010
+-#define NOVATELWIRELESS_PRODUCT_G1		0xA001
+-#define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
+ #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
  
+@@ -744,8 +742,6 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC547) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED) },
+-	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1) },
+-	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1_M) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
+ 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -37,7 +37,13 @@ static const struct usb_device_id id_tab
+ 	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
+ 	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
+ 	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
+-	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel/Verizon USB-1000 */
++	{DEVICE_G1K(0x1410, 0xa002)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa003)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa004)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa005)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa006)},	/* Novatel Gobi Modem device */
++	{DEVICE_G1K(0x1410, 0xa007)},	/* Novatel Gobi Modem device */
+ 	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
+ 	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
+ 	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
 
 
