@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3GSUds (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:33:48 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51870 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751003Ab3GSUdr (ORCPT
+	id S1751880Ab3GSUgf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:36:35 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:49602 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab3GSUge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:33:47 -0400
-Message-ID: <1374266024.2266.63.camel@dabdike>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Chris Ball <cjb@laptop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Fri, 19 Jul 2013 13:33:44 -0700
-In-Reply-To: <1374260189.3356.29.camel@gandalf.local.home>
-References: <1373944014.17876.255.camel@gandalf.local.home>
-	 <51E4BFA9.1030600@zytor.com>
-	 <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-	 <1373991399.6458.6.camel@gandalf.local.home>
-	 <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-	 <51E59F79.1040903@zytor.com>
-	 <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
-	 <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
-	 <20130717144043.GA16513@xanatos>
-	 <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
-	 <20130719120841.GH26716@gmail.com>
-	 <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
-	 <1374260189.3356.29.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Jul 2013 16:36:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <51E989A0.8050103@zytor.com>
+References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com>
+	<51E97779.3020103@zytor.com>
+	<CALkWK0ktHB34WkcYvGt_BOFoQbvbFJANDqGPUdZjT+Ui29pqAg@mail.gmail.com>
+	<51E989A0.8050103@zytor.com>
+Date: Fri, 19 Jul 2013 22:36:33 +0200
+Message-ID: <CAFLxGvxbYo+6nHThM70UuohA7dM+myJsF5FXcg_eS4S7-8AzVQ@mail.gmail.com>
+Subject: Re: [QUERY] lguest64
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 14:56 -0400, Steven Rostedt wrote:
-> On Fri, 2013-07-19 at 13:42 -0500, Felipe Contreras wrote:
-> 
-> > But you are avoiding the question as well; do you think there's
-> > something fundamentally different about the female brain that makes
-> > them more susceptible to personal attacks? If yes, where is the
-> > scientific evidence? If there's no evidence, then it's merely an
-> > opinion that is not shared by others (e.g. me), and if no, then
-> > whatever the men can take, the women can take as well, so nothing
-> > needs to change.
-> 
-> I don't know bout susceptible to personal attacks, but I have two
-> teenage daughters and I can't figure them out yet. I'll say something
-> that I think might get them upset and they are fine with it. Then I'll
-> say something, where I see no harm, and suddenly I'm the most evil
-> person in the world and they go all emotional on me.
+On Fri, Jul 19, 2013 at 8:46 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/19/2013 10:42 AM, Ramkumar Ramachandra wrote:
+>> H. Peter Anvin wrote:
+>>> We want to reduce pvops and pvops users, not increase them...
+>>
+>> I see.  So the future is true virtualization which exposes the
+>> underlying hardware, like KVM?  Why do bare-metal virtualizers like
+>> Xen employ paravirtualization?  Also, where does UML stand?
 
-I'm afraid I've got bad news for you:  That's not a male/female thing,
-that's a teenage thing.  I'm also afraid that it's set to continue for a
-while yet.
+UML is a nice thingy because it is Linux ported to itself, but it has
+limitations.
+Mostly it's speed (pagefaults and system calls are really slow) and it
+supports only x86/x86_64.
 
-> Women are too complex for me to figure out. Perhaps men are just too
-> simple minded (my wife keeps telling me that). Or perhaps it's just
-> me ;-)
+I use UML on systems where KVM is not available.
 
-If you're basing your entire theory on male/female interaction on
-teenagers, then I'm afraid your wife might be on to something ...
-
-James
-
-
-
+--
+Thanks,
+//richard
