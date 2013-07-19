@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935060Ab3GSCXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:23:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37703 "EHLO
+	id S935074Ab3GSCXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:23:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37691 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934888Ab3GSCXk (ORCPT
+	with ESMTP id S934875Ab3GSCXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:40 -0400
+	Thu, 18 Jul 2013 22:23:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        John Youn <johnyoun@synopsys.com>
-Subject: [ 05/18] xhci: check for failed dma pool allocation
-Date: Thu, 18 Jul 2013 19:23:20 -0700
-Message-Id: <20130719021049.332761403@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 02/18] ext3,ext4: dont mess with dir_file->f_pos in htree_dirblock_to_tree()
+Date: Thu, 18 Jul 2013 19:23:17 -0700
+Message-Id: <20130719021049.132514575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -28,38 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
+commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
 
-Fail and free the container context in case dma_pool_alloc() can't allocate
-the raw context data part of it
+Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
+in-core rbtree for use by call_filldir().  All updates of ->f_pos are
+done by the latter; bumping it here (on error) is obviously wrong - we
+might very well have it nowhere near the block we'd found an error in.
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
-Support for 64-byte contexts".
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: John Youn <johnyoun@synopsys.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/ext3/namei.c |    7 ++-----
+ fs/ext4/namei.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -273,6 +273,10 @@ static struct xhci_container_ctx *xhci_a
- 		ctx->size += CTX_SIZE(xhci->hcc_params);
- 
- 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
-+	if (!ctx->bytes) {
-+		kfree(ctx);
-+		return NULL;
-+	}
- 	memset(ctx->bytes, 0, ctx->size);
- 	return ctx;
- }
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -584,11 +584,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
+ 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
+ 						+((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse (bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext3fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (ext4_check_dir_entry(dir, NULL, de, bh,
+ 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
+ 					 + ((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse(bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext4fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
 
 
