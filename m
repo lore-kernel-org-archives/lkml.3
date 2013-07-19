@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759098Ab3GSOZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:25:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13907 "EHLO mx1.redhat.com"
+	id S1759627Ab3GSO0g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:26:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45880 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069Ab3GSOZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:25:38 -0400
-Date: Fri, 19 Jul 2013 16:20:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] tracing: Kill trace_array->waiter
-Message-ID: <20130719142036.GA1594@redhat.com>
+	id S1751471Ab3GSO0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 10:26:34 -0400
+Date: Fri, 19 Jul 2013 16:26:28 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: Re: [PATCH] RTC: Add an alarm disable quirk
+Message-ID: <20130719142628.GC19581@pd.tnic>
+References: <1374162294-29726-1-git-send-email-bp@alien8.de>
+ <51E8194E.1030704@linaro.org>
+ <20130718225349.GD15992@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130718225349.GD15992@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial. trace_array->waiter has no users since 6eaaa5d5
-"tracing/core: use appropriate waiting on trace_pipe".
+On Fri, Jul 19, 2013 at 12:53:49AM +0200, Borislav Petkov wrote:
+> > I assumed it was some sort of BIOS issue where any modification of the
+> > RTC_AIE bit caused the alarm irq line to be left high(or something
+> > like that) that triggered the immediate power-on on shutdown. But I've
+> > not been able to dig down on this.
+> 
+> Ha, this actually fits like an ass on a bucket (don't ask - German
+> proverb :-)).
+> 
+> If what you're saying is actually the case, then this explains why not
+> writing to 0xb doesn't cause the alarm irq to fire.
+> 
+> Btw, in the trace above we do the disabling twice. Once from
+> rtc_timer_remove() and then again from rtc_timer_do_work().
+> 
+> So, if we disable it once and we touch RTC_AIE again causing the second
+> time to rearm the alarm irq, this would explain the issue. Which reminds
+> me:
+> 
+> Maybe we should read out the alarm interrupt first and disable it only
+> if it is enabled - that would save us the modification of RTC_AIE. Cool,
+> I'll try that tomorrow.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Well, the below seems to do the trick. But since I don't trust the BIOS
+in any way, I'll run it a couple more days here. Btw, I think we should
+commit this regardless, as it saves us unneeded writes:
+
 ---
- kernel/trace/trace.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 4a4f6e1..f849e85 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -214,7 +214,6 @@ struct trace_array {
- 	struct dentry		*event_dir;
- 	struct list_head	systems;
- 	struct list_head	events;
--	struct task_struct	*waiter;
- 	int			ref;
- };
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index be06d7150de5..bb265f1651e7 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -304,6 +304,9 @@ static void cmos_irq_enable(struct cmos_rtc *cmos, unsigned char mask)
+ 	rtc_control = CMOS_READ(RTC_CONTROL);
+ 	cmos_checkintr(cmos, rtc_control);
  
++	if (rtc_control == mask)
++		return;
++
+ 	rtc_control |= mask;
+ 	CMOS_WRITE(rtc_control, RTC_CONTROL);
+ 	hpet_set_rtc_irq_bit(mask);
+@@ -316,6 +319,10 @@ static void cmos_irq_disable(struct cmos_rtc *cmos, unsigned char mask)
+ 	unsigned char	rtc_control;
+ 
+ 	rtc_control = CMOS_READ(RTC_CONTROL);
++
++	if (!(rtc_control & mask))
++		return;
++
+ 	rtc_control &= ~mask;
+ 	CMOS_WRITE(rtc_control, RTC_CONTROL);
+ 	hpet_mask_rtc_irq_bit(mask);
+--
+
 -- 
-1.5.5.1
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
