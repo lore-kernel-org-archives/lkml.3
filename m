@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965498Ab3GSIBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:01:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1706 "EHLO song.cn.fujitsu.com"
+	id S935012Ab3GSIC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:02:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54371 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759776Ab3GSIA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:00:57 -0400
+	id S1755678Ab3GSIBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:01:07 -0400
 X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
-   d="scan'208";a="7947444"
+   d="scan'208";a="7947438"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -20,124 +20,97 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 20/21] x86, numa, acpi, memory-hotplug: Make movablecore=acpi have higher priority.
-Date: Fri, 19 Jul 2013 15:59:33 +0800
-Message-Id: <1374220774-29974-21-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 15/21] x86, acpi, numa: Don't reserve memory on nodes the kernel resides in.
+Date: Fri, 19 Jul 2013 15:59:28 +0800
+Message-Id: <1374220774-29974-16-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/07/19 15:58:38,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 15:58:49,
-	Serialize complete at 2013/07/19 15:58:49
+ 2013/07/19 15:58:48,
+	Serialize complete at 2013/07/19 15:58:48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arrange hotpluggable memory as ZONE_MOVABLE will cause NUMA performance down
-because the kernel cannot use movable memory. For users who don't use memory
-hotplug and who don't want to lose their NUMA performance, they need a way to
-disable this functionality. So we improved movablecore boot option.
+If all the memory ranges in SRAT are hotpluggable, we should not reserve all
+of them in memblock. Otherwise the kernel won't have enough memory to boot.
 
-If users specify the original movablecore=nn@ss boot option, the kernel will
-arrange [ss, ss+nn) as ZONE_MOVABLE. The kernelcore=nn@ss boot option is similar
-except it specifies ZONE_NORMAL ranges.
+And also, memblock will reserve some memory at early time, such initrd file,
+kernel code and data segments, and so on. We cannot avoid these anyway.
 
-Now, if users specify "movablecore=acpi" in kernel commandline, the kernel will
-arrange hotpluggable memory in SRAT as ZONE_MOVABLE. And if users do this, all
-the other movablecore=nn@ss and kernelcore=nn@ss options should be ignored.
+So we make any node which the kernel resides in un-hotpluggable.
 
-For those who don't want this, just specify nothing. The kernel will act as
-before.
+This patch introduces kernel_resides_in_range() to check if the kernel resides
+in a memory range. And we can use this function to iterate memblock.reserve[],
+and find out which node the kernel resides in. And then, even if the memory in
+that node is hotpluggable, we don't reserve it.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- include/linux/memblock.h |    1 +
- mm/memblock.c            |    5 +++++
- mm/page_alloc.c          |   31 +++++++++++++++++++++++++++++--
- 3 files changed, 35 insertions(+), 2 deletions(-)
+ drivers/acpi/osl.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 40 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d520015..28ba511 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -64,6 +64,7 @@ int memblock_free(phys_addr_t base, phys_addr_t size);
- int memblock_reserve(phys_addr_t base, phys_addr_t size);
- int memblock_reserve_hotpluggable(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
-+bool memblock_is_hotpluggable(struct memblock_region *region);
- void memblock_free_hotpluggable(void);
- void memblock_trim_memory(phys_addr_t align);
- 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 1f5dc12..fd3ded8 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -616,6 +616,11 @@ int __init_memblock memblock_reserve_hotpluggable(phys_addr_t base,
- 	return memblock_reserve_region(base, size, nid, MEMBLK_HOTPLUGGABLE);
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 02a39e2..dfbe6ba 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -774,6 +774,43 @@ phys_addr_t __init early_acpi_firmware_srat()
  }
  
-+bool __init_memblock memblock_is_hotpluggable(struct memblock_region *region)
+ /*
++ * kernel_resides_in_range - Check if kernel resides in a memory range.
++ * @base: The base address of the memory range.
++ * @length: The length of the memory range.
++ *
++ * memblock reserves some memory for the kernel at very early time, such
++ * as kernel code and data segments, initrd file, and so on. So this
++ * function iterates memblock.reserved[] and check if any memory range with
++ * flag MEMBLK_FLAGS_DEFAULT overlaps [@base, @length). If so, the kernel
++ * resides in this memory range.
++ *
++ * Return true if the kernel resides in the memory range, false otherwise.
++ */
++static bool __init kernel_resides_in_range(phys_addr_t base, u64 length)
 +{
-+	return region->flags & MEMBLK_HOTPLUGGABLE;
-+}
-+
- /**
-  * __next_free_mem_range - next function for for_each_free_mem_range()
-  * @idx: pointer to u64 loop variable
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6271c36..cdb7919 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4880,9 +4880,37 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 	nodemask_t saved_node_state = node_states[N_MEMORY];
- 	unsigned long totalpages = early_calculate_totalpages();
- 	int usable_nodes = nodes_weight(node_states[N_MEMORY]);
++	int i;
 +	struct memblock_type *reserved = &memblock.reserved;
- 
- 	/*
--	 * If movablecore was specified, calculate what size of
-+	 * Need to find movable_zone earlier in case movablecore=acpi is
-+	 * specified.
-+	 */
-+	find_usable_zone_for_movable();
++	struct memblock_region *region;
++	phys_addr_t start, end;
 +
-+	/*
-+	 * If movablecore=acpi was specified, then zone_movable_pfn[] has been
-+	 * initialized, and no more work needs to do.
-+	 * NOTE: In this case, we ignore kernelcore option.
-+	 */
-+	if (movablecore_enable_srat) {
-+		for (i = 0; i < reserved->cnt; i++) {
-+			if (!memblock_is_hotpluggable(&reserved->regions[i]))
-+				continue;
++	for (i = 0; i < reserved->cnt; i++) {
++		region = &reserved->regions[i];
 +
-+			nid = reserved->regions[i].nid;
++		if (region->flags != MEMBLK_FLAGS_DEFAULT)
++			continue;
 +
-+			usable_startpfn = PFN_DOWN(reserved->regions[i].base);
-+			zone_movable_pfn[nid] = zone_movable_pfn[nid] ?
-+				min(usable_startpfn, zone_movable_pfn[nid]) :
-+				usable_startpfn;
-+		}
++		start = region->base;
++		end = region->base + region->size;
++		if (end <= base || start >= base + length)
++			continue;
 +
-+		goto out;
++		return true;
 +	}
 +
-+	/*
-+	 * If movablecore=nn[KMG] was specified, calculate what size of
- 	 * kernelcore that corresponds so that memory usable for
- 	 * any allocation type is evenly spread. If both kernelcore
- 	 * and movablecore are specified, then the value of kernelcore
-@@ -4908,7 +4936,6 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 		goto out;
++	return false;
++}
++
++/*
+  * acpi_reserve_hotpluggable_memory - Reserve hotpluggable memory in memblock.
+  * @srat_vaddr: The virtual address of SRAT.
+  *
+@@ -817,6 +854,9 @@ void __init acpi_reserve_hotpluggable_memory(void *srat_vaddr)
+ 		length = ma->length;
+ 		pxm = ma->proximity_domain;
  
- 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
--	find_usable_zone_for_movable();
- 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
- 
- restart:
++		if (kernel_resides_in_range(base_address, length))
++			goto next;
++
+ 		/*
+ 		 * In such an early time, we don't have nid. We specify pxm
+ 		 * instead of MAX_NUMNODES to prevent memblock merging regions
 -- 
 1.7.1
 
