@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab3GSVIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:08:45 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:58102 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab3GSVIn (ORCPT
+	id S1752456Ab3GSVLv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:11:51 -0400
+Received: from science.horizon.com ([71.41.210.146]:33579 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751787Ab3GSVLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:08:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAB=NE6XmxX0UQkbchU_AKJOyENcn0auBGMPzru5C4nohg_v1sQ@mail.gmail.com>
-References: <1374191339-10124-1-git-send-email-mcgrof@do-not-panic.com>
- <Pine.LNX.4.44L0.1307191012330.1055-100000@iolanthe.rowland.org> <CAB=NE6XmxX0UQkbchU_AKJOyENcn0auBGMPzru5C4nohg_v1sQ@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 19 Jul 2013 14:08:21 -0700
-X-Google-Sender-Auth: MQylXyqpdIZNBKhUmbh5Waz6hLY
-Message-ID: <CAB=NE6VHgure2+2VA=XWtaii4Wc_rG7YZ=_ZetgGnvouh7HJPw@mail.gmail.com>
-Subject: Re: [PATCH] backports: backport drvdata = NULL core driver fixes
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Felix Fietkau <nbd@openwrt.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Jul 2013 17:11:49 -0400
+Date: 19 Jul 2013 17:11:48 -0400
+Message-ID: <20130719211148.10251.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, waiman.long@hp.com
+Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock implementation
+Cc: JBeulich@novell.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
+In-Reply-To: <51E95E9F.4070507@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 2:07 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
->> This is not a very good idea.  Although setting drvdata to NULL allowed
->> a lot of code to be removed, it also exposed a bunch of hidden bugs --
->> drivers were using the drvdata value even after their remove function
->> returned.
->
-> Eek, have we not SmPL'ify'd a proof yet to ensure code like this no
-> longer exists? Julia? :)
+> What I have in mind is to have 2 separate rwlock initializers - one for 
+> fair and one for reader-bias behavior. So the lock owners can decide 
+> what behavior do they want with a one line change.
 
-Come to think of it, perhaps we should require *proof* with SmPL like
-this in future to avoid regressions ?
+That's definitely a nicer patch, if it will work.  I was imagining that,
+even for a single (type of) lock, only a few uses require reader bias
+(because they might be recursive, or are in an interrupt), but you'd
+want most read_lock sites to be fair.
 
-  Luis
+Deciding on a per-lock basis means that one potentially recursive call
+means you can't use fair queueing anywhere.
+
+I was hoping that the number of necessary unfair calls would
+be small enough that making the read_lock default fair and
+only marking the unfair call sites would be enough.
+
+But I don't really know until doing a survey of the calls.
