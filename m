@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935236Ab3GSC3O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:29:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37817 "EHLO
+	id S935262Ab3GSC3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:29:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37809 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935042Ab3GSCZD (ORCPT
+	with ESMTP id S935107Ab3GSCZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 22:25:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yu Liu <liuyu.ac@gmail.com>, Shane Huang <shane.huang@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 17/24] ahci: remove pmp link online check in FBS EH
-Date: Thu, 18 Jul 2013 19:24:49 -0700
-Message-Id: <20130719022405.201938501@linuxfoundation.org>
+        Tobias Kluge <zielscheibe@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 02/24] rtlwifi: rtl8192cu: Add new USB ID for TP-Link TL-WN8200ND
+Date: Thu, 18 Jul 2013 19:24:34 -0700
+Message-Id: <20130719022404.183261258@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -27,34 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
+commit c4d827c5ccc3a49227dbf9d4b248a2e86f388023 upstream.
 
-ata_link_online() check in ahci_error_intr() is unnecessary, it should
-be removed otherwise may lead to lockup with FBS enabled PMP.
-http://marc.info/?l=linux-ide&m=137050421603272&w=2
+This is a new device for this driver.
 
-Reported-by: Yu Liu <liuyu.ac@gmail.com>
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Tobias Kluge <zielscheibe@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Tobias Kluge <zielscheibe@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libahci.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1543,8 +1543,7 @@ static void ahci_error_intr(struct ata_p
- 		u32 fbs = readl(port_mmio + PORT_FBS);
- 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
- 
--		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
--		    ata_link_online(&ap->pmp_link[pmp])) {
-+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
- 			link = &ap->pmp_link[pmp];
- 			fbs_need_dec = true;
- 		}
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -357,6 +357,7 @@ static struct usb_device_id rtl8192c_usb
+ 	{RTL_USB_DEVICE(0x2001, 0x330a, rtl92cu_hal_cfg)}, /*D-Link-Alpha*/
+ 	{RTL_USB_DEVICE(0x2019, 0xab2b, rtl92cu_hal_cfg)}, /*Planex -Abocom*/
+ 	{RTL_USB_DEVICE(0x20f4, 0x624d, rtl92cu_hal_cfg)}, /*TRENDNet*/
++	{RTL_USB_DEVICE(0x2357, 0x0100, rtl92cu_hal_cfg)}, /*TP-Link WN8200ND*/
+ 	{RTL_USB_DEVICE(0x7392, 0x7822, rtl92cu_hal_cfg)}, /*Edimax -Edimax*/
+ 	{}
+ };
 
 
