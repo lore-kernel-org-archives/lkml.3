@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761137Ab3GSTHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:07:53 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:42456 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab3GSTHw (ORCPT
+	id S1761177Ab3GSTIk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:08:40 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:8834 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab3GSTIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:07:52 -0400
+	Fri, 19 Jul 2013 15:08:39 -0400
+Message-ID: <51E98EB4.3080307@hp.com>
+Date: Fri, 19 Jul 2013 15:08:36 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <51E967B6.8010305@gmail.com>
-References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
- <51E88AEF.8040701@gmail.com> <CALCETrXnVBPNGGTQQoXnpEmjXHxbhiWx+4RuMVQLRG5sfMpofA@mail.gmail.com>
- <51E893BC.6070400@gmail.com> <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
- <51E967B6.8010305@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 19 Jul 2013 12:07:31 -0700
-Message-ID: <CALCETrUgOURSxEdXdyOQpdEfEVnxqw5oGq5aaHhzwj+osVh6DA@mail.gmail.com>
-Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mutex: Fix mutex_can_spin_on_owner
+References: <20130719183101.GA20909@twins.programming.kicks-ass.net>
+In-Reply-To: <20130719183101.GA20909@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 9:22 AM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 07/18/2013 08:29 PM, Andy Lutomirski wrote:
->>
->> Other way around: a *library* that wants to use exception handling
->> can't do so safely without the cooperation, or at least understanding,
->> of the main program and every other library that wants to do something
->> similar.  Suppose my library installs a SIGFPE handler and throws
->> my_sigfpe_exception and your library installs a SIGFPE handler and
->> throws your_sigfpe_exception.  The result: one wins and the other
->> crashes due to an unhandled exception.
->>
->> In my particular usecase, I have code (known to the main program) that
->> catches all kinds of fatal signals to log nice error messages before
->> dying.  That means that I can't use a library that handles signals for
->> any other purpose.  Right now I want to have a small snippet of code
->> handle SIGBUS, but now I need to coordinate it with everything else.
->>
->> If this stuff were unified, then everything would just work.
+On 07/19/2013 02:31 PM, Peter Zijlstra wrote:
+> mutex_can_spin_on_owner() is broken in that it would allow the compiler
+> to load lock->owner twice, seeing a pointer first time and a MULL
+> pointer the second time.
 >
+> Signed-off-by: Peter Zijlstra<peterz@infradead.org>
+> ---
+>   kernel/mutex.c | 6 ++++--
+>   1 file changed, 4 insertions(+), 2 deletions(-)
 >
-> That's right.  But I think the Linux kernel already supplies all the needed
-> functionality to do this.  It is really a matter of choosing a userspace
-> implementation and standardizing your entire system around it.  In the realm
-> of GNU/GLibc/Linux, it is really more of social/political exercise rather
-> than a technical problem.
+> diff --git a/kernel/mutex.c b/kernel/mutex.c
+> index ff05f4b..7ff48c5 100644
+> --- a/kernel/mutex.c
+> +++ b/kernel/mutex.c
+> @@ -209,11 +209,13 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+>    */
+>   static inline int mutex_can_spin_on_owner(struct mutex *lock)
+>   {
+> +	struct task_struct *owner;
+>   	int retval = 1;
 >
+>   	rcu_read_lock();
+> -	if (lock->owner)
+> -		retval = lock->owner->on_cpu;
+> +	owner = ACCESS_ONCE(lock->owner);
+> +	if (owner)
+> +		retval = owner->on_cpu;
+>   	rcu_read_unlock();
+>   	/*
+>   	 * if lock->owner is not set, the mutex owner may have just acquired
 
-The social problem could be solved by glibc (or maybe ld.so)
-installing the relevant handlers automatically and taking advantage of
-its sigaction wrapper to keep everything working.  But this has
-technical problems:
+I am fine with this change. However, the compiler is smart enough to not 
+do two memory accesses to the same memory location. So this will not 
+change the generated code. Below is the relevant x86 code for that 
+section of code:
 
-1. Semantic changes: things like kill(pid, SIGSEGV) will no longer
-result in a fatal signal, which would be a regression (albeit probably
-harmless).  The results from /proc/pid/status might look a bit odd.
-Separating out signals resulting from faulting instructions (vs other
-causes) might be tricky.  I'm also not sure whether the ignored states
-of SIGSEGV and SIGFPE are preserved across exec, but, if they are,
-glibc will have trouble emulating this.
+    0x00000000000005d2 <+34>:    mov    0x18(%rdi),%rdx
+    0x00000000000005d6 <+38>:    mov    $0x1,%eax
+    0x00000000000005db <+43>:    test   %rdx,%rdx
+    0x00000000000005de <+46>:    je     0x5e3 <__mutex_lock_slowpath+51>
+    0x00000000000005e0 <+48>:    mov    0x28(%rdx),%eax
+    0x00000000000005e3 <+51>:    test   %eax,%eax
+    0x00000000000005e5 <+53>:    je     0x6d3 <__mutex_lock_slowpath+291>
 
-2. Unhandled signals: if SIGSEGV is handled (by, say, glibc) but there
-is no exception handler that claims the signal, then there's currently
-no way to tell the kernel to do everything it normally does on an
-unhandled fatal signal (e.g. logging, dumping core correctly,
-notifying ptracers, sending the right failure code to waitid).
+Only one memory access is done.
 
---Andy
+Ack-by: Waiman Long <Waiman.Long@hp.com>
