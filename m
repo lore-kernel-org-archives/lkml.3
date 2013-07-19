@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760104Ab3GSJwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 05:52:16 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:40414 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753197Ab3GSJwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 05:52:14 -0400
-X-IronPort-AV: E=Sophos;i="4.89,700,1367971200"; 
-   d="scan'208";a="38014231"
-Date: Fri, 19 Jul 2013 10:52:00 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Julien Grall <julien.grall@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux@arm.linux.org.uk>, Patch Tracking <patches@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] arm: choose debug/uncompress.h include when uncompress
- debug is disabled
-In-Reply-To: <1374222736.26728.128.camel@kazak.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1307191049070.8258@kaball.uk.xensource.com>
-References: <1373897706-15331-1-git-send-email-julien.grall@linaro.org>  <alpine.DEB.2.02.1307171420350.8258@kaball.uk.xensource.com>  <CAPnVf8yH7PBOSSC57qJv+pWmsinRUxGr81QUPH9GoOkKw2oo3Q@mail.gmail.com> <1374222736.26728.128.camel@kazak.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1760135Ab3GSJz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 05:55:29 -0400
+Received: from hop-nat-141.emc.com ([168.159.213.141]:35395 "EHLO
+	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753197Ab3GSJz0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 05:55:26 -0400
+From: "Peng, Tao" <tao.peng@emc.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>, Andreas Dilger <adilger@dilger.ca>
+CC: Nathan Rutman <nathan_rutman@xyratex.com>, Peng Tao <bergwolf@gmail.com>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: RE: [lustre mess] is mgc_fs_setup() reachable at all?
+Thread-Topic: [lustre mess] is mgc_fs_setup() reachable at all?
+Thread-Index: AQHOg5awi2HD5CaMmEqZ+O9dx2oYaJlqsmUAgAAal4OAAGGjgIAAvNAA///OiwA=
+Date: Fri, 19 Jul 2013 09:55:05 +0000
+Message-ID: <1882637210201641A747464075FFC6490E5A7333@MX101CL02.corp.emc.com>
+References: <20130718090835.GZ4165@ZenIV.linux.org.uk>
+ <CA+a=Yy49WfQVJAYybUzVvigi9b--kuagqKxBEH+yy0RZSKVnQA@mail.gmail.com>
+ <5DD1CAAA-2008-47F9-B3B6-8D342B28D08C@xyratex.com>
+ <20130718190703.GB4165@ZenIV.linux.org.uk>
+ <3F4C226D-9D3B-46FA-9C8C-55268B2F904F@dilger.ca>
+ <20130719081258.GE4165@ZenIV.linux.org.uk>
+In-Reply-To: <20130719081258.GE4165@ZenIV.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.32.218.82]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6J9taNE011184
 
-On Fri, 19 Jul 2013, Ian Campbell wrote:
-> On Thu, 2013-07-18 at 17:15 +0100, Julien Grall wrote:
-> > On 17 July 2013 14:25, Stefano Stabellini
-> > <stefano.stabellini@eu.citrix.com> wrote:
-> > > On Mon, 15 Jul 2013, Julien Grall wrote:
-> > >> Even if uncompress debug is disabled, some board will continue to print
-> > >> information during uncompress step.
-> > >
-> > > Are you talking about DEBUG_UNCOMPRESS?
-> > > Should I read the sentence as "even if DEBUG_UNCOMPRESS is not selected,
-> > > some board will continue to print information during the uncompress step"?
-> > 
-> > Yes. On the arndale, uncompress log are directly output on UART-2.
-> > This is annoying because Xen doesn't expose the UART to dom0.
-> 
-> This is because Xen wants/tries to use the UART as its own console,
-> right?
-> 
-> There are at least two other options: Either Xen uses a different UART
-> to that configured statically into the kernel image (depends on how many
-> UARTs the platform exposes) or Xen uses no serial console at all.
-> 
-> Of course long term we just need to wait for the exynos stuff to get
-> integrated into the multiplatform kernel.
-> 
-> Having no Xen serial console is not as bad as it seems for actual
-> deployment, it is actually already the default on x86 (a serial console
-> needs to be explicitly configured). The Xen console would still be
-> available via the "xl dmesg" command and for debug environments people
-> can just hack around the issue for now (until MP kernels arrive for the
-> platform).
-> 
-> Perhaps a useful compromise would be for Xen to initially use the
-> console but to hand it over to dom0 once it starts (similar to how we
-> handle VGA where it is present), Xen could also steal it back on panic
-> (since dom0 isn't going to be using it after that...).
+On Fri, Jul 19, 2013 at 4:12 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Thu, Jul 18, 2013 at 02:57:11PM -0600, Andreas Dilger wrote:
+>
+>> > _THAT_ was going to be a remotely supplied data?  I really hope I've
+>> > misparsed what you said above...
+>> >
+>> > And that still leaves the question about the code path that could
+>> > lead to execution of mgc_fs_setup().
+>>
+>> The KEY_SET_FS is only used in the server code, not on the client.
+>> The MGC code is shared between client and server to mount the
+>> filesystem and fetch the cluster configuration from the management
+>> server.  In the case of a server mount, it also has to mount the
+>> underlying block device, which isn't true on the client, so this
+>> code is indeed unused.
+>
+> Wait a minute...  So we have client side of things in staging, with
+> parts shared with the server, which is *not* in tree at all?  That
+> sounds painful - any changes done to the client code either risk
+> to break the server, or have the copies of the shared stuff diverge...
+>
+Currently we are hoping that the divergent part can be kept small and maintainable. Patches are ported between kernel and external trees to keep them in sync. There are also ongoing work to split client and server code. In external tree, server code are mostly marked by HAVE_SERVER_SUPPORT macro if they are shared with client but not used by client. Currently we removed such code that are not used by client in kernel Lustre but those are mostly whole functions. For the cases like in mgc_fs_setup(), can we use #ifdef HAVE_LUSTRE_SERVER_SUPPORT to mark out the unused code, or keep it as is, or do you want us to remove it completely?
 
-I like this last option, it looks like the best compromise.
+> I honestly have no idea about your plans wrt merging; are you going
+> to put the server side of things there as well?
+>
+Client is first attempted because it is easier to put into kernel, compared with server that still needs patching other pieces of kernel for a few places. I'm not sure about plans for server though. Andreas may know more about server plans.
 
+> Another thing: is your ll_statfs_internal() safe to call right up to
+> the moment when client_common_put_super calls lprocfs_unregister_mountpoint?
+> Because procfs IO *can* come right until the procfs entry removal;
+> said removal will act as a barrier, so it won't leak past the return from
+> remove_proc_entry(), but that's it.
+>
+You are right. It seems problematic. We should really remove procfs entry before cleaning up obd export in client_common_put_super(). Something like below:
 
-> Alternatively, since these early UART routines tend to be pretty simple
-> polled affairs, we could also consider extending the existing vpl011
-> code to have platform configurable addresses for the output and status
-> registers and a configurable fixed value for the read of the status
-> register. I'm not keen to have this code turn into a full "emulator" but
-> so long as it stays within the remit given in vpl011.c:
->         /*
->          * This is not intended to be a full emulation of a PL011
->          * device. Rather it is intended to provide a sufficient veneer of one
->          * that early code (such as Linux's boot time decompressor) which
->          * hardcodes output directly to such a device are able to make progress.
->          *
->          * This device is not intended to be enumerable or exposed to the OS
->          * (e.g. via Device Tree).
->          */
-> then I think I could live with it getting a bit more flexible about
-> where the registers live in order to be able to handle more UART
-> variants.
+diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
+index afae801..8e89311 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_lib.c
++++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
+@@ -685,6 +685,9 @@ void client_common_put_super(struct super_block *sb)
+ 	}
+ #endif
  
-We could end up emulating way too many devices and not all the platforms
-expect a pl011 uart.
++	/* remove proc entry first to prevent any new callers */
++	lprocfs_unregister_mountpoint(sbi);
++
+ 	ll_close_thread_shutdown(sbi->ll_lcq);
+ 
+ 	cl_sb_fini(sb);
+@@ -698,8 +701,6 @@ void client_common_put_super(struct super_block *sb)
+ 	 * see LU-2543. */
+ 	obd_zombie_barrier();
+ 
+-	lprocfs_unregister_mountpoint(sbi);
+-
+ 	obd_fid_fini(sbi->ll_md_exp->exp_obd);
+ 	obd_disconnect(sbi->ll_md_exp);
+ 	sbi->ll_md_exp = NULL;
+
+> While we are at procfs side of thing, looks like you need exclusion between
+> ll_..._seq_write() that clear/set bits in ->ll_flags; at least I haven't
+> found anything that would prevent the races among those.
+Yes, that part needs to be fixed as well, by taking sbi->ll_lock.
+
+Thanks very much for looking at it. Will send patches to fix the issues.
+
+Thanks,
+Tao
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
