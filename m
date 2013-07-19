@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab3GSUzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:55:47 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50541 "EHLO zene.cmpxchg.org"
+	id S1752258Ab3GSUzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:55:51 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50547 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751812Ab3GSUzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:55:43 -0400
+	id S1752172Ab3GSUzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 16:55:46 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 1/3] mm: vmscan: fix numa reclaim balance problem in kswapd
-Date: Fri, 19 Jul 2013 16:55:23 -0400
-Message-Id: <1374267325-22865-2-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 3/3] mm: page_alloc: fair zone allocator policy
+Date: Fri, 19 Jul 2013 16:55:25 -0400
+Message-Id: <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
 References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
@@ -21,46 +21,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the page allocator fails to get a page from all zones in its
-given zonelist, it wakes up the per-node kswapds for all zones that
-are at their low watermark.
+Each zone that holds userspace pages of one workload must be aged at a
+speed proportional to the zone size.  Otherwise, the time an
+individual page gets to stay in memory depends on the zone it happened
+to be allocated in.  Asymmetry in the zone aging creates rather
+unpredictable aging behavior and results in the wrong pages being
+reclaimed, activated etc.
 
-However, with a system under load and the free page counters being
-per-cpu approximations, the observed counter value in a zone can
-fluctuate enough that the allocation fails but the kswapd wakeup is
-also skipped while the zone is still really close to the low
-watermark.
+But exactly this happens right now because of the way the page
+allocator and kswapd interact.  The page allocator uses per-node lists
+of all zones in the system, ordered by preference, when allocating a
+new page.  When the first iteration does not yield any results, kswapd
+is woken up and the allocator retries.  Due to the way kswapd reclaims
+zones below the high watermark while a zone can be allocated from when
+it is above the low watermark, the allocator may keep kswapd running
+while kswapd reclaim ensures that the page allocator can keep
+allocating from the first zone in the zonelist for extended periods of
+time.  Meanwhile the other zones rarely see new allocations and thus
+get aged much slower in comparison.
 
-When one node misses a wakeup like this, it won't be aged before all
-the other node's zones are down to their low watermarks again.  And
-skipping a full aging cycle is an obvious fairness problem.
+The result is that the occasional page placed in lower zones gets
+relatively more time in memory, even get promoted to the active list
+after its peers have long been evicted.  Meanwhile, the bulk of the
+working set may be thrashing on the preferred zone even though there
+may be significant amounts of memory available in the lower zones.
 
-Kswapd runs until the high watermarks are restored, so it should also
-be woken when the high watermarks are not met.  This ages nodes more
-equally and creates a safety margin for the page counter fluctuation.
+Even the most basic test -- repeatedly reading a file slightly bigger
+than memory -- shows how broken the zone aging is.  In this scenario,
+no single page should be able stay in memory long enough to get
+referenced twice and activated, but activation happens in spades:
 
-By using zone_balanced(), it will now check, in addition to the
-watermark, if compaction requires more order-0 pages to create a
-higher order page.
+  $ grep active_file /proc/zoneinfo
+      nr_inactive_file 0
+      nr_active_file 0
+      nr_inactive_file 0
+      nr_active_file 8
+      nr_inactive_file 1582
+      nr_active_file 11994
+  $ cat data data data data >/dev/null
+  $ grep active_file /proc/zoneinfo
+      nr_inactive_file 0
+      nr_active_file 70
+      nr_inactive_file 258753
+      nr_active_file 443214
+      nr_inactive_file 149793
+      nr_active_file 12021
+
+Fix this with a very simple round robin allocator.  Each zone is
+allowed a batch of allocations that is proportional to the zone's
+size, after which it is treated as full.  The batch counters are reset
+when all zones have been tried and the allocator enters the slowpath
+and kicks off kswapd reclaim:
+
+  $ grep active_file /proc/zoneinfo
+      nr_inactive_file 0
+      nr_active_file 0
+      nr_inactive_file 174
+      nr_active_file 4865
+      nr_inactive_file 53
+      nr_active_file 860
+  $ cat data data data data >/dev/null
+  $ grep active_file /proc/zoneinfo
+      nr_inactive_file 0
+      nr_active_file 0
+      nr_inactive_file 666622
+      nr_active_file 4988
+      nr_inactive_file 190969
+      nr_active_file 937
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/vmscan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mmzone.h |  1 +
+ mm/page_alloc.c        | 39 +++++++++++++++++++++++++++++----------
+ 2 files changed, 30 insertions(+), 10 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index e364542..bccc6d3 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3277,7 +3277,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index af4a3b7..0c41d59 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -352,6 +352,7 @@ struct zone {
+ 	 * free areas of different sizes
+ 	 */
+ 	spinlock_t		lock;
++	atomic_t		alloc_batch;
+ 	int                     all_unreclaimable; /* All pages pinned */
+ #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+ 	/* Set to true when the PG_migrate_skip bits should be cleared */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index af1d956b..d938b67 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1879,6 +1879,14 @@ zonelist_scan:
+ 		if (alloc_flags & ALLOC_NO_WATERMARKS)
+ 			goto try_this_zone;
+ 		/*
++		 * Distribute pages in proportion to the individual
++		 * zone size to ensure fair page aging.  The zone a
++		 * page was allocated in should have no effect on the
++		 * time the page has in memory before being reclaimed.
++		 */
++		if (atomic_read(&zone->alloc_batch) <= 0)
++			continue;
++		/*
+ 		 * When allocating a page cache page for writing, we
+ 		 * want to get it from a zone that is within its dirty
+ 		 * limit, such that no single zone holds more than its
+@@ -1984,7 +1992,8 @@ this_zone_full:
+ 		goto zonelist_scan;
  	}
- 	if (!waitqueue_active(&pgdat->kswapd_wait))
- 		return;
--	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
-+	if (zone_balanced(zone, order, 0, 0))
- 		return;
  
- 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
+-	if (page)
++	if (page) {
++		atomic_sub(1U << order, &zone->alloc_batch);
+ 		/*
+ 		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+ 		 * necessary to allocate the page. The expectation is
+@@ -1993,6 +2002,7 @@ this_zone_full:
+ 		 * for !PFMEMALLOC purposes.
+ 		 */
+ 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
++	}
+ 
+ 	return page;
+ }
+@@ -2342,16 +2352,20 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	return page;
+ }
+ 
+-static inline
+-void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
+-						enum zone_type high_zoneidx,
+-						enum zone_type classzone_idx)
++static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
++			     struct zonelist *zonelist,
++			     enum zone_type high_zoneidx,
++			     enum zone_type classzone_idx)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 
+-	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
+-		wakeup_kswapd(zone, order, classzone_idx);
++	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
++		atomic_set(&zone->alloc_batch,
++			   high_wmark_pages(zone) - low_wmark_pages(zone));
++		if (!(gfp_mask & __GFP_NO_KSWAPD))
++			wakeup_kswapd(zone, order, classzone_idx);
++	}
+ }
+ 
+ static inline int
+@@ -2447,9 +2461,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 		goto nopage;
+ 
+ restart:
+-	if (!(gfp_mask & __GFP_NO_KSWAPD))
+-		wake_all_kswapd(order, zonelist, high_zoneidx,
+-						zone_idx(preferred_zone));
++	prepare_slowpath(gfp_mask, order, zonelist,
++			 high_zoneidx, zone_idx(preferred_zone));
+ 
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
+@@ -4758,6 +4771,9 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 		zone_seqlock_init(zone);
+ 		zone->zone_pgdat = pgdat;
+ 
++		/* For bootup, initialized properly in watermark setup */
++		atomic_set(&zone->alloc_batch, zone->managed_pages);
++
+ 		zone_pcp_init(zone);
+ 		lruvec_init(&zone->lruvec);
+ 		if (!size)
+@@ -5533,6 +5549,9 @@ static void __setup_per_zone_wmarks(void)
+ 		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
+ 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
+ 
++		atomic_set(&zone->alloc_batch,
++			   high_wmark_pages(zone) - low_wmark_pages(zone));
++
+ 		setup_zone_migrate_reserve(zone);
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+ 	}
 -- 
 1.8.3.2
 
