@@ -1,123 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259Ab3GSNea (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:34:30 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33656 "EHLO comal.ext.ti.com"
+	id S1760271Ab3GSNfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:35:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56262 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab3GSNe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:34:28 -0400
-Message-ID: <51E94059.6090900@ti.com>
-Date: Fri, 19 Jul 2013 19:04:17 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759431Ab3GSNfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:35:50 -0400
+Date: Fri, 19 Jul 2013 09:35:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v7 0/5] kdump: Allow ELF header creation in new kernel
+Message-ID: <20130719133518.GB19997@redhat.com>
+References: <OF6010D9F0.5A45F2CF-ONC1257BAB.002B1F3E-C1257BAB.002B2812@de.ibm.com>
+ <20130717180049.3b9c6ec8@holzheu>
+ <20130717214207.GB27633@redhat.com>
+ <20130718124004.098b85f4@holzheu>
+ <20130718124754.7453756e@mschwide>
+ <20130718133541.GB785@redhat.com>
+ <20130719085020.28daef68@mschwide>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <bigeasy@linutronix.de>
-Subject: Re: [PATCH v2 3/4] arm: dts: Add USB phy nodes for AM33XX
-References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-4-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1374237277-17769-4-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130719085020.28daef68@mschwide>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Friday 19 July 2013 06:04 PM, George Cherian wrote:
-> Add phy nodes for AM33XX platform and split the musb nodes
-> per instance.
+On Fri, Jul 19, 2013 at 08:50:20AM +0200, Martin Schwidefsky wrote:
+> On Thu, 18 Jul 2013 09:35:41 -0400
+> Vivek Goyal <vgoyal@redhat.com> wrote:
 > 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->  arch/arm/boot/dts/am33xx.dtsi | 68 +++++++++++++++++++++++++++++++++----------
->  1 file changed, 53 insertions(+), 15 deletions(-)
+> > On Thu, Jul 18, 2013 at 12:47:54PM +0200, Martin Schwidefsky wrote:
+> > > On Thu, 18 Jul 2013 12:40:04 +0200
+> > > Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > On Wed, 17 Jul 2013 17:42:07 -0400
+> > > > Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > > > On Wed, Jul 17, 2013 at 06:00:49PM +0200, Michael Holzheu wrote:
+> > > > 
+> > > > [snip]
+> > > > 
+> > > > > > But this is all additional effort now and would not be necessary if we
+> > > > > > integrate this patch series in 3.11.
+> > > > > > 
+> > > > > > Perhaps we should let Andrew decide here.
+> > > > > 
+> > > > > Hi Michael,
+> > > > > 
+> > > > > Given the fact that andrew too prefers a fix to get s390 working at this
+> > > > > stage can we modify s390 copy_from_oldmem() to be able to copy to 
+> > > > > vmalloc() memory area.
+> > > > > 
+> > > > > For mmap(), let us disable it on s390. And rest of the cleanups w.r.t
+> > > > > ELF header swap etc, let us now target that for 3.12.
+> > > > > 
+> > > > > Sounds reasonable?
+> > > > 
+> > > > Hi Vivek,
+> > > > 
+> > > > Ok this is not our preferred solution but we can't expect that life is
+> > > > always easy ;-)
+> > > > 
+> > > > Our s390 kernel maintainer Martin Schwidefsky agreed to send the following
+> > > > two patches upstream for 3.11:
+> > > > 
+> > > >  * s390/kdump: Disable mmap for s390
+> > > >  * s390/kdump: Allow copy_oldmem_page() copy to virtual memory
+> > > 
+> > > Patches have been added to 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git features
+> > > 
+> > > They will go upstream with my next pull request.
+> > > 
+> > 
+> > If everything related to crash dump is going through Andrew, wouldn't
+> > it make sense that even these fixes go through him?
+> > 
+> > https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=5a74953ff56aa870d6913ef4d81934f5c620c59d
+> > 
+> > https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=191a2fa0a8d2bbb64c98f9b1976fcb37ee5eae6b
 > 
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 8e1248f..e3890c4 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -326,21 +326,59 @@
->  			status = "disabled";
->  		};
->  
-> -		usb@47400000 {
-> -			compatible = "ti,musb-am33xx";
-> -			reg = <0x47400000 0x1000	/* usbss */
-> -			       0x47401000 0x800		/* musb instance 0 */
-> -			       0x47401800 0x800>;	/* musb instance 1 */
-> -			interrupts = <17		/* usbss */
-> -				      18		/* musb instance 0 */
-> -				      19>;		/* musb instance 1 */
-> -			multipoint = <1>;
-> -			num-eps = <16>;
-> -			ram-bits = <12>;
-> -			port0-mode = <3>;
-> -			port1-mode = <3>;
-> -			power = <250>;
-> -			ti,hwmods = "usb_otg_hs";
-> +		phy1: am335x-usb0@44e10620 {
+> Most of the architecture specific kdump patches for s390 have gone through me,
+> and these two fall into that category. If you insist we can route them over
+> Andrew, it just seems easier to me via the s390 tree.
+> 
 
-*44e10620* is not needed if you are not having the reg property.
-> +			compatible = "ti,am335x-usb2";
-> +			#phy-cells = <0>;
-> +			id= <0>;
-> +		};
-> +
-> +		phy2: am335x-usb1@44e10628 {
-> +			compatible = "ti,am335x-usb2";
+In this case one patch is modifying proc/vmcore.c and that's not arch
+specific change only.
 
-ditto..
-> +			#phy-cells = <0>;
-> +			id= <1>;
-> +		};
-> +
-> +		omap_control_usb: omap-control-usb@44e10620 {
-> +			compatible = "ti,omap-control-usb";
-> +			reg = <0x44e10620 0x10>;
-> +			reg-names = "control_dev_conf";
-> +			ti,type = <3>;
-> +		};
-> +
-> +                musb: usb@47400000 {
-> +                        compatible = "ti,musb-am33xx";
-> +                        reg = <0x47400000 0x1000>;
-> +                        ranges;
-> +                        #address-cells = <1>;
-> +                        #size-cells = <1>;
-> +                        interrupts = <17>;
-> +                        ti,hwmods = "usb_otg_hs";
-> +
-> +                        usb0@47401000 {
-> +                                reg = <0x47401000 0x800>;
-> +                                interrupts = <18>;
-> +                                interrupt-names = "mc";
-> +                                multipoint = <1>;
-> +                                num-eps = <16>;
-> +                                ram-bits = <12>;
-> +                                port-mode = <3>;
-> +                                power = <250>;
-> +                                phys = <&phy1>;
-> +				phy-names = "am335x-usb0";
+Secondly, in this specific instance, these changes are in the context
+of mmap() related changes which just were pushed. I find it easier
+if fixes flow through same channel where previous big set of patches
+flowed through.
 
-Looks like alignment has gone wrong here.
-> +                        };
-> +
-> +                        usb1@47401800 {
-> +                                reg = <0x47401800 0x800>;
-> +                                interrupts = <19>;
-> +                                interrupt-names = "mc";
-> +                                multipoint = <1>;
-> +                                num-eps = <16>;
-> +                                ram-bits = <12>;
-> +                                port-mode = <3>;
-> +                                power = <250>;
-> +                                phys = <&phy2>;
-> +				phy-names = "am335x-usb1";
-ditto.
+Hence, I was expecting that Michael will route these fixes through
+Andrew. But I am not too particular about it, so go ahead and
+push it to Linus.
 
 Thanks
-Kishon
+Vivek
