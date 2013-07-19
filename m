@@ -1,73 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760377Ab3GSMyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:54:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52306 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760353Ab3GSMyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:54:53 -0400
-Message-ID: <51E93704.8010208@pengutronix.de>
-Date: Fri, 19 Jul 2013 14:54:28 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	id S1760429Ab3GSNBI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:01:08 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52097 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752300Ab3GSNBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:01:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [GIT PULL] ACPI and power management fixes for v3.11-rc2
+Date: Fri, 19 Jul 2013 15:11 +0200
+Message-ID: <10849265.6UBS59mCp5@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Bernd Krumboeck <krumboeck@universalnet.at>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] can: usb_8dev: fix urb leak on failure path in usb_8dev_start()
-References: <1374096033-28981-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1374096033-28981-1-git-send-email-khoroshilov@ispras.ru>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2DVGJUTWSQJWSHLSWPGSO"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2DVGJUTWSQJWSHLSWPGSO
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-On 07/17/2013 11:20 PM, Alexey Khoroshilov wrote:
-> If usb_8dev_start() fails to submit urb,
-> it unanchors the urb but forgets to free it.
->=20
-> Found by Linux Driver Verification project (linuxtesting.org).
->=20
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Please pull from the git repository at
 
-Thanks, added to can/fixes-for-3.11
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.11-rc2
 
-Marc
+to receive ACPI and power management fixes for v3.11-rc2 with
+top-most commit 5a8d2815593007d4eb59f337ef919c871c2649ab
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+  Merge branch 'pm-fixes'
+
+on top of commit ad81f0545ef01ea651886dddac4bef6cec930092
+
+  Linux 3.11-rc1
+
+These are fixes collected over the last week, most importnatly two cpufreq
+reverts fixing regressions introduced in 3.10, an autoseelp fix preventing
+systems using it from crashing during shutdown and two ACPI scan fixes
+related to hotplug.
+
+Specifics:
+
+- Two cpufreq commits from the 3.10 cycle introduced regressions.
+  The first of them was buggy (it did way much more than it needed
+  to do) and the second one attempted to fix an issue introduced by
+  the first one.  Fixes from Srivatsa S Bhat revert both.
+
+- If autosleep triggers during system shutdown and the shutdown
+  callbacks of some device drivers have been called already, it may
+  crash the system.  Fix from Liu Shuo prevents that from happening
+  by making try_to_suspend() check system_state.
+
+- The ACPI memory hotplug driver doesn't clear its driver_data on
+  errors which may cause a NULL poiter dereference to happen later.
+  Fix from Toshi Kani.
+
+- The ACPI namespace scanning code should not try to attach scan
+  handlers to device objects that have them already, which may confuse
+  things quite a bit, and it should rescan the whole namespace branch
+  starting at the given node after receiving a bus check notify event
+  even if the device at that particular node has been discovered
+  already.  Fixes from yours truly.
+
+- New ACPI video blacklist entry for a system whose initial backlight
+  setting from the BIOS doesn't make sense.  From Lan Tianyu.
+
+- Garbage string output avoindance for ACPI PNP from Liu Shuo.
+
+- Two Kconfig fixes for issues introduced recently in the s3c24xx
+  cpufreq driver (when moving the driver to drivers/cpufreq) from
+  Paul Bolle.
+
+- Trivial comment fix in pm_wakeup.h from Chanwoo Choi.
+
+Thanks!
 
 
-------enig2DVGJUTWSQJWSHLSWPGSO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+---------------
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Chanwoo Choi (1):
+      PM / Sleep: Fix comment typo in pm_wakeup.h
 
-iEYEARECAAYFAlHpNwUACgkQjTAFq1RaXHMPEQCfS4rpvy1qOf+x5FkrJl11uN/3
-1SMAoIwF5db06bhxA3jRcISZDjnQq+yg
-=34Hf
------END PGP SIGNATURE-----
+Lan Tianyu (1):
+      ACPI / video: ignore BIOS initial backlight value for Fujitsu E753
 
-------enig2DVGJUTWSQJWSHLSWPGSO--
+Liu ShuoX (2):
+      PM / Sleep: avoid 'autosleep' in shutdown progress
+      PNP / ACPI: avoid garbage in resource name
+
+Paul Bolle (2):
+      cpufreq: s3c24xx: rename CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+      cpufreq: s3c24xx: fix "depends on ARM_S3C24XX" in Kconfig
+
+Rafael J. Wysocki (2):
+      ACPI / scan: Do not try to attach scan handlers to devices having them
+      ACPI / scan: Always call acpi_bus_scan() for bus check notifications
+
+Srivatsa S. Bhat (2):
+      cpufreq: Revert commit a66b2e to fix suspend/resume regression
+      cpufreq: Revert commit 2f7021a8 to fix CPU hotplug regression
+
+Toshi Kani (1):
+      ACPI / memhotplug: Fix a stale pointer in error path
+
+---------------
+
+ arch/arm/mach-s3c24xx/Kconfig      |    2 +-
+ drivers/acpi/acpi_memhotplug.c     |    1 +
+ drivers/acpi/scan.c                |   13 +++++++++----
+ drivers/acpi/video.c               |    8 ++++++++
+ drivers/cpufreq/cpufreq.c          |    4 +++-
+ drivers/cpufreq/cpufreq_governor.c |    3 ---
+ drivers/cpufreq/cpufreq_stats.c    |    6 ++----
+ drivers/cpufreq/s3c24xx-cpufreq.c  |    4 ++--
+ drivers/pnp/pnpacpi/rsparser.c     |    2 +-
+ drivers/pnp/resource.c             |    1 +
+ include/linux/pm_wakeup.h          |    4 ++--
+ kernel/power/autosleep.c           |    3 ++-
+ 12 files changed, 32 insertions(+), 19 deletions(-)
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
