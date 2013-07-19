@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab3GSU7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:59:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48214 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224Ab3GSU7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:59:18 -0400
-Message-ID: <51E9A896.8070408@zytor.com>
-Date: Fri, 19 Jul 2013 13:59:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>, gleb@redhat.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vadim Rozenfeld <vrozenfe@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: [PATCH] x86: properly handle KVM emulation of hyperv
-References: <1374229505-19470-1-git-send-email-jasowang@redhat.com> <51E92CAB.7020906@redhat.com>
-In-Reply-To: <51E92CAB.7020906@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+	id S1752543Ab3GSVAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:00:10 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:36778 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab3GSVAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 17:00:07 -0400
+Message-ID: <1374267934.7397.1062.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Fri, 19 Jul 2013 14:05:34 -0700
+In-Reply-To: <51E96239.8080409@cs.wisc.edu>
+References: <cover.1369155164.git.agordeev@redhat.com>
+	 <20130521235003.GE6985@mtj.dyndns.org>
+	 <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
+	 <20130522170305.GD9563@kernel.dk>
+	 <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+	 <51E83E32.9050306@cs.wisc.edu>
+	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+	 <51E96239.8080409@cs.wisc.edu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 05:10 AM, Paolo Bonzini wrote:
->> +
->> +static inline bool kvm_para_available(void)
->> +{
->>  	if (boot_cpu_data.cpuid_level < 0)
->>  		return false;	/* So we don't blow up on old processors */
->>  
->>  	if (cpu_has_hypervisor) {
->> -		cpuid(KVM_CPUID_SIGNATURE, &eax, &ebx, &ecx, &edx);
->> -		memcpy(signature + 0, &ebx, 4);
->> -		memcpy(signature + 4, &ecx, 4);
->> -		memcpy(signature + 8, &edx, 4);
->> -		signature[12] = 0;
->> -
->> -		if (strcmp(signature, "KVMKVMKVM") == 0)
->> +		if (kvm_para_available_function(KVM_CPUID_SIGNATURE) ||
->> +		    kvm_para_available_function(KVM_CPUID_SIGNATURE_NEXT))
->>  			return true;
->>  	}
+On Fri, 2013-07-19 at 09:58 -0600, Mike Christie wrote:
+> On 07/18/2013 06:23 PM, Nicholas A. Bellinger wrote:
+> >> Just saw this while trying out iscsi with the scsi-mq stuff :)
+> >> > 
+> > Took at stab at this a while back, but ended getting distracted on other
+> > items.  Do you have an initial conversion running yet..?
 > 
-> Nice catch.  Just one small thing, you should loop until 0x40010000, as
-> done in arch/x86/include/asm/xen/hypervisor.h, in case one day a third
-> hypervisor implements three extensions (Hyper-V, KVM and its own set).
-> 
+> Not running well :) Have a patch but I am debugging it now. I messed up
+> something with the cmd_size stuff.
 
-Any way we can centralize this stuff?
+<nod>, looking forward to see ib_iser move beyond the existing
+scsi_request_fn() bottleneck.   ;)
 
-	-hpa
+Feel free to send me the WIP off-list if you'd like another pair of
+eyes.
+
+--nab
+
 
 
