@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852Ab3GSIHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:07:10 -0400
+	id S1759937Ab3GSIII (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:08:08 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:1854 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759830Ab3GSIBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:01:01 -0400
+	id S1759742Ab3GSIA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:00:56 -0400
 X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
-   d="scan'208";a="7947434"
+   d="scan'208";a="7947446"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -20,151 +20,50 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 07/21] x86, acpi: Initialize ACPI root table list earlier.
-Date: Fri, 19 Jul 2013 15:59:20 +0800
-Message-Id: <1374220774-29974-8-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 21/21] doc, page_alloc, acpi, mem-hotplug: Add doc for movablecore=acpi boot option.
+Date: Fri, 19 Jul 2013 15:59:34 +0800
+Message-Id: <1374220774-29974-22-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 15:58:37,
+ 2013/07/19 15:58:38,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 15:58:43,
-	Serialize complete at 2013/07/19 15:58:43
+ 2013/07/19 15:58:50,
+	Serialize complete at 2013/07/19 15:58:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have split acpi_table_init() into two steps:
-1. Pares RSDT or XSDT, and initialize acpi_gbl_root_table_list.
-   This step will record all tables' physical address in memory.
-2. Check acpi initrd table override and install all tables into
-   acpi_gbl_root_table_list.
-
-This patch does step 1 earlier, right after memblock is ready.
-
-When memblock_x86_fill() is called to fulfill memblock.memory[],
-memblock is able to allocate memory.
-
-This patch introduces a new function acpi_root_table_init() to
-do step 1, and call this function right after memblock_x86_fill()
-is called.
+Since we modify movablecore boot option to support
+"movablecore=acpi", this patch adds doc for it.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/kernel/acpi/boot.c |   38 +++++++++++++++++++++++---------------
- arch/x86/kernel/setup.c     |    3 +++
- drivers/acpi/tables.c       |    7 +++++--
- include/linux/acpi.h        |    2 ++
- 4 files changed, 33 insertions(+), 17 deletions(-)
+ Documentation/kernel-parameters.txt |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 230c8ea..3da5b3c 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1491,6 +1491,28 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
- };
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 2fe6e76..7aa1099 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1714,6 +1714,16 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
  
- /*
-+ * acpi_root_table_init - Initialize acpi_gbl_root_table_list.
-+ *
-+ * This function will parse RSDT or XSDT, find all tables' phys addr,
-+ * initialize acpi_gbl_root_table_list, and record all tables' phys addr
-+ * in acpi_gbl_root_table_list.
-+ */
-+void __init acpi_root_table_init(void)
-+{
-+	dmi_check_system(acpi_dmi_table);
++	movablecore=acpi	[KNL,X86] The SRAT (System Resource Affinity
++			Table) in ACPI provides the NUMA info of the system.
++			And also, there is a Hotpluggable field in the memory
++			affinity of the table specifying which memory is
++			hotpluggable. This option enables the kernel to arrange
++			hotpluggable memory in SRAT as ZONE_MOVABLE.
++			NOTE: Any node which the kernel resides in will
++			      always be un-hotpluggable so that the kernel
++			      will always have enough memory to boot.
 +
-+	/* If acpi_disabled, bail out */
-+	if (acpi_disabled)
-+		return;
-+
-+	/* Initialize the ACPI boot-time table parser */
-+	if (acpi_table_init()) {
-+		disable_acpi();
-+		return;
-+	}
-+}
-+
-+/*
-  * acpi_boot_table_init() and acpi_boot_init()
-  *  called from setup_arch(), always.
-  *	1. checksums all tables
-@@ -1511,21 +1533,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
  
- void __init acpi_boot_table_init(void)
- {
--	dmi_check_system(acpi_dmi_table);
--
--	/*
--	 * If acpi_disabled, bail out
--	 */
--	if (acpi_disabled)
--		return; 
--
--	/*
--	 * Initialize the ACPI boot-time table parser.
--	 */
--	if (acpi_table_init()) {
--		disable_acpi();
--		return;
--	}
-+	acpi_install_root_table();
- 
- 	acpi_table_parse(ACPI_SIG_BOOT, acpi_parse_sbf);
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 56f7fcf..38a5952 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1075,6 +1075,9 @@ void __init setup_arch(char **cmdline_p)
- 	memblock.current_limit = ISA_END_ADDRESS;
- 	memblock_x86_fill();
- 
-+	/* Initialize ACPI root table */
-+	acpi_root_table_init();
-+
- 	/*
- 	 * The EFI specification says that boot service code won't be called
- 	 * after ExitBootServices(). This is, in fact, a lie.
-diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index 8860e79..60ecbb8 100644
---- a/drivers/acpi/tables.c
-+++ b/drivers/acpi/tables.c
-@@ -353,10 +353,13 @@ int __init acpi_table_init(void)
- 	if (ACPI_FAILURE(status))
- 		return 1;
- 
--	acpi_tb_install_root_table();
-+	return 0;
-+}
- 
-+void __init acpi_install_root_table(void)
-+{
-+	acpi_tb_install_root_table();
- 	check_multiple_madt();
--	return 0;
- }
- 
- static int __init acpi_parse_apic_instance(char *str)
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 17b5b59..95f600c 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -92,10 +92,12 @@ void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
- int acpi_boot_init (void);
- void acpi_boot_table_init (void);
-+void acpi_root_table_init(void);
- int acpi_mps_check (void);
- int acpi_numa_init (void);
- 
- int acpi_table_init (void);
-+void acpi_install_root_table(void);
- int acpi_table_parse(char *id, acpi_tbl_table_handler handler);
- int __init acpi_table_parse_entries(char *id, unsigned long table_size,
- 				    int entry_id,
 -- 
 1.7.1
 
