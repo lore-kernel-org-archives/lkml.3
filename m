@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965874Ab3GSFaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:30:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40040 "EHLO
+	id S965845Ab3GSFaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:30:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965821Ab3GSF1R (ORCPT
+	with ESMTP id S965761Ab3GSF1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:27:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Liu <r64343@freescale.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 62/72] ARM: 7769/1: Cortex-A15: fix erratum 798181 implementation
-Date: Thu, 18 Jul 2013 22:26:19 -0700
-Message-Id: <20130719052604.108594547@linuxfoundation.org>
+Subject: [ 63/72] ARM: 7778/1: smp_twd: twd_update_frequency need be run on all online CPUs
+Date: Thu, 18 Jul 2013 22:26:20 -0700
+Message-Id: <20130719052604.175456121@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -29,127 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Zyngier <Marc.Zyngier@arm.com>
+From: Jason Liu <r64343@freescale.com>
 
-commit 0d0752bca1f9a91fb646647aa4abbb21156f316c upstream.
+commit cbbe6f82b489e7ceba4ad7c833bd3a76cd0084cb upstream.
 
-Looking into the active_asids array is not enough, as we also need
-to look into the reserved_asids array (they both represent processes
-that are currently running).
+When the local timer freq changed, the twd_update_frequency function
+should be run all the CPUs include itself, otherwise, the twd freq will
+not get updated and the local timer will not run correcttly.
 
-Also, not holding the ASID allocator lock is racy, as another CPU
-could schedule that process and trigger a rollover, making the erratum
-workaround miss an IPI.
+smp_call_function will run functions on all other CPUs, but not include
+himself, this is not correct,use on_each_cpu instead to fix this issue.
 
-Exposing this outside of context.c is a little ugly on the side, so
-let's define a new entry point that the erratum workaround can call
-to obtain the cpumask.
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Jason Liu <r64343@freescale.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/mmu_context.h |   10 +++++++++-
- arch/arm/kernel/smp_tlb.c          |   18 ++----------------
- arch/arm/mm/context.c              |   29 ++++++++++++++++++++++++++++-
- 3 files changed, 39 insertions(+), 18 deletions(-)
+ arch/arm/kernel/smp_twd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/mmu_context.h
-+++ b/arch/arm/include/asm/mmu_context.h
-@@ -27,7 +27,15 @@ void __check_vmalloc_seq(struct mm_struc
- void check_and_switch_context(struct mm_struct *mm, struct task_struct *tsk);
- #define init_new_context(tsk,mm)	({ atomic64_set(&mm->context.id, 0); 0; })
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -120,7 +120,7 @@ static int twd_rate_change(struct notifi
+ 	 * changing cpu.
+ 	 */
+ 	if (flags == POST_RATE_CHANGE)
+-		smp_call_function(twd_update_frequency,
++		on_each_cpu(twd_update_frequency,
+ 				  (void *)&cnd->new_rate, 1);
  
--DECLARE_PER_CPU(atomic64_t, active_asids);
-+#ifdef CONFIG_ARM_ERRATA_798181
-+void a15_erratum_get_cpumask(int this_cpu, struct mm_struct *mm,
-+			     cpumask_t *mask);
-+#else  /* !CONFIG_ARM_ERRATA_798181 */
-+static inline void a15_erratum_get_cpumask(int this_cpu, struct mm_struct *mm,
-+					   cpumask_t *mask)
-+{
-+}
-+#endif /* CONFIG_ARM_ERRATA_798181 */
- 
- #else	/* !CONFIG_CPU_HAS_ASID */
- 
---- a/arch/arm/kernel/smp_tlb.c
-+++ b/arch/arm/kernel/smp_tlb.c
-@@ -103,7 +103,7 @@ static void broadcast_tlb_a15_erratum(vo
- 
- static void broadcast_tlb_mm_a15_erratum(struct mm_struct *mm)
- {
--	int cpu, this_cpu;
-+	int this_cpu;
- 	cpumask_t mask = { CPU_BITS_NONE };
- 
- 	if (!erratum_a15_798181())
-@@ -111,21 +111,7 @@ static void broadcast_tlb_mm_a15_erratum
- 
- 	dummy_flush_tlb_a15_erratum();
- 	this_cpu = get_cpu();
--	for_each_online_cpu(cpu) {
--		if (cpu == this_cpu)
--			continue;
--		/*
--		 * We only need to send an IPI if the other CPUs are running
--		 * the same ASID as the one being invalidated. There is no
--		 * need for locking around the active_asids check since the
--		 * switch_mm() function has at least one dmb() (as required by
--		 * this workaround) in case a context switch happens on
--		 * another CPU after the condition below.
--		 */
--		if (atomic64_read(&mm->context.id) ==
--		    atomic64_read(&per_cpu(active_asids, cpu)))
--			cpumask_set_cpu(cpu, &mask);
--	}
-+	a15_erratum_get_cpumask(this_cpu, mm, &mask);
- 	smp_call_function_many(&mask, ipi_flush_tlb_a15_erratum, NULL, 1);
- 	put_cpu();
- }
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -45,10 +45,37 @@ static DEFINE_RAW_SPINLOCK(cpu_asid_lock
- static atomic64_t asid_generation = ATOMIC64_INIT(ASID_FIRST_VERSION);
- static DECLARE_BITMAP(asid_map, NUM_USER_ASIDS);
- 
--DEFINE_PER_CPU(atomic64_t, active_asids);
-+static DEFINE_PER_CPU(atomic64_t, active_asids);
- static DEFINE_PER_CPU(u64, reserved_asids);
- static cpumask_t tlb_flush_pending;
- 
-+#ifdef CONFIG_ARM_ERRATA_798181
-+void a15_erratum_get_cpumask(int this_cpu, struct mm_struct *mm,
-+			     cpumask_t *mask)
-+{
-+	int cpu;
-+	unsigned long flags;
-+	u64 context_id, asid;
-+
-+	raw_spin_lock_irqsave(&cpu_asid_lock, flags);
-+	context_id = mm->context.id.counter;
-+	for_each_online_cpu(cpu) {
-+		if (cpu == this_cpu)
-+			continue;
-+		/*
-+		 * We only need to send an IPI if the other CPUs are
-+		 * running the same ASID as the one being invalidated.
-+		 */
-+		asid = per_cpu(active_asids, cpu).counter;
-+		if (asid == 0)
-+			asid = per_cpu(reserved_asids, cpu);
-+		if (context_id == asid)
-+			cpumask_set_cpu(cpu, mask);
-+	}
-+	raw_spin_unlock_irqrestore(&cpu_asid_lock, flags);
-+}
-+#endif
-+
- #ifdef CONFIG_ARM_LPAE
- static void cpu_set_reserved_ttbr0(void)
- {
+ 	return NOTIFY_OK;
 
 
