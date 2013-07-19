@@ -1,204 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3GSUkH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:40:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47450 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902Ab3GSUkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:40:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,704,1367996400"; 
-   d="scan'208";a="373376445"
-Subject: [PATCH] mm: vmstats: track TLB flush stats on UP too
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-mm@kvack.org, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 19 Jul 2013 13:40:04 -0700
-Message-Id: <20130719204004.B28D1C10@viggo.jf.intel.com>
+	id S1751865Ab3GSUn5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:43:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6215 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab3GSUn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 16:43:56 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=QIZFyTDxVIcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=WKn5AdJQQDgA:10 a=w4AlbVWuHBmOmVXOOW4A:9 a=QEXdDO2ut3YA:10 a=rplWeYxKVmwA:10 a=8eq3DY-4tpAA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374266633.3356.40.camel@gandalf.local.home>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+From: Steven Rostedt <rostedt@goodmis.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Chris Ball <cjb@laptop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Fri, 19 Jul 2013 16:43:53 -0400
+In-Reply-To: <1374266024.2266.63.camel@dabdike>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+	 <51E4BFA9.1030600@zytor.com>
+	 <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+	 <1373991399.6458.6.camel@gandalf.local.home>
+	 <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+	 <51E59F79.1040903@zytor.com>
+	 <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+	 <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+	 <20130717144043.GA16513@xanatos>
+	 <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+	 <20130719120841.GH26716@gmail.com>
+	 <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+	 <1374260189.3356.29.camel@gandalf.local.home>
+	 <1374266024.2266.63.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-07-19 at 13:33 -0700, James Bottomley wrote:
 
-Andrew, this fixes up the TLB flush vmstats for UP.  It's on top
-of the previous patch, but I'm happy to combine them and send a
-replacement if you'd prefer.
+> If you're basing your entire theory on male/female interaction on
+> teenagers, then I'm afraid your wife might be on to something ...
 
-This also removes the NR_TLB_LOCAL_FLUSH_ONE_KERNEL counter.  We
-do not have a good API on UP to separate out the kernel from the
-non-kernel flushes.  It's probably not an important distinction
-anyway.
+No, it's also based on interaction with my Wife and her sister too ;-)
 
-Compile and boot tested on 64-bit SMP and UP.  Compile tested
-for x86_32 SMP.
+-- Steve
 
---
 
-The previous patch doing vmstats for TLB flushes effectively
-missed UP since arch/x86/mm/tlb.c is only compiled for SMP.
 
-UP systems do not do remote TLB flushes, so compile those
-counters out on UP.
-
-arch/x86/kernel/cpu/mtrr/generic.c calls __flush_tlb() directly.
-This is probably an optimization since both the mtrr code and
-__flush_tlb() write cr4.  It would probably be safe to make that
-a flush_tlb_all() (and then get these statistics), but the mtrr
-code is ancient and I'm hesitant to touch it other than to just
-stick in the counters.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/arch/x86/include/asm/tlbflush.h    |   38 +++++++++++++++---
- linux.git-davehans/arch/x86/kernel/cpu/mtrr/generic.c |    2 
- linux.git-davehans/arch/x86/mm/tlb.c                  |    4 -
- linux.git-davehans/include/linux/vm_event_item.h      |    3 -
- linux.git-davehans/mm/vmstat.c                        |    3 -
- 5 files changed, 39 insertions(+), 11 deletions(-)
-
-diff -puN include/linux/vm_event_item.h~compile-useless-stats-out-on-up include/linux/vm_event_item.h
---- linux.git/include/linux/vm_event_item.h~compile-useless-stats-out-on-up	2013-07-19 08:21:37.408237538 -0700
-+++ linux.git-davehans/include/linux/vm_event_item.h	2013-07-19 09:13:16.903143205 -0700
-@@ -70,11 +70,12 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
- 		THP_ZERO_PAGE_ALLOC,
- 		THP_ZERO_PAGE_ALLOC_FAILED,
- #endif
-+#ifdef CONFIG_SMP
- 		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
- 		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
-+#endif
- 		NR_TLB_LOCAL_FLUSH_ALL,
- 		NR_TLB_LOCAL_FLUSH_ONE,
--		NR_TLB_LOCAL_FLUSH_ONE_KERNEL,
- 		NR_VM_EVENT_ITEMS
- };
- 
-diff -puN mm/vmstat.c~compile-useless-stats-out-on-up mm/vmstat.c
---- linux.git/mm/vmstat.c~compile-useless-stats-out-on-up	2013-07-19 08:21:37.410237627 -0700
-+++ linux.git-davehans/mm/vmstat.c	2013-07-19 09:13:29.388694341 -0700
-@@ -817,11 +817,12 @@ const char * const vmstat_text[] = {
- 	"thp_zero_page_alloc",
- 	"thp_zero_page_alloc_failed",
- #endif
-+#ifdef CONFIG_SMP
- 	"nr_tlb_remote_flush",
- 	"nr_tlb_remote_flush_received",
-+#endif
- 	"nr_tlb_local_flush_all",
- 	"nr_tlb_local_flush_one",
--	"nr_tlb_local_flush_one_kernel",
- 
- #endif /* CONFIG_VM_EVENTS_COUNTERS */
- };
-diff -puN arch/x86/mm/tlb.c~compile-useless-stats-out-on-up arch/x86/mm/tlb.c
---- linux.git/arch/x86/mm/tlb.c~compile-useless-stats-out-on-up	2013-07-19 08:21:37.411237672 -0700
-+++ linux.git-davehans/arch/x86/mm/tlb.c	2013-07-19 09:10:16.183165988 -0700
-@@ -280,10 +280,8 @@ static void do_kernel_range_flush(void *
- 	unsigned long addr;
- 
- 	/* flush range by one by one 'invlpg' */
--	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE) {
--		count_vm_event(NR_TLB_LOCAL_FLUSH_ONE_KERNEL);
-+	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE)
- 		__flush_tlb_single(addr);
--	}
- }
- 
- void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-diff -puN arch/x86/mm/Makefile~compile-useless-stats-out-on-up arch/x86/mm/Makefile
-diff -puN arch/x86/kernel/cpu/mtrr/generic.c~compile-useless-stats-out-on-up arch/x86/kernel/cpu/mtrr/generic.c
---- linux.git/arch/x86/kernel/cpu/mtrr/generic.c~compile-useless-stats-out-on-up	2013-07-19 08:30:41.081279304 -0700
-+++ linux.git-davehans/arch/x86/kernel/cpu/mtrr/generic.c	2013-07-19 13:21:55.160158221 -0700
-@@ -683,6 +683,7 @@ static void prepare_set(void) __acquires
- 	}
- 
- 	/* Flush all TLBs via a mov %cr3, %reg; mov %reg, %cr3 */
-+	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
- 	__flush_tlb();
- 
- 	/* Save MTRR state */
-@@ -696,6 +697,7 @@ static void prepare_set(void) __acquires
- static void post_set(void) __releases(set_atomicity_lock)
- {
- 	/* Flush TLBs (no need to flush caches - they are disabled) */
-+	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
- 	__flush_tlb();
- 
- 	/* Intel (P6) standard MTRRs */
-diff -puN arch/x86/include/asm/paravirt.h~compile-useless-stats-out-on-up arch/x86/include/asm/paravirt.h
-diff -puN arch/x86/include/asm/tlbflush.h~compile-useless-stats-out-on-up arch/x86/include/asm/tlbflush.h
---- linux.git/arch/x86/include/asm/tlbflush.h~compile-useless-stats-out-on-up	2013-07-19 08:31:48.158245363 -0700
-+++ linux.git-davehans/arch/x86/include/asm/tlbflush.h	2013-07-19 13:24:14.022307785 -0700
-@@ -62,6 +62,7 @@ static inline void __flush_tlb_all(void)
- 
- static inline void __flush_tlb_one(unsigned long addr)
- {
-+	count_vm_event(NR_TLB_LOCAL_FLUSH_ONE);
- 	__flush_tlb_single(addr);
- }
- 
-@@ -84,14 +85,39 @@ static inline void __flush_tlb_one(unsig
- 
- #ifndef CONFIG_SMP
- 
--#define flush_tlb() __flush_tlb()
--#define flush_tlb_all() __flush_tlb_all()
--#define local_flush_tlb() __flush_tlb()
-+/* "_up" is for UniProcessor
-+ *
-+ * This is a helper for other header functions.  *Not*
-+ * intended to be called directly.  All global TLB
-+ * flushes need to either call this, or do the bump the
-+ * vm statistics themselves.
-+ */
-+static inline void __flush_tlb_up(void)
-+{
-+	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
-+	__flush_tlb();
-+}
-+
-+static inline void flush_tlb_all(void)
-+{
-+	count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
-+	__flush_tlb_all();
-+}
-+
-+static inline void flush_tlb(void)
-+{
-+	__flush_tlb_up();
-+}
-+
-+static inline void local_flush_tlb(void)
-+{
-+	__flush_tlb_up();
-+}
- 
- static inline void flush_tlb_mm(struct mm_struct *mm)
- {
- 	if (mm == current->active_mm)
--		__flush_tlb();
-+		__flush_tlb_up();
- }
- 
- static inline void flush_tlb_page(struct vm_area_struct *vma,
-@@ -105,14 +131,14 @@ static inline void flush_tlb_range(struc
- 				   unsigned long start, unsigned long end)
- {
- 	if (vma->vm_mm == current->active_mm)
--		__flush_tlb();
-+		__flush_tlb_up();
- }
- 
- static inline void flush_tlb_mm_range(struct mm_struct *mm,
- 	   unsigned long start, unsigned long end, unsigned long vmflag)
- {
- 	if (mm == current->active_mm)
--		__flush_tlb();
-+		__flush_tlb_up();
- }
- 
- static inline void native_flush_tlb_others(const struct cpumask *cpumask,
-diff -puN arch/x86/include/asm/cpufeature.h~compile-useless-stats-out-on-up arch/x86/include/asm/cpufeature.h
-diff -puN arch/x86/mm/init_64.c~compile-useless-stats-out-on-up arch/x86/mm/init_64.c
-_
