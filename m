@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933926Ab3GSQ3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:29:47 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59119 "EHLO
+	id S933660Ab3GSQ3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:29:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54588 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab3GSQ3i (ORCPT
+	with ESMTP id S1760584Ab3GSQ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:29:38 -0400
+	Fri, 19 Jul 2013 12:29:39 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
@@ -14,96 +14,116 @@ Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 04/15] DMA: shdma: make a pointer const
-Date: Fri, 19 Jul 2013 18:29:29 +0200
-Message-Id: <1374251374-30186-5-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v2 05/15] DMA: shdma: pass SoC-specific configuration to the driver via OF matching
+Date: Fri, 19 Jul 2013 18:29:30 +0200
+Message-Id: <1374251374-30186-6-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:WRM7TfNEdVEZx0P+z+qzOA+LPSQa1NR4ugdDnyrkNOo
- 8ZDcwOZboMO7SWgm9Vjnm58rFNU+GI8YjY5n6UjYl/RWJnyGjN
- 7bQ1/p92C+XvK9RDD85YfWzwnLhYTrResyrSEAvbbQuk28wxGt
- 2oxIvsN6bQDMcH+9IFpaSXCLqeKubNYyH7pFV3zjkbBuf6qQmr
- rGaDKjGngf9q3Dhq+zG4kv06gTvXB9FB5dPQbkzLr9UmY+aQC7
- M6FomQmlWfFJidFw9CQVqsvEZVTrghHCzZLf2RbnsMZPQ3eKFK
- YJ/2jmYwDp5A2p9QzXMB+YoON3xaq7nmHeyX0WXZQUKbw8dDER
- sgyQIO+RZUrcE1dcSkCEsahu7ytXo1WsR2lMjxnejrp3S+GnQj
- x1NW/KDzlXa+g==
+X-Provags-ID: V02:K0:bG4rzXhRMLhl7SQjyTXOjhj9bOe+y3CdfqrpQ1YR/hp
+ C0x5oIoVNVuufN2T5kzfbbmPToOS5nY4VmgyMlfO7p6gLC4h59
+ 7ANYgDGtFyxzyrLZs9et7Gq5kBvPZKC9b/Qun181ZPj3gWFqlc
+ vuZqDT+JSLBA4G3h0Xg6tceLiVJrwxTkwXA1MlNaOlTW8xx0ze
+ M/sKMQ0f0WJt2saLyfIoQPepDbjAjy5R79F8erNlAUT1hStPHv
+ +DvWWcBoFf+4RoWIUlz+Bf1QKzgvT3G57LjCwUKjX9r79EYTDL
+ eh7TuzZ/ZR4X2CPO6OTqhq2q8ck81DdMlycwFRjk7oBEl2ksuY
+ TWSrSOemw5bkcPg039Si5WlHVWos0EAICcLyTanOlRkObCAZ4i
+ H9zRodANZfczA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform data shouldn't be changed at run-time, so, pointers to it should
-be const.
+Similar to the non-DT case, this patch passes SoC-specific configuration
+to the driver via device ID matching, instead of platform data.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- drivers/dma/sh/shdma.h  |    2 +-
- drivers/dma/sh/shdmac.c |   10 +++++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/dma/sh/shdma.h b/drivers/dma/sh/shdma.h
-index 82a83f8..ae0c65f 100644
---- a/drivers/dma/sh/shdma.h
-+++ b/drivers/dma/sh/shdma.h
-@@ -36,7 +36,7 @@ struct sh_dmae_chan {
- struct sh_dmae_device {
- 	struct shdma_dev shdma_dev;
- 	struct sh_dmae_chan *chan[SH_DMAE_MAX_CHANNELS];
--	struct sh_dmae_pdata *pdata;
-+	const struct sh_dmae_pdata *pdata;
- 	struct list_head node;
- 	void __iomem *chan_reg;
- 	void __iomem *dmars;
+v2: adjust spacing within array definitions to keep a uniform style.
+
+ Documentation/devicetree/bindings/dma/shdma.txt |    7 +++++--
+ drivers/dma/sh/shdmac.c                         |   22 +++++++++++++++-------
+ 2 files changed, 20 insertions(+), 9 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/dma/shdma.txt b/Documentation/devicetree/bindings/dma/shdma.txt
+index c15994a..7702e35 100644
+--- a/Documentation/devicetree/bindings/dma/shdma.txt
++++ b/Documentation/devicetree/bindings/dma/shdma.txt
+@@ -22,7 +22,10 @@ Optional properties (currently unused):
+ * DMA controller
+ 
+ Required properties:
+-- compatible:	should be "renesas,shdma"
++- compatible:	should be one of
++		"renesas,shdma-r8a73a4" for the system DMAC on r8a73a4 SoC
++		"renesas,shdma-r8a7740" for the DMACs (not RTDMAC) on r8a7740
++		"renesas,shdma" for a generic DMAC
+ 
+ Example:
+ 	dmac: dma-mux0 {
+@@ -36,7 +39,7 @@ Example:
+ 		ranges;
+ 
+ 		dma0: shdma@fe008020 {
+-			compatible = "renesas,shdma";
++			compatible = "renesas,shdma-r8a7740";
+ 			reg = <0xfe008020 0x270>,
+ 				<0xfe009000 0xc>;
+ 			interrupt-parent = <&gic>;
 diff --git a/drivers/dma/sh/shdmac.c b/drivers/dma/sh/shdmac.c
-index 6546bf9..859ddbe 100644
+index 859ddbe..f80543c 100644
 --- a/drivers/dma/sh/shdmac.c
 +++ b/drivers/dma/sh/shdmac.c
-@@ -177,7 +177,7 @@ static bool dmae_is_busy(struct sh_dmae_chan *sh_chan)
- static unsigned int calc_xmit_shift(struct sh_dmae_chan *sh_chan, u32 chcr)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	int cnt = ((chcr & pdata->ts_low_mask) >> pdata->ts_low_shift) |
- 		((chcr & pdata->ts_high_mask) >> pdata->ts_high_shift);
+@@ -20,6 +20,8 @@
  
-@@ -190,7 +190,7 @@ static unsigned int calc_xmit_shift(struct sh_dmae_chan *sh_chan, u32 chcr)
- static u32 log2size_to_chcr(struct sh_dmae_chan *sh_chan, int l2size)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	int i;
+ #include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/slab.h>
+ #include <linux/interrupt.h>
+ #include <linux/dmaengine.h>
+@@ -663,6 +665,14 @@ static const struct shdma_ops sh_dmae_shdma_ops = {
+ 	.get_partial = sh_dmae_get_partial,
+ };
  
- 	for (i = 0; i < pdata->ts_shift_num; i++)
-@@ -250,7 +250,7 @@ static int dmae_set_chcr(struct sh_dmae_chan *sh_chan, u32 val)
- static int dmae_set_dmars(struct sh_dmae_chan *sh_chan, u16 val)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	const struct sh_dmae_channel *chan_pdata = &pdata->channel[sh_chan->shdma_chan.id];
- 	void __iomem *addr = shdev->dmars;
- 	unsigned int shift = chan_pdata->dmars_bit;
-@@ -319,7 +319,7 @@ static const struct sh_dmae_slave_config *dmae_find_slave(
- 	struct sh_dmae_chan *sh_chan, int match)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	const struct sh_dmae_slave_config *cfg;
- 	int i;
- 
-@@ -665,7 +665,7 @@ static const struct shdma_ops sh_dmae_shdma_ops = {
- 
++static const struct of_device_id sh_dmae_of_match[] = {
++	{.compatible = "renesas,shdma",},
++	{.compatible = "renesas,shdma-r8a73a4", .data = r8a73a4_shdma_devid,},
++	{.compatible = "renesas,shdma-r8a7740", .data = r8a7740_shdma_devid,},
++	{}
++};
++MODULE_DEVICE_TABLE(of, sh_dmae_of_match);
++
  static int sh_dmae_probe(struct platform_device *pdev)
  {
--	struct sh_dmae_pdata *pdata;
-+	const struct sh_dmae_pdata *pdata;
- 	unsigned long irqflags = IRQF_DISABLED,
- 		chan_flag[SH_DMAE_MAX_CHANNELS] = {};
- 	int errirq, chan_irq[SH_DMAE_MAX_CHANNELS];
+ 	const struct sh_dmae_pdata *pdata;
+@@ -674,7 +684,11 @@ static int sh_dmae_probe(struct platform_device *pdev)
+ 	struct dma_device *dma_dev;
+ 	struct resource *chan, *dmars, *errirq_res, *chanirq_res;
+ 
+-	pdata = (void *)pdev->id_entry->driver_data ? : pdev->dev.platform_data;
++	if (pdev->dev.of_node)
++		pdata = of_match_device(sh_dmae_of_match, &pdev->dev)->data;
++	else
++		pdata = (void *)pdev->id_entry->driver_data ? :
++			pdev->dev.platform_data;
+ 
+ 	/* get platform data */
+ 	if (!pdata || !pdata->channel_num)
+@@ -899,12 +913,6 @@ static int sh_dmae_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static const struct of_device_id sh_dmae_of_match[] = {
+-	{ .compatible = "renesas,shdma", },
+-	{ }
+-};
+-MODULE_DEVICE_TABLE(of, sh_dmae_of_match);
+-
+ const struct platform_device_id sh_dmae_id_table[] = {
+ 	{.name = SH_DMAE_DRV_NAME,},
+ 	{.name = "shdma-r8a73a4", .driver_data = (kernel_ulong_t)r8a73a4_shdma_devid,},
 -- 
 1.7.2.5
 
