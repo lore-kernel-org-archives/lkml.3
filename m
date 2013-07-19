@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab3GSVmD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:42:03 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:38872 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab3GSVmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:42:00 -0400
+	id S1751567Ab3GSVo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:44:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4769 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101Ab3GSVoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 17:44:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,704,1367996400"; 
+   d="scan'208";a="373185391"
+Date: Fri, 19 Jul 2013 14:44:21 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Kurt H Maier <khm@sdf.org>, "Ted Ts'o" <tytso@mit.edu>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Subject: Re:  Maybe it's time to shut this thread down (Was: Re: [ 00/19]
+ 3.10.1-stable review)
+Message-ID: <20130719214421.GA5161@xanatos>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1307192326080.2229@localhost6.localdomain6>
-References: <1374191339-10124-1-git-send-email-mcgrof@do-not-panic.com>
- <Pine.LNX.4.44L0.1307191012330.1055-100000@iolanthe.rowland.org>
- <CAB=NE6XmxX0UQkbchU_AKJOyENcn0auBGMPzru5C4nohg_v1sQ@mail.gmail.com>
- <CAB=NE6VHgure2+2VA=XWtaii4Wc_rG7YZ=_ZetgGnvouh7HJPw@mail.gmail.com> <alpine.DEB.2.02.1307192326080.2229@localhost6.localdomain6>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 19 Jul 2013 14:41:37 -0700
-X-Google-Sender-Auth: TRBG-eF4GOReapYaUZlcX5O-3aw
-Message-ID: <CAB=NE6WfbauZnzCT=jgfUtc2Roe7WfY=G7Z5OAobc9YLc0nCvw@mail.gmail.com>
-Subject: Re: [PATCH] backports: backport drvdata = NULL core driver fixes
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Felix Fietkau <nbd@openwrt.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718133008.GC30405@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 2:27 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> On Fri, 19 Jul 2013, Luis R. Rodriguez wrote:
->
->> On Fri, Jul 19, 2013 at 2:07 PM, Luis R. Rodriguez
->> <mcgrof@do-not-panic.com> wrote:
->> >> This is not a very good idea.  Although setting drvdata to NULL allowed
->> >> a lot of code to be removed, it also exposed a bunch of hidden bugs --
->> >> drivers were using the drvdata value even after their remove function
->> >> returned.
->> >
->> > Eek, have we not SmPL'ify'd a proof yet to ensure code like this no
->> > longer exists? Julia? :)
->>
->> Come to think of it, perhaps we should require *proof* with SmPL like
->> this in future to avoid regressions ?
->
-> Is it a concurrency problem?  SmPL is not so good at that in the general
-> case.  One would have to know a specific case where other functions of the
-> driver can be invoked after remove.
+On Fri, Jul 19, 2013 at 04:03:24PM -0400, Kurt H Maier wrote:
+> On Fri, Jul 19, 2013 at 12:01:27PM -0700, Sarah Sharp wrote:
+> > 
+> > I'm not trying to shut down this discussion.  But please, let's continue
+> > this discussion at KS, away from the court of public opinion.  I would
+> > love for this email to serve as a final summary of my opinion.  We can
+> > use this email to start a conversation at KS, and we can argue our
+> > hearts out there about the various points.
+> 
+> Well more than half your argument is about how "the court of public
+> opinion" regards interactions on the mailing list.  Why is this
+> discussion exempt?
 
-Thanks Julia. In that case I'm going to just leave this in place given
-that if there's a bug upstream we'll get it fixed as soon as a
-respective patch gets upstream as well. That is, we are not using old
-drivers, we use the same upstream drivers so if a regression was found
-in backports the fix must go upstream s well. This is one of the
-benefits of backporting -- the range of users and testers increases
-and we still benefit from the upstream bandwagon.
+Come to KS!  You're more than welcome to discuss this with us there.
 
-  Luis
+With some schedule wrangling, I think we can make the session on LKML
+communication styles take place on the overlapping day between KS and
+LinuxCon.  That should allow anyone from the wider open source community
+that wants to participate in this conversation do so.
+
+Sarah Sharp
