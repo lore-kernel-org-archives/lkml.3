@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965865Ab3GSFbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:31:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40030 "EHLO
+	id S965891Ab3GSFb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:31:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965510Ab3GSF1P (ORCPT
+	with ESMTP id S965812Ab3GSF1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:15 -0400
+	Fri, 19 Jul 2013 01:27:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Carinas <catalin.marinas@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
+        Jed Davis <jld@mozilla.com>, Will Deacon <will.deacon@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 60/72] ARM: 7767/1: let the ASID allocator handle suspended animation
-Date: Thu, 18 Jul 2013 22:26:17 -0700
-Message-Id: <20130719052603.973434963@linuxfoundation.org>
+Subject: [ 59/72] ARM: 7765/1: perf: Record the user-mode PC in the call chain.
+Date: Thu, 18 Jul 2013 22:26:16 -0700
+Message-Id: <20130719052603.898094944@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -29,83 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Zyngier <Marc.Zyngier@arm.com>
+From: Jed Davis <jld@mozilla.com>
 
-commit ae120d9edfe96628f03d87634acda0bfa7110632 upstream.
+commit c5f927a6f62196226915f12194c9d0df4e2210d7 upstream.
 
-When a CPU is running a process, the ASID for that process is
-held in a per-CPU variable (the "active ASIDs" array). When
-the ASID allocator handles a rollover, it copies the active
-ASIDs into a "reserved ASIDs" array to ensure that a process
-currently running on another CPU will continue to run unaffected.
-The active array is zero-ed to indicate that a rollover occurred.
+With this change, we no longer lose the innermost entry in the user-mode
+part of the call chain.  See also the x86 port, which includes the ip.
 
-Because of this mechanism, a reserved ASID is only remembered for
-a single rollover. A subsequent rollover will completely refill
-the reserved ASIDs array.
+It's possible to partially work around this problem by post-processing
+the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
+wasn't in the kernel when the sample was taken.
 
-In a severely oversubscribed environment where a CPU can be
-prevented from running for extended periods of time (think virtual
-machines), the above has a horrible side effect:
-
-[P{a} denotes process P running with ASID a]
-
-	CPU-0		CPU-1
-
-	A{x}				[active = <x 0>]
-
-	[suspended]	runs B{y}	[active = <x y>]
-
-					[rollover:
-					 active = <0 0>
-					 reserved = <x y>]
-
-			runs B{y}	[active = <0 y>
-					 reserved = <x y>]
-
-					[rollover:
-					 active = <0 0>
-					 reserved = <0 y>]
-
-			runs C{x}	[active = <0 x>]
-
-	[resumes]
-
-	runs A{x}
-
-At that stage, both A and C have the same ASID, with deadly
-consequences.
-
-The fix is to preserve reserved ASIDs across rollovers if
-the CPU doesn't have an active ASID when the rollover occurs.
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-Acked-by: Catalin Carinas <catalin.marinas@arm.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Jed Davis <jld@mozilla.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/context.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/arm/kernel/perf_event.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -128,6 +128,15 @@ static void flush_context(unsigned int c
- 			asid = 0;
- 		} else {
- 			asid = atomic64_xchg(&per_cpu(active_asids, i), 0);
-+			/*
-+			 * If this CPU has already been through a
-+			 * rollover, but hasn't run another task in
-+			 * the meantime, we must preserve its reserved
-+			 * ASID, as this is the only trace we have of
-+			 * the process it is still running.
-+			 */
-+			if (asid == 0)
-+				asid = per_cpu(reserved_asids, i);
- 			__set_bit(ASID_TO_IDX(asid), asid_map);
- 		}
- 		per_cpu(reserved_asids, i) = asid;
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -569,6 +569,7 @@ perf_callchain_user(struct perf_callchai
+ 		return;
+ 	}
+ 
++	perf_callchain_store(entry, regs->ARM_pc);
+ 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
+ 
+ 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
 
 
