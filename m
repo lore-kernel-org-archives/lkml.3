@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965594Ab3GSFwv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:52:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39321 "EHLO
+	id S966083Ab3GSFxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:53:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39306 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964962Ab3GSFWA (ORCPT
+	with ESMTP id S1759612Ab3GSFV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:00 -0400
+	Fri, 19 Jul 2013 01:21:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjarni Ingi Gislason <bjarniig@rhi.hi.is>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, 709647@bugs.debian.org
-Subject: [ 17/38] genirq: Fix can_request_irq() for IRQs without an action
-Date: Thu, 18 Jul 2013 22:21:33 -0700
-Message-Id: <20130719052049.063069625@linuxfoundation.org>
+        Joachim Eastwood <manabian@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [ 13/38] pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+Date: Thu, 18 Jul 2013 22:21:29 -0700
+Message-Id: <20130719052048.789209149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -28,44 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Joachim Eastwood <manabian@gmail.com>
 
-commit 2779db8d37d4b542d9ca2575f5f178dbeaca6c86 upstream.
+commit e39506b466edcda2a7e9d0174d7987ae654137b7 upstream.
 
-Commit 02725e7471b8 ('genirq: Use irq_get/put functions'),
-inadvertently changed can_request_irq() to return 0 for IRQs that have
-no action.  This causes pcibios_lookup_irq() to select only IRQs that
-already have an action with IRQF_SHARED set, or to fail if there are
-none.  Change can_request_irq() to return 1 for IRQs that have no
-action (if the first two conditions are met).
+Commit 80af9e6d (pcmcia at91_cf: fix raw gpio number usage) forgot
+to change the parameter in gpio_get_value after adding gpio
+validation.
 
-Reported-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is>
-Tested-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is> (against 3.2)
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: 709647@bugs.debian.org
-Link: http://bugs.debian.org/709647
-Link: http://lkml.kernel.org/r/1372383630.23847.40.camel@deadeye.wl.decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Joachim Eastwood <manabian@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/manage.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/pcmcia/at91_cf.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -555,9 +555,9 @@ int can_request_irq(unsigned int irq, un
- 		return 0;
+--- a/drivers/pcmcia/at91_cf.c
++++ b/drivers/pcmcia/at91_cf.c
+@@ -100,9 +100,9 @@ static int at91_cf_get_status(struct pcm
+ 		int vcc	= gpio_is_valid(cf->board->vcc_pin);
  
- 	if (irq_settings_can_request(desc)) {
--		if (desc->action)
--			if (irqflags & desc->action->flags & IRQF_SHARED)
--				canrequest =1;
-+		if (!desc->action ||
-+		    irqflags & desc->action->flags & IRQF_SHARED)
-+			canrequest = 1;
- 	}
- 	irq_put_desc_unlock(desc, flags);
- 	return canrequest;
+ 		*sp = SS_DETECT | SS_3VCARD;
+-		if (!rdy || gpio_get_value(rdy))
++		if (!rdy || gpio_get_value(cf->board->irq_pin))
+ 			*sp |= SS_READY;
+-		if (!vcc || gpio_get_value(vcc))
++		if (!vcc || gpio_get_value(cf->board->vcc_pin))
+ 			*sp |= SS_POWERON;
+ 	} else
+ 		*sp = 0;
 
 
