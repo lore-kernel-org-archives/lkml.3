@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973Ab3GSI1o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:27:44 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2919 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241Ab3GSI1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:27:40 -0400
-X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
-   d="scan'208";a="7947789"
-Message-ID: <51E8F7A6.7030708@cn.fujitsu.com>
-Date: Fri, 19 Jul 2013 16:24:06 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1759994Ab3GSI1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:27:55 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:32870 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759975Ab3GSI1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:27:50 -0400
+Date: Fri, 19 Jul 2013 10:27:49 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        hector.palacios@digi.com, Thomas Petazzoni <thomas@free-electrons.com>,
+        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 0/3] Few ignored framebuffer fixes/additions
+Message-ID: <20130719082749.GB5106@lukather>
+References: <1373902022-20439-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20130717143709.f8879fb7f0a5d55859e96838@linux-foundation.org>
 MIME-Version: 1.0
-To: Kim <jaegeuk.kim@samsung.com>
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] f2fs: use list_for_each rather than list_for_each_safe, in
- remove_orphan_inode()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 16:25:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 16:25:45,
-	Serialize complete at 2013/07/19 16:25:45
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XOIedfhf+7KOe/yw"
+Content-Disposition: inline
+In-Reply-To: <20130717143709.f8879fb7f0a5d55859e96838@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we remove the target single node, so list_for_each is enought, in order to
-clean up, we use list_for_each_entry instead.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/f2fs/checkpoint.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+--XOIedfhf+7KOe/yw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 290db04..87f7bc2 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -237,13 +237,12 @@ out:
- 
- void remove_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
- {
--	struct list_head *this, *next, *head;
-+	struct list_head *head;
- 	struct orphan_inode_entry *orphan;
- 
- 	mutex_lock(&sbi->orphan_inode_mutex);
- 	head = &sbi->orphan_inode_list;
--	list_for_each_safe(this, next, head) {
--		orphan = list_entry(this, struct orphan_inode_entry, list);
-+	list_for_each_entry(orphan, head, list) {
- 		if (orphan->ino == ino) {
- 			list_del(&orphan->list);
- 			kmem_cache_free(orphan_entry_slab, orphan);
--- 
-1.7.7
+Hi Andrew,
 
+On Wed, Jul 17, 2013 at 02:37:09PM -0700, Andrew Morton wrote:
+> On Mon, 15 Jul 2013 17:26:59 +0200 Maxime Ripard <maxime.ripard@free-elec=
+trons.com> wrote:
+>=20
+> > Sorry to bother you again with the framebuffer stuff but the new
+> > maintainer doesn't appear to be responsive either.
+>=20
+> Jean-Christophe is doing things - on 11 July he sent out a call for
+> late patches to linux-fbdev@vger.kernel.org.
+>=20
+> So hopefully the resend of this patch series will be handled
+> appropriately?
+
+Hopefully. We'll see how it turns out then, and let you know.
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--XOIedfhf+7KOe/yw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR6PiFAAoJEBx+YmzsjxAgVAEQAKX0DZTXlsUffgonwy7AY4M5
+DBgKJr4OCyISLEdpdAFr/HDIxvkZfQNlqoJ+v9Cb8Asx6vDNnHYPfJwUoUf/hTIU
+prGcOXnwPPeICwnmDtedLYYDthXTBpWMh0xi9c1Iy74RIVpcZhR8coV+jwWmVT7Y
+oH31/T6PU6ilFkx4cxBhsREHODPnWhI/5/Zr0pjRpKg67x9D9tIxbBvElI3RnGNu
+8SdDNYM1TaZESNLo82VoUT4+46zv+HntTpYHDCH+wa9CTVWw/YiSwFpw9rG5Z/iQ
+6YScHMjG6RVWCwVFU76/deZEOqgsv++PZJZ9EDjVHTPQyBVVThRWWtqS/nAgN7EK
+s44G5nluR47rutrk/d4NM0sDEJTM7Ru+H0S4hPc5B2FG5pVg7jMfQVGR0pd1EloI
+ZDgZ8UFBeNoS7As/EwPVfRAgAsupRV5w6xb5QqxYx22tUFCEdGB84EZYTh4H5fnT
+CKGsp/pghcZ+WzlODI2UtxrnZY3mAT7KKlcbkJjibztojGSzKjhpVPsCmXOGZO7r
+gE++4KP/iPkq9DmVObZJL6yxkXKuFjtZ0V+PLFzmifOF2sRvEazKNm7MpH7mNkhH
+SCEE0ihNwHtAMKEAD4O05T23lyROd5PZhVBhK8jY0Fgs9YPlzF7XGQjYpd9KJsBT
+myTRqt6GM/T/ZJKawzmp
+=v2mM
+-----END PGP SIGNATURE-----
+
+--XOIedfhf+7KOe/yw--
