@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760283Ab3GSKuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:50:20 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:57305 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760229Ab3GSKuR (ORCPT
+	id S1760295Ab3GSKuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:50:24 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:61161 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760276Ab3GSKuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:50:17 -0400
+	Fri, 19 Jul 2013 06:50:20 -0400
 From: daniel jeong <gshark.jeong@gmail.com>
 To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
 Cc: Daniel Jeong <daniel.jeong@ti.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         <linux-kernel@vger.kernel.org>
 Subject: [PATCH] backlight-lm3630-apply chip revision
-Date: Fri, 19 Jul 2013 19:49:32 +0900
-Message-Id: <1374230973-30939-1-git-send-email-daniel.jeong@ti.com>
+Date: Fri, 19 Jul 2013 19:49:33 +0900
+Message-Id: <1374230973-30939-2-git-send-email-daniel.jeong@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374230973-30939-1-git-send-email-daniel.jeong@ti.com>
+References: <1374230973-30939-1-git-send-email-daniel.jeong@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@chip revision
 The TI LM3630 chip was revised and chip name was also changed to LM3630A.
 And register map, default values and initial sequences are changed.
 www.ti.com
