@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759621Ab3GSDaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 23:30:16 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:54108 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab3GSDaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 23:30:15 -0400
+	id S965054Ab3GSDcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 23:32:13 -0400
+Received: from smtpfreer105.163vip.net ([211.100.40.154]:24723 "HELO
+	smtp.tom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1759616Ab3GSDcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 23:32:12 -0400
+Authentication-Results: bjsd-antispam2 smtp.user=numberonecn@tom.com; auth=pass (LOGIN)
+Date: Fri, 19 Jul 2013 11:30:11 +0800
+From: "Numberone Biotech Inc." <numberonecn@tom.com>
+Reply-To: cnrocket020@126.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Steroid Products
+Message-ID: <201307191130113162581@tom.com>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Build 9.0.2416 (9.0.2910.0)
 MIME-Version: 1.0
-In-Reply-To: <51E893BC.6070400@gmail.com>
-References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
- <51E88AEF.8040701@gmail.com> <CALCETrXnVBPNGGTQQoXnpEmjXHxbhiWx+4RuMVQLRG5sfMpofA@mail.gmail.com>
- <51E893BC.6070400@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 18 Jul 2013 20:29:52 -0700
-Message-ID: <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
-Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6J3WJTK008247
 
-On Thu, Jul 18, 2013 at 6:17 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 07/18/2013 05:50 PM, Andy Lutomirski wrote:
->>
->> On Thu, Jul 18, 2013 at 5:40 PM, David Daney <ddaney.cavm@gmail.com>
->> wrote:
->>>
->>> On 07/18/2013 05:26 PM, Andy Lutomirski wrote:
->>>
->>>
->>> How is this different than throwing exceptions from a signal handler?
->>
->>
->> Two ways.  First, exceptions thrown from a signal handler can't be
->> retries.
->
->
-> ??
+Dear,
+We supply products-injection steroids, oral steroids.
+Min. order quantity: As your request.
+Payment type: Western Union, Bank Transfer.
+Delivery time: within 15 working days after get payment.
+Shipping term: express mail (with registered tracking number, door delivery).
+Supplying ability: 5000 vials(bottles) per week.
+Return policy: we will return your money if our products don¡¯t have good effect.
+We can develop and product the injectable steroids as your request too.
+You can learn the details of our products on our web: <numberone-cn.com>.
+We hope to receiving orders from you and build a long lasting working relation with you.
 
-s/retries/retried, by which I mean that you can't do things like
-implementing virtual memory in userspace by catching SIGSEGV, calling
-mmap, and resuming.
+Sincerely,
 
->
->
->> Second, and more importantly, installing a signal handler in
->> a library is a terrible idea.
->
->
-> The signal handler would be installed by main() before calling into the
-> library.  You have to have a small amount of boiler plate code to set it up,
-> but the libraries wouldn't have to be modified if they were already
-> exception safe.
->
-> FWIW the libgcj java runtime environment uses this strategy for handling
-> NullPointerExceptions and DivideByZeroError(sp?).  Since all that code for
-> the most part follows the standard C++ ABIs, it is an example of this
-> technique that has been deployed in many environments.
-
-Other way around: a *library* that wants to use exception handling
-can't do so safely without the cooperation, or at least understanding,
-of the main program and every other library that wants to do something
-similar.  Suppose my library installs a SIGFPE handler and throws
-my_sigfpe_exception and your library installs a SIGFPE handler and
-throws your_sigfpe_exception.  The result: one wins and the other
-crashes due to an unhandled exception.
-
-In my particular usecase, I have code (known to the main program) that
-catches all kinds of fatal signals to log nice error messages before
-dying.  That means that I can't use a library that handles signals for
-any other purpose.  Right now I want to have a small snippet of code
-handle SIGBUS, but now I need to coordinate it with everything else.
-
-If this stuff were unified, then everything would just work.
-
---Andy
+Overseas Sales Division
+Numberone Biotech Co., Ltd.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
