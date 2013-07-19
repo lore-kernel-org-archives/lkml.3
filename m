@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965930Ab3GSFgp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:36:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39918 "EHLO
+	id S965935Ab3GSFhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:37:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965697Ab3GSF0v (ORCPT
+	with ESMTP id S965691Ab3GSF0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:51 -0400
+	Fri, 19 Jul 2013 01:26:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shane Huang <shane.huang@amd.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 45/72] ahci: Add AMD CZ SATA device ID
-Date: Thu, 18 Jul 2013 22:26:02 -0700
-Message-Id: <20130719052602.942799000@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 09/72] ext3,ext4: dont mess with dir_file->f_pos in htree_dirblock_to_tree()
+Date: Thu, 18 Jul 2013 22:25:26 -0700
+Message-Id: <20130719052600.496451648@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,43 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit fafe5c3d82a470d73de53e6b08eb4e28d974d895 upstream.
+commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
 
-To add AMD CZ SATA controller device ID of IDE mode.
+Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
+in-core rbtree for use by call_filldir().  All updates of ->f_pos are
+done by the latter; bumping it here (on error) is obviously wrong - we
+might very well have it nowhere near the block we'd found an error in.
 
-[bhelgaas: drop pci_ids.h update]
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c   |    1 +
- drivers/pci/quirks.c |    2 ++
- 2 files changed, 3 insertions(+)
+ fs/ext3/namei.c |    7 ++-----
+ fs/ext4/namei.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -310,6 +310,7 @@ static const struct pci_device_id ahci_p
- 
- 	/* AMD */
- 	{ PCI_VDEVICE(AMD, 0x7800), board_ahci }, /* AMD Hudson-2 */
-+	{ PCI_VDEVICE(AMD, 0x7900), board_ahci }, /* AMD CZ */
- 	/* AMD is using RAID class only for ahci controllers */
- 	{ PCI_VENDOR_ID_AMD, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_RAID << 8, 0xffffff, board_ahci },
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1022,6 +1022,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_A
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP700_SATA, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
- 
- /*
-  *	Serverworks CSB5 IDE does not fully support native mode
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -576,11 +576,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
+ 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
+ 						+((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse (bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext3fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -918,11 +918,8 @@ static int htree_dirblock_to_tree(struct
+ 				bh->b_data, bh->b_size,
+ 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
+ 					 + ((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse(bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext4fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
 
 
