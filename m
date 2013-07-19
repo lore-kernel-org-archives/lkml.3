@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935101Ab3GSCZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:25:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37768 "EHLO
+	id S935199Ab3GSCbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:31:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935025Ab3GSCY5 (ORCPT
+	with ESMTP id S935089Ab3GSCY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:24:57 -0400
+	Thu, 18 Jul 2013 22:24:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joachim Eastwood <manabian@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [ 10/24] pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
-Date: Thu, 18 Jul 2013 19:24:42 -0700
-Message-Id: <20130719022404.731916952@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Heiko Schocher <hs@denx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/24] drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
+Date: Thu, 18 Jul 2013 19:24:45 -0700
+Message-Id: <20130719022404.933036325@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -28,36 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joachim Eastwood <manabian@gmail.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit e39506b466edcda2a7e9d0174d7987ae654137b7 upstream.
+commit 29ecd78c0fd6ee05f2c6b07b23823a6ae43c13ff upstream.
 
-Commit 80af9e6d (pcmcia at91_cf: fix raw gpio number usage) forgot
-to change the parameter in gpio_get_value after adding gpio
-validation.
+In the disable AIE irq code path, current code passes "1" to enable
+parameter of rv3029c2_rtc_i2c_alarm_set_irq().  Thus it does not disable
+AIE irq.
 
-Signed-off-by: Joachim Eastwood <manabian@gmail.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Heiko Schocher <hs@denx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pcmcia/at91_cf.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-rv3029c2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pcmcia/at91_cf.c
-+++ b/drivers/pcmcia/at91_cf.c
-@@ -100,9 +100,9 @@ static int at91_cf_get_status(struct pcm
- 		int vcc	= gpio_is_valid(cf->board->vcc_pin);
+--- a/drivers/rtc/rtc-rv3029c2.c
++++ b/drivers/rtc/rtc-rv3029c2.c
+@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(st
+ 		dev_dbg(&client->dev, "alarm IRQ armed\n");
+ 	} else {
+ 		/* disable AIE irq */
+-		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
++		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
+ 		if (ret)
+ 			return ret;
  
- 		*sp = SS_DETECT | SS_3VCARD;
--		if (!rdy || gpio_get_value(rdy))
-+		if (!rdy || gpio_get_value(cf->board->irq_pin))
- 			*sp |= SS_READY;
--		if (!vcc || gpio_get_value(vcc))
-+		if (!vcc || gpio_get_value(cf->board->vcc_pin))
- 			*sp |= SS_POWERON;
- 	} else
- 		*sp = 0;
 
 
