@@ -1,74 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760633Ab3GSOO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:14:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28808 "EHLO
+	id S932961Ab3GSOPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:15:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32652 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3GSOOu (ORCPT
+	with ESMTP id S1760600Ab3GSOOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:14:50 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=OtYG3TwmGo8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Jt5mE-_EwH0A:10 a=VwQbUJbxAAAA:8 a=bVhYIKo0QyJuZe5aPtoA:9 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Fri, 19 Jul 2013 10:14:55 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=yLKm8batPPsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=mJgigVc9aycA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=fZUAx6Wx3NXLDUrKyAEA:9 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130719141224.703522101@goodmis.org>
+Message-Id: <20130719141449.744316241@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 19 Jul 2013 10:12:24 -0400
+Date: Fri, 19 Jul 2013 10:12:33 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next-3.11][PATCH 00/12] tracing: Cleanups and fixes
+        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>,
+        Alexander Z Lam <azl@google.com>
+Subject: [for-next-3.11][PATCH 09/12] tracing: Miscellaneous fixes for trace_array ref counting
+References: <20130719141224.703522101@goodmis.org>
+Content-Disposition: inline; filename=0009-tracing-Miscellaneous-fixes-for-trace_array-ref-coun.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are mostly cleanups and some minor fixes. Still working on
-fixing a theoretical race with trace events.
+From: Alexander Z Lam <azl@google.com>
 
--- Steve
+Some error paths did not handle ref counting properly, and some trace files need
+ref counting.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+Link: http://lkml.kernel.org/r/1374171524-11948-1-git-send-email-azl@google.com
 
-Head SHA1: cd458ba9d5a5592d37b5145e560071e91ea762ac
+Cc: stable@vger.kernel.org # 3.10
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Cc: Alexander Z Lam <lambchop468@gmail.com>
+Signed-off-by: Alexander Z Lam <azl@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c        |   24 ++++++++++++++++++------
+ kernel/trace/trace_events.c |   21 +++++++++++++++++++--
+ 2 files changed, 37 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 7c3da7b..7d9ceab 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3008,7 +3008,6 @@ static int tracing_release(struct inode *inode, struct file *file)
+ 
+ 	iter = m->private;
+ 	tr = iter->tr;
+-	trace_array_put(tr);
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+@@ -3023,6 +3022,9 @@ static int tracing_release(struct inode *inode, struct file *file)
+ 	if (!iter->snapshot)
+ 		/* reenable tracing if it was previously enabled */
+ 		tracing_start_tr(tr);
++
++	__trace_array_put(tr);
++
+ 	mutex_unlock(&trace_types_lock);
+ 
+ 	mutex_destroy(&iter->mutex);
+@@ -3447,6 +3449,7 @@ tracing_trace_options_write(struct file *filp, const char __user *ubuf,
+ static int tracing_trace_options_open(struct inode *inode, struct file *file)
+ {
+ 	struct trace_array *tr = inode->i_private;
++	int ret;
+ 
+ 	if (tracing_disabled)
+ 		return -ENODEV;
+@@ -3454,7 +3457,11 @@ static int tracing_trace_options_open(struct inode *inode, struct file *file)
+ 	if (trace_array_get(tr) < 0)
+ 		return -ENODEV;
+ 
+-	return single_open(file, tracing_trace_options_show, inode->i_private);
++	ret = single_open(file, tracing_trace_options_show, inode->i_private);
++	if (ret < 0)
++		trace_array_put(tr);
++
++	return ret;
+ }
+ 
+ static const struct file_operations tracing_iter_fops = {
+@@ -3958,6 +3965,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 	if (!iter) {
+ 		ret = -ENOMEM;
++		__trace_array_put(tr);
+ 		goto out;
+ 	}
+ 
+@@ -4704,21 +4712,24 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ 			ret = PTR_ERR(iter);
+ 	} else {
+ 		/* Writes still need the seq_file to hold the private data */
++		ret = -ENOMEM;
+ 		m = kzalloc(sizeof(*m), GFP_KERNEL);
+ 		if (!m)
+-			return -ENOMEM;
++			goto out;
+ 		iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 		if (!iter) {
+ 			kfree(m);
+-			return -ENOMEM;
++			goto out;
+ 		}
++		ret = 0;
++
+ 		iter->tr = tr;
+ 		iter->trace_buffer = &tc->tr->max_buffer;
+ 		iter->cpu_file = tc->cpu;
+ 		m->private = iter;
+ 		file->private_data = m;
+ 	}
+-
++out:
+ 	if (ret < 0)
+ 		trace_array_put(tr);
+ 
+@@ -5328,9 +5339,10 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
+ }
+ 
+ static const struct file_operations tracing_stats_fops = {
+-	.open		= tracing_open_generic,
++	.open		= tracing_open_generic_tc,
+ 	.read		= tracing_stats_read,
+ 	.llseek		= generic_file_llseek,
++	.release	= tracing_release_generic_tc,
+ };
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 7d85429..7a75cb2 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1218,6 +1218,7 @@ show_header(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ 
+ static int ftrace_event_avail_open(struct inode *inode, struct file *file);
+ static int ftrace_event_set_open(struct inode *inode, struct file *file);
++static int ftrace_event_release(struct inode *inode, struct file *file);
+ 
+ static const struct seq_operations show_event_seq_ops = {
+ 	.start = t_start,
+@@ -1245,7 +1246,7 @@ static const struct file_operations ftrace_set_event_fops = {
+ 	.read = seq_read,
+ 	.write = ftrace_event_write,
+ 	.llseek = seq_lseek,
+-	.release = seq_release,
++	.release = ftrace_event_release,
+ };
+ 
+ static const struct file_operations ftrace_enable_fops = {
+@@ -1323,6 +1324,15 @@ ftrace_event_open(struct inode *inode, struct file *file,
+ 	return ret;
+ }
+ 
++static int ftrace_event_release(struct inode *inode, struct file *file)
++{
++	struct trace_array *tr = inode->i_private;
++
++	trace_array_put(tr);
++
++	return seq_release(inode, file);
++}
++
+ static int
+ ftrace_event_avail_open(struct inode *inode, struct file *file)
+ {
+@@ -1336,12 +1346,19 @@ ftrace_event_set_open(struct inode *inode, struct file *file)
+ {
+ 	const struct seq_operations *seq_ops = &show_set_event_seq_ops;
+ 	struct trace_array *tr = inode->i_private;
++	int ret;
++
++	if (trace_array_get(tr) < 0)
++		return -ENODEV;
+ 
+ 	if ((file->f_mode & FMODE_WRITE) &&
+ 	    (file->f_flags & O_TRUNC))
+ 		ftrace_clear_events(tr);
+ 
+-	return ftrace_event_open(inode, file, seq_ops);
++	ret = ftrace_event_open(inode, file, seq_ops);
++	if (ret < 0)
++		trace_array_put(tr);
++	return ret;
+ }
+ 
+ static struct event_subsystem *
+-- 
+1.7.10.4
 
 
-Alexander Z Lam (2):
-      tracing: Fix error handling to ensure instances can always be removed
-      tracing: Miscellaneous fixes for trace_array ref counting
-
-Masami Hiramatsu (1):
-      tracing/kprobe: Wait for disabling all running kprobe handlers
-
-Oleg Nesterov (5):
-      tracing/function: Avoid perf_trace_buf_*() if event_function.perf_events is empty
-      tracing/syscall: Avoid perf_trace_buf_*() if sys_data->perf_events is empty
-      tracing/perf: Move the PERF_MAX_TRACE_SIZE check into perf_trace_buf_prepare()
-      tracing: Simplify the iteration logic in f_start/f_next
-      tracing: Do not (ab)use trace_seq in event_id_read()
-
-Steven Rostedt (Red Hat) (1):
-      tracing: Add ref_data to function and fgraph tracer structs
-
-zhangwei(Jovi) (3):
-      tracing: Use correct config guard CONFIG_STACK_TRACER
-      tracing: Use trace_seq_puts()/trace_seq_putc() where possible
-      tracing: Typo fix on ring buffer comments
-
-----
- include/trace/ftrace.h               |    4 --
- kernel/trace/ring_buffer.c           |   26 ++++-----
- kernel/trace/trace.c                 |   32 +++++++----
- kernel/trace/trace.h                 |    9 ++++
- kernel/trace/trace_event_perf.c      |   10 +++-
- kernel/trace/trace_events.c          |   98 ++++++++++++++++------------------
- kernel/trace/trace_events_filter.c   |    4 +-
- kernel/trace/trace_functions.c       |    2 +-
- kernel/trace/trace_functions_graph.c |   54 +++++++++----------
- kernel/trace/trace_kprobe.c          |   29 +++++-----
- kernel/trace/trace_mmiotrace.c       |    8 +--
- kernel/trace/trace_output.c          |   14 ++---
- kernel/trace/trace_syscalls.c        |   26 ++++-----
- kernel/trace/trace_uprobe.c          |    2 -
- 14 files changed, 166 insertions(+), 152 deletions(-)
