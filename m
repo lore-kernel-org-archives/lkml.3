@@ -1,37 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760735Ab3GSPUa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:20:30 -0400
-Received: from www.sr71.net ([198.145.64.142]:42657 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760253Ab3GSPU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:20:29 -0400
-Message-ID: <51E95932.5030902@sr71.net>
-Date: Fri, 19 Jul 2013 08:20:18 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1760756Ab3GSPUg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:20:36 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22829 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760724Ab3GSPUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 11:20:33 -0400
+Date: Fri, 19 Jul 2013 11:20:16 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Piotr Sarna <p.sarna@partner.samsung.com>
+Cc: bob.liu@oracle.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        b.zolnierkie@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] zcache: fix "zcache=" kernel parameter
+Message-ID: <20130719152016.GA13009@localhost.localdomain>
+References: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
 MIME-Version: 1.0
-To: Raghavendra KT <raghavendra.kt.linux@gmail.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
-References: <20130716234438.C792C316@viggo.jf.intel.com> <CAC4Lta1mHixqfRSJKpydH3X9M_nQPCY3QSD86Tm=cnQ+KxpGYw@mail.gmail.com>
-In-Reply-To: <CAC4Lta1mHixqfRSJKpydH3X9M_nQPCY3QSD86Tm=cnQ+KxpGYw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 04:38 AM, Raghavendra KT wrote:
-> While measuring non - PLE performance, one of the bottleneck, I am seeing is
-> flush tlbs.
-> perf had helped in alaysing a bit there, but this patch would help
-> in precise calculation. It will aslo help in tuning the PLE window
-> experiments (larger PLE window
-> would affect remote flush TLBs)
+On Fri, Jul 19, 2013 at 04:46:41PM +0200, Piotr Sarna wrote:
+> Commit 835f2f5 ("staging: zcache: enable zcache to be built/loaded as
+> a module") introduced an incorrect handling of "zcache=" parameter.
+> 
+> Inside zcache_comp_init() function, zcache_comp_name variable is
+> checked for being empty. If not empty, the above variable is tested
+> for being compatible with Crypto API. Unfortunately, after that
+> function ends unconditionally (by the "goto out" directive) and returns:
+> - non-zero value if verification succeeded, wrongly indicating an error
+> - zero value if verification failed, falsely informing that function
+>   zcache_comp_init() ended properly.
+> 
+> A solution to this problem is as following:
+> 1. Move the "goto out" directive inside the "if (!ret)" statement
+> 2. In case that crypto_has_comp() returned 0, change the value of ret
+>    to non-zero before "goto out" to indicate an error.
+> 
+> Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+> Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Interesting.  What workload is that?  I've been having problems finding
-workloads that are too consumed with TLB flushes.
+You can also add
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
 
+> ---
+>  drivers/staging/zcache/zcache-main.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index dcceed2..81972fa 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
+>  #else
+>  	if (*zcache_comp_name != '\0') {
+>  		ret = crypto_has_comp(zcache_comp_name, 0, 0);
+> -		if (!ret)
+> +		if (!ret) {
+>  			pr_info("zcache: %s not supported\n",
+>  					zcache_comp_name);
+> -		goto out;
+> +			ret = 1;
+> +			goto out;
+> +		}
+>  	}
+>  	if (!ret)
+>  		strcpy(zcache_comp_name, "lzo");
+> -- 
+> 1.7.9.5
+> 
