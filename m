@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966055Ab3GSFs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:48:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39386 "EHLO
+	id S966069Ab3GSFtA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:49:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965263Ab3GSFWO (ORCPT
+	with ESMTP id S965357Ab3GSFWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:14 -0400
+	Fri, 19 Jul 2013 01:22:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Schmidt <list.btrfs@jan-o-sch.net>,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 29/38] Btrfs: only do the tree_mod_log_free_eb if this is our last ref
-Date: Thu, 18 Jul 2013 22:21:45 -0700
-Message-Id: <20130719052049.866569137@linuxfoundation.org>
+        Chris Wilson <jakdaw@gmail.com>, Josef Bacik <jbacik@fusionio.com>
+Subject: [ 28/38] Btrfs: fix estale with btrfs send
+Date: Thu, 18 Jul 2013 22:21:44 -0700
+Message-Id: <20130719052049.799754215@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -29,35 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josef Bacik <jbacik@fusionio.com>
 
-commit 7fb7d76f96bfcbea25007d190ba828b18e13d29d upstream.
+commit 139f807a1eba1e484941a98fb93ee32ad859a6a1 upstream.
 
-There is another bug in the tree mod log stuff in that we're calling
-tree_mod_log_free_eb every single time a block is cow'ed.  The problem with this
-is that if this block is shared by multiple snapshots we will call this multiple
-times per block, so if we go to rewind the mod log for this block we'll BUG_ON()
-in __tree_mod_log_rewind because we try to rewind a free twice.  We only want to
-call tree_mod_log_free_eb if we are actually freeing the block.  With this patch
-I no longer hit the panic in __tree_mod_log_rewind.  Thanks,
+This fixes bugzilla 57491.  If we take a snapshot of a fs with a unlink ongoing
+and then try to send that root we will run into problems.  When comparing with a
+parent root we will search the parents and the send roots commit_root, which if
+we've just created the snapshot will include the file that needs to be evicted
+by the orphan cleanup.  So when we find a changed extent we will try and copy
+that info into the send stream, but when we lookup the inode we use the normal
+root, which no longer has the inode because the orphan cleanup deleted it.  The
+best solution I have for this is to check our otransid with the generation of
+the commit root and if they match just commit the transaction again, that way we
+get the changes from the orphan cleanup.  With this patch the reproducer I made
+for this bugzilla no longer returns ESTALE when trying to do the send.  Thanks,
 
-Reviewed-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
+Reported-by: Chris Wilson <jakdaw@gmail.com>
 Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ctree.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/btrfs/send.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -1049,7 +1049,8 @@ static noinline int __btrfs_cow_block(st
- 		btrfs_set_node_ptr_generation(parent, parent_slot,
- 					      trans->transid);
- 		btrfs_mark_buffer_dirty(parent);
--		tree_mod_log_free_eb(root->fs_info, buf);
-+		if (last_ref)
-+			tree_mod_log_free_eb(root->fs_info, buf);
- 		btrfs_free_tree_block(trans, root, buf, parent_start,
- 				      last_ref);
- 	}
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -4579,6 +4579,41 @@ long btrfs_ioctl_send(struct file *mnt_f
+ 	send_root = BTRFS_I(file_inode(mnt_file))->root;
+ 	fs_info = send_root->fs_info;
+ 
++	/*
++	 * This is done when we lookup the root, it should already be complete
++	 * by the time we get here.
++	 */
++	WARN_ON(send_root->orphan_cleanup_state != ORPHAN_CLEANUP_DONE);
++
++	/*
++	 * If we just created this root we need to make sure that the orphan
++	 * cleanup has been done and committed since we search the commit root,
++	 * so check its commit root transid with our otransid and if they match
++	 * commit the transaction to make sure everything is updated.
++	 */
++	down_read(&send_root->fs_info->extent_commit_sem);
++	if (btrfs_header_generation(send_root->commit_root) ==
++	    btrfs_root_otransid(&send_root->root_item)) {
++		struct btrfs_trans_handle *trans;
++
++		up_read(&send_root->fs_info->extent_commit_sem);
++
++		trans = btrfs_attach_transaction_barrier(send_root);
++		if (IS_ERR(trans)) {
++			if (PTR_ERR(trans) != -ENOENT) {
++				ret = PTR_ERR(trans);
++				goto out;
++			}
++			/* ENOENT means theres no transaction */
++		} else {
++			ret = btrfs_commit_transaction(trans, send_root);
++			if (ret)
++				goto out;
++		}
++	} else {
++		up_read(&send_root->fs_info->extent_commit_sem);
++	}
++
+ 	arg = memdup_user(arg_, sizeof(*arg));
+ 	if (IS_ERR(arg)) {
+ 		ret = PTR_ERR(arg);
 
 
