@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab3GSTUj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:20:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50521 "EHLO
+	id S1750957Ab3GSTZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:25:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50610 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926Ab3GSTUh (ORCPT
+	with ESMTP id S1750760Ab3GSTZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:20:37 -0400
-Date: Fri, 19 Jul 2013 12:20:43 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daniil Bolsun <dan.bolsun@gmail.com>
-Cc: Matthias Urlichs <smurf@smurf.noris.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usbserial: append Petatel NP10T device to GSM modems list
-Message-ID: <20130719192043.GA2222@kroah.com>
-References: <20130719072123.GA3486@l33t.onliner>
+	Fri, 19 Jul 2013 15:25:18 -0400
+Date: Fri, 19 Jul 2013 12:25:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/38] 3.9.11-stable review
+Message-ID: <20130719192524.GB2428@kroah.com>
+References: <20130719052047.858393825@linuxfoundation.org>
+ <B8EFE96D1287C24090BAD9D858E15E6174192D@sisaex01sj>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130719072123.GA3486@l33t.onliner>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6174192D@sisaex01sj>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 10:21:23AM +0300, Daniil Bolsun wrote:
-> This patch was tested on 3.10.1 kernel.
+On Fri, Jul 19, 2013 at 04:45:25PM +0000, Shuah Khan wrote:
+> On 07/19/2013 09:34 AM, Greg Kroah-Hartman wrote:
+> > ---------------
+> > Note, this is the LAST 3.9-stable kernel release that I will be doing.
+> > Please move to the 3.10-stable branch as soon as possible.
+> > ---------------
+> >
+> > This is the start of the stable review cycle for the 3.9.11 release.
+> > There are 38 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Sun Jul 21 05:20:01 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
 > 
-> Same models of Petatel NP10T modems have different device IDs.
-> Unfortunately they have no additional revision information on a board
-> which may treat them as different devices. Currently I've seen only
-> two NP10T devices with various IDs. Possibly Petatel NP10T list will
-> be appended upon devices with new IDs will appear.
+> Greg,
 > 
-> Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
+> Build failed with the following error:
+> 
+>    LD      ipc/built-in.o
+>    CC [M]  fs/cifs/inode.o
+> fs/cifs/inode.c: In function ‘cifs_all_info_to_fattr’:
+> fs/cifs/inode.c:560:4: error: implicit declaration of function 
+> ‘cifs_dbg’ [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> make[2]: *** [fs/cifs/inode.o] Error 1
+> make[1]: *** [fs/cifs] Error 2
+> make: *** [fs] Error 2
+> make: *** Waiting for unfinished jobs....
+>    CC      security/selinux/hooks.o
+> 
+> I have CONFIG_CIFS=m in my config and CONFIG_CIFS_DEBUG is disabled. 
+> cifs_dbg() is not defined.
 
-Much better resubmission, thanks.  I'll queue it up in a few days and
-you will get an automated email from my system then.
+Ugh, I thought I fixed that one...  I did it for the 3.4 and other
+trees, I'll go see what I did wrong...
+
+thanks for letting me know,
 
 greg k-h
