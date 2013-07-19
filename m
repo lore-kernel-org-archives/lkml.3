@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759595Ab3GSFV4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:21:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39294 "EHLO
+	id S964909Ab3GSFV7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:21:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759222Ab3GSFVz (ORCPT
+	with ESMTP id S1759572Ab3GSFV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:21:55 -0400
+	Fri, 19 Jul 2013 01:21:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        John Youn <johnyoun@synopsys.com>
-Subject: [ 10/38] xhci: check for failed dma pool allocation
-Date: Thu, 18 Jul 2013 22:21:26 -0700
-Message-Id: <20130719052048.584741416@linuxfoundation.org>
+        Jason Wang <jasowang@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 12/38] drivers: hv: switch to use mb() instead of smp_mb()
+Date: Thu, 18 Jul 2013 22:21:28 -0700
+Message-Id: <20130719052048.721065400@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -28,38 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
+commit 35848f68b07df3f917cb13fc3c134718669f569b upstream.
 
-Fail and free the container context in case dma_pool_alloc() can't allocate
-the raw context data part of it
+Even if guest were compiled without SMP support, it could not assume that host
+wasn't. So switch to use mb() instead of smp_mb() to force memory barriers for
+UP guest.
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
-Support for 64-byte contexts".
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: John Youn <johnyoun@synopsys.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/hv/ring_buffer.c |   10 +++++-----
+ drivers/hv/vmbus_drv.c   |    2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -369,6 +369,10 @@ static struct xhci_container_ctx *xhci_a
- 		ctx->size += CTX_SIZE(xhci->hcc_params);
- 
- 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
-+	if (!ctx->bytes) {
-+		kfree(ctx);
-+		return NULL;
-+	}
- 	memset(ctx->bytes, 0, ctx->size);
- 	return ctx;
+--- a/drivers/hv/ring_buffer.c
++++ b/drivers/hv/ring_buffer.c
+@@ -32,7 +32,7 @@
+ void hv_begin_read(struct hv_ring_buffer_info *rbi)
+ {
+ 	rbi->ring_buffer->interrupt_mask = 1;
+-	smp_mb();
++	mb();
  }
+ 
+ u32 hv_end_read(struct hv_ring_buffer_info *rbi)
+@@ -41,7 +41,7 @@ u32 hv_end_read(struct hv_ring_buffer_in
+ 	u32 write;
+ 
+ 	rbi->ring_buffer->interrupt_mask = 0;
+-	smp_mb();
++	mb();
+ 
+ 	/*
+ 	 * Now check to see if the ring buffer is still empty.
+@@ -71,7 +71,7 @@ u32 hv_end_read(struct hv_ring_buffer_in
+ 
+ static bool hv_need_to_signal(u32 old_write, struct hv_ring_buffer_info *rbi)
+ {
+-	smp_mb();
++	mb();
+ 	if (rbi->ring_buffer->interrupt_mask)
+ 		return false;
+ 
+@@ -442,7 +442,7 @@ int hv_ringbuffer_write(struct hv_ring_b
+ 					     sizeof(u64));
+ 
+ 	/* Issue a full memory barrier before updating the write index */
+-	smp_mb();
++	mb();
+ 
+ 	/* Now, update the write location */
+ 	hv_set_next_write_location(outring_info, next_write_location);
+@@ -549,7 +549,7 @@ int hv_ringbuffer_read(struct hv_ring_bu
+ 	/* Make sure all reads are done before we update the read index since */
+ 	/* the writer may start writing to the read area once the read index */
+ 	/*is updated */
+-	smp_mb();
++	mb();
+ 
+ 	/* Update the read index */
+ 	hv_set_next_read_location(inring_info, next_read_location);
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -434,7 +434,7 @@ static void vmbus_on_msg_dpc(unsigned lo
+ 		 * will not deliver any more messages since there is
+ 		 * no empty slot
+ 		 */
+-		smp_mb();
++		mb();
+ 
+ 		if (msg->header.message_flags.msg_pending) {
+ 			/*
 
 
