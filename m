@@ -1,273 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934306Ab3GSCDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:03:40 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6059 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759441Ab3GSCDj (ORCPT
+	id S934403Ab3GSCF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:05:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37447 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933633Ab3GSCFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:03:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 18 Jul 2013 19:02:16 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <rklein@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 RFT] ARM: tegra: enable palmas device for dalmore
-Date: Fri, 19 Jul 2013 07:43:11 +0530
-Message-ID: <1374199992-27947-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Thu, 18 Jul 2013 22:05:55 -0400
+Date: Thu, 18 Jul 2013 19:06:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: daniel.kiper@oracle.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Eric Biederman <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Brandon Philips <brandon@ifup.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: is kexec on Xen domU possible?
+Message-ID: <20130719020603.GA22932@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the entry of Dalmore Power Management Unit device TPS65913
-in dalmore DTS file. The Palma driver support this device.
+Hi all,
 
-Enable following submodule of the TPS65913:
-- GPIO driver
-- RTC driver.
-- Power regulator driver.
+I was messing around with kexec and it seems to work just fine on KVM,
+but for Xen domU images, it doesn't work at all.  Daniel, I saw some
+patches from you back in September 2012 for adding this support for
+Dom0, but they don't seem to have gone into the kernel (but other
+patches went into kexec-tools at that time.)  You mention that domU
+support is "easy" after your patches go in, is that because Dom0 needs
+to support this, or is it something specific to only domU?
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- renames nodes from palams_* to simple as gpio, rtc, pmic etc.
-- Added line gap properly.
-- Remove comment for palams-gpio reference as the entry itself explain.
-- Remove unit address for tps65913.
+Also, what's the status of those patches for the kernel, I don't see
+them reposted anywhere, did you drop them?
 
-Changes from V2:
-- Made LDO9 as always ON for sd card functionality.
+thanks,
 
-Hi Stephen,
-I observed that if sd card is not initailised in bootloader then it will not get
-enumerated in the kernel also. In my case, I am using fastboot and hence it is not
-observed that sd card is getting initialised.
-But today I use the uboot and on this, sd card is getting enumerated. And observer that
-LDO9 is getting disabled in late init call due to full constraint and it can create
-issue for sd card. With this modified patch I make the LDO9 as always ON.
-
-I am not able to validate this througly as the kernel crash in the method of uboot. Need
-more debugging.
-
- arch/arm/boot/dts/tegra114-dalmore.dts |  186 +++++++++++++++++++++++++++++++-
- 1 files changed, 185 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index a42bfa4..d5728ff 100644
---- a/arch/arm/boot/dts/tegra114-dalmore.dts
-+++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -791,7 +791,7 @@
- 					regulator-boot-on;
- 				};
- 
--				dcdc3 {
-+				tps65090_dcdc3_reg: dcdc3 {
- 					regulator-name = "vdd-ao";
- 					regulator-always-on;
- 					regulator-boot-on;
-@@ -836,6 +836,180 @@
- 				};
- 			};
- 		};
-+
-+		palmas: tps65913 {
-+			compatible = "ti,palmas";
-+			reg = <0x58>;
-+			interrupts = <0 86 0x4>;
-+
-+			#interrupt-cells = <2>;
-+			interrupt-controller;
-+
-+			palmas_gpio: gpio {
-+				compatible = "ti,palmas-gpio";
-+				gpio-controller;
-+				#gpio-cells = <2>;
-+			};
-+
-+			rtc {
-+				compatible = "ti,palmas-rtc";
-+				interrupt-parent = <&palmas>;
-+				interrupts = <8 0>;
-+			};
-+
-+			pmic {
-+			    compatible = "ti,tps65913-pmic", "ti,palmas-pmic";
-+			    smps1-in-supply = <&tps65090_dcdc3_reg>;
-+			    smps3-in-supply = <&tps65090_dcdc3_reg>;
-+			    smps4-in-supply = <&tps65090_dcdc2_reg>;
-+			    smps7-in-supply = <&tps65090_dcdc2_reg>;
-+			    smps8-in-supply = <&tps65090_dcdc2_reg>;
-+			    smps9-in-supply = <&tps65090_dcdc2_reg>;
-+			    ldo1-in-supply = <&tps65090_dcdc2_reg>;
-+			    ldo2-in-supply = <&tps65090_dcdc2_reg>;
-+			    ldo3-in-supply = <&palmas_smps3_reg>;
-+			    ldo4-in-supply = <&tps65090_dcdc2_reg>;
-+			    ldo5-in-supply = <&vdd_ac_bat_reg>;
-+			    ldo6-in-supply = <&tps65090_dcdc2_reg>;
-+			    ldo7-in-supply = <&tps65090_dcdc2_reg>;
-+			    ldo8-in-supply = <&tps65090_dcdc3_reg>;
-+			    ldo9-in-supply = <&palmas_smps9_reg>;
-+			    ldoln-in-supply = <&tps65090_dcdc1_reg>;
-+			    ldousb-in-supply = <&tps65090_dcdc1_reg>;
-+
-+			    regulators {
-+				smps12 {
-+					regulator-name = "vddio-ddr";
-+					regulator-min-microvolt = <1350000>;
-+					regulator-max-microvolt = <1350000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				palmas_smps3_reg: smps3 {
-+					regulator-name = "vddio-1v8";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				smps45 {
-+					regulator-name = "vdd-core";
-+					regulator-min-microvolt = <900000>;
-+					regulator-max-microvolt = <1400000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				smps457 {
-+					regulator-name = "vdd-core";
-+					regulator-min-microvolt = <900000>;
-+					regulator-max-microvolt = <1400000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				smps8 {
-+					regulator-name = "avdd-pll";
-+					regulator-min-microvolt = <1050000>;
-+					regulator-max-microvolt = <1050000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				palmas_smps9_reg: smps9 {
-+					regulator-name = "sdhci-vdd-sd-slot";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <2800000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo1 {
-+					regulator-name = "avdd-cam1";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <2800000>;
-+				};
-+
-+				ldo2 {
-+					regulator-name = "avdd-cam2";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <2800000>;
-+				};
-+
-+				ldo3 {
-+					regulator-name = "avdd-dsi-csi";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo4 {
-+					regulator-name = "vpp-fuse";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+				};
-+
-+				ldo6 {
-+					regulator-name = "vdd-sensor-2v85";
-+					regulator-min-microvolt = <2850000>;
-+					regulator-max-microvolt = <2850000>;
-+				};
-+
-+				ldo7 {
-+					regulator-name = "vdd-af-cam1";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <2800000>;
-+				};
-+
-+				ldo8 {
-+					regulator-name = "vdd-rtc";
-+					regulator-min-microvolt = <900000>;
-+					regulator-max-microvolt = <900000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+					ti,enable-ldo8-tracking;
-+				};
-+
-+				ldo9 {
-+					regulator-name = "vddio-sdmmc-2";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldoln {
-+					regulator-name = "hvdd-usb";
-+					regulator-min-microvolt = <3300000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+
-+				ldousb {
-+					regulator-name = "avdd-usb";
-+					regulator-min-microvolt = <3300000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				regen1 {
-+					regulator-name = "rail-3v3";
-+					regulator-max-microvolt = <3300000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				regen2 {
-+					regulator-name = "rail-5v0";
-+					regulator-max-microvolt = <5000000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+			    };
-+			};
-+		};
- 	};
- 
- 	spi@7000da00 {
-@@ -980,6 +1154,16 @@
- 			gpio = <&gpio TEGRA_GPIO(K, 1) GPIO_ACTIVE_HIGH>;
- 			vin-supply = <&tps65090_dcdc1_reg>;
- 		};
-+
-+		vdd_cam_1v8_reg: regulator@6 {
-+			compatible = "regulator-fixed";
-+			reg = <6>;
-+			regulator-name = "vdd_cam_1v8_reg";
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <1800000>;
-+			enable-active-high;
-+			gpio = <&palmas_gpio 6 0>;
-+		};
- 	};
- 
- 	sound {
--- 
-1.7.1.1
-
+greg k-h
