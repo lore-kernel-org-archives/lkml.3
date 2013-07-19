@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935209Ab3GSCZT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:25:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37864 "EHLO
+	id S935163Ab3GSCZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:25:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37833 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935190Ab3GSCZP (ORCPT
+	with ESMTP id S935039Ab3GSCZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:15 -0400
+	Thu, 18 Jul 2013 22:25:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        steve <sanpatr1@in.ibm.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 24/24] Handle big endianness in NTLM (ntlmv2) authentication
-Date: Thu, 18 Jul 2013 19:24:56 -0700
-Message-Id: <20130719022405.671266396@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        John Youn <johnyoun@synopsys.com>
+Subject: [ 08/24] xhci: check for failed dma pool allocation
+Date: Thu, 18 Jul 2013 19:24:40 -0700
+Message-Id: <20130719022404.583774910@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -28,80 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@us.ibm.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
+commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
 
-This is RH bug 970891
-Uppercasing of username during calculation of ntlmv2 hash fails
-because UniStrupr function does not handle big endian wchars.
+Fail and free the container context in case dma_pool_alloc() can't allocate
+the raw context data part of it
 
-Also fix a comment in the same code to reflect its correct usage.
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
+Support for 64-byte contexts".
 
-[To make it easier for stable (rather than require 2nd patch) fixed
-this patch of Shirish's to remove endian warning generated
-by sparse -- steve f.]
-
-Reported-by: steve <sanpatr1@in.ibm.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: John Youn <johnyoun@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifs_unicode.h |    8 ++++----
- fs/cifs/cifsencrypt.c  |    6 +++---
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/host/xhci-mem.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/cifs/cifs_unicode.h
-+++ b/fs/cifs/cifs_unicode.h
-@@ -323,14 +323,14 @@ UniToupper(register wchar_t uc)
- /*
-  * UniStrupr:  Upper case a unicode string
-  */
--static inline wchar_t *
--UniStrupr(register wchar_t *upin)
-+static inline __le16 *
-+UniStrupr(register __le16 *upin)
- {
--	register wchar_t *up;
-+	register __le16 *up;
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -369,6 +369,10 @@ static struct xhci_container_ctx *xhci_a
+ 		ctx->size += CTX_SIZE(xhci->hcc_params);
  
- 	up = upin;
- 	while (*up) {		/* For all characters */
--		*up = UniToupper(*up);
-+		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
- 		up++;
- 	}
- 	return upin;		/* Return input pointer */
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -394,7 +394,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 	int rc = 0;
- 	int len;
- 	char nt_hash[CIFS_NTHASH_SIZE];
--	wchar_t *user;
-+	__le16 *user;
- 	wchar_t *domain;
- 	wchar_t *server;
- 
-@@ -419,7 +419,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 		return rc;
- 	}
- 
--	/* convert ses->user_name to unicode and uppercase */
-+	/* convert ses->user_name to unicode */
- 	len = ses->user_name ? strlen(ses->user_name) : 0;
- 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
- 	if (user == NULL) {
-@@ -429,7 +429,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 	}
- 
- 	if (len) {
--		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
-+		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
- 		UniStrupr(user);
- 	} else {
- 		memset(user, '\0', 2);
+ 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
++	if (!ctx->bytes) {
++		kfree(ctx);
++		return NULL;
++	}
+ 	memset(ctx->bytes, 0, ctx->size);
+ 	return ctx;
+ }
 
 
