@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965588Ab3GSHt2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:49:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35553 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965303Ab3GSHtW (ORCPT
+	id S1759691Ab3GSHtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:49:42 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53897 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965303Ab3GSHtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:49:22 -0400
-Date: Fri, 19 Jul 2013 00:49:05 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-9d58d2f66c92fe47dd395947a3d51b9ace7dcc92@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        penberg@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        penberg@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1370337737-30812-7-git-send-email-namhyung@kernel.org>
-References: <1370337737-30812-7-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf gtk/hists:
-  Set rules hint for the hist browser
-Git-Commit-ID: 9d58d2f66c92fe47dd395947a3d51b9ace7dcc92
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 19 Jul 2013 03:49:40 -0400
+Date: Fri, 19 Jul 2013 08:49:37 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kim Jaegeuk <jaegeuk.kim@gmail.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] f2fs: update file name in the inode block during
+ f2fs_rename
+Message-ID: <20130719074937.GD4165@ZenIV.linux.org.uk>
+References: <1374138684-28520-1-git-send-email-jaegeuk.kim@samsung.com>
+ <20130718092211.GA4165@ZenIV.linux.org.uk>
+ <CAOtxgyetWtucBEQJmCU0nLNk9_r42yQSC1+X1i+iHM18rDge+Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:49:11 -0700 (PDT)
+In-Reply-To: <CAOtxgyetWtucBEQJmCU0nLNk9_r42yQSC1+X1i+iHM18rDge+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9d58d2f66c92fe47dd395947a3d51b9ace7dcc92
-Gitweb:     http://git.kernel.org/tip/9d58d2f66c92fe47dd395947a3d51b9ace7dcc92
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 4 Jun 2013 18:22:17 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:52:45 -0300
+On Fri, Jul 19, 2013 at 12:40:47PM +0900, Kim Jaegeuk wrote:
+> Hi,
+> 
+> 2013. 7. 18. ???? 6:22?? "Al Viro" <viro@zeniv.linux.org.uk>???? ????:
+> >
+> > On Thu, Jul 18, 2013 at 06:11:23PM +0900, Jaegeuk Kim wrote:
+> > > The error is reproducible by:
+> > >
+> > > After this, when we retrieve the inode->i_name of test2 by dump.f2fs,
+> we get
+> > > test1 instead of test2.
+> > > This is because f2fs didn't update the file name during the f2fs_rename.
+> >
+> > Er...  Correct me if I'm wrong, but f2fs appears to support link(2) and
+> > if rename(2) creates some problem for dump.f2fs, I would expect an
+> > equivalent link()+unlink() combination to do the same...
+> 
+> Right. I will check that too.
+> Thank you. :)
 
-perf gtk/hists: Set rules hint for the hist browser
+You do realize that having unlink() hunt for the surviving links would be
+both very costly and painful wrt locking, right?
 
-The 'rules' means that every second line of the tree view has a shaded
-background, which makes it easier to see which cell belongs to which
-row in the tree view.  It can be useful for a tree view that has a lot
-of rows.
+The real question is, what are the warranties for that ->i_name thing?
+What should it be while there are multiple links?  Matter of fact,
+after looking at the users... What about ->i_pino in the same scenario
+(link+unlink instead of rename)?
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1370337737-30812-7-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/gtk/hists.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 3a5d013..3254903 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -326,6 +326,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		}
- 	}
- 
-+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
-+
- 	g_signal_connect(view, "row-activated",
- 			 G_CALLBACK(on_row_activated), NULL);
- 	gtk_container_add(GTK_CONTAINER(window), view);
+BTW, while looking at i_pino... Why does get_parent_ino() bother with
+igrab/iput?  If you have found an alias, just use parent_ino(dentry)
+and be done with that - as it is, you have a race with d_move() there,
+so you'd need to reproduce parent_ino() locking anyway (->d_lock on
+dentry holds d_move() away and stabilizes ->d_parent->d_inode)
