@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966023Ab3GSFsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:48:23 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:53475 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965543Ab3GSFsU (ORCPT
+	id S966048Ab3GSFsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:48:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39388 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965373Ab3GSFWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:48:20 -0400
-X-AuditID: 85900ec0-d4ccab900000151e-25-51e8d32248cb
-Message-ID: <51E8D310.2050207@hitachi.com>
-Date: Fri, 19 Jul 2013 14:48:00 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
-MIME-Version: 1.0
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnd Bergmann <arnd@arndb.de>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH 0/2] [BUGFIX] virtio/console: Fix two bugs of splice_write
-References: <20130718231927.3664.50418.stgit@yunodevel> <20130719052345.GD3087@amit-x200.redhat.com>
-In-Reply-To: <20130719052345.GD3087@amit-x200.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 19 Jul 2013 01:22:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 02/38] CIFS: Fix a deadlock when a file is reopened
+Date: Thu, 18 Jul 2013 22:21:18 -0700
+Message-Id: <20130719052048.041258110@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
+References: <20130719052047.858393825@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-(2013/07/19 14:23), Amit Shah wrote:
-> On (Fri) 19 Jul 2013 [08:19:27], Yoshihiro YUNOMAE wrote:
->> Hi,
->>
->> This patch set fixes two bugs of splice_write in the virtio-console driver.
->>
->> [BUG1] Although pipe->nrbufs is empty, the driver tries to do splice_write.
->>         => This induces oops in sg_init_table().
->>
->> [BUG2] No lock for competition of splice_write.
->>         => This induces oops in splice_from_pipe_feed() by bug of any user
->>            application.
->
-> Spotted a bug in the 2nd patch.  Do you want to also CC these to stable@?
+------------------
 
-Sure! I'll CC stable@ and virtualization@lists.linux-foundation.org.
-Thanks!
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-Yoshihiro YUNOMAE
+commit 689c3db4d57a73bee6c5ad7797fce7b54d32a87c upstream.
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+If we request reading or writing on a file that needs to be
+reopened, it causes the deadlock: we are already holding rw
+semaphore for reading and then we try to acquire it for writing
+in cifs_relock_file. Fix this by acquiring the semaphore for
+reading in cifs_relock_file due to we don't make any changes in
+locks and don't need a write access.
+
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/cifs/file.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -557,11 +557,10 @@ cifs_relock_file(struct cifsFileInfo *cf
+ 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
+ 	int rc = 0;
+ 
+-	/* we are going to update can_cache_brlcks here - need a write access */
+-	down_write(&cinode->lock_sem);
++	down_read(&cinode->lock_sem);
+ 	if (cinode->can_cache_brlcks) {
+-		/* can cache locks - no need to push them */
+-		up_write(&cinode->lock_sem);
++		/* can cache locks - no need to relock */
++		up_read(&cinode->lock_sem);
+ 		return rc;
+ 	}
+ 
+@@ -572,7 +571,7 @@ cifs_relock_file(struct cifsFileInfo *cf
+ 	else
+ 		rc = tcon->ses->server->ops->push_mand_locks(cfile);
+ 
+-	up_write(&cinode->lock_sem);
++	up_read(&cinode->lock_sem);
+ 	return rc;
+ }
+ 
 
 
