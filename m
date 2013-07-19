@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965774Ab3GSKkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:40:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16615 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934447Ab3GSKku (ORCPT
+	id S964783Ab3GSKpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:45:40 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42605 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab3GSKpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:40:50 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-58-51e917b062c4
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christian Gmeiner <christian.gmeiner@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: Re: libata / IDE cs5536: 80c cable detect issue (and worse?)
-Date: Fri, 19 Jul 2013 12:40:38 +0200
-Message-id: <21479812.cJNm40xAqz@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-45-generic; KDE/4.8.5; i686; ; )
-In-reply-to: <20130718182541.GA30707@rhlx01.hs-esslingen.de>
-References: <20130718181355.GA31889@rhlx01.hs-esslingen.de>
- <20130718182541.GA30707@rhlx01.hs-esslingen.de>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd0N4i8DDdb0qVhc/veGxeL7lutM
-	FpP23GSyOLbjEZPF5V1z2CyWH//H5MDmsXPWXXaPJTfVPD4+vcXi8XmTXABLFJdNSmpOZllq
-	kb5dAlfGlJX/WArmcVY8m9nD3sC4n72LkZNDQsBEYurhRmYIW0ziwr31bF2MXBxCAtMZJXqe
-	3mCBcFqYJE4t3gFWxSZgJTGxfRUjiC0ioCDxr2snK0gRs8BVRonOG1vYQBLCAp4S3dvegzWw
-	CKhKzF5+FczmFdCS6G46xQJiiwq4Spxb9APM5hSwkWh/cw2sRkggV+LezeOsEPWCEj8m3wOr
-	YRaQl9i3fyorhK0lsX7ncaYJjAKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6bmGesWJucWleel6
-	yfm5mxjBIf1MagfjygaLQ4wCHIxKPLwPvjwPFGJNLCuuzD3EKMHBrCTC+yv5RaAQb0piZVVq
-	UX58UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxmOT/CrYmj8wMt1mXMt0
-	SNQ9S27ljVcpv042WetNbspdw/PZ5uOUzom+zFdr5VMV20sv3NWS+bhlScdXlR/dTjYnk/5O
-	Z1tgn/L0ruHLS6+7Tus7uh+3/eXz7/jmxRGPmuRCYyff5vuj3X4gQjakr6jsutK6q8LSLQvV
-	V3UJpEboHNYLXCUtp8RSnJFoqMVcVJwIAEagbxplAgAA
+	Fri, 19 Jul 2013 06:45:39 -0400
+X-AuditID: 9c93016f-b7b50ae0000021a9-68-51e918d098dc
+From: "Gioh Kim" <gioh.kim@lge.com>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Ming Lei'" <tom.leiming@gmail.com>
+Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "'Mark Salter'" <msalter@redhat.com>, <namhyung.kim@lge.com>,
+        "'Minchan Kim'" <minchan.kim@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>,
+        "'Jong-Sung Kim'" <neidhard.kim@lge.com>,
+        "'linux-arm-kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "HyoJun Im" <hyojun.im@lge.com>
+References: <CACVXFVNV-hGZpcy2ANQaca1K5yXJ88EOq1PTkJUEHEkFk9Btvw@mail.gmail.com> <Pine.LNX.4.44L0.1307181004190.1245-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1307181004190.1245-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH] [RFC] EHCI: add to memory barrier to updating hw_next
+Date: Fri, 19 Jul 2013 19:45:36 +0900
+Message-ID: <003101ce846d$1a74ffa0$4f5efee0$@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQEmaxjpMNQvv+XOwJIu5BYHLh/tLZq71/Xw
+Content-Language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks a lot for your replay.
 
-Hi,
-
-On Thursday, July 18, 2013 08:25:41 PM Andreas Mohr wrote:
-> Hi,
+> -----Original Message-----
+> From: Alan Stern [mailto:stern@rowland.harvard.edu]
+> Sent: Thursday, July 18, 2013 11:09 PM
+> To: Ming Lei
+> Cc: Gioh Kim; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Mark Salter; namhyung.kim@lge.com; Minchan Kim; Chanho Min; Jong-Sung Kim;
+> linux-arm-kernel
+> Subject: Re: [PATCH] [RFC] EHCI: add to memory barrier to updating hw_next
 > 
-> forgot to mention that I had already added a libata.force=40c boot
-> after my 80c config issue discovery
-> which did successfully cause the "limiting to UDMA/33 due to 40c foo" dmesg
-> yet where there's now initial but strong confirmation via reports
-> that the resulting UDMA/33 limit did NOT manage to fix corruption issues,
-> thus it's more strongly likely that the "bound to ill-suited pata_amd driver"
-> (due to incorrectly configuring speeds, or due to not configuring speeds
-> at all due to possibly BIOS not providing emulation of PCI register accesses
-> to Geode bus, which would be properly supported by pata_cs5536 OTOH)
-> thing is the actual reason and might fix it (fingers crossed).
+> On Thu, 18 Jul 2013, Ming Lei wrote:
+> 
+> > > I guess that HC could have a use-after-free problem like following
+> situation.
+> > >
+> > > 1. A qtd which is not at the queue head should be removed in
+> qh_completions().
+> > > 2. The last->hw_next become be pointing at the next qtd but the
+> hw_next value is delayed in write-buffer.
+> > > 3. The qtd is removed in the list.
+> > > 4. The qtd is freed into DMA pool and re-allocated for another urb.
+> > > 5. HC try to process last->hw_next and it is pointing re-allocated
+qtd.
+> > >
+> > > What do you think about it? Is it possible?
+> >
+> > I understand it might not be possible because:  when 'stopped' is set,
+> > that said the HC might not advance the queue. But I don't understand
+> > why 'last->hw_next' is patched here under 'stopped' situation.
+> 
+> It should not be possible.  When "stopped" is set, the QH gets unlinked
+> and relinked before it can start up again.  Relinking involves some memory
+> barriers, so the qTD will not be accessed again by the HC.
+> 
+> last->hw_next gets patched because the qTD might belong to some URB in
+> the middle of the queue that is being unlinked.  The URBs before it and
+> after it will still be active, so the queue link has to be updated.
+> 
 
-UDMA/66 (and higher) requires 80-wire cable to work (if the vendor states
-that UDMA/66 is supported then UDMA/100 should also work on CS5536). UDMA/33
-should work just fine with 40-wire cable. Therefore this indeed sounds more
-like wrong driver being selected issue than a cable problem.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+You're right. I misunderstand those codes. Please forget about it.
+
+
+> > Even the 'stopped' case may be seldom triggered, do you know under
+> > which condition the stopped is triggered in your problem?(stall, short
+> > read or others)
+> 
+> I was going to ask the same question.  This particular piece of code gets
+> executed _only_ when an URB is unlinked.  Not during any other kind of
+> error.
+
+
+I've got the problem when I listened to the mp3 file of USB HDD.
+I checked the urb data when the problem occurred, the last-status value of
+urb was EINPROGRESS and 
+urb->unlinked was ECONNRESET. 
+I think the 'stopped' case was occurred by the reset of USB port.
+The block device driver did reset USB port because there is no return from
+USB device.
+If I made block device driver could not reset USB port, the EHCI driver
+codes were not executed.
+Finally the halt of HC makes 'stopped' case.
+
+I think halt of the HC might be caused that store-buffer delays command for
+HC.
+When I applied the patch from https://lkml.org/lkml/2011/8/31/344 and added
+a mb() into hw_next updating
+to remove delay of store-buffer, My platform works well.
+
+Can the store-buffer delay halt HC? Is it possible?
+
+IMHO, if the qTD list is broken the HC think there is no qTD to send.
+So I added mb() at hw_next update code.
+
+
+
+
+
+> 
+> Alan Stern
 
