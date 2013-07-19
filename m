@@ -1,78 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760183Ab3GSNit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:38:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48346 "EHLO mx1.redhat.com"
+	id S1760390Ab3GSNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:39:27 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57013 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab3GSNis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:38:48 -0400
-Date: Fri, 19 Jul 2013 15:33:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing
-	event_file/call in inode->i_private
-Message-ID: <20130719133327.GA21278@redhat.com>
-References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com> <20130717145148.GB7358@redhat.com> <51E750F4.5070200@hitachi.com> <20130718145137.GA6014@redhat.com> <51E8CCC0.7030404@hitachi.com>
+	id S1759989Ab3GSNjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:39:25 -0400
+Message-ID: <51E9413C.2080007@ti.com>
+Date: Fri, 19 Jul 2013 09:38:04 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E8CCC0.7030404@hitachi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <wni@nvidia.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <l.stach@pengutronix.de>
+Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
+ zone build
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com> <20130717220942.GB990@roeck-us.net> <51E7F341.8020508@ti.com> <20130718211154.GB4110@roeck-us.net>
+In-Reply-To: <20130718211154.GB4110@roeck-us.net>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2BFWIVTNOWNEEFQNLGFHB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19, Masami Hiramatsu wrote:
->
-> (2013/07/18 23:51), Oleg Nesterov wrote:
-> > It removes trace_array_get/put from tracing_open_generic_file() and
-> > tracing_release_generic_file(). This assumes that "call->flags++" is
-> > enough, but it is not.
->
-> No, it replaces trace_array_get/put with ftrace_event_file_get/put
-> which calls trace_array_get/put inside.
+------enig2BFWIVTNOWNEEFQNLGFHB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ah, I didn't notice your patch adds "file->tr->ref++" into
-ftrace_event_file_get...
+On 18-07-2013 17:11, Guenter Roeck wrote:
+> On Thu, Jul 18, 2013 at 09:53:05AM -0400, Eduardo Valentin wrote:
+>> Hello Guenter,
+>>
+>> On 17-07-2013 18:09, Guenter Roeck wrote:
+>>> On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin wrote:
+>>>> Hello all,
+>>>>
+>>>> As you noticed, I am working in a way to represent thermal data
+>>>> using device tree [1]. Essentially, this should be a way to say
+>>>> what to do with a sensor and how to associate (cooling) actions
+>>>> with it.
+>>>>
+>>> Seems to me that goes way beyond the supposed scope of devicetree dat=
+a.
+>>> Devicetree data is supposed to describe hardware, not its configurati=
+on or use.
+>>> This is clearly a use case.
+>>
+>> Thanks for rising your voice here. It is important to know what hwmon
+>> ppl think about this.
+>>
+> Sorry, I don't know what ppl stands for.
+>=20
+>>>
+>>> Guenter
+>>
+>> As your answers to the series are giving same argument, I chose to
+>> answer on patch 0. I would be happier if you could elaborate a bit mor=
+e
+>> on your concern, specially if you take hwmon cap here, and give your
+>> view with that perspective.
+>>
+>> I also considered that this work could be abusing of DT purposes. But
+>> let me explain why I still think it makes sense to have it.
+>>
+> Ultimately, you are making my point here. If you considered it, did you=
+ ask
+> devicetree experts for an opinion ? Did you discuss the subject on the
+> devicetree-discuss mailing list ? If so, what was the result ?
 
-So I was wrong in any case, thanks for correcting me.
+Although I have asked, I didn't get any feedback.
+https://lkml.org/lkml/2013/4/11/760
 
-But,
+But now I am requesting feedback in a formal (patch) way.
 
-> (Just one point, previous ftrace_event_file_get has a racy point
-> when it does tr->ref++, it should be fixed.)
+Consider this patch series as official request for (devicetree experts
+and everyone involved) opinions.
 
-Not sure what do you mean, but unless I missed something again this
-"tr->ref++" above still looks racy. instance_delete() checks tr->ref
-first, then it takes event_mutex and removes/kfrees event_files.
+>=20
+>> First thing is that this series intend to describe the thermal data
+>> required for a specific board. That means, considering your board
+>> layout, mechanics, power dissipation and composition of your ICs, etc,=
 
-But this doesn't really matter even if I am right, surely this can
-be fixed. My only point, imho this is more complex than necessary.
+>> that will impose thermal requirements on your system. That is not
+>> configuration, but part of your board design and non-functional
+>> requirement. To me, configuration would be something like saying you
+>> want to use a specific keyboard layout, or defining your wifi card
+>> channel, or display size, etc.
+>>
+>> Here what is described and setup may get confused with configuration,
+>> but it is not because what goes in DT in this case must be actually
+>> derived from your HW needs. Putting a sensor  close to your battery ha=
+s
+>> a strong meaning behind. Same if you put a sensor close to your
+>> processor. For instance, we have cases we need to consider external he=
+at
+>> in order to properly determine our CPU hotspot level, using a board
+>> sensor. That is what I mean by HW requirement/need.
+>>
+>> Again, just to refresh our minds, this is about protecting your board
+>> and ICs from operating out of their spec and extending their lifetime.=
 
-In particular,
+>> This is not about configuring something just because user has chosen t=
+o.
+>> That is definitely not a configuration.
+>>
+>> Being a use case, well, these new DT nodes can still be seen as a use
+>> case, yes. But depends on your understanding of use case. Because a
+>> sensor device may be used on different needs, composing different use
+>> cases. But still here we are talking about HW needs and composition. A=
+nd
+>> yes, if you take that perspective, there are use cases already describ=
+ed
+>> in DT.
+>>
+>> For instance, just because you use an LDO to power a MMC, does it mean=
 
-> > IOW, I believe that either .open() should do trace_array_get(), or
-> > __trace_remove_event_dirs() needs another for-each-file loop which
-> > checks file->call->flags & TRACE_EVENT_FL_REF_MASK.
->
-> Agreed :)
+>> you always will use it to power MMC on all boards. Would that be a use=
 
-Yes ;) and this makes the ref-counting even more complex, we use
-different methods to avoid the races with rmdir and event_remove().
+>> case? And in that example, because your MMC requires 2.8V, if you have=
+ a
+>> DT property to say that, does it mean it is  configuration? Well, yes,=
 
-> > The same bugs which Steven's 1/4 tries to solve ;)
->
-> OK, let me confirm that, would you mean we still need 2/4 - 4/4?
+>> but that is based on HW needs, otherwise it wont operate properly. Sam=
+e
+>> thing here, leave your hw operating out of temperature specs and you
+>> will see what is the outcome.
+>>
+>> Similar example would be cpufreq, or OPPs for opp layer. Defining an O=
+PP
+>> in DT could be considered a configuration?  Well in theory yes, one ca=
+n
+>> pick what ever configuration for your (D)PLL then match with a
+>> minimalist voltage level. And in theory, a voltage level can sustain
+>> more than one frequency level. An OPP is still a virtual concept, and =
+we
+>> still describe it in DT. Why? To me is because it is a HW need, becaus=
+e
+>> HW folks have actually validated that configuration of PLL (frequency)=
 
-Yes, yes.
+>> and voltage level. Sometimes they have even optimized it (for low powe=
+r
+>> consumption for instance), as one may achieve same OPP with different
+>> configuration. Then why thermal data, which is again, a 'HW
+>> configuration' that has been optimized by HW folks, known to be a HW
+>> requirement, cannot be described in DT?
+>>
+>> Similar argument goes to the fact that one may think this is subsystem=
 
-Oleg.
+>> specific. Again, describing your OPPs is not OPP layer specific?
+>> Besides, one can still read the device tree nodes I have written for
+>> describing thermal data and implement the HW requirement elsewhere, if=
 
+>> wanted (say in user land). I don't see as subsystem specific.
+>>
+>> Keep in mind that these very same concepts are actually derived from
+>> ACPI specification. They don't come from nowhere. And just because you=
+r
+>> system does not have ACPI support, does not mean it won't have a need =
+to
+>> describe thermal?
+>>
+>> So, because with this work (i) we are describing something that is
+>> required for properly usage of your HW (and not choice of the user),
+>> because (ii) same data is used on different specification (that is use=
+d
+>> on different OSes too), because (iii) you don't need thermal fw to rea=
+d
+>> this data and you could implement the HW requirement elsewhere, becaus=
+e
+>> (iv) there are other similar requirements already implemented via DT; =
+I
+>> still think this work is within DT scope. And that is based on evidenc=
+e
+>> of existing work not because DT is nice and I would want to use it.
+>>
+>> Hope that clarifies.
+>>
+>> Of course it is always welcome to hear ppl opinion. I would be really
+>> interested to know what ppl from OF think about this topic.
+>>
+> Yes, me too, or more widely the devicetree community. This is exactly
+> why I brought it up.
+
+And that is why I copied them.
+
+>=20
+>> If still, this does not fit DT, I would like to understand a proper
+>> argument. Better than, this is configuration/use case.
+>>
+>=20
+> I am not a devicetree expert. One of the complaints by the devicetree
+> folks is that much is added to devicetree which should not be there.
+> I find this use case questionable. Maybe I am wrong and it isn't,
+
+ok..
+
+> which may well be. But you thought about it as well, so I don't think
+> I am that far off track.
+
+Well, what I meant was more like, yes, I considered DT requirements
+before writing this code.
+
+>=20
+> This needs to be discussed and determined by devicetree experts, not me=
+=2E
+> I'll be happy with your patch series if you get an agreement or an Ack
+> by the devicetree maintainer for your patch series.
+
+Ok. Thanks for your review and taking the time to express your judgment,
+Guenter. Let s wait for Grant and dt folks to express their too.
+
+>=20
+> Guenter
+>=20
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+------enig2BFWIVTNOWNEEFQNLGFHB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlHpQUEACgkQCXcVR3XQvP1TxwEAx7Ak/u30tKm9nqVV0PzUE68o
+XUn99nKbW+ufbAgvyb8A/jq3ZIkSybbjSFU0OH0dA5qQ3Vz/zcIu/Ns+rGNgP+jT
+=6KhV
+-----END PGP SIGNATURE-----
+
+------enig2BFWIVTNOWNEEFQNLGFHB--
