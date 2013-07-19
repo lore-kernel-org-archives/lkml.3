@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760077Ab3GSQLB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:11:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54191 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040Ab3GSQLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:11:00 -0400
-Date: Fri, 19 Jul 2013 12:10:48 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC 1/2] watchdog: update watchdog attributes atomically
-Message-ID: <20130719161047.GN126784@redhat.com>
-References: <1374224699-13255-1-git-send-email-mhocko@suse.cz>
+	id S1760477Ab3GSQOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:14:17 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:56854 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab3GSQOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 12:14:16 -0400
+X-Auth-Info: CiSzMnmBh88PWlTDgiXtDFSe538EnfDuGPUBFnnQavQ=
+From: Marek Vasut <marex@denx.de>
+To: Hector Palacios <hector.palacios@digi.com>
+Subject: Re: [PATCH v2 3/5] iio: mxs-lradc: add scale attribute to channels
+Date: Fri, 19 Jul 2013 18:14:15 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
+Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307191630.17149.marex@denx.de> <51E95EF1.4040503@digi.com>
+In-Reply-To: <51E95EF1.4040503@digi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374224699-13255-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307191814.15491.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 11:04:58AM +0200, Michal Hocko wrote:
-> proc_dowatchdog doesn't synchronize multiple callers which
-> might lead to confusion when two parallel callers might confuse
-> watchdog_enable_all_cpus resp. watchdog_disable_all_cpus (e.g. watchdog
-> gets enabled even if watchdog_thresh was set to 0 already).
+Dear Hector Palacios,
+
+> Dear Marek,
 > 
-> This patch adds a local mutex which synchronizes callers to the sysctl
-> handler.
-
-Looks fine by me, except one little nitpick..
-
+> On 07/19/2013 04:30 PM, Marek Vasut wrote:
+> >> @@ -228,39 +230,12 @@ struct mxs_lradc {
+> >> 
+> >>   #define LRADC_RESOLUTION			12
+> >>   #define LRADC_SINGLE_SAMPLE_MASK		((1 << LRADC_RESOLUTION) - 1)
+> >> 
+> >> -/*
+> >> - * Raw I/O operations
+> >> - */
+> >> -static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+> >> +static int mxs_lradc_read_single(struct iio_dev *iio_dev,
+> >> 
+> >>   			const struct iio_chan_spec *chan,
+> >>   			int *val, int *val2, long m)
+> >>   
+> >>   {
+> >>   
+> >>   	struct mxs_lradc *lradc = iio_priv(iio_dev);
+> >>   	int ret;
+> >> 
+> >> -	unsigned long mask;
+> >> -
+> >> -	if (m != IIO_CHAN_INFO_RAW)
+> >> -		return -EINVAL;
+> >> -
+> >> -	/* Check for invalid channel */
+> >> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
+> >> -		return -EINVAL;
+> > 
+> > This was already resolved, so this patch won't apply I'm afraid.
 > 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  kernel/watchdog.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 1241d8c..2d64c02 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -520,13 +520,15 @@ int proc_dowatchdog(struct ctl_table *table, int write,
->  		    void __user *buffer, size_t *lenp, loff_t *ppos)
->  {
->  	int err, old_thresh, old_enabled;
-> +	static DEFINE_MUTEX(watchdog_proc_mutex);
+> You mean the 'unsigned long mask', right?  Yeah, I think I had resolved
+> that one before submitting, but looks like I didn't.
+> The other check is not resolved afaik. We agreed to remove it, but on a
+> different patch.
 
-Should we just make this global instead of hiding it as a static inside a
-function.  I don't know the kernel rules for deciding which approach makes
-sense.  I know it is the same result in either case...
+I mean the other check, yeah. A patch removing that should be applied already.
 
-Cheers,
-Don
+Best regards,
+Marek Vasut
