@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760921Ab3GSQyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:54:36 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.7]:36896 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760225Ab3GSQyf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:54:35 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-127.messagelabs.com!1374252861!7781029!20
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.9; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
-Organization: Vision Engraving Systems
-To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ASoC: ep93xx: fix build of ep93xx-ac97.c
-Date: Fri, 19 Jul 2013 09:53:25 -0700
-User-Agent: KMail/1.13.5 (Linux/3.7.0; KDE/4.4.5; x86_64; ; )
-CC: <alsa-devel@alsa-project.org>, Ryan Mallon <rmallon@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
+	id S1760926Ab3GSQ7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:59:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45125 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760466Ab3GSQ7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 12:59:02 -0400
+Message-ID: <51E97029.9090500@zytor.com>
+Date: Fri, 19 Jul 2013 09:58:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: paulmck@linux.vnet.ibm.com
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+References: <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <1373926109.17876.221.camel@gandalf.local.home> <CA+55aFwdYxfgE8B4oPVFXWTJUcnDKnM4cchZ=t08mFwEHX+TAA@mail.gmail.com> <1373999229.2148.87.camel@dabdike> <20130716211830.GX16780@linux.vnet.ibm.com> <1374041689.2036.14.camel@dabdike.svoaero.ru> <1374112865.19894.493.camel@pasglop> <20130719060343.GA16774@linux.vnet.ibm.com>
+In-Reply-To: <20130719060343.GA16774@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <201307190953.25957.hsweeten@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the build of this driver. It was broken by:
+On 07/18/2013 11:03 PM, Paul E. McKenney wrote:
+>>
+>> Ie. It's a *very good* barrier against maintainers sliding into
+>> sloppyness. Really, it works. At least with me.
+>>
+>> It's easy to take things a bit too much for granted, especially when you
+>> maintain your own little corner of the world.
+> 
+> Agreed!  Though I must confess that I have shifted from being mostly
+> worried about people yelling at me to being mostly worried about my own
+> code yelling at me.  Either way, I do find that being worried about some
+> consequence or another does help me get a better result.
+> 
 
-Commit 453807f3006757a5661c4000262d7d9284b5214c
-ASoC: ep93xx: Use ep93xx_dma_params instead of ep93xx_pcm_dma_params
+Yes.  Linus' little rant from last weekend has had me and the other tip
+maintainers look at process changes and new tooling, which we probably
+should have done a while ago... but it just got way too buried on the
+list of priorities.
 
-The removed struct ep93xx_pcm_dma_params use the member 'dma_port' to
-select the dma channel. The struct ep93xx_dma_data uses the member
-'port'.
+	-hpa
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
----
- sound/soc/cirrus/ep93xx-ac97.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/sound/soc/cirrus/ep93xx-ac97.c b/sound/soc/cirrus/ep93xx-ac97.c
-index ac73c60..04491f0 100644
---- a/sound/soc/cirrus/ep93xx-ac97.c
-+++ b/sound/soc/cirrus/ep93xx-ac97.c
-@@ -102,13 +102,13 @@ static struct ep93xx_ac97_info *ep93xx_ac97_info;
- 
- static struct ep93xx_dma_data ep93xx_ac97_pcm_out = {
- 	.name		= "ac97-pcm-out",
--	.dma_port	= EP93XX_DMA_AAC1,
-+	.port		= EP93XX_DMA_AAC1,
- 	.direction	= DMA_MEM_TO_DEV,
- };
- 
- static struct ep93xx_dma_data ep93xx_ac97_pcm_in = {
- 	.name		= "ac97-pcm-in",
--	.dma_port	= EP93XX_DMA_AAC1,
-+	.port		= EP93XX_DMA_AAC1,
- 	.direction	= DMA_DEV_TO_MEM,
- };
- 
--- 
-1.8.3.2
 
