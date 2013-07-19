@@ -1,182 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964966Ab3GSANg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:13:36 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:60124 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759365Ab3GSANW (ORCPT
+	id S1759534Ab3GSANJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:13:09 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51386 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759365Ab3GSANH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:13:22 -0400
+	Thu, 18 Jul 2013 20:13:07 -0400
+X-AuditID: 9c93017d-b7b45ae000000e34-4b-51e88490147f
+Date: Fri, 19 Jul 2013 09:13:03 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hugepage related lockdep trace.
+Message-ID: <20130719001303.GB23354@blaptop>
+References: <20130717153223.GD27731@redhat.com>
+ <20130718000901.GA31972@blaptop>
+ <87hafrdatb.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <51E87C98.5030001@ti.com>
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com>
-	<1374165830-6367-2-git-send-email-r.sricharan@ti.com>
-	<51E83A4F.5080904@ti.com>
-	<51E87C98.5030001@ti.com>
-Date: Thu, 18 Jul 2013 19:13:18 -0500
-X-Google-Sender-Auth: -OlvP6mwYHUwcA6tAmT03_iuaFc
-Message-ID: <CAGo_u6rO0SjHzXhMBPeSmWykqqpf9phLEPBEaeFtS9bkHoq8qg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-From: Nishanth Menon <nm@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: balbi@ti.com, Sricharan R <r.sricharan@ti.com>, linux@arm.linux.org.uk,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        rnayak@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hafrdatb.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 6:39 PM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> On Thursday 18 July 2013 02:56 PM, Nishanth Menon wrote:
->> On 07/18/2013 11:43 AM, Sricharan R wrote:
->>> Some socs have a large number of interrupts/dma requests to service
->>> the needs of its many peripherals and subsystems. All of the
->>> requests lines from the subsystems are not needed at the same
->>> time, so they have to be muxed to the controllers appropriately.
->>> In such places a interrupt/dma controllers are preceded by an
->>> IRQ/DMA CROSSBAR that provides flexibility in muxing the device
->>> requests to the controller inputs.
->>>
->>> The Peripheral irq/dma requests are connected to one crossbar's input
->>> and the output of the crossbar is connected to controller's input
->>> line. On POR, there are some mappings which are done by default.
->>> Those peripherals which do not have a mapping on POR, should be configured
->>> to route its requests using the crossbar.
->>>
->>> The drivers identifies every controller's crossbar as individual devices.
->>> The mappings can be specified from the DT crossbar nodes and those gets mapped
->>> during the crossbar device's probe. The mappings can also be specified by adding
->>> the crossbar lines to the peripheral device nodes and map it with
->>> crossbar_map/unmap apis.
->>>
->>> Signed-off-by: Sricharan R <r.sricharan@ti.com>
->>> ---
->>>   .../devicetree/bindings/arm/omap/crossbar.txt      |   24 ++
->>>   drivers/misc/Kconfig                               |    8 +
->>>   drivers/misc/Makefile                              |    1 +
->>>   drivers/misc/crossbar.c                            |  258 ++++++++++++++++++++
->>>   include/linux/crossbar.h                           |   71 ++++++
->>>   5 files changed, 362 insertions(+)
->>>   create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>>   create mode 100644 drivers/misc/crossbar.c
->>>   create mode 100644 include/linux/crossbar.h
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>> new file mode 100644
->>> index 0000000..02a8a28
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
->>> @@ -0,0 +1,24 @@
->>> +* TI - IRQ/DMA Crossbar
->>> +
->>> +This version is an implementation of the Crossbar IRQ/DMA IP
->>> +
->>> +Required properties:
->>> +- compatible : Should be "ti,dra-crossbar"
->>> +- crossbar-name: Name of the controller to which crossbar output is routed
->>> +- reg:    Contains crossbar register address range
->>> +- reg-width: Represents the width of the individual registers
->>> +- crossbar-lines:  Default mappings.Should contain the crossbar-name
->>> +           device name, int/dma request number, crossbar number,
->>> +           register offset in the same order.
->>> +
->>> +Examples:
->>> +        crossbar_mpu: mpuirq@4a002a48 {
->>> +            compatible = "crossbar";
->>> +            crossbar-name = "mpu-irq";
->>> +            reg = <0x4a002a48 0x0130>;
->>> +            reg-width = <16>;
->>> +            crossbar-lines = "mpu-irq", "rtc-ss-alarm", <0x9f 0xd9 0x12c>,
->>> +                     "mpu-irq", "mcasp3-arevt", <0x9e 0x96 0x12a>,
->>> +                     "mpu-irq", "mcasp3-axevt", <0x9d 0x97 0x128>;
->>> +        };
->>
->> I carry forward my TI internal objection to this approach:
->>
->> NAK.
->>
->> DRA7 uses a cross bar to map a line to GIC interrupt. Flow of interrupt is as follows:
->> hardware IP block -interrupt line-> IRQ Cross bar -> GIC IRQ line --> MPU IRQ.
->>
->>
->> What we have done today for DRA is to provide IRQ numbers as direct maps from hardware IP block to GIC based on default IRQ cross bar mapping.
->>
->> Lets see what happens as a result of this:
->>
->> https://patchwork.kernel.org/patch/2825148/ (introducing DTS for DRA7)
->> uart1 to uart6 is defined. while in fact 10 uarts exist on IP block.
->> uart1: serial@4806a000 {
->> <snip>
->> +            interrupts = <0 72 0x4>;
->> Assumes that GIC interrupt by default mapping used.
->>
->> Now, think of a product that wants to use UART10 instead of UART1, SoC design allows you do that by doing a remapping of GIC interrupt to UART10 - which is awesome.
->>
->> Option 1: u-boot/bootloader
->> mw.l IRQ_CROSSBAR_address with value to map uart10 to GIC IRQ for UART1,
->>
->> Option 2: in kernel do a raw_writel version of option 1.
->> This patch does option 1 in kernel in a "fancy way" - why the heck would I want to do that when u-boot allows me to do the same thing in uEnv.txt
->>
->> Option 3: map GIC interrupt to IRQ CROSS bar dynamically.
->> a) Allows us to define every single IP available on DRA7 SoC.
->> b) GIC allocation happens dynamically
->> c) allow products use IPs as needed.
->>
->> Sorry, Conceptually option 3 is the right approach in my view.
->> instead of doing
->> uart1: serial@4806a000 {
->> <snip>
->> +            interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
->>
->> we should be able to do the following:
->> uart1: serial@4806a000 {
->> <snip>
->> +            interrupts = <TI_IRQ_CROSSBAR 192 IRQ_TYPE_LEVEL_HIGH>;
->>
->> and not worry about the GIC interrupt number used
->>
->>
-> Since the cross-bar is not limited t0 IRQ lines and applicable for
-> DMA request lines as well, making it IRQ chip doesn't make sense. Its
-> not typical pin control functionality either but at least that framework
-> is much closer to consider as an option.
+On Thu, Jul 18, 2013 at 11:12:24PM +0530, Aneesh Kumar K.V wrote:
+> Minchan Kim <minchan@kernel.org> writes:
+> 
+> > Ccing people get_maintainer says.
+> >
+> > On Wed, Jul 17, 2013 at 11:32:23AM -0400, Dave Jones wrote:
+> >> [128095.470960] =================================
+> >> [128095.471315] [ INFO: inconsistent lock state ]
+> >> [128095.471660] 3.11.0-rc1+ #9 Not tainted
+> >> [128095.472156] ---------------------------------
+> >> [128095.472905] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+> >> [128095.473650] kswapd0/49 [HC0[0]:SC0[0]:HE1:SE1] takes:
+> >> [128095.474373]  (&mapping->i_mmap_mutex){+.+.?.}, at: [<c114971b>] page_referenced+0x87/0x5e3
+> >> [128095.475128] {RECLAIM_FS-ON-W} state was registered at:
+> >> [128095.475866]   [<c10a6232>] mark_held_locks+0x81/0xe7
+> >> [128095.476597]   [<c10a8db3>] lockdep_trace_alloc+0x5e/0xbc
+> >> [128095.477322]   [<c112316b>] __alloc_pages_nodemask+0x8b/0x9b6
+> >> [128095.478049]   [<c1123ab6>] __get_free_pages+0x20/0x31
+> >> [128095.478769]   [<c1123ad9>] get_zeroed_page+0x12/0x14
+> >> [128095.479477]   [<c113fe1e>] __pmd_alloc+0x1c/0x6b
+> >> [128095.480138]   [<c1155ea7>] huge_pmd_share+0x265/0x283
+> >> [128095.480138]   [<c1155f22>] huge_pte_alloc+0x5d/0x71
+> >> [128095.480138]   [<c115612e>] hugetlb_fault+0x7c/0x64a
+> >> [128095.480138]   [<c114087c>] handle_mm_fault+0x255/0x299
+> >> [128095.480138]   [<c15bbab0>] __do_page_fault+0x142/0x55c
+> >> [128095.480138]   [<c15bbed7>] do_page_fault+0xd/0x16
+> >> [128095.480138]   [<c15b927c>] error_code+0x6c/0x74
+> >> [128095.480138] irq event stamp: 3136917
+> >> [128095.480138] hardirqs last  enabled at (3136917): [<c15b8139>] _raw_spin_unlock_irq+0x27/0x50
+> >> [128095.480138] hardirqs last disabled at (3136916): [<c15b7f4e>] _raw_spin_lock_irq+0x15/0x78
+> >> [128095.480138] softirqs last  enabled at (3136180): [<c1048e4a>] __do_softirq+0x137/0x30f
+> >> [128095.480138] softirqs last disabled at (3136175): [<c1049195>] irq_exit+0xa8/0xaa
+> >> [128095.480138] 
+> >> other info that might help us debug this:
+> >> [128095.480138]  Possible unsafe locking scenario:
+> >> 
+> >> [128095.480138]        CPU0
+> >> [128095.480138]        ----
+> >> [128095.480138]   lock(&mapping->i_mmap_mutex);
+> >> [128095.480138]   <Interrupt>
+> >> [128095.480138]     lock(&mapping->i_mmap_mutex);
+> >> [128095.480138] 
+> >>  *** DEADLOCK ***
+> >> 
+> >> [128095.480138] no locks held by kswapd0/49.
+> >> [128095.480138] 
+> >> stack backtrace:
+> >> [128095.480138] CPU: 1 PID: 49 Comm: kswapd0 Not tainted 3.11.0-rc1+ #9
+> >> [128095.480138] Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
+> >> [128095.480138]  c1d32630 00000000 ee39fb18 c15b001e ee395780 ee39fb54 c15acdcb c1751845
+> >> [128095.480138]  c1751bbf 00000031 00000000 00000000 00000000 00000000 00000001 00000001
+> >> [128095.480138]  c1751bbf 00000008 ee395c44 00000100 ee39fb88 c10a6130 00000008 0000d8fb
+> >> [128095.480138] Call Trace:
+> >> [128095.480138]  [<c15b001e>] dump_stack+0x4b/0x79
+> >> [128095.480138]  [<c15acdcb>] print_usage_bug+0x1d9/0x1e3
+> >> [128095.480138]  [<c10a6130>] mark_lock+0x1e0/0x261
+> >> [128095.480138]  [<c10a5878>] ? check_usage_backwards+0x109/0x109
+> >> [128095.480138]  [<c10a6cde>] __lock_acquire+0x623/0x17f2
+> >> [128095.480138]  [<c107aa43>] ? sched_clock_cpu+0xcd/0x130
+> >> [128095.480138]  [<c107a7e8>] ? sched_clock_local+0x42/0x12e
+> >> [128095.480138]  [<c10a84cf>] lock_acquire+0x7d/0x195
+> >> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
+> >> [128095.480138]  [<c15b3671>] mutex_lock_nested+0x6c/0x3a7
+> >> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
+> >> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
+> >> [128095.480138]  [<c11661d5>] ? mem_cgroup_charge_statistics.isra.24+0x61/0x9e
+> >> [128095.480138]  [<c114971b>] page_referenced+0x87/0x5e3
+> >> [128095.480138]  [<f8433030>] ? raid0_congested+0x26/0x8a [raid0]
+> >> [128095.480138]  [<c112b9c7>] shrink_page_list+0x3d9/0x947
+> >> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
+> >> [128095.480138]  [<c112c3cf>] shrink_inactive_list+0x155/0x4cb
+> >> [128095.480138]  [<c112cd07>] shrink_lruvec+0x300/0x5ce
+> >> [128095.480138]  [<c112d028>] shrink_zone+0x53/0x14e
+> >> [128095.480138]  [<c112e531>] kswapd+0x517/0xa75
+> >> [128095.480138]  [<c112e01a>] ? mem_cgroup_shrink_node_zone+0x280/0x280
+> >> [128095.480138]  [<c10661ff>] kthread+0xa8/0xaa
+> >> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
+> >> [128095.480138]  [<c15bf737>] ret_from_kernel_thread+0x1b/0x28
+> >> [128095.480138]  [<c1066157>] ? insert_kthread_work+0x63/0x63
+> >
+> > IMHO, it's a false positive because i_mmap_mutex was held by kswapd
+> > while one in the middle of fault path could be never on kswapd context.
+> >
+> > It seems lockdep for reclaim-over-fs isn't enough smart to identify
+> > between background and direct reclaim.
+> >
+> > Wait for other's opinion.
+> 
+> Is that reasoning correct ?. We may not deadlock because hugetlb pages
+> cannot be reclaimed. So the fault path in hugetlb won't end up
+> reclaiming pages from same inode. But the report is correct right ?
+> 
+> 
+> Looking at the hugetlb code we have in huge_pmd_share
+> 
+> out:
+> 	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+> 	mutex_unlock(&mapping->i_mmap_mutex);
+> 	return pte;
+> 
+> I guess we should move that pmd_alloc outside i_mmap_mutex. Otherwise
+> that pmd_alloc can result in a reclaim which can call shrink_page_list ?
 
-The core concept is that this is a trivial mapping problem and if can
-extrapolate pinctrl to be mapping for SoC internal signals, oh great!
+True. Sorry for that I didn't review the code carefully and I was very paranoid
+in reclaim-over-fs due to internal works. :(
 
-pinctrl solved a problem where we are not absolutely sure how to
-reallocate SoC *external* pins to board interface. pinctrl works in
-more complex world, each SoC pinout has A options, but not all B SoC
-signals can or will routed there - in fact, inside one single SoC
-family, there never was a pattern even as it all depended on how the
-board manufacturer wanted to do it - and yep, it was easy - a signal
-just had limited number of options it could go to review and pinctrl
-options to do that was simple as well!
+> 
+> Something like  ?
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 83aff0a..2cb1be3 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -3266,8 +3266,8 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+>  		put_page(virt_to_page(spte));
+>  	spin_unlock(&mm->page_table_lock);
+>  out:
+> -	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+>  	mutex_unlock(&mapping->i_mmap_mutex);
+> +	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+>  	return pte;
 
-The problem here IMHO is different. it is a simple X->Y mapping, where
-X > Y, but any of X can be mapped to any of Y - so, now with a static
-map, you need be sure that you do not map double even by mistake - so
-what ever number of GIC mappings need to be evaluated always every
-time we do a static map change to ensure no conflicts w.r.t board
-usage etc. Doable? sure! Right way to solve a simple X->Y mapping
-problem? I personally don't think so.
+I am blind on hugetlb but not sure it doesn't break eb48c071.
+Michal?
 
-<rant>
 
-Now, if we want to force every single DRA7 product board designers and
-s/w board support guy to consider how the DRA internal signals are
-mapped using dts - yes, we are proposing to solve the problem of a
-trivial resource allocation problem with a framework meant to handle
-much more complex muxing problem and ensured that all DRA7 product
-guys will wonder "what the heck were these guys thinking"?
+>  }
+>  
+> -aneesh
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-</rant>
-
-Regards,
-Nishanth Menon
+-- 
+Kind regards,
+Minchan Kim
