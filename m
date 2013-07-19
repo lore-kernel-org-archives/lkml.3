@@ -1,95 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759670Ab3GSGgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 02:36:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43434 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab3GSGgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 02:36:45 -0400
-Message-ID: <51E8DE51.1060404@ti.com>
-Date: Fri, 19 Jul 2013 12:06:01 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759689Ab3GSGnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 02:43:05 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7440 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759632Ab3GSGnD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 02:43:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 18 Jul 2013 23:41:54 -0700
+Message-ID: <51E8DFB2.9070701@nvidia.com>
+Date: Fri, 19 Jul 2013 14:41:54 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <kyungmin.park@samsung.com>, <balbi@ti.com>, <jg1.han@samsung.com>,
-        <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
-        <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
-        <swarren@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <1374129984-765-1-git-send-email-kishon@ti.com> <1374129984-765-2-git-send-email-kishon@ti.com> <20130718072004.GA16720@kroah.com> <51E7AE88.3050007@ti.com> <20130718154954.GA31961@kroah.com> <51E8D086.809@ti.com> <20130719054311.GA14638@kroah.com> <51E8D4E0.8060200@ti.com> <20130719062941.GA23611@kroah.com>
-In-Reply-To: <20130719062941.GA23611@kroah.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: "linux@roeck-us.net" <linux@roeck-us.net>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] hwmon: (lm90) add support to handle IRQ
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com> <1373615287-18502-4-git-send-email-wni@nvidia.com> <20130718175822.62c358bf@endymion.delvare>
+In-Reply-To: <20130718175822.62c358bf@endymion.delvare>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Friday 19 July 2013 11:59 AM, Greg KH wrote:
-> On Fri, Jul 19, 2013 at 11:25:44AM +0530, Kishon Vijay Abraham I wrote:
->> Hi,
->>
->> On Friday 19 July 2013 11:13 AM, Greg KH wrote:
->>> On Fri, Jul 19, 2013 at 11:07:10AM +0530, Kishon Vijay Abraham I wrote:
->>>>>>>> +	ret = dev_set_name(&phy->dev, "%s.%d", dev_name(dev), id);
->>>>>>>
->>>>>>> Your naming is odd, no "phy" anywhere in it?  You rely on the sender to
->>>>>>> never send a duplicate name.id pair?  Why not create your own ids based
->>>>>>> on the number of phys in the system, like almost all other classes and
->>>>>>> subsystems do?
->>>>>>
->>>>>> hmm.. some PHY drivers use the id they provide to perform some of their
->>>>>> internal operation as in [1] (This is used only if a single PHY provider
->>>>>> implements multiple PHYS). Probably I'll add an option like PLATFORM_DEVID_AUTO
->>>>>> to give the PHY drivers an option to use auto id.
->>>>>>
->>>>>> [1] ->
->>>>>> http://archive.arm.linux.org.uk/lurker/message/20130628.134308.4a8f7668.ca.html
->>>>>
->>>>> No, who cares about the id?  No one outside of the phy core ever should,
->>>>> because you pass back the only pointer that they really do care about,
->>>>> if they need to do anything with the device.  Use that, and then you can
->>>>
->>>> hmm.. ok.
->>>>
->>>>> rip out all of the "search for a phy by a string" logic, as that's not
->>>>
->>>> Actually this is needed for non-dt boot case. In the case of dt boot, we use a
->>>> phandle by which the controller can get a reference to the phy. But in the case
->>>> of non-dt boot, the controller can get a reference to the phy only by label.
->>>
->>> I don't understand.  They registered the phy, and got back a pointer to
->>> it.  Why can't they save it in their local structure to use it again
->>> later if needed?  They should never have to "ask" for the device, as the
->>
->> One is a *PHY provider* driver which is a driver for some PHY device. This will
->> use phy_create to create the phy.
->> The other is a *PHY consumer* driver which might be any controller driver (can
->> be USB/SATA/PCIE). The PHY consumer will use phy_get to get a reference to the
->> phy (by *phandle* in the case of dt boot and *label* in the case of non-dt boot).
->>> device id might be unknown if there are multiple devices in the system.
->>
->> I agree with you on the device id part. That need not be known to the PHY driver.
+On 07/18/2013 11:58 PM, Jean Delvare wrote:
+> Hi Wei,
 > 
-> How does a consumer know which "label" to use in a non-dt system if
-> there are multiple PHYs in the system?
-
-That should be passed using platform data.
+> On Fri, 12 Jul 2013 15:48:06 +0800, Wei Ni wrote:
+>> When the temperature exceed the limit range value,
+>> the driver can handle the interrupt.
+>>
+>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>> ---
+>>  drivers/hwmon/lm90.c |   24 ++++++++++++++++++++++++
+>>  1 file changed, 24 insertions(+)
+>>
+>> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+>> index c90037f..1cc3d19 100644
+>> --- a/drivers/hwmon/lm90.c
+>> +++ b/drivers/hwmon/lm90.c
+>> @@ -89,6 +89,7 @@
+>>  #include <linux/err.h>
+>>  #include <linux/mutex.h>
+>>  #include <linux/sysfs.h>
+>> +#include <linux/interrupt.h>
+>>  
+>>  /*
+>>   * Addresses to scan
+>> @@ -1460,6 +1461,17 @@ static bool lm90_is_tripped(struct i2c_client *client)
+>>  	return true;
+>>  }
+>>  
+>> +static irqreturn_t lm90_irq_thread(int irq, void *dev_id)
+>> +{
+>> +	struct lm90_data *data = dev_id;
+>> +	struct i2c_client *client = to_i2c_client(data->hwmon_dev->parent);
 > 
-> Do you have any drivers that are non-dt using this yet?
+> Why are you passing data as the dev_id in the first place, instead of
+> client? It's easier to get the data when you have the client
+> (i2c_get_clientdata) than the other way around.
 
-yes. tw4030 (used in OMAP3) supports non-dt.
-[PATCH 04/15] ARM: OMAP: USB: Add phy binding information
-[PATCH 06/15] usb: musb: omap2430: use the new generic PHY framework
-of this patch series shows how it's used.
+Oh, I'm stupid :)
+I will pass the client.
 
-Thanks
-Kishon
+> 
+>> +
+>> +	if (lm90_is_tripped(client))
+>> +		return IRQ_HANDLED;
+>> +	else
+>> +		return IRQ_NONE;
+>> +}
+>> +
+>>  static int lm90_probe(struct i2c_client *client,
+>>  		      const struct i2c_device_id *id)
+>>  {
+>> @@ -1536,6 +1548,18 @@ static int lm90_probe(struct i2c_client *client,
+>>  		goto exit_remove_files;
+>>  	}
+>>  
+>> +	if (client->irq >= 0) {
+> 
+> I though you had agreed to just check for (client->irq)?
+
+Oh, yes, I forgot to change it, thanks, I will update it.
+
+> 
+>> +		dev_dbg(dev, "lm90 IRQ: %d\n", client->irq);
+> 
+> The "lm90" is redundant, dev_dbg will use the chip name as a prefix.
+
+Ok, I will remove it.
+
+> 
+>> +		err = devm_request_threaded_irq(dev, client->irq,
+>> +						NULL, lm90_irq_thread,
+>> +						IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+>> +						"lm90", data);
+>> +		if (err < 0) {
+>> +			dev_err(dev, "cannot request interrupt\n");
+> 
+> You should include the IRQ number in the error message, it is useful
+> for investigating the issue. Not everyone will have the debugging
+> message above enabled.
+
+Yes, you are right, I will add the IRQ number.
+
+> 
+>> +			goto exit_remove_files;
+>> +		}
+>> +	}
+>> +
+>>  	return 0;
+>>  
+>>  exit_remove_files:
+> 
+> That's it for the code. Now I'm not sure I understand what you are
+> trying to do and what this is all good for.
+> 
+> First of all, how is the chip wired on your system? You are using an
+> NCT1008, right? Which output of the chip is connected to your interrupt
+> line, THERM or ALERT/THERM2? ALERT is normally used for SMBus Alert but
+> I suppose it could be used for an interrupt too. THERM and THERM2 OTOH
+> are comparator outputs, they stay low as long as the temperature are
+> above the therm limits. Reading the status register won't bring them
+> back up as I understand it, and contrary to the ALERT output, they
+> can't be masked. Won't this result in an interrupt flood if using
+> IRQF_TRIGGER_LOW? Have you tested your code already?
+
+Let me explain why I want to add the IRQ thread.
+In our tegra30 platform, we use an NCT1008, and in our downstream tree,
+it programmed as following:
+1. The pin THERM is connected to the PMIC, we will set the THERM limit
+in the initialization, once the this limit is tripped, it will trigged
+the PMIC, and the PMIC will shutdown the system immediately.
+2. The pin ALERT/THERM2 is configured as ALERT, and it is connected to
+the interrupt line. In the platform init, we will prepare some trip
+temps, such as 20C, 40C,60C, 80C, and we will set 20C to the
+remote-low-temp-limit, and set 40C to remote-high-temp-limit. When the
+temperature exceed this rang, it will interrupt the system, then we will
+update the low/high limit to next rang, for example, if the temp raise
+to 50C, we will set 40C to low-limit, and set 60C to hight-limit, then
+we will run the throttle functions, and update cooling state.
+
+We wish to upstream these codes, but as you know, it's difficult to use
+current lm90.c and thermal framework to implement it, and these codes
+related many other things, such as throttling cpufreq, other clock freq.
+So at first, I want to update the lm90.c, so that I can add it to the
+thermal fw and use interrupt handler easily. And at the same time I
+followed the thermal framework thread, there has new infrastructure
+posted, which is more easy to add lm90 to thermal fw.
+
+> 
+> Also I don't think just logging an error message is the right thing to
+> do in the case of overheating. The code to handle SMBus alerts is from
+> me, and it does indeed just log the problems, but it was really only
+> meant as a proof of concept when I first added support for SMBus Alert.
+> Today we could do better than this, starting with issuing sysfs
+> notifications to the relevant alarm files (several other hwmon drivers
+> are doing that already.)
+
+yes, I can try to use sysfs_notify() for the alarm.
+
+> 
+> For a real system, if the THERM output is connected to an interrupt line
+> (instead of directly to a fan controller) I would expect the platform
+> to provide a callback to handle thermal events and take whatever
+> appropriate measure is needed (e.g. throttling.) Just logging the
+> problem won't save the system, by the time someone looks at the log it
+> might be too late.
+
+In our downstream tree, we write a new driver nct1008.c, whci can handle
+these interrupts and all other things, but as you know this driver can't
+be upstreamed, because there already has the lm90.c :).
+Anyway I think this patch is the first step of the implementation.
+
+> 
+
