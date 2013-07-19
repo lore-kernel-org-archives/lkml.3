@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965922Ab3GSFeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:34:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39966 "EHLO
+	id S965818Ab3GSFeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:34:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39963 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965748Ab3GSF07 (ORCPT
+	with ESMTP id S965743Ab3GSF07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:26:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Jie Liu <jeff.liu@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Sunil Mushran <sunil.mushran@gmail.com>,
+        Chen Gang <gang.chen@asianux.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 39/72] ocfs2: xattr: fix inlined xattr reflink
-Date: Thu, 18 Jul 2013 22:25:56 -0700
-Message-Id: <20130719052602.533746324@linuxfoundation.org>
+Subject: [ 38/72] arch: c6x: mm: include "asm/uaccess.h" to pass compiling
+Date: Thu, 18 Jul 2013 22:25:55 -0700
+Message-Id: <20130719052602.466806781@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -30,83 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit ef962df057aaafd714f5c22ba3de1be459571fdf upstream.
+commit fe74650166dd6905b0cf66594eb79222dc9d7109 upstream.
 
-Inlined xattr shared free space of inode block with inlined data or data
-extent record, so the size of the later two should be adjusted when
-inlined xattr is enabled.  See ocfs2_xattr_ibody_init().  But this isn't
-done well when reflink.  For inode with inlined data, its max inlined
-data size is adjusted in ocfs2_duplicate_inline_data(), no problem.  But
-for inode with data extent record, its record count isn't adjusted.  Fix
-it, or data extent record and inlined xattr may overwrite each other,
-then cause data corruption or xattr failure.
+Need include "asm/uaccess.h" to pass compiling.
 
-One panic caused by this bug in our test environment is the following:
+The related error (with allmodconfig):
 
-  kernel BUG at fs/ocfs2/xattr.c:1435!
-  invalid opcode: 0000 [#1] SMP
-  Pid: 10871, comm: multi_reflink_t Not tainted 2.6.39-300.17.1.el5uek #1
-  RIP: ocfs2_xa_offset_pointer+0x17/0x20 [ocfs2]
-  RSP: e02b:ffff88007a587948  EFLAGS: 00010283
-  RAX: 0000000000000000 RBX: 0000000000000010 RCX: 00000000000051e4
-  RDX: ffff880057092060 RSI: 0000000000000f80 RDI: ffff88007a587a68
-  RBP: ffff88007a587948 R08: 00000000000062f4 R09: 0000000000000000
-  R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000010
-  R13: ffff88007a587a68 R14: 0000000000000001 R15: ffff88007a587c68
-  FS:  00007fccff7f06e0(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
-  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00000000015cf000 CR3: 000000007aa76000 CR4: 0000000000000660
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process multi_reflink_t
-  Call Trace:
-    ocfs2_xa_reuse_entry+0x60/0x280 [ocfs2]
-    ocfs2_xa_prepare_entry+0x17e/0x2a0 [ocfs2]
-    ocfs2_xa_set+0xcc/0x250 [ocfs2]
-    ocfs2_xattr_ibody_set+0x98/0x230 [ocfs2]
-    __ocfs2_xattr_set_handle+0x4f/0x700 [ocfs2]
-    ocfs2_xattr_set+0x6c6/0x890 [ocfs2]
-    ocfs2_xattr_user_set+0x46/0x50 [ocfs2]
-    generic_setxattr+0x70/0x90
-    __vfs_setxattr_noperm+0x80/0x1a0
-    vfs_setxattr+0xa9/0xb0
-    setxattr+0xc3/0x120
-    sys_fsetxattr+0xa8/0xd0
-    system_call_fastpath+0x16/0x1b
+  arch/c6x/mm/init.c: In function `paging_init':
+  arch/c6x/mm/init.c:46:2: error: implicit declaration of function `set_fs' [-Werror=implicit-function-declaration]
+  arch/c6x/mm/init.c:46:9: error: `KERNEL_DS' undeclared (first use in this function)
+  arch/c6x/mm/init.c:46:9: note: each undeclared identifier is reported only once for each function it appears in
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Jie Liu <jeff.liu@oracle.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/xattr.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/c6x/mm/init.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ocfs2/xattr.c
-+++ b/fs/ocfs2/xattr.c
-@@ -6499,6 +6499,16 @@ static int ocfs2_reflink_xattr_inline(st
- 	}
+--- a/arch/c6x/mm/init.c
++++ b/arch/c6x/mm/init.c
+@@ -18,6 +18,7 @@
+ #include <linux/initrd.h>
  
- 	new_oi = OCFS2_I(args->new_inode);
-+	/*
-+	 * Adjust extent record count to reserve space for extended attribute.
-+	 * Inline data count had been adjusted in ocfs2_duplicate_inline_data().
-+	 */
-+	if (!(new_oi->ip_dyn_features & OCFS2_INLINE_DATA_FL) &&
-+	    !(ocfs2_inode_is_fast_symlink(args->new_inode))) {
-+		struct ocfs2_extent_list *el = &new_di->id2.i_list;
-+		le16_add_cpu(&el->l_count, -(inline_size /
-+					sizeof(struct ocfs2_extent_rec)));
-+	}
- 	spin_lock(&new_oi->ip_lock);
- 	new_oi->ip_dyn_features |= OCFS2_HAS_XATTR_FL | OCFS2_INLINE_XATTR_FL;
- 	new_di->i_dyn_features = cpu_to_le16(new_oi->ip_dyn_features);
+ #include <asm/sections.h>
++#include <asm/uaccess.h>
+ 
+ /*
+  * ZERO_PAGE is a special page that is used for zero-initialized
 
 
