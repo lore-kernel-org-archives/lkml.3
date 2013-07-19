@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab3GSVAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:00:10 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36778 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420Ab3GSVAH (ORCPT
+	id S1752682Ab3GSVAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:00:39 -0400
+Received: from science.horizon.com ([71.41.210.146]:33131 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752552Ab3GSVAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:00:07 -0400
-Message-ID: <1374267934.7397.1062.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 19 Jul 2013 14:05:34 -0700
-In-Reply-To: <51E96239.8080409@cs.wisc.edu>
-References: <cover.1369155164.git.agordeev@redhat.com>
-	 <20130521235003.GE6985@mtj.dyndns.org>
-	 <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
-	 <20130522170305.GD9563@kernel.dk>
-	 <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
-	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
-	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
-	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
-	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
-	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
-	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
-	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
-	 <51E83E32.9050306@cs.wisc.edu>
-	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
-	 <51E96239.8080409@cs.wisc.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Jul 2013 17:00:38 -0400
+Date: 19 Jul 2013 17:00:36 -0400
+Message-ID: <20130719210036.5543.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: hpa@zytor.com, linux@horizon.com
+Subject: Re: 3.10.0 i386 uniprocessor panic
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <51E974A9.3050608@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 09:58 -0600, Mike Christie wrote:
-> On 07/18/2013 06:23 PM, Nicholas A. Bellinger wrote:
-> >> Just saw this while trying out iscsi with the scsi-mq stuff :)
-> >> > 
-> > Took at stab at this a while back, but ended getting distracted on other
-> > items.  Do you have an initial conversion running yet..?
-> 
-> Not running well :) Have a patch but I am debugging it now. I messed up
-> something with the cmd_size stuff.
+>> EIP is at 0xc143a091
+>> EAX: c143a090 EBX: 00000100 ECX: f3150000 EDX: c143a090
+>> ESI: c143a090 EDI: c143a090 EBP: c143a090 ESP: f3151eec
+>>  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+>> CR0: 80050033 CR2: a090c143 CR3: 331c6000 CR4: 000007d0
+>> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+>> DR6: ffff0ff0 DR7: 00000400
 
-<nod>, looking forward to see ib_iser move beyond the existing
-scsi_request_fn() bottleneck.   ;)
+>> (The CR2 value looks particularly odd.)
 
-Feel free to send me the WIP off-list if you'd like another pair of
-eyes.
+> Indeed it does; it is a user space value, but it doesn't look like
+> either a normal user space value nor really as a trivially buggered-up
+> kernel pointer value, unless the 0xc143... at the bottom is the upper
+> half of a kernel pointer, in which case we probably obtained this value
+> from a corrupt, misaligned pointer.
 
---nab
+Er... I assumed you'd see instantly that it was the 0xc143a090 value
+that's in 5 registers (EAX/EDX/ESI/EDI/EBP), and IP-1, but with the
+halves swapped.
 
-
-
+How the heck the halves got swapped is confusing me...
