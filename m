@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935087Ab3GSCXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:23:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37697 "EHLO
+	id S935060Ab3GSCXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:23:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37703 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934877Ab3GSCXj (ORCPT
+	with ESMTP id S934888Ab3GSCXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:39 -0400
+	Thu, 18 Jul 2013 22:23:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 03/18] USB: option,qcserial: move Novatel Gobi1K IDs to qcserial
-Date: Thu, 18 Jul 2013 19:23:18 -0700
-Message-Id: <20130719021049.199300664@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        John Youn <johnyoun@synopsys.com>
+Subject: [ 05/18] xhci: check for failed dma pool allocation
+Date: Thu, 18 Jul 2013 19:23:20 -0700
+Message-Id: <20130719021049.332761403@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -26,58 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit a254810a86aaaac4ac6ba44fa934558b042a17a7 upstream.
+commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
 
-These devices are all Gobi1K devices (according to the Windows INF
-files) and should be handled by qcserial instead of option.  Their
-network port is handled by qmi_wwan.
+Fail and free the container context in case dma_pool_alloc() can't allocate
+the raw context data part of it
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
+Support for 64-byte contexts".
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: John Youn <johnyoun@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c   |    4 ----
- drivers/usb/serial/qcserial.c |    8 +++++++-
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/usb/host/xhci-mem.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -159,8 +159,6 @@ static void option_instat_callback(struc
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
--#define NOVATELWIRELESS_PRODUCT_G1		0xA001
--#define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -273,6 +273,10 @@ static struct xhci_container_ctx *xhci_a
+ 		ctx->size += CTX_SIZE(xhci->hcc_params);
  
-@@ -744,8 +742,6 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC547) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1_M) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -36,7 +36,13 @@ static const struct usb_device_id id_tab
- 	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
- 	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
- 	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
--	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel/Verizon USB-1000 */
-+	{DEVICE_G1K(0x1410, 0xa002)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa003)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa004)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa005)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa006)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa007)},	/* Novatel Gobi Modem device */
- 	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
- 	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
- 	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
+ 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
++	if (!ctx->bytes) {
++		kfree(ctx);
++		return NULL;
++	}
+ 	memset(ctx->bytes, 0, ctx->size);
+ 	return ctx;
+ }
 
 
