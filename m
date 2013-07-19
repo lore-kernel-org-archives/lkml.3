@@ -1,35 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760853Ab3GSP7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:59:19 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:38364 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615Ab3GSP7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:59:17 -0400
-Message-ID: <51E96239.8080409@cs.wisc.edu>
-Date: Fri, 19 Jul 2013 09:58:49 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752652Ab3GSQEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:04:33 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52529 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751762Ab3GSQEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 12:04:31 -0400
+Date: Fri, 19 Jul 2013 17:03:50 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] arm64 fixes for 3.11-rc2
+Message-ID: <20130719160336.GA22565@arm.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-References: <cover.1369155164.git.agordeev@redhat.com>  <20130521235003.GE6985@mtj.dyndns.org>  <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>  <20130522170305.GD9563@kernel.dk>  <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>  <1373583637.7397.370.camel@haakon3.risingtidesystems.com>  <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>  <1373692812.7397.625.camel@haakon3.risingtidesystems.com>  <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>  <1374010683.7397.880.camel@haakon3.risingtidesystems.com>  <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>  <1374173515.7397.948.camel@haakon3.risingtidesystems.com>  <51E83E32.9050306@cs.wisc.edu> <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 06:23 PM, Nicholas A. Bellinger wrote:
->> Just saw this while trying out iscsi with the scsi-mq stuff :)
->> > 
-> Took at stab at this a while back, but ended getting distracted on other
-> items.  Do you have an initial conversion running yet..?
+Hi Linus,
 
-Not running well :) Have a patch but I am debugging it now. I messed up
-something with the cmd_size stuff.
+Please pull the arm64 fixes below. Thanks.
+
+The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+
+  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-stable
+
+for you to fetch changes up to ff701306cd49aaff80fb852323b387812bc76491:
+
+  arm64: use common reboot infrastructure (2013-07-19 15:57:08 +0100)
+
+----------------------------------------------------------------
+- Post -rc1 update to the common reboot infrastructure.
+- Fixes (user cache maintenance fault handling, !COMPAT compilation, CPU
+  online and interrupt hanlding).
+
+----------------------------------------------------------------
+Catalin Marinas (1):
+      arm64: Only enable local interrupts after the CPU is marked online
+
+Chen Gang (1):
+      arm64: add '#ifdef CONFIG_COMPAT' for aarch32_break_handler()
+
+Marc Zyngier (1):
+      arm64: use common reboot infrastructure
+
+Will Deacon (1):
+      arm64: mm: don't treat user cache maintenance faults as writes
+
+ arch/arm64/include/asm/debug-monitors.h |  7 -----
+ arch/arm64/include/asm/system_misc.h    |  3 ++-
+ arch/arm64/kernel/process.c             |  2 +-
+ arch/arm64/kernel/smp.c                 | 15 ++++++-----
+ arch/arm64/mm/fault.c                   | 46 ++++++++++++++-------------------
+ 5 files changed, 31 insertions(+), 42 deletions(-)
+
+-- 
+Catalin
