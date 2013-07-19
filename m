@@ -1,111 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab3GSEhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 00:37:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59425 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146Ab3GSEhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 00:37:01 -0400
-Date: Fri, 19 Jul 2013 00:36:13 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1374208573-y6d9p8yt-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <CAJd=RBBv6rhKqb-30SDaZF3DFf2Nc=Odfo8=uRXQ8m40v_1rKg@mail.gmail.com>
-References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1374183272-10153-5-git-send-email-n-horiguchi@ah.jp.nec.com>
- <CAJd=RBBv6rhKqb-30SDaZF3DFf2Nc=Odfo8=uRXQ8m40v_1rKg@mail.gmail.com>
-Subject: Re: [PATCH 4/8] migrate: add hugepage migration code to move_pages()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <CAJd=RBBv6rhKqb-30SDaZF3DFf2Nc=Odfo8=uRXQ8m40v_1rKg@mail.gmail.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1759304Ab3GSE4Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 00:56:24 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:59406 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560Ab3GSE4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 00:56:23 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-b2-51e8c6f519d3
+Message-id: <51E8C6F4.6010204@samsung.com>
+Date: Fri, 19 Jul 2013 13:56:20 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Mark Brown <broonie@kernel.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] extcon: arizona: Use power efficient workqueue
+References: <1374183742-6678-1-git-send-email-broonie@kernel.org>
+In-reply-to: <1374183742-6678-1-git-send-email-broonie@kernel.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsWyRsSkSPfrsReBBpP+S1pMffiEzWLT9eus
+	Fpd3zWGzuN24gs1i+dv/bA6sHptWdbJ53Lm2h83j5cTfbB59W1YxenzeJBfAGsVlk5Kak1mW
+	WqRvl8CVcf7tXraCsywVd5sWMDcwXmfuYuTkkBAwkTi75ROULSZx4d56ti5GLg4hgaWMEnOn
+	v4Mren3gKDNEYhGjxPyH11ggnFeMElsXHmMBqeIV0JJY0LqXDcRmEVCVWHZzDiOIzQYU3//i
+	BlhcVCBMYuX0K1D1ghI/Jt8Ds0UElCWuft8LNpRZYDKjxM3368CahQWcJXpftLOD2EICjhLf
+	DtwBG8Qp4CTRe+ke2HnMAjoS+1unsUHY8hKb17wFO1VCYB+7xJvj39khLhKQ+Db5ENAGDqCE
+	rMSmA1CvSUocXHGDZQKj2CwkN81CMnYWkrELGJlXMYqmFiQXFCelF5noFSfmFpfmpesl5+du
+	YgTG2el/zybsYLx3wPoQYzLQyonMUqLJ+cA4zSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBI
+	ID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY26NYoOwtnnow7ZN/x5F/awu/qn2xLaBhWG2cde+
+	jxucfk7/lKW/bALPrJbTsiq18uecJR60Fv47+PfN+f/6q6eHeG8ynTJxgf/dNsMn6ttkpN7I
+	m9lP/GjjUrRc6eyvy+t4S24tEWPsdnDvnnes2ijj7Jn43l9NepMXfudfPZnFZPazKet37FJi
+	Kc5INNRiLipOBADL61X4yQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jAd2vx14EGvx+LGQx9eETNotN16+z
+	WlzeNYfN4nbjCjaL5W//szmwemxa1cnmcefaHjaPlxN/s3n0bVnF6PF5k1wAa1QDo01GamJK
+	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
+	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8b5t3vZCs6yVNxtWsDcwHiduYuRk0NCwETi
+	9YGjULaYxIV769m6GLk4hAQWMUrMf3iNBcJ5xSixdeExFpAqXgEtiQWte9lAbBYBVYllN+cw
+	gthsQPH9L26AxUUFwiRWTr8CVS8o8WPyPTBbREBZ4ur3vWBDmQUmM0rcfL8OrFlYwFmi90U7
+	O4gtJOAo8e3AHbBBnAJOEr2X7oGdxyygI7G/dRobhC0vsXnNW+YJjAKzkOyYhaRsFpKyBYzM
+	qxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/iZ1A7GlQ0WhxgFOBiVeHgffHkeKMSaWFZc
+	mXuIUYKDWUmE91fyi0Ah3pTEyqrUovz4otKc1OJDjMnAIJjILCWanA9MMHkl8YbGJmZGlkbm
+	hhZGxuakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwMh0T0rsitG84J+d9zN7XWf66bye
+	3lH+3PBGfxXz1jbNmnWPfPSjaj7Gu07Uuytbtl9ujyZrc1uHlbP58yjdq8cE/Hr60jNNll1r
+	fcw7W9+q7U1T6O+NMz+EB2c/FTspfuKd+CmTbysecGT/LvFr5Pj2umxevZlHZ7ur3f95p/oM
+	BNSvhfirKrEUZyQaajEXFScCAC4Th5cmAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 11:36:19AM +0800, Hillf Danton wrote:
-> On Fri, Jul 19, 2013 at 5:34 AM, Naoya Horiguchi
-> <n-horiguchi@ah.jp.nec.com> wrote:
-> > This patch extends move_pages() to handle vma with VM_HUGETLB set.
-> > We will be able to migrate hugepage with move_pages(2) after
-> > applying the enablement patch which comes later in this series.
-> >
-> > We avoid getting refcount on tail pages of hugepage, because unlike thp,
-> > hugepage is not split and we need not care about races with splitting.
-> >
-> > And migration of larger (1GB for x86_64) hugepage are not enabled.
-> >
-> > ChangeLog v3:
-> >  - revert introducing migrate_movable_pages
-> >  - follow_page_mask(FOLL_GET) returns NULL for tail pages
-> >  - use isolate_huge_page
-> >
-> > ChangeLog v2:
-> >  - updated description and renamed patch title
-> >
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  mm/memory.c  | 12 ++++++++++--
-> >  mm/migrate.c | 13 +++++++++++--
-> >  2 files changed, 21 insertions(+), 4 deletions(-)
-> >
-> > diff --git v3.11-rc1.orig/mm/memory.c v3.11-rc1/mm/memory.c
-> > index 1ce2e2a..8c9a2cb 100644
-> > --- v3.11-rc1.orig/mm/memory.c
-> > +++ v3.11-rc1/mm/memory.c
-> > @@ -1496,7 +1496,8 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
-> >         if (pud_none(*pud))
-> >                 goto no_page_table;
-> >         if (pud_huge(*pud) && vma->vm_flags & VM_HUGETLB) {
-> > -               BUG_ON(flags & FOLL_GET);
-> > +               if (flags & FOLL_GET)
-> > +                       goto out;
-> >                 page = follow_huge_pud(mm, address, pud, flags & FOLL_WRITE);
-> >                 goto out;
-> >         }
-> > @@ -1507,8 +1508,15 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
-> >         if (pmd_none(*pmd))
-> >                 goto no_page_table;
-> >         if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
-> > -               BUG_ON(flags & FOLL_GET);
-> >                 page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
-> > +               if (flags & FOLL_GET) {
-> > +                       if (PageHead(page))
-> > +                               get_page_foll(page);
-> > +                       else {
-> > +                               page = NULL;
-> > +                               goto out;
-> > +                       }
-> > +               }
-> 
-> Can get_page do the work for us, like the following?
-> 
-> 		if (flags & FOLL_GET)
-> 			get_page(page);
+Hi Mark,
 
-Ohh, OK. We should use get_page instead of get_page_foll, because
-get_page_foll is for thp.
-However, I think that if(PageHead) blocks are necessary because
-otherwise we get refcounts on tail pages and release them immediately
-in the caller's side, which is fragile (this was discussed previously.)
-  http://thread.gmane.org/gmane.linux.kernel.mm/96665/focus=96818
-Anyway I'll add comment on this hunk in the next post.
+On 07/19/2013 06:42 AM, Mark Brown wrote:
+> From: Mark Brown <broonie@linaro.org>
+> 
+> None of the delayed work the driver schedules has particularly short delays
+> and it is not performance sensitive so let the scheduler run it wherever
+> is most efficient rather than in a per CPU workqueue by using the system
+> power efficient workqueue.
+> 
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> ---
+>  drivers/extcon/extcon-arizona.c | 25 +++++++++++++++----------
+>  1 file changed, 15 insertions(+), 10 deletions(-)
+> 
+
+Applied it.
 
 Thanks,
-Naoya
+Chanwoo Choi
 
-> >                 goto out;
-> >         }
-> >         if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
