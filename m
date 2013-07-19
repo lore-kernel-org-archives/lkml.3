@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966042Ab3GSFtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39376 "EHLO
+	id S966075Ab3GSFtz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:49:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965338Ab3GSFWM (ORCPT
+	with ESMTP id S965322Ab3GSFWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:12 -0400
+	Fri, 19 Jul 2013 01:22:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 27/38] timer: Fix jiffies wrap behavior of round_jiffies_common()
-Date: Thu, 18 Jul 2013 22:21:43 -0700
-Message-Id: <20130719052049.733140406@linuxfoundation.org>
+        Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 25/38] PCI: Fix refcount issue in pci_create_root_bus() error recovery path
+Date: Thu, 18 Jul 2013 22:21:41 -0700
+Message-Id: <20130719052049.599403974@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -29,40 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bart.vanassche@gmail.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit 9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1 upstream.
+commit 343df771e671d821478dd3ef525a0610b808dbf8 upstream.
 
-Direct compare of jiffies related values does not work in the wrap
-around case. Replace it with time_is_after_jiffies().
+After calling device_register(&bridge->dev), the bridge is reference-
+counted, and it is illegal to call kfree() on it except in the release
+function.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Link: http://lkml.kernel.org/r/519BC066.5080600@acm.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bhelgaas: changelog, use put_device() after device_register() failure]
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/timer.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/pci/probe.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -148,9 +148,11 @@ static unsigned long round_jiffies_commo
- 	/* now that we have rounded, subtract the extra skew again */
- 	j -= cpu * 3;
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1694,12 +1694,16 @@ struct pci_bus *pci_create_root_bus(stru
+ 	bridge->dev.release = pci_release_bus_bridge_dev;
+ 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+ 	error = pcibios_root_bridge_prepare(bridge);
+-	if (error)
+-		goto bridge_dev_reg_err;
++	if (error) {
++		kfree(bridge);
++		goto err_out;
++	}
  
--	if (j <= jiffies) /* rounding ate our timeout entirely; */
--		return original;
--	return j;
-+	/*
-+	 * Make sure j is still in the future. Otherwise return the
-+	 * unmodified value.
-+	 */
-+	return time_is_after_jiffies(j) ? j : original;
- }
- 
- /**
+ 	error = device_register(&bridge->dev);
+-	if (error)
+-		goto bridge_dev_reg_err;
++	if (error) {
++		put_device(&bridge->dev);
++		goto err_out;
++	}
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+ 	pci_set_bus_of_node(b);
+@@ -1753,8 +1757,6 @@ struct pci_bus *pci_create_root_bus(stru
+ class_dev_reg_err:
+ 	put_device(&bridge->dev);
+ 	device_unregister(&bridge->dev);
+-bridge_dev_reg_err:
+-	kfree(bridge);
+ err_out:
+ 	kfree(b);
+ 	return NULL;
 
 
