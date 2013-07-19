@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab3GSX2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 19:28:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49198 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751393Ab3GSX2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 19:28:21 -0400
-Message-ID: <51E9CB86.1000201@zytor.com>
-Date: Fri, 19 Jul 2013 16:28:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753137Ab3GSXg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 19:36:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55520 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab3GSXgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 19:36:16 -0400
+Date: Sat, 20 Jul 2013 00:36:13 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] ext4: fix a bug when we try to open a file with
+ O_TMPFILE flag
+Message-ID: <20130719233613.GH4165@ZenIV.linux.org.uk>
+References: <20130717161944.GA19405@redhat.com>
+ <20130719121405.GA3856@gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ak <ak@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <2493652.fjZLqTL8IF@vostro.rjw.lan> <1374257329.22432.382.camel@schen9-DESK> <4295105.1txhDL4OOg@vostro.rjw.lan> <20130719231630.GC1701@kroah.com> <51E9C9E5.2060602@zytor.com> <20130719232609.GA2852@kroah.com>
-In-Reply-To: <20130719232609.GA2852@kroah.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130719121405.GA3856@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 04:26 PM, Greg Kroah-Hartman wrote:
->>
->> RAID has effectively the same issue, and we just "solved" it by
->> compiling in all the accelerators into the top-level module.
+On Fri, Jul 19, 2013 at 08:14:05PM +0800, Zheng Liu wrote:
+> Hi Dave,
 > 
-> Then there's nothing to be done in udev or kmod, right?
-> 
+> After applied this patch, the problem has been fixed in my own sand box.
+> But that would be great if you could give it a try.  I want to make sure
+> that this patch can fix the problem.  It looks like there has the same
+> problem in ext3.  So if this patch is fine, I will generate a patch for
+> ext3 file system.
 
-I don't know.
-
-	-hpa
-
-
+Nice catch, and you have my ACK.  Which tree do you prefer that to go
+through?  vfs and ext4 are the obvious candidates...
