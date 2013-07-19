@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759614Ab3GSDUM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 23:20:12 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56884 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759599Ab3GSDUK (ORCPT
+	id S1759621Ab3GSDaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 23:30:16 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:54108 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951Ab3GSDaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 23:20:10 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: hugepage related lockdep trace.
-In-Reply-To: <CAJd=RBA0UDCJGE5ua7m44hOQp5g9EQdkeC00iWSEDkmLhc0rDw@mail.gmail.com>
-References: <20130717153223.GD27731@redhat.com> <20130718000901.GA31972@blaptop> <87hafrdatb.fsf@linux.vnet.ibm.com> <CAJd=RBA0UDCJGE5ua7m44hOQp5g9EQdkeC00iWSEDkmLhc0rDw@mail.gmail.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Fri, 19 Jul 2013 08:50:02 +0530
-Message-ID: <87d2qfck2l.fsf@linux.vnet.ibm.com>
+	Thu, 18 Jul 2013 23:30:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071903-8878-0000-0000-000008053799
+In-Reply-To: <51E893BC.6070400@gmail.com>
+References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
+ <51E88AEF.8040701@gmail.com> <CALCETrXnVBPNGGTQQoXnpEmjXHxbhiWx+4RuMVQLRG5sfMpofA@mail.gmail.com>
+ <51E893BC.6070400@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 18 Jul 2013 20:29:52 -0700
+Message-ID: <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
+Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton <dhillf@gmail.com> writes:
-
-> On Fri, Jul 19, 2013 at 1:42 AM, Aneesh Kumar K.V
-> <aneesh.kumar@linux.vnet.ibm.com> wrote:
->> Minchan Kim <minchan@kernel.org> writes:
->>> IMHO, it's a false positive because i_mmap_mutex was held by kswapd
->>> while one in the middle of fault path could be never on kswapd context.
+On Thu, Jul 18, 2013 at 6:17 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 07/18/2013 05:50 PM, Andy Lutomirski wrote:
+>>
+>> On Thu, Jul 18, 2013 at 5:40 PM, David Daney <ddaney.cavm@gmail.com>
+>> wrote:
 >>>
->>> It seems lockdep for reclaim-over-fs isn't enough smart to identify
->>> between background and direct reclaim.
+>>> On 07/18/2013 05:26 PM, Andy Lutomirski wrote:
 >>>
->>> Wait for other's opinion.
->>
->> Is that reasoning correct ?. We may not deadlock because hugetlb pages
->> cannot be reclaimed. So the fault path in hugetlb won't end up
->> reclaiming pages from same inode. But the report is correct right ?
+>>>
+>>> How is this different than throwing exceptions from a signal handler?
 >>
 >>
->> Looking at the hugetlb code we have in huge_pmd_share
->>
->> out:
->>         pte = (pte_t *)pmd_alloc(mm, pud, addr);
->>         mutex_unlock(&mapping->i_mmap_mutex);
->>         return pte;
->>
->> I guess we should move that pmd_alloc outside i_mmap_mutex. Otherwise
->> that pmd_alloc can result in a reclaim which can call shrink_page_list ?
->>
-> Hm, can huge pages be reclaimed, say by kswapd currently?
+>> Two ways.  First, exceptions thrown from a signal handler can't be
+>> retries.
+>
+>
+> ??
 
-No we don't reclaim hugetlb pages.
+s/retries/retried, by which I mean that you can't do things like
+implementing virtual memory in userspace by catching SIGSEGV, calling
+mmap, and resuming.
 
--aneesh
+>
+>
+>> Second, and more importantly, installing a signal handler in
+>> a library is a terrible idea.
+>
+>
+> The signal handler would be installed by main() before calling into the
+> library.  You have to have a small amount of boiler plate code to set it up,
+> but the libraries wouldn't have to be modified if they were already
+> exception safe.
+>
+> FWIW the libgcj java runtime environment uses this strategy for handling
+> NullPointerExceptions and DivideByZeroError(sp?).  Since all that code for
+> the most part follows the standard C++ ABIs, it is an example of this
+> technique that has been deployed in many environments.
 
+Other way around: a *library* that wants to use exception handling
+can't do so safely without the cooperation, or at least understanding,
+of the main program and every other library that wants to do something
+similar.  Suppose my library installs a SIGFPE handler and throws
+my_sigfpe_exception and your library installs a SIGFPE handler and
+throws your_sigfpe_exception.  The result: one wins and the other
+crashes due to an unhandled exception.
+
+In my particular usecase, I have code (known to the main program) that
+catches all kinds of fatal signals to log nice error messages before
+dying.  That means that I can't use a library that handles signals for
+any other purpose.  Right now I want to have a small snippet of code
+handle SIGBUS, but now I need to coordinate it with everything else.
+
+If this stuff were unified, then everything would just work.
+
+--Andy
