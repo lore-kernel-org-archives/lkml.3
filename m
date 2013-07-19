@@ -1,120 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab3GSWAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 18:00:38 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49715 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab3GSWAh (ORCPT
+	id S1752808Ab3GSWCJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 18:02:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42125 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab3GSWCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 18:00:37 -0400
-Message-ID: <1374271561.7397.1089.camel@haakon3.risingtidesystems.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Smart <James.Smart@Emulex.Com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
-        "kmo@daterainc.com" <kmo@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Hannes Reinecke <hare@suse.de>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>
-Date: Fri, 19 Jul 2013 15:06:01 -0700
-In-Reply-To: <1374270366.2266.70.camel@dabdike>
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
-	 <20130712010223.GA15673@kroah.com>
-	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
-	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
-	 <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
-	 <20130716211529.GQ22392@kernel.dk> <1374036751.2045.20.camel@dabdike>
-	 <1374268967.7397.1075.camel@haakon3.risingtidesystems.com>
-	 <1374270366.2266.70.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Jul 2013 18:02:07 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Cc: Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH] drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
+Date: Fri, 19 Jul 2013 15:02:01 -0700
+Message-Id: <1374271321-7907-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 21:46 +0000, James Bottomley wrote:
-> On Fri, 2013-07-19 at 14:22 -0700, Nicholas A. Bellinger wrote:
-> > On Wed, 2013-07-17 at 04:52 +0000, James Bottomley wrote:
-> > > On Tue, 2013-07-16 at 15:15 -0600, Jens Axboe wrote:
-> > > > On Tue, Jul 16 2013, Nicholas A. Bellinger wrote:
-> > > > > On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
-> > 
-> > <SNIP>
-> > 
-> > > > > > Lets start with discussing this on the list, please, and then see where
-> > > > > > we go from there ...
-> > > > > > 
-> > > > > 
-> > > > > Yes, the discussion is beginning to make it's way to the list.  I've
-> > > > > mostly been waiting for blk-mq to get a wider review before taking the
-> > > > > early scsi-mq prototype driver to a larger public audience.
-> > > > > 
-> > > > > Primarily, I'm now reaching out to the people most effected by existing
-> > > > > scsi_request_fn() based performance limitations.  Most of them have
-> > > > > abandoned existing scsi_request_fn() based logic in favor of raw block
-> > > > > make_request() based drivers, and are now estimating the amount of
-> > > > > effort to move to an scsi-mq based approach.
-> > > > > 
-> > > > > Regardless, as the prototype progresses over the next months, having a
-> > > > > face-to-face discussion with the key parties in the room would be very
-> > > > > helpful given the large amount of effort involved to actually make this
-> > > > > type of generational shift in SCSI actually happen.
-> > > > 
-> > > > There's a certain amount of overlap with the aio/O_DIRECT work as well.
-> > > > But if it's not a general session, could always be a BOF or something.
-> > > > 
-> > > > I'll second the argument that most technical topics probably DO belong
-> > > > in a topic related workshop. But that leaves us with basically only
-> > > > process related topics at KS, I don't think it hurts to have a bit of
-> > > > tech meat on the bone too. At least I personally miss that part of KS
-> > > > from years gone by.
-> > > 
-> > > Heh well, given that most of the block mq discussions at LSF have been
-> > > you saying you really should get around to cleaning up and posting the
-> > > code, you'll understand my wanting to see that happen first ...
-> > > 
-> > > I suppose we could try to run a storage workshop within KS, but I think
-> > > most of the mini summit slots have already gone.
-> > 
-> > That would be great, given there is a reasonable level of interest from
-> > various parities, and the pain threshold for existing scsi small block
-> > random I/O performance is high..
-> > 
-> > When will we know if there is a workshop / mini summit slot available..?
-> > 
-> > (CC'ing Mike Christie as well for open-iscsi/scsi-mq bits)
-> > 
-> > > There's also plumbers
-> > > if all slots are gone (I would say that, being biased and on the
-> > > programme committee) Ric is running the storage and Filesystems MC
-> > > 
-> > > http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/tracks/159
-> > 
-> > FYI, I'm not trying to 'sell' scsi-mq to the larger community yet, but
-> > rather interested in getting the right scsi/block/LLD people in the same
-> > room at KS for an hour or two to discuss implementation details, given
-> > the scope of the effort involved.
-> 
-> Well, so that's why I think plumbers might be a better venue: we'll have
-> more of the actual storage people there.  Usually we get at most 2-3
-> storage people to KS compared to the 25 or so we usually have at LSF ...
-> that makes KS not a very good venue for storage centric discussions.
-> 
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
+BugLink: https://bugs.launchpad.net/bugs/1163720
+BugLink: https://bugs.launchpad.net/bugs/1162026
 
-The most relevant people for the discussion are Jens, Hannes, Christoph,
-Tejun, Martin, Mike, and you.
+Some machines suffer from non-functional backlight controls if
+BLM_PCH_PWM_ENABLE is set, so provide a quirk to avoid doing so.
+Apply this quirk to Dell XPS 13 models.
 
-I know these folks are regular attendees for KS, but typically not for
-plumbers, which is why I made this KS topic proposal in the first place.
+Tested-by: Eric Griffith <EGriffith92@gmail.com>
+Tested-by: Kent Baxley <kent.baxley@canonical.com>
+Cc: <stable@vger.kernel.org> # v3.8+
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/gpu/drm/i915/i915_drv.h      |  1 +
+ drivers/gpu/drm/i915/intel_display.c | 16 ++++++++++++++++
+ drivers/gpu/drm/i915/intel_panel.c   |  3 ++-
+ 3 files changed, 19 insertions(+), 1 deletion(-)
 
---nab
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index a416645..204c3ec 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -555,6 +555,7 @@ enum intel_sbi_destination {
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
+ #define QUIRK_INVERT_BRIGHTNESS (1<<2)
++#define QUIRK_NO_PCH_PWM_ENABLE (1<<3)
+ 
+ struct intel_fbdev;
+ struct intel_fbc_work;
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 85f3eb7..42e207e 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9398,6 +9398,17 @@ static void quirk_invert_brightness(struct drm_device *dev)
+ 	DRM_INFO("applying inverted panel brightness quirk\n");
+ }
+ 
++/*
++ * Some machines (Dell XPS13) suffer broken backlight controls if
++ * BLM_PCH_PWM_ENABLE is set.
++ */
++static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
++	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
++}
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+@@ -9467,6 +9478,11 @@ static struct intel_quirk intel_quirks[] = {
+ 
+ 	/* Acer Aspire 4736Z */
+ 	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
++
++	/* Dell XPS13 HD Sandy Bridge */
++	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
++	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
++	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index 80bea1d..01b5a51 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -580,7 +580,8 @@ void intel_panel_enable_backlight(struct drm_device *dev,
+ 		POSTING_READ(reg);
+ 		I915_WRITE(reg, tmp | BLM_PWM_ENABLE);
+ 
+-		if (HAS_PCH_SPLIT(dev)) {
++		if (HAS_PCH_SPLIT(dev) &&
++		    !(dev_priv->quirks & QUIRK_NO_PCH_PWM_ENABLE)) {
+ 			tmp = I915_READ(BLC_PWM_PCH_CTL1);
+ 			tmp |= BLM_PCH_PWM_ENABLE;
+ 			tmp &= ~BLM_PCH_OVERRIDE_ENABLE;
+-- 
+1.8.1.2
 
