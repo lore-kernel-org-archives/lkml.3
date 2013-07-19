@@ -1,61 +1,839 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760267Ab3GSKtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:49:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54177 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760229Ab3GSKtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:49:50 -0400
-Message-ID: <51E919CA.8060805@ti.com>
-Date: Fri, 19 Jul 2013 13:49:46 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no ethernet
-References: <51E7AA24.6080600@broadcom.com> <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com>
-In-Reply-To: <51E916C0.8080206@broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1760283Ab3GSKuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:50:20 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:57305 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760229Ab3GSKuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 06:50:17 -0400
+From: daniel jeong <gshark.jeong@gmail.com>
+To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Cc: Daniel Jeong <daniel.jeong@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] backlight-lm3630-apply chip revision
+Date: Fri, 19 Jul 2013 19:49:32 +0900
+Message-Id: <1374230973-30939-1-git-send-email-daniel.jeong@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 01:36 PM, Arend van Spriel wrote:
-> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
->> Then for the SDIO with device tree, take a look at the following
->> patches:
->>
->> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
->> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
-> 
-> I have been looking at the pandaboard patch in the series above and I do have a question. Among other things the patch adds these dt entries.
-> 
-> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP | MODE0 */
-> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP | MODE0 */
-> 
-> If I look at the similar names in the deceased board-omap4panda.c:
-> 
-> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
-> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
-> 
-> and in mux44xx.h:
-> 
-> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
-> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
-> 
-> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is probably an explanation to it and it would help my understanding to know where this difference comes from. Hope you can help me out here.
-> 
+@chip revision
+The TI LM3630 chip was revised and chip name was also changed to LM3630A.
+And register map, default values and initial sequences are changed.
+www.ti.com
 
-If you see omap4.dtsi, omap4_pmx_core starts at register address 0x4a100040.
+Signed-off-by: daniel jeong <daniel.jeong@ti.com>
+---
+ drivers/video/backlight/Kconfig         |    4 +-
+ drivers/video/backlight/lm3630_bl.c     |  491 ++++++++++++++++---------------
+ include/linux/platform_data/lm3630_bl.h |   68 +++--
+ 3 files changed, 293 insertions(+), 270 deletions(-)
 
-So, you need to subtract 0x40 from the offsets defined in mux44xx.h for pmx_core registers.
-
-NOTE: omap4_pmx_wkup starts at a different address. Those are for wakeup domain
-control registers.
-
-cheers,
--roger
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index d5ab658..048e7bd 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -369,11 +369,11 @@ config BACKLIGHT_AAT2870
+ 	  backlight driver.
+ 
+ config BACKLIGHT_LM3630
+-	tristate "Backlight Driver for LM3630"
++	tristate "Backlight Driver for LM3630A"
+ 	depends on BACKLIGHT_CLASS_DEVICE && I2C
+ 	select REGMAP_I2C
+ 	help
+-	  This supports TI LM3630 Backlight Driver
++	  This supports TI LM3630A Backlight Driver
+ 
+ config BACKLIGHT_LM3639
+ 	tristate "Backlight Driver for LM3639"
+diff --git a/drivers/video/backlight/lm3630_bl.c b/drivers/video/backlight/lm3630_bl.c
+index 76a62e9..0e9d4e7 100644
+--- a/drivers/video/backlight/lm3630_bl.c
++++ b/drivers/video/backlight/lm3630_bl.c
+@@ -1,5 +1,5 @@
+ /*
+-* Simple driver for Texas Instruments LM3630 Backlight driver chip
++* Simple driver for Texas Instruments LM3630A Backlight driver chip
+ * Copyright (C) 2012 Texas Instruments
+ *
+ * This program is free software; you can redistribute it and/or modify
+@@ -16,12 +16,16 @@
+ #include <linux/uaccess.h>
+ #include <linux/interrupt.h>
+ #include <linux/regmap.h>
++#include <linux/pwm.h>
+ #include <linux/platform_data/lm3630_bl.h>
+ 
+ #define REG_CTRL	0x00
++#define REG_BOOST	0x02
+ #define REG_CONFIG	0x01
+ #define REG_BRT_A	0x03
+ #define REG_BRT_B	0x04
++#define REG_I_A		0x05
++#define REG_I_B		0x06
+ #define REG_INT_STATUS	0x09
+ #define REG_INT_EN	0x0A
+ #define REG_FAULT	0x0B
+@@ -30,205 +34,211 @@
+ #define REG_MAX		0x1F
+ 
+ #define INT_DEBOUNCE_MSEC	10
+-
+-enum lm3630_leds {
+-	BLED_ALL = 0,
+-	BLED_1,
+-	BLED_2
+-};
+-
+-static const char * const bled_name[] = {
+-	[BLED_ALL] = "lm3630_bled",	/*Bank1 controls all string */
+-	[BLED_1] = "lm3630_bled1",	/*Bank1 controls bled1 */
+-	[BLED_2] = "lm3630_bled2",	/*Bank1 or 2 controls bled2 */
+-};
+-
+-struct lm3630_chip_data {
++struct lm3630_chip {
+ 	struct device *dev;
+ 	struct delayed_work work;
++
+ 	int irq;
+ 	struct workqueue_struct *irqthread;
+ 	struct lm3630_platform_data *pdata;
+-	struct backlight_device *bled1;
+-	struct backlight_device *bled2;
++	struct backlight_device *bleda;
++	struct backlight_device *bledb;
+ 	struct regmap *regmap;
++	struct pwm_device *pwmd;
+ };
+ 
+-/* initialize chip */
+-static int lm3630_chip_init(struct lm3630_chip_data *pchip)
++/* i2c access */
++static int lm3630_read(struct lm3630_chip *pchip, unsigned int reg)
+ {
+-	int ret;
++	int rval;
+ 	unsigned int reg_val;
+-	struct lm3630_platform_data *pdata = pchip->pdata;
+-
+-	/*pwm control */
+-	reg_val = ((pdata->pwm_active & 0x01) << 2) | (pdata->pwm_ctrl & 0x03);
+-	ret = regmap_update_bits(pchip->regmap, REG_CONFIG, 0x07, reg_val);
+-	if (ret < 0)
+-		goto out;
+ 
+-	/* bank control */
+-	reg_val = ((pdata->bank_b_ctrl & 0x01) << 1) |
+-			(pdata->bank_a_ctrl & 0x07);
+-	ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x07, reg_val);
+-	if (ret < 0)
+-		goto out;
++	rval = regmap_read(pchip->regmap, reg, &reg_val);
++	if (rval < 0)
++		return rval;
++	return reg_val & 0xFF;
++}
+ 
+-	ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x80, 0x00);
+-	if (ret < 0)
+-		goto out;
++static int lm3630_write(struct lm3630_chip *pchip,
++			unsigned int reg, unsigned int data)
++{
++	return regmap_write(pchip->regmap, reg, data);
++}
+ 
+-	/* set initial brightness */
+-	if (pdata->bank_a_ctrl != BANK_A_CTRL_DISABLE) {
+-		ret = regmap_write(pchip->regmap,
+-				   REG_BRT_A, pdata->init_brt_led1);
+-		if (ret < 0)
+-			goto out;
+-	}
++static int lm3630_update(struct lm3630_chip *pchip,
++			 unsigned int reg, unsigned int mask, unsigned int data)
++{
++	return regmap_update_bits(pchip->regmap, reg, mask, data);
++}
+ 
+-	if (pdata->bank_b_ctrl != BANK_B_CTRL_DISABLE) {
+-		ret = regmap_write(pchip->regmap,
+-				   REG_BRT_B, pdata->init_brt_led2);
+-		if (ret < 0)
+-			goto out;
+-	}
+-	return ret;
++/* initialize chip */
++static int lm3630_chip_init(struct lm3630_chip *pchip)
++{
++	int rval;
++	struct lm3630_platform_data *pdata = pchip->pdata;
+ 
+-out:
+-	dev_err(pchip->dev, "i2c failed to access register\n");
+-	return ret;
++	mdelay(1);
++	/* set Filter Strength Register */
++	rval = lm3630_write(pchip, 0x50, 0x03);
++	/* set Cofig. register */
++	rval |= lm3630_update(pchip, REG_CONFIG, 0x07, pdata->pwm_ctrl);
++	/* set boost control */
++	rval |= lm3630_write(pchip, REG_BOOST, 0x38);
++	/* set current A */
++	rval |= lm3630_update(pchip, REG_I_A, 0x1F, 0x1F);
++	/* set current B */
++	rval |= lm3630_write(pchip, REG_I_B, 0x1F);
++	/* set control */
++	rval |=
++	    lm3630_write(pchip, REG_CTRL, pdata->leda_ctrl | pdata->ledb_ctrl);
++	mdelay(1);
++	/* set brightness A and B */
++	rval |= lm3630_write(pchip, REG_BRT_A, pdata->leda_init_brt);
++	rval |= lm3630_write(pchip, REG_BRT_B, pdata->ledb_init_brt);
++
++	if (rval < 0)
++		dev_err(pchip->dev, "i2c failed to access register\n");
++	return rval;
+ }
+ 
+ /* interrupt handling */
+ static void lm3630_delayed_func(struct work_struct *work)
+ {
+-	int ret;
+-	unsigned int reg_val;
+-	struct lm3630_chip_data *pchip;
++	unsigned int rval;
++	struct lm3630_chip *pchip;
+ 
+-	pchip = container_of(work, struct lm3630_chip_data, work.work);
++	pchip = container_of(work, struct lm3630_chip, work.work);
+ 
+-	ret = regmap_read(pchip->regmap, REG_INT_STATUS, &reg_val);
+-	if (ret < 0) {
++	rval = lm3630_read(pchip, REG_INT_STATUS);
++	if (rval < 0) {
+ 		dev_err(pchip->dev,
+ 			"i2c failed to access REG_INT_STATUS Register\n");
+ 		return;
+ 	}
+ 
+-	dev_info(pchip->dev, "REG_INT_STATUS Register is 0x%x\n", reg_val);
++	dev_info(pchip->dev, "REG_INT_STATUS Register is 0x%x\n", rval);
+ }
+ 
+ static irqreturn_t lm3630_isr_func(int irq, void *chip)
+ {
+-	int ret;
+-	struct lm3630_chip_data *pchip = chip;
++	int rval;
++	struct lm3630_chip *pchip = chip;
+ 	unsigned long delay = msecs_to_jiffies(INT_DEBOUNCE_MSEC);
+ 
+ 	queue_delayed_work(pchip->irqthread, &pchip->work, delay);
+ 
+-	ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x80, 0x00);
+-	if (ret < 0)
+-		goto out;
++	rval = lm3630_update(pchip, REG_CTRL, 0x80, 0x00);
++	if (rval < 0)
++		goto out_i2c_err;
+ 
+ 	return IRQ_HANDLED;
+-out:
++out_i2c_err:
+ 	dev_err(pchip->dev, "i2c failed to access register\n");
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int lm3630_intr_config(struct lm3630_chip_data *pchip)
++static int lm3630_intr_config(struct lm3630_chip *pchip)
+ {
++	int rval;
++
++	rval = lm3630_write(pchip, REG_INT_EN, 0x87);
++	if (rval < 0)
++		return rval;
++
+ 	INIT_DELAYED_WORK(&pchip->work, lm3630_delayed_func);
+ 	pchip->irqthread = create_singlethread_workqueue("lm3630-irqthd");
+ 	if (!pchip->irqthread) {
+-		dev_err(pchip->dev, "create irq thread fail...\n");
++		dev_err(pchip->dev, "create irq thread fail\n");
+ 		return -1;
+ 	}
+ 	if (request_threaded_irq
+ 	    (pchip->irq, NULL, lm3630_isr_func,
+ 	     IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "lm3630_irq", pchip)) {
+-		dev_err(pchip->dev, "request threaded irq fail..\n");
++		dev_err(pchip->dev, "request threaded irq fail\n");
+ 		return -1;
+ 	}
+-	return 0;
++	return rval;
+ }
+ 
+-static bool
+-set_intensity(struct backlight_device *bl, struct lm3630_chip_data *pchip)
++static void lm3630_pwm_ctrl(struct lm3630_chip *pchip, int br, int br_max)
+ {
+-	if (!pchip->pdata->pwm_set_intensity)
+-		return false;
+-	pchip->pdata->pwm_set_intensity(bl->props.brightness - 1,
+-					pchip->pdata->pwm_period);
+-	return true;
++	unsigned int period = pwm_get_period(pchip->pwmd);
++	unsigned int duty = br * period / br_max;
++
++	pwm_config(pchip->pwmd, duty, period);
++	if (duty)
++		pwm_enable(pchip->pwmd);
++	else
++		pwm_disable(pchip->pwmd);
+ }
+ 
+ /* update and get brightness */
+ static int lm3630_bank_a_update_status(struct backlight_device *bl)
+ {
+ 	int ret;
+-	struct lm3630_chip_data *pchip = bl_get_data(bl);
++	struct lm3630_chip *pchip = bl_get_data(bl);
+ 	enum lm3630_pwm_ctrl pwm_ctrl = pchip->pdata->pwm_ctrl;
+ 
+-	/* brightness 0 means disable */
+-	if (!bl->props.brightness) {
+-		ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x04, 0x00);
+-		if (ret < 0)
+-			goto out;
++	/* pwm control */
++	if ((pwm_ctrl & LM3630_PWM_BANK_A) != 0) {
++		lm3630_pwm_ctrl(pchip, bl->props.brightness,
++				bl->props.max_brightness);
+ 		return bl->props.brightness;
+ 	}
+ 
+-	/* pwm control */
+-	if (pwm_ctrl == PWM_CTRL_BANK_A || pwm_ctrl == PWM_CTRL_BANK_ALL) {
+-		if (!set_intensity(bl, pchip))
+-			dev_err(pchip->dev, "No pwm control func. in plat-data\n");
+-	} else {
+-
+-		/* i2c control */
+-		ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x80, 0x00);
+-		if (ret < 0)
+-			goto out;
+-		mdelay(1);
+-		ret = regmap_write(pchip->regmap,
+-				   REG_BRT_A, bl->props.brightness - 1);
+-		if (ret < 0)
+-			goto out;
+-	}
++	/* disable sleep */
++	ret = lm3630_update(pchip, REG_CTRL, 0x80, 0x00);
++	if (ret < 0)
++		goto out_i2c_err;
++	mdelay(1);
++	/* minimum brightness is 0x04 */
++	ret = lm3630_write(pchip, REG_BRT_A, bl->props.brightness);
++	if (bl->props.brightness < 0x4)
++		ret |= lm3630_update(pchip, REG_CTRL, LM3630_LEDA_ENABLE, 0);
++	else
++		ret |= lm3630_update(pchip, REG_CTRL,
++				     LM3630_LEDA_ENABLE, LM3630_LEDA_ENABLE);
++	if (ret < 0)
++		goto out_i2c_err;
+ 	return bl->props.brightness;
+-out:
+-	dev_err(pchip->dev, "i2c failed to access REG_CTRL\n");
++
++out_i2c_err:
++	dev_err(pchip->dev, "i2c failed to access\n");
+ 	return bl->props.brightness;
+ }
+ 
+ static int lm3630_bank_a_get_brightness(struct backlight_device *bl)
+ {
+-	unsigned int reg_val;
+-	int brightness, ret;
+-	struct lm3630_chip_data *pchip = bl_get_data(bl);
++	int brightness, rval;
++	struct lm3630_chip *pchip = bl_get_data(bl);
+ 	enum lm3630_pwm_ctrl pwm_ctrl = pchip->pdata->pwm_ctrl;
+ 
+-	if (pwm_ctrl == PWM_CTRL_BANK_A || pwm_ctrl == PWM_CTRL_BANK_ALL) {
+-		ret = regmap_read(pchip->regmap, REG_PWM_OUTHIGH, &reg_val);
+-		if (ret < 0)
+-			goto out;
+-		brightness = reg_val & 0x01;
+-		ret = regmap_read(pchip->regmap, REG_PWM_OUTLOW, &reg_val);
+-		if (ret < 0)
+-			goto out;
+-		brightness = ((brightness << 8) | reg_val) + 1;
+-	} else {
+-		ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x80, 0x00);
+-		if (ret < 0)
+-			goto out;
+-		mdelay(1);
+-		ret = regmap_read(pchip->regmap, REG_BRT_A, &reg_val);
+-		if (ret < 0)
+-			goto out;
+-		brightness = reg_val + 1;
++	if ((pwm_ctrl & LM3630_PWM_BANK_A) != 0) {
++		rval = lm3630_read(pchip, REG_PWM_OUTHIGH);
++		if (rval < 0)
++			goto out_i2c_err;
++		brightness = rval & 0x01;
++		rval = lm3630_read(pchip, REG_PWM_OUTLOW);
++		if (rval < 0)
++			goto out_i2c_err;
++		brightness = ((brightness << 8) | rval);
++		goto out;
+ 	}
++
++	/* disable sleep */
++	rval = lm3630_update(pchip, REG_CTRL, 0x80, 0x00);
++	if (rval < 0)
++		goto out_i2c_err;
++	mdelay(1);
++	rval = lm3630_read(pchip, REG_BRT_A);
++	if (rval < 0)
++		goto out_i2c_err;
++	brightness = rval;
++
++out:
+ 	bl->props.brightness = brightness;
+ 	return bl->props.brightness;
+-out:
++out_i2c_err:
+ 	dev_err(pchip->dev, "i2c failed to access register\n");
+ 	return 0;
+ }
+@@ -239,62 +249,75 @@ static const struct backlight_ops lm3630_bank_a_ops = {
+ 	.get_brightness = lm3630_bank_a_get_brightness,
+ };
+ 
++/* update and get brightness */
+ static int lm3630_bank_b_update_status(struct backlight_device *bl)
+ {
+ 	int ret;
+-	struct lm3630_chip_data *pchip = bl_get_data(bl);
++	struct lm3630_chip *pchip = bl_get_data(bl);
+ 	enum lm3630_pwm_ctrl pwm_ctrl = pchip->pdata->pwm_ctrl;
+ 
+-	if (pwm_ctrl == PWM_CTRL_BANK_B || pwm_ctrl == PWM_CTRL_BANK_ALL) {
+-		if (!set_intensity(bl, pchip))
+-			dev_err(pchip->dev,
+-				"no pwm control func. in plat-data\n");
+-	} else {
+-		ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x80, 0x00);
+-		if (ret < 0)
+-			goto out;
+-		mdelay(1);
+-		ret = regmap_write(pchip->regmap,
+-				   REG_BRT_B, bl->props.brightness - 1);
++	/* pwm control */
++	if ((pwm_ctrl & LM3630_PWM_BANK_B) != 0) {
++		lm3630_pwm_ctrl(pchip, bl->props.brightness,
++				bl->props.max_brightness);
++		return bl->props.brightness;
+ 	}
++
++	/* disable sleep */
++	ret = lm3630_update(pchip, REG_CTRL, 0x80, 0x00);
++	if (ret < 0)
++		goto out_i2c_err;
++	mdelay(1);
++	/* minimum brightness is 0x04 */
++	ret = lm3630_write(pchip, REG_BRT_B, bl->props.brightness);
++	if (bl->props.brightness < 0x4)
++		ret |= lm3630_update(pchip, REG_CTRL, LM3630_LEDB_ENABLE, 0);
++	else
++		ret |= lm3630_update(pchip, REG_CTRL,
++				     LM3630_LEDB_ENABLE, LM3630_LEDB_ENABLE);
++	if (ret < 0)
++		goto out_i2c_err;
+ 	return bl->props.brightness;
+-out:
+-	dev_err(pchip->dev, "i2c failed to access register\n");
++
++out_i2c_err:
++	dev_err(pchip->dev, "i2c failed to access REG_CTRL\n");
+ 	return bl->props.brightness;
+ }
+ 
+ static int lm3630_bank_b_get_brightness(struct backlight_device *bl)
+ {
+-	unsigned int reg_val;
+-	int brightness, ret;
+-	struct lm3630_chip_data *pchip = bl_get_data(bl);
++	int brightness, rval;
++	struct lm3630_chip *pchip = bl_get_data(bl);
+ 	enum lm3630_pwm_ctrl pwm_ctrl = pchip->pdata->pwm_ctrl;
+ 
+-	if (pwm_ctrl == PWM_CTRL_BANK_B || pwm_ctrl == PWM_CTRL_BANK_ALL) {
+-		ret = regmap_read(pchip->regmap, REG_PWM_OUTHIGH, &reg_val);
+-		if (ret < 0)
+-			goto out;
+-		brightness = reg_val & 0x01;
+-		ret = regmap_read(pchip->regmap, REG_PWM_OUTLOW, &reg_val);
+-		if (ret < 0)
+-			goto out;
+-		brightness = ((brightness << 8) | reg_val) + 1;
+-	} else {
+-		ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x80, 0x00);
+-		if (ret < 0)
+-			goto out;
+-		mdelay(1);
+-		ret = regmap_read(pchip->regmap, REG_BRT_B, &reg_val);
+-		if (ret < 0)
+-			goto out;
+-		brightness = reg_val + 1;
++	if ((pwm_ctrl & LM3630_PWM_BANK_B) != 0) {
++		rval = lm3630_read(pchip, REG_PWM_OUTHIGH);
++		if (rval < 0)
++			goto out_i2c_err;
++		brightness = rval & 0x01;
++		rval = lm3630_read(pchip, REG_PWM_OUTLOW);
++		if (rval < 0)
++			goto out_i2c_err;
++		brightness = ((brightness << 8) | rval);
++		goto out;
+ 	}
+-	bl->props.brightness = brightness;
+ 
+-	return bl->props.brightness;
++	/* disable sleep */
++	rval = lm3630_update(pchip, REG_CTRL, 0x80, 0x00);
++	if (rval < 0)
++		goto out_i2c_err;
++	mdelay(1);
++	rval = lm3630_read(pchip, REG_BRT_B);
++	if (rval < 0)
++		goto out_i2c_err;
++	brightness = rval;
++
+ out:
+-	dev_err(pchip->dev, "i2c failed to access register\n");
++	bl->props.brightness = brightness;
+ 	return bl->props.brightness;
++out_i2c_err:
++	dev_err(pchip->dev, "i2c failed to access register\n");
++	return 0;
+ }
+ 
+ static const struct backlight_ops lm3630_bank_b_ops = {
+@@ -303,44 +326,41 @@ static const struct backlight_ops lm3630_bank_b_ops = {
+ 	.get_brightness = lm3630_bank_b_get_brightness,
+ };
+ 
+-static int lm3630_backlight_register(struct lm3630_chip_data *pchip,
+-				     enum lm3630_leds ledno)
++static int lm3630_backlight_register(struct lm3630_chip *pchip)
+ {
+-	const char *name = bled_name[ledno];
+ 	struct backlight_properties props;
+ 	struct lm3630_platform_data *pdata = pchip->pdata;
+ 
+ 	props.type = BACKLIGHT_RAW;
+-	switch (ledno) {
+-	case BLED_1:
+-	case BLED_ALL:
+-		props.brightness = pdata->init_brt_led1;
+-		props.max_brightness = pdata->max_brt_led1;
+-		pchip->bled1 =
+-		    backlight_device_register(name, pchip->dev, pchip,
++	if (pdata->leda_ctrl != LM3630_LEDA_DISABLE) {
++		props.brightness = pdata->leda_init_brt;
++		props.max_brightness = pdata->leda_max_brt;
++		pchip->bleda =
++		    backlight_device_register("lm3630_leda", pchip->dev, pchip,
+ 					      &lm3630_bank_a_ops, &props);
+-		if (IS_ERR(pchip->bled1))
+-			return PTR_ERR(pchip->bled1);
+-		break;
+-	case BLED_2:
+-		props.brightness = pdata->init_brt_led2;
+-		props.max_brightness = pdata->max_brt_led2;
+-		pchip->bled2 =
+-		    backlight_device_register(name, pchip->dev, pchip,
++		if (IS_ERR(pchip->bleda))
++			return PTR_ERR(pchip->bleda);
++	}
++
++	if ((pdata->ledb_ctrl != LM3630_LEDB_DISABLE) &&
++	    (pdata->ledb_ctrl != LM3630_LEDB_ON_A)) {
++		props.brightness = pdata->ledb_init_brt;
++		props.max_brightness = pdata->ledb_max_brt;
++		pchip->bledb =
++		    backlight_device_register("lm3630_ledb", pchip->dev, pchip,
+ 					      &lm3630_bank_b_ops, &props);
+-		if (IS_ERR(pchip->bled2))
+-			return PTR_ERR(pchip->bled2);
+-		break;
++		if (IS_ERR(pchip->bledb))
++			return PTR_ERR(pchip->bledb);
+ 	}
+ 	return 0;
+ }
+ 
+-static void lm3630_backlight_unregister(struct lm3630_chip_data *pchip)
++static void lm3630_backlight_unregister(struct lm3630_chip *pchip)
+ {
+-	if (pchip->bled1)
+-		backlight_device_unregister(pchip->bled1);
+-	if (pchip->bled2)
+-		backlight_device_unregister(pchip->bled2);
++	if (pchip->bleda)
++		backlight_device_unregister(pchip->bleda);
++	if (pchip->bledb)
++		backlight_device_unregister(pchip->bledb);
+ }
+ 
+ static const struct regmap_config lm3630_regmap = {
+@@ -350,96 +370,92 @@ static const struct regmap_config lm3630_regmap = {
+ };
+ 
+ static int lm3630_probe(struct i2c_client *client,
+-				  const struct i2c_device_id *id)
++			const struct i2c_device_id *id)
+ {
+ 	struct lm3630_platform_data *pdata = client->dev.platform_data;
+-	struct lm3630_chip_data *pchip;
+-	int ret;
++	struct lm3630_chip *pchip;
++	int rval;
+ 
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+-		dev_err(&client->dev, "fail : i2c functionality check...\n");
++		dev_err(&client->dev, "fail : i2c functionality check\n");
+ 		return -EOPNOTSUPP;
+ 	}
+ 
+-	if (pdata == NULL) {
+-		dev_err(&client->dev, "fail : no platform data.\n");
+-		return -ENODATA;
+-	}
+-
+-	pchip = devm_kzalloc(&client->dev, sizeof(struct lm3630_chip_data),
++	pchip = devm_kzalloc(&client->dev, sizeof(struct lm3630_chip),
+ 			     GFP_KERNEL);
+ 	if (!pchip)
+ 		return -ENOMEM;
+-	pchip->pdata = pdata;
+ 	pchip->dev = &client->dev;
+ 
+ 	pchip->regmap = devm_regmap_init_i2c(client, &lm3630_regmap);
+ 	if (IS_ERR(pchip->regmap)) {
+-		ret = PTR_ERR(pchip->regmap);
+-		dev_err(&client->dev, "fail : allocate register map: %d\n",
+-			ret);
+-		return ret;
++		rval = PTR_ERR(pchip->regmap);
++		dev_err(&client->dev, "fail : allocate reg. map: %d\n", rval);
++		return rval;
+ 	}
++
+ 	i2c_set_clientdata(client, pchip);
++	if (pdata == NULL) {
++		pchip->pdata = devm_kzalloc(pchip->dev,
++					    sizeof(struct lm3630_platform_data),
++					    GFP_KERNEL);
++		if (pchip->pdata == NULL)
++			return -ENOMEM;
++		/* default values */
++		pchip->pdata->leda_ctrl = LM3630_LEDA_ENABLE;
++		pchip->pdata->ledb_ctrl = LM3630_LEDB_ENABLE;
++		pchip->pdata->leda_max_brt = LM3630_MAX_BRIGHTNESS;
++		pchip->pdata->ledb_max_brt = LM3630_MAX_BRIGHTNESS;
++		pchip->pdata->leda_init_brt = LM3630_MAX_BRIGHTNESS;
++		pchip->pdata->ledb_init_brt = LM3630_MAX_BRIGHTNESS;
++	} else
++		pchip->pdata = pdata;
+ 
+ 	/* chip initialize */
+-	ret = lm3630_chip_init(pchip);
+-	if (ret < 0) {
++	rval = lm3630_chip_init(pchip);
++	if (rval < 0) {
+ 		dev_err(&client->dev, "fail : init chip\n");
+-		goto err_chip_init;
+-	}
+-
+-	switch (pdata->bank_a_ctrl) {
+-	case BANK_A_CTRL_ALL:
+-		ret = lm3630_backlight_register(pchip, BLED_ALL);
+-		pdata->bank_b_ctrl = BANK_B_CTRL_DISABLE;
+-		break;
+-	case BANK_A_CTRL_LED1:
+-		ret = lm3630_backlight_register(pchip, BLED_1);
+-		break;
+-	case BANK_A_CTRL_LED2:
+-		ret = lm3630_backlight_register(pchip, BLED_2);
+-		pdata->bank_b_ctrl = BANK_B_CTRL_DISABLE;
+-		break;
+-	default:
+-		break;
++		return rval;
+ 	}
+-
+-	if (ret < 0)
++	/* backlight register */
++	rval = lm3630_backlight_register(pchip);
++	if (rval < 0) {
++		dev_err(&client->dev, "fail : backlight register.\n");
+ 		goto err_bl_reg;
+-
+-	if (pdata->bank_b_ctrl && pchip->bled2 == NULL) {
+-		ret = lm3630_backlight_register(pchip, BLED_2);
+-		if (ret < 0)
++	}
++	/* pwm */
++	if (pdata->pwm_ctrl != LM3630_PWM_DISABLE) {
++		pchip->pwmd = devm_pwm_get(pchip->dev, "lm3630-pwm");
++		if (IS_ERR(pchip->pwmd)) {
++			dev_err(&client->dev, "fail : get pwm device\n");
+ 			goto err_bl_reg;
++		}
+ 	}
++	pchip->pwmd->period = pdata->pwm_period;
+ 
+ 	/* interrupt enable  : irq 0 is not allowed for lm3630 */
+ 	pchip->irq = client->irq;
+ 	if (pchip->irq)
+ 		lm3630_intr_config(pchip);
+-
+ 	dev_info(&client->dev, "LM3630 backlight register OK.\n");
+ 	return 0;
+ 
+ err_bl_reg:
+-	dev_err(&client->dev, "fail : backlight register.\n");
+ 	lm3630_backlight_unregister(pchip);
+-err_chip_init:
+-	return ret;
++	return rval;
+ }
+ 
+ static int lm3630_remove(struct i2c_client *client)
+ {
+-	int ret;
+-	struct lm3630_chip_data *pchip = i2c_get_clientdata(client);
++	int rval;
++	struct lm3630_chip *pchip = i2c_get_clientdata(client);
+ 
+-	ret = regmap_write(pchip->regmap, REG_BRT_A, 0);
+-	if (ret < 0)
++	rval = lm3630_write(pchip, REG_BRT_A, 0);
++	if (rval < 0)
+ 		dev_err(pchip->dev, "i2c failed to access register\n");
+ 
+-	ret = regmap_write(pchip->regmap, REG_BRT_B, 0);
+-	if (ret < 0)
++	rval = lm3630_write(pchip, REG_BRT_B, 0);
++	if (rval < 0)
+ 		dev_err(pchip->dev, "i2c failed to access register\n");
+ 
+ 	lm3630_backlight_unregister(pchip);
+@@ -470,6 +486,5 @@ static struct i2c_driver lm3630_i2c_driver = {
+ module_i2c_driver(lm3630_i2c_driver);
+ 
+ MODULE_DESCRIPTION("Texas Instruments Backlight driver for LM3630");
+-MODULE_AUTHOR("G.Shark Jeong <gshark.jeong@gmail.com>");
+ MODULE_AUTHOR("Daniel Jeong <daniel.jeong@ti.com>");
+ MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/platform_data/lm3630_bl.h b/include/linux/platform_data/lm3630_bl.h
+index 9176dd3..7282211 100644
+--- a/include/linux/platform_data/lm3630_bl.h
++++ b/include/linux/platform_data/lm3630_bl.h
+@@ -11,47 +11,55 @@
+ #ifndef __LINUX_LM3630_H
+ #define __LINUX_LM3630_H
+ 
+-#define LM3630_NAME "lm3630_bl"
++#define LM3630_NAME "lm3630a_bl"
+ 
+ enum lm3630_pwm_ctrl {
+-	PWM_CTRL_DISABLE = 0,
+-	PWM_CTRL_BANK_A,
+-	PWM_CTRL_BANK_B,
+-	PWM_CTRL_BANK_ALL,
++	LM3630_PWM_DISABLE = 0x00,
++	LM3630_PWM_BANK_A,
++	LM3630_PWM_BANK_B,
++	LM3630_PWM_BANK_ALL,
++	LM3630_PWM_BANK_A_ACT_LOW = 0x05,
++	LM3630_PWM_BANK_B_ACT_LOW,
++	LM3630_PWM_BANK_ALL_ACT_LOW,
+ };
+ 
+-enum lm3630_pwm_active {
+-	PWM_ACTIVE_HIGH = 0,
+-	PWM_ACTIVE_LOW,
++enum lm3630_leda_ctrl {
++	LM3630_LEDA_DISABLE = 0x00,
++	LM3630_LEDA_ENABLE = 0x04,
++	LM3630_LEDA_ENABLE_LINEAR = 0x14,
+ };
+ 
+-enum lm3630_bank_a_ctrl {
+-	BANK_A_CTRL_DISABLE = 0x0,
+-	BANK_A_CTRL_LED1 = 0x4,
+-	BANK_A_CTRL_LED2 = 0x1,
+-	BANK_A_CTRL_ALL = 0x5,
+-};
+-
+-enum lm3630_bank_b_ctrl {
+-	BANK_B_CTRL_DISABLE = 0,
+-	BANK_B_CTRL_LED2,
++enum lm3630_ledb_ctrl {
++	LM3630_LEDB_DISABLE = 0x00,
++	LM3630_LEDB_ON_A = 0x01,
++	LM3630_LEDB_ENABLE = 0x02,
++	LM3630_LEDB_ENABLE_LINEAR = 0x0A,
+ };
+ 
++#define LM3630_MAX_BRIGHTNESS 255
++/*
++ *@leda_init_brt : led a init brightness. 4~255
++ *@leda_max_brt  : led a max brightness.  4~255
++ *@leda_ctrl     : led a disable, enable linear, enable exponential
++ *@ledb_init_brt : led b init brightness. 4~255
++ *@ledb_max_brt  : led b max brightness.  4~255
++ *@ledb_ctrl     : led b disable, enable linear, enable exponential
++ *@pwm_period    : pwm period
++ *@pwm_ctrl      : pwm disable, bank a or b, active high or low
++ */
+ struct lm3630_platform_data {
+ 
+-	/* maximum brightness */
+-	int max_brt_led1;
+-	int max_brt_led2;
+-
+-	/* initial on brightness */
+-	int init_brt_led1;
+-	int init_brt_led2;
+-	enum lm3630_pwm_ctrl pwm_ctrl;
+-	enum lm3630_pwm_active pwm_active;
+-	enum lm3630_bank_a_ctrl bank_a_ctrl;
+-	enum lm3630_bank_b_ctrl bank_b_ctrl;
++	/* led a config.  */
++	int leda_init_brt;
++	int leda_max_brt;
++	enum lm3630_leda_ctrl leda_ctrl;
++	/* led b config. */
++	int ledb_init_brt;
++	int ledb_max_brt;
++	enum lm3630_ledb_ctrl ledb_ctrl;
++	/* pwm config. */
+ 	unsigned int pwm_period;
+-	void (*pwm_set_intensity) (int brightness, int max_brightness);
++	enum lm3630_pwm_ctrl pwm_ctrl;
+ };
+ 
+ #endif /* __LINUX_LM3630_H */
+-- 
+1.7.9.5
 
