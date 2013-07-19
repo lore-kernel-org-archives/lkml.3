@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab3GSDuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 23:50:07 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:62337 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759570Ab3GSDuF (ORCPT
+	id S1759656Ab3GSDxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 23:53:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41901 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759616Ab3GSDxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 23:50:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1307181004190.1245-100000@iolanthe.rowland.org>
-References: <CACVXFVNV-hGZpcy2ANQaca1K5yXJ88EOq1PTkJUEHEkFk9Btvw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1307181004190.1245-100000@iolanthe.rowland.org>
-Date: Fri, 19 Jul 2013 11:50:04 +0800
-Message-ID: <CACVXFVNXAJe363O2OFHJ927BT23hCzedbG1Yt41xbDxV_d_oOg@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] EHCI: add to memory barrier to updating hw_next
-From: Ming Lei <tom.leiming@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Gioh Kim <gioh.kim@lge.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Salter <msalter@redhat.com>,
-        namhyung.kim@lge.com, Minchan Kim <minchan.kim@lge.com>,
-        Chanho Min <chanho.min@lge.com>, Jong-Sung Kim <neidhard.kim@lge.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Jul 2013 23:53:06 -0400
+Date: Fri, 19 Jul 2013 13:52:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (sound-asoc
+ tree related)
+Message-Id: <20130719135253.2689f6c0e42838f330b60df9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 10:08 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 18 Jul 2013, Ming Lei wrote:
->
->> > I guess that HC could have a use-after-free problem like following situation.
->> >
->> > 1. A qtd which is not at the queue head should be removed in qh_completions().
->> > 2. The last->hw_next become be pointing at the next qtd but the hw_next value is delayed in write-buffer.
->> > 3. The qtd is removed in the list.
->> > 4. The qtd is freed into DMA pool and re-allocated for another urb.
->> > 5. HC try to process last->hw_next and it is pointing re-allocated qtd.
->> >
->> > What do you think about it? Is it possible?
->>
->> I understand it might not be possible because:  when 'stopped' is set, that
->> said the HC might not advance the queue. But I don't understand why
->> 'last->hw_next' is patched here under 'stopped' situation.
->
-> It should not be possible.  When "stopped" is set, the QH gets unlinked
-> and relinked before it can start up again.  Relinking involves some
-> memory barriers, so the qTD will not be accessed again by the HC.
->
-> last->hw_next gets patched because the qTD might belong to some URB in
-> the middle of the queue that is being unlinked.  The URBs before it and
-> after it will still be active, so the queue link has to be updated.
+--Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-'stopped' is set under below situations:
+Hi all,
 
-     - unlink over or shutdown
-     - halt
-     - short packet(URB_SHORT_NOT_OK)
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Looks EHCI won't advance the queue(qh) any more on above situations, so I
-think last->hw_next might not need patching.
+sound/soc/fsl/fsl_ssi.c: In function 'fsl_ssi_isr':
+sound/soc/fsl/fsl_ssi.c:181:2: error: implicit declaration of function 'rea=
+d_ssi' [-Werror=3Dimplicit-function-declaration]
+  sisr =3D read_ssi(&ssi->sisr) & SIER_FLAGS;
+  ^
+sound/soc/fsl/fsl_ssi.c:296:3: error: implicit declaration of function 'wri=
+te_ssi' [-Werror=3Dimplicit-function-declaration]
+   write_ssi(sisr2, &ssi->sisr);
+   ^
+sound/soc/fsl/fsl_ssi.c: In function 'fsl_ssi_startup':
+sound/soc/fsl/fsl_ssi.c:331:3: error: implicit declaration of function 'wri=
+te_ssi_mask' [-Werror=3Dimplicit-function-declaration]
+   write_ssi_mask(&ssi->scr, CCSR_SSI_SCR_SSIEN, 0);
+   ^
 
->
->> Even the 'stopped' case may be seldom triggered, do you know under
->> which condition the stopped is triggered in your problem?(stall, short read
->> or others)
->
-> I was going to ask the same question.  This particular piece of code
-> gets executed _only_ when an URB is unlinked.  Not during any other
-> kind of error.
+Caused by commit a1df5c2b310f ("ASoC: imx: Enable COMPILE_TEST builds").
 
-The code may run under 'halt' or short packet(URB_SHORT_NOT_OK) too.
-If Gioh's problem falls to these two situations, below patch might be helpful.
+I have reverted that commit for today.
 
-Because the qh will be unlinked when there is fault in the endpoint(halt, short
-packet), maybe it is safer to complete these URBs after the qh becomes
-unlinked,  like what the blew patch does:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
-index b637a65..6a65e0a 100644
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -454,6 +454,10 @@ qh_completions (struct ehci_hcd *ehci, struct ehci_qh *qh)
- 			}
- 		}
+--Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg
+Content-Type: application/pgp-signature
 
-+		/* complete URBs after unlinking */
-+		if (stopped && state != QH_STATE_IDLE)
-+			goto exit;
-+
- 		/* unless we already know the urb's status, collect qtd status
- 		 * and update count of bytes transferred.  in common short read
- 		 * cases with only one data qtd (including control transfers),
-@@ -489,15 +493,6 @@ qh_completions (struct ehci_hcd *ehci, struct ehci_qh *qh)
- 			}
- 		}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
--		/* if we're removing something not at the queue head,
--		 * patch the hardware queue pointer.
--		 */
--		if (stopped && qtd->qtd_list.prev != &qh->qtd_list) {
--			last = list_entry (qtd->qtd_list.prev,
--					struct ehci_qtd, qtd_list);
--			last->hw_next = qtd->hw_next;
--		}
--
- 		/* remove qtd; it's recycled after possible urb completion */
- 		list_del (&qtd->qtd_list);
- 		last = qtd;
-@@ -520,7 +515,7 @@ qh_completions (struct ehci_hcd *ehci, struct ehci_qh *qh)
+iQIcBAEBCAAGBQJR6LgaAAoJEECxmPOUX5FE7T4P/RxSQE22DSRtlcQ+FGLiXwEw
+570Tud3KlOvpUw2Uc6vt8wXEzQqUfrX9akUlHLZY3SfCZnsgH2njmVyqW3iprUKl
+jMgPvLVRLhs9syTwFNBwclu0HpOwx24TfYEFVzXxlcOqXTXmnPLUOV13fMNbQhBv
+jBtuDTtE4ZPe+ja2Qt7MlmbOputs1ZZ1S77cV9zWrIUHnkEQK9HkO4UoEYfwKwDP
+LoINr0YkjqxtkbIqKxwNCkBK5bmO/3bzDf3TO+r+Yy5oSBnYhxpzELi/7blE7j6C
+12OmehgCqek7OP1ZEZgT6A5HoSZ9f6Z6REeBr2eiBhKFinkp7bEt/EzNnI9rvpsZ
+HlgDFjhy9pTUdxQ3lJVS6cfMLvUYMWViUWNBe98v+R5xSH+PNlPdJ18OykDGwZic
+dZeWSvIYaNVRc44Fj3GNVnYbeFZIDL+J1DuwgRwDlBROMWvfVZaJnuSFGqn38Jl1
+55YkqJi3YgfQgZBKOBs732aFfpJ/12R9qXQrEVTx9i2/C74zfM8UyHT4s56+OX7n
+eFsKhfQK6bZX3NlSMOpM4PPgkMMkz2NIaoGi1+h0ugjYbwEsIUhahO34puQMonnW
+bdODOcRilgqOvvkwBoPkiG90m/Wg6W8sDDS7CqaLCzD4p4p73Wt8NixZzTgFIGGz
+NT4p4imYkn5Uv8sDsBh/
+=rieu
+-----END PGP SIGNATURE-----
 
- 		/* Otherwise the caller must unlink the QH. */
- 	}
--
-+ exit:
- 	/* restore original state; caller must unlink or relink */
- 	qh->qh_state = state;
-
-
-
-Thanks,
--- 
-Ming Lei
+--Signature=_Fri__19_Jul_2013_13_52_53_+1000_ieUgJnBVvj3n1TEg--
