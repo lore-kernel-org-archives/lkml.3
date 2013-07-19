@@ -1,118 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3GSVqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:46:17 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:54658 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab3GSVqP convert rfc822-to-8bit (ORCPT
+	id S1752204Ab3GSVun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:50:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42082 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab3GSVul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:46:15 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Smart <James.Smart@Emulex.Com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
-        "kmo@daterainc.com" <kmo@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Hannes Reinecke <hare@suse.de>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Thread-Topic: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Thread-Index: AQHOgqlzl9hpr72CpUKHCI3BOS12fZls/ECAgAAGhAA=
-Date: Fri, 19 Jul 2013 21:46:06 +0000
-Message-ID: <1374270366.2266.70.camel@dabdike>
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
-	 <20130712010223.GA15673@kroah.com>
-	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
-	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
-	 <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
-	 <20130716211529.GQ22392@kernel.dk> <1374036751.2045.20.camel@dabdike>
-	 <1374268967.7397.1075.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1374268967.7397.1075.camel@haakon3.risingtidesystems.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.18.112.117]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <61166E467D94534E8BE65AEBA3D09E56@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Fri, 19 Jul 2013 17:50:41 -0400
+Message-ID: <51E9B4A1.3080205@canonical.com>
+Date: Fri, 19 Jul 2013 17:50:25 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Kamal Mostafa <kamal.mostafa@canonical.com>
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, kendatsuba@gmail.com,
+        linux-input@vger.kernel.org, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kernel Team <kernel-team@lists.ubuntu.com>
+Subject: [PATCH][v3.2.y][v3.5.y][3.8.y] Input: elantech - fix for newer hardware
+ versions (v7)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 14:22 -0700, Nicholas A. Bellinger wrote:
-> On Wed, 2013-07-17 at 04:52 +0000, James Bottomley wrote:
-> > On Tue, 2013-07-16 at 15:15 -0600, Jens Axboe wrote:
-> > > On Tue, Jul 16 2013, Nicholas A. Bellinger wrote:
-> > > > On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
-> 
-> <SNIP>
-> 
-> > > > > Lets start with discussing this on the list, please, and then see where
-> > > > > we go from there ...
-> > > > > 
-> > > > 
-> > > > Yes, the discussion is beginning to make it's way to the list.  I've
-> > > > mostly been waiting for blk-mq to get a wider review before taking the
-> > > > early scsi-mq prototype driver to a larger public audience.
-> > > > 
-> > > > Primarily, I'm now reaching out to the people most effected by existing
-> > > > scsi_request_fn() based performance limitations.  Most of them have
-> > > > abandoned existing scsi_request_fn() based logic in favor of raw block
-> > > > make_request() based drivers, and are now estimating the amount of
-> > > > effort to move to an scsi-mq based approach.
-> > > > 
-> > > > Regardless, as the prototype progresses over the next months, having a
-> > > > face-to-face discussion with the key parties in the room would be very
-> > > > helpful given the large amount of effort involved to actually make this
-> > > > type of generational shift in SCSI actually happen.
-> > > 
-> > > There's a certain amount of overlap with the aio/O_DIRECT work as well.
-> > > But if it's not a general session, could always be a BOF or something.
-> > > 
-> > > I'll second the argument that most technical topics probably DO belong
-> > > in a topic related workshop. But that leaves us with basically only
-> > > process related topics at KS, I don't think it hurts to have a bit of
-> > > tech meat on the bone too. At least I personally miss that part of KS
-> > > from years gone by.
-> > 
-> > Heh well, given that most of the block mq discussions at LSF have been
-> > you saying you really should get around to cleaning up and posting the
-> > code, you'll understand my wanting to see that happen first ...
-> > 
-> > I suppose we could try to run a storage workshop within KS, but I think
-> > most of the mini summit slots have already gone.
-> 
-> That would be great, given there is a reasonable level of interest from
-> various parities, and the pain threshold for existing scsi small block
-> random I/O performance is high..
-> 
-> When will we know if there is a workshop / mini summit slot available..?
-> 
-> (CC'ing Mike Christie as well for open-iscsi/scsi-mq bits)
-> 
-> > There's also plumbers
-> > if all slots are gone (I would say that, being biased and on the
-> > programme committee) Ric is running the storage and Filesystems MC
-> > 
-> > http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/tracks/159
-> 
-> FYI, I'm not trying to 'sell' scsi-mq to the larger community yet, but
-> rather interested in getting the right scsi/block/LLD people in the same
-> room at KS for an hour or two to discuss implementation details, given
-> the scope of the effort involved.
+Hello,
 
-Well, so that's why I think plumbers might be a better venue: we'll have
-more of the actual storage people there.  Usually we get at most 2-3
-storage people to KS compared to the 25 or so we usually have at LSF ...
-that makes KS not a very good venue for storage centric discussions.
+Please consider including upstream commit
+9eebed7de660c0b5ab129a9de4f89d20b60de68c in the next v3.2.y, v3.5.y and
+v3.8.y releases. 
 
-James
+It was included upstream as of v3.11-rc1.  It has been tested and
+confirmed to resolve http://bugs.launchpad.net/bugs/1166442 .
+
+commit 9eebed7de660c0b5ab129a9de4f89d20b60de68c
+Author: Matteo Delfino <kendatsuba@gmail.com>
+Date:   Sat Jul 6 21:52:26 2013 -0700
+
+    Input: elantech - fix for newer hardware versions (v7)
+
+
+Sincerely,
+Joseph Salisbury
 
