@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965547Ab3GSF0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:26:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39419 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965391Ab3GSFWY (ORCPT
+	id S965557Ab3GSF0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:26:17 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:48865 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965480Ab3GSF0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 35/38] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
-Date: Thu, 18 Jul 2013 22:21:51 -0700
-Message-Id: <20130719052050.275740304@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
-References: <20130719052047.858393825@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 19 Jul 2013 01:26:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374183272-10153-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1374183272-10153-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Fri, 19 Jul 2013 13:26:12 +0800
+Message-ID: <CAJd=RBD4SNTpA=6ODXswGycBMq9LRhm=rZ4p2N7=RputH2O8bw@mail.gmail.com>
+Subject: Re: [PATCH 6/8] migrate: remove VM_HUGETLB from vma flag check in vma_migratable()
+From: Hillf Danton <dhillf@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 19, 2013 at 5:34 AM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> This patch enables hugepage migration from migrate_pages(2),
+> move_pages(2), and mbind(2).
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
 
-------------------
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-
-commit da331ba8e9c5de72a27e50f71105395bba6eebe0 upstream.
-
-tasklet_kill() may sleep so call it before taking pch->lock.
-
-Fixes following lockup:
-
-  BUG: scheduling while atomic: cat/2383/0x00000002
-  Modules linked in:
-    unwind_backtrace+0x0/0xfc
-    __schedule_bug+0x4c/0x58
-    __schedule+0x690/0x6e0
-    sys_sched_yield+0x70/0x78
-    tasklet_kill+0x34/0x8c
-    pl330_free_chan_resources+0x24/0x88
-    dma_chan_put+0x4c/0x50
-  [...]
-  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
-   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
-    unwind_backtrace+0x0/0xfc
-    do_raw_spin_lock+0x194/0x204
-    _raw_spin_lock_irqsave+0x20/0x28
-    pl330_tasklet+0x2c/0x5a8
-    tasklet_action+0xfc/0x114
-    __do_softirq+0xe4/0x19c
-    irq_exit+0x98/0x9c
-    handle_IPI+0x124/0x16c
-    gic_handle_irq+0x64/0x68
-    __irq_svc+0x40/0x70
-    cpuidle_wrap_enter+0x4c/0xa0
-    cpuidle_enter_state+0x18/0x68
-    cpuidle_idle_call+0xac/0xe0
-    cpu_idle+0xac/0xf0
-
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/dma/pl330.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2485,10 +2485,10 @@ static void pl330_free_chan_resources(st
- 	struct dma_pl330_chan *pch = to_pchan(chan);
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&pch->lock, flags);
--
- 	tasklet_kill(&pch->task);
- 
-+	spin_lock_irqsave(&pch->lock, flags);
-+
- 	pl330_release_channel(pch->pl330_chid);
- 	pch->pl330_chid = NULL;
- 
-
-
+>  include/linux/mempolicy.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git v3.11-rc1.orig/include/linux/mempolicy.h v3.11-rc1/include/linux/mempolicy.h
+> index 0d7df39..2e475b5 100644
+> --- v3.11-rc1.orig/include/linux/mempolicy.h
+> +++ v3.11-rc1/include/linux/mempolicy.h
+> @@ -173,7 +173,7 @@ extern int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol);
+>  /* Check if a vma is migratable */
+>  static inline int vma_migratable(struct vm_area_struct *vma)
+>  {
+> -       if (vma->vm_flags & (VM_IO | VM_HUGETLB | VM_PFNMAP))
+> +       if (vma->vm_flags & (VM_IO | VM_PFNMAP))
+>                 return 0;
+>         /*
+>          * Migration allocates pages in the highest zone. If we cannot
+> --
+> 1.8.3.1
+>
