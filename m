@@ -1,72 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3GSEZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 00:25:08 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50471 "EHLO zene.cmpxchg.org"
+	id S1753866Ab3GSEZf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 00:25:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33641 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750938Ab3GSEZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 00:25:05 -0400
-Date: Fri, 19 Jul 2013 00:25:02 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        righi.andrea@gmail.com
-Subject: [patch 3/5] x86: finish fault error path with fatal signal
-Message-ID: <20130719042502.GF17812@cmpxchg.org>
-References: <20130710182506.F25DF461@pobox.sk>
- <20130711072507.GA21667@dhcp22.suse.cz>
- <20130714012641.C2DA4E05@pobox.sk>
- <20130714015112.FFCB7AF7@pobox.sk>
- <20130715154119.GA32435@dhcp22.suse.cz>
- <20130715160006.GB32435@dhcp22.suse.cz>
- <20130716153544.GX17812@cmpxchg.org>
- <20130716160905.GA20018@dhcp22.suse.cz>
- <20130716164830.GZ17812@cmpxchg.org>
- <20130719042124.GC17812@cmpxchg.org>
+	id S1752707Ab3GSEZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 00:25:34 -0400
+Message-ID: <51E8BF9F.5080007@zytor.com>
+Date: Thu, 18 Jul 2013 21:25:03 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719042124.GC17812@cmpxchg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 fixes for 3.11-rc2
+References: <201307182241.r6IMfmap003013@terminus.zytor.com> <CA+55aFx38ogZxxg2uHXKsPFHU4p4yvxvUE1i8DiPWZ4SdEDANg@mail.gmail.com>
+In-Reply-To: <CA+55aFx38ogZxxg2uHXKsPFHU4p4yvxvUE1i8DiPWZ4SdEDANg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The x86 fault handler bails in the middle of error handling when the
-task has been killed.  For the next patch this is a problem, because
-it relies on pagefault_out_of_memory() being called even when the task
-has been killed, to perform proper OOM state unwinding.
+On 07/18/2013 05:46 PM, Linus Torvalds wrote:
+> 
+> Finnish is hard. But good for swearing.
+> 
 
-This is a rather minor optimization, just remove it.
+Ehkä meidän sääntö, että kiroilu on sallittu vain suomeksi (ja venäjä,
+muuten Al Viro todennäköisesti räjähtää.)
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- arch/x86/mm/fault.c | 11 -----------
- 1 file changed, 11 deletions(-)
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 1cebabe..90248c9 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -846,17 +846,6 @@ static noinline int
- mm_fault_error(struct pt_regs *regs, unsigned long error_code,
- 	       unsigned long address, unsigned int fault)
- {
--	/*
--	 * Pagefault was interrupted by SIGKILL. We have no reason to
--	 * continue pagefault.
--	 */
--	if (fatal_signal_pending(current)) {
--		if (!(fault & VM_FAULT_RETRY))
--			up_read(&current->mm->mmap_sem);
--		if (!(error_code & PF_USER))
--			no_context(regs, error_code, address);
--		return 1;
--	}
- 	if (!(fault & VM_FAULT_ERROR))
- 		return 0;
- 
--- 
-1.8.3.2
+	-hpa
 
