@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965659Ab3GSMe6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:34:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48934 "EHLO
+	id S1760334Ab3GSMfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:35:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48953 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760254Ab3GSMe4 (ORCPT
+	with ESMTP id S1759923Ab3GSMfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:34:56 -0400
+	Fri, 19 Jul 2013 08:35:06 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
         <kishon@ti.com>, <bigeasy@linutronix.de>,
         George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 1/4] usb: phy: phy-omap-control: Add API to power and wakeup
-Date: Fri, 19 Jul 2013 18:04:34 +0530
-Message-ID: <1374237277-17769-2-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 3/4] arm: dts: Add USB phy nodes for AM33XX
+Date: Fri, 19 Jul 2013 18:04:36 +0530
+Message-ID: <1374237277-17769-4-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374237277-17769-1-git-send-email-george.cherian@ti.com>
 References: <1374237277-17769-1-git-send-email-george.cherian@ti.com>
@@ -25,151 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on/off USB PHY for AM335X
+Add phy nodes for AM33XX platform and split the musb nodes
+per instance.
 
-Add APIs to
-	-power on/off USB PHY for AM335X
-	-enable/disable PHY wakeup.
-
-This API will be called from phy-amxxxx-usb driver.
-
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/usb/phy/phy-omap-control.c   | 67 ++++++++++++++++++++++++++++++++++++
- include/linux/usb/omap_control_usb.h | 24 +++++++++++++
- 2 files changed, 91 insertions(+)
+ arch/arm/boot/dts/am33xx.dtsi | 68 +++++++++++++++++++++++++++++++++----------
+ 1 file changed, 53 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
-index 1419ced..4f2502c 100644
---- a/drivers/usb/phy/phy-omap-control.c
-+++ b/drivers/usb/phy/phy-omap-control.c
-@@ -46,6 +46,73 @@ struct device *omap_get_control_dev(void)
- EXPORT_SYMBOL_GPL(omap_get_control_dev);
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 8e1248f..e3890c4 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -326,21 +326,59 @@
+ 			status = "disabled";
+ 		};
  
- /**
-+ * omap_control_am335x_phy_wkup - PHY wakeup on/off  using control
-+ *	module
-+ * @dev: the control module device
-+ * @on: 0 to off and 1 to on PHY wakeup feature
-+ * @id: phy id 0 or 1 for phy instance 0 and 1 repectively
-+ *
-+ * AMXXXX PHY driver should call this API to enable or disable PHY wakeup.
-+ */
-+void omap_control_am335x_phy_wkup(struct device *dev, bool on, u8 id)
-+{
-+	u32 val;
-+	u32 *phy_wkup_reg;
-+	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
+-		usb@47400000 {
+-			compatible = "ti,musb-am33xx";
+-			reg = <0x47400000 0x1000	/* usbss */
+-			       0x47401000 0x800		/* musb instance 0 */
+-			       0x47401800 0x800>;	/* musb instance 1 */
+-			interrupts = <17		/* usbss */
+-				      18		/* musb instance 0 */
+-				      19>;		/* musb instance 1 */
+-			multipoint = <1>;
+-			num-eps = <16>;
+-			ram-bits = <12>;
+-			port0-mode = <3>;
+-			port1-mode = <3>;
+-			power = <250>;
+-			ti,hwmods = "usb_otg_hs";
++		phy1: am335x-usb0@44e10620 {
++			compatible = "ti,am335x-usb2";
++			#phy-cells = <0>;
++			id= <0>;
++		};
 +
-+	if (control_usb->type != OMAP_CTRL_DEV_TYPE3 || id < 0 || id > 1)
-+		return;
++		phy2: am335x-usb1@44e10628 {
++			compatible = "ti,am335x-usb2";
++			#phy-cells = <0>;
++			id= <1>;
++		};
 +
-+	phy_wkup_reg = control_usb->dev_conf + AM335X_USB_WKUP_OFFSET;
-+	val = readl(phy_wkup_reg);
++		omap_control_usb: omap-control-usb@44e10620 {
++			compatible = "ti,omap-control-usb";
++			reg = <0x44e10620 0x10>;
++			reg-names = "control_dev_conf";
++			ti,type = <3>;
++		};
 +
-+	if (on)
-+		val |= id ? AM335X_USB1_WKUP_CTRL_ENABLE :
-+				AM335X_USB0_WKUP_CTRL_ENABLE;
-+	 else
-+		val &= id ? ~AM335X_USB1_WKUP_CTRL_ENABLE :
-+				~AM335X_USB0_WKUP_CTRL_ENABLE;
++                musb: usb@47400000 {
++                        compatible = "ti,musb-am33xx";
++                        reg = <0x47400000 0x1000>;
++                        ranges;
++                        #address-cells = <1>;
++                        #size-cells = <1>;
++                        interrupts = <17>;
++                        ti,hwmods = "usb_otg_hs";
 +
++                        usb0@47401000 {
++                                reg = <0x47401000 0x800>;
++                                interrupts = <18>;
++                                interrupt-names = "mc";
++                                multipoint = <1>;
++                                num-eps = <16>;
++                                ram-bits = <12>;
++                                port-mode = <3>;
++                                power = <250>;
++                                phys = <&phy1>;
++				phy-names = "am335x-usb0";
++                        };
 +
-+	writel(val, phy_wkup_reg);
-+}
-+EXPORT_SYMBOL_GPL(omap_control_am335x_phy_wkup);
-+
-+/**
-+ * omap_control_am335x_phy_power - power on/off the serializer using control
-+ *	module
-+ * @dev: the control module device
-+ * @on: 0 to off and 1 to on based on powering on or off the PHY
-+ * @id: phy id 0 or 1 for phy instance 0 and 1 repectively
-+ *
-+ * AMXXXX PHY driver should call this API to power on or off the PHY.
-+ */
-+void omap_control_am335x_phy_power(struct device *dev, bool on, u8 id)
-+{
-+	u32 val;
-+	u32 *phy_pwr_reg;
-+	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+
-+	if (control_usb->type != OMAP_CTRL_DEV_TYPE3 || id < 0 || id > 1)
-+		return;
-+
-+	phy_pwr_reg = GET_PHY_POWER_REG(control_usb->dev_conf, id);
-+	val = readl(phy_pwr_reg);
-+
-+	if (on) {
-+		val &= ~(AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN);
-+		val |= AM335X_USBPHY_OTGVDET_EN |
-+			AM335X_USBPHY_OTGSESSEND_EN;
-+	} else
-+		val |= AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN;
-+
-+
-+	writel(val, phy_pwr_reg);
-+}
-+EXPORT_SYMBOL_GPL(omap_control_am335x_phy_power);
-+
-+
-+/**
-  * omap_control_usb3_phy_power - power on/off the serializer using control
-  *	module
-  * @dev: the control module device
-diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
-index 27b5b8c..a92b417 100644
---- a/include/linux/usb/omap_control_usb.h
-+++ b/include/linux/usb/omap_control_usb.h
-@@ -45,6 +45,7 @@ enum omap_control_usb_mode {
- /* To differentiate ctrl module IP having either mailbox or USB3 PHY power */
- #define	OMAP_CTRL_DEV_TYPE1		0x1
- #define	OMAP_CTRL_DEV_TYPE2		0x2
-+#define	OMAP_CTRL_DEV_TYPE3		0x3
++                        usb1@47401800 {
++                                reg = <0x47401800 0x800>;
++                                interrupts = <19>;
++                                interrupt-names = "mc";
++                                multipoint = <1>;
++                                num-eps = <16>;
++                                ram-bits = <12>;
++                                port-mode = <3>;
++                                power = <250>;
++                                phys = <&phy2>;
++				phy-names = "am335x-usb1";
++			};
+ 		};
  
- #define	OMAP_CTRL_DEV_PHY_PD		BIT(0)
- 
-@@ -63,10 +64,23 @@ enum omap_control_usb_mode {
- #define	OMAP_CTRL_USB3_PHY_TX_RX_POWERON	0x3
- #define	OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF	0x0
- 
-+#define GET_PHY_POWER_REG(base, id)	((u32 *)base + (id * 2))
-+#define AM335X_USBPHY_CM_PWRDN		(1 << 0)
-+#define AM335X_USBPHY_OTG_PWRDN		(1 << 1)
-+#define AM335X_USBPHY_OTGVDET_EN		(1 << 19)
-+#define AM335X_USBPHY_OTGSESSEND_EN	(1 << 20)
-+#define AM335X_USB_WKUP_OFFSET		0xA
-+#define AM335X_USB0_WKUP_CTRL_ENABLE	(1 << 0)
-+#define AM335X_USB1_WKUP_CTRL_ENABLE	(1 << 8)
-+
-+
-+
- #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
- extern struct device *omap_get_control_dev(void);
- extern void omap_control_usb_phy_power(struct device *dev, int on);
- extern void omap_control_usb3_phy_power(struct device *dev, bool on);
-+extern void omap_control_am335x_phy_power(struct device *dev, bool on, u8 id);
-+extern void omap_control_am335x_phy_wkup(struct device *dev, bool on, u8 id);
- extern void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode);
- #else
-@@ -87,6 +101,16 @@ static inline void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode)
- {
- }
-+
-+static inline void omap_control_am335x_phy_power(struct device *dev,
-+	 bool on, u8 id)
-+{
-+}
-+
-+static inline void omap_control_am335x_phy_wkup(struct device *dev,
-+	 bool on, u8 id)
-+{
-+}
- #endif
- 
- #endif	/* __OMAP_CONTROL_USB_H__ */
+ 		mac: ethernet@4a100000 {
 -- 
 1.8.1.4
 
