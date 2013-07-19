@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965598Ab3GSF0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:26:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39644 "EHLO
+	id S966000Ab3GSFnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:43:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39685 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965444Ab3GSF0X (ORCPT
+	with ESMTP id S965600Ab3GSF0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:23 -0400
+	Fri, 19 Jul 2013 01:26:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>
-Subject: [ 10/72] ext4: check error return from ext4_write_inline_data_end()
-Date: Thu, 18 Jul 2013 22:25:27 -0700
-Message-Id: <20130719052600.563480015@linuxfoundation.org>
+        David Disseldorp <ddiss@suse.de>, Steve French <smfrench@gmail.com>
+Subject: [ 01/72] CIFS use sensible file nlink values if unprovided
+Date: Thu, 18 Jul 2013 22:25:18 -0700
+Message-Id: <20130719052559.954064080@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,41 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Steve French <smfrench@gmail.com>
 
-commit 42c832debbbf819f6c4ad8601baa559c44105ba4 upstream.
+commit 6658b9f70ebca5fc0795b1d6d733996af1e2caa7 upstream.
 
-The function ext4_write_inline_data_end() can return an error.  So we
-need to assign it to a signed integer variable to check for an error
-return (since copied is an unsigned int).
+Certain servers may not set the NumberOfLinks field in query file/path
+info responses. In such a case, cifs_inode_needs_reval() assumes that
+all regular files are hardlinks and triggers revalidation, leading to
+excessive and unnecessary network traffic.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Zheng Liu <wenqing.lz@taobao.com>
+This change hardcodes cf_nlink (and subsequently i_nlink) when not
+returned by the server, similar to what already occurs in cifs_mkdir().
+
+Signed-off-by: David Disseldorp <ddiss@suse.de>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- fs/ext4/inode.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1118,10 +1118,13 @@ static int ext4_write_end(struct file *f
- 		}
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 20efd81..449b6cf 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -558,6 +558,11 @@ cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
+ 			fattr->cf_mode &= ~(S_IWUGO);
+ 
+ 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
++		if (fattr->cf_nlink < 1) {
++			cifs_dbg(1, "replacing bogus file nlink value %u\n",
++				fattr->cf_nlink);
++			fattr->cf_nlink = 1;
++		}
  	}
  
--	if (ext4_has_inline_data(inode))
--		copied = ext4_write_inline_data_end(inode, pos, len,
--						    copied, page);
--	else
-+	if (ext4_has_inline_data(inode)) {
-+		ret = ext4_write_inline_data_end(inode, pos, len,
-+						 copied, page);
-+		if (ret < 0)
-+			goto errout;
-+		copied = ret;
-+	} else
- 		copied = block_write_end(file, mapping, pos,
- 					 len, copied, page, fsdata);
- 
+ 	fattr->cf_uid = cifs_sb->mnt_uid;
 
 
