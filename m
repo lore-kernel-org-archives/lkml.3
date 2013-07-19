@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3GSVAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:00:38 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37932 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab3GSVAh (ORCPT
+	id S1752285Ab3GSVDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:03:17 -0400
+Received: from smtprelay-b31.telenor.se ([213.150.131.20]:50853 "EHLO
+	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab3GSVDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:00:37 -0400
-Message-ID: <51E9A8FA.2080205@gmail.com>
-Date: Fri, 19 Jul 2013 15:00:42 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 19 Jul 2013 17:03:15 -0400
+X-SENDER-IP: [85.230.171.181]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am5nAKyo6VFV5qu1PGdsb2JhbABbgwaDI4UjuQMEAYEQFwMBAQEBODWCJAEBBAE6HCMFCwgDISUPBSUKGjGHbAq3ORaOXIEdB4MQbgOXXIYzji86
+X-IronPort-AV: E=Sophos;i="4.89,704,1367964000"; 
+   d="scan'208";a="361957330"
+From: rydberg@euromail.se
+Date: Fri, 19 Jul 2013 23:04:30 +0200
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HID: multitouch: do not init reports for multitouch
+ devices
+Message-ID: <20130719210430.GA31481@polaris.bitmath.org>
+References: <1373620101-16113-1-git-send-email-benjamin.tissoires@redhat.com>
+ <20130718192416.GA526@polaris.bitmath.org>
+ <CAN+gG=G6jw0BkJejZ=Rb+Vzzey1=JdqiiYmMonwjt9G1R779Tg@mail.gmail.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 0/3] Teach perf_trace_##call() to check hlist_empty(perf_events)
-References: <20130718183018.GA4043@redhat.com>  <20130719074339.GA22597@gmail.com> <1374265641.3356.31.camel@gandalf.local.home>
-In-Reply-To: <1374265641.3356.31.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=G6jw0BkJejZ=Rb+Vzzey1=JdqiiYmMonwjt9G1R779Tg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/19/13 2:27 PM, Steven Rostedt wrote:
-> On Fri, 2013-07-19 at 09:43 +0200, Ingo Molnar wrote:
->> * Oleg Nesterov <oleg@redhat.com> wrote:
->>
->>> Hello.
->>>
->>> The patches are the same, I only tried to update the changelogs a bit.
->>> I am also quoting my old email below, to explain what this hack tries
->>> to do.
->>>
->>> 	Say, "perf record -e sched:sched_switch -p1".
->>>
->>> 	Every task except /sbin/init will do perf_trace_sched_switch() and
->>> 	perf_trace_buf_prepare() + perf_trace_buf_submit for no reason(),
->>> 	it doesn't have a counter.
->>>
->>> 	So it makes sense to add the fast-path check at the start of
->>> 	perf_trace_##call(),
->>>
->>> 		if (hlist_empty(event_call->perf_events))
->>> 			return;
->>>
->>> 	The problem is, we should not do this if __task != NULL (iow, if
->>> 	DECLARE_EVENT_CLASS() uses __perf_task()), perf_tp_event() has the
->>> 	additional code for this case.
->>>
->>> 	So we should do
->>>
->>> 		if (!__task && hlist_empty(event_call->perf_events))
->>> 			return;
->>>
->>> 	But __task is changed by "{ assign; }" block right before
->>> 	perf_trace_buf_submit(). Too late for the fast-path check,
->>> 	we already called perf_trace_buf_prepare/fetch_regs.
->>>
->>> 	So. After 2/3 __perf_task() (and __perf_count/addr) is called
->>> 	when ftrace_get_offsets_##call(args) evaluates the arguments,
->>> 	and we can check !__task && hlist_empty() right after that.
->>>
->>> Oleg.
->>
->> Nice improvement.
->>
->> Peter, Steve, any objections?
->>
->
-> Yep, agreed.
->
->
-> The whole series...
->
-> Reviewed-and-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Hi Benjamin,
 
-For what it is worth,
-Tested-by: David Ahern <dsahern@gmail.com>
+> >> Some multitouch screens do not like to be polled for input reports.
+> >> However, the Win8 spec says that all touches should be sent during
+> >> each report, making the initialization of reports unnecessary.
+> >> The Win7 spec is less precise, but we can safely assume that when
+> >> the module is loaded (at boot), no one is touching the screen.
+> >>
+> >> Add the quirk HID_QUIRK_NO_INIT_REPORTS so that we do not have to
+> >> introduce a quirk for each problematic device.
+> >
+> > I assume you have tested thoroughly for regressions? How about odd
+> > eGalax devices, for instance? Changes affecting existing hardware
+> > makes me nervous. Is it so bad to add this quirk on a per-device
+> > basis? Or perhaps turned on by default for win8 devices only?
+> 
+> Aargh, I forgot the eGalax... (I don't have it anymore on my desk). I
+> was pretty confident because Win [7-8] is not doing any quirks for the
+> multitouch devices, and I had in mind that it did not asked for the
+> reports at startup (at least, I am sure about it for HID/I2C). I'm not
+> sure win 8 devices is a sufficient denominator, because this init
+> sequence is not mentioned anywhere in the Win 8 spec. It's true that
+> we are going to see fewer Win 7 devices, but I would say it's the
+> exact same problem for win 7 and 8. Moreover, asking this for Win 8
+> devices only will forces us to detect it in core before hid-multitouch
+> is loaded because the init reports is called before the parsing.
 
+We already branch on report specifics in hid_add_device(). Adding win8
+detection there is more or less what it was built for.
 
+> If I capture the Win 7 & Win 8 initialization events and I observe
+> that they do not retrieve the reports, will it be sufficient as a
+> guarantee to include this patch even if it is not widely tested under
+> Linux?
+
+We already have the usbhid quirks to handle odd cases, and we can add
+all sorts of generic detection during device add, so there really is
+no reason to risk regressions at all, is there?
+
+Cheers,
+Henrik
