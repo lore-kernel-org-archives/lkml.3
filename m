@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965677Ab3GSF0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:26:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39906 "EHLO
+	id S965783Ab3GSFfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:35:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39934 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965490Ab3GSF0r (ORCPT
+	with ESMTP id S965709Ab3GSF0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:47 -0400
+	Fri, 19 Jul 2013 01:26:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 07/72] jbd2: fix theoretical race in jbd2__journal_restart
-Date: Thu, 18 Jul 2013 22:25:24 -0700
-Message-Id: <20130719052600.363125882@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 48/72] timer: Fix jiffies wrap behavior of round_jiffies_common()
+Date: Thu, 18 Jul 2013 22:26:05 -0700
+Message-Id: <20130719052603.145054226@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,46 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Bart Van Assche <bart.vanassche@gmail.com>
 
-commit 39c04153fda8c32e85b51c96eb5511a326ad7609 upstream.
+commit 9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1 upstream.
 
-Once we decrement transaction->t_updates, if this is the last handle
-holding the transaction from closing, and once we release the
-t_handle_lock spinlock, it's possible for the transaction to commit
-and be released.  In practice with normal kernels, this probably won't
-happen, since the commit happens in a separate kernel thread and it's
-unlikely this could all happen within the space of a few CPU cycles.
+Direct compare of jiffies related values does not work in the wrap
+around case. Replace it with time_is_after_jiffies().
 
-On the other hand, with a real-time kernel, this could potentially
-happen, so save the tid found in transaction->t_tid before we release
-t_handle_lock.  It would require an insane configuration, such as one
-where the jbd2 thread was set to a very high real-time priority,
-perhaps because a high priority real-time thread is trying to read or
-write to a file system.  But some people who use real-time kernels
-have been known to do insane things, including controlling
-laser-wielding industrial robots.  :-)
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Link: http://lkml.kernel.org/r/519BC066.5080600@acm.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/transaction.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/timer.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -517,10 +517,10 @@ int jbd2__journal_restart(handle_t *hand
- 		   &transaction->t_outstanding_credits);
- 	if (atomic_dec_and_test(&transaction->t_updates))
- 		wake_up(&journal->j_wait_updates);
-+	tid = transaction->t_tid;
- 	spin_unlock(&transaction->t_handle_lock);
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -149,9 +149,11 @@ static unsigned long round_jiffies_commo
+ 	/* now that we have rounded, subtract the extra skew again */
+ 	j -= cpu * 3;
  
- 	jbd_debug(2, "restarting handle %p\n", handle);
--	tid = transaction->t_tid;
- 	need_to_start = !tid_geq(journal->j_commit_request, tid);
- 	read_unlock(&journal->j_state_lock);
- 	if (need_to_start)
+-	if (j <= jiffies) /* rounding ate our timeout entirely; */
+-		return original;
+-	return j;
++	/*
++	 * Make sure j is still in the future. Otherwise return the
++	 * unmodified value.
++	 */
++	return time_is_after_jiffies(j) ? j : original;
+ }
+ 
+ /**
 
 
