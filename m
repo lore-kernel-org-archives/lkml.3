@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab3GSV5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:57:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52104 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab3GSV5b (ORCPT
+	id S1752744Ab3GSWAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 18:00:38 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49715 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3GSWAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:57:31 -0400
-Date: Fri, 19 Jul 2013 14:57:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jerry <uulinux@gmail.com>
-Cc: zhuwei.lu@archermind.com, tianfu.huang@archermind.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: negative left shift count when PAGE_SHIFT > 20
-Message-Id: <20130719145729.840eeae88fad89d2c6915163@linux-foundation.org>
-In-Reply-To: <CAAV+Mu7A5H_T2EroUDWaCSOs1j5_Z6hRNyzrwU2N1WPAOZ=JDw@mail.gmail.com>
-References: <1374166572-7988-1-git-send-email-uulinux@gmail.com>
-	<20130718143928.4f9b45807956e2fdb1ee3a22@linux-foundation.org>
-	<CAAV+Mu7A5H_T2EroUDWaCSOs1j5_Z6hRNyzrwU2N1WPAOZ=JDw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Fri, 19 Jul 2013 18:00:37 -0400
+Message-ID: <1374271561.7397.1089.camel@haakon3.risingtidesystems.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        James Smart <James.Smart@Emulex.Com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
+        "kmo@daterainc.com" <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Hannes Reinecke <hare@suse.de>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>
+Date: Fri, 19 Jul 2013 15:06:01 -0700
+In-Reply-To: <1374270366.2266.70.camel@dabdike>
+References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
+	 <20130712010223.GA15673@kroah.com>
+	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
+	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
+	 <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+	 <20130716211529.GQ22392@kernel.dk> <1374036751.2045.20.camel@dabdike>
+	 <1374268967.7397.1075.camel@haakon3.risingtidesystems.com>
+	 <1374270366.2266.70.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Jul 2013 07:47:02 +0800 Jerry <uulinux@gmail.com> wrote:
-
-> 2013/7/19 Andrew Morton <akpm@linux-foundation.org>:
-> > On Fri, 19 Jul 2013 00:56:12 +0800 Jerry <uulinux@gmail.com> wrote:
-> >
-> >> When PAGE_SHIFT > 20, the result of "20 - PAGE_SHIFT" is negative. The
-> >> calculating here will generate an unexpected result. In addition, if
-> >> PAGE_SHIFT > 20, The memory size represented by numentries was already
-> >> integral multiple of 1MB.
-> >>
-> >
-> > If you tell me that you have a machine which has PAGE_SIZE=2MB and this
-> > was the only problem which prevented Linux from running on that machine
-> > then I'll apply the patch ;)
-> >
+On Fri, 2013-07-19 at 21:46 +0000, James Bottomley wrote:
+> On Fri, 2013-07-19 at 14:22 -0700, Nicholas A. Bellinger wrote:
+> > On Wed, 2013-07-17 at 04:52 +0000, James Bottomley wrote:
+> > > On Tue, 2013-07-16 at 15:15 -0600, Jens Axboe wrote:
+> > > > On Tue, Jul 16 2013, Nicholas A. Bellinger wrote:
+> > > > > On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
+> > 
+> > <SNIP>
+> > 
+> > > > > > Lets start with discussing this on the list, please, and then see where
+> > > > > > we go from there ...
+> > > > > > 
+> > > > > 
+> > > > > Yes, the discussion is beginning to make it's way to the list.  I've
+> > > > > mostly been waiting for blk-mq to get a wider review before taking the
+> > > > > early scsi-mq prototype driver to a larger public audience.
+> > > > > 
+> > > > > Primarily, I'm now reaching out to the people most effected by existing
+> > > > > scsi_request_fn() based performance limitations.  Most of them have
+> > > > > abandoned existing scsi_request_fn() based logic in favor of raw block
+> > > > > make_request() based drivers, and are now estimating the amount of
+> > > > > effort to move to an scsi-mq based approach.
+> > > > > 
+> > > > > Regardless, as the prototype progresses over the next months, having a
+> > > > > face-to-face discussion with the key parties in the room would be very
+> > > > > helpful given the large amount of effort involved to actually make this
+> > > > > type of generational shift in SCSI actually happen.
+> > > > 
+> > > > There's a certain amount of overlap with the aio/O_DIRECT work as well.
+> > > > But if it's not a general session, could always be a BOF or something.
+> > > > 
+> > > > I'll second the argument that most technical topics probably DO belong
+> > > > in a topic related workshop. But that leaves us with basically only
+> > > > process related topics at KS, I don't think it hurts to have a bit of
+> > > > tech meat on the bone too. At least I personally miss that part of KS
+> > > > from years gone by.
+> > > 
+> > > Heh well, given that most of the block mq discussions at LSF have been
+> > > you saying you really should get around to cleaning up and posting the
+> > > code, you'll understand my wanting to see that happen first ...
+> > > 
+> > > I suppose we could try to run a storage workshop within KS, but I think
+> > > most of the mini summit slots have already gone.
+> > 
+> > That would be great, given there is a reasonable level of interest from
+> > various parities, and the pain threshold for existing scsi small block
+> > random I/O performance is high..
+> > 
+> > When will we know if there is a workshop / mini summit slot available..?
+> > 
+> > (CC'ing Mike Christie as well for open-iscsi/scsi-mq bits)
+> > 
+> > > There's also plumbers
+> > > if all slots are gone (I would say that, being biased and on the
+> > > programme committee) Ric is running the storage and Filesystems MC
+> > > 
+> > > http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/tracks/159
+> > 
+> > FYI, I'm not trying to 'sell' scsi-mq to the larger community yet, but
+> > rather interested in getting the right scsi/block/LLD people in the same
+> > room at KS for an hour or two to discuss implementation details, given
+> > the scope of the effort involved.
 > 
-> Hi Morton:
-> I just "grep -rn "#define\s\+PAGE_SHIFT" arch/", and find the
-> PAGE_SHIFT in some architecture is very big.
-> such as the following in "arch/hexagon/include/asm/page.h"
-> ....
-> #ifdef CONFIG_PAGE_SIZE_256KB
-> #define PAGE_SHIFT 18
-> #define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_256KB
-> #endif
+> Well, so that's why I think plumbers might be a better venue: we'll have
+> more of the actual storage people there.  Usually we get at most 2-3
+> storage people to KS compared to the 25 or so we usually have at LSF ...
+> that makes KS not a very good venue for storage centric discussions.
 > 
-> #ifdef CONFIG_PAGE_SIZE_1MB
-> #define PAGE_SHIFT 20
-> #define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_1MB
-> #endif
-> .....
 
-Good heavens.
+The most relevant people for the discussion are Jens, Hannes, Christoph,
+Tejun, Martin, Mike, and you.
 
-> In my patch, I think compiler would optimize "if (20 > PAGE_SIZE)", it
-> won't generate any machine instruction. Just a guarantee.
+I know these folks are regular attendees for KS, but typically not for
+plumbers, which is why I made this KS topic proposal in the first place.
 
-Well the existing code is a bit silly looking.  Why can't we just do
+--nab
 
-	/* round applicable memory size up to nearest megabyte */
-	if (PAGE_SHIFT < 20)
-		numentries = round_up(nr_kernel_pages, (1 << 20)/PAGE_SIZE);
-
-or similar?
