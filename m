@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab3GSUXq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:23:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51438 "EHLO
+	id S1752022Ab3GSUXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:23:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58764 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab3GSUXG (ORCPT
+	with ESMTP id S1751601Ab3GSUXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:23:06 -0400
+	Fri, 19 Jul 2013 16:23:07 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
@@ -14,210 +14,102 @@ Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 15/15] ARM: shmobile: r8a7740: add support for 2 RTDMACs
-Date: Fri, 19 Jul 2013 22:22:56 +0200
-Message-Id: <1374265376-30777-6-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v2 13/15] ARM: shmobile: r8a73a4: add a DT node and a clock alias for the DMAC
+Date: Fri, 19 Jul 2013 22:22:54 +0200
+Message-Id: <1374265376-30777-4-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:kUGfYP3NUkjHStIiJdONbxx6uXq/1jeNx2p9S/+Nt0D
- kcb0H7t3u98lVqpDHMR+miJ9ydeFfMWLy3CuCy6KHYOB7ncIUO
- fXXoa0pQUrezjyrWu1N+1UYgPca4cm+64ssmAJ4jPqGTBEJf8G
- r2Zz0QOpNc+pJg43b7fXUqTfjoPX8as7n1tTsvWtyc91z2GBUz
- HaU+sMKFKRkeyKyX5mhFeE+k4t/+cJhS+wJMNzZfNXZbxOOZ1c
- 4idTkvoSPg6wIUd/2auHZ53PUKt+ZNbJvAb9zI0WlN54VftBHF
- 5ed1MW8NSCPUfmGNtqlUypzpjtpo22gzpfkWPO9p/tNMUmFdgb
- 8CDt7lD72s+2qM9dvEeUuhJ6QZ2Fu1bi77Sb4qXT3egLfev92a
- bZooqHlq2gajA==
+X-Provags-ID: V02:K0:finf6faoST7J0BV02J8IPghO+37p8Ge7s3T1hrObp6a
+ vtmM30bUo7wpzuPUODuaOckHe7SpLMEPY8Vshn0WkeXpD/PTMo
+ z/0uJe74CJxNWjcmBVcT5WINWEAiX3qJWKC5nEW0kGcGANaqmC
+ WC2oRlKT/kAv/ErNOhpwC7H/2AeOqDchzw8IsUy6wVwTm/LY+u
+ 9DklshV+91f3ElNZwG5vCfw53HMHYv2lCYC9jMyqG40WTDl4do
+ hraDPdAQkgG/JkY5IBOItn1V8lZE+uHqmGYj4HxxVc0VHTVC8C
+ 0JGzl4jXtIaNVbkqZOJKCI7ZUDO44hOqyfWTMufjmqvNp186Mt
+ gG7eCxXYvVnHpzUyAMKtvftvMuaYvjvCRlE6P+QY144VtZHlHZ
+ hgsbEj0Tr+Hpw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to 3 SYS-DMACs, r817740 SoCs also have 2 RT-DMACs. This patch
-adds support for them in both DT- amd non-DT-modes.
+Add a DT node for the only system DMAC instance on r8a73a4. The RT DMAC
+can be added later under the same multiplexer, because they can serve the
+same slaves and use the same MID-RID values. Configuration data is
+supplied to the driver, using a compatibility match string.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- arch/arm/boot/dts/r8a7740.dtsi         |   34 +++++++++++++++
- arch/arm/mach-shmobile/clock-r8a7740.c |    8 ++++
- arch/arm/mach-shmobile/setup-r8a7740.c |   72 ++++++++++++++++++++++++++++++++
- 3 files changed, 114 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/r8a73a4.dtsi         |   43 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-shmobile/clock-r8a73a4.c |    1 +
+ 2 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
-index 4797f1e..638ada2 100644
---- a/arch/arm/boot/dts/r8a7740.dtsi
-+++ b/arch/arm/boot/dts/r8a7740.dtsi
-@@ -175,6 +175,40 @@
- 					"ch0", "ch1", "ch2", "ch3",
- 					"ch4", "ch5";
- 		};
-+
-+		dma3: dma-controller@ffc18020 {
-+			compatible = "renesas,shdma-r8a7740";
-+			reg = <0xffc18020 0x270>,
-+				<0xffc19000 0xc>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 196 4
-+					0 190 4
-+					0 191 4
-+					0 192 4
-+					0 193 4
-+					0 194 4
-+					0 195 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5";
-+		};
-+
-+		dma4: dma-controller@ffc28020 {
-+			compatible = "renesas,shdma-r8a7740";
-+			reg = <0xffc28020 0x270>,
-+				<0xffc29000 0xc>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 158 4
-+					0 152 4
-+					0 153 4
-+					0 154 4
-+					0 155 4
-+					0 156 4
-+					0 157 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5";
-+		};
+diff --git a/arch/arm/boot/dts/r8a73a4.dtsi b/arch/arm/boot/dts/r8a73a4.dtsi
+index 47bf326..2f1bec8 100644
+--- a/arch/arm/boot/dts/r8a73a4.dtsi
++++ b/arch/arm/boot/dts/r8a73a4.dtsi
+@@ -78,6 +78,49 @@
+ 				<0 56 4>, <0 57 4>;
  	};
  
- 	i2c0: i2c@fff20000 {
-diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
-index 4e76fb8..2e67f6a 100644
---- a/arch/arm/mach-shmobile/clock-r8a7740.c
-+++ b/arch/arm/mach-shmobile/clock-r8a7740.c
-@@ -451,6 +451,8 @@ static struct clk fsidivs[] = {
- 
- /* MSTP */
- enum {
-+	MSTP023, MSTP021,
++	dmac: dma-multiplexer@0 {
++		compatible = "renesas,shdma-mux";
++		#dma-cells = <1>;
++		dma-channels = <20>;
++		dma-requests = <256>;
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
 +
- 	MSTP128, MSTP127, MSTP125,
- 	MSTP116, MSTP111, MSTP100, MSTP117,
- 
-@@ -469,6 +471,8 @@ enum {
- };
- 
- static struct clk mstp_clks[MSTP_NR] = {
-+	[MSTP021] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR0, 21, 0), /* RT-DMAC1 */
-+	[MSTP023] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR0, 23, 0), /* RT-DMAC2 */
- 	[MSTP128] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR1, 28, 0), /* CEU21 */
- 	[MSTP127] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR1, 27, 0), /* CEU20 */
- 	[MSTP125] = SH_CLK_MSTP32(&div6_clks[DIV6_SUB],	SMSTPCR1, 25, 0), /* TMU0 */
-@@ -547,6 +551,10 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_CON_ID("sub_clk",		&div6_clks[DIV6_SUB]),
- 
- 	/* MSTP32 clocks */
-+	CLKDEV_DEV_ID("shdma-r8a7740.4",	&mstp_clks[MSTP021]),
-+	CLKDEV_DEV_ID("ffc18020.dma-controller",&mstp_clks[MSTP021]),
-+	CLKDEV_DEV_ID("shdma-r8a7740.5",	&mstp_clks[MSTP023]),
-+	CLKDEV_DEV_ID("ffc28020.dma-controller",&mstp_clks[MSTP023]),
- 	CLKDEV_DEV_ID("sh_mobile_lcdc_fb.0",	&mstp_clks[MSTP100]),
- 	CLKDEV_DEV_ID("sh_tmu.3",		&mstp_clks[MSTP111]),
- 	CLKDEV_DEV_ID("sh_tmu.4",		&mstp_clks[MSTP111]),
-diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
-index 01dcb3b..2dc2d652 100644
---- a/arch/arm/mach-shmobile/setup-r8a7740.c
-+++ b/arch/arm/mach-shmobile/setup-r8a7740.c
-@@ -626,6 +626,62 @@ static struct resource r8a7740_dmae2_resources[] = {
- 	},
- };
- 
-+/* Resource order important! */
-+static struct resource r8a7740_rtdma0_resources[] = {
-+	{
-+		/* Channel registers and DMAOR */
-+		.start	= 0xffc18020,
-+		.end	= 0xffc1828f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		/* DMARSx */
-+		.start	= 0xffc19000,
-+		.end	= 0xffc1900b,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.name	= "error_irq",
-+		.start	= gic_spi(196),
-+		.end	= gic_spi(196),
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		/* IRQ for channels 0-5 */
-+		.start	= gic_spi(190),
-+		.end	= gic_spi(195),
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
++		dma0: dma-controller@e6700020 {
++			compatible = "renesas,shdma-r8a73a4";
++			reg = <0 0xe6700020 0 0x89e0>;
++			interrupt-parent = <&gic>;
++			interrupts = <0 220 4
++					0 200 4
++					0 201 4
++					0 202 4
++					0 203 4
++					0 204 4
++					0 205 4
++					0 206 4
++					0 207 4
++					0 208 4
++					0 209 4
++					0 210 4
++					0 211 4
++					0 212 4
++					0 213 4
++					0 214 4
++					0 215 4
++					0 216 4
++					0 217 4
++					0 218 4
++					0 219 4>;
++			interrupt-names = "error",
++					"ch0", "ch1", "ch2", "ch3",
++					"ch4", "ch5", "ch6", "ch7",
++					"ch8", "ch9", "ch10", "ch11",
++					"ch12", "ch13", "ch14", "ch15",
++					"ch16", "ch17", "ch18", "ch19";
++		};
++	};
 +
-+/* Resource order important! */
-+static struct resource r8a7740_rtdma1_resources[] = {
-+	{
-+		/* Channel registers and DMAOR */
-+		.start	= 0xffc28020,
-+		.end	= 0xffc2828f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		/* DMARSx */
-+		.start	= 0xffc29000,
-+		.end	= 0xffc2900b,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.name	= "error_irq",
-+		.start	= gic_spi(158),
-+		.end	= gic_spi(158),
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		/* IRQ for channels 0-5 */
-+		.start	= gic_spi(152),
-+		.end	= gic_spi(157),
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
- static struct platform_device dma0_device = {
- 	.name		= "shdma-r8a7740",
- 	.id		= 0,
-@@ -647,6 +703,20 @@ static struct platform_device dma2_device = {
- 	.num_resources	= ARRAY_SIZE(r8a7740_dmae2_resources),
- };
- 
-+static struct platform_device rtdma0_device = {
-+	.name		= "shdma-r8a7740",
-+	.id		= 4,
-+	.resource	= r8a7740_rtdma0_resources,
-+	.num_resources	= ARRAY_SIZE(r8a7740_rtdma0_resources),
-+};
-+
-+static struct platform_device rtdma1_device = {
-+	.name		= "shdma-r8a7740",
-+	.id		= 5,
-+	.resource	= r8a7740_rtdma1_resources,
-+	.num_resources	= ARRAY_SIZE(r8a7740_rtdma1_resources),
-+};
-+
- /* USB-DMAC */
- static const struct sh_dmae_channel r8a7740_usb_dma_channels[] = {
- 	{
-@@ -781,6 +851,8 @@ static struct platform_device *r8a7740_late_devices[] __initdata = {
- 	&dma0_device,
- 	&dma1_device,
- 	&dma2_device,
-+	&rtdma0_device,
-+	&rtdma1_device,
- 	&usb_dma_device,
- 	&pmu_device,
- };
+ 	thermal@e61f0000 {
+ 		compatible = "renesas,rcar-thermal";
+ 		reg = <0 0xe61f0000 0 0x14>, <0 0xe61f0100 0 0x38>,
+diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
+index cd62b11..7d6d2a3 100644
+--- a/arch/arm/mach-shmobile/clock-r8a73a4.c
++++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
+@@ -580,6 +580,7 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
+ 	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
+ 	CLKDEV_DEV_ID("shdma-r8a73a4.0", &mstp_clks[MSTP218]),
++	CLKDEV_DEV_ID("e6700020.dma-controller", &mstp_clks[MSTP218]),
+ 	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
+ 	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
+ 	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
 -- 
 1.7.2.5
 
