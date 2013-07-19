@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965972Ab3GSFlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:41:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39724 "EHLO
+	id S965959Ab3GSFlb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:41:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965644Ab3GSF0j (ORCPT
+	with ESMTP id S965637Ab3GSF0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:39 -0400
+	Fri, 19 Jul 2013 01:26:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-pci@vger.kernel.org
-Subject: [ 29/72] xen/pcifront: Deal with toolstack missing XenbusStateClosing state.
-Date: Thu, 18 Jul 2013 22:25:46 -0700
-Message-Id: <20130719052601.856152676@linuxfoundation.org>
+        Laszlo Ersek <lersek@redhat.com>, John Haxby <john.haxby@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 28/72] xen/time: remove blocked time accounting from xen "clockchip"
+Date: Thu, 18 Jul 2013 22:25:45 -0700
+Message-Id: <20130719052601.789383930@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -28,91 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Laszlo Ersek <lersek@redhat.com>
 
-commit 098b1aeaf4d6149953b8f1f8d55c21d85536fbff upstream.
+commit 0b0c002c340e78173789f8afaa508070d838cf3d upstream.
 
-There are two tool-stack that can instruct the Xen PCI frontend
-and backend to change states: 'xm' (Python code with a daemon),
-and 'xl' (C library - does not keep state changes).
+... because the "clock_event_device framework" already accounts for idle
+time through the "event_handler" function pointer in
+xen_timer_interrupt().
 
-With the 'xm', the path to disconnect a single PCI device (xm pci-detach
-<guest> <BDF>) is:
+The patch is intended as the completion of [1]. It should fix the double
+idle times seen in PV guests' /proc/stat [2]. It should be orthogonal to
+stolen time accounting (the removed code seems to be isolated).
 
-4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)->5(Closing*).
+The approach may be completely misguided.
 
-The * is for states that the tool-stack sets. For 'xl', it is similar:
+[1] https://lkml.org/lkml/2011/10/6/10
+[2] http://lists.xensource.com/archives/html/xen-devel/2010-08/msg01068.html
 
-4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
+John took the time to retest this patch on top of v3.10 and reported:
+"idle time is correctly incremented for pv and hvm for the normal
+case, nohz=off and nohz=idle." so lets put this patch in.
 
-Both of them also tear down the XenBus structure, so the backend
-state ends up going in the 3(Initialised) and calls pcifront_xenbus_remove.
-
-When a PCI device is plugged back in (xm pci-attach <guest> <BDF>)
-both of them follow the same pattern:
-
-2(InitWait*), 3(Initialized*), 4(Connected*)->4(Connected).
-
-[xen-pcifront ignores the 2,3 state changes and only acts when
-4 (Connected) has been reached]
-
-Note that this is for a _single_ PCI device. If there were two
-PCI devices and only one was disconnected 'xm' would show the same
-state changes.
-
-The problem is that git commit 3d925320e9e2de162bd138bf97816bda8c3f71be
-("xen/pcifront: Use Xen-SWIOTLB when initting if required") introduced
-a mechanism to initialize the SWIOTLB when the Xen PCI front moves to
-Connected state. It also had some aggressive seatbelt code check that
-would warn the user if one tried to change to Connected state without
-hitting first the Closing state:
-
- pcifront pci-0: PCI frontend already installed!
-
-However, that code can be relaxed and we can continue on working
-even if the frontend is instructed to be the 'Connected' state with
-no devices and then gets tickled to be in 'Connected' state again.
-
-In other words, this 4(Connected)->5(Closing)->4(Connected) state
-was expected, while 4(Connected)->.... anything but 5(Closing)->4(Connected)
-was not. This patch removes that aggressive check and allows
-Xen pcifront to work with the 'xl' toolstack (for one or more
-PCI devices) and with 'xm' toolstack (for more than two PCI
-devices).
-
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org
-[v2: Added in the description about two PCI devices]
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Signed-off-by: John Haxby <john.haxby@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/xen-pcifront.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/xen/time.c |   17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
 
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -678,10 +678,9 @@ static int pcifront_connect_and_init_dma
- 	if (!pcifront_dev) {
- 		dev_info(&pdev->xdev->dev, "Installing PCI frontend\n");
- 		pcifront_dev = pdev;
--	} else {
--		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
-+	} else
- 		err = -EEXIST;
--	}
-+
- 	spin_unlock(&pcifront_dev_lock);
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runsta
+ /* snapshots of runstate info */
+ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
  
- 	if (!err && !swiotlb_nr_tbl()) {
-@@ -848,7 +847,7 @@ static int pcifront_try_connect(struct p
- 		goto out;
+-/* unused ns of stolen and blocked time */
++/* unused ns of stolen time */
+ static DEFINE_PER_CPU(u64, xen_residual_stolen);
+-static DEFINE_PER_CPU(u64, xen_residual_blocked);
  
- 	err = pcifront_connect_and_init_dma(pdev);
--	if (err) {
-+	if (err && err != -EEXIST) {
- 		xenbus_dev_fatal(pdev->xdev, err,
- 				 "Error setting up PCI Frontend");
- 		goto out;
+ /* return an consistent snapshot of 64-bit time/counter value */
+ static u64 get64(const u64 *p)
+@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
+ {
+ 	struct vcpu_runstate_info state;
+ 	struct vcpu_runstate_info *snap;
+-	s64 blocked, runnable, offline, stolen;
++	s64 runnable, offline, stolen;
+ 	cputime_t ticks;
+ 
+ 	get_runstate_snapshot(&state);
+@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
+ 	snap = &__get_cpu_var(xen_runstate_snapshot);
+ 
+ 	/* work out how much time the VCPU has not been runn*ing*  */
+-	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
+ 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
+ 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
+ 
+@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
+ 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
+ 	__this_cpu_write(xen_residual_stolen, stolen);
+ 	account_steal_ticks(ticks);
+-
+-	/* Add the appropriate number of ticks of blocked time,
+-	   including any left-overs from last time. */
+-	blocked += __this_cpu_read(xen_residual_blocked);
+-
+-	if (blocked < 0)
+-		blocked = 0;
+-
+-	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
+-	__this_cpu_write(xen_residual_blocked, blocked);
+-	account_idle_ticks(ticks);
+ }
+ 
+ /* Get the TSC speed from Xen */
 
 
