@@ -1,178 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760285Ab3GSM0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:26:16 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52467 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab3GSM0O (ORCPT
+	id S965231Ab3GSM04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:26:56 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:37683 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab3GSM0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:26:14 -0400
-Message-ID: <51E93062.4090405@hitachi.com>
-Date: Fri, 19 Jul 2013 21:26:10 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 19 Jul 2013 08:26:54 -0400
+Date: Fri, 19 Jul 2013 14:26:53 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Andreas Mohr <andi@lisas.de>,
+        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christian Gmeiner <christian.gmeiner@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: Re: libata / IDE cs5536: 80c cable detect issue (and worse?)
+Message-ID: <20130719122653.GA12554@rhlx01.hs-esslingen.de>
+References: <20130718181355.GA31889@rhlx01.hs-esslingen.de>
+ <20130718182541.GA30707@rhlx01.hs-esslingen.de>
+ <21479812.cJNm40xAqz@amdc1032>
 MIME-Version: 1.0
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH V2 2/2] [BUGFIX] virtio/console: Add pipe_lock/unlock
- for splice_write
-References: <20130719091951.9698.95194.stgit@yunodevel> <20130719091956.9698.30207.stgit@yunodevel>
-In-Reply-To: <20130719091956.9698.30207.stgit@yunodevel>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21479812.cJNm40xAqz@amdc1032>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/19 18:19), Yoshihiro YUNOMAE wrote:
-> Add pipe_lock/unlock for splice_write to avoid oops by following competition:
+On Fri, Jul 19, 2013 at 12:40:38PM +0200, Bartlomiej Zolnierkiewicz wrote:
 > 
-> (1) An application gets fds of a trace buffer, virtio-serial, pipe.
-> (2) The application does fork()
-> (3) The processes execute splice_read(trace buffer) and
->     splice_write(virtio-serial) via same pipe.
+> Hi,
 > 
->         <parent>                   <child>
->   get fds of a trace buffer,
->          virtio-serial, pipe
->           |
->         fork()----------create--------+
->           |                           |
->       splice(read)                    |           ---+
->       splice(write)                   |              +-- no competition
->           |                       splice(read)       |
->           |                       splice(write)   ---+
->           |                           |
->       splice(read)                    |
->       splice(write)               splice(read)    ------ competition
->           |                       splice(write)
+> On Thursday, July 18, 2013 08:25:41 PM Andreas Mohr wrote:
+> > Hi,
+> > 
+> > forgot to mention that I had already added a libata.force=40c boot
+> > after my 80c config issue discovery
+> > which did successfully cause the "limiting to UDMA/33 due to 40c foo" dmesg
+> > yet where there's now initial but strong confirmation via reports
+> > that the resulting UDMA/33 limit did NOT manage to fix corruption issues,
+> > thus it's more strongly likely that the "bound to ill-suited pata_amd driver"
+> > (due to incorrectly configuring speeds, or due to not configuring speeds
+> > at all due to possibly BIOS not providing emulation of PCI register accesses
+> > to Geode bus, which would be properly supported by pata_cs5536 OTOH)
+> > thing is the actual reason and might fix it (fingers crossed).
 > 
-> Two processes share a pipe_inode_info structure. If the child execute
-> splice(read) when the parent tries to execute splice(write), the
-> structure can be broken. Existing virtio-serial driver does not get
-> lock for the structure in splice_write, so this competition will induce
-> oops.
-> 
-> <oops messages>
->  BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
->  IP: [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
->  PGD 7223e067 PUD 72391067 PMD 0
->  Oops: 0000 [#1] SMP
->  Modules linked in: lockd bnep bluetooth rfkill sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr virtio_net virtio_balloon i2c_piix4 i2c_core microcode uinput floppy
->  CPU: 0 PID: 1072 Comm: compete-test Not tainted 3.10.0ws+ #55
->  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
->  task: ffff880071b98000 ti: ffff88007b55e000 task.ti: ffff88007b55e000
->  RIP: 0010:[<ffffffff811a6b5f>]  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
->  RSP: 0018:ffff88007b55fd78  EFLAGS: 00010287
->  RAX: 0000000000000000 RBX: ffff88007b55fe20 RCX: 0000000000000000
->  RDX: 0000000000001000 RSI: ffff88007a95ba30 RDI: ffff880036f9e6c0
->  RBP: ffff88007b55fda8 R08: 00000000000006ec R09: ffff880077626708
->  R10: 0000000000000003 R11: ffffffff8139ca59 R12: ffff88007a95ba30
->  R13: 0000000000000000 R14: ffffffff8139dd00 R15: ffff880036f9e6c0
->  FS:  00007f2e2e3a0740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->  CR2: 0000000000000018 CR3: 0000000071bd1000 CR4: 00000000000006f0
->  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->  Stack:
->   ffffffff8139ca59 ffff88007b55fe20 ffff880036f9e6c0 ffffffff8139dd00
->   ffff8800776266c0 ffff880077626708 ffff88007b55fde8 ffffffff811a6e8e
->   ffff88007b55fde8 ffffffff8139ca59 ffff880036f9e6c0 ffff88007b55fe20
->  Call Trace:
->   [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
->   [<ffffffff8139dd00>] ? virtcons_restore+0x100/0x100
->   [<ffffffff811a6e8e>] __splice_from_pipe+0x7e/0x90
->   [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
->   [<ffffffff8139d739>] port_fops_splice_write+0xe9/0x140
->   [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
->   [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
->   [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
->   [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
->   [<ffffffff8161facf>] tracesys+0xdd/0xe2
->  Code: 49 8b 87 80 00 00 00 4c 8d 24 d0 8b 53 04 41 8b 44 24 0c 4d 8b 6c 24 10 39 d0 89 03 76 02 89 13 49 8b 44 24 10 4c 89 e6 4c 89 ff <ff> 50 18 85 c0 0f 85 aa 00 00 00 48 89 da 4c 89 e6 4c 89 ff 41
->  RIP  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
->   RSP <ffff88007b55fd78>
->  CR2: 0000000000000018
->  ---[ end trace 24572beb7764de59 ]---
-> 
-> V2: Fix a locking problem for error
-
-Thanks, this looks good for me.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-> 
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Amit Shah <amit.shah@redhat.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/char/virtio_console.c |   20 +++++++++++++++-----
->  1 file changed, 15 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index 8722656..8a15af3 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -936,16 +936,21 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
->  	 * pipe->nrbufs == 0 means there are no data to transfer,
->  	 * so this returns just 0 for no data.
->  	 */
-> -	if (!pipe->nrbufs)
-> -		return 0;
-> +	pipe_lock(pipe);
-> +	if (!pipe->nrbufs) {
-> +		ret = 0;
-> +		goto error_out;
-> +	}
->  
->  	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
->  	if (ret < 0)
-> -		return ret;
-> +		goto error_out;
->  
->  	buf = alloc_buf(port->out_vq, 0, pipe->nrbufs);
-> -	if (!buf)
-> -		return -ENOMEM;
-> +	if (!buf) {
-> +		ret = -ENOMEM;
-> +		goto error_out;
-> +	}
->  
->  	sgl.n = 0;
->  	sgl.len = 0;
-> @@ -953,12 +958,17 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
->  	sgl.sg = buf->sg;
->  	sg_init_table(sgl.sg, sgl.size);
->  	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
-> +	pipe_unlock(pipe);
->  	if (likely(ret > 0))
->  		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
->  
->  	if (unlikely(ret <= 0))
->  		free_buf(buf, true);
->  	return ret;
-> +
-> +error_out:
-> +	pipe_unlock(pipe);
-> +	return ret;
->  }
->  
->  static unsigned int port_fops_poll(struct file *filp, poll_table *wait)
-> 
-> 
+> UDMA/66 (and higher) requires 80-wire cable to work (if the vendor states
+> that UDMA/66 is supported then UDMA/100 should also work on CS5536). UDMA/33
+> should work just fine with 40-wire cable. Therefore this indeed sounds more
+> like wrong driver being selected issue than a cable problem.
 
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Hohumm, news flash:
+
+We just found out that such image corruption
+(not sure yet whether it's an *identical* case of corruption though)
+also can occur when having the CF image written by a premium USB combo writer
+on a *completely different machine* (should have done that counter check
+somewhat earlier, sorry...).
+IOW, this quite likely frees the driver from being the culprit
+for our specific case, i.e. we're likely talking about a stupid software issue.
+
+BUT, I'm still suspecting that we have a severe case of having the wrong driver activated:
+
+. lsmod:
+sd_mod                 25977  2
+snd_cs5535audio         6485  0
+ata_generic             2239  0
+pata_cs5536             2294  0
+pata_amd                6641  1
+libata                117483  3 ata_generic,pata_cs5536,pata_amd
+scsi_mod              106093  2 sd_mod,libata
+cs5535_gpio             1756  0
+
+Pray tell me, this does look like pata_cs5536 gets loaded
+due to also containing the PCI ID, yet then fails to bind,
+as opposed to pata_amd which does (reference count 1)?
+
+We also tried the pata_cs5536.msr=1 boot parm:
+
+[    0.000000] Kernel command line: [..........] pata_cs5536.msr=1 libata.force=40c [............]
+
+, and that did NOT cause the only recognizeable pata_cs5536-triggered
+log message
+                printk(KERN_ERR DRV_NAME ": Using MSR regs instead of PCI\n");
+to occur in dmesg, IOW this driver *is* inactive.
+
+We only had a
+
+[   68.861778] pata_amd 0000:00:0f.2: version 0.4.1
+[   68.864570] scsi0 : pata_amd
+[   68.865240] scsi1 : pata_amd
 
 
+
+So, AFAICS, this leaves us with up to three (perhaps four?) corrections
+that one would want to have:
+
+- remove the woefully improper (forgotten!?!) CS5536 ID from pata_amd
+  (this correction is what one would want to have, and this would work fine,
+  right? Famous last words...)
+
+- do a cable correction patch for libata side (I do think that indicating
+  40c if even one device is 40c-only is the way to go [as long as libata
+  cannot handle per-device settings], for safety reasons,
+  and if so that's probably also preferrable to advertising an UNK value,
+  since UNK would skip towards device-side cable detection
+  which might be unreliable in case ATA ID values (i.e., ATA_ID_HW_CONFIG)
+  happen to be incorrect,
+  e.g. especially in the case of CF cards (OTOH it specifically looks
+  for a 0x2000 bit being *set* for 80c indication,
+  thus it should be reliable after all since you'd expect ignorant/older
+  devices to provide zeroed fields only...)
+
+- and what about cable correction patch for IDE side? Since IDE layer
+  cable probing sequence algo appears to be different ("why??"),
+  this might require advertising a different cable flag
+
+- perhaps pata_cs5536 DMI quirk for that board, in case UDMA/100
+  (BIOS reports cable 0x03 value i.e. both 80c) happens to be too fast,
+  but given the advanced state of our discussion (pata_cs5536 driver
+  even completely inactive!!) and the DMI recognition issues that I reported
+  (empty strings) I don't think that's relevant, at least not now
+
+
+Thanks,
+
+Andreas Mohr
