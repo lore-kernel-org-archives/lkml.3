@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759765Ab3GSRD5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 13:03:57 -0400
-Received: from mail.sysmocom.de ([144.76.43.93]:12011 "EHLO mail.sysmocom.de"
+	id S1760515Ab3GSRFa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 13:05:30 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36021 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562Ab3GSRD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 13:03:56 -0400
-Date: Fri, 19 Jul 2013 19:03:54 +0200
-From: Holger Hans Peter Freyther <holger@freyther.de>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: /proc/timer_list and weird behavior with dropbear
-Message-ID: <20130719170354.GE5902@xiaoyu.lan>
-References: <20130719152800.GA20792@xiaoyu.lan>
- <51E95F0B.6080703@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E95F0B.6080703@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760049Ab3GSRF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 13:05:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,703,1367996400"; 
+   d="scan'208";a="333956846"
+From: "Luck, Tony" <tony.luck@intel.com>
+Date: Fri, 19 Jul 2013 09:50:15 -0700
+Subject: [PATCH] mce: acpi/apei: Only disable banks listed in HEST if mce is configured
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Message-Id: <0129220@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 10:45:15AM -0500, Nathan Zimmer wrote:
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
 
-> I hadn't noticed anything.
-> Let me try your program and see what I may have missed.
+Randconfig testing found this error:
+>> hest.c(.init.text+0x6004): undefined reference to 'mce_disable_bank'
 
-Hi,
+Fix by wrapping body of hest_parse_cmc() inside #ifdef CONFIG_X86_MCE
 
-I neither know the semantics of the timer_list nor how to use
-seq_file correctly. What happens is that timer_list_next will only
-be called once. This means that iter->cpu will never be increased.
+Reported-by: "Wu, Fengguang" <fengguang.wu@intel.com>
+Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
 
-This just moves to the next CPU when stop is called (e.g. nothing
-was added once the print_tickdevice was printed). Do you think
-this could be correct?
+[Peter: Thanks for pulling Naveen's series from my ras tree. Fengguang's
+ testbuild robot promtly found this build issue. Please apply this patch
+ on top of the x86/mce branch. - Thanks]
 
+ drivers/acpi/apei/hest.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-
-diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-index 3bdf283..8d36a3d 100644
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -327,8 +327,10 @@ static void *timer_list_next(struct seq_file *file, void *v, loff_t *offset)
- 	return timer_list_start(file, offset);
- }
- 
--static void timer_list_stop(struct seq_file *seq, void *v)
-+static void timer_list_stop(struct seq_file *file, void *v)
+diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
+index 5020245..f5e37f3 100644
+--- a/drivers/acpi/apei/hest.c
++++ b/drivers/acpi/apei/hest.c
+@@ -128,6 +128,7 @@ EXPORT_SYMBOL_GPL(apei_hest_parse);
+  */
+ static int __init hest_parse_cmc(struct acpi_hest_header *hest_hdr, void *data)
  {
-+	struct timer_list_iter *iter = file->private;
-+	iter->cpu = cpumask_next(iter->cpu, cpu_online_mask);
++#ifdef CONFIG_X86_MCE
+ 	int i;
+ 	struct acpi_hest_ia_corrected *cmc;
+ 	struct acpi_hest_ia_error_bank *mc_bank;
+@@ -152,7 +153,7 @@ static int __init hest_parse_cmc(struct acpi_hest_header *hest_hdr, void *data)
+ 	mc_bank = (struct acpi_hest_ia_error_bank *)(cmc + 1);
+ 	for (i = 0; i < cmc->num_hardware_banks; i++, mc_bank++)
+ 		mce_disable_bank(mc_bank->bank_number);
+-
++#endif
+ 	return 1;
  }
  
- static const struct seq_operations timer_list_sops = {
+-- 
+1.8.1.4
+
