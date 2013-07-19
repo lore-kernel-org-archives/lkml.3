@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965959Ab3GSFlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:41:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39719 "EHLO
+	id S965966Ab3GSFlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:41:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39715 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965637Ab3GSF0i (ORCPT
+	with ESMTP id S965433Ab3GSF0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:38 -0400
+	Fri, 19 Jul 2013 01:26:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laszlo Ersek <lersek@redhat.com>, John Haxby <john.haxby@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 28/72] xen/time: remove blocked time accounting from xen "clockchip"
-Date: Thu, 18 Jul 2013 22:25:45 -0700
-Message-Id: <20130719052601.789383930@linuxfoundation.org>
+        Zach Bobroff <zacharyb@ami.com>, Matt Fleming <matt.fleming@intel.com>
+Subject: [ 27/72] x86, efi: retry ExitBootServices() on failure
+Date: Thu, 18 Jul 2013 22:25:44 -0700
+Message-Id: <20130719052601.721799876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,83 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laszlo Ersek <lersek@redhat.com>
+From: Zach Bobroff <zacharyb@ami.com>
 
-commit 0b0c002c340e78173789f8afaa508070d838cf3d upstream.
+commit d3768d885c6ccbf8a137276843177d76c49033a7 upstream.
 
-... because the "clock_event_device framework" already accounts for idle
-time through the "event_handler" function pointer in
-xen_timer_interrupt().
+ExitBootServices is absolutely supposed to return a failure if any
+ExitBootServices event handler changes the memory map.  Basically the
+get_map loop should run again if ExitBootServices returns an error the
+first time.  I would say it would be fair that if ExitBootServices gives
+an error the second time then Linux would be fine in returning control
+back to BIOS.
 
-The patch is intended as the completion of [1]. It should fix the double
-idle times seen in PV guests' /proc/stat [2]. It should be orthogonal to
-stolen time accounting (the removed code seems to be isolated).
+The second change is the following line:
 
-The approach may be completely misguided.
+again:
+        size += sizeof(*mem_map) * 2;
 
-[1] https://lkml.org/lkml/2011/10/6/10
-[2] http://lists.xensource.com/archives/html/xen-devel/2010-08/msg01068.html
+Originally you were incrementing it by the size of one memory map entry.
+The issue here is all related to the low_alloc routine you are using.
+In this routine you are making allocations to get the memory map itself.
+Doing this allocation or allocations can affect the memory map by more
+than one record.
 
-John took the time to retest this patch on top of v3.10 and reported:
-"idle time is correctly incremented for pv and hvm for the normal
-case, nohz=off and nohz=idle." so lets put this patch in.
-
-Signed-off-by: Laszlo Ersek <lersek@redhat.com>
-Signed-off-by: John Haxby <john.haxby@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[ mfleming - changelog, code style ]
+Signed-off-by: Zach Bobroff <zacharyb@ami.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/time.c |   17 ++---------------
- 1 file changed, 2 insertions(+), 15 deletions(-)
+ arch/x86/boot/compressed/eboot.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runsta
- /* snapshots of runstate info */
- static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -992,18 +992,20 @@ static efi_status_t exit_boot(struct boo
+ 	efi_memory_desc_t *mem_map;
+ 	efi_status_t status;
+ 	__u32 desc_version;
++	bool called_exit = false;
+ 	u8 nr_entries;
+ 	int i;
  
--/* unused ns of stolen and blocked time */
-+/* unused ns of stolen time */
- static DEFINE_PER_CPU(u64, xen_residual_stolen);
--static DEFINE_PER_CPU(u64, xen_residual_blocked);
+ 	size = sizeof(*mem_map) * 32;
  
- /* return an consistent snapshot of 64-bit time/counter value */
- static u64 get64(const u64 *p)
-@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
- {
- 	struct vcpu_runstate_info state;
- 	struct vcpu_runstate_info *snap;
--	s64 blocked, runnable, offline, stolen;
-+	s64 runnable, offline, stolen;
- 	cputime_t ticks;
+ again:
+-	size += sizeof(*mem_map);
++	size += sizeof(*mem_map) * 2;
+ 	_size = size;
+ 	status = low_alloc(size, 1, (unsigned long *)&mem_map);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
  
- 	get_runstate_snapshot(&state);
-@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
- 	snap = &__get_cpu_var(xen_runstate_snapshot);
++get_map:
+ 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
+ 				mem_map, &key, &desc_size, &desc_version);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+@@ -1029,8 +1031,20 @@ again:
+ 	/* Might as well exit boot services now */
+ 	status = efi_call_phys2(sys_table->boottime->exit_boot_services,
+ 				handle, key);
+-	if (status != EFI_SUCCESS)
+-		goto free_mem_map;
++	if (status != EFI_SUCCESS) {
++		/*
++		 * ExitBootServices() will fail if any of the event
++		 * handlers change the memory map. In which case, we
++		 * must be prepared to retry, but only once so that
++		 * we're guaranteed to exit on repeated failures instead
++		 * of spinning forever.
++		 */
++		if (called_exit)
++			goto free_mem_map;
++
++		called_exit = true;
++		goto get_map;
++	}
  
- 	/* work out how much time the VCPU has not been runn*ing*  */
--	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
- 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
- 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
- 
-@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
- 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
- 	__this_cpu_write(xen_residual_stolen, stolen);
- 	account_steal_ticks(ticks);
--
--	/* Add the appropriate number of ticks of blocked time,
--	   including any left-overs from last time. */
--	blocked += __this_cpu_read(xen_residual_blocked);
--
--	if (blocked < 0)
--		blocked = 0;
--
--	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
--	__this_cpu_write(xen_residual_blocked, blocked);
--	account_idle_ticks(ticks);
- }
- 
- /* Get the TSC speed from Xen */
+ 	/* Historic? */
+ 	boot_params->alt_mem_k = 32 * 1024;
 
 
