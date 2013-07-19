@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965983Ab3GSFi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:38:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39883 "EHLO
+	id S965957Ab3GSFi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:38:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39887 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965674Ab3GSF0p (ORCPT
+	with ESMTP id S965676Ab3GSF0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:26:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
+        Daniel Rowe <bart@fathom13.com>, Lv Zheng <lv.zheng@intel.com>,
+        Bob Moore <robert.moore@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 33/72] ACPI / EC: Add HP Folio 13 to ec_dmi_table in order to skip DSDT scan
-Date: Thu, 18 Jul 2013 22:25:50 -0700
-Message-Id: <20130719052602.133598604@linuxfoundation.org>
+Subject: [ 34/72] ACPICA: Do not use extended sleep registers unless HW-reduced bit is set
+Date: Thu, 18 Jul 2013 22:25:51 -0700
+Message-Id: <20130719052602.200454404@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,37 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit eff9a4b62b14cf0d9913e3caf1f26f8b7a6105c9 upstream.
+commit 7cec7048fe22e3e92389da2cd67098f6c4284e7f upstream.
 
-HP Folio 13's BIOS defines CMOS RTC Operation Region and the EC's
-_REG method will access that region.  To allow the CMOS RTC region
-handler to be installed before the EC _REG method is first invoked,
-add ec_skip_dsdt_scan() as HP Folio 13's callback to ec_dmi_table.
+Previous implementation incorrectly used the ACPI 5.0 extended
+sleep registers if they were simply populated. This caused
+problems on some non-HW-reduced machines. As per the ACPI spec,
+they should only be used if the HW-reduced bit is set.  Lv Zheng,
+ACPICA BZ 1020.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=54621
-Reported-and-tested-by: Stefan Nagy <public@stefan-nagy.at>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Reported-by: Daniel Rowe <bart@fathom13.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=54181
+References: https://bugs.acpica.org/show_bug.cgi?id=1020
+Bisected-by: Brint E. Kriebel <kernel@bekit.net>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/acpi/acpica/hwxfsleep.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -983,6 +983,10 @@ static struct dmi_system_id __initdata e
- 	ec_enlarge_storm_threshold, "CLEVO hardware", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
- 	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
-+	{
-+	ec_skip_dsdt_scan, "HP Folio 13", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
- 	{},
- };
+--- a/drivers/acpi/acpica/hwxfsleep.c
++++ b/drivers/acpi/acpica/hwxfsleep.c
+@@ -240,12 +240,14 @@ static acpi_status acpi_hw_sleep_dispatc
+ 	    &acpi_sleep_dispatch[function_id];
  
+ #if (!ACPI_REDUCED_HARDWARE)
+-
+ 	/*
+ 	 * If the Hardware Reduced flag is set (from the FADT), we must
+-	 * use the extended sleep registers
++	 * use the extended sleep registers (FADT). Note: As per the ACPI
++	 * specification, these extended registers are to be used for HW-reduced
++	 * platforms only. They are not general-purpose replacements for the
++	 * legacy PM register sleep support.
+ 	 */
+-	if (acpi_gbl_reduced_hardware || acpi_gbl_FADT.sleep_control.address) {
++	if (acpi_gbl_reduced_hardware) {
+ 		status = sleep_functions->extended_function(sleep_state);
+ 	} else {
+ 		/* Legacy sleep */
 
 
