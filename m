@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761015Ab3GSSym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:54:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47264 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab3GSSyk (ORCPT
+	id S933119Ab3GSS4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:56:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12724 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760440Ab3GSS4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:54:40 -0400
-Date: Fri, 19 Jul 2013 19:54:16 +0100
-From: Mark Brown <broonie@kernel.org>
-To: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Ryan Mallon <rmallon@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Message-ID: <20130719185416.GW9858@sirena.org.uk>
-References: <201307190953.25957.hsweeten@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1Wg5Vd7si6EhrIHA"
-Content-Disposition: inline
-In-Reply-To: <201307190953.25957.hsweeten@visionengravers.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: ep93xx: fix build of ep93xx-ac97.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 19 Jul 2013 14:56:32 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BvhdhFe28WsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=LhvmM_GddXoA:10 a=6yqHwZjHN9ko7J7LByQA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374260189.3356.29.camel@gandalf.local.home>
+Subject: Re: [ATTEND] How to act on LKML
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Chris Ball <cjb@laptop.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Date: Fri, 19 Jul 2013 14:56:29 -0400
+In-Reply-To: <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+	 <51E4BFA9.1030600@zytor.com>
+	 <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+	 <1373991399.6458.6.camel@gandalf.local.home>
+	 <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+	 <51E59F79.1040903@zytor.com>
+	 <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+	 <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+	 <20130717144043.GA16513@xanatos>
+	 <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+	 <20130719120841.GH26716@gmail.com>
+	 <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-07-19 at 13:42 -0500, Felipe Contreras wrote:
 
---1Wg5Vd7si6EhrIHA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> But you are avoiding the question as well; do you think there's
+> something fundamentally different about the female brain that makes
+> them more susceptible to personal attacks? If yes, where is the
+> scientific evidence? If there's no evidence, then it's merely an
+> opinion that is not shared by others (e.g. me), and if no, then
+> whatever the men can take, the women can take as well, so nothing
+> needs to change.
 
-On Fri, Jul 19, 2013 at 09:53:25AM -0700, H Hartley Sweeten wrote:
-> Fix the build of this driver. It was broken by:
->=20
-> Commit 453807f3006757a5661c4000262d7d9284b5214c
-> ASoC: ep93xx: Use ep93xx_dma_params instead of ep93xx_pcm_dma_params
+I don't know bout susceptible to personal attacks, but I have two
+teenage daughters and I can't figure them out yet. I'll say something
+that I think might get them upset and they are fine with it. Then I'll
+say something, where I see no harm, and suddenly I'm the most evil
+person in the world and they go all emotional on me.
 
-Applied, thanks.
+Women are too complex for me to figure out. Perhaps men are just too
+simple minded (my wife keeps telling me that). Or perhaps it's just
+me ;-)
 
---1Wg5Vd7si6EhrIHA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR6YtVAAoJELSic+t+oim9NSMP+waWWU8DTARfpgtn2Mrolyf9
-wqImY4sFaeEtn/6Cg7LHTLBs9Xerj8SxKpUXLF2J3s4Z0tBVf6iMW18JzR/2v0Uy
-T65T0gLW0/ILjErkUJ68uSOZcWYnmAx5AXOxOGwkCv68bmiXoqXBWN8dBwAQgf5+
-PaY+kZiBgZGrkho4REG4tcoNoGmhowiN2LWnOTMTB9fYkrx6EGdc8hoZOKTbTQQ1
-nwxzEBmTFahmeCZskhOtBwBioOM1U8xMVFLLEZfSBzgU/exikcFxSiV4V2LwFoAQ
-lXmx4lAZMkZx8bfWjKYMQg3qMS5A2cg97nRyXEGSvvRTG74ZGagFfC6rIIwAWHmh
-gOHV1SbIWm4XsLKonF9HNzbXd6cFxqGRNVDp2PwhV5iCIWsyxp7Oo5CH2GYX4suY
-cBAIfpOahjzPalBIVX3o6fNRQAmcOcGc39gXomYeXjgPFSfLIzZHTNof6tn0nhy0
-a3ZgVpXPILV623LcoKLKK6HoT7cCLGZfTbaT/Pbr6tvB2AWXk7MhR6C/A/3YVp+6
-vJ7gTd8aE2XnI2YfMnPGjOG+3d9I1X2FiapQoPrPHEZdlMrCS7k4Gss/uu+GnUtM
-KeVqx/tdONDLIqCOb6OQlLZotP3eDA0KouDk042Gr4E13/5XRtJ0otP8sGINVbd0
-w0MBaVhMWS5YrjwJJYQu
-=6MLY
------END PGP SIGNATURE-----
-
---1Wg5Vd7si6EhrIHA--
