@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966069Ab3GSFtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:49:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39381 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965357Ab3GSFWN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965362Ab3GSFWN (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Jul 2013 01:22:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39346 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965263Ab3GSFWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:22:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <jakdaw@gmail.com>, Josef Bacik <jbacik@fusionio.com>
-Subject: [ 28/38] Btrfs: fix estale with btrfs send
-Date: Thu, 18 Jul 2013 22:21:44 -0700
-Message-Id: <20130719052049.799754215@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 21/38] ACPI / PM: Fix corner case in acpi_bus_update_power()
+Date: Thu, 18 Jul 2013 22:21:37 -0700
+Message-Id: <20130719052049.332662825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -26,73 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 139f807a1eba1e484941a98fb93ee32ad859a6a1 upstream.
+commit 91bdad0b6237c25a7bf8fd4604d0cc64a2005a23 upstream.
 
-This fixes bugzilla 57491.  If we take a snapshot of a fs with a unlink ongoing
-and then try to send that root we will run into problems.  When comparing with a
-parent root we will search the parents and the send roots commit_root, which if
-we've just created the snapshot will include the file that needs to be evicted
-by the orphan cleanup.  So when we find a changed extent we will try and copy
-that info into the send stream, but when we lookup the inode we use the normal
-root, which no longer has the inode because the orphan cleanup deleted it.  The
-best solution I have for this is to check our otransid with the generation of
-the commit root and if they match just commit the transaction again, that way we
-get the changes from the orphan cleanup.  With this patch the reproducer I made
-for this bugzilla no longer returns ESTALE when trying to do the send.  Thanks,
+The role of acpi_bus_update_power() is to update the given ACPI
+device object's power.state field to reflect the current physical
+state of the device (as inferred from the configuration of power
+resources and _PSC, if available).  For this purpose it calls
+acpi_device_set_power() that should update the power resources'
+reference counters and set power.state as appropriate.  However,
+that doesn't work if the "new" state is D1, D2 or D3hot and the
+the current value of power.state means D3cold, because in that
+case acpi_device_set_power() will refuse to transition the device
+from D3cold to non-D0.
 
-Reported-by: Chris Wilson <jakdaw@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+To address this problem, make acpi_bus_update_power() call
+acpi_power_transition() directly to update the power resources'
+reference counters and only use acpi_device_set_power() to put
+the device into D0 if the current physical state of it cannot
+be determined.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/send.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ drivers/acpi/device_pm.c |   23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
 
---- a/fs/btrfs/send.c
-+++ b/fs/btrfs/send.c
-@@ -4579,6 +4579,41 @@ long btrfs_ioctl_send(struct file *mnt_f
- 	send_root = BTRFS_I(file_inode(mnt_file))->root;
- 	fs_info = send_root->fs_info;
+--- a/drivers/acpi/device_pm.c
++++ b/drivers/acpi/device_pm.c
+@@ -295,14 +295,27 @@ int acpi_bus_update_power(acpi_handle ha
+ 	if (result)
+ 		return result;
  
-+	/*
-+	 * This is done when we lookup the root, it should already be complete
-+	 * by the time we get here.
-+	 */
-+	WARN_ON(send_root->orphan_cleanup_state != ORPHAN_CLEANUP_DONE);
-+
-+	/*
-+	 * If we just created this root we need to make sure that the orphan
-+	 * cleanup has been done and committed since we search the commit root,
-+	 * so check its commit root transid with our otransid and if they match
-+	 * commit the transaction to make sure everything is updated.
-+	 */
-+	down_read(&send_root->fs_info->extent_commit_sem);
-+	if (btrfs_header_generation(send_root->commit_root) ==
-+	    btrfs_root_otransid(&send_root->root_item)) {
-+		struct btrfs_trans_handle *trans;
-+
-+		up_read(&send_root->fs_info->extent_commit_sem);
-+
-+		trans = btrfs_attach_transaction_barrier(send_root);
-+		if (IS_ERR(trans)) {
-+			if (PTR_ERR(trans) != -ENOENT) {
-+				ret = PTR_ERR(trans);
-+				goto out;
-+			}
-+			/* ENOENT means theres no transaction */
-+		} else {
-+			ret = btrfs_commit_transaction(trans, send_root);
-+			if (ret)
-+				goto out;
-+		}
+-	if (state == ACPI_STATE_UNKNOWN)
++	if (state == ACPI_STATE_UNKNOWN) {
+ 		state = ACPI_STATE_D0;
+-
+-	result = acpi_device_set_power(device, state);
+-	if (!result && state_p)
++		result = acpi_device_set_power(device, state);
++		if (result)
++			return result;
 +	} else {
-+		up_read(&send_root->fs_info->extent_commit_sem);
++		if (device->power.flags.power_resources) {
++			/*
++			 * We don't need to really switch the state, bu we need
++			 * to update the power resources' reference counters.
++			 */
++			result = acpi_power_transition(device, state);
++			if (result)
++				return result;
++		}
++		device->power.state = state;
 +	}
-+
- 	arg = memdup_user(arg_, sizeof(*arg));
- 	if (IS_ERR(arg)) {
- 		ret = PTR_ERR(arg);
++	if (state_p)
+ 		*state_p = state;
+ 
+-	return result;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(acpi_bus_update_power);
+ 
 
 
