@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760812Ab3GSPd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:33:26 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51046 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760327Ab3GSPdX (ORCPT
+	id S1760828Ab3GSPdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:33:38 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:59570 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760350Ab3GSPdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:33:23 -0400
-Message-ID: <1374248000.2266.20.camel@dabdike>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
-        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 19 Jul 2013 08:33:20 -0700
-In-Reply-To: <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
-References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
-	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
-	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
-	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
-	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
-	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
-	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
-	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
-	 <51E83E32.9050306@cs.wisc.edu>
-	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
-	 <20130719003034.GG28005@kernel.dk>
-	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
-	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Jul 2013 11:33:35 -0400
+Date: Fri, 19 Jul 2013 17:33:32 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 0/8] extend hugepage migration
+Message-ID: <20130719153332.GG6123@two.firstfloor.org>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 23:34 -0700, Nicholas A. Bellinger wrote:
-> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-> index 0101af5..191bc15 100644
-> --- a/drivers/ata/libata-scsi.c
-> +++ b/drivers/ata/libata-scsi.c
-> @@ -1144,7 +1144,11 @@ static int ata_scsi_dev_config(struct scsi_device *sdev,
->                         "sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
->                         sdev->sector_size);
->  
-> -       blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
-> +       if (!q->mq_ops) {
-> +               blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
-> +       } else {
-> +               printk("Skipping dma_alignment for libata w/ scsi-mq\n");
-> +       }
+On Thu, Jul 18, 2013 at 05:34:24PM -0400, Naoya Horiguchi wrote:
+> Here is the 3rd version of hugepage migration patchset.
+> I rebased it onto v3.11-rc1 and applied most of your feedbacks.
+> 
+> Some works referred to in previous discussion (shown below) are not included
+> in this patchset, but likely to be done after this work.
+>  - using page walker in check_range
+>  - split page table lock for pmd/pud based hugepage (maybe applicable to thp)
 
-Amazingly enough there is a reason for the dma alignment, and it wasn't
-just to annoy you, so you can't blindly do this.
+I did a quick read through the patchkit and it looks all good to me.
+It also closes a long standing gap. Thanks!
 
-The email thread is probably lost in the mists of time, but if I
-remember correctly the problem is that some ahci DMA controllers barf if
-the sector they're doing DMA on crosses a page boundary.  Some are
-annoying enough to actually cause silent data corruption.  You won't
-find every ahci DMA controller doing this, so the change will work for
-some, but it will be hard to identify those it won't work for until
-people start losing data.
+Acked-by: Andi Kleen <ak@linux.intel.com>
 
-The correct fix, obviously, is to do the bio copy on the kernel path for
-unaligned data.  It is OK to assume that REQ_TYPE_FS data is correctly
-aligned (because of the block to page alignment).
+> Hugepage migration of 1GB hugepage is not enabled for now, because
+> I'm not sure whether users of 1GB hugepage really want it.
+> We need to spare free hugepage in order to do migration, but I don't
+> think that users want to 1GB memory to idle for that purpose
+> (currently we can't expand/shrink 1GB hugepage pool after boot).
 
-James
+I think we'll need 1GB migration sooner or later. As memory sizes
+go up 1GB use will be more common, and the limitation of not
+expanding/shrinking 1GB will be eventually fixed.
 
+It would be just a straight forward extension of your patchkit,
+right?
 
+-Andi
