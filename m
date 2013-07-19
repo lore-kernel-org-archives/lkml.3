@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab3GSUD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:03:29 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:44637 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab3GSUD0 (ORCPT
+	id S1751687Ab3GSUXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:23:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61877 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab3GSUXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:03:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
-References: <1373944014.17876.255.camel@gandalf.local.home>
-	<51E4BFA9.1030600@zytor.com>
-	<alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-	<1373991399.6458.6.camel@gandalf.local.home>
-	<alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-	<51E59F79.1040903@zytor.com>
-	<alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
-	<CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
-	<20130717144043.GA16513@xanatos>
-	<CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
-	<20130719120841.GH26716@gmail.com>
-	<CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
-Date: Fri, 19 Jul 2013 22:03:25 +0200
-X-Google-Sender-Auth: XZL1BqkeoIA_5Bwf_BabsntbiKU
-Message-ID: <CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
-Subject: Re: [ATTEND] How to act on LKML
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Jul 2013 16:23:05 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: [PATCH v2 10/15] ARM: shmobile: r8a73a4: add a DMAC platform device and clock for it
+Date: Fri, 19 Jul 2013 22:22:51 +0200
+Message-Id: <1374265376-30777-1-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:hwYEamo4JI1JxqARE8Vf05c/ck/N2nD2GvgIFhq38Q+
+ rKb8d8iHq1GDhNk2zHo2ZEm3iW3CBqK2lvLWsSm4RdsNs3bLKV
+ j+fNlllrE1PvJY4Vy2J+VyIRjK9HmJcnCZ2UGZ1QFS8M6JBuI6
+ N3VquZWp0vY3zHzCcTxRcdu8xwCmrIFY/x5bmkKVvfCxXsn3Qi
+ jE90LCjOVr+XMD625tkO1ZbJCycPaKC4ZUo8NYK1TYPu+rtweI
+ Sa5e72n56rlnCOq8IEzcEd4B7tWJZk8I0qgqip15de2zKBgNQS
+ zlZHHptFBV714qfihEMDqcIE8bdo6Prqn8WCj9CvYjeF7yc9Gr
+ 8stUvgGQ9fvs23/3JkgXlhdyXvor2PIpClII/DqyeedWcbmJHw
+ cN0EU1cDUG03g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 8:42 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Fri, Jul 19, 2013 at 7:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>
->> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
->
->>> As Linus already pointed out, not everybody has to work with everybody.
->>
->> That's not the point though, the point is to potentially roughly double
->> the creative brain capacity of the Linux kernel project.
->
-> Unfortunately that's impossible; we all know there aren't as many
-> women programmers as there are men. So there's absolutely *nothing*
-> the Linux kernel can do to double the creative brain capacity of the
-> Linux kernel project (at least with respect to women).
+Add a DMAC platform device and clock definitions for it on r8a73a4.
 
-There may be less women programmers than men programmers, but that
-doesn't say anything about the ratio of female Linux kernel hackers vs.
-female programmers.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
+ arch/arm/mach-shmobile/clock-r8a73a4.c        |    4 +++-
+ arch/arm/mach-shmobile/include/mach/r8a73a4.h |    9 +++++++++
+ arch/arm/mach-shmobile/setup-r8a73a4.c        |   17 +++++++++++++++++
+ 3 files changed, 29 insertions(+), 1 deletions(-)
 
-So let's hope we can prove you wrong soon ;-)
+diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
+index 8ea5ef6..cd62b11 100644
+--- a/arch/arm/mach-shmobile/clock-r8a73a4.c
++++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
+@@ -504,7 +504,7 @@ static struct clk div6_clks[DIV6_NR] = {
+ 
+ /* MSTP */
+ enum {
+-	MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
++	MSTP218, MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
+ 	MSTP329, MSTP323, MSTP318, MSTP317, MSTP316,
+ 	MSTP315, MSTP314, MSTP313, MSTP312, MSTP305, MSTP300,
+ 	MSTP411, MSTP410, MSTP409,
+@@ -519,6 +519,7 @@ static struct clk mstp_clks[MSTP_NR] = {
+ 	[MSTP207] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 7, 0), /* SCIFB1 */
+ 	[MSTP216] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 16, 0), /* SCIFB2 */
+ 	[MSTP217] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 17, 0), /* SCIFB3 */
++	[MSTP218] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR2, 18, 0), /* DMAC */
+ 	[MSTP300] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 0, 0), /* IIC2 */
+ 	[MSTP305] = SH_CLK_MSTP32(&div6_clks[DIV6_MMC1],SMSTPCR3, 5, 0), /* MMCIF1 */
+ 	[MSTP312] = SH_CLK_MSTP32(&div6_clks[DIV6_SDHI2],SMSTPCR3, 12, 0), /* SDHI2 */
+@@ -578,6 +579,7 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("sh-sci.3", &mstp_clks[MSTP207]),
+ 	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
+ 	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
++	CLKDEV_DEV_ID("shdma-r8a73a4.0", &mstp_clks[MSTP218]),
+ 	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
+ 	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
+ 	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
+diff --git a/arch/arm/mach-shmobile/include/mach/r8a73a4.h b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
+index f3a9b70..3a0ea48 100644
+--- a/arch/arm/mach-shmobile/include/mach/r8a73a4.h
++++ b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
+@@ -1,6 +1,15 @@
+ #ifndef __ASM_R8A73A4_H__
+ #define __ASM_R8A73A4_H__
+ 
++/* DMA slave IDs */
++enum {
++	SHDMA_SLAVE_INVALID,
++	SHDMA_SLAVE_MMCIF0_TX,
++	SHDMA_SLAVE_MMCIF0_RX,
++	SHDMA_SLAVE_MMCIF1_TX,
++	SHDMA_SLAVE_MMCIF1_RX,
++};
++
+ void r8a73a4_add_standard_devices(void);
+ void r8a73a4_add_dt_devices(void);
+ void r8a73a4_clock_init(void);
+diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
+index 630ea4e..ad7180e 100644
+--- a/arch/arm/mach-shmobile/setup-r8a73a4.c
++++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
+@@ -199,12 +199,29 @@ void __init r8a73a4_add_dt_devices(void)
+ 	r8a7790_register_cmt(10);
+ }
+ 
++/* DMA */
++static struct resource dma_resources[] = {
++	DEFINE_RES_MEM(0xe6700020, 0x89e0),
++	DEFINE_RES_IRQ_NAMED(gic_spi(220), "error_irq"),
++	{
++		/* IRQ for channels 0-19 */
++		.start  = gic_spi(200),
++		.end    = gic_spi(219),
++		.flags  = IORESOURCE_IRQ,
++	},
++};
++
++#define r8a73a4_register_dmac()							\
++	platform_device_register_simple("shdma-r8a73a4", 0,			\
++				dma_resources, ARRAY_SIZE(dma_resources))
++
+ void __init r8a73a4_add_standard_devices(void)
+ {
+ 	r8a73a4_add_dt_devices();
+ 	r8a73a4_register_irqc(0);
+ 	r8a73a4_register_irqc(1);
+ 	r8a73a4_register_thermal();
++	r8a73a4_register_dmac();
+ }
+ 
+ void __init r8a73a4_init_delay(void)
+-- 
+1.7.2.5
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
