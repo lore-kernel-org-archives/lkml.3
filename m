@@ -1,142 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935406Ab3GSIFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:05:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:25571 "EHLO song.cn.fujitsu.com"
+	id S1759859Ab3GSIGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:06:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:1706 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934228Ab3GSIFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:05:10 -0400
+	id S1759843Ab3GSIBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:01:02 -0400
 X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
-   d="scan'208";a="7947493"
-Message-ID: <51E8F258.7020102@cn.fujitsu.com>
-Date: Fri, 19 Jul 2013 16:01:28 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: dwmw2@infradead.org
-CC: linux-mtd@lists.infradead.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH RESEND] fs/jffs2: remove the unused paramters of function
- jffs2_{compress,decompress}
+   d="scan'208";a="7947445"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH 12/21] x86, acpi: Try to find if SRAT is overrided earlier.
+Date: Fri, 19 Jul 2013 15:59:25 +0800
+Message-Id: <1374220774-29974-13-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 16:03:06,
+ 2013/07/19 15:58:38,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 16:03:11,
-	Serialize complete at 2013/07/19 16:03:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+ 2013/07/19 15:58:48,
+	Serialize complete at 2013/07/19 15:58:48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the unused paramters of function jffs2_{compress,decompress}.
+As we mentioned in previous patches, to prevent the kernel
+using hotpluggable memory at early time, we need to reserve
+hotpluggable memory in memblock. So we need to parse SRAT
+at early time.
 
+This patch does the following two things:
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+1. Introduce reserve_hotpluggable_memory() to reserve
+   hotpluggable memory, and call it in setup_arch() right
+   after memblock is ready.
+   The main job of this function is not implemented in this
+   patch. In this patch, it only calls early_acpi_override_srat()
+   to get SRAT in initrd file if there is any.
+
+2. Introduce early_acpi_override_srat() to check if there
+   is a SRAT in initrd file used to override SRAT in the
+   firmware. If so, the function will return the phys addr
+   of the override SRAT.
+
+   At early time in setup_arch(), pagetable has not been setup.
+   So we have to use early_ioremap() to map the initrd file
+   temporarily. But early_ioremap() can only map at most 256KB
+   at one time. So we use a loop to map the whole initrd file,
+   and map only 256KB one time.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- fs/jffs2/compr.c |   12 ++++++------
- fs/jffs2/compr.h |   12 ++++++------
- fs/jffs2/gc.c    |    2 +-
- fs/jffs2/read.c  |    4 +++-
- fs/jffs2/write.c |    2 +-
- 5 files changed, 17 insertions(+), 15 deletions(-)
+ arch/x86/kernel/setup.c        |    9 ++++++
+ drivers/acpi/osl.c             |   55 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h           |   14 ++++++++-
+ include/linux/memory_hotplug.h |    2 +
+ mm/memory_hotplug.c            |   26 ++++++++++++++++++-
+ 5 files changed, 103 insertions(+), 3 deletions(-)
 
-diff --git a/fs/jffs2/compr.c b/fs/jffs2/compr.c
-index 4849a4c..6fcb426 100644
---- a/fs/jffs2/compr.c
-+++ b/fs/jffs2/compr.c
-@@ -145,9 +145,9 @@ static int jffs2_selected_compress(u8 compr, unsigned char *data_in,
-  * jffs2_compress should compress as much as will fit, and should set
-  * *datalen accordingly to show the amount of data which were compressed.
-  */
--uint16_t jffs2_compress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
--			unsigned char *data_in, unsigned char **cpage_out,
--			uint32_t *datalen, uint32_t *cdatalen)
-+uint16_t jffs2_compress(struct jffs2_sb_info *c, unsigned char *data_in,
-+			unsigned char **cpage_out, uint32_t *datalen,
-+			uint32_t *cdatalen)
- {
- 	int ret = JFFS2_COMPR_NONE;
- 	int mode, compr_ret;
-@@ -250,9 +250,9 @@ uint16_t jffs2_compress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
- 	return ret;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 28d2e60..9717760 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1078,6 +1078,15 @@ void __init setup_arch(char **cmdline_p)
+ 	/* Initialize ACPI root table */
+ 	acpi_root_table_init();
+ 
++#ifdef CONFIG_ACPI_NUMA
++	/*
++	 * Linux kernel cannot migrate kernel pages, as a result, memory used
++	 * by the kernel cannot be hot-removed. Reserve hotpluggable memory to
++	 * prevent memblock from allocating hotpluggable memory for the kernel.
++	 */
++	reserve_hotpluggable_memory();
++#endif
++
+ 	/*
+ 	 * The EFI specification says that boot service code won't be called
+ 	 * after ExitBootServices(). This is, in fact, a lie.
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 4531920..fa6b973 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -48,6 +48,7 @@
+ 
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
++#include <asm/setup.h>
+ 
+ #include <acpi/acpi.h>
+ #include <acpi/acpi_bus.h>
+@@ -627,6 +628,60 @@ int __init acpi_invalid_table(struct cpio_data *file,
+ 	return 0;
  }
  
--int jffs2_decompress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
--		     uint16_t comprtype, unsigned char *cdata_in,
--		     unsigned char *data_out, uint32_t cdatalen, uint32_t datalen)
-+int jffs2_decompress(uint16_t comprtype, unsigned char *cdata_in,
-+		     unsigned char *data_out, uint32_t cdatalen,
-+		     uint32_t datalen)
++#ifdef CONFIG_ACPI_NUMA
++/*
++ * early_acpi_override_srat - Try to get the phys addr of SRAT in initrd.
++ *
++ * The ACPI_INITRD_TABLE_OVERRIDE procedure is able to use tables in initrd
++ * file to override the ones provided by firmware. This function checks if
++ * there is a SRAT in initrd at early time. If so, return the phys addr of
++ * the SRAT.
++ *
++ * Return the phys addr of SRAT in initrd, 0 if there is no SRAT.
++ */
++phys_addr_t __init early_acpi_override_srat(void)
++{
++	int i;
++	u32 length;
++	long offset;
++	void *ramdisk_vaddr;
++	struct acpi_table_header *table;
++	unsigned long map_step = NR_FIX_BTMAPS << PAGE_SHIFT;
++	phys_addr_t ramdisk_image = get_ramdisk_image();
++	char cpio_path[32] = "kernel/firmware/acpi/";
++	struct cpio_data file;
++
++	/* Try to find if SRAT is overrided */
++	for (i = 0; i < ACPI_OVERRIDE_TABLES; i++) {
++		ramdisk_vaddr = early_ioremap(ramdisk_image, map_step);
++
++		file = find_cpio_data(cpio_path, ramdisk_vaddr,
++				      map_step, &offset);
++		if (!file.data) {
++			early_iounmap(ramdisk_vaddr, map_step);
++			return 0;
++		}
++
++		table = file.data;
++		length = table->length;
++
++		if (acpi_invalid_table(&file, cpio_path, ACPI_SIG_SRAT)) {
++			ramdisk_image += offset;
++			early_iounmap(ramdisk_vaddr, map_step);
++			continue;
++		}
++
++		/* Found SRAT */
++		early_iounmap(ramdisk_vaddr, map_step);
++		ramdisk_image = ramdisk_image + offset - length;
++
++		break;
++	}
++
++	return ramdisk_image;
++}
++#endif	/* CONFIG_ACPI_NUMA */
++
+ void __init acpi_initrd_override(void *data, size_t size)
  {
- 	struct jffs2_compressor *this;
- 	int ret;
-diff --git a/fs/jffs2/compr.h b/fs/jffs2/compr.h
-index 5e91d57..092089a 100644
---- a/fs/jffs2/compr.h
-+++ b/fs/jffs2/compr.h
-@@ -70,13 +70,13 @@ int jffs2_unregister_compressor(struct jffs2_compressor *comp);
- int jffs2_compressors_init(void);
- int jffs2_compressors_exit(void);
+ 	int no, table_nr = 0, total_offset = 0;
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 95f600c..17155bc 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -81,11 +81,21 @@ typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
  
--uint16_t jffs2_compress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
--			unsigned char *data_in, unsigned char **cpage_out,
--			uint32_t *datalen, uint32_t *cdatalen);
-+uint16_t jffs2_compress(struct jffs2_sb_info *c, unsigned char *data_in,
-+			unsigned char **cpage_out, uint32_t *datalen,
-+			uint32_t *cdatalen);
+ #ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
+ void acpi_initrd_override(void *data, size_t size);
+-#else
++
++#ifdef CONFIG_ACPI_NUMA
++phys_addr_t early_acpi_override_srat(void);
++#endif	/* CONFIG_ACPI_NUMA */
++
++#else	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
+ static inline void acpi_initrd_override(void *data, size_t size)
+ {
+ }
+-#endif
++
++static inline phys_addr_t early_acpi_override_srat(void)
++{
++	return 0;
++}
++#endif	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
  
--int jffs2_decompress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
--		     uint16_t comprtype, unsigned char *cdata_in,
--		     unsigned char *data_out, uint32_t cdatalen, uint32_t datalen);
-+int jffs2_decompress(uint16_t comprtype, unsigned char *cdata_in,
-+		     unsigned char *data_out, uint32_t cdatalen,
-+		     uint32_t datalen);
+ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 3e622c6..681b97f 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -104,6 +104,7 @@ extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
+ /* reasonably generic interface to expand the physical pages in a zone  */
+ extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
+ 	unsigned long nr_pages);
++extern void reserve_hotpluggable_memory(void);
  
- void jffs2_free_comprbuf(unsigned char *comprbuf, unsigned char *orig);
+ #ifdef CONFIG_NUMA
+ extern int memory_add_physaddr_to_nid(u64 start);
+@@ -181,6 +182,7 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+ }
+ #endif
++
+ extern void put_page_bootmem(struct page *page);
+ extern void get_page_bootmem(unsigned long ingo, struct page *page,
+ 			     unsigned long type);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 1ad92b4..066873e 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -30,6 +30,7 @@
+ #include <linux/mm_inline.h>
+ #include <linux/firmware-map.h>
+ #include <linux/stop_machine.h>
++#include <linux/acpi.h>
  
-diff --git a/fs/jffs2/gc.c b/fs/jffs2/gc.c
-index 5a2dec2..8dc85aa 100644
---- a/fs/jffs2/gc.c
-+++ b/fs/jffs2/gc.c
-@@ -1330,7 +1330,7 @@ static int jffs2_garbage_collect_dnode(struct jffs2_sb_info *c, struct jffs2_era
+ #include <asm/tlbflush.h>
  
- 		writebuf = pg_ptr + (offset & (PAGE_CACHE_SIZE -1));
+@@ -62,7 +63,6 @@ void unlock_memory_hotplug(void)
+ 	mutex_unlock(&mem_hotplug_mutex);
+ }
  
--		comprtype = jffs2_compress(c, f, writebuf, &comprbuf, &datalen, &cdatalen);
-+		comprtype = jffs2_compress(c, writebuf, &comprbuf, &datalen, &cdatalen);
+-
+ /* add this memory to iomem resource */
+ static struct resource *register_memory_resource(u64 start, u64 size)
+ {
+@@ -91,6 +91,30 @@ static void release_memory_resource(struct resource *res)
+ 	return;
+ }
  
- 		ri.magic = cpu_to_je16(JFFS2_MAGIC_BITMASK);
- 		ri.nodetype = cpu_to_je16(JFFS2_NODETYPE_INODE);
-diff --git a/fs/jffs2/read.c b/fs/jffs2/read.c
-index 0b042b1..aed9183 100644
---- a/fs/jffs2/read.c
-+++ b/fs/jffs2/read.c
-@@ -132,7 +132,9 @@ int jffs2_read_dnode(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
- 		jffs2_dbg(2, "Decompress %d bytes from %p to %d bytes at %p\n",
- 			  je32_to_cpu(ri->csize), readbuf,
- 			  je32_to_cpu(ri->dsize), decomprbuf);
--		ret = jffs2_decompress(c, f, ri->compr | (ri->usercompr << 8), readbuf, decomprbuf, je32_to_cpu(ri->csize), je32_to_cpu(ri->dsize));
-+		ret = jffs2_decompress(ri->compr | (ri->usercompr << 8),
-+				readbuf, decomprbuf, je32_to_cpu(ri->csize),
-+				je32_to_cpu(ri->dsize));
- 		if (ret) {
- 			pr_warn("Error: jffs2_decompress returned %d\n", ret);
- 			goto out_decomprbuf;
-diff --git a/fs/jffs2/write.c b/fs/jffs2/write.c
-index b634de4..dbc26de 100644
---- a/fs/jffs2/write.c
-+++ b/fs/jffs2/write.c
-@@ -369,7 +369,7 @@ int jffs2_write_inode_range(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
- 		datalen = min_t(uint32_t, writelen, PAGE_CACHE_SIZE - (offset & (PAGE_CACHE_SIZE-1)));
- 		cdatalen = min_t(uint32_t, alloclen - sizeof(*ri), datalen);
- 
--		comprtype = jffs2_compress(c, f, buf, &comprbuf, &datalen, &cdatalen);
-+		comprtype = jffs2_compress(c, buf, &comprbuf, &datalen, &cdatalen);
- 
- 		ri->magic = cpu_to_je16(JFFS2_MAGIC_BITMASK);
- 		ri->nodetype = cpu_to_je16(JFFS2_NODETYPE_INODE);
++#ifdef CONFIG_ACPI_NUMA
++/*
++ * reserve_hotpluggable_memory - Reserve hotpluggable memory in memblock.
++ *
++ * This function did the following:
++ * 1. Try to find if there is a SRAT in initrd file used to override the one
++ *    provided by firmware. If so, get its phys addr.
++ * 2. If there is no override SRAT, get the phys addr of the SRAT in firmware.
++ * 3. Parse SRAT, find out which memory is hotpluggable, and reserve it in
++ *    memblock.
++ */
++void __init reserve_hotpluggable_memory(void)
++{
++	phys_addr_t srat_paddr;
++
++	/* Try to find if SRAT is overrided */
++	srat_paddr = early_acpi_override_srat();
++	if (!srat_paddr)
++		return;
++
++	/* Will reserve hotpluggable memory here */
++}
++#endif	/* CONFIG_ACPI_NUMA */
++
+ #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+ void get_page_bootmem(unsigned long info,  struct page *page,
+ 		      unsigned long type)
 -- 
-1.7.7
-
+1.7.1
 
