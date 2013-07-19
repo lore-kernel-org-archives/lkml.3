@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab3GSL4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 07:56:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47371 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759974Ab3GSL4E (ORCPT
+	id S1760289Ab3GSL70 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 07:59:26 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:64998 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759865Ab3GSL7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 07:56:04 -0400
-Message-ID: <51E92946.8030907@ti.com>
-Date: Fri, 19 Jul 2013 17:25:50 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Fri, 19 Jul 2013 07:59:24 -0400
+Date: Fri, 19 Jul 2013 13:59:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org
+Subject: Re: [ATTEND] How to act on LKML
+Message-ID: <20130719115919.GG26716@gmail.com>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+ <51E4BFA9.1030600@zytor.com>
+ <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+ <1373991399.6458.6.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+ <51E59F79.1040903@zytor.com>
+ <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+ <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+ <20130717144043.GA16513@xanatos>
+ <20130717144320.GJ24293@1wt.eu>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
-        <balbi@ti.com>, <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com> <1374141687-10790-3-git-send-email-sourav.poddar@ti.com> <20130718104233.GG22506@sirena.org.uk>
-In-Reply-To: <20130718104233.GG22506@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717144320.GJ24293@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-On Thursday 18 July 2013 04:12 PM, Mark Brown wrote:
-> On Thu, Jul 18, 2013 at 03:31:26PM +0530, Sourav Poddar wrote:
->
->> QSPI is a kind of spi module that allows single,
->> dual and quad read access to external spi devices. The module
->> has a memory mapped interface which provide direct interface
->> for accessing data form external spi devices.
-> Have you seen the ongoing thread about SPI buses with extra data lines?
-> How does this driver fit in with that?
->
->> --- a/drivers/spi/Makefile
->> +++ b/drivers/spi/Makefile
->> @@ -46,6 +46,7 @@ obj-$(CONFIG_SPI_OCTEON)		+= spi-octeon.o
->>   obj-$(CONFIG_SPI_OMAP_UWIRE)		+= spi-omap-uwire.o
->>   obj-$(CONFIG_SPI_OMAP_100K)		+= spi-omap-100k.o
->>   obj-$(CONFIG_SPI_OMAP24XX)		+= spi-omap2-mcspi.o
->> +obj-$(CONFIG_QSPI_DRA7xxx)              += spi-ti-qspi.o
->>   obj-$(CONFIG_SPI_ORION)			+= spi-orion.o
->>   obj-$(CONFIG_SPI_PL022)			+= spi-pl022.o
->>   obj-$(CONFIG_SPI_PPC4xx)		+= spi-ppc4xx.o
-> Please use SPI_ like the other drivers.
->
->> +static int ti_qspi_prepare_xfer(struct spi_master *master)
->> +{
->> +	struct ti_qspi *qspi = spi_master_get_devdata(master);
->> +	int ret;
->> +
->> +	ret = pm_runtime_get_sync(qspi->dev);
->> +	if (ret<  0) {
->> +		dev_err(qspi->dev, "pm_runtime_get_sync() failed\n");
->> +		return ret;
->> +	}
->> +
->> +	return 0;
->> +}
-> This is a very common pattern, it should probably be factored out into
-> the core, probably not even as ops but rather as an actual feature.
->
 
-I see, every other driver doing it this way right now.
-Is it ok, if I take your above idea as an seperate excercise after this 
-patch.?
->> +	list_for_each_entry(t,&m->transfers, transfer_list) {
->> +		qspi->cmd |= QSPI_WLEN(t->bits_per_word);
->> +		qspi->cmd |= QSPI_WC_CMD_INT_EN;
->> +
->> +		ret = qspi_transfer_msg(qspi, t);
->> +		if (ret) {
->> +			dev_dbg(qspi->dev, "transfer message failed\n");
->> +			return -EINVAL;
->> +		}
->> +
->> +		m->actual_length += t->len;
->> +
->> +		if (list_is_last(&t->transfer_list,&m->transfers))
->> +			goto out;
->> +	}
-> The use of list_is_last() here is *realy* strange - what's going on
-> there?
->
->> +static irqreturn_t ti_qspi_isr(int irq, void *dev_id)
->> +{
->> +	struct ti_qspi *qspi = dev_id;
->> +	u16 mask, stat;
->> +
->> +	irqreturn_t ret = IRQ_HANDLED;
->> +
->> +	spin_lock(&qspi->lock);
->> +
->> +	stat = ti_qspi_readl(qspi, QSPI_SPI_STATUS_REG);
->> +	mask = ti_qspi_readl(qspi, QSPI_INTR_ENABLE_SET_REG);
->> +
->> +	if (stat&&  mask)
->> +		ret = IRQ_WAKE_THREAD;
->> +
->> +	spin_unlock(&qspi->lock);
->> +
->> +	return ret;
-> According to the above code we might interrupt for masked events...
-> that's a bit worrying isn't it?
->
->> +	ret = devm_request_threaded_irq(&pdev->dev, irq, ti_qspi_isr,
->> +			ti_qspi_threaded_isr, IRQF_NO_SUSPEND | IRQF_ONESHOT,
->> +			dev_name(&pdev->dev), qspi);
->> +	if (ret<  0) {
->> +		dev_err(&pdev->dev, "Failed to register ISR for IRQ %d\n",
->> +				irq);
->> +		goto free_master;
->> +	}
-> Standard question about devm_request_threaded_irq() - how can we be
-> certain it's safe to use during removal?
+* Willy Tarreau <w@1wt.eu> wrote:
 
+> On Wed, Jul 17, 2013 at 07:40:43AM -0700, Sarah Sharp wrote:
+>
+> > Go look at Dreamwidth, the open source Livejournal fork.  It has a 
+> > good code of conduct, so developers are civil to each other.  They 
+> > encourage all patch submissions, and take the time to work with people 
+> > who don't understand their community rules.
+> > 
+> > The result: 75% of their developers are women.  If you give a flying 
+> > fuck about diversity, and want to attract women to your open source 
+> > project, your developers need to be civil, and not verbally abuse each 
+> > other.
+> 
+> But this has nothing to do with a project's success or quality, gender 
+> is not related. Are you suggesting that with more women the Linux kernel 
+> would be a more successful project ? If so I think you're a bit biased. 
+> In my opinion, only its good people make it a good project, whatever 
+> their gender.
+
+I don't necessarily agree with everything that Sarah has stated, but I 
+think we can declare it with scientific certainty that utilizing the other 
+50% of creative brainpower that humanity has available can only improve 
+the Linux kernel, and drastically so.
+
+( The "how" is the 1 trillion dollars question, and I'm glad Sarah is
+  working on that problem. )
+
+Thanks,
+
+	Ingo
