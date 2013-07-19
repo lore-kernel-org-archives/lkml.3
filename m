@@ -1,132 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760984Ab3GSSRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:17:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49696 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab3GSSRq (ORCPT
+	id S932345Ab3GSSSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:18:53 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:35290 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760631Ab3GSSSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:17:46 -0400
-Date: Fri, 19 Jul 2013 11:17:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Paul Bolle <paul.bollee@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
-Subject: Re: mmotm 2013-07-18-16-40 uploaded
-Message-Id: <20130719111744.ce87390c8d8fa6b0b1c52eb6@linux-foundation.org>
-In-Reply-To: <20130719180035.GI17812@cmpxchg.org>
-References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com>
-	<51E8B34B.1070200@gmail.com>
-	<20130719180035.GI17812@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 19 Jul 2013 14:18:51 -0400
+Message-ID: <51E98310.7020103@cogentembedded.com>
+Date: Fri, 19 Jul 2013 22:18:56 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>, tony@atomide.com,
+        benoit.cousson@linaro.org, rnayak@ti.com, peter.ujfalusi@ti.com,
+        kishon@ti.com, jic23@cam.ac.uk, grant.likely@linaro.org,
+        rob.herring@calxeda.com, lars@metafoo.de, sameo@linux.intel.com,
+        ch.naveen@samsung.com, poeschel@lemonage.de, milo.kim@ti.com,
+        balajitk@ti.com, gg@slimlogic.co.uk, linux-iio@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 1/2] ARM: dts: twl: Add GPADC data to device tree
+References: <1374226039-16943-1-git-send-email-oleksandr.kozaruk@ti.com> <1374226039-16943-2-git-send-email-oleksandr.kozaruk@ti.com> <51E94F97.40002@cogentembedded.com> <51E95DEB.7010702@ti.com>
+In-Reply-To: <51E95DEB.7010702@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Jul 2013 14:00:35 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+Hello.
 
-> > >A git tree which contains the memory management portion of this tree is
-> > >maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> > >by Michal Hocko.  It contains the patches which are between the
-> > >"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-> > >file, http://www.ozlabs.org/~akpm/mmotm/series.
-> > >
-> > >
-> > >A full copy of the full kernel tree with the linux-next and mmotm patches
-> > >already applied is available through git within an hour of the mmotm
-> > >release.  Individual mmotm releases are tagged.  The master branch always
-> > >points to the latest release, so it's constantly rebasing.
-> > >
-> > >http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-> > >
-> > >To develop on top of mmotm git:
-> > >
-> > >   $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> > >   $ git remote update mmotm
-> > >   $ git checkout -b topic mmotm/master
-> > >   <make changes, commit>
-> > >   $ git send-email mmotm/master.. [...]
-> > >
-> > >To rebase a branch with older patches to a new mmotm release:
-> > >
-> > >   $ git remote update mmotm
-> > >   $ git rebase --onto mmotm/master <topic base> topic
-> 
-> Andrew, that workflow is actually meant for
-> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
-> (i.e. the git remote add mmotm <michal's tree> does not make much
-> sense).  Michal's tree is append-only, so all this precision-rebasing
-> is unnecessary.
+On 07/19/2013 07:40 PM, Grygorii Strashko wrote:
 
-Gee, I haven't looked at that text in a while...
+>>> GPADC is the general purpose ADC present on twl6030.
+>>> The dt data is interrupt used to trigger end of ADC
+>>> conversion.
 
-Could you guys please check it, propose any fixes we should make?
+>>> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+>>> ---
+>>>   arch/arm/boot/dts/twl6030.dtsi | 6 ++++++
+>>>   1 file changed, 6 insertions(+)
 
+>>> diff --git a/arch/arm/boot/dts/twl6030.dtsi
+>>> b/arch/arm/boot/dts/twl6030.dtsi
+>>> index 2e3bd31..d7d4c28 100644
+>>> --- a/arch/arm/boot/dts/twl6030.dtsi
+>>> +++ b/arch/arm/boot/dts/twl6030.dtsi
+>>> @@ -103,4 +103,10 @@
+>>>           compatible = "ti,twl6030-pwmled";
+>>>           #pwm-cells = <2>;
+>>>       };
+>>> +
+>>> +    adc: gpadc {
 
+>>     Read my lips: the node should be called just "adc", not "gpadc".
+>        ^^^^^^^^^^^^ Are you sure?
 
-README for mm-of-the-moment:
+    I didn't know how to express my disappointment from Oleksandr's inability 
+to understand what I wanted to convey to him from 2 attempts... first, he 
+changed the label instead of the node name, then he only dropped "twl6030_" 
+prefix from the name. I should probably have been even more specific before.
 
-http://www.ozlabs.org/~akpm/mmotm/
+> Why? The name was selected according to the documentation on device "General
+> purpose analog-to-digital converter (GPADC)".
 
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
+    Sigh, we simply don't care whether this ADC is general-purpose or not.
+The main thing it is ADC.
 
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
+> PS. Following your logic - "GPIO" need to renamed to "IO" everywhere ;P
 
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
+    GPIO is well known and established abbreviation, contrasted to GPADC.
+Moreover, ePAPR spec lists "gpio" as a generic node name.
 
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
-
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
-
-
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
-
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-
-To develop on top of mmotm git:
-
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
-
-To rebase a branch with older patches to a new mmotm release:
-
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
-
-
-
-
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
-
-A git copy of this tree is available at
-
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
-
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+WBR, Sergei
 
