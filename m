@@ -1,208 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab3GSUzv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:55:51 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50547 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752172Ab3GSUzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:55:46 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 3/3] mm: page_alloc: fair zone allocator policy
-Date: Fri, 19 Jul 2013 16:55:25 -0400
-Message-Id: <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+	id S1752354Ab3GSU4A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:56:00 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39956 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab3GSUz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 16:55:57 -0400
+Message-ID: <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
+        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Fri, 19 Jul 2013 14:01:24 -0700
+In-Reply-To: <1374248000.2266.20.camel@dabdike>
+References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+	 <51E83E32.9050306@cs.wisc.edu>
+	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+	 <20130719003034.GG28005@kernel.dk>
+	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+	 <1374248000.2266.20.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each zone that holds userspace pages of one workload must be aged at a
-speed proportional to the zone size.  Otherwise, the time an
-individual page gets to stay in memory depends on the zone it happened
-to be allocated in.  Asymmetry in the zone aging creates rather
-unpredictable aging behavior and results in the wrong pages being
-reclaimed, activated etc.
+On Fri, 2013-07-19 at 08:33 -0700, James Bottomley wrote:
+> On Thu, 2013-07-18 at 23:34 -0700, Nicholas A. Bellinger wrote:
+> > diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> > index 0101af5..191bc15 100644
+> > --- a/drivers/ata/libata-scsi.c
+> > +++ b/drivers/ata/libata-scsi.c
+> > @@ -1144,7 +1144,11 @@ static int ata_scsi_dev_config(struct scsi_device *sdev,
+> >                         "sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
+> >                         sdev->sector_size);
+> >  
+> > -       blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
+> > +       if (!q->mq_ops) {
+> > +               blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
+> > +       } else {
+> > +               printk("Skipping dma_alignment for libata w/ scsi-mq\n");
+> > +       }
+> 
+> Amazingly enough there is a reason for the dma alignment, and it wasn't
+> just to annoy you, so you can't blindly do this.
+> 
+> The email thread is probably lost in the mists of time, but if I
+> remember correctly the problem is that some ahci DMA controllers barf if
+> the sector they're doing DMA on crosses a page boundary.  Some are
+> annoying enough to actually cause silent data corruption.  You won't
+> find every ahci DMA controller doing this, so the change will work for
+> some, but it will be hard to identify those it won't work for until
+> people start losing data.
 
-But exactly this happens right now because of the way the page
-allocator and kswapd interact.  The page allocator uses per-node lists
-of all zones in the system, ordered by preference, when allocating a
-new page.  When the first iteration does not yield any results, kswapd
-is woken up and the allocator retries.  Due to the way kswapd reclaims
-zones below the high watermark while a zone can be allocated from when
-it is above the low watermark, the allocator may keep kswapd running
-while kswapd reclaim ensures that the page allocator can keep
-allocating from the first zone in the zonelist for extended periods of
-time.  Meanwhile the other zones rarely see new allocations and thus
-get aged much slower in comparison.
+Thanks for the extra background.
 
-The result is that the occasional page placed in lower zones gets
-relatively more time in memory, even get promoted to the active list
-after its peers have long been evicted.  Meanwhile, the bulk of the
-working set may be thrashing on the preferred zone even though there
-may be significant amounts of memory available in the lower zones.
+So at least from what I gather thus far this shouldn't be an issue for
+initial testing with scsi-mq <-> libata w/ ata_piix.
 
-Even the most basic test -- repeatedly reading a file slightly bigger
-than memory -- shows how broken the zone aging is.  In this scenario,
-no single page should be able stay in memory long enough to get
-referenced twice and activated, but activation happens in spades:
+> 
+> The correct fix, obviously, is to do the bio copy on the kernel path for
+> unaligned data.  It is OK to assume that REQ_TYPE_FS data is correctly
+> aligned (because of the block to page alignment).
+> 
 
-  $ grep active_file /proc/zoneinfo
-      nr_inactive_file 0
-      nr_active_file 0
-      nr_inactive_file 0
-      nr_active_file 8
-      nr_inactive_file 1582
-      nr_active_file 11994
-  $ cat data data data data >/dev/null
-  $ grep active_file /proc/zoneinfo
-      nr_inactive_file 0
-      nr_active_file 70
-      nr_inactive_file 258753
-      nr_active_file 443214
-      nr_inactive_file 149793
-      nr_active_file 12021
+Indeed.  Looking into the bio_copy_kern() breakage next..
 
-Fix this with a very simple round robin allocator.  Each zone is
-allowed a batch of allocations that is proportional to the zone's
-size, after which it is treated as full.  The batch counters are reset
-when all zones have been tried and the allocator enters the slowpath
-and kicks off kswapd reclaim:
-
-  $ grep active_file /proc/zoneinfo
-      nr_inactive_file 0
-      nr_active_file 0
-      nr_inactive_file 174
-      nr_active_file 4865
-      nr_inactive_file 53
-      nr_active_file 860
-  $ cat data data data data >/dev/null
-  $ grep active_file /proc/zoneinfo
-      nr_inactive_file 0
-      nr_active_file 0
-      nr_inactive_file 666622
-      nr_active_file 4988
-      nr_inactive_file 190969
-      nr_active_file 937
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/mmzone.h |  1 +
- mm/page_alloc.c        | 39 +++++++++++++++++++++++++++++----------
- 2 files changed, 30 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index af4a3b7..0c41d59 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -352,6 +352,7 @@ struct zone {
- 	 * free areas of different sizes
- 	 */
- 	spinlock_t		lock;
-+	atomic_t		alloc_batch;
- 	int                     all_unreclaimable; /* All pages pinned */
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
- 	/* Set to true when the PG_migrate_skip bits should be cleared */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index af1d956b..d938b67 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1879,6 +1879,14 @@ zonelist_scan:
- 		if (alloc_flags & ALLOC_NO_WATERMARKS)
- 			goto try_this_zone;
- 		/*
-+		 * Distribute pages in proportion to the individual
-+		 * zone size to ensure fair page aging.  The zone a
-+		 * page was allocated in should have no effect on the
-+		 * time the page has in memory before being reclaimed.
-+		 */
-+		if (atomic_read(&zone->alloc_batch) <= 0)
-+			continue;
-+		/*
- 		 * When allocating a page cache page for writing, we
- 		 * want to get it from a zone that is within its dirty
- 		 * limit, such that no single zone holds more than its
-@@ -1984,7 +1992,8 @@ this_zone_full:
- 		goto zonelist_scan;
- 	}
- 
--	if (page)
-+	if (page) {
-+		atomic_sub(1U << order, &zone->alloc_batch);
- 		/*
- 		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
- 		 * necessary to allocate the page. The expectation is
-@@ -1993,6 +2002,7 @@ this_zone_full:
- 		 * for !PFMEMALLOC purposes.
- 		 */
- 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
-+	}
- 
- 	return page;
- }
-@@ -2342,16 +2352,20 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
- 	return page;
- }
- 
--static inline
--void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
--						enum zone_type high_zoneidx,
--						enum zone_type classzone_idx)
-+static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
-+			     struct zonelist *zonelist,
-+			     enum zone_type high_zoneidx,
-+			     enum zone_type classzone_idx)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 
--	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
--		wakeup_kswapd(zone, order, classzone_idx);
-+	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
-+		atomic_set(&zone->alloc_batch,
-+			   high_wmark_pages(zone) - low_wmark_pages(zone));
-+		if (!(gfp_mask & __GFP_NO_KSWAPD))
-+			wakeup_kswapd(zone, order, classzone_idx);
-+	}
- }
- 
- static inline int
-@@ -2447,9 +2461,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 		goto nopage;
- 
- restart:
--	if (!(gfp_mask & __GFP_NO_KSWAPD))
--		wake_all_kswapd(order, zonelist, high_zoneidx,
--						zone_idx(preferred_zone));
-+	prepare_slowpath(gfp_mask, order, zonelist,
-+			 high_zoneidx, zone_idx(preferred_zone));
- 
- 	/*
- 	 * OK, we're below the kswapd watermark and have kicked background
-@@ -4758,6 +4771,9 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone_seqlock_init(zone);
- 		zone->zone_pgdat = pgdat;
- 
-+		/* For bootup, initialized properly in watermark setup */
-+		atomic_set(&zone->alloc_batch, zone->managed_pages);
-+
- 		zone_pcp_init(zone);
- 		lruvec_init(&zone->lruvec);
- 		if (!size)
-@@ -5533,6 +5549,9 @@ static void __setup_per_zone_wmarks(void)
- 		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
- 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
- 
-+		atomic_set(&zone->alloc_batch,
-+			   high_wmark_pages(zone) - low_wmark_pages(zone));
-+
- 		setup_zone_migrate_reserve(zone);
- 		spin_unlock_irqrestore(&zone->lock, flags);
- 	}
--- 
-1.8.3.2
+--nab
 
