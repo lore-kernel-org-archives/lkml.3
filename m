@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935163Ab3GSCZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:25:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37833 "EHLO
+	id S935219Ab3GSCZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:25:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935039Ab3GSCZG (ORCPT
+	with ESMTP id S935194Ab3GSCZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:06 -0400
+	Thu, 18 Jul 2013 22:25:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        John Youn <johnyoun@synopsys.com>
-Subject: [ 08/24] xhci: check for failed dma pool allocation
-Date: Thu, 18 Jul 2013 19:24:40 -0700
-Message-Id: <20130719022404.583774910@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 18/24] timer: Fix jiffies wrap behavior of round_jiffies_common()
+Date: Thu, 18 Jul 2013 19:24:50 -0700
+Message-Id: <20130719022405.268285428@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -28,38 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Bart Van Assche <bart.vanassche@gmail.com>
 
-commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
+commit 9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1 upstream.
 
-Fail and free the container context in case dma_pool_alloc() can't allocate
-the raw context data part of it
+Direct compare of jiffies related values does not work in the wrap
+around case. Replace it with time_is_after_jiffies().
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
-Support for 64-byte contexts".
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: John Youn <johnyoun@synopsys.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Link: http://lkml.kernel.org/r/519BC066.5080600@acm.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/timer.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -369,6 +369,10 @@ static struct xhci_container_ctx *xhci_a
- 		ctx->size += CTX_SIZE(xhci->hcc_params);
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -145,9 +145,11 @@ static unsigned long round_jiffies_commo
+ 	/* now that we have rounded, subtract the extra skew again */
+ 	j -= cpu * 3;
  
- 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
-+	if (!ctx->bytes) {
-+		kfree(ctx);
-+		return NULL;
-+	}
- 	memset(ctx->bytes, 0, ctx->size);
- 	return ctx;
+-	if (j <= jiffies) /* rounding ate our timeout entirely; */
+-		return original;
+-	return j;
++	/*
++	 * Make sure j is still in the future. Otherwise return the
++	 * unmodified value.
++	 */
++	return time_is_after_jiffies(j) ? j : original;
  }
+ 
+ /**
 
 
