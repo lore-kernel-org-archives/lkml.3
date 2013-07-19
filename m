@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760869Ab3GSQ34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:29:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57441 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934401Ab3GSQ3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934447Ab3GSQ3v (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Jul 2013 12:29:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60532 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab3GSQ3i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 12:29:38 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
@@ -14,207 +14,175 @@ Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 09/15] DMA: shdma: support referencing specific DMACs within a multiplexer in DT
-Date: Fri, 19 Jul 2013 18:29:34 +0200
-Message-Id: <1374251374-30186-10-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v2 03/15] DMA: shdma: add r8a73a4 DMAC data to the device ID table
+Date: Fri, 19 Jul 2013 18:29:28 +0200
+Message-Id: <1374251374-30186-4-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:G+e2wK3c/0RYsRrID+6wE9ixABb2EoLkWjSU742bsTv
- 1+KGbN5Rd1de3Gpq7J2Ej7R32xx/BtiOCVgfhlcJLhIyFL2ke9
- z4s6DMcWkVC6xOK2TbSl+gSR1UHbzgeaq0SQhIeeVtz8qRn3fH
- /pN+IxItxaoGdm1CEvZ+UJOONxxdnsiVTA0OFIXDGw7L0FXQif
- WS5Xsw6NllrnPvV6PYAlyMed1tO75X+4TqoZZK/ejABzf8YkkZ
- AXr544oCns/DE0NqMZrqmGKx5+6waF9+qa7IO/yieuFOJINxkx
- uDaWjISJTxF9q8ptxhCPgtBFpXFyJnCKM3nnddk2K8oRkhsOd+
- LsOvd1uWw41zi9wSoqBVZGb2ebBpB+fv3SYEJXtEsY2rxSDFZK
- vBr6R2q/03BaQ==
+X-Provags-ID: V02:K0:Yh5YwjL/nzSWOQyTZH9RHqaodVgXE1gYItWyCW7RXQS
+ l6gr9jFLYF1SHabnuOlBKoqLpti+G+4r4eNyIOmzv+OpRDlwii
+ XB2DfL2VYf9VKEV5Nu+c9KSCgSYMCUM1ARz5OGF6QyiLqo35r5
+ mLxS3tgFcH4mQiDZh6phWbqcG669LiJRWcrgFifZkYlMWOI3Hf
+ NWTXDL43jc/aLbxQftJdzlJE//nR5HKQF1UQQFzENSsTg/aRTq
+ qkeVqMhkkAA+VBM9e1ItJYVgHJaD60sOAzOSfidX+11WaR3g1X
+ 7z3sJsZ17lEekqEYCXm6jGC4wQlUac6ToP9ZDAHEWMxY11Vjp5
+ ClyTJCAI6Rwuaf73qmJmQQRuneMSvC4eWdjldoAcLMohAqG6zu
+ E8R9RkpVM5KiA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently shdma DT nodes have to be placed under a multiplexer node. DMA
-slave DT nodes then use that multiplexer's phandle in their "dmas"
-properties. However, sometimes it can be necessary to let DMA slaves only
-use a specific DMAC instance. In this case it would be logical to just use
-the respective phandle in that slave's "dmas" property. For this to work
-the referenced DMAC has to register a struct of_dma instance, which isn't
-presently done. Instead the driver currently only registers one struct
-of_dma for the multiplexer. This patch adds support for such
-configurations. To enable this option a "#dma-cells" property also must be
-added to the respective DMAC DT node.
+This configuration data will be re-used, when DMAC DT support is added to
+r8a73a4.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- Documentation/devicetree/bindings/dma/shdma.txt |   16 ++++++
- drivers/dma/sh/shdma.h                          |    7 +++
- drivers/dma/sh/shdmac.c                         |   66 +++++++++++++++++++++++
- 3 files changed, 89 insertions(+), 0 deletions(-)
+ drivers/dma/sh/Kconfig         |    4 ++
+ drivers/dma/sh/Makefile        |    1 +
+ drivers/dma/sh/shdma-r8a73a4.c |   75 ++++++++++++++++++++++++++++++++++++++++
+ drivers/dma/sh/shdma.h         |    7 ++++
+ drivers/dma/sh/shdmac.c        |    1 +
+ 5 files changed, 88 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/dma/sh/shdma-r8a73a4.c
 
-diff --git a/Documentation/devicetree/bindings/dma/shdma.txt b/Documentation/devicetree/bindings/dma/shdma.txt
-index 7702e35..69ff80f 100644
---- a/Documentation/devicetree/bindings/dma/shdma.txt
-+++ b/Documentation/devicetree/bindings/dma/shdma.txt
-@@ -27,6 +27,22 @@ Required properties:
- 		"renesas,shdma-r8a7740" for the DMACs (not RTDMAC) on r8a7740
- 		"renesas,shdma" for a generic DMAC
+diff --git a/drivers/dma/sh/Kconfig b/drivers/dma/sh/Kconfig
+index 0ac3e94..6921ba2 100644
+--- a/drivers/dma/sh/Kconfig
++++ b/drivers/dma/sh/Kconfig
+@@ -23,6 +23,10 @@ config SUDMAC
+ 	help
+ 	  Enable support for the Renesas SUDMAC controllers.
  
-+Optional properties:
-+- #dma-cells:	this property is only needed in one specific case: if DMA slaves
-+		have to be able to request channels specifically from this DMAC,
-+		not from anyone from the multiplexer. In such a case the board
-+		.dts file can contain code, similar to this:
++config SHDMA_R8A73A4
++	def_bool y
++	depends on ARCH_R8A73A4 && SH_DMAE != n
 +
-+&dma1 {
-+	#dma-cells = <1>;
+ config SHDMA_R8A7740
+ 	def_bool y
+ 	depends on ARCH_R8A7740 && SH_DMAE != n
+diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
+index acdd3cb..e08489c 100644
+--- a/drivers/dma/sh/Makefile
++++ b/drivers/dma/sh/Makefile
+@@ -2,5 +2,6 @@ obj-$(CONFIG_SH_DMAE_BASE) += shdma-base.o shdma-of.o
+ obj-$(CONFIG_SH_DMAE) += shdma.o
+ shdma-y := shdmac.o
+ shdma-$(CONFIG_SHDMA_R8A7740) += shdma-r8a7740.o
++shdma-$(CONFIG_SHDMA_R8A73A4) += shdma-r8a73a4.o
+ shdma-objs := $(shdma-y)
+ obj-$(CONFIG_SUDMAC) += sudmac.o
+diff --git a/drivers/dma/sh/shdma-r8a73a4.c b/drivers/dma/sh/shdma-r8a73a4.c
+new file mode 100644
+index 0000000..d3b759d
+--- /dev/null
++++ b/drivers/dma/sh/shdma-r8a73a4.c
+@@ -0,0 +1,75 @@
++#include <linux/sh_dma.h>
++
++#include <mach/dma-register.h>
++#include <mach/r8a73a4.h>
++
++static const struct sh_dmae_slave_config dma_slaves[] = {
++	{
++		.slave_id	= SHDMA_SLAVE_MMCIF0_TX,
++		.addr		= 0xee200034,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF0_RX,
++		.addr		= 0xee200034,
++		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd2,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF1_TX,
++		.addr		= 0xee220034,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xe1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF1_RX,
++		.addr		= 0xee220034,
++		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xe2,
++	},
 +};
 +
-+&mmc0 {
-+	dmas = <&dma1 0xd1
-+		&dma1 0xd2>;
-+	dma-names = "tx", "rx";
++#define DMAE_CHANNEL(a, b)				\
++	{						\
++		.offset         = (a) - 0x20,		\
++		.dmars          = (a) - 0x20 + 0x40,	\
++		.chclr_bit	= (b),			\
++		.chclr_offset	= 0x80 - 0x20,		\
++	}
++
++static const struct sh_dmae_channel dma_channels[] = {
++	DMAE_CHANNEL(0x8000, 0),
++	DMAE_CHANNEL(0x8080, 1),
++	DMAE_CHANNEL(0x8100, 2),
++	DMAE_CHANNEL(0x8180, 3),
++	DMAE_CHANNEL(0x8200, 4),
++	DMAE_CHANNEL(0x8280, 5),
++	DMAE_CHANNEL(0x8300, 6),
++	DMAE_CHANNEL(0x8380, 7),
++	DMAE_CHANNEL(0x8400, 8),
++	DMAE_CHANNEL(0x8480, 9),
++	DMAE_CHANNEL(0x8500, 10),
++	DMAE_CHANNEL(0x8580, 11),
++	DMAE_CHANNEL(0x8600, 12),
++	DMAE_CHANNEL(0x8680, 13),
++	DMAE_CHANNEL(0x8700, 14),
++	DMAE_CHANNEL(0x8780, 15),
++	DMAE_CHANNEL(0x8800, 16),
++	DMAE_CHANNEL(0x8880, 17),
++	DMAE_CHANNEL(0x8900, 18),
++	DMAE_CHANNEL(0x8980, 19),
 +};
 +
- Example:
- 	dmac: dma-mux0 {
- 		compatible = "renesas,shdma-mux";
++struct sh_dmae_pdata r8a73a4_dma_pdata = {
++	.slave		= dma_slaves,
++	.slave_num	= ARRAY_SIZE(dma_slaves),
++	.channel	= dma_channels,
++	.channel_num	= ARRAY_SIZE(dma_channels),
++	.ts_low_shift	= TS_LOW_SHIFT,
++	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
++	.ts_high_shift	= TS_HI_SHIFT,
++	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
++	.ts_shift	= dma_ts_shift,
++	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
++	.dmaor_init     = DMAOR_DME,
++	.chclr_present	= 1,
++	.chclr_bitwise	= 1,
++};
 diff --git a/drivers/dma/sh/shdma.h b/drivers/dma/sh/shdma.h
-index 8394424..991316f 100644
+index b5fe545..82a83f8 100644
 --- a/drivers/dma/sh/shdma.h
 +++ b/drivers/dma/sh/shdma.h
-@@ -23,6 +23,7 @@
- #define SH_DMAE_TCR_MAX 0x00FFFFFF	/* 16MB */
+@@ -61,6 +61,13 @@ struct sh_dmae_desc {
+ #define to_sh_dev(chan) container_of(chan->shdma_chan.dma_chan.device,\
+ 				     struct sh_dmae_device, shdma_dev.dma_dev)
  
- struct device;
-+struct device_node;
- 
- struct sh_dmae_chan {
- 	struct shdma_chan shdma_chan;
-@@ -33,6 +34,11 @@ struct sh_dmae_chan {
- 	int pm_error;
- };
- 
-+struct sh_dmae_filter_info {
-+	u32			hw_req;
-+	struct device_node	*of_node;
-+};
++#ifdef CONFIG_SHDMA_R8A73A4
++extern struct sh_dmae_pdata r8a73a4_dma_pdata;
++#define r8a73a4_shdma_devid &r8a73a4_dma_pdata
++#else
++#define r8a73a4_shdma_devid NULL
++#endif
 +
- struct sh_dmae_device {
- 	struct shdma_dev shdma_dev;
- 	struct sh_dmae_chan *chan[SH_DMAE_MAX_CHANNELS];
-@@ -42,6 +48,7 @@ struct sh_dmae_device {
- 	void __iomem *dmars;
- 	unsigned int chcr_offset;
- 	u32 chcr_ie_bit;
-+	struct sh_dmae_filter_info filter_info;
- };
- 
- struct sh_dmae_regs {
+ #ifdef CONFIG_SHDMA_R8A7740
+ extern struct sh_dmae_pdata r8a7740_dma_pdata;
+ #define r8a7740_shdma_devid &r8a7740_dma_pdata
 diff --git a/drivers/dma/sh/shdmac.c b/drivers/dma/sh/shdmac.c
-index ae89261..0ddcddf 100644
+index fe54cda..6546bf9 100644
 --- a/drivers/dma/sh/shdmac.c
 +++ b/drivers/dma/sh/shdmac.c
-@@ -22,6 +22,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/of_dma.h>
- #include <linux/slab.h>
- #include <linux/interrupt.h>
- #include <linux/dmaengine.h>
-@@ -665,6 +666,63 @@ static const struct shdma_ops sh_dmae_shdma_ops = {
- 	.get_partial = sh_dmae_get_partial,
+@@ -907,6 +907,7 @@ MODULE_DEVICE_TABLE(of, sh_dmae_of_match);
+ 
+ const struct platform_device_id sh_dmae_id_table[] = {
+ 	{.name = SH_DMAE_DRV_NAME,},
++	{.name = "shdma-r8a73a4", .driver_data = (kernel_ulong_t)r8a73a4_shdma_devid,},
+ 	{.name = "shdma-r8a7740", .driver_data = (kernel_ulong_t)r8a7740_shdma_devid,},
+ 	{}
  };
- 
-+static bool sh_dmae_chan_filter(struct dma_chan *chan, void *arg)
-+{
-+	struct sh_dmae_filter_info *info = arg;
-+	struct shdma_chan *schan = to_shdma_chan(chan);
-+	int match = info->hw_req;
-+
-+	if (match < 0)
-+		/* No slave requested - arbitrary channel */
-+		return true;
-+
-+	dev_dbg(schan->dev, "%s(): trying %s for 0x%x\n", __func__,
-+		info->of_node->full_name, match);
-+
-+	if (schan->dev->of_node != info->of_node)
-+		return false;
-+
-+	return !sh_dmae_set_slave(schan, match, true);
-+}
-+
-+static struct dma_chan *sh_dmae_of_xlate(struct of_phandle_args *dma_spec,
-+					 struct of_dma *ofdma)
-+{
-+	struct sh_dmae_filter_info *info = ofdma->of_dma_data;
-+	u32 id = dma_spec->args[0];
-+	dma_cap_mask_t mask;
-+	struct dma_chan *chan;
-+
-+	if (dma_spec->args_count != 1)
-+		return NULL;
-+
-+	dma_cap_zero(mask);
-+	/* Only slave DMA channels can be allocated via DT */
-+	dma_cap_set(DMA_SLAVE, mask);
-+
-+	info->hw_req = id;
-+	info->of_node = dma_spec->np;
-+
-+	chan = dma_request_channel(mask, sh_dmae_chan_filter, info);
-+	if (chan)
-+		to_shdma_chan(chan)->hw_req = id;
-+
-+	return chan;
-+}
-+
-+static int sh_dmae_of_add(struct device *dev, struct sh_dmae_device *shdev)
-+{
-+	u32 cells;
-+	int ret = of_property_read_u32(dev->of_node, "#dma-cells", &cells);
-+
-+	dev_dbg(dev, "%s(): %u (%d)\n", __func__, cells, ret);
-+	if (ret < 0 || !cells)
-+		return 0;
-+
-+	return of_dma_controller_register(dev->of_node,
-+					  sh_dmae_of_xlate, &shdev->filter_info);
-+}
-+
- static const struct of_device_id sh_dmae_of_match[] = {
- 	{.compatible = "renesas,shdma",},
- 	{.compatible = "renesas,shdma-r8a73a4", .data = r8a73a4_shdma_devid,},
-@@ -845,6 +903,10 @@ static int sh_dmae_probe(struct platform_device *pdev)
- 		} while (irq_cnt < pdata->channel_num && chanirq_res);
- 	}
- 
-+	err = sh_dmae_of_add(&pdev->dev, shdev);
-+	if (err < 0)
-+		goto of_add_err;
-+
- 	/* Create DMA Channel */
- 	for (i = 0; i < irq_cnt; i++) {
- 		err = sh_dmae_chan_probe(shdev, i, chan_irq[i], chan_flag[i]);
-@@ -869,6 +931,8 @@ edmadevreg:
- 	pm_runtime_get(&pdev->dev);
- 
- chan_probe_err:
-+	of_dma_controller_free(pdev->dev.of_node);
-+of_add_err:
- 	sh_dmae_chan_remove(shdev);
- 
- #if defined(CONFIG_CPU_SH4) || defined(CONFIG_ARCH_SHMOBILE)
-@@ -895,6 +959,8 @@ static int sh_dmae_remove(struct platform_device *pdev)
- 	struct sh_dmae_device *shdev = platform_get_drvdata(pdev);
- 	struct dma_device *dma_dev = &shdev->shdma_dev.dma_dev;
- 
-+	of_dma_controller_free(pdev->dev.of_node);
-+
- 	dma_async_device_unregister(dma_dev);
- 
- 	spin_lock_irq(&sh_dmae_lock);
 -- 
 1.7.2.5
 
