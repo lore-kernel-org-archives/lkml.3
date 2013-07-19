@@ -1,128 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760130Ab3GSN06 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:26:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51309 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab3GSN04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:26:56 -0400
-Date: Fri, 19 Jul 2013 16:26:48 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Illia Smyrnov <illia.smyrnov@globallogic.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Input: omap-keypad: Cleanup - remove unnecessary IRQ
- enabling/disabling
-Message-ID: <20130719132648.GB17188@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1374239027-3927-1-git-send-email-illia.smyrnov@globallogic.com>
- <1374239027-3927-3-git-send-email-illia.smyrnov@globallogic.com>
+	id S1759997Ab3GSNco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:32:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33562 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab3GSNcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:32:42 -0400
+Message-ID: <51E93FF1.4060506@ti.com>
+Date: Fri, 19 Jul 2013 19:02:33 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yEPQxsgoJgBvi8ip"
-Content-Disposition: inline
-In-Reply-To: <1374239027-3927-3-git-send-email-illia.smyrnov@globallogic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, <bigeasy@linutronix.de>
+Subject: Re: [PATCH v2 2/4] phy: phy-amxxxx-usb: Add PHY driver for amxxxx
+ platform
+References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-3-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1374237277-17769-3-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---yEPQxsgoJgBvi8ip
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi,
 
-On Fri, Jul 19, 2013 at 04:03:47PM +0300, Illia Smyrnov wrote:
-> From: Illia Smyrnov <illia.smyrnov@ti.com>
->=20
-> Remove unnecessary IRQ enabling/disabling for certain keyboard events.
->=20
-> Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+On Friday 19 July 2013 06:04 PM, George Cherian wrote:
+> Adds phy driver support for am33xx platform, the host/device
+> peripheral controller shall get this phy object to control the phy
+> operations.
+> 
+> Signed-off-by: George Cherian <george.cherian@ti.com>
 > ---
->  drivers/input/keyboard/omap4-keypad.c |   15 ++++-----------
->  1 files changed, 4 insertions(+), 11 deletions(-)
->=20
-> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboa=
-rd/omap4-keypad.c
-> index c727548..73813b6 100644
-> --- a/drivers/input/keyboard/omap4-keypad.c
-> +++ b/drivers/input/keyboard/omap4-keypad.c
-> @@ -121,10 +121,6 @@ static irqreturn_t omap4_keypad_interrupt(int irq, v=
-oid *dev_id)
->  	unsigned int col, row, code, changed;
->  	u32 *new_state =3D (u32 *) key_state;
-> =20
-> -	/* Disable interrupts */
-> -	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQENABLE,
-> -			 OMAP4_VAL_IRQDISABLE);
-> -
->  	*new_state =3D kbd_readl(keypad_data, OMAP4_KBD_FULLCODE31_0);
->  	*(new_state + 1) =3D kbd_readl(keypad_data, OMAP4_KBD_FULLCODE63_32);
-> =20
-> @@ -154,11 +150,6 @@ static irqreturn_t omap4_keypad_interrupt(int irq, v=
-oid *dev_id)
->  	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQSTATUS,
->  			 kbd_read_irqreg(keypad_data, OMAP4_KBD_IRQSTATUS));
-> =20
-> -	/* enable interrupts */
-> -	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQENABLE,
-> -		OMAP4_DEF_IRQENABLE_EVENTEN |
-> -				OMAP4_DEF_IRQENABLE_LONGKEY);
-> -
+>  drivers/phy/Kconfig          |  12 +++
+>  drivers/phy/Makefile         |   1 +
+>  drivers/phy/phy-amxxxx-usb.c | 222 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 235 insertions(+)
+>  create mode 100644 drivers/phy/phy-amxxxx-usb.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 5f85909..55087ab 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -11,3 +11,15 @@ menuconfig GENERIC_PHY
+>  	  devices present in the kernel. This layer will have the generic
+>  	  API by which phy drivers can create PHY using the phy framework and
+>  	  phy users can obtain reference to the PHY.
+> +if GENERIC_PHY
 
-please don't remove this code. It'll be good to have this around when we
-move the driver to threaded IRQs without IRQF_ONESHOT. In fact, it would
-be very simple to implement such a change, wanna take it up ?
+Greg has some comments about the generic PHY framework. So instead of having
+like this, you might have to select GENERIC_PHY in the Kconfig of your phy driver.
+> +
+> +config PHY_AMXXXX_USB
+> +	tristate "AMXXXX USB2 PHY Driver"
+> +	depends on SOC_AM33XX
+> +	help
+> +	  Enable this to support the transceiver that is part of SOC. This
+> +	  phy supports all LS/FS/HS speed and also supports OTG functionality.
+> +	  The USB OTG controller communicates with this phy through stand UTMI
+> +	  interface.
+> +
+> +endif
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index 9e9560f..471c525 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -3,3 +3,4 @@
+>  #
+>  
+>  obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
+> +obj-$(CONFIG_PHY_AMXXXX_USB)	+= phy-amxxxx-usb.o
+> diff --git a/drivers/phy/phy-amxxxx-usb.c b/drivers/phy/phy-amxxxx-usb.c
+> new file mode 100644
+> index 0000000..d0b0749
+> --- /dev/null
+> +++ b/drivers/phy/phy-amxxxx-usb.c
+> @@ -0,0 +1,222 @@
+> +/*
+> + * phy-amxxxx-usb.c - USB PHY, talking to usb controller in AMXXX.
+> + *
+> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * Author: George Cherian <george.cherian@ti.com>
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/of.h>
+> +#include <linux/usb/otg.h>
+> +#include <linux/clk.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/usb/omap_control_usb.h>
+> +#include <linux/phy/phy.h>
+> +
+> +struct amxxxx_usb {
+> +	struct usb_phy	phy;
+> +	struct device	*dev;
+> +	struct device	*control_dev;
+> +	struct clk	*optclk;
+> +	u32		id;
+> +};
+> +
+> +#define phy_to_amxxxxphy(x)	container_of((x), struct amxxxx_phy, phy)
+> +
+> +
 
-It should be doable in few patches:
+additional blank line..
+> +static int amxxxx_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
+> +{
+> +	struct usb_phy	*phy = otg->phy;
+> +
+> +	otg->host = host;
+> +	if (!host)
+> +		phy->state = OTG_STATE_UNDEFINED;
+> +
+> +	return 0;
+> +}
+> +
+> +static int amxxxx_usb_set_peripheral(struct usb_otg *otg,
+> +		struct usb_gadget *gadget)
+> +{
+> +	struct usb_phy	*phy = otg->phy;
+> +
+> +	otg->gadget = gadget;
+> +	if (!gadget)
+> +		phy->state = OTG_STATE_UNDEFINED;
+> +
+> +	return 0;
+> +}
+> +
+> +
+> +
+ditto..
+> +static int amxxxx_usb_power_off(struct phy *x)
+> +{
+> +	struct amxxxx_usb *phy = phy_get_drvdata(x);
+> +
+> +	omap_control_am335x_phy_power(phy->control_dev, 0, phy->id);
+> +
+> +	return 0;
+> +}
+> +
+> +static int amxxxx_usb_power_on(struct phy *x)
+> +{
+> +	struct amxxxx_usb *phy = phy_get_drvdata(x);
+> +
+> +	omap_control_am335x_phy_power(phy->control_dev, 1, phy->id);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct phy_ops ops = {
+> +	.power_on	= amxxxx_usb_power_on,
+> +	.power_off	= amxxxx_usb_power_off,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static int amxxxx_usb2_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct amxxxx_usb			*phy;
+> +	struct phy			*generic_phy;
+> +	struct usb_otg			*otg;
+> +	struct phy_provider		*phy_provider;
+> +
+> +	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
 
-1) switch over to request_threaded_irq()
+You might have to bail out of memory allocation fails.
+> +
+> +	otg = devm_kzalloc(&pdev->dev, sizeof(*otg), GFP_KERNEL);
 
-	just blind move to a thread, without hardirq handler, so
-	IRQF_ONESHOT is mandatory.
+ditto.
+> +
+> +	phy->dev		= &pdev->dev;
+> +
+> +	if (np)
+> +		of_property_read_u32(np, "id", &phy->id);
+> +
+> +	phy->phy.dev		= phy->dev;
+> +	phy->phy.label		= "amxxxx-usb2";
+> +	phy->phy.otg		= otg;
+> +	phy->phy.type		= USB_PHY_TYPE_USB2;
+> +
+> +	phy_provider = devm_of_phy_provider_register(phy->dev,
+> +			of_phy_simple_xlate);
+> +	if (IS_ERR(phy_provider))
+> +		return PTR_ERR(phy_provider);
+> +
+> +	phy->control_dev = omap_get_control_dev();
+> +	if (IS_ERR(phy->control_dev)) {
+> +		dev_dbg(&pdev->dev, "Failed to get control device\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	omap_control_am335x_phy_power(phy->control_dev, 0, phy->id);
+> +
+> +	otg->set_host		= amxxxx_usb_set_host;
+> +	otg->set_peripheral	= amxxxx_usb_set_peripheral;
+> +	otg->phy		= &phy->phy;
+> +
+> +	platform_set_drvdata(pdev, phy);
+> +	pm_runtime_enable(phy->dev);
+> +
+> +	generic_phy = devm_phy_create(phy->dev, 0, &ops, "amxxxx-usb2");
+> +	if (IS_ERR(generic_phy))
+> +		return PTR_ERR(generic_phy);
+> +
+> +	phy_set_drvdata(generic_phy, phy);
+> +
+> +	phy->optclk = devm_clk_get(phy->dev, "usbotg_fck");
 
-2) add hardirq handler
+Will the device be functional without this clock? If it's not functional,, then
+you might have to bail out.
+> +	if (IS_ERR(phy->optclk))
+> +		dev_err(&pdev->dev, "unable to get usbotg_fck\n");
+> +	else
+> +		clk_prepare(phy->optclk);
+> +
+> +	device_init_wakeup(&pdev->dev, true);
+> +	usb_add_phy_dev(&phy->phy);
+> +
+> +	return 0;
+> +}
+> +
+> +static int amxxxx_usb2_remove(struct platform_device *pdev)
+> +{
+> +	struct amxxxx_usb	*phy = platform_get_drvdata(pdev);
+> +
+> +	clk_unprepare(phy->optclk);
+> +	usb_remove_phy(&phy->phy);
 
-	read IRQSTATUS to check if our device has generated IRQs
-	returning IRQ_WAKE_THREAD if true
+Should we be doing a power off of phy here?
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_RUNTIME
+> +
+> +static int amxxxx_usb2_runtime_suspend(struct device *dev)
+> +{
+> +	struct platform_device	*pdev = to_platform_device(dev);
+> +	struct amxxxx_usb	*phy = platform_get_drvdata(pdev);
+> +
+> +	omap_control_am335x_phy_power(phy->control_dev, 0, phy->id);
+> +	if (device_may_wakeup(dev))
+> +		omap_control_am335x_phy_wkup(phy->control_dev, 1, phy->id);
+> +	clk_disable(phy->optclk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int amxxxx_usb2_runtime_resume(struct device *dev)
+> +{
+> +	struct platform_device	*pdev = to_platform_device(dev);
+> +	struct amxxxx_usb	*phy = platform_get_drvdata(pdev);
+> +
+> +
+empty blank line..
 
-3) move 'IRQ masking logic' to hardirq handler, before returning
-IRQ_WAKE_THREAD
-
-	this will let you remove IRQF_ONESHOT
-
-4) finally remove IRQF_ONESHOT
-
-	this makes sure that IRQs aren't kept disabled until we have
-	time to iterate over the entire keypad matrix. Only the keypad
-	IRQ will be masked.
-
---=20
-balbi
-
---yEPQxsgoJgBvi8ip
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR6T6YAAoJEIaOsuA1yqREiu8P/13909a6NgJFVGavASP9XXGk
-4XZjZfFJjA/o0kqsms9Oo3A7HaGVyNgfDwYynZruNJX/eQaPiiEFZi5nUwYLsOMZ
-a1UlpXnHrfIvJis6u9njgtVbvFINt5fab28QEMAKFkqbz8tqK5qlQZ1VuZvNpkxS
-hEQKC9DY1vAPLH8TMVIUYvZ9Wk1qleQNoJIlqj7hkz0FS+2C+MEPzbYI6Ele/X7N
-HnUj01IqV0cwLCM1Sbzyh5UfeXAJCcXNlj4Z+TeF+gysdpVUKNRbW7nQGRFND+5u
-3eHah6VGkQPr+zePF8OwObPlsa+nZhGnTqlVs7p2W1AD3OeNxV+VCZ9ZXoGlJlcB
-G3C2y6wjNJDuvpowRL0PlgQVtD5ee2VS5hZoVldM4aWWgLcsJzDOC7eXL6o2sVC6
-Vjj2r+msCZ7XuzDUgnwVvxNd9I0/JrEtGYBOU04oh/OSzRfzOMVIxXbA7AwBQIaX
-WwDDbLCEvPDSI+4K5bxl00H6f6FoY1rECQ5L3Tx5xUM57Z257HGEj5jhn44KbMa+
-SVorZdNudFia9wA0cWINi0+rw+fJlMN2H1Q7saseJQ6DautHtBRD9u3uhIUKZ8FQ
-wMEqUP3INNFoVsKwbIokevh57v5JPewts8DB9pwRsElDRSryZQzjoqlEdCjqNE7z
-b4y4G9daSw1acPmkpzox
-=kACE
------END PGP SIGNATURE-----
-
---yEPQxsgoJgBvi8ip--
+Thanks
+Kishon
