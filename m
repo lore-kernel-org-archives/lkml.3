@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3GSTE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:04:57 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:53408 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3GSTE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:04:56 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/XwYvfZ+8=
-X-RZG-CLASS-ID: mo00
-Date: Fri, 19 Jul 2013 21:04:27 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Daniel Kiper <daniel.kiper@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Brandon Philips <brandon@ifup.org>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: is kexec on Xen domU possible?
-Message-ID: <20130719190427.GA26622@aepfle.de>
-References: <20130719020603.GA22932@kroah.com>
- <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
- <20130719135445.GB12144@localhost.localdomain>
+	id S1761175Ab3GSTFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:05:24 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:58802 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753334Ab3GSTFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 15:05:22 -0400
+Message-ID: <51E98DF2.3050608@sgi.com>
+Date: Fri, 19 Jul 2013 14:05:22 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130719135445.GB12144@localhost.localdomain>
-User-Agent: Mutt/1.5.21.rev5641 (2013-02-23)
+To: Holger Hans Peter Freyther <holger@freyther.de>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: /proc/timer_list and weird behavior with dropbear
+References: <20130719152800.GA20792@xiaoyu.lan> <51E95F0B.6080703@sgi.com> <20130719170354.GE5902@xiaoyu.lan>
+In-Reply-To: <20130719170354.GE5902@xiaoyu.lan>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.140]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, Konrad Rzeszutek Wilk wrote:
+On 07/19/2013 12:03 PM, Holger Hans Peter Freyther wrote:
+> On Fri, Jul 19, 2013 at 10:45:15AM -0500, Nathan Zimmer wrote:
+>
+>> I hadn't noticed anything.
+>> Let me try your program and see what I may have missed.
+> Hi,
+>
+> I neither know the semantics of the timer_list nor how to use
+> seq_file correctly. What happens is that timer_list_next will only
+> be called once. This means that iter->cpu will never be increased.
+>
+> This just moves to the next CPU when stop is called (e.g. nothing
+> was added once the print_tickdevice was printed). Do you think
+> this could be correct?
+>
+>
+>
+> diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+> index 3bdf283..8d36a3d 100644
+> --- a/kernel/time/timer_list.c
+> +++ b/kernel/time/timer_list.c
+> @@ -327,8 +327,10 @@ static void *timer_list_next(struct seq_file *file, void *v, loff_t *offset)
+>   	return timer_list_start(file, offset);
+>   }
+>   
+> -static void timer_list_stop(struct seq_file *seq, void *v)
+> +static void timer_list_stop(struct seq_file *file, void *v)
+>   {
+> +	struct timer_list_iter *iter = file->private;
+> +	iter->cpu = cpumask_next(iter->cpu, cpu_online_mask);
+>   }
+>   
+>   static const struct seq_operations timer_list_sops = {
 
-> Olaf, you wouldn't have any time to look at this some more now
-> that Xen 4.3 is out?
+That certainly does make the issue go away.
+I think a better solution would be to have an increment in the 
+timer_list_start.
 
-Currently no time to continue work on kexec for PVonHVM, sorry.
-
-Olaf
