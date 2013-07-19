@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759654Ab3GSO6n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:58:43 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:34423 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab3GSO6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:58:41 -0400
-MIME-Version: 1.0
-X-Originating-IP: [67.180.19.67]
-In-Reply-To: <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
-References: <20130719020603.GA22932@kroah.com>
-	<20130719131819.GC11233@debian70-amd64.local.net-space.pl>
-Date: Fri, 19 Jul 2013 07:58:40 -0700
-Message-ID: <CAK7GKxnB933DkO8qM6HxZCbDVNn4ze5Ere7ZWnXxBieYMg88dQ@mail.gmail.com>
-Subject: Re: is kexec on Xen domU possible?
-From: Brandon Philips <brandon@ifup.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759923Ab3GSPF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:05:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16024 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048Ab3GSPFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 11:05:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,702,1367996400"; 
+   d="scan'208";a="367962311"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>, eranian@google.com
+Subject: [PATCH] perf, x86: Enable PEBS mode automatically for mem-{loads,stores} v4
+Date: Fri, 19 Jul 2013 08:05:49 -0700
+Message-Id: <1374246349-9664-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 6:18 AM, Daniel Kiper <daniel.kiper@oracle.com> wrote:
->   - PV guests: there is no support for kexec at this time;
->     Once I wrote an implementatation for that type of guests
->     for one company but according to our agreement I could not
->     publish this code; However, I could use it as a base for
->     publicly available kexec implementation; Currently, I do
->     not have any plans to work on this due to some more important
->     stuff to do; However, question about kexec support for PV
->     guests is raised from time to time and maybe this issue
->     will be much more important than others once,
+From: Andi Kleen <ak@linux.intel.com>
 
-To do kexec on PV guests is there a dependency on support from the dom0?
+[The patch to enable this in the user tools has been sent separately]
 
-e.g. if we recreated your patches and merged them into 3.12 and booted
-on a XenServer from a few years ago would it work?
+With the earlier patches to automatically try cpu// and add
+a precise sys attribute, we can now enable PEBS for the mem-loads,
+mem-stores events everywhere.
 
-What I want to do is use kexec on existing public cloud providers,
-that use Xen, like AWS or Rackspace.
+This allows to use
 
-Thanks,
+perf record -e mem-loads ...
 
-Brandon
+instead of
+
+perf record -e cpu/mem-loads/p ...
+
+Always use precise=2 even though it is costly pre-Haswell
+
+Cc: eranian@google.com
+v2: Different white space
+v3: Always use precise=2, as people seem to think overhead doesn't matter.
+v4: Longer lines
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index fbc9210..1871866 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -176,9 +176,9 @@ static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
+ 	EVENT_EXTRA_END
+ };
+ 
+-EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
+-EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
+-EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
++EVENT_ATTR_STR(mem-loads,  mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3,precise=2");
++EVENT_ATTR_STR(mem-loads,  mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3,precise=2");
++EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2,precise=2");
+ 
+ struct attribute *nhm_events_attrs[] = {
+ 	EVENT_PTR(mem_ld_nhm),
+@@ -2034,8 +2034,9 @@ static __init void intel_nehalem_quirk(void)
+ 	}
+ }
+ 
+-EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
+-EVENT_ATTR_STR(mem-stores,     mem_st_hsw,     "event=0xd0,umask=0x82")
++EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,
++		"event=0xcd,umask=0x1,ldlat=3,precise=2");
++EVENT_ATTR_STR(mem-stores,     mem_st_hsw,  "event=0xd0,umask=0x82,precise=2")
+ 
+ static struct attribute *hsw_events_attrs[] = {
+ 	EVENT_PTR(mem_ld_hsw),
+-- 
+1.8.1.4
+
