@@ -1,115 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3GSUXo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:23:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58764 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3GSUXH (ORCPT
+	id S1751956Ab3GSUXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:23:42 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39110 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3GSUXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:23:07 -0400
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 13/15] ARM: shmobile: r8a73a4: add a DT node and a clock alias for the DMAC
-Date: Fri, 19 Jul 2013 22:22:54 +0200
-Message-Id: <1374265376-30777-4-git-send-email-g.liakhovetski@gmx.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:finf6faoST7J0BV02J8IPghO+37p8Ge7s3T1hrObp6a
- vtmM30bUo7wpzuPUODuaOckHe7SpLMEPY8Vshn0WkeXpD/PTMo
- z/0uJe74CJxNWjcmBVcT5WINWEAiX3qJWKC5nEW0kGcGANaqmC
- WC2oRlKT/kAv/ErNOhpwC7H/2AeOqDchzw8IsUy6wVwTm/LY+u
- 9DklshV+91f3ElNZwG5vCfw53HMHYv2lCYC9jMyqG40WTDl4do
- hraDPdAQkgG/JkY5IBOItn1V8lZE+uHqmGYj4HxxVc0VHTVC8C
- 0JGzl4jXtIaNVbkqZOJKCI7ZUDO44hOqyfWTMufjmqvNp186Mt
- gG7eCxXYvVnHpzUyAMKtvftvMuaYvjvCRlE6P+QY144VtZHlHZ
- hgsbEj0Tr+Hpw==
+	Fri, 19 Jul 2013 16:23:09 -0400
+Message-ID: <51E9A029.3000008@kernel.org>
+Date: Fri, 19 Jul 2013 21:23:05 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Hector Palacios <hector.palacios@digi.com>
+CC: Marek Vasut <marex@denx.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify
+ scale
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307191639.01240.marex@denx.de> <51E95BEC.5080703@digi.com> <201307191817.27102.marex@denx.de> <51E967D8.8020001@digi.com>
+In-Reply-To: <51E967D8.8020001@digi.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a DT node for the only system DMAC instance on r8a73a4. The RT DMAC
-can be added later under the same multiplexer, because they can serve the
-same slaves and use the same MID-RID values. Configuration data is
-supplied to the driver, using a compatibility match string.
+On 07/19/2013 05:22 PM, Hector Palacios wrote:
+> Dear Marek,
+> 
+> On 07/19/2013 06:17 PM, Marek Vasut wrote:
+>>> Here you have three entries per channel:
+>>> in_voltageX_raw        -> the sample raw value
+>>> in_voltageX_scale    -> the scale to multiply the raw value to get the
+>> voltage
+>>> in mV in_voltageX_scale_available -> lists the available scales of the
+>>> channel
+>>>
+>>> For example for channel 0:
+>>>
+>>> # cat in_voltage0_scale_available
+>>> 0.451660156 0.903320312    (two scales available, first with divider by two
+>>> disabled, second with divider by two enabled)
+>>>
+>>> # cat in_voltage0_scale
+>>> 0.451660156            (divider by two is currently disabled)
+>>>
+>>> # cat in_voltage0_raw        (shows measured value)
+>>> 1000
+>>>
+>>> If you multiply the value by the scale you get: 1000 * 0.451660156 = 451.6
+>>> mV
+>>>
+>>> # echo 0.903320312 > in_voltage0_scale    (enables the divider by two)
+>>
+>> Ok, so I have to remember this value : '0.903320312' in case I want to enable
+>> divide-by-two functionality?
+> 
+> No you don't. That's why there is a 'in_voltage_scale_available' that lists the available values.
+> 
+>> Hmmmm ... why would this interface not work:
+>> echo 2 > in_voltage0_scale
+>>
+>> or
+>>
+>> echo 1 > in_voltage0_scale
+> 
+> An easy thing like that is what I first submitted, but it was rejected and I was told to use the scale_available
+> descriptor instead, which is the common interface the rest of drivers use.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
- arch/arm/boot/dts/r8a73a4.dtsi         |   43 ++++++++++++++++++++++++++++++++
- arch/arm/mach-shmobile/clock-r8a73a4.c |    1 +
- 2 files changed, 44 insertions(+), 0 deletions(-)
+This comes down to allowing us to have one generic predictable interface (which sometimes
+ends up looking uggly!).  The key thing is that if you are outputing using the _raw
+sysfs interfaces, the aim is to avoid doing nasty maths in kernel to get to 'standard' units such as mV.
 
-diff --git a/arch/arm/boot/dts/r8a73a4.dtsi b/arch/arm/boot/dts/r8a73a4.dtsi
-index 47bf326..2f1bec8 100644
---- a/arch/arm/boot/dts/r8a73a4.dtsi
-+++ b/arch/arm/boot/dts/r8a73a4.dtsi
-@@ -78,6 +78,49 @@
- 				<0 56 4>, <0 57 4>;
- 	};
- 
-+	dmac: dma-multiplexer@0 {
-+		compatible = "renesas,shdma-mux";
-+		#dma-cells = <1>;
-+		dma-channels = <20>;
-+		dma-requests = <256>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
-+
-+		dma0: dma-controller@e6700020 {
-+			compatible = "renesas,shdma-r8a73a4";
-+			reg = <0 0xe6700020 0 0x89e0>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 220 4
-+					0 200 4
-+					0 201 4
-+					0 202 4
-+					0 203 4
-+					0 204 4
-+					0 205 4
-+					0 206 4
-+					0 207 4
-+					0 208 4
-+					0 209 4
-+					0 210 4
-+					0 211 4
-+					0 212 4
-+					0 213 4
-+					0 214 4
-+					0 215 4
-+					0 216 4
-+					0 217 4
-+					0 218 4
-+					0 219 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5", "ch6", "ch7",
-+					"ch8", "ch9", "ch10", "ch11",
-+					"ch12", "ch13", "ch14", "ch15",
-+					"ch16", "ch17", "ch18", "ch19";
-+		};
-+	};
-+
- 	thermal@e61f0000 {
- 		compatible = "renesas,rcar-thermal";
- 		reg = <0 0xe61f0000 0 0x14>, <0 0xe61f0100 0 0x38>,
-diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
-index cd62b11..7d6d2a3 100644
---- a/arch/arm/mach-shmobile/clock-r8a73a4.c
-+++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
-@@ -580,6 +580,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
- 	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
- 	CLKDEV_DEV_ID("shdma-r8a73a4.0", &mstp_clks[MSTP218]),
-+	CLKDEV_DEV_ID("e6700020.dma-controller", &mstp_clks[MSTP218]),
- 	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
- 	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
- 	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
--- 
-1.7.2.5
+Hence that scale attribute tells you what to apply to the value.  If you just wanted it
+to be 1 or 2 then the in_voltage0_raw value would have to be a long and nasty
+decimal.  Now we do have the option of in_voltage0_calibscale which would be applied
+internally to the value but it really isn't for this purpose (it's for devices with a 'trim'
+control) and you'd still have scale set to 0.903320312 or similar. Although they have
+meaning obviously, in this case 1 and 2 are little more than 'magic' numbers.
 
+Note that when things are quite, I'm at least in theory working on a cleaner interface
+for these 'available' attributes that would also provide in kernel access for IIO consumers.
+Basically this will be another callback to get either the 'range' of pseudo continuous
+variables or the 'available' set for parameters like this.
+
+Being lazy I'm happy to let someone else clean this corner up if they like? *looks hopeful*
+
+Jonathan
+> 
+> Best regards,
+> -- 
+> Hector Palacios
