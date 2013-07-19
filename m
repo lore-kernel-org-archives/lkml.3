@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964909Ab3GSFV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:21:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39301 "EHLO
+	id S965248Ab3GSFWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:22:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39315 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759572Ab3GSFV4 (ORCPT
+	with ESMTP id S964839Ab3GSFV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:21:56 -0400
+	Fri, 19 Jul 2013 01:21:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [ 12/38] drivers: hv: switch to use mb() instead of smp_mb()
-Date: Thu, 18 Jul 2013 22:21:28 -0700
-Message-Id: <20130719052048.721065400@linuxfoundation.org>
+        Laszlo Ersek <lersek@redhat.com>, John Haxby <john.haxby@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 15/38] xen/time: remove blocked time accounting from xen "clockchip"
+Date: Thu, 18 Jul 2013 22:21:31 -0700
+Message-Id: <20130719052048.928028754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -28,81 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Laszlo Ersek <lersek@redhat.com>
 
-commit 35848f68b07df3f917cb13fc3c134718669f569b upstream.
+commit 0b0c002c340e78173789f8afaa508070d838cf3d upstream.
 
-Even if guest were compiled without SMP support, it could not assume that host
-wasn't. So switch to use mb() instead of smp_mb() to force memory barriers for
-UP guest.
+... because the "clock_event_device framework" already accounts for idle
+time through the "event_handler" function pointer in
+xen_timer_interrupt().
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+The patch is intended as the completion of [1]. It should fix the double
+idle times seen in PV guests' /proc/stat [2]. It should be orthogonal to
+stolen time accounting (the removed code seems to be isolated).
+
+The approach may be completely misguided.
+
+[1] https://lkml.org/lkml/2011/10/6/10
+[2] http://lists.xensource.com/archives/html/xen-devel/2010-08/msg01068.html
+
+John took the time to retest this patch on top of v3.10 and reported:
+"idle time is correctly incremented for pv and hvm for the normal
+case, nohz=off and nohz=idle." so lets put this patch in.
+
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Signed-off-by: John Haxby <john.haxby@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/ring_buffer.c |   10 +++++-----
- drivers/hv/vmbus_drv.c   |    2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/xen/time.c |   17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
 
---- a/drivers/hv/ring_buffer.c
-+++ b/drivers/hv/ring_buffer.c
-@@ -32,7 +32,7 @@
- void hv_begin_read(struct hv_ring_buffer_info *rbi)
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runsta
+ /* snapshots of runstate info */
+ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+ 
+-/* unused ns of stolen and blocked time */
++/* unused ns of stolen time */
+ static DEFINE_PER_CPU(u64, xen_residual_stolen);
+-static DEFINE_PER_CPU(u64, xen_residual_blocked);
+ 
+ /* return an consistent snapshot of 64-bit time/counter value */
+ static u64 get64(const u64 *p)
+@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
  {
- 	rbi->ring_buffer->interrupt_mask = 1;
--	smp_mb();
-+	mb();
+ 	struct vcpu_runstate_info state;
+ 	struct vcpu_runstate_info *snap;
+-	s64 blocked, runnable, offline, stolen;
++	s64 runnable, offline, stolen;
+ 	cputime_t ticks;
+ 
+ 	get_runstate_snapshot(&state);
+@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
+ 	snap = &__get_cpu_var(xen_runstate_snapshot);
+ 
+ 	/* work out how much time the VCPU has not been runn*ing*  */
+-	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
+ 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
+ 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
+ 
+@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
+ 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
+ 	__this_cpu_write(xen_residual_stolen, stolen);
+ 	account_steal_ticks(ticks);
+-
+-	/* Add the appropriate number of ticks of blocked time,
+-	   including any left-overs from last time. */
+-	blocked += __this_cpu_read(xen_residual_blocked);
+-
+-	if (blocked < 0)
+-		blocked = 0;
+-
+-	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
+-	__this_cpu_write(xen_residual_blocked, blocked);
+-	account_idle_ticks(ticks);
  }
  
- u32 hv_end_read(struct hv_ring_buffer_info *rbi)
-@@ -41,7 +41,7 @@ u32 hv_end_read(struct hv_ring_buffer_in
- 	u32 write;
- 
- 	rbi->ring_buffer->interrupt_mask = 0;
--	smp_mb();
-+	mb();
- 
- 	/*
- 	 * Now check to see if the ring buffer is still empty.
-@@ -71,7 +71,7 @@ u32 hv_end_read(struct hv_ring_buffer_in
- 
- static bool hv_need_to_signal(u32 old_write, struct hv_ring_buffer_info *rbi)
- {
--	smp_mb();
-+	mb();
- 	if (rbi->ring_buffer->interrupt_mask)
- 		return false;
- 
-@@ -442,7 +442,7 @@ int hv_ringbuffer_write(struct hv_ring_b
- 					     sizeof(u64));
- 
- 	/* Issue a full memory barrier before updating the write index */
--	smp_mb();
-+	mb();
- 
- 	/* Now, update the write location */
- 	hv_set_next_write_location(outring_info, next_write_location);
-@@ -549,7 +549,7 @@ int hv_ringbuffer_read(struct hv_ring_bu
- 	/* Make sure all reads are done before we update the read index since */
- 	/* the writer may start writing to the read area once the read index */
- 	/*is updated */
--	smp_mb();
-+	mb();
- 
- 	/* Update the read index */
- 	hv_set_next_read_location(inring_info, next_read_location);
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -434,7 +434,7 @@ static void vmbus_on_msg_dpc(unsigned lo
- 		 * will not deliver any more messages since there is
- 		 * no empty slot
- 		 */
--		smp_mb();
-+		mb();
- 
- 		if (msg->header.message_flags.msg_pending) {
- 			/*
+ /* Get the TSC speed from Xen */
 
 
