@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934320Ab3GSGwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 02:52:50 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:10421
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759681Ab3GSGwr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 02:52:47 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h1de096h8275bh8275dha509lz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Gupta Ruchika-R66431 <R66431@freescale.com>
-To: Stoica Cristian-B18196 <B18196@freescale.com>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geanta Neag Horia Ioan-B05471 <B05471@freescale.com>,
-        Stoica Cristian-B18196 <B18196@freescale.com>
-Subject: RE: [PATCH] crypto: remove double execution of the same test suite
-Thread-Topic: [PATCH] crypto: remove double execution of the same test suite
-Thread-Index: AQHOg9FjNPue39lsmE+4dsBBH4vfOplrkT/w
-Date: Fri, 19 Jul 2013 06:52:43 +0000
-Message-ID: <B2B5EF0D8FDD10429C8DE6C4C2B38282093EE905@039-SN2MPN1-022.039d.mgd.msft.net>
-References: <1374163027-17201-1-git-send-email-cristian.stoica@freescale.com>
-In-Reply-To: <1374163027-17201-1-git-send-email-cristian.stoica@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.60]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759716Ab3GSG6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 02:58:13 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:50888 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3GSG6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 02:58:11 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <db631755ca657e2841de51e72304fa6598c98508.1373970214.git.viresh.kumar@linaro.org>
+References: <db631755ca657e2841de51e72304fa6598c98508.1373970214.git.viresh.kumar@linaro.org>
+Date: Fri, 19 Jul 2013 09:58:11 +0300
+Message-ID: <CAHp75VfzPB1-AUkVG_is8qk_b-zRoNM09iRu33xKj1TvSZmvvg@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine/MAINTAINERS: Add Andy as Co-Maintainer of DW
+ DMA Controller
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shevchenko, Andy" <andriy.shevchenko@linux.intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Ruchika Gupta <ruchika.gupta@freescale.com>
+On Fri, Jul 19, 2013 at 6:43 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Andy has done enough work on Synopsys Designware DMA Controller and I believe he
+> should Co-Maintain this driver along with me. So this patch.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-> -----Original Message-----
-> From: linux-crypto-owner@vger.kernel.org [mailto:linux-crypto-
-> owner@vger.kernel.org] On Behalf Of Cristian Stoica
-> Sent: Thursday, July 18, 2013 9:27 PM
-> To: herbert@gondor.hengli.com.au
-> Cc: davem@davemloft.net; linux-crypto@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Geanta Neag Horia Ioan-B05471; Stoica Cristian-
-> B18196
-> Subject: [PATCH] crypto: remove double execution of the same test suite
-> 
-> This patch removes redundant execution of the same test suite in cases where
-> alg and driver variables are the same (e.g. when alg_test is called from
-> tcrypt_test)
-> 
-> Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+Thanks.
+
+Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+
 > ---
->  crypto/testmgr.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/crypto/testmgr.c b/crypto/testmgr.c index 2f00607..e091ef6
-> 100644
-> --- a/crypto/testmgr.c
-> +++ b/crypto/testmgr.c
-> @@ -3234,7 +3234,7 @@ int alg_test(const char *driver, const char *alg, u32
-> type, u32 mask)
->  	if (i >= 0)
->  		rc |= alg_test_descs[i].test(alg_test_descs + i, driver,
->  					     type, mask);
-> -	if (j >= 0)
-> +	if (j >= 0 && j != i)
->  		rc |= alg_test_descs[j].test(alg_test_descs + j, driver,
->  					     type, mask);
-> 
+>  MAINTAINERS | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 5d3facf..a4d57d9 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7111,6 +7111,7 @@ F:        drivers/tty/serial
+>
+>  SYNOPSYS DESIGNWARE DMAC DRIVER
+>  M:     Viresh Kumar <viresh.linux@gmail.com>
+> +M:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>  S:     Maintained
+>  F:     include/linux/dw_dmac.h
+>  F:     drivers/dma/dw/
 > --
-> 1.8.1.5
-> 
-> 
+> 1.7.12.rc2.18.g61b472e
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
+
+--
+With Best Regards,
+Andy Shevchenko
