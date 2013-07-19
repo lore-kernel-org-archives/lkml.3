@@ -1,90 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760311Ab3GSMIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:08:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57939 "EHLO mx1.redhat.com"
+	id S1760345Ab3GSMIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:08:52 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51974 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111Ab3GSMIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:08:13 -0400
-Date: Fri, 19 Jul 2013 14:11:03 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
-Cc: Arend van Spriel <arend@broadcom.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: [BUG] 3.10 regression: hang on suspend
-Message-ID: <20130719121102.GB1570@redhat.com>
-References: <51E4501D.3010001@odi.ch>
- <20130716065626.GA1587@redhat.com>
- <51E4F790.6090308@odi.ch>
- <51E51712.4020609@broadcom.com>
- <51E58FA5.4000804@odi.ch>
- <20130717122944.GA25894@redhat.com>
- <51E6E1AB.5010300@odi.ch>
- <20130718105550.GA4628@redhat.com>
- <51E83AB7.6020002@odi.ch>
- <20130719120842.GA1570@redhat.com>
+	id S1760285Ab3GSMIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 08:08:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
+Date: Fri, 19 Jul 2013 14:18:41 +0200
+Message-ID: <5137167.kOnaWbA4s1@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51E8B923.5090201@gmail.com>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com> <1444243.g9GbxN3NM0@vostro.rjw.lan> <51E8B923.5090201@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130719120842.GA1570@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-
-On Fri, Jul 19, 2013 at 02:08:42PM +0200, Stanislaw Gruszka wrote:
-> On Thu, Jul 18, 2013 at 08:57:59PM +0200, Ortwin Glück wrote:
-> > On 07/18/2013 12:55 PM, Stanislaw Gruszka wrote:
-> > >objdump -r -d --prefix-addresses net/mac80211/mac80211.ko > mac80211.txt
-> > >objdump -r -d --prefix-addresses drivers/net/wireless/iwlwifi/dvm/iwldvm.ko > iwldvm.txt
-> > 
-> > Here you go. Please note, that the offsets have changed due to
-> > .config changes. New trace attached. Transcript:
-> > 
-> > iwlagn_mac_remove_interface+0x5f/0x160
-> > __ieee80211_suspend+0x4a1/0xb30
-> > ieee80211_suspend+0x1a/0x20
+On Thursday, July 18, 2013 09:57:23 PM Robert Hancock wrote:
+> On 07/03/2013 03:40 PM, Rafael J. Wysocki wrote:
+> > On Wednesday, July 03, 2013 05:04:53 PM Mika Westerberg wrote:
+> >> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >>
+> >> Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+> >> PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+> >> deeper in hierarchy:
+> >>
+> >> Device (RP05)
+> >> {
+> >>     // ...
+> >>     Device (HRUP)
+> >>     {
+> >>         // ...
+> >>         Device (HRDN)
+> >>         {
+> >>             // ...
+> >>             Device (EPUP)
+> >>             {
+> >>                 // ...
+> >>                 Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+> >>                 {
+> >>                     Return (One)
+> >>                 }
+> >>             }
+> >>         }
+> >>     }
+> >> }
+> >>
+> >> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> >> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >> ---
+> >>   drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
+> >>   1 file changed, 13 insertions(+)
+> >>
+> >> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> >> index 2a47e82..d92ebfb 100644
+> >> --- a/drivers/pci/hotplug/acpi_pcihp.c
+> >> +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> >> @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+> >>   	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+> >>   	if (ACPI_SUCCESS(status) && removable)
+> >>   		return 1;
+> >> +
+> >> +	/*
+> >> +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
+> >> +	 *
+> >> +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+> >> +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
+> >> +	 * deeper in hierarchy.
+> >> +	 */
+> >> +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+> >> +			&removable);
+> >
+> > Well, calling stuff like this directly from a general function is kind of ugly.
+> >
+> > Can we use something like a quirk instead?  A DMI check or something?
 > 
-> Crash happen because we call iwlagn_mac_remove_interface with
-> vif_priv->ctx NULL. I do not see any possibility of that other than
-> doing ->remove_interface without previous ->add_interface, but I do
-> not see how that possible. 
+> Presumably this device functions under Windows so clearly Windows is 
+> capable of dealing with this case, so we should too.
 > 
-> Does crash happen on any suspend or on second one ?  
-> 
-> I'm attaching patch, which should prevent crash (but not fix the issue,
-> just workaround it), plese apply it. If it make suspend work, please then
-> reload iwlwifi module with debug=0x3 option, suspend/resume machine and
-> provide dmesg output after that.
+> There are way too many of these silly DMI checks in the kernel - we 
+> should be way more hesitant to add more of them. They're almost 
+> guaranteed to be incomplete. I would say they should be avoided whenever 
+> possible unless there's some reason why a general workaround can't be used.
 
-This time really attaching forgotten patch.
+This horse is already dead. :-)
 
-Stanislaw
+Please check the series I posted the day before yesterday.
 
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="iwlwifi_check_ctx_null.patch"
+Thanks,
+Rafael
 
-diff --git a/drivers/net/wireless/iwlwifi/dvm/mac80211.c b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-index cab23af..7f25fe1 100644
---- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-@@ -1536,6 +1536,9 @@ static void iwlagn_mac_remove_interface(struct ieee80211_hw *hw,
- 
- 	IWL_DEBUG_MAC80211(priv, "enter\n");
- 
-+	if (WARN(ctx == NULL, "remove interface with NULL ctx\n"))
-+		return;
-+
- 	mutex_lock(&priv->mutex);
- 
- 	if (WARN_ON(ctx->vif != vif)) {
 
---AhhlLboLdkugWU4S--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
