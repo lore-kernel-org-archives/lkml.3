@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965920Ab3GSFfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:35:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39951 "EHLO
+	id S965780Ab3GSFf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:35:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965727Ab3GSF04 (ORCPT
+	with ESMTP id S965720Ab3GSF04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:26:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [ 52/72] ext4: fix data offset overflow on 32-bit archs in ext4_inline_data_fiemap()
-Date: Thu, 18 Jul 2013 22:26:09 -0700
-Message-Id: <20130719052603.413786969@linuxfoundation.org>
+        Jan Schmidt <list.btrfs@jan-o-sch.net>,
+        Josef Bacik <jbacik@fusionio.com>
+Subject: [ 51/72] Btrfs: only do the tree_mod_log_free_eb if this is our last ref
+Date: Thu, 18 Jul 2013 22:26:08 -0700
+Message-Id: <20130719052603.346629617@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,32 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit eaf3793728d07d995f1e74250b2d0005f7ae98b5 upstream.
+commit 7fb7d76f96bfcbea25007d190ba828b18e13d29d upstream.
 
-On 32-bit archs when sector_t is defined as 32-bit the logic computing
-data offset in ext4_inline_data_fiemap(). Fix that by properly typing
-the shifted value.
+There is another bug in the tree mod log stuff in that we're calling
+tree_mod_log_free_eb every single time a block is cow'ed.  The problem with this
+is that if this block is shared by multiple snapshots we will call this multiple
+times per block, so if we go to rewind the mod log for this block we'll BUG_ON()
+in __tree_mod_log_rewind because we try to rewind a free twice.  We only want to
+call tree_mod_log_free_eb if we are actually freeing the block.  With this patch
+I no longer hit the panic in __tree_mod_log_rewind.  Thanks,
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inline.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/ctree.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/inline.c
-+++ b/fs/ext4/inline.c
-@@ -1842,7 +1842,7 @@ int ext4_inline_data_fiemap(struct inode
- 	if (error)
- 		goto out;
- 
--	physical = iloc.bh->b_blocknr << inode->i_sb->s_blocksize_bits;
-+	physical = (__u64)iloc.bh->b_blocknr << inode->i_sb->s_blocksize_bits;
- 	physical += (char *)ext4_raw_inode(&iloc) - iloc.bh->b_data;
- 	physical += offsetof(struct ext4_inode, i_block);
- 	length = i_size_read(inode);
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -1089,7 +1089,8 @@ static noinline int __btrfs_cow_block(st
+ 		btrfs_set_node_ptr_generation(parent, parent_slot,
+ 					      trans->transid);
+ 		btrfs_mark_buffer_dirty(parent);
+-		tree_mod_log_free_eb(root->fs_info, buf);
++		if (last_ref)
++			tree_mod_log_free_eb(root->fs_info, buf);
+ 		btrfs_free_tree_block(trans, root, buf, parent_start,
+ 				      last_ref);
+ 	}
 
 
