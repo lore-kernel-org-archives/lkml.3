@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966083Ab3GSFxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:53:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39306 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759612Ab3GSFV5 (ORCPT
+	id S1759646Ab3GSFxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:53:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25460 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755817Ab3GSFx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:21:57 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joachim Eastwood <manabian@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [ 13/38] pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
-Date: Thu, 18 Jul 2013 22:21:29 -0700
-Message-Id: <20130719052048.789209149@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
-References: <20130719052047.858393825@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 19 Jul 2013 01:53:29 -0400
+Date: Fri, 19 Jul 2013 08:53:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] TTY: snyclinkmp: calculating wrong addresses
+Message-ID: <20130719055313.GF9729@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+This is a static checker fix and I don't have a way to test it.  But
+from the context it looks like this is a typo where SCABUFSIZE was
+intended instead of sizeof(SCABUFSIZE).  SCABUFSIZE is 1024 and
+sizeof(int) is 4.  I would suspect this is a bad bug.
 
-------------------
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-From: Joachim Eastwood <manabian@gmail.com>
-
-commit e39506b466edcda2a7e9d0174d7987ae654137b7 upstream.
-
-Commit 80af9e6d (pcmcia at91_cf: fix raw gpio number usage) forgot
-to change the parameter in gpio_get_value after adding gpio
-validation.
-
-Signed-off-by: Joachim Eastwood <manabian@gmail.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/pcmcia/at91_cf.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/pcmcia/at91_cf.c
-+++ b/drivers/pcmcia/at91_cf.c
-@@ -100,9 +100,9 @@ static int at91_cf_get_status(struct pcm
- 		int vcc	= gpio_is_valid(cf->board->vcc_pin);
+diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
+index ff17138..dc6e969 100644
+--- a/drivers/tty/synclinkmp.c
++++ b/drivers/tty/synclinkmp.c
+@@ -3478,7 +3478,7 @@ static int alloc_buf_list(SLMP_INFO *info)
+ 	for ( i = 0; i < info->rx_buf_count; i++ ) {
+ 		/* calculate and store physical address of this buffer entry */
+ 		info->rx_buf_list_ex[i].phys_entry =
+-			info->buffer_list_phys + (i * sizeof(SCABUFSIZE));
++			info->buffer_list_phys + (i * SCABUFSIZE);
  
- 		*sp = SS_DETECT | SS_3VCARD;
--		if (!rdy || gpio_get_value(rdy))
-+		if (!rdy || gpio_get_value(cf->board->irq_pin))
- 			*sp |= SS_READY;
--		if (!vcc || gpio_get_value(vcc))
-+		if (!vcc || gpio_get_value(cf->board->vcc_pin))
- 			*sp |= SS_POWERON;
- 	} else
- 		*sp = 0;
-
-
+ 		/* calculate and store physical address of */
+ 		/* next entry in cirular list of entries */
