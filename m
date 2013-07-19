@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965883Ab3GSF1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:27:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40094 "EHLO
+	id S965811Ab3GSF1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:27:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40089 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965859Ab3GSF1Y (ORCPT
+	with ESMTP id S965804Ab3GSF1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:27:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 72/72] UBIFS: correct mount message
-Date: Thu, 18 Jul 2013 22:26:29 -0700
-Message-Id: <20130719052604.781222495@linuxfoundation.org>
+        steve <sanpatr1@in.ibm.com>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 71/72] Handle big endianness in NTLM (ntlmv2) authentication
+Date: Thu, 18 Jul 2013 22:26:28 -0700
+Message-Id: <20130719052604.713839974@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,34 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Genoud <richard.genoud@gmail.com>
+From: Steve French <smfrench@us.ibm.com>
 
-commit beadadfa5467e09e36891f39cae1f5d8d3bbf17e upstream.
+commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
 
-When mounting an UBIFS R/W volume, we have the message:
-UBIFS: mounted UBI device 0, volume 1, name "rootfs"(null)
-With this patch, we'll have:
-UBIFS: mounted UBI device 0, volume 1, name "rootfs"
-Which is, I think, what was intended.
+This is RH bug 970891
+Uppercasing of username during calculation of ntlmv2 hash fails
+because UniStrupr function does not handle big endian wchars.
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Also fix a comment in the same code to reflect its correct usage.
+
+[To make it easier for stable (rather than require 2nd patch) fixed
+this patch of Shirish's to remove endian warning generated
+by sparse -- steve f.]
+
+Reported-by: steve <sanpatr1@in.ibm.com>
+Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifs_unicode.h |    8 ++++----
+ fs/cifs/cifsencrypt.c  |    6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1412,7 +1412,7 @@ static int mount_ubifs(struct ubifs_info
+--- a/fs/cifs/cifs_unicode.h
++++ b/fs/cifs/cifs_unicode.h
+@@ -327,14 +327,14 @@ UniToupper(register wchar_t uc)
+ /*
+  * UniStrupr:  Upper case a unicode string
+  */
+-static inline wchar_t *
+-UniStrupr(register wchar_t *upin)
++static inline __le16 *
++UniStrupr(register __le16 *upin)
+ {
+-	register wchar_t *up;
++	register __le16 *up;
  
- 	ubifs_msg("mounted UBI device %d, volume %d, name \"%s\"%s",
- 		  c->vi.ubi_num, c->vi.vol_id, c->vi.name,
--		  c->ro_mount ? ", R/O mode" : NULL);
-+		  c->ro_mount ? ", R/O mode" : "");
- 	x = (long long)c->main_lebs * c->leb_size;
- 	y = (long long)c->log_lebs * c->leb_size + c->max_bud_bytes;
- 	ubifs_msg("LEB size: %d bytes (%d KiB), min./max. I/O unit sizes: %d bytes/%d bytes",
+ 	up = upin;
+ 	while (*up) {		/* For all characters */
+-		*up = UniToupper(*up);
++		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
+ 		up++;
+ 	}
+ 	return upin;		/* Return input pointer */
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -414,7 +414,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 	int rc = 0;
+ 	int len;
+ 	char nt_hash[CIFS_NTHASH_SIZE];
+-	wchar_t *user;
++	__le16 *user;
+ 	wchar_t *domain;
+ 	wchar_t *server;
+ 
+@@ -439,7 +439,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 		return rc;
+ 	}
+ 
+-	/* convert ses->user_name to unicode and uppercase */
++	/* convert ses->user_name to unicode */
+ 	len = ses->user_name ? strlen(ses->user_name) : 0;
+ 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
+ 	if (user == NULL) {
+@@ -448,7 +448,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 	}
+ 
+ 	if (len) {
+-		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
++		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
+ 		UniStrupr(user);
+ 	} else {
+ 		memset(user, '\0', 2);
 
 
