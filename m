@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935082Ab3GSCYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:24:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37759 "EHLO
+	id S935209Ab3GSCZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:25:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935025Ab3GSCXr (ORCPT
+	with ESMTP id S935190Ab3GSCZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:47 -0400
+	Thu, 18 Jul 2013 22:25:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shane Huang <shane.huang@amd.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 12/18] ahci: Add AMD CZ SATA device ID
-Date: Thu, 18 Jul 2013 19:23:27 -0700
-Message-Id: <20130719021049.803589269@linuxfoundation.org>
+        steve <sanpatr1@in.ibm.com>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 24/24] Handle big endianness in NTLM (ntlmv2) authentication
+Date: Thu, 18 Jul 2013 19:24:56 -0700
+Message-Id: <20130719022405.671266396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
-References: <20130719021048.965829361@linuxfoundation.org>
+In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
+References: <20130719022404.015008451@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Steve French <smfrench@us.ibm.com>
 
-commit fafe5c3d82a470d73de53e6b08eb4e28d974d895 upstream.
+commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
 
-To add AMD CZ SATA controller device ID of IDE mode.
+This is RH bug 970891
+Uppercasing of username during calculation of ntlmv2 hash fails
+because UniStrupr function does not handle big endian wchars.
 
-[bhelgaas: drop pci_ids.h update]
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
+Also fix a comment in the same code to reflect its correct usage.
+
+[To make it easier for stable (rather than require 2nd patch) fixed
+this patch of Shirish's to remove endian warning generated
+by sparse -- steve f.]
+
+Reported-by: steve <sanpatr1@in.ibm.com>
+Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c   |    1 +
- drivers/pci/quirks.c |    2 ++
- 2 files changed, 3 insertions(+)
+ fs/cifs/cifs_unicode.h |    8 ++++----
+ fs/cifs/cifsencrypt.c  |    6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -284,6 +284,7 @@ static const struct pci_device_id ahci_p
- 
- 	/* AMD */
- 	{ PCI_VDEVICE(AMD, 0x7800), board_ahci }, /* AMD Hudson-2 */
-+	{ PCI_VDEVICE(AMD, 0x7900), board_ahci }, /* AMD CZ */
- 	/* AMD is using RAID class only for ahci controllers */
- 	{ PCI_VENDOR_ID_AMD, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_RAID << 8, 0xffffff, board_ahci },
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1122,6 +1122,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_A
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP700_SATA, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
- 
+--- a/fs/cifs/cifs_unicode.h
++++ b/fs/cifs/cifs_unicode.h
+@@ -323,14 +323,14 @@ UniToupper(register wchar_t uc)
  /*
-  *	Serverworks CSB5 IDE does not fully support native mode
+  * UniStrupr:  Upper case a unicode string
+  */
+-static inline wchar_t *
+-UniStrupr(register wchar_t *upin)
++static inline __le16 *
++UniStrupr(register __le16 *upin)
+ {
+-	register wchar_t *up;
++	register __le16 *up;
+ 
+ 	up = upin;
+ 	while (*up) {		/* For all characters */
+-		*up = UniToupper(*up);
++		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
+ 		up++;
+ 	}
+ 	return upin;		/* Return input pointer */
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -394,7 +394,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 	int rc = 0;
+ 	int len;
+ 	char nt_hash[CIFS_NTHASH_SIZE];
+-	wchar_t *user;
++	__le16 *user;
+ 	wchar_t *domain;
+ 	wchar_t *server;
+ 
+@@ -419,7 +419,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 		return rc;
+ 	}
+ 
+-	/* convert ses->user_name to unicode and uppercase */
++	/* convert ses->user_name to unicode */
+ 	len = ses->user_name ? strlen(ses->user_name) : 0;
+ 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
+ 	if (user == NULL) {
+@@ -429,7 +429,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 	}
+ 
+ 	if (len) {
+-		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
++		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
+ 		UniStrupr(user);
+ 	} else {
+ 		memset(user, '\0', 2);
 
 
