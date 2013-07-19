@@ -1,32 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965973Ab3GSHvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:51:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35696 "EHLO
+	id S966072Ab3GSHvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:51:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35726 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965772Ab3GSHvD (ORCPT
+	with ESMTP id S965772Ab3GSHvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:51:03 -0400
-Date: Fri, 19 Jul 2013 00:50:41 -0700
-From: tip-bot for Greg Price <tipbot@zytor.com>
-Message-ID: <tip-b21484f1a1f300d422cfe5d4f8f50015e22cea24@git.kernel.org>
+	Fri, 19 Jul 2013 03:51:31 -0400
+Date: Fri, 19 Jul 2013 00:51:10 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-981q265sf6h05zuu8fnvw842@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, price@mit.edu, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        fengguang.wu@intel.com, price@mit.edu
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        price@mit.edu, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de, fengguang.wu@intel.com,
-        price@mit.edu
-In-Reply-To: <20130708115746.GO22203@biohazard-cafe.mit.edu>
-References: <20130623031720.GW22203@biohazard-cafe.mit.edu>
-	<20130708115746.GO22203@biohazard-cafe.mit.edu>
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report/top:
-  Add option to collapse undesired parts of call graph
-Git-Commit-ID: b21484f1a1f300d422cfe5d4f8f50015e22cea24
+Subject: [tip:perf/core] perf diff:
+  Introducing diff_data object to hold files
+Git-Commit-ID: ec308426ea743469ec6c2b0e06e20b3671546e8f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,332 +30,228 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:50:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:51:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b21484f1a1f300d422cfe5d4f8f50015e22cea24
-Gitweb:     http://git.kernel.org/tip/b21484f1a1f300d422cfe5d4f8f50015e22cea24
-Author:     Greg Price <price@MIT.EDU>
-AuthorDate: Thu, 6 Dec 2012 21:48:05 -0800
+Commit-ID:  ec308426ea743469ec6c2b0e06e20b3671546e8f
+Gitweb:     http://git.kernel.org/tip/ec308426ea743469ec6c2b0e06e20b3671546e8f
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 25 Mar 2013 00:02:01 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:53:55 -0300
+CommitDate: Fri, 12 Jul 2013 13:54:00 -0300
 
-perf report/top: Add option to collapse undesired parts of call graph
+perf diff: Introducing diff_data object to hold files
 
-For example, in an application with an expensive function implemented
-with deeply nested recursive calls, the default call-graph presentation
-is dominated by the different callchains within that function.  By
-ignoring these callees, we can collect the callchains leading into the
-function and compactly identify what to blame for expensive calls.
+Introducing struct diff_data to hold data file specifics.  It will be
+handy when dealing with more than 2 data files.
 
-For example, in this report the callers of garbage_collect() are
-scattered across the tree:
-
-  $ perf report -d ruby 2>- | grep -m10 ^[^#]*[a-z]
-      22.03%     ruby  [.] gc_mark
-                 --- gc_mark
-                    |--59.40%-- mark_keyvalue
-                    |          st_foreach
-                    |          gc_mark_children
-                    |          |--99.75%-- rb_gc_mark
-                    |          |          rb_vm_mark
-                    |          |          gc_mark_children
-                    |          |          gc_marks
-                    |          |          |--99.00%-- garbage_collect
-
-If we ignore the callees of garbage_collect(), its callers are coalesced:
-
-  $ perf report --ignore-callees garbage_collect -d ruby 2>- | grep -m10 ^[^#]*[a-z]
-      72.92%     ruby  [.] garbage_collect
-                 --- garbage_collect
-                     vm_xmalloc
-                    |--47.08%-- ruby_xmalloc
-                    |          st_insert2
-                    |          rb_hash_aset
-                    |          |--98.45%-- features_index_add
-                    |          |          rb_provide_feature
-                    |          |          rb_require_safe
-                    |          |          vm_call_method
-
-Signed-off-by: Greg Price <price@mit.edu>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20130623031720.GW22203@biohazard-cafe.mit.edu
-Link: http://lkml.kernel.org/r/20130708115746.GO22203@biohazard-cafe.mit.edu
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-[ remove spaces at beginning of line, reported by Fengguang Wu ]
+Link: http://lkml.kernel.org/n/tip-981q265sf6h05zuu8fnvw842@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-report.txt |  5 +++++
- tools/perf/Documentation/perf-top.txt    |  5 +++++
- tools/perf/builtin-report.c              | 27 ++++++++++++++++++++++++---
- tools/perf/builtin-top.c                 |  6 ++++--
- tools/perf/util/machine.c                | 24 +++++++++++++++---------
- tools/perf/util/machine.h                |  4 +++-
- tools/perf/util/session.c                |  3 +--
- tools/perf/util/sort.c                   |  2 ++
- tools/perf/util/sort.h                   |  4 ++++
- 9 files changed, 63 insertions(+), 17 deletions(-)
+ tools/perf/builtin-diff.c | 143 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 95 insertions(+), 48 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 66dab74..747ff50 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -135,6 +135,11 @@ OPTIONS
- --inverted::
-         alias for inverted caller based call graph.
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 0aac5f3..015ca2d 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -19,10 +19,24 @@
  
-+--ignore-callees=<regex>::
-+        Ignore callees of the function(s) matching the given regex.
-+        This has the effect of collecting the callers of each such
-+        function into one place in the call-graph tree.
+ #include <stdlib.h>
+ 
+-static char const *input_old = "perf.data.old",
+-		  *input_new = "perf.data";
+-static char	  diff__default_sort_order[] = "dso,symbol";
+-static bool  force;
++struct data__file {
++	struct perf_session	*session;
++	const char		*file;
++	int			 idx;
++};
 +
- --pretty=<key>::
-         Pretty printing style.  key: normal, raw
- 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 7fdd190..58d6598 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -155,6 +155,11 @@ Default is to monitor all CPUS.
- 
- 	Default: fractal,0.5,callee.
- 
-+--ignore-callees=<regex>::
-+        Ignore callees of the function(s) matching the given regex.
-+        This has the effect of collecting the callers of each such
-+        function into one place in the call-graph tree.
++static struct data__file *data__files;
++static int data__files_cnt;
 +
- --percent-limit::
- 	Do not show entries which have an overhead under that percent.
- 	(Default: 0).
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index ee2ca3e..9a7e54d 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -89,7 +89,7 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain) &&
- 	    sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent);
-+						 sample, &parent, al);
- 		if (err)
- 			return err;
- 	}
-@@ -180,7 +180,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent);
-+						 sample, &parent, al);
- 		if (err)
- 			return err;
- 	}
-@@ -254,7 +254,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent);
-+						 sample, &parent, al);
- 		if (err)
- 			return err;
- 	}
-@@ -681,6 +681,24 @@ setup:
- 	return 0;
++#define data__for_each_file_start(i, d, s)	\
++	for (i = s, d = &data__files[s];	\
++	     i < data__files_cnt;		\
++	     i++, d = &data__files[i])
++
++#define data__for_each_file(i, d) data__for_each_file_start(i, d, 0)
++
++static char diff__default_sort_order[] = "dso,symbol";
++static bool force;
+ static bool show_period;
+ static bool show_formula;
+ static bool show_baseline_only;
+@@ -467,56 +481,62 @@ static void hists__process(struct hists *old, struct hists *new)
+ 	hists__fprintf(new, true, 0, 0, 0, stdout);
  }
  
-+int
-+report_parse_ignore_callees_opt(const struct option *opt __maybe_unused,
-+				const char *arg, int unset __maybe_unused)
+-static int __cmd_diff(void)
++static void data_process(void)
+ {
+-	int ret, i;
+-#define older (session[0])
+-#define newer (session[1])
+-	struct perf_session *session[2];
+-	struct perf_evlist *evlist_new, *evlist_old;
+-	struct perf_evsel *evsel;
++	struct perf_evlist *evlist_old = data__files[0].session->evlist;
++	struct perf_evlist *evlist_new = data__files[1].session->evlist;
++	struct perf_evsel *evsel_old;
+ 	bool first = true;
+ 
+-	older = perf_session__new(input_old, O_RDONLY, force, false,
+-				  &tool);
+-	newer = perf_session__new(input_new, O_RDONLY, force, false,
+-				  &tool);
+-	if (session[0] == NULL || session[1] == NULL)
+-		return -ENOMEM;
++	list_for_each_entry(evsel_old, &evlist_old->entries, node) {
++		struct perf_evsel *evsel_new;
+ 
+-	for (i = 0; i < 2; ++i) {
+-		ret = perf_session__process_events(session[i], &tool);
+-		if (ret)
+-			goto out_delete;
+-	}
++		evsel_new = evsel_match(evsel_old, evlist_new);
++		if (!evsel_new)
++			continue;
+ 
+-	evlist_old = older->evlist;
+-	evlist_new = newer->evlist;
++		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
++			perf_evsel__name(evsel_old));
+ 
+-	perf_evlist__collapse_resort(evlist_old);
+-	perf_evlist__collapse_resort(evlist_new);
++		first = false;
+ 
+-	list_for_each_entry(evsel, &evlist_new->entries, node) {
+-		struct perf_evsel *evsel_old;
++		hists__process(&evsel_old->hists, &evsel_new->hists);
++	}
++}
+ 
+-		evsel_old = evsel_match(evsel, evlist_old);
+-		if (!evsel_old)
+-			continue;
++static int __cmd_diff(void)
 +{
-+	if (arg) {
-+		int err = regcomp(&ignore_callees_regex, arg, REG_EXTENDED);
-+		if (err) {
-+			char buf[BUFSIZ];
-+			regerror(err, &ignore_callees_regex, buf, sizeof(buf));
-+			pr_err("Invalid --ignore-callees regex: %s\n%s", arg, buf);
-+			return -1;
++	struct data__file *d;
++	int ret = -EINVAL, i;
++
++	data__for_each_file(i, d) {
++		d->session = perf_session__new(d->file, O_RDONLY, force,
++					       false, &tool);
++		if (!d->session) {
++			pr_err("Failed to open %s\n", d->file);
++			ret = -ENOMEM;
++			goto out_delete;
 +		}
-+		have_ignore_callees = 1;
+ 
+-		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
+-			perf_evsel__name(evsel));
++		ret = perf_session__process_events(d->session, &tool);
++		if (ret) {
++			pr_err("Failed to process %s\n", d->file);
++			goto out_delete;
++		}
+ 
+-		first = false;
++		perf_evlist__collapse_resort(d->session->evlist);
++	}
++
++	data_process();
+ 
+-		hists__process(&evsel_old->hists, &evsel->hists);
++ out_delete:
++	data__for_each_file(i, d) {
++		if (d->session)
++			perf_session__delete(d->session);
+ 	}
+ 
+-out_delete:
+-	for (i = 0; i < 2; ++i)
+-		perf_session__delete(session[i]);
++	free(data__files);
+ 	return ret;
+-#undef older
+-#undef newer
+ }
+ 
+ static const char * const diff_usage[] = {
+@@ -589,27 +609,54 @@ static void ui_init(void)
+ 	}
+ }
+ 
+-int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
++static int data_init(int argc, const char **argv)
+ {
+-	sort_order = diff__default_sort_order;
+-	argc = parse_options(argc, argv, options, diff_usage, 0);
++	struct data__file *d;
++	static const char *defaults[] = {
++		"perf.data.old",
++		"perf.data",
++	};
++	int i;
++
++	data__files_cnt = 2;
++
+ 	if (argc) {
+ 		if (argc > 2)
+ 			usage_with_options(diff_usage, options);
+ 		if (argc == 2) {
+-			input_old = argv[0];
+-			input_new = argv[1];
++			defaults[0] = argv[0];
++			defaults[1] = argv[1];
+ 		} else
+-			input_new = argv[0];
++			defaults[1] = argv[0];
+ 	} else if (symbol_conf.default_guest_vmlinux_name ||
+ 		   symbol_conf.default_guest_kallsyms) {
+-		input_old = "perf.data.host";
+-		input_new = "perf.data.guest";
++		defaults[0] = "perf.data.host";
++		defaults[1] = "perf.data.guest";
+ 	}
+ 
++	data__files = zalloc(sizeof(*data__files) * data__files_cnt);
++	if (!data__files)
++		return -ENOMEM;
++
++	data__for_each_file(i, d) {
++		d->file = defaults[i];
++		d->idx  = i;
 +	}
 +
 +	return 0;
 +}
 +
- static int
- parse_branch_mode(const struct option *opt __maybe_unused,
- 		  const char *str __maybe_unused, int unset)
-@@ -771,6 +789,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
- 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
- 		    "alias for inverted call graph"),
-+	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
-+		   "ignore callees of these functions in call graphs",
-+		   report_parse_ignore_callees_opt),
- 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
- 		   "only consider symbols in these dsos"),
- 	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index a237059..bbf4635 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -773,8 +773,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 		    sample->callchain) {
- 			err = machine__resolve_callchain(machine, evsel,
- 							 al.thread, sample,
--							 &parent);
--
-+							 &parent, &al);
- 			if (err)
- 				return;
- 		}
-@@ -1109,6 +1108,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
- 			     "mode[,dump_size]", record_callchain_help,
- 			     &parse_callchain_opt, "fp"),
-+	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
-+		   "ignore callees of these functions in call graphs",
-+		   report_parse_ignore_callees_opt),
- 	OPT_BOOLEAN(0, "show-total-period", &symbol_conf.show_total_period,
- 		    "Show a column with the sum of periods"),
- 	OPT_STRING(0, "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 5dd5026..f9f9d63 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1058,11 +1058,10 @@ int machine__process_event(struct machine *machine, union perf_event *event)
- 	return ret;
- }
- 
--static bool symbol__match_parent_regex(struct symbol *sym)
-+static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
- {
--	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
-+	if (sym->name && !regexec(regex, sym->name, 0, NULL, 0))
- 		return 1;
--
- 	return 0;
- }
- 
-@@ -1159,8 +1158,8 @@ struct branch_info *machine__resolve_bstack(struct machine *machine,
- static int machine__resolve_callchain_sample(struct machine *machine,
- 					     struct thread *thread,
- 					     struct ip_callchain *chain,
--					     struct symbol **parent)
--
-+					     struct symbol **parent,
-+					     struct addr_location *root_al)
- {
- 	u8 cpumode = PERF_RECORD_MISC_USER;
- 	unsigned int i;
-@@ -1211,8 +1210,15 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 					   MAP__FUNCTION, ip, &al, NULL);
- 		if (al.sym != NULL) {
- 			if (sort__has_parent && !*parent &&
--			    symbol__match_parent_regex(al.sym))
-+			    symbol__match_regex(al.sym, &parent_regex))
- 				*parent = al.sym;
-+			else if (have_ignore_callees && root_al &&
-+			  symbol__match_regex(al.sym, &ignore_callees_regex)) {
-+				/* Treat this symbol as the root,
-+				   forgetting its callees. */
-+				*root_al = al;
-+				callchain_cursor_reset(&callchain_cursor);
-+			}
- 			if (!symbol_conf.use_callchain)
- 				break;
- 		}
-@@ -1237,13 +1243,13 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct perf_evsel *evsel,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
--			       struct symbol **parent)
--
-+			       struct symbol **parent,
-+			       struct addr_location *root_al)
- {
- 	int ret;
- 
- 	ret = machine__resolve_callchain_sample(machine, thread,
--						sample->callchain, parent);
-+						sample->callchain, parent, root_al);
- 	if (ret)
- 		return ret;
- 
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index e49ba01..5bb6244 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -5,6 +5,7 @@
- #include <linux/rbtree.h>
- #include "map.h"
- 
-+struct addr_location;
- struct branch_stack;
- struct perf_evsel;
- struct perf_sample;
-@@ -83,7 +84,8 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct perf_evsel *evsel,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
--			       struct symbol **parent);
-+			       struct symbol **parent,
-+			       struct addr_location *root_al);
- 
- /*
-  * Default guest kernel is defined by parameter --guestkallsyms
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 951a1cf..1eb58ee 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1406,9 +1406,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 
- 	if (symbol_conf.use_callchain && sample->callchain) {
- 
--
- 		if (machine__resolve_callchain(machine, evsel, al.thread,
--					       sample, NULL) != 0) {
-+					       sample, NULL, NULL) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
- 			return;
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 8deee19..cb2b108 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -7,6 +7,8 @@ const char	default_parent_pattern[] = "^sys_|^do_page_fault";
- const char	*parent_pattern = default_parent_pattern;
- const char	default_sort_order[] = "comm,dso,symbol";
- const char	*sort_order = default_sort_order;
-+regex_t		ignore_callees_regex;
-+int		have_ignore_callees = 0;
- int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
- int		sort__has_sym = 0;
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 45ac84c..a4a6d0b 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -29,6 +29,8 @@ extern const char *sort_order;
- extern const char default_parent_pattern[];
- extern const char *parent_pattern;
- extern const char default_sort_order[];
-+extern regex_t ignore_callees_regex;
-+extern int have_ignore_callees;
- extern int sort__need_collapse;
- extern int sort__has_parent;
- extern int sort__has_sym;
-@@ -183,4 +185,6 @@ int setup_sorting(void);
- extern int sort_dimension__add(const char *);
- void sort__setup_elide(FILE *fp);
- 
-+int report_parse_ignore_callees_opt(const struct option *opt, const char *arg, int unset);
++int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
++{
++	sort_order = diff__default_sort_order;
++	argc = parse_options(argc, argv, options, diff_usage, 0);
 +
- #endif	/* __PERF_SORT_H */
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
++	if (data_init(argc, argv) < 0)
++		return -1;
++
+ 	ui_init();
+ 
+ 	if (setup_sorting() < 0)
