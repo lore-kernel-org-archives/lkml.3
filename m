@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934995Ab3GSA6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:58:22 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54645 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934913Ab3GSA6V (ORCPT
+	id S935014Ab3GSA6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:58:44 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:34938 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934998Ab3GSA6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:58:21 -0400
-Message-ID: <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Mike Christie <michaelc@cs.wisc.edu>,
-        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Thu, 18 Jul 2013 18:03:45 -0700
-In-Reply-To: <20130719003034.GG28005@kernel.dk>
-References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
-	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
-	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
-	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
-	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
-	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
-	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
-	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
-	 <51E83E32.9050306@cs.wisc.edu>
-	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
-	 <20130719003034.GG28005@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Jul 2013 20:58:42 -0400
+Date: Fri, 19 Jul 2013 09:17:33 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: kernel BUG at fs/ext4/namei.c:2572!
+Message-ID: <20130719011733.GC21615@gmail.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <20130717161944.GA19405@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130717161944.GA19405@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 18:30 -0600, Jens Axboe wrote:
-> On Thu, Jul 18 2013, Nicholas A. Bellinger wrote:
-> > On Thu, 2013-07-18 at 13:12 -0600, Mike Christie wrote:
-> > > On 07/18/2013 12:51 PM, Nicholas A. Bellinger wrote:
-> > > > On Wed, 2013-07-17 at 18:19 +0200, Alexander Gordeev wrote:
-> > > >> On Tue, Jul 16, 2013 at 02:38:03PM -0700, Nicholas A. Bellinger wrote:
-> > > >>> [    7.927818] scsi_execute(): Calling blk_mq_free_request >>>
-> > > >>> [    7.927826] scsi 0:0:0:0: Direct-Access     ATA      ST9500530NS      CC03 PQ: 0 ANSI: 5
-> > > >>>
-> > > >>> OK, so INQUIRY response payload is looking as expected here.
-> > > >>
-> > > >> Yep. It is not on the top of my head, but I remember something like INQUIRYs
-> > > >> are emulated and thus do not have payload.
-> > > >>
-> > > >>> [    7.927960] sd 0:0:0:0: [sda] Sector size 0 reported, assuming 512.
-> > > >>> [    7.927964] sd 0:0:0:0: [sda] 1 512-byte logical blocks: (512 B/512 B)
-> > > >>> [    7.927965] sd 0:0:0:0: [sda] 0-byte physical blocks
-> > > >>>
-> > > >>> Strange..  READ_CAPACITY appears to be returning a payload as zeros..?
-> > > >>
-> > > >> Yep. Because blk_execute_rq() does not put the proper callback and data do
-> > > >> not get copied from sg's to bounce buffer. That is why I tried to use
-> > > >> blk_mq_execute_rq() instead. Once I do that, data start getting read and
-> > > >> booting stops elsewhere.
-> > > > 
-> > > > Mmmmmm.
-> > > > 
-> > > > The call to blk_queue_bounce() exists within blk_mq_make_request(), but
-> > > > AFAICT this should still be getting invoked regardless of if the struct
-> > > > request is dispatched into blk-mq via the modified blk_execute_rq() ->
-> > > > blk_execute_rq_nowait() -> blk_mq_insert_request() codepath, or directly
-> > > > via blk_mq_execute_rq()..
-> > > > 
-> > > 
-> > > blk_mq_make_request is not called from the blk insert/execute paths.
-> > > blk_mq_make_request takes a bio and tries to merge it with a request and
-> > > adds it to the queue. It is only called when the make_request_fn is
-> > > called like when generic_make_request is called.
-> > > 
-> > > blk_mq_insert_request adds a already formed request to the queue. It is
-> > > already formed so that is why that path does not bounce bios. The
-> > > bios/pages should already be added within the drivers restrictions. So
-> > > for the read_cap path, the call to blk_rq_map_kern in scsi_execute does
-> > > the blk_queue_bounce call.
-> > > 
-> > 
-> > <nod>, just noticed the blk_queue_bounce() in blk_rq_map_kern().  
-> > 
-> > Not sure why this doesn't seem to be doing what it's supposed to for
-> > libata just yet..
+Hi Dave,
+
+Thanks for reporting this.
+
+On Wed, Jul 17, 2013 at 12:19:44PM -0400, Dave Jones wrote:
+> Seen while fuzzing..
 > 
-> How are you make the request from the bio? It'd be pretty trivial to
-> ensure that it gets bounced properly... blk_mq_execute_rq() assumes a
-> fully complete request, so it wont bounce anything.
+> kernel BUG at fs/ext4/namei.c:2572!
+> invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> Modules linked in: dlci bridge stp hidp cmtp kernelcapi l2tp_ppp l2tp_netlink l2tp_core sctp libcrc32c rfcomm tun fuse nfnetli
+> nk can_raw ipt_ULOG can_bcm x25 scsi_transport_iscsi ipx p8023 p8022 appletalk phonet psnap vmw_vsock_vmci_transport af_key vmw_vmci rose vsock atm can netrom ax25 af_rxrpc ir
+> da pppoe pppox ppp_generic slhc bluetooth nfc rfkill rds caif_socket caif crc_ccitt af_802154 llc2 llc snd_hda_codec_realtek snd_hda_intel snd_hda_codec serio_raw snd_pcm pcsp
+> kr edac_core snd_page_alloc snd_timer snd soundcore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
+> CPU: 1 PID: 1812571 Comm: trinity-child2 Not tainted 3.11.0-rc1+ #12
+> Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+> task: ffff88007dfe69a0 ti: ffff88010f7b6000 task.ti: ffff88010f7b6000
+> RIP: 0010:[<ffffffff8125ce69>]  [<ffffffff8125ce69>] ext4_orphan_add+0x299/0x2b0
+> RSP: 0018:ffff88010f7b7cf8  EFLAGS: 00010202
+> RAX: 0000000000000000 RBX: ffff8800966d3020 RCX: 0000000000000000
+> RDX: 0000000000000000 RSI: ffff88007dfe70b8 RDI: 0000000000000001
+> RBP: ffff88010f7b7d40 R08: ffff880126a3c4e0 R09: ffff88010f7b7ca0
+> R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801271fd668
+> R13: ffff8800966d2f78 R14: ffff88011d7089f0 R15: ffff88007dfe69a0
+> FS:  00007f70441a3740(0000) GS:ffff88012a800000(0000) knlGS:00000000f77c96c0
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000002834000 CR3: 0000000107964000 CR4: 00000000000007e0
+> DR0: 0000000000780000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> Stack:
+>  0000000000002000 00000020810b6dde 0000000000000000 ffff88011d46db00
+>  ffff8800966d3020 ffff88011d7089f0 ffff88009c7f4c10 ffff88010f7b7f2c
+>  ffff88007dfe69a0 ffff88010f7b7da8 ffffffff8125cfac ffff880100000004
+> Call Trace:
+>  [<ffffffff8125cfac>] ext4_tmpfile+0x12c/0x180
+>  [<ffffffff811cba78>] path_openat+0x238/0x700
+>  [<ffffffff8100afc4>] ? native_sched_clock+0x24/0x80
+>  [<ffffffff811cc647>] do_filp_open+0x47/0xa0
+>  [<ffffffff811db73f>] ? __alloc_fd+0xaf/0x200
+>  [<ffffffff811ba2e4>] do_sys_open+0x124/0x210
+>  [<ffffffff81010725>] ? syscall_trace_enter+0x25/0x290
+>  [<ffffffff811ba3ee>] SyS_open+0x1e/0x20
+>  [<ffffffff816ca8d4>] tracesys+0xdd/0xe2
+>  [<ffffffff81001001>] ? start_thread_common.constprop.6+0x1/0xa0
+> Code: 04 00 00 00 89 04 24 31 c0 e8 c4 77 04 00 e9 43 fe ff ff 66 25 00 d0 66 3d 00 80 0f 84 0e fe ff ff 83 7b 48 00 0f 84 04 fe ff ff <0f> 0b 49 8b 8c 24 50 07 00 00 e9 88 fe ff ff 0f 1f 84 00 00 00 
 > 
+> 
+> 2571         J_ASSERT((S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
+> 2572                   S_ISLNK(inode->i_mode)) || inode->i_nlink == 0);
 
->From what I gather for REQ_TYPE_BLOCK_PC, scsi_execute() ->
-blk_rq_map_kern() -> blk_rq_append_bio() -> blk_rq_bio_prep() is what
-does the request setup from the bios returned by bio_[copy,map]_kern()
-in blk_rq_map_kern() code.
+I guess that is because we need to call drop_nlink to let ->i_nlink == 0
+before adding this inode into orphan list in ext4_tmpfile().  I will try
+to fix it later.
 
-blk_queue_bounce() is called immediately after blk_rq_append_bio() here,
-which AFAICT looks like it's doing the correct thing for scsi-mq..
+Regards,
+                                                - Zheng
 
-What is strange here is that libata-scsi.c CDB emulation code is doing
-the same stuff for both INQUIRY (that seems to be OK) and READ_CAPACITY
-(that is returning zeros), which makes me think that something else is
-going on..
-
-Alexander, where you able to re-test using sdev->sdev_mq_reg.queue_depth
-= 1 in scsi_mq_alloc_queue()..?
-
---nab
-
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
