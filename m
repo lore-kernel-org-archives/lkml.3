@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760808Ab3GSPlu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:41:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18326 "EHLO mx1.redhat.com"
+	id S1760825Ab3GSPm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:42:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39476 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759619Ab3GSPlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:41:49 -0400
-Date: Fri, 19 Jul 2013 17:36:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] tracing: Kill the unbalanced tr->ref++ in
-	tracing_buffers_open()
-Message-ID: <20130719153644.GA18899@redhat.com>
+	id S1752733Ab3GSPm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 11:42:28 -0400
+Message-ID: <51E95DEB.7010702@ti.com>
+Date: Fri, 19 Jul 2013 18:40:27 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>, <tony@atomide.com>,
+        <benoit.cousson@linaro.org>, <rnayak@ti.com>, <peter.ujfalusi@ti.com>,
+        <kishon@ti.com>, <jic23@cam.ac.uk>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <lars@metafoo.de>, <sameo@linux.intel.com>,
+        <ch.naveen@samsung.com>, <poeschel@lemonage.de>, <milo.kim@ti.com>,
+        <balajitk@ti.com>, <gg@slimlogic.co.uk>, <linux-iio@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 1/2] ARM: dts: twl: Add GPADC data to device tree
+References: <1374226039-16943-1-git-send-email-oleksandr.kozaruk@ti.com> <1374226039-16943-2-git-send-email-oleksandr.kozaruk@ti.com> <51E94F97.40002@cogentembedded.com>
+In-Reply-To: <51E94F97.40002@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tracing_buffers_open() does trace_array_get() and then it wrongly
-inrcements tr->ref again under trace_types_lock. This means that
-every caller leaks trace_array:
+On 07/19/2013 05:39 PM, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 19-07-2013 13:27, Oleksandr Kozaruk wrote:
+>
+>> GPADC is the general purpose ADC present on twl6030.
+>> The dt data is interrupt used to trigger end of ADC
+>> conversion.
+>
+>> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+>> ---
+>>   arch/arm/boot/dts/twl6030.dtsi | 6 ++++++
+>>   1 file changed, 6 insertions(+)
+>
+>> diff --git a/arch/arm/boot/dts/twl6030.dtsi
+>> b/arch/arm/boot/dts/twl6030.dtsi
+>> index 2e3bd31..d7d4c28 100644
+>> --- a/arch/arm/boot/dts/twl6030.dtsi
+>> +++ b/arch/arm/boot/dts/twl6030.dtsi
+>> @@ -103,4 +103,10 @@
+>>           compatible = "ti,twl6030-pwmled";
+>>           #pwm-cells = <2>;
+>>       };
+>> +
+>> +    adc: gpadc {
+>
+>     Read my lips: the node should be called just "adc", not "gpadc".
+       ^^^^^^^^^^^^ Are you sure?
 
-	# cd /sys/kernel/debug/tracing/
-	# mkdir instances/X
-	# true < instances/X/per_cpu/cpu0/trace_pipe_raw
-	# rmdir instances/X
-	rmdir: failed to remove `instances/X': Device or resource busy
+Why? The name was selected according to the documentation on device 
+"General purpose analog-to-digital converter (GPADC)".
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+PS. Following your logic - "GPIO" need to renamed to "IO" everywhere ;P
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ee471fb..278c5f5 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4944,8 +4944,6 @@ static int tracing_buffers_open(struct inode *inode, struct file *filp)
- 
- 	mutex_lock(&trace_types_lock);
- 
--	tr->ref++;
--
- 	info->iter.tr		= tr;
- 	info->iter.cpu_file	= tc->cpu;
- 	info->iter.trace	= tr->current_trace;
--- 
-1.5.5.1
+>
+> WBR, Sergei
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
+Regards,
+- grygorii
