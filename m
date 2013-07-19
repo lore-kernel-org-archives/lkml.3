@@ -1,150 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431Ab3GSXpg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 19:45:36 -0400
-Received: from science.horizon.com ([71.41.210.146]:39211 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750957Ab3GSXpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 19:45:35 -0400
-Date: 19 Jul 2013 19:45:34 -0400
-Message-ID: <20130719234534.4596.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: hpa@zytor.com, linux@horizon.com
-Subject: Re: 3.10.0 i386 uniprocessor panic
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <51E9BCC9.7070909@zytor.com>
+	id S1751666Ab3GSXrR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 19:47:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35077 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab3GSXrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 19:47:15 -0400
+Date: Sat, 20 Jul 2013 09:46:52 +1000
+From: NeilBrown <neilb@suse.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Chris Ball <cjb@laptop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Message-ID: <20130720094652.1b1ceca2@notabene.brown>
+In-Reply-To: <1374266633.3356.40.camel@gandalf.local.home>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+	<51E4BFA9.1030600@zytor.com>
+	<alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+	<1373991399.6458.6.camel@gandalf.local.home>
+	<alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+	<51E59F79.1040903@zytor.com>
+	<alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+	<CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+	<20130717144043.GA16513@xanatos>
+	<CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+	<20130719120841.GH26716@gmail.com>
+	<CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+	<1374260189.3356.29.camel@gandalf.local.home>
+	<1374266024.2266.63.camel@dabdike>
+	<1374266633.3356.40.camel@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/KaQY9snduYjNEyQ+HtHWQVL"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> A disassembly of the calling function, i.e.:
-> 
->  [<c1024524>] ? run_timer_softirq+0x150/0x165
-> 
-> ... would be a good idea, at least.
+--Sig_/KaQY9snduYjNEyQ+HtHWQVL
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Here you go.  Note that the machine isn't doing anything of interest,
-so after a quick search for residual personal data I could give you a
-root login on it.  (Just send ssh key.)
+On Fri, 19 Jul 2013 16:43:53 -0400 Steven Rostedt <rostedt@goodmis.org> wro=
+te:
 
-kernel/timer.o:     file format elf32-i386
+> On Fri, 2013-07-19 at 13:33 -0700, James Bottomley wrote:
+>=20
+> > If you're basing your entire theory on male/female interaction on
+> > teenagers, then I'm afraid your wife might be on to something ...
+>=20
+> No, it's also based on interaction with my Wife and her sister too ;-)
+>=20
 
-Disassembly of section .text:
+I genuinely think the gender difference is a distraction.  The simple fact =
+is
+that people are different.  Wildly amazingly beautifully different.
 
-[snip...]
+Certainly some metrics have starkly different averages for men than women,
+and there can be biological and social drivers of that.  But those metrics
+very often vary greatly among men and among women.
 
-00000289 <run_timer_softirq>:
- 289:	55                   	push   %ebp
- 28a:	57                   	push   %edi
- 28b:	56                   	push   %esi
- 28c:	53                   	push   %ebx
- 28d:	83 ec 24             	sub    $0x24,%esp
- 290:	8b 1d 00 00 00 00    	mov    0x0,%ebx
- 296:	e8 fc ff ff ff       	call   297 <run_timer_softirq+0xe>
- 29b:	a1 00 00 00 00       	mov    0x0,%eax
- 2a0:	3b 43 04             	cmp    0x4(%ebx),%eax
- 2a3:	0f 88 3d 01 00 00    	js     3e6 <run_timer_softirq+0x15d>
- 2a9:	fa                   	cli    
- 2aa:	8d 83 10 08 00 00    	lea    0x810(%ebx),%eax
- 2b0:	89 44 24 14          	mov    %eax,0x14(%esp)
- 2b4:	8d 83 10 0a 00 00    	lea    0xa10(%ebx),%eax
- 2ba:	89 44 24 18          	mov    %eax,0x18(%esp)
- 2be:	a1 00 00 00 00       	mov    0x0,%eax
- 2c3:	8b 4b 04             	mov    0x4(%ebx),%ecx
- 2c6:	39 c8                	cmp    %ecx,%eax
- 2c8:	0f 88 11 01 00 00    	js     3df <run_timer_softirq+0x156>
- 2ce:	0f b6 f1             	movzbl %cl,%esi
- 2d1:	85 f6                	test   %esi,%esi
- 2d3:	75 5a                	jne    32f <run_timer_softirq+0xa6>
- 2d5:	8b 54 24 14          	mov    0x14(%esp),%edx
- 2d9:	c1 e9 08             	shr    $0x8,%ecx
- 2dc:	89 d8                	mov    %ebx,%eax
- 2de:	83 e1 3f             	and    $0x3f,%ecx
- 2e1:	e8 e3 fe ff ff       	call   1c9 <cascade>
- 2e6:	85 c0                	test   %eax,%eax
- 2e8:	75 45                	jne    32f <run_timer_softirq+0xa6>
- 2ea:	8b 4b 04             	mov    0x4(%ebx),%ecx
- 2ed:	8b 54 24 18          	mov    0x18(%esp),%edx
- 2f1:	89 d8                	mov    %ebx,%eax
- 2f3:	c1 e9 0e             	shr    $0xe,%ecx
- 2f6:	83 e1 3f             	and    $0x3f,%ecx
- 2f9:	e8 cb fe ff ff       	call   1c9 <cascade>
- 2fe:	85 c0                	test   %eax,%eax
- 300:	75 2d                	jne    32f <run_timer_softirq+0xa6>
- 302:	8b 4b 04             	mov    0x4(%ebx),%ecx
- 305:	8d 93 10 0c 00 00    	lea    0xc10(%ebx),%edx
- 30b:	89 d8                	mov    %ebx,%eax
- 30d:	c1 e9 14             	shr    $0x14,%ecx
- 310:	83 e1 3f             	and    $0x3f,%ecx
- 313:	e8 b1 fe ff ff       	call   1c9 <cascade>
- 318:	85 c0                	test   %eax,%eax
- 31a:	75 13                	jne    32f <run_timer_softirq+0xa6>
- 31c:	8b 4b 04             	mov    0x4(%ebx),%ecx
- 31f:	8d 93 10 0e 00 00    	lea    0xe10(%ebx),%edx
- 325:	89 d8                	mov    %ebx,%eax
- 327:	c1 e9 1a             	shr    $0x1a,%ecx
- 32a:	e8 9a fe ff ff       	call   1c9 <cascade>
- 32f:	8d 0c f3             	lea    (%ebx,%esi,8),%ecx
- 332:	ff 43 04             	incl   0x4(%ebx)
- 335:	8d 54 24 1c          	lea    0x1c(%esp),%edx
- 339:	8b 71 10             	mov    0x10(%ecx),%esi
- 33c:	8d 41 10             	lea    0x10(%ecx),%eax
- 33f:	89 54 24 10          	mov    %edx,0x10(%esp)
- 343:	89 56 04             	mov    %edx,0x4(%esi)
- 346:	89 74 24 1c          	mov    %esi,0x1c(%esp)
- 34a:	8b 71 14             	mov    0x14(%ecx),%esi
- 34d:	89 74 24 20          	mov    %esi,0x20(%esp)
- 351:	89 16                	mov    %edx,(%esi)
- 353:	89 41 10             	mov    %eax,0x10(%ecx)
- 356:	89 40 04             	mov    %eax,0x4(%eax)
- 359:	8b 74 24 1c          	mov    0x1c(%esp),%esi
- 35d:	3b 74 24 10          	cmp    0x10(%esp),%esi
- 361:	0f 84 57 ff ff ff    	je     2be <run_timer_softirq+0x35>
- 367:	8b 46 0c             	mov    0xc(%esi),%eax
- 36a:	8b 4e 20             	mov    0x20(%esi),%ecx
- 36d:	8b 7e 10             	mov    0x10(%esi),%edi
- 370:	8b 6e 14             	mov    0x14(%esi),%ebp
- 373:	89 c2                	mov    %eax,%edx
- 375:	83 e2 02             	and    $0x2,%edx
- 378:	85 c9                	test   %ecx,%ecx
- 37a:	89 54 24 0c          	mov    %edx,0xc(%esp)
- 37e:	74 1b                	je     39b <run_timer_softirq+0x112>
- 380:	83 e0 01             	and    $0x1,%eax
- 383:	8b 56 1c             	mov    0x1c(%esi),%edx
- 386:	89 3c 24             	mov    %edi,(%esp)
- 389:	89 44 24 08          	mov    %eax,0x8(%esp)
- 38d:	8d 46 24             	lea    0x24(%esi),%eax
- 390:	89 44 24 04          	mov    %eax,0x4(%esp)
- 394:	89 f0                	mov    %esi,%eax
- 396:	e8 fc ff ff ff       	call   397 <run_timer_softirq+0x10e>
- 39b:	89 33                	mov    %esi,(%ebx)
- 39d:	8b 16                	mov    (%esi),%edx
- 39f:	8b 46 04             	mov    0x4(%esi),%eax
- 3a2:	89 42 04             	mov    %eax,0x4(%edx)
- 3a5:	89 10                	mov    %edx,(%eax)
- 3a7:	f6 46 0c 01          	testb  $0x1,0xc(%esi)
- 3ab:	c7 06 00 00 00 00    	movl   $0x0,(%esi)
- 3b1:	c7 46 04 00 02 20 00 	movl   $0x200200,0x4(%esi)
- 3b8:	75 03                	jne    3bd <run_timer_softirq+0x134>
- 3ba:	ff 4b 0c             	decl   0xc(%ebx)
- 3bd:	83 7c 24 0c 00       	cmpl   $0x0,0xc(%esp)
- 3c2:	74 0b                	je     3cf <run_timer_softirq+0x146>
- 3c4:	89 ea                	mov    %ebp,%edx
- 3c6:	89 f8                	mov    %edi,%eax
- 3c8:	e8 4f fe ff ff       	call   21c <call_timer_fn.isra.37>
- 3cd:	eb 0b                	jmp    3da <run_timer_softirq+0x151>
- 3cf:	fb                   	sti    
- 3d0:	89 ea                	mov    %ebp,%edx
- 3d2:	89 f8                	mov    %edi,%eax
- 3d4:	e8 43 fe ff ff       	call   21c <call_timer_fn.isra.37>
- 3d9:	fa                   	cli    
- 3da:	e9 7a ff ff ff       	jmp    359 <run_timer_softirq+0xd0>
- 3df:	c7 03 00 00 00 00    	movl   $0x0,(%ebx)
- 3e5:	fb                   	sti    
- 3e6:	83 c4 24             	add    $0x24,%esp
- 3e9:	5b                   	pop    %ebx
- 3ea:	5e                   	pop    %esi
- 3eb:	5f                   	pop    %edi
- 3ec:	5d                   	pop    %ebp
- 3ed:	c3                   	ret    
+But it's really people that are different.
+
+Some people are very perceptive of, and responsive to, those differences.
+They are able and willing to listen and understand and adjust.  They try to
+fit in with others.  I know a few people like that and I am staggered by how
+effectively they bond with other people.
+
+Other people are blind to the differences.  They expect everyone to be just
+like themselves.  When the reality shows that isn't true they create coarse
+stereotypes to allow them to pigeon hole others.  This naturally leads to
+prejudice and sometimes to hate.  And I know a few people like that too -
+maybe not quite the extreme, but certainly closer to that extreme than me.
+
+
+I believe that the abstract/mathematical/literal abilities that allow someo=
+ne
+to be good at software development is inversely correlated with the
+holistic/forgiving/flexible abilities that allow someone to be good at
+understanding others.
+
+One needs to care deeply about small details.  The other needs to work with
+hints and suggestions and accept that precision is simply not available.
+
+I know for myself that such understanding of people as I have has developed
+slowly due to hard work, patience from a loving wife and others, and from me
+stepping well outside my comfort zone - where as the mathematical ability
+was obvious in kindergarten and never needed any encouragement.
+
+And the people I know who are very good with other people are about as
+comfortable with technology as I am with strangers (i.e. not very).
+
+If this negative correlation is true, then it says something very important
+about our community.  I don't think there is any need for me to spell it ou=
+t.
+
+I think the recent discussion demonstrates this quite clearly.  Lots of
+beating on chests, very little meeting of minds.  Lots of talk about
+technical solutions (or non-solutions), very little suggestion of
+acknowledgement, accommodation or compromise.
+[some - yes.  But not much]
+
+Maybe that is just who we are.  Yes, we are sometimes blind to differences =
+in
+others and can lead us to hurt and repel them.  But that blindness allows us
+to focus on excellence in technology and so it is worth it.
+Or maybe that is only who were were.  Maybe we've got the technology pretty
+much under control and we (individuals) can choose to put more effort into
+listening to people who are very different to us.  Stop accepting the fact
+that we "just don't understand some people" and use our not inconsiderable
+intellect find some understanding.
+
+(and no, I don't completely understand my wife either, but I'm sure I
+understand her better now than I once did).
+
+NeilBrown
+
+--Sig_/KaQY9snduYjNEyQ+HtHWQVL
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUenP7Dnsnt1WYoG5AQI84w//XPNFgeplsjVclP8kG4kgthT99znnhRT1
+snwjs/Q7gw7IOkz1xW72R367Xl8I5MjznbCamG9Lre6Oa+SCae0ttsA/KLjNjpWZ
+fODrSDJWsxx6H4WpJ+e25UNs3hBRmJjUo/9yWmrrJr1/YPqyGlGzTCeOiurXqQ/R
+hz1+iyXyj7W37iaxsSBPgbu2SX1vdLfJbBAL9DXrwknWnROmC7YNWHsuJgRjZnPs
+WccHdsmnVHZaee3qV01Vb88h5z6BkWmJQz50WZ2mC8Ucs8FoTExG3/6glDkMQVo8
+ATIjGB8rJAnRvPF53Yg/0fArR4WotOODrdcfEmV7mOdIiBOzs83luUWkEFUlB/ZB
+zviz+/d5W3g6RS0KeSHCgT9Isfo3k5VTa/0g9TNIyodCTFYFrZ+GZtVAr8yHDvrB
+DI60X2WVBElAyxLV2RNuOTQt8CfgQeU6KLp+3b83Qg+8N8EyPy+mkbIDMK5NrPmX
+Nxp9JSEvLe20VtyIFz8VjZ/w24bm16t4P+OnvZAcrDvgJIB8CvMQnN+QyO3MPehr
+J8ZSrQng/A1VuOaWXen90UqPnlfLwBEmJPNUTkLsLt2qnZv9hKtjcgVG8MXqGU1L
+HBSgcd28DYbWVwvm2kqvw/29mjdtWm2gxI6hnYZ3ESp/AmrWDB9x7DtS0wmOZ05I
+3BHMEpewZPw=
+=/2F/
+-----END PGP SIGNATURE-----
+
+--Sig_/KaQY9snduYjNEyQ+HtHWQVL--
