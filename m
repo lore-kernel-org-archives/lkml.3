@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965806Ab3GSMfB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:35:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53906 "EHLO arroyo.ext.ti.com"
+	id S965876Ab3GSMf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:35:29 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53928 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965646Ab3GSMe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:34:58 -0400
+	id S1760254Ab3GSMfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 08:35:11 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
         <kishon@ti.com>, <bigeasy@linutronix.de>,
         George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 2/4] phy: phy-amxxxx-usb: Add PHY driver for amxxxx platform
-Date: Fri, 19 Jul 2013 18:04:35 +0530
-Message-ID: <1374237277-17769-3-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 4/4] usb: musb: dsps: Remove the phy control from glue and add phy driver APIs
+Date: Fri, 19 Jul 2013 18:04:37 +0530
+Message-ID: <1374237277-17769-5-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374237277-17769-1-git-send-email-george.cherian@ti.com>
 References: <1374237277-17769-1-git-send-email-george.cherian@ti.com>
@@ -24,275 +24,324 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds phy driver support for am33xx platform, the host/device
-peripheral controller shall get this phy object to control the phy
-operations.
+Remove usb phy control module access from platform glue.
+The same is now done using amxxxx phy driver and phy-omap-control.
+Adapt the driver to the split dt nodes.
 
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/phy/Kconfig          |  12 +++
- drivers/phy/Makefile         |   1 +
- drivers/phy/phy-amxxxx-usb.c | 222 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 235 insertions(+)
- create mode 100644 drivers/phy/phy-amxxxx-usb.c
+ drivers/usb/musb/musb_dsps.c | 150 ++++++++++++++++---------------------------
+ 1 file changed, 55 insertions(+), 95 deletions(-)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 5f85909..55087ab 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -11,3 +11,15 @@ menuconfig GENERIC_PHY
- 	  devices present in the kernel. This layer will have the generic
- 	  API by which phy drivers can create PHY using the phy framework and
- 	  phy users can obtain reference to the PHY.
-+if GENERIC_PHY
-+
-+config PHY_AMXXXX_USB
-+	tristate "AMXXXX USB2 PHY Driver"
-+	depends on SOC_AM33XX
-+	help
-+	  Enable this to support the transceiver that is part of SOC. This
-+	  phy supports all LS/FS/HS speed and also supports OTG functionality.
-+	  The USB OTG controller communicates with this phy through stand UTMI
-+	  interface.
-+
-+endif
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 9e9560f..471c525 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -3,3 +3,4 @@
- #
+diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+index 41f135a..6bec458 100644
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -43,6 +43,7 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
  
- obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
-+obj-$(CONFIG_PHY_AMXXXX_USB)	+= phy-amxxxx-usb.o
-diff --git a/drivers/phy/phy-amxxxx-usb.c b/drivers/phy/phy-amxxxx-usb.c
-new file mode 100644
-index 0000000..d0b0749
---- /dev/null
-+++ b/drivers/phy/phy-amxxxx-usb.c
-@@ -0,0 +1,222 @@
-+/*
-+ * phy-amxxxx-usb.c - USB PHY, talking to usb controller in AMXXX.
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Author: George Cherian <george.cherian@ti.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
+ #include "musb_core.h"
+ 
+@@ -110,8 +111,6 @@ struct dsps_musb_wrapper {
+ 	/* miscellaneous stuff */
+ 	u32		musb_core_offset;
+ 	u8		poll_seconds;
+-	/* number of musb instances */
+-	u8		instances;
+ };
+ 
+ /**
+@@ -123,49 +122,11 @@ struct dsps_glue {
+ 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
+ 	struct timer_list timer[2];	/* otg_workaround timer */
+ 	unsigned long last_timer[2];    /* last timer data for each instance */
+-	u32 __iomem *usb_ctrl[2];
+ };
+ 
+-#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
+-#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_1	0x44e10628
++#define glue_to_musb(g, i)		platform_get_drvdata(g->musb[i])
+ 
+-static const resource_size_t dsps_control_module_phys[] = {
+-	DSPS_AM33XX_CONTROL_MODULE_PHYS_0,
+-	DSPS_AM33XX_CONTROL_MODULE_PHYS_1,
+-};
+-
+-#define USBPHY_CM_PWRDN		(1 << 0)
+-#define USBPHY_OTG_PWRDN	(1 << 1)
+-#define USBPHY_OTGVDET_EN	(1 << 19)
+-#define USBPHY_OTGSESSEND_EN	(1 << 20)
+-
+-/**
+- * musb_dsps_phy_control - phy on/off
+- * @glue: struct dsps_glue *
+- * @id: musb instance
+- * @on: flag for phy to be switched on or off
+- *
+- * This is to enable the PHY using usb_ctrl register in system control
+- * module space.
+- *
+- * XXX: This function will be removed once we have a seperate driver for
+- * control module
+- */
+-static void musb_dsps_phy_control(struct dsps_glue *glue, u8 id, u8 on)
+-{
+-	u32 usbphycfg;
+-
+-	usbphycfg = readl(glue->usb_ctrl[id]);
+-
+-	if (on) {
+-		usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
+-		usbphycfg |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
+-	} else {
+-		usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
+-	}
+ 
+-	writel(usbphycfg, glue->usb_ctrl[id]);
+-}
+ /**
+  * dsps_musb_enable - enable interrupts
+  */
+@@ -411,16 +372,28 @@ static int dsps_musb_init(struct musb *musb)
+ 	void __iomem *reg_base = musb->ctrl_base;
+ 	u32 rev, val;
+ 	int status;
++	char phyname[12];
+ 
+ 	/* mentor core register starts at offset of 0x400 from musb base */
+ 	musb->mregs += wrp->musb_core_offset;
+ 
+-	/* NOP driver needs change if supporting dual instance */
+-	usb_nop_xceiv_register();
+-	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
++	snprintf(phyname , 12, "am335x-usb%d", pdev->id);
 +
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/usb/otg.h>
-+#include <linux/clk.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/phy.h>
-+
-+struct amxxxx_usb {
-+	struct usb_phy	phy;
-+	struct device	*dev;
-+	struct device	*control_dev;
-+	struct clk	*optclk;
-+	u32		id;
-+};
-+
-+#define phy_to_amxxxxphy(x)	container_of((x), struct amxxxx_phy, phy)
-+
-+
-+static int amxxxx_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
-+{
-+	struct usb_phy	*phy = otg->phy;
-+
-+	otg->host = host;
-+	if (!host)
-+		phy->state = OTG_STATE_UNDEFINED;
-+
-+	return 0;
-+}
-+
-+static int amxxxx_usb_set_peripheral(struct usb_otg *otg,
-+		struct usb_gadget *gadget)
-+{
-+	struct usb_phy	*phy = otg->phy;
-+
-+	otg->gadget = gadget;
-+	if (!gadget)
-+		phy->state = OTG_STATE_UNDEFINED;
-+
-+	return 0;
-+}
-+
-+
-+
-+static int amxxxx_usb_power_off(struct phy *x)
-+{
-+	struct amxxxx_usb *phy = phy_get_drvdata(x);
-+
-+	omap_control_am335x_phy_power(phy->control_dev, 0, phy->id);
-+
-+	return 0;
-+}
-+
-+static int amxxxx_usb_power_on(struct phy *x)
-+{
-+	struct amxxxx_usb *phy = phy_get_drvdata(x);
-+
-+	omap_control_am335x_phy_power(phy->control_dev, 1, phy->id);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops ops = {
-+	.power_on	= amxxxx_usb_power_on,
-+	.power_off	= amxxxx_usb_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int amxxxx_usb2_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct amxxxx_usb			*phy;
-+	struct phy			*generic_phy;
-+	struct usb_otg			*otg;
-+	struct phy_provider		*phy_provider;
-+
-+	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
-+
-+	otg = devm_kzalloc(&pdev->dev, sizeof(*otg), GFP_KERNEL);
-+
-+	phy->dev		= &pdev->dev;
-+
-+	if (np)
-+		of_property_read_u32(np, "id", &phy->id);
-+
-+	phy->phy.dev		= phy->dev;
-+	phy->phy.label		= "amxxxx-usb2";
-+	phy->phy.otg		= otg;
-+	phy->phy.type		= USB_PHY_TYPE_USB2;
-+
-+	phy_provider = devm_of_phy_provider_register(phy->dev,
-+			of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	phy->control_dev = omap_get_control_dev();
-+	if (IS_ERR(phy->control_dev)) {
-+		dev_dbg(&pdev->dev, "Failed to get control device\n");
-+		return -ENODEV;
++	if (dev->of_node) {
++		musb->phy = devm_phy_get(dev, phyname);
++		musb->xceiv = devm_usb_get_phy_by_phandle(dev,
++							"phys", 0);
++	} else {
++		musb->phy = devm_phy_get(dev, musb->phy_label);
++		musb->xceiv = devm_usb_get_phy_dev(dev, pdev->id);
 +	}
 +
-+	omap_control_am335x_phy_power(phy->control_dev, 0, phy->id);
+ 	if (IS_ERR_OR_NULL(musb->xceiv))
+ 		return -EPROBE_DEFER;
+ 
++	if (IS_ERR_OR_NULL(musb->phy))
++		return -EPROBE_DEFER;
 +
-+	otg->set_host		= amxxxx_usb_set_host;
-+	otg->set_peripheral	= amxxxx_usb_set_peripheral;
-+	otg->phy		= &phy->phy;
+ 	/* Returns zero if e.g. not clocked */
+ 	rev = dsps_readl(reg_base, wrp->revision);
+ 	if (!rev) {
+@@ -434,7 +407,8 @@ static int dsps_musb_init(struct musb *musb)
+ 	dsps_writel(reg_base, wrp->control, (1 << wrp->reset));
+ 
+ 	/* Start the on-chip PHY and its PLL. */
+-	musb_dsps_phy_control(glue, pdev->id, 1);
++	phy_init(musb->phy);
++	phy_power_on(musb->phy);
+ 
+ 	musb->isr = dsps_interrupt;
+ 
+@@ -448,8 +422,7 @@ static int dsps_musb_init(struct musb *musb)
+ 
+ 	return 0;
+ err0:
+-	usb_put_phy(musb->xceiv);
+-	usb_nop_xceiv_unregister();
++	devm_phy_put(dev->parent, musb->phy);
+ 	return status;
+ }
+ 
+@@ -462,11 +435,8 @@ static int dsps_musb_exit(struct musb *musb)
+ 	del_timer_sync(&glue->timer[pdev->id]);
+ 
+ 	/* Shutdown the on-chip PHY and its PLL. */
+-	musb_dsps_phy_control(glue, pdev->id, 0);
+-
+-	/* NOP driver needs change if supporting dual instance */
+-	usb_put_phy(musb->xceiv);
+-	usb_nop_xceiv_unregister();
++	phy_power_off(musb->phy);
++	phy_exit(musb->phy);
+ 
+ 	return 0;
+ }
+@@ -483,49 +453,34 @@ static struct musb_platform_ops dsps_ops = {
+ 
+ static u64 musb_dmamask = DMA_BIT_MASK(32);
+ 
+-static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
++static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id,
++		struct device_node *np)
+ {
+ 	struct device *dev = glue->dev;
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct musb_hdrc_platform_data  *pdata = dev->platform_data;
+-	struct device_node *np = pdev->dev.of_node;
+ 	struct musb_hdrc_config	*config;
+ 	struct platform_device	*musb;
+-	struct resource *res;
+ 	struct resource	resources[2];
+ 	char res_name[11];
+ 	int ret;
+ 
+-	resources[0].start = dsps_control_module_phys[id];
+-	resources[0].end = resources[0].start + SZ_4 - 1;
+-	resources[0].flags = IORESOURCE_MEM;
+-
+-	glue->usb_ctrl[id] = devm_ioremap_resource(&pdev->dev, resources);
+-	if (IS_ERR(glue->usb_ctrl[id])) {
+-		ret = PTR_ERR(glue->usb_ctrl[id]);
+-		goto err0;
+-	}
+-
+-	/* first resource is for usbss, so start index from 1 */
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, id + 1);
+-	if (!res) {
++	ret = of_address_to_resource(np, 0, &resources[0]);
++	if (ret) {
+ 		dev_err(dev, "failed to get memory for instance %d\n", id);
+-		ret = -ENODEV;
+ 		goto err0;
+ 	}
+-	res->parent = NULL;
+-	resources[0] = *res;
+ 
+ 	/* first resource is for usbss, so start index from 1 */
+-	res = platform_get_resource(pdev, IORESOURCE_IRQ, id + 1);
+-	if (!res) {
++	ret = of_irq_to_resource(np, 0, &resources[1]);
++	if (ret == 0) {
+ 		dev_err(dev, "failed to get irq for instance %d\n", id);
+-		ret = -ENODEV;
++		ret = -EINVAL;
+ 		goto err0;
+ 	}
+-	res->parent = NULL;
+-	resources[1] = *res;
+-	resources[1].name = "mc";
++	resources[0].parent = NULL;
++	resources[1].parent = NULL;
 +
-+	platform_set_drvdata(pdev, phy);
-+	pm_runtime_enable(phy->dev);
-+
-+	generic_phy = devm_phy_create(phy->dev, 0, &ops, "amxxxx-usb2");
-+	if (IS_ERR(generic_phy))
-+		return PTR_ERR(generic_phy);
-+
-+	phy_set_drvdata(generic_phy, phy);
-+
-+	phy->optclk = devm_clk_get(phy->dev, "usbotg_fck");
-+	if (IS_ERR(phy->optclk))
-+		dev_err(&pdev->dev, "unable to get usbotg_fck\n");
-+	else
-+		clk_prepare(phy->optclk);
-+
-+	device_init_wakeup(&pdev->dev, true);
-+	usb_add_phy_dev(&phy->phy);
-+
-+	return 0;
-+}
-+
-+static int amxxxx_usb2_remove(struct platform_device *pdev)
-+{
-+	struct amxxxx_usb	*phy = platform_get_drvdata(pdev);
-+
-+	clk_unprepare(phy->optclk);
-+	usb_remove_phy(&phy->phy);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_RUNTIME
-+
-+static int amxxxx_usb2_runtime_suspend(struct device *dev)
-+{
-+	struct platform_device	*pdev = to_platform_device(dev);
-+	struct amxxxx_usb	*phy = platform_get_drvdata(pdev);
-+
-+	omap_control_am335x_phy_power(phy->control_dev, 0, phy->id);
-+	if (device_may_wakeup(dev))
-+		omap_control_am335x_phy_wkup(phy->control_dev, 1, phy->id);
-+	clk_disable(phy->optclk);
-+
-+	return 0;
-+}
-+
-+static int amxxxx_usb2_runtime_resume(struct device *dev)
-+{
-+	struct platform_device	*pdev = to_platform_device(dev);
-+	struct amxxxx_usb	*phy = platform_get_drvdata(pdev);
-+
-+
-+	omap_control_am335x_phy_power(phy->control_dev, 1, phy->id);
-+	if (device_may_wakeup(dev))
-+		omap_control_am335x_phy_wkup(phy->control_dev, 0, phy->id);
-+	clk_enable(phy->optclk);
-+
-+	return 0;
-+
-+}
-+
-+static const struct dev_pm_ops amxxxx_usb2_pm_ops = {
-+	SET_RUNTIME_PM_OPS(amxxxx_usb2_runtime_suspend,
-+		amxxxx_usb2_runtime_resume, NULL)
-+};
-+
-+#define DEV_PM_OPS     (&amxxxx_usb2_pm_ops)
-+#else
-+#define DEV_PM_OPS     NULL
-+#endif
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id amxxxx_usb2_id_table[] = {
-+	{ .compatible = "ti,am335x-usb2" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, amxxxx_usb2_id_table);
-+#endif
-+
-+static struct platform_driver amxxxx_usb2_driver = {
-+	.probe		= amxxxx_usb2_probe,
-+	.remove		= amxxxx_usb2_remove,
-+	.driver		= {
-+		.name	= "amxxxx-usb2",
-+		.owner	= THIS_MODULE,
-+		.pm	= DEV_PM_OPS,
-+		.of_match_table = of_match_ptr(amxxxx_usb2_id_table),
-+	},
-+};
-+
-+module_platform_driver(amxxxx_usb2_driver);
-+
-+MODULE_ALIAS("platform: amxxxx_usb2");
-+MODULE_AUTHOR("Texas Instruments Inc.");
-+MODULE_DESCRIPTION("AMXXXX USB2 phy driver");
-+MODULE_LICENSE("GPL v2");
+ 
+ 	/* allocate the child platform device */
+ 	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+@@ -538,6 +493,7 @@ static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
+ 	musb->dev.parent		= dev;
+ 	musb->dev.dma_mask		= &musb_dmamask;
+ 	musb->dev.coherent_dma_mask	= musb_dmamask;
++	musb->dev.of_node               = of_node_get(np);
+ 
+ 	glue->musb[id]			= musb;
+ 
+@@ -566,8 +522,7 @@ static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
+ 
+ 		of_property_read_u32(np, "num-eps", (u32 *)&config->num_eps);
+ 		of_property_read_u32(np, "ram-bits", (u32 *)&config->ram_bits);
+-		snprintf(res_name, sizeof(res_name), "port%d-mode", id);
+-		of_property_read_u32(np, res_name, (u32 *)&pdata->mode);
++		of_property_read_u32(np, "port-mode", (u32 *)&pdata->mode);
+ 		of_property_read_u32(np, "power", (u32 *)&pdata->power);
+ 		config->multipoint = of_property_read_bool(np, "multipoint");
+ 
+@@ -602,6 +557,7 @@ static int dsps_probe(struct platform_device *pdev)
+ 	const struct dsps_musb_wrapper *wrp;
+ 	struct dsps_glue *glue;
+ 	struct resource *iomem;
++	struct device_node *child;
+ 	int ret, i;
+ 
+ 	match = of_match_node(musb_dsps_of_match, pdev->dev.of_node);
+@@ -648,8 +604,9 @@ static int dsps_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* create the child platform device for all instances of musb */
+-	for (i = 0; i < wrp->instances ; i++) {
+-		ret = dsps_create_musb_pdev(glue, i);
++	i = 0;
++	for_each_available_child_of_node(pdev->dev.of_node, child) {
++		ret = dsps_create_musb_pdev(glue, i, child);
+ 		if (ret != 0) {
+ 			dev_err(&pdev->dev, "failed to create child pdev\n");
+ 			/* release resources of previously created instances */
+@@ -657,6 +614,7 @@ static int dsps_probe(struct platform_device *pdev)
+ 				platform_device_unregister(glue->musb[i]);
+ 			goto err3;
+ 		}
++		i++;
+ 	}
+ 
+ 	return 0;
+@@ -674,12 +632,13 @@ err0:
+ static int dsps_remove(struct platform_device *pdev)
+ {
+ 	struct dsps_glue *glue = platform_get_drvdata(pdev);
+-	const struct dsps_musb_wrapper *wrp = glue->wrp;
+ 	int i;
+ 
+ 	/* delete the child platform device */
+-	for (i = 0; i < wrp->instances ; i++)
+-		platform_device_unregister(glue->musb[i]);
++	for (i = 0; i < ARRAY_SIZE(glue->musb); i++) {
++		if (glue->musb[i])
++			platform_device_unregister(glue->musb[i]);
++	}
+ 
+ 	/* disable usbss clocks */
+ 	pm_runtime_put(&pdev->dev);
+@@ -692,26 +651,28 @@ static int dsps_remove(struct platform_device *pdev)
+ #ifdef CONFIG_PM_SLEEP
+ static int dsps_suspend(struct device *dev)
+ {
+-	struct platform_device *pdev = to_platform_device(dev->parent);
+-	struct dsps_glue *glue = platform_get_drvdata(pdev);
+-	const struct dsps_musb_wrapper *wrp = glue->wrp;
++	struct dsps_glue *glue = dev_get_drvdata(dev);
++	struct musb *musb;
+ 	int i;
+ 
+-	for (i = 0; i < wrp->instances; i++)
+-		musb_dsps_phy_control(glue, i, 0);
++	for (i = 0; i < ARRAY_SIZE(glue->musb); i++) {
++		musb = glue_to_musb(glue, i);
++		phy_power_off(musb->phy);
++	}
+ 
+ 	return 0;
+ }
+ 
+ static int dsps_resume(struct device *dev)
+ {
+-	struct platform_device *pdev = to_platform_device(dev->parent);
+-	struct dsps_glue *glue = platform_get_drvdata(pdev);
+-	const struct dsps_musb_wrapper *wrp = glue->wrp;
++	struct dsps_glue *glue = dev_get_drvdata(dev);
++	struct musb *musb;
+ 	int i;
+ 
+-	for (i = 0; i < wrp->instances; i++)
+-		musb_dsps_phy_control(glue, i, 1);
++	for (i = 0; i < ARRAY_SIZE(glue->musb); i++) {
++		musb = glue_to_musb(glue, i);
++		phy_power_off(musb->phy);
++	}
+ 
+ 	return 0;
+ }
+@@ -747,7 +708,6 @@ static const struct dsps_musb_wrapper ti81xx_driver_data = {
+ 	.rxep_bitmap		= (0xfffe << 16),
+ 	.musb_core_offset	= 0x400,
+ 	.poll_seconds		= 2,
+-	.instances		= 2,
+ };
+ 
+ static const struct platform_device_id musb_dsps_id_table[] = {
 -- 
 1.8.1.4
 
