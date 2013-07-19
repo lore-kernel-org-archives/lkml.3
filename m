@@ -1,142 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759251Ab3GSNz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:55:58 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:40429 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757534Ab3GSNz4 (ORCPT
+	id S1760576Ab3GSN4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:56:50 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:53859 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760539Ab3GSN4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:55:56 -0400
-Message-ID: <51E94571.8080805@cogentembedded.com>
-Date: Fri, 19 Jul 2013 17:56:01 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 19 Jul 2013 09:56:47 -0400
+X-Auth-Info: vurXLP0s7OSatQz0qPhvESsMUVrUD3pXxFY9y3IIfD0=
+From: Marek Vasut <marex@denx.de>
+To: Hector Palacios <hector.palacios@digi.com>
+Subject: Re: [PATCH v2 1/5] iio: mxs-lradc: change the realbits to 12
+Date: Fri, 19 Jul 2013 15:56:46 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        alexandre.belloni@free-electrons.com, jic23@kernel.org,
+        lars@metafoo.de, fabio.estevam@freescale.com
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <1374225208-28940-2-git-send-email-hector.palacios@digi.com>
+In-Reply-To: <1374225208-28940-2-git-send-email-hector.palacios@digi.com>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org, kishon@ti.com,
-        bigeasy@linutronix.de
-Subject: Re: [PATCH v2 3/4] arm: dts: Add USB phy nodes for AM33XX
-References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-4-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1374237277-17769-4-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201307191556.46857.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Dear Hector Palacios,
 
-On 19-07-2013 16:34, George Cherian wrote:
+> The LRADC virtual channels have an 18 bit field to store the sum of up
+> to 2^5 accumulated samples. The read_raw function however only operates
+> over a single sample (12 bit resolution).
+> In order to use this field for scaling operations, we need it to be the
+> exact resolution value of the LRADC.
+> Besides, the driver was using an 18 bit mask (LRADC_CH_VALUE_MASK) to
+> report touch coordinates to userland. A 12 bit mask should be used instead
+> or else the touch libraries will expect a coordinates range between 0
+> and 0x3ffff (18 bits), instead of between 0 and 0xfff (12 bits).
+> 
+> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
 
-> Add phy nodes for AM33XX platform and split the musb nodes
-> per instance.
+Acked-by: Marek Vasut <marex@denx.de>
 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->   arch/arm/boot/dts/am33xx.dtsi | 68 +++++++++++++++++++++++++++++++++----------
->   1 file changed, 53 insertions(+), 15 deletions(-)
-
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 8e1248f..e3890c4 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -326,21 +326,59 @@
->   			status = "disabled";
->   		};
->
-> -		usb@47400000 {
-> -			compatible = "ti,musb-am33xx";
-> -			reg = <0x47400000 0x1000	/* usbss */
-> -			       0x47401000 0x800		/* musb instance 0 */
-> -			       0x47401800 0x800>;	/* musb instance 1 */
-> -			interrupts = <17		/* usbss */
-> -				      18		/* musb instance 0 */
-> -				      19>;		/* musb instance 1 */
-> -			multipoint = <1>;
-> -			num-eps = <16>;
-> -			ram-bits = <12>;
-> -			port0-mode = <3>;
-> -			port1-mode = <3>;
-> -			power = <250>;
-> -			ti,hwmods = "usb_otg_hs";
-> +		phy1: am335x-usb0@44e10620 {
-
-    Shouldn't the PHYs be *under* the usb0/1 device nodes in the hierarchy?
-They're not on the same bus as the MUSB controllers for sure.
-
-> +			compatible = "ti,am335x-usb2";
-> +			#phy-cells = <0>;
-> +			id= <0>;
-
-    Forgot space before =.
-
-> +		};
-> +
-> +		phy2: am335x-usb1@44e10628 {
-> +			compatible = "ti,am335x-usb2";
-> +			#phy-cells = <0>;
-> +			id= <1>;
-
-    Same here.
-
-> +		};
-> +
-> +		omap_control_usb: omap-control-usb@44e10620 {
-> +			compatible = "ti,omap-control-usb";
-> +			reg = <0x44e10620 0x10>;
-> +			reg-names = "control_dev_conf";
-> +			ti,type = <3>;
-> +		};
-> +
-> +                musb: usb@47400000 {
-> +                        compatible = "ti,musb-am33xx";
-> +                        reg = <0x47400000 0x1000>;
-> +                        ranges;
-> +                        #address-cells = <1>;
-> +                        #size-cells = <1>;
-> +                        interrupts = <17>;
-> +                        ti,hwmods = "usb_otg_hs";
-> +
-> +                        usb0@47401000 {
-
-    I don't think you need index in the name since you have the address as a 
-part of the name anyway. That way it's closer to the ePAPR spec.
-
-> +                                reg = <0x47401000 0x800>;
-> +                                interrupts = <18>;
-> +                                interrupt-names = "mc";
-> +                                multipoint = <1>;
-> +                                num-eps = <16>;
-> +                                ram-bits = <12>;
-> +                                port-mode = <3>;
-> +                                power = <250>;
-> +                                phys = <&phy1>;
-
-    The above lines are indented with spaces, the below one with tabs. Use 
-tabs please.
-
-> +				phy-names = "am335x-usb0";
-> +                        };
-> +
-> +                        usb1@47401800 {
-> +                                reg = <0x47401800 0x800>;
-> +                                interrupts = <19>;
-> +                                interrupt-names = "mc";
-> +                                multipoint = <1>;
-> +                                num-eps = <16>;
-> +                                ram-bits = <12>;
-> +                                port-mode = <3>;
-> +                                power = <250>;
-> +                                phys = <&phy2>;
-
-    The above lines are indented with spaces, the below one with tabs. Use 
-tabs please.
-
-> +				phy-names = "am335x-usb1";
-> +			};
->   		};
-
-WBR, Sergei
-
+Best regards,
+Marek Vasut
