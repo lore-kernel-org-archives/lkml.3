@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965800Ab3GSF1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:27:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39984 "EHLO
+	id S965871Ab3GSF11 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:27:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40083 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965761Ab3GSF1C (ORCPT
+	with ESMTP id S965856Ab3GSF1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:02 -0400
+	Fri, 19 Jul 2013 01:27:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 42/72] PCI: Fix refcount issue in pci_create_root_bus() error recovery path
-Date: Thu, 18 Jul 2013 22:25:59 -0700
-Message-Id: <20130719052602.742607405@linuxfoundation.org>
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 70/72] mm/memory-hotplug: fix lowmem count overflow when offline pages
+Date: Thu, 18 Jul 2013 22:26:27 -0700
+Message-Id: <20130719052604.646233158@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,54 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit 343df771e671d821478dd3ef525a0610b808dbf8 upstream.
+commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
 
-After calling device_register(&bridge->dev), the bridge is reference-
-counted, and it is illegal to call kfree() on it except in the release
-function.
+The logic for the memory-remove code fails to correctly account the
+Total High Memory when a memory block which contains High Memory is
+offlined as shown in the example below.  The following patch fixes it.
 
-[bhelgaas: changelog, use put_device() after device_register() failure]
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Before logic memory remove:
+
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
+
+After logic memory remove:
+
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ mm/page_alloc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1703,12 +1703,16 @@ struct pci_bus *pci_create_root_bus(stru
- 	bridge->dev.release = pci_release_bus_bridge_dev;
- 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
- 	error = pcibios_root_bridge_prepare(bridge);
--	if (error)
--		goto bridge_dev_reg_err;
-+	if (error) {
-+		kfree(bridge);
-+		goto err_out;
-+	}
- 
- 	error = device_register(&bridge->dev);
--	if (error)
--		goto bridge_dev_reg_err;
-+	if (error) {
-+		put_device(&bridge->dev);
-+		goto err_out;
-+	}
- 	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
- 	pci_set_bus_of_node(b);
-@@ -1764,8 +1768,6 @@ struct pci_bus *pci_create_root_bus(stru
- class_dev_reg_err:
- 	put_device(&bridge->dev);
- 	device_unregister(&bridge->dev);
--bridge_dev_reg_err:
--	kfree(bridge);
- err_out:
- 	kfree(b);
- 	return NULL;
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6142,6 +6142,10 @@ __offline_isolated_pages(unsigned long s
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
++#ifdef CONFIG_HIGHMEM
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
++#endif
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 
 
