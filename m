@@ -1,119 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab3GSHO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:14:26 -0400
-Received: from ozlabs.org ([203.10.76.45]:33938 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460Ab3GSHOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:14:25 -0400
-Date: Fri, 19 Jul 2013 17:14:32 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
-        Anton Blanchard <anton@samba.org>
-Subject: Re: [PATCH] hugepage: allow parallelization of the hugepage fault
- path
-Message-ID: <20130719071432.GB19634@voom.fritz.box>
-References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
- <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
- <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
- <20130715072432.GA28053@voom.fritz.box>
- <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
- <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
- <20130718084235.GA9761@lge.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
-Content-Disposition: inline
-In-Reply-To: <20130718084235.GA9761@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759775Ab3GSHQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:16:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:49925 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759727Ab3GSHQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 03:16:04 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-0b-51e8e7b46440
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Evgeniy Polyakov'" <zbr@ioremap.net>
+Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH] w1: replace strict_strtol() with kstrtol()
+Date: Fri, 19 Jul 2013 16:16:03 +0900
+Message-id: <001401ce844f$d4047db0$7c0d7910$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6ET9PZdBmTUcBHTFOyLh1FhosXqw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zY90tz18EGhyaxWRxeeElVovLu+aw
+	WfxafY7Ngdnj8Y7tTB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVcf/nb/aChxwV049LNjA2
+	s3cxcnJICJhItL1YxAZhi0lcuLceyObiEBJYxijxa+F0Npiiq8umQCUWMUqsfPCLGcL5xSix
+	9tEnsFFsAmoSX74cBrNFBDQk1jd9YgKxmQWcJH5umckCYgsLWEscu3wdrIZFQFWis72PEcTm
+	FbCUWNbQCWULSvyYfI8FoldLYv3O41Bz5CU2r3nLDHGRgsSOs68ZIXbpSfT8fMUMUSMise/F
+	O0aImnnsEt/e2UDsEpD4NvkQ0EwOoLisxKYDUGMkJQ6uuMEygVFsFpLNs5BsnoVk8ywkGxYw
+	sqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECImo3h2Mtw9YH2JMBlo/kVlKNDkfGJF5JfGG
+	xmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamAsCt+TvFb4
+	4V6jf++6Nj6KzTTaXtnx+ajn5MP2j368ebU66p1jk4rCg+UhRm7v48+LpWRa+bzbay7KOSdR
+	Ze4Jlls/np1TfetU/S/rWf2ahFoB/1kZB+ZdsChO+LKHj2vCPd2Damun6t43k+rImujtznCs
+	OG8b46THnvv/XAu/XnJi8krHiNbvSizFGYmGWsxFxYkAcAyH674CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xgO7m5y8CDd5ft7a4vPASq8XlXXPY
+	LH6tPsfmwOzxeMd2Jo++LasYPT5vkgtgjmpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw
+	1DW0tDBXUshLzE21VXLxCdB1y8wB2qSkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7H
+	yAANJKxjzLj/8zd7wUOOiunHJRsYm9m7GDk5JARMJK4um8IGYYtJXLi3Hsjm4hASWMQosfLB
+	L2YI5xejxNpHn8A62ATUJL58OQxmiwhoSKxv+sQEYjMLOEn83DKTBcQWFrCWOHb5OlgNi4Cq
+	RGd7HyOIzStgKbGsoRPKFpT4MfkeC0SvlsT6nceh5shLbF7zlhniIgWJHWdfM0Ls0pPo+fmK
+	GaJGRGLfi3eMExgFZiEZNQvJqFlIRs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4m
+	RnDEPpPawbiyweIQowAHoxIP74MvzwOFWBPLiitzDzFKcDArifD+Sn4RKMSbklhZlVqUH19U
+	mpNafIgxGejTicxSosn5wGSSVxJvaGxiZmRpZGZhZGJuTpqwkjjvgVbrQCGB9MSS1OzU1ILU
+	IpgtTBycUg2MDCby3KIfTyywcH7DvnlV07p3twL2t4luc/j47aNIZ8UEh+/7ihl15wq+id/P
+	fk9fk0n90rWKXwdWZaZJR5tbJqeqZ/0yLCtKmrpM4snxhLj0qiAWlWu6/tqbOA87fRadl/sr
+	V9mzaL2RS0C27gRGsZbAzzmu54W/CxyZoD2L95XMurUXdLcrsRRnJBpqMRcVJwIAqOMhGxwD	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The usage of strict_strtol() is not preferred, because
+strict_strtol() is obsolete. Thus, kstrtol() should be
+used.
 
---DKU6Jbt7q3WqK7+M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/w1/w1.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-On Thu, Jul 18, 2013 at 05:42:35PM +0900, Joonsoo Kim wrote:
-> On Wed, Jul 17, 2013 at 12:50:25PM -0700, Davidlohr Bueso wrote:
-> > From: David Gibson <david@gibson.dropbear.id.au>
-> >=20
-> > At present, the page fault path for hugepages is serialized by a
-> > single mutex. This is used to avoid spurious out-of-memory conditions
-> > when the hugepage pool is fully utilized (two processes or threads can
-> > race to instantiate the same mapping with the last hugepage from the
-> > pool, the race loser returning VM_FAULT_OOM).  This problem is
-> > specific to hugepages, because it is normal to want to use every
-> > single hugepage in the system - with normal pages we simply assume
-> > there will always be a few spare pages which can be used temporarily
-> > until the race is resolved.
-> >=20
-> > Unfortunately this serialization also means that clearing of hugepages
-> > cannot be parallelized across multiple CPUs, which can lead to very
-> > long process startup times when using large numbers of hugepages.
-> >=20
-> > This patch improves the situation by replacing the single mutex with a
-> > table of mutexes, selected based on a hash, which allows us to know
-> > which page in the file we're instantiating. For shared mappings, the
-> > hash key is selected based on the address space and file offset being f=
-aulted.
-> > Similarly, for private mappings, the mm and virtual address are used.
-> >=20
->=20
-> Hello.
->=20
-> With this table mutex, we cannot protect region tracking structure.
-> See below comment.
->=20
-> /*
->  * Region tracking -- allows tracking of reservations and instantiated pa=
-ges
->  *                    across the pages in a mapping.
->  *
->  * The region data structures are protected by a combination of the mmap_=
-sem
->  * and the hugetlb_instantion_mutex.  To access or modify a region the ca=
-ller
->  * must either hold the mmap_sem for write, or the mmap_sem for read and
->  * the hugetlb_instantiation mutex:
->  *
->  *      down_write(&mm->mmap_sem);
->  * or
->  *      down_read(&mm->mmap_sem);
->  *      mutex_lock(&hugetlb_instantiation_mutex);
->  */
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 0459df8..46a8fd7 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -235,9 +235,11 @@ static ssize_t w1_master_attribute_store_search(struct device * dev,
+ {
+ 	long tmp;
+ 	struct w1_master *md = dev_to_w1_master(dev);
++	int ret;
+ 
+-	if (strict_strtol(buf, 0, &tmp) == -EINVAL)
+-		return -EINVAL;
++	ret = kstrtol(buf, 0, &tmp);
++	if (ret)
++		return ret;
+ 
+ 	mutex_lock(&md->mutex);
+ 	md->search_count = tmp;
+@@ -267,9 +269,11 @@ static ssize_t w1_master_attribute_store_pullup(struct device *dev,
+ {
+ 	long tmp;
+ 	struct w1_master *md = dev_to_w1_master(dev);
++	int ret;
+ 
+-	if (strict_strtol(buf, 0, &tmp) == -EINVAL)
+-		return -EINVAL;
++	ret = kstrtol(buf, 0, &tmp);
++	if (ret)
++		return ret;
+ 
+ 	mutex_lock(&md->mutex);
+ 	md->enable_pullup = tmp;
+-- 
+1.7.10.4
 
-Ugh.  Who the hell added that.  I guess you'll need to split of
-another mutex for that purpose, afaict there should be no interaction
-with the actual, intended purpose of the instantiation mutex.
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---DKU6Jbt7q3WqK7+M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iEYEARECAAYFAlHo51gACgkQaILKxv3ab8Zn9wCdHYvc1EFMgILPkcigkxwZ5JDG
-0PcAn1iauHw+cLwCGVDnPjgpTfw/vHRe
-=AG8T
------END PGP SIGNATURE-----
-
---DKU6Jbt7q3WqK7+M--
