@@ -1,88 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759452Ab3GSFVM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:21:12 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34419 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab3GSFVK (ORCPT
+	id S1759514Ab3GSFVt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:21:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39292 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759222Ab3GSFVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:21:10 -0400
-Message-ID: <51E8CCC0.7030404@hitachi.com>
-Date: Fri, 19 Jul 2013 14:21:04 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing
- event_file/call in inode->i_private
-References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com> <20130717145148.GB7358@redhat.com> <51E750F4.5070200@hitachi.com> <20130718145137.GA6014@redhat.com>
-In-Reply-To: <20130718145137.GA6014@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Jul 2013 01:21:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/38] 3.9.11-stable review
+Date: Thu, 18 Jul 2013 22:21:16 -0700
+Message-Id: <20130719052047.858393825@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.2
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/18 23:51), Oleg Nesterov wrote:
-> On 07/18, Masami Hiramatsu wrote:
->>
->> (2013/07/17 23:51), Oleg Nesterov wrote:
->>> Well, perhaps you are right... But this TRACE_EVENT_FL_REF_MASK code
->>> is new too, it is not that we only need a small fixlets to finish it.
->>
->> Would you mean that TRACE_EVENT_FL_REF_MASK may also have some problems?
-> 
-> It was you who initially pointed that it does have problems ;)
-> 
-> And, _afaics_ your patch which tries to fix this problem is not
-> exactly correct.
+---------------
+Note, this is the LAST 3.9-stable kernel release that I will be doing.
+Please move to the 3.10-stable branch as soon as possible.
+---------------
 
-Hm,
+This is the start of the stable review cycle for the 3.9.11 release.
+There are 38 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-> It removes trace_array_get/put from tracing_open_generic_file() and
-> tracing_release_generic_file(). This assumes that "call->flags++" is
-> enough, but it is not.
+Responses should be made by Sun Jul 21 05:20:01 UTC 2013.
+Anything received after that time might be too late.
 
-No, it replaces trace_array_get/put with ftrace_event_file_get/put
-which calls trace_array_get/put inside.
-(Just one point, previous ftrace_event_file_get has a racy point
-when it does tr->ref++, it should be fixed.)
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc1.gz
+and the diffstat can be found below.
 
-> Yes, the next patch adds the "flags & TRACE_EVENT_FL_REF_MASK" check
-> into trace_remove_event_call() path. But this is still racy wrt
-> instance_delete() unless I missed something.
-> 
-> IOW, I believe that either .open() should do trace_array_get(), or
-> __trace_remove_event_dirs() needs another for-each-file loop which
-> checks file->call->flags & TRACE_EVENT_FL_REF_MASK.
+thanks,
 
-Agreed :)
+greg k-h
 
->>> So I think that it makes sense to discuss the alternatives before we
->>> decide what exactly we should do.
->>
->> Your approach is also interesting for me, indeed. However, it is so
->> different from current one. I think you should clarify what bug you
->> would like to solve and how.
-> 
-> The same bugs which Steven's 1/4 tries to solve ;)
+-------------
+Pseudo-Shortlog of commits:
 
-OK, let me confirm that, would you mean we still need 2/4 - 4/4?
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.9.11-rc1
 
-Thank you,
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Steve French <smfrench@us.ibm.com>
+    Handle big endianness in NTLM (ntlmv2) authentication
+
+Wanpeng Li <liwanp@linux.vnet.ibm.com>
+    mm/memory-hotplug: fix lowmem count overflow when offline pages
+
+Michal Hocko <mhocko@suse.cz>
+    memcg, kmem: fix reference count handling on the error path
+
+Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+    drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
+
+Theodore Ts'o <tytso@mit.edu>
+    ext4: don't allow ext4_free_blocks() to fail due to ENOMEM
+
+Jan Kara <jack@suse.cz>
+    ext4: fix overflow when counting used blocks on 32-bit architectures
+
+Jan Kara <jack@suse.cz>
+    ext4: fix data offset overflow in ext4_xattr_fiemap() on 32-bit archs
+
+Jan Kara <jack@suse.cz>
+    ext4: fix overflows in SEEK_HOLE, SEEK_DATA implementations
+
+Jan Kara <jack@suse.cz>
+    ext4: fix data offset overflow on 32-bit archs in ext4_inline_data_fiemap()
+
+Josef Bacik <jbacik@fusionio.com>
+    Btrfs: only do the tree_mod_log_free_eb if this is our last ref
+
+Josef Bacik <jbacik@fusionio.com>
+    Btrfs: fix estale with btrfs send
+
+Bart Van Assche <bart.vanassche@gmail.com>
+    timer: Fix jiffies wrap behavior of round_jiffies_common()
+
+Shane Huang <shane.huang@amd.com>
+    ahci: remove pmp link online check in FBS EH
+
+Jiang Liu <liuj97@gmail.com>
+    PCI: Fix refcount issue in pci_create_root_bus() error recovery path
+
+Xudong Hao <xudong.hao@intel.com>
+    PCI: Finish SR-IOV VF setup before adding the device
+
+Paul Clements <paul.clements@steeleye.com>
+    nbd: correct disconnect behavior
+
+Junxiao Bi <junxiao.bi@oracle.com>
+    ocfs2: xattr: fix inlined xattr reflink
+
+Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+    ACPI / PM: Fix corner case in acpi_bus_update_power()
+
+Lv Zheng <lv.zheng@intel.com>
+    ACPICA: Do not use extended sleep registers unless HW-reduced bit is set
+
+Lan Tianyu <tianyu.lan@intel.com>
+    ACPI / EC: Add HP Folio 13 to ec_dmi_table in order to skip DSDT scan
+
+Axel Lin <axel.lin@ingics.com>
+    drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
+
+Ben Hutchings <ben@decadent.org.uk>
+    genirq: Fix can_request_irq() for IRQs without an action
+
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    xen/pcifront: Deal with toolstack missing 'XenbusStateClosing' state.
+
+Laszlo Ersek <lersek@redhat.com>
+    xen/time: remove blocked time accounting from xen "clockchip"
+
+Li Zefan <lizefan@huawei.com>
+    cgroup: fix umount vs cgroup_event_remove() race
+
+Joachim Eastwood <manabian@gmail.com>
+    pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+
+Jason Wang <jasowang@redhat.com>
+    drivers: hv: switch to use mb() instead of smp_mb()
+
+George Cherian <george.cherian@ti.com>
+    usb: host: xhci-plat: release mem region while removing module
+
+Mathias Nyman <mathias.nyman@linux.intel.com>
+    xhci: check for failed dma pool allocation
+
+UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+    usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
+
+Al Viro <viro@ZenIV.linux.org.uk>
+    ext3,ext4: don't mess with dir_file->f_pos in htree_dirblock_to_tree()
+
+Maarten ter Huurne <maarten@treewalker.org>
+    ext4: fix corruption when online resizing a fs with 1K block size
+
+Theodore Ts'o <tytso@mit.edu>
+    jbd2: fix theoretical race in jbd2__journal_restart
+
+Theodore Ts'o <tytso@mit.edu>
+    jbd2: move superblock checksum calculation to jbd2_write_superblock()
+
+Larry Finger <Larry.Finger@lwfinger.net>
+    rtlwifi: rtl8192cu: Fix duplicate if test
+
+Larry Finger <Larry.Finger@lwfinger.net>
+    rtlwifi: rtl8723ae: Fix typo in firmware names
+
+Pavel Shilovsky <pshilovsky@samba.org>
+    CIFS: Fix a deadlock when a file is reopened
+
+Steve French <smfrench@gmail.com>
+    CIFS use sensible file nlink values if unprovided
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                    |  4 ++--
+ arch/x86/xen/time.c                         | 17 ++------------
+ drivers/acpi/acpica/hwxfsleep.c             |  8 ++++---
+ drivers/acpi/device_pm.c                    | 23 ++++++++++++++-----
+ drivers/acpi/ec.c                           |  4 ++++
+ drivers/ata/libahci.c                       |  3 +--
+ drivers/block/nbd.c                         |  7 +++++-
+ drivers/dma/pl330.c                         |  4 ++--
+ drivers/hv/ring_buffer.c                    | 10 ++++-----
+ drivers/hv/vmbus_drv.c                      |  2 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |  2 +-
+ drivers/net/wireless/rtlwifi/rtl8723ae/sw.c |  6 ++---
+ drivers/pci/iov.c                           |  5 ++---
+ drivers/pci/probe.c                         | 14 +++++++-----
+ drivers/pci/xen-pcifront.c                  |  7 +++---
+ drivers/pcmcia/at91_cf.c                    |  4 ++--
+ drivers/rtc/rtc-rv3029c2.c                  |  2 +-
+ drivers/usb/gadget/f_mass_storage.c         |  2 ++
+ drivers/usb/host/xhci-mem.c                 |  4 ++++
+ drivers/usb/host/xhci-plat.c                |  1 +
+ fs/btrfs/ctree.c                            |  3 ++-
+ fs/btrfs/send.c                             | 35 +++++++++++++++++++++++++++++
+ fs/cifs/cifs_unicode.h                      |  8 +++----
+ fs/cifs/cifsencrypt.c                       |  6 ++---
+ fs/cifs/file.c                              |  9 ++++----
+ fs/cifs/inode.c                             |  5 +++++
+ fs/ext3/namei.c                             |  7 ++----
+ fs/ext4/extents.c                           |  4 ++--
+ fs/ext4/file.c                              | 14 ++++++------
+ fs/ext4/inline.c                            |  2 +-
+ fs/ext4/inode.c                             |  4 ++--
+ fs/ext4/mballoc.c                           | 11 ++++++---
+ fs/ext4/namei.c                             |  7 ++----
+ fs/ext4/resize.c                            |  4 +---
+ fs/jbd2/journal.c                           |  3 ++-
+ fs/jbd2/transaction.c                       |  2 +-
+ fs/ocfs2/xattr.c                            | 10 +++++++++
+ include/linux/nbd.h                         |  1 +
+ kernel/cgroup.c                             | 25 ++++++++++++++++-----
+ kernel/irq/manage.c                         |  6 ++---
+ kernel/timer.c                              |  8 ++++---
+ mm/memcontrol.c                             |  8 -------
+ mm/page_alloc.c                             |  4 ++++
+ 43 files changed, 196 insertions(+), 119 deletions(-)
 
 
