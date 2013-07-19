@@ -1,132 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965231Ab3GSM04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:26:56 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:37683 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab3GSM0y (ORCPT
+	id S1760303Ab3GSMax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:30:53 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:56639 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab3GSMav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:26:54 -0400
-Date: Fri, 19 Jul 2013 14:26:53 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Andreas Mohr <andi@lisas.de>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christian Gmeiner <christian.gmeiner@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: Re: libata / IDE cs5536: 80c cable detect issue (and worse?)
-Message-ID: <20130719122653.GA12554@rhlx01.hs-esslingen.de>
-References: <20130718181355.GA31889@rhlx01.hs-esslingen.de>
- <20130718182541.GA30707@rhlx01.hs-esslingen.de>
- <21479812.cJNm40xAqz@amdc1032>
+	Fri, 19 Jul 2013 08:30:51 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-ea-51e9317a979e
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 18/23] perf tools: Move synthetizing into single function
+References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+	<1374083403-14591-19-git-send-email-jolsa@redhat.com>
+Date: Fri, 19 Jul 2013 21:30:50 +0900
+In-Reply-To: <1374083403-14591-19-git-send-email-jolsa@redhat.com> (Jiri
+	Olsa's message of "Wed, 17 Jul 2013 19:49:58 +0200")
+Message-ID: <87y592viit.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <21479812.cJNm40xAqz@amdc1032>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 12:40:38PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> 
-> Hi,
-> 
-> On Thursday, July 18, 2013 08:25:41 PM Andreas Mohr wrote:
-> > Hi,
-> > 
-> > forgot to mention that I had already added a libata.force=40c boot
-> > after my 80c config issue discovery
-> > which did successfully cause the "limiting to UDMA/33 due to 40c foo" dmesg
-> > yet where there's now initial but strong confirmation via reports
-> > that the resulting UDMA/33 limit did NOT manage to fix corruption issues,
-> > thus it's more strongly likely that the "bound to ill-suited pata_amd driver"
-> > (due to incorrectly configuring speeds, or due to not configuring speeds
-> > at all due to possibly BIOS not providing emulation of PCI register accesses
-> > to Geode bus, which would be properly supported by pata_cs5536 OTOH)
-> > thing is the actual reason and might fix it (fingers crossed).
-> 
-> UDMA/66 (and higher) requires 80-wire cable to work (if the vendor states
-> that UDMA/66 is supported then UDMA/100 should also work on CS5536). UDMA/33
-> should work just fine with 40-wire cable. Therefore this indeed sounds more
-> like wrong driver being selected issue than a cable problem.
+On Wed, 17 Jul 2013 19:49:58 +0200, Jiri Olsa wrote:
+> Moving synthetizing into single function, so it
+
+s/synthetizing/synthesizing/
+
+The same goes to the subject line too.
 
 
-Hohumm, news flash:
+> could be reused.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> ---
+>  tools/perf/builtin-record.c | 155 ++++++++++++++++++++++++++------------------
+>  1 file changed, 91 insertions(+), 64 deletions(-)
+>
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index b67564c..33a5bce 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -317,6 +317,95 @@ static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
+>  		       " relocation symbol.\n", machine->pid);
+>  }
+>  
+> +static int synthesize_record_pipe(struct perf_record *rec)
+> +{
+> +	struct perf_session  *session = rec->session;
+> +	struct perf_tool        *tool = &rec->tool;
+> +	struct perf_evlist    *evlist = rec->evlist;
+> +	int err;
+> +
+> +	err = perf_event__synthesize_attrs(tool, session,
+> +					   process_synthesized_event);
+> +	if (err < 0) {
+> +		pr_err("Couldn't synthesize attrs.\n");
+> +		return err;
+> +	}
+> +
+> +	if (have_tracepoints(&evlist->entries)) {
+> +		/*
+> +		 * FIXME err <= 0 here actually means that
+> +		 * there were no tracepoints so its not really
+> +		 * an error, just that we don't need to
+> +		 * synthesize anything.  We really have to
+> +		 * return this more properly and also
+> +		 * propagate errors that now are calling die()
+> +		 */
 
-We just found out that such image corruption
-(not sure yet whether it's an *identical* case of corruption though)
-also can occur when having the CF image written by a premium USB combo writer
-on a *completely different machine* (should have done that counter check
-somewhat earlier, sorry...).
-IOW, this quite likely frees the driver from being the culprit
-for our specific case, i.e. we're likely talking about a stupid software issue.
+I believe that this comment is doubly wrong.  First we already check
+whether evlist has tracepoints before calling the below function.
+Secondly I think I got rid of all of the die() calls from the
+tracing_data_get/put path.
 
-BUT, I'm still suspecting that we have a severe case of having the wrong driver activated:
-
-. lsmod:
-sd_mod                 25977  2
-snd_cs5535audio         6485  0
-ata_generic             2239  0
-pata_cs5536             2294  0
-pata_amd                6641  1
-libata                117483  3 ata_generic,pata_cs5536,pata_amd
-scsi_mod              106093  2 sd_mod,libata
-cs5535_gpio             1756  0
-
-Pray tell me, this does look like pata_cs5536 gets loaded
-due to also containing the PCI ID, yet then fails to bind,
-as opposed to pata_amd which does (reference count 1)?
-
-We also tried the pata_cs5536.msr=1 boot parm:
-
-[    0.000000] Kernel command line: [..........] pata_cs5536.msr=1 libata.force=40c [............]
-
-, and that did NOT cause the only recognizeable pata_cs5536-triggered
-log message
-                printk(KERN_ERR DRV_NAME ": Using MSR regs instead of PCI\n");
-to occur in dmesg, IOW this driver *is* inactive.
-
-We only had a
-
-[   68.861778] pata_amd 0000:00:0f.2: version 0.4.1
-[   68.864570] scsi0 : pata_amd
-[   68.865240] scsi1 : pata_amd
-
-
-
-So, AFAICS, this leaves us with up to three (perhaps four?) corrections
-that one would want to have:
-
-- remove the woefully improper (forgotten!?!) CS5536 ID from pata_amd
-  (this correction is what one would want to have, and this would work fine,
-  right? Famous last words...)
-
-- do a cable correction patch for libata side (I do think that indicating
-  40c if even one device is 40c-only is the way to go [as long as libata
-  cannot handle per-device settings], for safety reasons,
-  and if so that's probably also preferrable to advertising an UNK value,
-  since UNK would skip towards device-side cable detection
-  which might be unreliable in case ATA ID values (i.e., ATA_ID_HW_CONFIG)
-  happen to be incorrect,
-  e.g. especially in the case of CF cards (OTOH it specifically looks
-  for a 0x2000 bit being *set* for 80c indication,
-  thus it should be reliable after all since you'd expect ignorant/older
-  devices to provide zeroed fields only...)
-
-- and what about cable correction patch for IDE side? Since IDE layer
-  cable probing sequence algo appears to be different ("why??"),
-  this might require advertising a different cable flag
-
-- perhaps pata_cs5536 DMI quirk for that board, in case UDMA/100
-  (BIOS reports cable 0x03 value i.e. both 80c) happens to be too fast,
-  but given the advanced state of our discussion (pata_cs5536 driver
-  even completely inactive!!) and the DMI recognition issues that I reported
-  (empty strings) I don't think that's relevant, at least not now
-
+So I would suggest simply removing this comment block.
 
 Thanks,
+Namhyung
 
-Andreas Mohr
+
+> +		err = perf_event__synthesize_tracing_data(tool, rec->output, evlist,
+> +							  process_synthesized_event);
+> +		if (err <= 0) {
+> +			pr_err("Couldn't record tracing data.\n");
+> +			return err;
+> +		}
+> +		advance_output(rec, err);
+> +	}
+> +
+> +	return 0;
+> +}
