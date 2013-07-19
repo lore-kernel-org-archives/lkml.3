@@ -1,34 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965477Ab3GSMuy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:50:54 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:40955 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab3GSMux (ORCPT
+	id S1760312Ab3GSMxm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:53:42 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57568 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751401Ab3GSMxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:50:53 -0400
+	Fri, 19 Jul 2013 08:53:40 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, ak <ak@linux.intel.com>
+Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
+Date: Fri, 19 Jul 2013 15:03:36 +0200
+Message-ID: <3364013.pHWIsx89Eq@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1374188894.22432.354.camel@schen9-DESK>
+References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <51E8696A.7090406@intel.com> <1374188894.22432.354.camel@schen9-DESK>
 MIME-Version: 1.0
-In-Reply-To: <51E92E30.5090907@linaro.org>
-References: <1374048297-4321-1-git-send-email-jonas.jensen@gmail.com>
-	<1374232379-20900-1-git-send-email-jonas.jensen@gmail.com>
-	<51E92E30.5090907@linaro.org>
-Date: Fri, 19 Jul 2013 14:50:52 +0200
-Message-ID: <CACmBeS1zTcMCU=p-rfgrLzDrDGsjOuBvN6qzjP+HkUVhvGnsdQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: clocksource: moxart: documentation: update device
- tree bindings document
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, john.stultz@linaro.org, tglx@linutronix.de,
-        u.kleine-koenig@pengutronix.de, tomasz.figa@gmail.com,
-        linus.walleij@linaro.org, thomas.petazzoni@free-electrons.com,
-        arnd@arndb.de
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 July 2013 14:16, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> Ok, pushed.
+On Thursday, July 18, 2013 04:08:14 PM Tim Chen wrote:
+> On Fri, 2013-07-19 at 00:17 +0200, Rafael J. Wysocki wrote:
+> > On 7/18/2013 11:00 PM, Tim Chen wrote:
+> > > On Thu, 2013-07-18 at 12:47 +0900, Tetsuo Handa wrote:
+> > >> Tim Chen wrote:
+> > >>>>> Your approach is quite complicated.  I think something simpler like the
+> > >>>>> following will work:
+> > >>>> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
+> > >>>
+> > >>> The following code in crct10dif-pclmul_glue.c
+> > >>>
+> > >>> static const struct x86_cpu_id crct10dif_cpu_id[] = {
+> > >>>          X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
+> > >>>          {}
+> > >>> };
+> > >>> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+> > >>>
+> > >>> will put the module in the device table and get the module
+> > >>> loaded, as long as the cpu support PCLMULQDQ. So we should be able
+> > >>> to benefit.
+> > >> Excuse me, how can crct10dif-pclmul.ko get loaded automatically?
+> > >> Did you test CONFIG_CRYPTO_CRCT10DIF_PCLMUL=m with below debug message?
+> > > The code:
+> > >
+> > > static const struct x86_cpu_id crct10dif_cpu_id[] = {
+> > >           X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
+> > >           {}
+> > > };
+> > > MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+> > >
+> > > causes the following line to be added to modules.alias file:
+> > >
+> > > alias x86cpu:vendor:*:family:*:model:*:feature:*0081* crct10dif_pclmul
+> > >
+> > > This should cause udev to load the crct10dif_pclml module when cpu
+> > > support the PCLMULQDQ (feature code 0081).  I did my testing during
+> > > development on 3.10 and the module was indeed loaded.
+> > >
+> > > However, I found that the following commit under 3.11-rc1 broke
+> > > the mechanism after some bisection.
+> > >
+> > > commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
+> > > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > Date:   Fri May 3 00:26:22 2013 +0200
+> > >
+> > >      ACPI / processor: Use common hotplug infrastructure
+> > >      
+> > >      Split the ACPI processor driver into two parts, one that is
+> > >      non-modular, resides in the ACPI core and handles the enumeration
+> > >      and hotplug of processors and one that implements the rest of the
+> > >      existing processor driver functionality.
+> > >      
+> > > Rafael, can you check and see if this can be fixed so those optimized
+> > > crypto modules for Intel cpu that support them can be loaded?
+> > 
+> > I think this is an ordering issue between udev startup and the time when 
+> > devices are registered.
+> 
+> Something that can be fixed?
 
-Thanks :)
+I'm sure it can be fixes, but I'm not sure whether it's a udev bug or real
+breakage in the kernel yet.  I need to figure out that part.
+
+> > I wonder what happens if you put those modules into the initramfs image?
+> 
+> Under initramfs image's /lib/modules/3.11.0-rc1/kernel/arch/x86/crypto
+> directory?  Any files in /lib/modules/3.11.0-rc1/modules.* need to be
+> modified?
+
+No, you shouldn't need to modify any files, just please try to make your
+mkinitrd (or whatever else you use) put the modules you'd like to be
+autoloaded into the image.
+
+That's only something I'd like to know at this point, though, not a
+"workaround" or something like that.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
