@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759567Ab3GSA0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:26:35 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:51986 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759208Ab3GSA0d (ORCPT
+	id S1759577Ab3GSAbB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:31:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46695 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759194Ab3GSAa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:26:33 -0400
+	Thu, 18 Jul 2013 20:30:59 -0400
+Date: Thu, 18 Jul 2013 18:30:34 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130719003034.GG28005@kernel.dk>
+References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+ <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+ <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+ <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+ <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+ <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+ <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+ <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+ <51E83E32.9050306@cs.wisc.edu>
+ <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 18 Jul 2013 17:26:12 -0700
-Message-ID: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
-Subject: [RFC / musing] Scoped exception handling in Linux userspace?
-To: linux-kernel@vger.kernel.org
-Cc: gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Windows has a feature that I've wanted on Linux forever: stack-based
-(i.e. scoped) exception handling.  The upshot is that you can do,
-roughly, this (pseudocode):
+On Thu, Jul 18 2013, Nicholas A. Bellinger wrote:
+> On Thu, 2013-07-18 at 13:12 -0600, Mike Christie wrote:
+> > On 07/18/2013 12:51 PM, Nicholas A. Bellinger wrote:
+> > > On Wed, 2013-07-17 at 18:19 +0200, Alexander Gordeev wrote:
+> > >> On Tue, Jul 16, 2013 at 02:38:03PM -0700, Nicholas A. Bellinger wrote:
+> > >>> [    7.927818] scsi_execute(): Calling blk_mq_free_request >>>
+> > >>> [    7.927826] scsi 0:0:0:0: Direct-Access     ATA      ST9500530NS      CC03 PQ: 0 ANSI: 5
+> > >>>
+> > >>> OK, so INQUIRY response payload is looking as expected here.
+> > >>
+> > >> Yep. It is not on the top of my head, but I remember something like INQUIRYs
+> > >> are emulated and thus do not have payload.
+> > >>
+> > >>> [    7.927960] sd 0:0:0:0: [sda] Sector size 0 reported, assuming 512.
+> > >>> [    7.927964] sd 0:0:0:0: [sda] 1 512-byte logical blocks: (512 B/512 B)
+> > >>> [    7.927965] sd 0:0:0:0: [sda] 0-byte physical blocks
+> > >>>
+> > >>> Strange..  READ_CAPACITY appears to be returning a payload as zeros..?
+> > >>
+> > >> Yep. Because blk_execute_rq() does not put the proper callback and data do
+> > >> not get copied from sg's to bounce buffer. That is why I tried to use
+> > >> blk_mq_execute_rq() instead. Once I do that, data start getting read and
+> > >> booting stops elsewhere.
+> > > 
+> > > Mmmmmm.
+> > > 
+> > > The call to blk_queue_bounce() exists within blk_mq_make_request(), but
+> > > AFAICT this should still be getting invoked regardless of if the struct
+> > > request is dispatched into blk-mq via the modified blk_execute_rq() ->
+> > > blk_execute_rq_nowait() -> blk_mq_insert_request() codepath, or directly
+> > > via blk_mq_execute_rq()..
+> > > 
+> > 
+> > blk_mq_make_request is not called from the blk insert/execute paths.
+> > blk_mq_make_request takes a bio and tries to merge it with a request and
+> > adds it to the queue. It is only called when the make_request_fn is
+> > called like when generic_make_request is called.
+> > 
+> > blk_mq_insert_request adds a already formed request to the queue. It is
+> > already formed so that is why that path does not bounce bios. The
+> > bios/pages should already be added within the drivers restrictions. So
+> > for the read_cap path, the call to blk_rq_map_kern in scsi_execute does
+> > the blk_queue_bounce call.
+> > 
+> 
+> <nod>, just noticed the blk_queue_bounce() in blk_rq_map_kern().  
+> 
+> Not sure why this doesn't seem to be doing what it's supposed to for
+> libata just yet..
 
-int callback(...)
-{
-  /* Called if code_that_may_fault faults.  May return "unwind to
-landing pad", "propagate the fault", or "fixup and retry" */
-}
+How are you make the request from the bio? It'd be pretty trivial to
+ensure that it gets bounced properly... blk_mq_execute_rq() assumes a
+fully complete request, so it wont bounce anything.
 
-void my_function()
-{
-  __hideous_try_thing(callback) {
-    code_that_may_fault();
-  } blahblahblah {
-    landing_pad_code();
-  }
-}
+-- 
+Jens Axboe
 
-Windows calls it SEH (structured exception handling), and the
-implementation on 32-bit Windows is rather gnarly.  I don't really
-know how it works on 64-bit windows, but I think it's saner.
-
-This has two really nice properties:
-
-1. It works in libraries!
-
-2. It's localized.  So you can mmap something, read from it *and
-handle SIGBUS*, and unmap.
-
-Could Linux support such a thing?  Here's a sketch of a way:
-
- - The kernel would need to have a fairly well-defined concept of
-synchronous faults that can be handled with this mechanism.  Calls to
-force_sig_info are probably the right thing to hook in to.
-
- - The userspace runtime optionally registers (via a new syscall or
-prctl, say) a handler for synchronous faults.
-
- - When a synchronous fault happens, if the process (struct
-sighand_struct) has a synchronous fault handler registered, the signal
-is delivered to that handler, on the thread that faulted, instead of
-via the normal signal handling mechanism.
-
- - The userspace runtime walks the chain of personality handlers and
-gives them a chance to respond.
-
- - If no handler claims the fault, then the user code somehow* causes
-ordinary signal delivery to happen.
-
-* This may need kernel help, too -- if the process is going to die, it
-should die for the right reason, so perhaps there should be a syscall
-to redeliver the signal.  If the runtime wants to be fancy and a
-signal handler is installed, then there could be a fast path.  Maybe
-if we got really fancy, it could live in the vdso.
-
-Now everyone wins!  After someone writes the libgcc support for this
-(ugh!), then you can write CFI-based exception handlers in assembly!
-Presumably you could write them in C++, too, if you don't care about
-restarting, like this:
-
-try {
-   code_that_may_fault();
-} catch (cxxabi::synchronous_kernel_fault &) {
-   amazingly_dont_crash();
-}
-
-Is this worth persuing?  I'm not touching the gcc part with a ten-foot
-pole, but I could probably do some of the kernel work.  I'm a bit
-scared of libgcc, too.
-
-It's worth noting that SIGBUS isn't the only interesting signal here.
-SIGFPE could work, too.  I'm not sure whether SIGPIPE would make
-sense.  SIGSEGV would clearly work, but anyone using this mechanism
-for SIGSEGV is probably asking for trouble.
-
-
---Andy
-
-P.S.  Just because you can probably get away with throwing a C++
-exception from a signal handler right now does not mean it's a good
-idea.  Especially in a library.
