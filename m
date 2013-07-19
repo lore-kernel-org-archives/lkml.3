@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253Ab3GST2O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:28:14 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:47359 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab3GST2M (ORCPT
+	id S1751132Ab3GSTaa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:30:30 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:41015 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab3GSTa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:28:12 -0400
-Message-ID: <1374262090.1830.16.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
-From: Jason Low <jason.low2@hp.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Date: Fri, 19 Jul 2013 12:28:10 -0700
-In-Reply-To: <51E921EC.5040501@linux.vnet.ibm.com>
-References: <1374220211.5447.9.camel@j-VirtualBox>
-	 <51E921EC.5040501@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 19 Jul 2013 15:30:29 -0400
+Message-ID: <51E993D5.2080409@gmail.com>
+Date: Fri, 19 Jul 2013 15:30:29 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
+        kosaki.motohiro@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
+        tangchen@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 16:54 +0530, Preeti U Murthy wrote:
-> Hi Json,
-> 
-> I ran ebizzy and kernbench benchmarks on your 3.11-rc1 + your        "V1
-> patch" on a 1 socket, 16 core powerpc machine. I thought I would let you
-> know the results before I try your V2.
-> 
-> Ebizzy: 30 seconds run. The table below shows the improvement in the
-> number of records completed. I have not spent enough time on the patch
-> to explain such a big improvement.
-> 
-> Number_of_threads   %improvement_with_patch
->     4                          41.86%
->     8                          9.8%
->    12                          34.77%
->    16                          28.37%
-> 
-> While on kernbench there was no significant change in the observation.
-> 
-> I will try patch V2 and let you know the results.
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index b32ebf9..408ef68 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1344,8 +1344,13 @@ config ARCH_SELECT_MEMORY_MODEL
+>   	depends on ARCH_SPARSEMEM_ENABLE
+>   
+>   config ARCH_MEMORY_PROBE
+> -	def_bool y
+> +	bool "Enable sysfs memory/probe interface"
+> +	default n
+>   	depends on X86_64 && MEMORY_HOTPLUG
+> +	help
+> +	  This option enables a sysfs memory/probe interface for testing.
+> +	  See Documentation/memory-hotplug.txt for more information.
+> +	  If you are unsure how to answer this question, answer N.
 
-Great to see those improvements so far. Thank you for testing this.
+makes sense.
 
-Jason
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+
+
 
