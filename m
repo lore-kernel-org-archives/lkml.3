@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711Ab3GSUDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:03:30 -0400
-Received: from intma.in ([199.191.58.34]:56970 "HELO intma.in"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751527Ab3GSUD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751666Ab3GSUD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:03:29 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:44637 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab3GSUD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 16:03:26 -0400
-Date: Fri, 19 Jul 2013 16:03:24 -0400
-From: Kurt H Maier <khm@sdf.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+MIME-Version: 1.0
+In-Reply-To: <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+	<51E4BFA9.1030600@zytor.com>
+	<alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+	<1373991399.6458.6.camel@gandalf.local.home>
+	<alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+	<51E59F79.1040903@zytor.com>
+	<alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+	<CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+	<20130717144043.GA16513@xanatos>
+	<CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+	<20130719120841.GH26716@gmail.com>
+	<CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+Date: Fri, 19 Jul 2013 22:03:25 +0200
+X-Google-Sender-Auth: XZL1BqkeoIA_5Bwf_BabsntbiKU
+Message-ID: <CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
+Subject: Re: [ATTEND] How to act on LKML
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Guenter Roeck <linux@roeck-us.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Dave Jones <davej@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: mistakes in code vs. maintainer flow mistakes (was: [ 00/19]
- 3.10.1-stable review)
-Message-ID: <20130719200324.GA66975@intma.in>
-References: <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
- <20130718103907.GC23558@gmail.com>
- <20130718160754.GC5440@xanatos>
- <20130719092256.GC25784@gmail.com>
- <20130719190127.GA12990@xanatos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719190127.GA12990@xanatos>
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 12:01:27PM -0700, Sarah Sharp wrote:
-> 
-> I'm not trying to shut down this discussion.  But please, let's continue
-> this discussion at KS, away from the court of public opinion.  I would
-> love for this email to serve as a final summary of my opinion.  We can
-> use this email to start a conversation at KS, and we can argue our
-> hearts out there about the various points.
+On Fri, Jul 19, 2013 at 8:42 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> On Fri, Jul 19, 2013 at 7:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>>
+>> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>
+>>> As Linus already pointed out, not everybody has to work with everybody.
+>>
+>> That's not the point though, the point is to potentially roughly double
+>> the creative brain capacity of the Linux kernel project.
+>
+> Unfortunately that's impossible; we all know there aren't as many
+> women programmers as there are men. So there's absolutely *nothing*
+> the Linux kernel can do to double the creative brain capacity of the
+> Linux kernel project (at least with respect to women).
 
-Well more than half your argument is about how "the court of public
-opinion" regards interactions on the mailing list.  Why is this
-discussion exempt?
+There may be less women programmers than men programmers, but that
+doesn't say anything about the ratio of female Linux kernel hackers vs.
+female programmers.
 
-> 
-> Just please, let me do my job as a kernel maintainer, and please stop
-> replying to this conversation.  I can only write so many long emails a
-> day without it cutting into my time for writing code and debugging USB
-> issues.
-> 
+So let's hope we can prove you wrong soon ;-)
 
-You should have thought about that before you posted your assault on
-free expression to every single social media outlet you have access to,
-With any luck, next time, you will.
+Gr{oetje,eeting}s,
 
-khm
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
