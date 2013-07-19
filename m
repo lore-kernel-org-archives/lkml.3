@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759627Ab3GSO0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:26:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45880 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab3GSO0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:26:34 -0400
-Date: Fri, 19 Jul 2013 16:26:28 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH] RTC: Add an alarm disable quirk
-Message-ID: <20130719142628.GC19581@pd.tnic>
-References: <1374162294-29726-1-git-send-email-bp@alien8.de>
- <51E8194E.1030704@linaro.org>
- <20130718225349.GD15992@pd.tnic>
+	id S1759239Ab3GSO1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:27:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37628 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab3GSO1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 10:27:37 -0400
+Date: Fri, 19 Jul 2013 15:27:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>
+Subject: Re: [PATCH v4 02/17] sched_clock: Use seqcount instead of rolling
+	our own
+Message-ID: <20130719142718.GG24642@n2100.arm.linux.org.uk>
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org> <1374189690-10810-3-git-send-email-sboyd@codeaurora.org> <20130719090328.GA18139@mudshark.cambridge.arm.com> <alpine.LFD.2.03.1307191016010.14924@syhkavp.arg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130718225349.GD15992@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.03.1307191016010.14924@syhkavp.arg>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 12:53:49AM +0200, Borislav Petkov wrote:
-> > I assumed it was some sort of BIOS issue where any modification of the
-> > RTC_AIE bit caused the alarm irq line to be left high(or something
-> > like that) that triggered the immediate power-on on shutdown. But I've
-> > not been able to dig down on this.
+On Fri, Jul 19, 2013 at 10:20:19AM -0400, Nicolas Pitre wrote:
+> On Fri, 19 Jul 2013, Will Deacon wrote:
 > 
-> Ha, this actually fits like an ass on a bucket (don't ask - German
-> proverb :-)).
+> > Looks good to me. The current scheme would be very fiddly to extend to
+> > 64-bit values on 32-bit architectures without cheap atomic doubleword
+> > accesses.
 > 
-> If what you're saying is actually the case, then this explains why not
-> writing to 0xb doesn't cause the alarm irq to fire.
-> 
-> Btw, in the trace above we do the disabling twice. Once from
-> rtc_timer_remove() and then again from rtc_timer_do_work().
-> 
-> So, if we disable it once and we touch RTC_AIE again causing the second
-> time to rearm the alarm irq, this would explain the issue. Which reminds
-> me:
-> 
-> Maybe we should read out the alarm interrupt first and disable it only
-> if it is enabled - that would save us the modification of RTC_AIE. Cool,
-> I'll try that tomorrow.
+> You should have a look at include/linux/cnt32_to_63.h.
+> This could be applied to pure software counters if the low part is 
+> atomically increased.
 
-Well, the below seems to do the trick. But since I don't trust the BIOS
-in any way, I'll run it a couple more days here. Btw, I think we should
-commit this regardless, as it saves us unneeded writes:
-
----
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index be06d7150de5..bb265f1651e7 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -304,6 +304,9 @@ static void cmos_irq_enable(struct cmos_rtc *cmos, unsigned char mask)
- 	rtc_control = CMOS_READ(RTC_CONTROL);
- 	cmos_checkintr(cmos, rtc_control);
- 
-+	if (rtc_control == mask)
-+		return;
-+
- 	rtc_control |= mask;
- 	CMOS_WRITE(rtc_control, RTC_CONTROL);
- 	hpet_set_rtc_irq_bit(mask);
-@@ -316,6 +319,10 @@ static void cmos_irq_disable(struct cmos_rtc *cmos, unsigned char mask)
- 	unsigned char	rtc_control;
- 
- 	rtc_control = CMOS_READ(RTC_CONTROL);
-+
-+	if (!(rtc_control & mask))
-+		return;
-+
- 	rtc_control &= ~mask;
- 	CMOS_WRITE(rtc_control, RTC_CONTROL);
- 	hpet_mask_rtc_irq_bit(mask);
---
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+But this can't be used for sched_clock().  That's exactly why I originally
+had to rewrite that thing in the first place.
