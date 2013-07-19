@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760934Ab3GSRsD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 13:48:03 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33859 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab3GSRsB (ORCPT
+	id S1760919Ab3GSRss (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 13:48:48 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:25074 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab3GSRsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 13:48:01 -0400
-From: Mark Brown <broonie@kernel.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Date: Fri, 19 Jul 2013 18:47:34 +0100
-Message-Id: <1374256055-26894-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.3.2
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 1/2] extcon: gpio: Use power efficient workqueue for debounce
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 19 Jul 2013 13:48:47 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        dave@sr71.net, kosaki.motohiro@gmail.com,
+        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+Date: Fri, 19 Jul 2013 11:47:48 -0600
+Message-Id: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
+interface, which allows a given memory address to be hot-added as
+follows. (See Documentation/memory-hotplug.txt for more detail.)
 
-The debounce timeout is generally quite long and the work not performance
-critical so allow the scheduler to run the work anywhere rather than in
-the normal per-CPU workqueue.
+# echo start_address_of_new_memory > /sys/devices/system/memory/probe
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This probe interface is required on powerpc. On x86, however, ACPI
+notifies a memory hotplug event to the kernel, which performs its
+hotplug operation as the result. Therefore, regular users do not need
+this interface on x86. This probe interface is also error-prone and
+misleading that the kernel blindly adds a given memory address without
+checking if the memory is present on the system; no probing is done
+despite of its name. The kernel crashes when a user requests to online
+a memory block that is not present on the system. This interface is
+currently used for testing as it can fake a hotplug event.
+
+This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86, adds
+its Kconfig menu entry on x86, and clarifies its use in Documentation/
+memory-hotplug.txt.
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- drivers/extcon/extcon-gpio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/memory-hotplug.txt |   16 +++++++++-------
+ arch/x86/Kconfig                 |    7 ++++++-
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 02bec32..f874c30 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -56,7 +56,7 @@ static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
- {
- 	struct gpio_extcon_data *extcon_data = dev_id;
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 8e5eacb..8fd254c 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -210,13 +210,15 @@ If memory device is found, memory hotplug code will be called.
  
--	schedule_delayed_work(&extcon_data->work,
-+	queue_delayed_work(system_power_efficient_wq, &extcon_data->work,
- 			      extcon_data->debounce_jiffies);
- 	return IRQ_HANDLED;
- }
--- 
-1.8.3.2
-
+ 4.2 Notify memory hot-add event by hand
+ ------------
+-In some environments, especially virtualized environment, firmware will not
+-notify memory hotplug event to the kernel. For such environment, "probe"
+-interface is supported. This interface depends on CONFIG_ARCH_MEMORY_PROBE.
+-
+-Now, CONFIG_ARCH_MEMORY_PROBE is supported only by powerpc but it does not
+-contain highly architecture codes. Please add config if you need "probe"
+-interface.
++On powerpc, the firmware does not notify a memory hotplug event to the kernel.
++Therefore, "probe" interface is supported to notify the event to the kernel.
++This interface depends on CONFIG_ARCH_MEMORY_PROBE.
++
++CONFIG_ARCH_MEMORY_PROBE is supported on powerpc only. On x86, this config
++option is disabled by default since ACPI notifies a memory hotplug event to
++the kernel, which performs its hotplug operation as the result. Please
++enable this option if you need the "probe" interface for testing purposes
++on x86.
+ 
+ Probe interface is located at
+ /sys/devices/system/memory/probe
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf9..408ef68 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1344,8 +1344,13 @@ config ARCH_SELECT_MEMORY_MODEL
+ 	depends on ARCH_SPARSEMEM_ENABLE
+ 
+ config ARCH_MEMORY_PROBE
+-	def_bool y
++	bool "Enable sysfs memory/probe interface"
++	default n
+ 	depends on X86_64 && MEMORY_HOTPLUG
++	help
++	  This option enables a sysfs memory/probe interface for testing.
++	  See Documentation/memory-hotplug.txt for more information.
++	  If you are unsure how to answer this question, answer N.
+ 
+ config ARCH_PROC_KCORE_TEXT
+ 	def_bool y
