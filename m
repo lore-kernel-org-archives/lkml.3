@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760627Ab3GSQXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:23:15 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:59949 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759422Ab3GSQXO (ORCPT
+	id S1760736Ab3GSQXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:23:21 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.194]:56342 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760643Ab3GSQXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:23:14 -0400
+	Fri, 19 Jul 2013 12:23:18 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-13.tower-46.messagelabs.com!1374250995!30543641!5
+X-Originating-IP: [66.77.174.13]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.9; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <51E967D8.8020001@digi.com>
+Date: Fri, 19 Jul 2013 18:22:48 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1374250046.15242.7.camel@x61.thuisdomein>
-References: <1374245148-24031-1-git-send-email-alexj@rosedu.org>
- <CAOJsxLGEmjY6wTp99DKQ4ZKO2oXq6102MczbjCHTUReuCTq-fw@mail.gmail.com>
- <CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
- <CAOJsxLFw4t-jwO4vDuMYfZA4uqH59h1c66xVPPFDO037OvGKSg@mail.gmail.com>
- <CAPhGq=Y30i0RWJTcomt5sRdKX6RDzdGHBo5L9D6coH8O0ej6kA@mail.gmail.com>
- <20130719154648.GA23116@kroah.com> <1374250046.15242.7.camel@x61.thuisdomein>
-From: Alexandru Juncu <alexj@rosedu.org>
-Date: Fri, 19 Jul 2013 19:22:53 +0300
-X-Google-Sender-Auth: a3ZFeoX0KCrqocc0Jcs2cEGuadU
-Message-ID: <CAPhGq=YW671ey1MUih_O2=2r-gjVVo8v=ac7nYrsHQ232KoxOw@mail.gmail.com>
-Subject: Re: [PATCH] lustre:libcfs: remove redundant code.
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "andreas.dilger" <andreas.dilger@intel.com>,
-        "tao.peng" <tao.peng@emc.com>, driverdev <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Marek Vasut <marex@denx.de>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify
+ scale
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307191639.01240.marex@denx.de> <51E95BEC.5080703@digi.com> <201307191817.27102.marex@denx.de>
+In-Reply-To: <201307191817.27102.marex@denx.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 July 2013 19:07, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Fri, 2013-07-19 at 08:46 -0700, Greg Kroah-Hartman wrote:
->> Doesn't matter, if there are no users, please just remove it.
+Dear Marek,
+
+On 07/19/2013 06:17 PM, Marek Vasut wrote:
+>> Here you have three entries per channel:
+>> in_voltageX_raw		-> the sample raw value
+>> in_voltageX_scale	-> the scale to multiply the raw value to get the
+> voltage
+>> in mV in_voltageX_scale_available -> lists the available scales of the
+>> channel
+>>
+>> For example for channel 0:
+>>
+>> # cat in_voltage0_scale_available
+>> 0.451660156 0.903320312	(two scales available, first with divider by two
+>> disabled, second with divider by two enabled)
+>>
+>> # cat in_voltage0_scale
+>> 0.451660156			(divider by two is currently disabled)
+>>
+>> # cat in_voltage0_raw		(shows measured value)
+>> 1000
+>>
+>> If you multiply the value by the scale you get: 1000 * 0.451660156 = 451.6
+>> mV
+>>
+>> # echo 0.903320312 > in_voltage0_scale	(enables the divider by two)
 >
-> Is that, basically, your approach to staging cleanups?
+> Ok, so I have to remember this value : '0.903320312' in case I want to enable
+> divide-by-two functionality?
+
+No you don't. That's why there is a 'in_voltage_scale_available' that lists the 
+available values.
+
+> Hmmmm ... why would this interface not work:
+> echo 2 > in_voltage0_scale
 >
-> I ask because I noticed that "drivers/staging/lustre/lustre/ptlrpc/gss/"
-> is only built if CONFIG_PTLRPC_GSS is set. But the corresponding Kconfig
-> symbol is nowhere to be found.
+> or
 >
-> Or do you prefer that I poke the people involved in (this case in)
-> Lustre before suggesting a drastic cleanup like that?
+> echo 1 > in_voltage0_scale
 
+An easy thing like that is what I first submitted, but it was rejected and I was told 
+to use the scale_available descriptor instead, which is the common interface the rest 
+of drivers use.
 
-
-Thanks for the comments!
-
-The comment for that function is "Duplicate a string in a
-platform-independent way" so it might be because it's called by code
-that also run on non-Linux systems.
+Best regards,
+--
+Hector Palacios
