@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965533Ab3GSFX5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:23:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39458 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965463Ab3GSFWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:31 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 09/38] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
-Date: Thu, 18 Jul 2013 22:21:25 -0700
-Message-Id: <20130719052048.517099335@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
-References: <20130719052047.858393825@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S965519Ab3GSFX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:23:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965438Ab3GSFXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:23:54 -0400
+Date: Fri, 19 Jul 2013 10:53:45 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnd Bergmann <arnd@arndb.de>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 0/2] [BUGFIX] virtio/console: Fix two bugs of splice_write
+Message-ID: <20130719052345.GD3087@amit-x200.redhat.com>
+References: <20130718231927.3664.50418.stgit@yunodevel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718231927.3664.50418.stgit@yunodevel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On (Fri) 19 Jul 2013 [08:19:27], Yoshihiro YUNOMAE wrote:
+> Hi,
+> 
+> This patch set fixes two bugs of splice_write in the virtio-console driver.
+> 
+> [BUG1] Although pipe->nrbufs is empty, the driver tries to do splice_write.
+>        => This induces oops in sg_init_table().
+> 
+> [BUG2] No lock for competition of splice_write.
+>        => This induces oops in splice_from_pipe_feed() by bug of any user
+>           application.
 
-------------------
+Spotted a bug in the 2nd patch.  Do you want to also CC these to stable@?
 
-From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-
-commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
-
-Without this memory barrier, the file-storage thread may fail to
-escape from the following while loop, because it may observe new
-common->thread_wakeup_needed and old bh->state which are updated by
-the callback functions.
-
-	/* Wait for the CBW to arrive */
-	while (bh->state != BUF_STATE_FULL) {
-		rc = sleep_thread(common);
-		if (rc)
-			return rc;
-	}
-
-Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/gadget/f_mass_storage.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -413,6 +413,7 @@ static int fsg_set_halt(struct fsg_dev *
- /* Caller must hold fsg->lock */
- static void wakeup_thread(struct fsg_common *common)
- {
-+	smp_wmb();	/* ensure the write of bh->state is complete */
- 	/* Tell the main thread that something has happened */
- 	common->thread_wakeup_needed = 1;
- 	if (common->thread_task)
-@@ -632,6 +633,7 @@ static int sleep_thread(struct fsg_commo
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	common->thread_wakeup_needed = 0;
-+	smp_rmb();	/* ensure the latest bh->state is visible */
- 	return rc;
- }
- 
-
-
+		Amit
