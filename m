@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965318Ab3GSFWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:22:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39342 "EHLO
+	id S966063Ab3GSFuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:50:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964839Ab3GSFWH (ORCPT
+	with ESMTP id S965291Ab3GSFWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:07 -0400
+	Fri, 19 Jul 2013 01:22:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Rowe <bart@fathom13.com>, Lv Zheng <lv.zheng@intel.com>,
-        Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 20/38] ACPICA: Do not use extended sleep registers unless HW-reduced bit is set
-Date: Thu, 18 Jul 2013 22:21:36 -0700
-Message-Id: <20130719052049.265705240@linuxfoundation.org>
+        Xudong Hao <xudong.hao@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 24/38] PCI: Finish SR-IOV VF setup before adding the device
+Date: Thu, 18 Jul 2013 22:21:40 -0700
+Message-Id: <20130719052049.532797847@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -28,48 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Xudong Hao <xudong.hao@intel.com>
 
-commit 7cec7048fe22e3e92389da2cd67098f6c4284e7f upstream.
+commit fbf33f516bdbcc2ab1ba1e54dfb720b0cfaa6874 upstream.
 
-Previous implementation incorrectly used the ACPI 5.0 extended
-sleep registers if they were simply populated. This caused
-problems on some non-HW-reduced machines. As per the ACPI spec,
-they should only be used if the HW-reduced bit is set.  Lv Zheng,
-ACPICA BZ 1020.
+Commit 4f535093cf "PCI: Put pci_dev in device tree as early as possible"
+moves device registering from pci_bus_add_devices() to pci_device_add().
+That causes problems for virtual functions because device_add(&virtfn->dev)
+is called before setting the virtfn->is_virtfn flag, which then causes Xen
+to report PCI virtual functions as PCI physical functions.
 
-Reported-by: Daniel Rowe <bart@fathom13.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=54181
-References: https://bugs.acpica.org/show_bug.cgi?id=1020
-Bisected-by: Brint E. Kriebel <kernel@bekit.net>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fix it by setting virtfn->is_virtfn before calling pci_device_add().
+
+[Jiang Liu]: Move the setting of virtfn->is_virtfn ahead further for better
+readability and modify changelog.
+
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/hwxfsleep.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/pci/iov.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/acpica/hwxfsleep.c
-+++ b/drivers/acpi/acpica/hwxfsleep.c
-@@ -240,12 +240,14 @@ static acpi_status acpi_hw_sleep_dispatc
- 	    &acpi_sleep_dispatch[function_id];
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -92,6 +92,8 @@ static int virtfn_add(struct pci_dev *de
+ 	pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_DID, &virtfn->device);
+ 	pci_setup_device(virtfn);
+ 	virtfn->dev.parent = dev->dev.parent;
++	virtfn->physfn = pci_dev_get(dev);
++	virtfn->is_virtfn = 1;
  
- #if (!ACPI_REDUCED_HARDWARE)
+ 	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+ 		res = dev->resource + PCI_IOV_RESOURCES + i;
+@@ -113,9 +115,6 @@ static int virtfn_add(struct pci_dev *de
+ 	pci_device_add(virtfn, virtfn->bus);
+ 	mutex_unlock(&iov->dev->sriov->lock);
+ 
+-	virtfn->physfn = pci_dev_get(dev);
+-	virtfn->is_virtfn = 1;
 -
- 	/*
- 	 * If the Hardware Reduced flag is set (from the FADT), we must
--	 * use the extended sleep registers
-+	 * use the extended sleep registers (FADT). Note: As per the ACPI
-+	 * specification, these extended registers are to be used for HW-reduced
-+	 * platforms only. They are not general-purpose replacements for the
-+	 * legacy PM register sleep support.
- 	 */
--	if (acpi_gbl_reduced_hardware || acpi_gbl_FADT.sleep_control.address) {
-+	if (acpi_gbl_reduced_hardware) {
- 		status = sleep_functions->extended_function(sleep_state);
- 	} else {
- 		/* Legacy sleep */
+ 	rc = pci_bus_add_device(virtfn);
+ 	sprintf(buf, "virtfn%u", id);
+ 	rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
 
 
