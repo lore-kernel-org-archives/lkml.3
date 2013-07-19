@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935195Ab3GSCZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:25:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37847 "EHLO
+	id S935226Ab3GSCZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:25:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935181Ab3GSCZO (ORCPT
+	with ESMTP id S935116Ab3GSCZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:14 -0400
+	Thu, 18 Jul 2013 22:25:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nagachandra P <nagachandra@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 21/24] ext4: dont allow ext4_free_blocks() to fail due to ENOMEM
-Date: Thu, 18 Jul 2013 19:24:53 -0700
-Message-Id: <20130719022405.468438506@linuxfoundation.org>
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 23/24] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
+Date: Thu, 18 Jul 2013 19:24:55 -0700
+Message-Id: <20130719022405.602117725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -26,45 +32,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-commit e7676a704ee0a1ef71a6b23760b5a8f6896cb1a1 upstream.
+commit da331ba8e9c5de72a27e50f71105395bba6eebe0 upstream.
 
-The filesystem should not be marked inconsistent if ext4_free_blocks()
-is not able to allocate memory.  Unfortunately some callers (most
-notably ext4_truncate) don't have a way to reflect an error back up to
-the VFS.  And even if we did, most userspace applications won't deal
-with most system calls returning ENOMEM anyway.
+tasklet_kill() may sleep so call it before taking pch->lock.
 
-Reported-by: Nagachandra P <nagachandra@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Fixes following lockup:
+
+  BUG: scheduling while atomic: cat/2383/0x00000002
+  Modules linked in:
+    unwind_backtrace+0x0/0xfc
+    __schedule_bug+0x4c/0x58
+    __schedule+0x690/0x6e0
+    sys_sched_yield+0x70/0x78
+    tasklet_kill+0x34/0x8c
+    pl330_free_chan_resources+0x24/0x88
+    dma_chan_put+0x4c/0x50
+  [...]
+  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
+   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
+    unwind_backtrace+0x0/0xfc
+    do_raw_spin_lock+0x194/0x204
+    _raw_spin_lock_irqsave+0x20/0x28
+    pl330_tasklet+0x2c/0x5a8
+    tasklet_action+0xfc/0x114
+    __do_softirq+0xe4/0x19c
+    irq_exit+0x98/0x9c
+    handle_IPI+0x124/0x16c
+    gic_handle_irq+0x64/0x68
+    __irq_svc+0x40/0x70
+    cpuidle_wrap_enter+0x4c/0xa0
+    cpuidle_enter_state+0x18/0x68
+    cpuidle_idle_call+0xac/0xe0
+    cpu_idle+0xac/0xf0
+
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/dma/pl330.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4639,11 +4639,16 @@ do_more:
- 		 * blocks being freed are metadata. these blocks shouldn't
- 		 * be used until this transaction is committed
- 		 */
-+	retry:
- 		new_entry = kmem_cache_alloc(ext4_free_data_cachep, GFP_NOFS);
- 		if (!new_entry) {
--			ext4_mb_unload_buddy(&e4b);
--			err = -ENOMEM;
--			goto error_return;
-+			/*
-+			 * We use a retry loop because
-+			 * ext4_free_blocks() is not allowed to fail.
-+			 */
-+			cond_resched();
-+			congestion_wait(BLK_RW_ASYNC, HZ/50);
-+			goto retry;
- 		}
- 		new_entry->efd_start_cluster = bit;
- 		new_entry->efd_group = block_group;
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2469,10 +2469,10 @@ static void pl330_free_chan_resources(st
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&pch->lock, flags);
+-
+ 	tasklet_kill(&pch->task);
+ 
++	spin_lock_irqsave(&pch->lock, flags);
++
+ 	pl330_release_channel(pch->pl330_chid);
+ 	pch->pl330_chid = NULL;
+ 
 
 
