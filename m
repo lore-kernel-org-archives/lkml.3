@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965773Ab3GSF1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:27:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39960 "EHLO
+	id S965830Ab3GSFct (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:32:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39994 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965490Ab3GSF06 (ORCPT
+	with ESMTP id S965771Ab3GSF1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:58 -0400
+	Fri, 19 Jul 2013 01:27:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 37/72] Input: bcm5974 - add support for the 2013 MacBook Air
-Date: Thu, 18 Jul 2013 22:25:54 -0700
-Message-Id: <20130719052602.400119106@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 35/72] ACPI / PM: Fix corner case in acpi_bus_update_power()
+Date: Thu, 18 Jul 2013 22:25:52 -0700
+Message-Id: <20130719052602.267109824@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,112 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <rydberg@euromail.se>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 148c1c8ad3c4170186ebe6ea5900adde27d2a0e7 upstream.
+commit 91bdad0b6237c25a7bf8fd4604d0cc64a2005a23 upstream.
 
-The June 2013 Macbook Air (13'') has a new trackpad protocol; four new
-values are inserted in the header, and the mode switch is no longer
-needed. This patch adds support for the new devices.
+The role of acpi_bus_update_power() is to update the given ACPI
+device object's power.state field to reflect the current physical
+state of the device (as inferred from the configuration of power
+resources and _PSC, if available).  For this purpose it calls
+acpi_device_set_power() that should update the power resources'
+reference counters and set power.state as appropriate.  However,
+that doesn't work if the "new" state is D1, D2 or D3hot and the
+the current value of power.state means D3cold, because in that
+case acpi_device_set_power() will refuse to transition the device
+from D3cold to non-D0.
 
-Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To address this problem, make acpi_bus_update_power() call
+acpi_power_transition() directly to update the power resources'
+reference counters and only use acpi_device_set_power() to put
+the device into D0 if the current physical state of it cannot
+be determined.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/bcm5974.c |   36 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 34 insertions(+), 2 deletions(-)
+ drivers/acpi/device_pm.c |   23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
 
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -88,6 +88,10 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
- #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
- #define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
-+/* MacbookAir6,2 (unibody, June 2013) */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
+--- a/drivers/acpi/device_pm.c
++++ b/drivers/acpi/device_pm.c
+@@ -324,14 +324,27 @@ int acpi_bus_update_power(acpi_handle ha
+ 	if (result)
+ 		return result;
  
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-@@ -145,6 +149,10 @@ static const struct usb_device_id bcm597
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
-+	/* MacbookAir6,2 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
- 	/* Terminating entry */
- 	{}
- };
-@@ -172,15 +180,18 @@ struct bt_data {
- /* trackpad header types */
- enum tp_type {
- 	TYPE1,			/* plain trackpad */
--	TYPE2			/* button integrated in trackpad */
-+	TYPE2,			/* button integrated in trackpad */
-+	TYPE3			/* additional header fields since June 2013 */
- };
+-	if (state == ACPI_STATE_UNKNOWN)
++	if (state == ACPI_STATE_UNKNOWN) {
+ 		state = ACPI_STATE_D0;
+-
+-	result = acpi_device_set_power(device, state);
+-	if (!result && state_p)
++		result = acpi_device_set_power(device, state);
++		if (result)
++			return result;
++	} else {
++		if (device->power.flags.power_resources) {
++			/*
++			 * We don't need to really switch the state, bu we need
++			 * to update the power resources' reference counters.
++			 */
++			result = acpi_power_transition(device, state);
++			if (result)
++				return result;
++		}
++		device->power.state = state;
++	}
++	if (state_p)
+ 		*state_p = state;
  
- /* trackpad finger data offsets, le16-aligned */
- #define FINGER_TYPE1		(13 * sizeof(__le16))
- #define FINGER_TYPE2		(15 * sizeof(__le16))
-+#define FINGER_TYPE3		(19 * sizeof(__le16))
+-	return result;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(acpi_bus_update_power);
  
- /* trackpad button data offsets */
- #define BUTTON_TYPE2		15
-+#define BUTTON_TYPE3		23
- 
- /* list of device capability bits */
- #define HAS_INTEGRATED_BUTTON	1
-@@ -400,6 +411,19 @@ static const struct bcm5974_config bcm59
- 		{ SN_COORD, -150, 6730 },
- 		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
- 	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING8_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING8_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0, sizeof(struct bt_data),
-+		0x83, TYPE3, FINGER_TYPE3, FINGER_TYPE3 + SIZEOF_ALL_FINGERS,
-+		{ SN_PRESSURE, 0, 300 },
-+		{ SN_WIDTH, 0, 2048 },
-+		{ SN_COORD, -4620, 5140 },
-+		{ SN_COORD, -150, 6600 },
-+		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
-+	},
- 	{}
- };
- 
-@@ -557,6 +581,9 @@ static int report_tp_state(struct bcm597
- 		input_report_key(input, BTN_LEFT, ibt);
- 	}
- 
-+	if (c->tp_type == TYPE3)
-+		input_report_key(input, BTN_LEFT, dev->tp_data[BUTTON_TYPE3]);
-+
- 	input_sync(input);
- 
- 	return 0;
-@@ -572,9 +599,14 @@ static int report_tp_state(struct bcm597
- 
- static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
- {
--	char *data = kmalloc(8, GFP_KERNEL);
- 	int retval = 0, size;
-+	char *data;
-+
-+	/* Type 3 does not require a mode switch */
-+	if (dev->cfg.tp_type == TYPE3)
-+		return 0;
- 
-+	data = kmalloc(8, GFP_KERNEL);
- 	if (!data) {
- 		dev_err(&dev->intf->dev, "out of memory\n");
- 		retval = -ENOMEM;
 
 
