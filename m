@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965526Ab3GSFYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:24:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39439 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965446Ab3GSFW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:27 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 04/38] rtlwifi: rtl8192cu: Fix duplicate if test
-Date: Thu, 18 Jul 2013 22:21:20 -0700
-Message-Id: <20130719052048.174965994@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
-References: <20130719052047.858393825@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S965531Ab3GSFZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:25:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965446Ab3GSFY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:24:59 -0400
+Date: Fri, 19 Jul 2013 10:54:49 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnd Bergmann <arnd@arndb.de>, yrl.pp-manager.tt@hitachi.com,
+        Virtualization List <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 0/2] [BUGFIX] virtio/console: Fix two bugs of splice_write
+Message-ID: <20130719052449.GE3087@amit-x200.redhat.com>
+References: <20130718231927.3664.50418.stgit@yunodevel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718231927.3664.50418.stgit@yunodevel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On (Fri) 19 Jul 2013 [08:19:27], Yoshihiro YUNOMAE wrote:
+> Hi,
+> 
+> This patch set fixes two bugs of splice_write in the virtio-console driver.
 
-------------------
+Oh, and please CC virtualization@lists.linux-foundation.org for any
+virtio-related patches.
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+Thanks,
 
-commit 10d0b9030a3f86e1e26c710c7580524d7787d688 upstream.
-
-A typo causes routine rtl92cu_phy_rf6052_set_cck_txpower() to test the
-same condition twice. The problem was found using cppcheck-1.49, and the
-proper fix was verified against the pre-mac80211 version of the code.
-
-This patch was originally included as commit 1288aa4, but was accidentally
-reverted in a later patch.
-
-Reported-by: David Binderman <dcb314@hotmail.com> [original report]
-Reported-by: Andrea Morello <andrea.merello@gmail.com> [report of accidental reversion]
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-@@ -104,7 +104,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
- 			tx_agc[RF90_PATH_A] = 0x10101010;
- 			tx_agc[RF90_PATH_B] = 0x10101010;
- 		} else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
--			   TXHIGHPWRLEVEL_LEVEL1) {
-+			   TXHIGHPWRLEVEL_LEVEL2) {
- 			tx_agc[RF90_PATH_A] = 0x00000000;
- 			tx_agc[RF90_PATH_B] = 0x00000000;
- 		} else{
-
-
+		Amit
