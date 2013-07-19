@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935186Ab3GSC1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:27:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37840 "EHLO
+	id S935149Ab3GSCZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:25:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935069Ab3GSCZM (ORCPT
+	with ESMTP id S935106Ab3GSCZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:12 -0400
+	Thu, 18 Jul 2013 22:25:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [ 19/24] ext4: fix data offset overflow in ext4_xattr_fiemap() on 32-bit archs
-Date: Thu, 18 Jul 2013 19:24:51 -0700
-Message-Id: <20130719022405.335453468@linuxfoundation.org>
+        David Disseldorp <ddiss@suse.de>, Steve French <smfrench@gmail.com>
+Subject: [ 01/24] CIFS use sensible file nlink values if unprovided
+Date: Thu, 18 Jul 2013 19:24:33 -0700
+Message-Id: <20130719022404.116566509@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -26,42 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Steve French <smfrench@gmail.com>
 
-commit a60697f411eb365fb09e639e6f183fe33d1eb796 upstream.
+commit 6658b9f70ebca5fc0795b1d6d733996af1e2caa7 upstream.
 
-On 32-bit architectures with 32-bit sector_t computation of data offset
-in ext4_xattr_fiemap() can overflow resulting in reporting bogus data
-location. Fix the problem by typing block number to proper type before
-shifting.
+Certain servers may not set the NumberOfLinks field in query file/path
+info responses. In such a case, cifs_inode_needs_reval() assumes that
+all regular files are hardlinks and triggers revalidation, leading to
+excessive and unnecessary network traffic.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+This change hardcodes cf_nlink (and subsequently i_nlink) when not
+returned by the server, similar to what already occurs in cifs_mkdir().
+
+Signed-off-by: David Disseldorp <ddiss@suse.de>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/cifs/inode.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4713,7 +4713,7 @@ static int ext4_xattr_fiemap(struct inod
- 		error = ext4_get_inode_loc(inode, &iloc);
- 		if (error)
- 			return error;
--		physical = iloc.bh->b_blocknr << blockbits;
-+		physical = (__u64)iloc.bh->b_blocknr << blockbits;
- 		offset = EXT4_GOOD_OLD_INODE_SIZE +
- 				EXT4_I(inode)->i_extra_isize;
- 		physical += offset;
-@@ -4721,7 +4721,7 @@ static int ext4_xattr_fiemap(struct inod
- 		flags |= FIEMAP_EXTENT_DATA_INLINE;
- 		brelse(iloc.bh);
- 	} else { /* external block */
--		physical = EXT4_I(inode)->i_file_acl << blockbits;
-+		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
- 		length = inode->i_sb->s_blocksize;
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -549,6 +549,11 @@ cifs_all_info_to_fattr(struct cifs_fattr
+ 			fattr->cf_mode &= ~(S_IWUGO);
+ 
+ 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
++		if (fattr->cf_nlink < 1) {
++			cFYI(1, "replacing bogus file nlink value %u\n",
++			     fattr->cf_nlink);
++			fattr->cf_nlink = 1;
++		}
  	}
  
+ 	fattr->cf_uid = cifs_sb->mnt_uid;
 
 
