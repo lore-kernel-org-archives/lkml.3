@@ -1,78 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304Ab3GSE4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 00:56:24 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:59406 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab3GSE4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 00:56:23 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-b2-51e8c6f519d3
-Message-id: <51E8C6F4.6010204@samsung.com>
-Date: Fri, 19 Jul 2013 13:56:20 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Mark Brown <broonie@kernel.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] extcon: arizona: Use power efficient workqueue
-References: <1374183742-6678-1-git-send-email-broonie@kernel.org>
-In-reply-to: <1374183742-6678-1-git-send-email-broonie@kernel.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsWyRsSkSPfrsReBBpP+S1pMffiEzWLT9eus
-	Fpd3zWGzuN24gs1i+dv/bA6sHptWdbJ53Lm2h83j5cTfbB59W1YxenzeJBfAGsVlk5Kak1mW
-	WqRvl8CVcf7tXraCsywVd5sWMDcwXmfuYuTkkBAwkTi75ROULSZx4d56ti5GLg4hgaWMEnOn
-	v4Mren3gKDNEYhGjxPyH11ggnFeMElsXHmMBqeIV0JJY0LqXDcRmEVCVWHZzDiOIzQYU3//i
-	BlhcVCBMYuX0K1D1ghI/Jt8Ds0UElCWuft8LNpRZYDKjxM3368CahQWcJXpftLOD2EICjhLf
-	DtwBG8Qp4CTRe+ke2HnMAjoS+1unsUHY8hKb17wFO1VCYB+7xJvj39khLhKQ+Db5ENAGDqCE
-	rMSmA1CvSUocXHGDZQKj2CwkN81CMnYWkrELGJlXMYqmFiQXFCelF5noFSfmFpfmpesl5+du
-	YgTG2el/zybsYLx3wPoQYzLQyonMUqLJ+cA4zSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBI
-	ID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY26NYoOwtnnow7ZN/x5F/awu/qn2xLaBhWG2cde+
-	jxucfk7/lKW/bALPrJbTsiq18uecJR60Fv47+PfN+f/6q6eHeG8ynTJxgf/dNsMn6ttkpN7I
-	m9lP/GjjUrRc6eyvy+t4S24tEWPsdnDvnnes2ijj7Jn43l9NepMXfudfPZnFZPazKet37FJi
-	Kc5INNRiLipOBADL61X4yQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jAd2vx14EGvx+LGQx9eETNotN16+z
-	WlzeNYfN4nbjCjaL5W//szmwemxa1cnmcefaHjaPlxN/s3n0bVnF6PF5k1wAa1QDo01GamJK
-	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
-	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8b5t3vZCs6yVNxtWsDcwHiduYuRk0NCwETi
-	9YGjULaYxIV769m6GLk4hAQWMUrMf3iNBcJ5xSixdeExFpAqXgEtiQWte9lAbBYBVYllN+cw
-	gthsQPH9L26AxUUFwiRWTr8CVS8o8WPyPTBbREBZ4ur3vWBDmQUmM0rcfL8OrFlYwFmi90U7
-	O4gtJOAo8e3AHbBBnAJOEr2X7oGdxyygI7G/dRobhC0vsXnNW+YJjAKzkOyYhaRsFpKyBYzM
-	qxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/iZ1A7GlQ0WhxgFOBiVeHgffHkeKMSaWFZc
-	mXuIUYKDWUmE91fyi0Ah3pTEyqrUovz4otKc1OJDjMnAIJjILCWanA9MMHkl8YbGJmZGlkbm
-	hhZGxuakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwMh0T0rsitG84J+d9zN7XWf66bye
-	3lH+3PBGfxXz1jbNmnWPfPSjaj7Gu07Uuytbtl9ujyZrc1uHlbP58yjdq8cE/Hr60jNNll1r
-	fcw7W9+q7U1T6O+NMz+EB2c/FTspfuKd+CmTbysecGT/LvFr5Pj2umxevZlHZ7ur3f95p/oM
-	BNSvhfirKrEUZyQaajEXFScCAC4Th5cmAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1759432Ab3GSFCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:02:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab3GSFCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:02:14 -0400
+Date: Fri, 19 Jul 2013 08:03:35 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net V2 1/2] tuntap: do not zerocopy if iov needs more
+ pages than MAX_SKB_FRAGS
+Message-ID: <20130719050335.GA8537@redhat.com>
+References: <1374116116-43844-1-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374116116-43844-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Thu, Jul 18, 2013 at 10:55:15AM +0800, Jason Wang wrote:
+> We try to linearize part of the skb when the number of iov is greater than
+> MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
+> one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
+> network.
+> 
+> Solve this problem by calculate the pages needed for iov before trying to do
+> zerocopy and switch to use copy instead of zerocopy if it needs more than
+> MAX_SKB_FRAGS.
+> 
+> This is done through introducing a new helper to count the pages for iov, and
+> call uarg->callback() manually when switching from zerocopy to copy to notify
+> vhost.
+> 
+> We can do further optimization on top.
+> 
+> The bug were introduced from commit 0690899b4d4501b3505be069b9a687e68ccbe15b
+> (tun: experimental zero copy tx support)
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-On 07/19/2013 06:42 AM, Mark Brown wrote:
-> From: Mark Brown <broonie@linaro.org>
-> 
-> None of the delayed work the driver schedules has particularly short delays
-> and it is not performance sensitive so let the scheduler run it wherever
-> is most efficient rather than in a per CPU workqueue by using the system
-> power efficient workqueue.
-> 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
+
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
 > ---
->  drivers/extcon/extcon-arizona.c | 25 +++++++++++++++----------
->  1 file changed, 15 insertions(+), 10 deletions(-)
+> The patch is needed fot -stable.
+> ---
+>  drivers/net/tun.c |   62 ++++++++++++++++++++++++++++++++--------------------
+>  1 files changed, 38 insertions(+), 24 deletions(-)
 > 
-
-Applied it.
-
-Thanks,
-Chanwoo Choi
-
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 5cdcf92..db690a3 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -1035,6 +1035,29 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+>  	return 0;
+>  }
+>  
+> +static unsigned long iov_pages(const struct iovec *iv, int offset,
+> +			       unsigned long nr_segs)
+> +{
+> +	unsigned long seg, base;
+> +	int pages = 0, len, size;
+> +
+> +	while (nr_segs && (offset >= iv->iov_len)) {
+> +		offset -= iv->iov_len;
+> +		++iv;
+> +		--nr_segs;
+> +	}
+> +
+> +	for (seg = 0; seg < nr_segs; seg++) {
+> +		base = (unsigned long)iv[seg].iov_base + offset;
+> +		len = iv[seg].iov_len - offset;
+> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+> +		pages += size;
+> +		offset = 0;
+> +	}
+> +
+> +	return pages;
+> +}
+> +
+>  /* Get packet from user space buffer */
+>  static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  			    void *msg_control, const struct iovec *iv,
+> @@ -1082,32 +1105,18 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  			return -EINVAL;
+>  	}
+>  
+> -	if (msg_control)
+> -		zerocopy = true;
+> -
+> -	if (zerocopy) {
+> -		/* Userspace may produce vectors with count greater than
+> -		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+> -		 * to let the rest of data to be fit in the frags.
+> -		 */
+> -		if (count > MAX_SKB_FRAGS) {
+> -			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
+> -			if (copylen < offset)
+> -				copylen = 0;
+> -			else
+> -				copylen -= offset;
+> -		} else
+> -				copylen = 0;
+> -		/* There are 256 bytes to be copied in skb, so there is enough
+> -		 * room for skb expand head in case it is used.
+> +	if (msg_control) {
+> +		/* There are 256 bytes to be copied in skb, so there is
+> +		 * enough room for skb expand head in case it is used.
+>  		 * The rest of the buffer is mapped from userspace.
+>  		 */
+> -		if (copylen < gso.hdr_len)
+> -			copylen = gso.hdr_len;
+> -		if (!copylen)
+> -			copylen = GOODCOPY_LEN;
+> +		copylen = gso.hdr_len ? gso.hdr_len : GOODCOPY_LEN;
+>  		linear = copylen;
+> -	} else {
+> +		if (iov_pages(iv, offset + copylen, count) <= MAX_SKB_FRAGS)
+> +			zerocopy = true;
+> +	}
+> +
+> +	if (!zerocopy) {
+>  		copylen = len;
+>  		linear = gso.hdr_len;
+>  	}
+> @@ -1121,8 +1130,13 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  
+>  	if (zerocopy)
+>  		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
+> -	else
+> +	else {
+>  		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
+> +		if (!err && msg_control) {
+> +			struct ubuf_info *uarg = msg_control;
+> +			uarg->callback(uarg, false);
+> +		}
+> +	}
+>  
+>  	if (err) {
+>  		tun->dev->stats.rx_dropped++;
+> -- 
+> 1.7.1
