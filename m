@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935109Ab3GSCdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:33:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37740 "EHLO
+	id S935130Ab3GSCdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:33:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37734 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935003Ab3GSCXo (ORCPT
+	with ESMTP id S933685Ab3GSCXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 22:23:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [ 15/18] ext4: fix data offset overflow in ext4_xattr_fiemap() on 32-bit archs
-Date: Thu, 18 Jul 2013 19:23:30 -0700
-Message-Id: <20130719021050.003259613@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 14/18] timer: Fix jiffies wrap behavior of round_jiffies_common()
+Date: Thu, 18 Jul 2013 19:23:29 -0700
+Message-Id: <20130719021049.936861329@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -26,42 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Bart Van Assche <bart.vanassche@gmail.com>
 
-commit a60697f411eb365fb09e639e6f183fe33d1eb796 upstream.
+commit 9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1 upstream.
 
-On 32-bit architectures with 32-bit sector_t computation of data offset
-in ext4_xattr_fiemap() can overflow resulting in reporting bogus data
-location. Fix the problem by typing block number to proper type before
-shifting.
+Direct compare of jiffies related values does not work in the wrap
+around case. Replace it with time_is_after_jiffies().
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Link: http://lkml.kernel.org/r/519BC066.5080600@acm.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/timer.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4155,7 +4155,7 @@ static int ext4_xattr_fiemap(struct inod
- 		error = ext4_get_inode_loc(inode, &iloc);
- 		if (error)
- 			return error;
--		physical = iloc.bh->b_blocknr << blockbits;
-+		physical = (__u64)iloc.bh->b_blocknr << blockbits;
- 		offset = EXT4_GOOD_OLD_INODE_SIZE +
- 				EXT4_I(inode)->i_extra_isize;
- 		physical += offset;
-@@ -4163,7 +4163,7 @@ static int ext4_xattr_fiemap(struct inod
- 		flags |= FIEMAP_EXTENT_DATA_INLINE;
- 		brelse(iloc.bh);
- 	} else { /* external block */
--		physical = EXT4_I(inode)->i_file_acl << blockbits;
-+		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
- 		length = inode->i_sb->s_blocksize;
- 	}
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -145,9 +145,11 @@ static unsigned long round_jiffies_commo
+ 	/* now that we have rounded, subtract the extra skew again */
+ 	j -= cpu * 3;
  
+-	if (j <= jiffies) /* rounding ate our timeout entirely; */
+-		return original;
+-	return j;
++	/*
++	 * Make sure j is still in the future. Otherwise return the
++	 * unmodified value.
++	 */
++	return time_is_after_jiffies(j) ? j : original;
+ }
+ 
+ /**
 
 
