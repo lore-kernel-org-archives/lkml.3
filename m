@@ -1,134 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab3GSKDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:03:50 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:48758 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760045Ab3GSKDs (ORCPT
+	id S1760109Ab3GSKFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:05:05 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:58415 "HELO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750784Ab3GSKFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:03:48 -0400
-Date: Fri, 19 Jul 2013 12:03:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: mistakes in code vs. maintainer flow mistakes (was: [ 00/19]
- 3.10.1-stable review)
-Message-ID: <20130719100342.GA26334@gmail.com>
-References: <20130715180403.GD15531@xanatos>
- <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <20130715204135.GH15531@xanatos>
- <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
- <20130718103907.GC23558@gmail.com>
- <20130718160754.GC5440@xanatos>
- <20130719092256.GC25784@gmail.com>
+	Fri, 19 Jul 2013 06:05:02 -0400
+Date: Fri, 19 Jul 2013 22:03:30 +1200
+From: Michael Cree <cree@waikato.ac.nz>
+To: Richard Henderson <rth@twiddle.net>
+Cc: linux-kernel@vger.kernel.org, ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        linux-alpha@vger.kernel.org
+Subject: Re: [RFC PATCH 00/10] Alpha support for QEMU
+Message-ID: <20130719100330.GA20339@stolen.phys.waikato.ac.nz>
+References: <1373996058-13399-1-git-send-email-rth@twiddle.net>
+ <20130718011435.GA20007@stolen.phys.waikato.ac.nz>
+ <51E7EFC6.6070003@twiddle.net>
+ <20130718212815.GA32459@stolen.phys.waikato.ac.nz>
+ <51E86669.5040608@twiddle.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130719092256.GC25784@gmail.com>
+In-Reply-To: <51E86669.5040608@twiddle.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
-> [...]
+On Thu, Jul 18, 2013 at 03:04:25PM -0700, Richard Henderson wrote:
+> On 07/18/2013 02:28 PM, Michael Cree wrote:
+> > On the kernel without the patch set the dummy-RTC timer interrupt received
+> > 30876 interrupts in a 30s period which is within measurement uncertainty of
+> > the expected 30*1024 = 30720 interrupts.
+> > 
+> > On the kernel with the patch set the dummy-RTC timer interrupt received 14419 
+> > interrupts on CPU-1, 13935 interrupts on CPU-2 and 2619 interrupts on CPU-3
+> > over a 30s period.
 > 
-> Mistakes in patches and code happen all the time. Linus rarely if ever 
-> flamed me for _that_ - sh*t happens.
+> Grr.  Naturally, the old kernel obfuscates which timers are being delivered
+> where.  So a direct comparison doesn't appear possible.  But those separated
+> numbers seem uncomfortably low.
 > 
-> What he flames me for, and what you (with all due respect) still don't 
-> seem to understand, are _META_ mistakes. Top level maintainer level 
-> mistakes. Bad patterns of maintainer behavior that really should not 
-> occur because they could affect many patches in the future, such as:
+> I've just pushed a new branch to
 > 
->  - trying to argue regressions away - i.e. not 'shutting up' in time, 
->    being a meta hindrance to problem resolution
+>   git://github.com/rth7680/linux.git axp-qemu-7
 > 
->  - doing a sloppy Git flow, repeatedly
-> 
->  - not testing adequately, especially when the pull request occurs at a 
->    critical time (such as a couple of hours before -rc1)
-> 
->  - [ and many other meta mistakes ]
-> 
-> None of those arguments are about code and still I fully expect Linus to 
-> pin those on me if he notices a meta bug in my behavior and finds it 
-> dangerous.
+> Please try that with CONFIG_ALPHA_WTINT disabled.  I'd like to eliminate that
+> as a source of uncertainty for your system.
 
-And note that whenever I or a fellow -tip maintainer got such an unhappy 
-complaint from Linus in the past couple of years our response wasn't just 
-to fix some broken code.
+Running that axp-qemu-7 branch with RTC_DRV_ALPHA on and ALPHA_WTINT off
+still results in a rather slow clock.  (Does start up with correct time
+now that I have RTC_DRV_ALPHA selected.)
 
-Our response was to fix broken top level maintainer behavior, by applying 
-'meta fixes':
+Over a 30s period still get too few timer interrupts: 843, 28805 and 1434
+interrupts on the CPUs.
 
-  - changing our Git workflow
-
-  - adding more scripting to catch bad commits
-
-  - changing our flow of sending pull requests, adding fail-safes
-
-  - trying to think more neutrally about bug reports to avoid punishing 
-    the messenger and to avoid arguing regressions away
-
-  - hardening our review process
-
-  - making sure at least one -tip maintainer watches lkml for bugreports
-
-  - tightening our controls to avoid missed patches
-
-  - thinking about the timing of pull requests
-
-  - etc., etc.
-
-(And there's an even larger body of 'meta fixes' we applied without being 
-prodded by Linus.)
-
-On the outside such incidents look like as if Linus flamed 'the person' in 
-a disrespectful way.
-
-What Linus _really_ flamed us for in 95% of the cases was the meta 
-process, the 'meta code' of Linux, which is not actual source code but 
-mostly a social construct, informal patterns of human behavior - and those 
-are inextricably embedded in the person.
-
-And because the 'meta fixes' too are often of social nature, what you see 
-when reading lkml is just a unidirectional stream of complaints from 
-Linus. You typically don't see patch notifications of changed behavior. 
-Nor do you see top level maintainers 'speaking up against Linus' very 
-often: these are bugreports from Linus and we simply fix them, there's not 
-much to speak up against.
-
-Linus is very laissez-faire about maintainence, so whenever he _does_ 
-erupt at us (at a clip of ~10,000 commits per cycle that do go in without 
-any complaint from Linus) it's justified in a large percentage of cases.
-
-So despite the outside appearance this is not top level Linux maintainers 
-being oppressed by Linus or suffering from some sort of Stockholm Syndrome
-:-)
-
-We are just as stubborn as Linus and do speak up against Linus when needed 
-- it just rarely is necessary - in great part because Linus flames in 
-public and takes care he is upset for a good reason so he does not have to 
-walk back on his flame. Public embarrassment cuts both ways.
-
-When Linus's complaint is unjustified top level maintainers _do_ speak up 
-- see Thomas Gleixner's recent example, which resulted in Linus 
-apologizing. (It's a rare occurance and we've archived all the emails for 
-the history books.)
-
-Thanks,
-
-	Ingo
+Cheers
+Michael
