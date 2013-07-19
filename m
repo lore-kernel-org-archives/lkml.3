@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965703Ab3GSF0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:26:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39902 "EHLO
+	id S965787Ab3GSF1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:27:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965686Ab3GSF0r (ORCPT
+	with ESMTP id S965758Ab3GSF1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:47 -0400
+	Fri, 19 Jul 2013 01:27:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>
-Subject: [ 06/72] jbd2: move superblock checksum calculation to jbd2_write_superblock()
-Date: Thu, 18 Jul 2013 22:25:23 -0700
-Message-Id: <20130719052600.295853884@linuxfoundation.org>
+        Xudong Hao <xudong.hao@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 41/72] PCI: Finish SR-IOV VF setup before adding the device
+Date: Thu, 18 Jul 2013 22:25:58 -0700
+Message-Id: <20130719052602.675873189@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,48 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Xudong Hao <xudong.hao@intel.com>
 
-commit fe52d17cdd343ac43c85cf72940a58865b9d3bfb upstream.
+commit fbf33f516bdbcc2ab1ba1e54dfb720b0cfaa6874 upstream.
 
-Some of the functions which modify the jbd2 superblock were not
-updating the checksum before calling jbd2_write_superblock().  Move
-the call to jbd2_superblock_csum_set() to jbd2_write_superblock(), so
-that the checksum is calculated consistently.
+Commit 4f535093cf "PCI: Put pci_dev in device tree as early as possible"
+moves device registering from pci_bus_add_devices() to pci_device_add().
+That causes problems for virtual functions because device_add(&virtfn->dev)
+is called before setting the virtfn->is_virtfn flag, which then causes Xen
+to report PCI virtual functions as PCI physical functions.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Darrick J. Wong <darrick.wong@oracle.com>
+Fix it by setting virtfn->is_virtfn before calling pci_device_add().
+
+[Jiang Liu]: Move the setting of virtfn->is_virtfn ahead further for better
+readability and modify changelog.
+
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/journal.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/pci/iov.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1318,6 +1318,7 @@ static int journal_reset(journal_t *jour
- static void jbd2_write_superblock(journal_t *journal, int write_op)
- {
- 	struct buffer_head *bh = journal->j_sb_buffer;
-+	journal_superblock_t *sb = journal->j_superblock;
- 	int ret;
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -92,6 +92,8 @@ static int virtfn_add(struct pci_dev *de
+ 	pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_DID, &virtfn->device);
+ 	pci_setup_device(virtfn);
+ 	virtfn->dev.parent = dev->dev.parent;
++	virtfn->physfn = pci_dev_get(dev);
++	virtfn->is_virtfn = 1;
  
- 	trace_jbd2_write_superblock(journal, write_op);
-@@ -1339,6 +1340,7 @@ static void jbd2_write_superblock(journa
- 		clear_buffer_write_io_error(bh);
- 		set_buffer_uptodate(bh);
- 	}
-+	jbd2_superblock_csum_set(journal, sb);
- 	get_bh(bh);
- 	bh->b_end_io = end_buffer_write_sync;
- 	ret = submit_bh(write_op, bh);
-@@ -1435,7 +1437,6 @@ void jbd2_journal_update_sb_errno(journa
- 	jbd_debug(1, "JBD2: updating superblock error (errno %d)\n",
- 		  journal->j_errno);
- 	sb->s_errno    = cpu_to_be32(journal->j_errno);
--	jbd2_superblock_csum_set(journal, sb);
- 	read_unlock(&journal->j_state_lock);
+ 	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+ 		res = dev->resource + PCI_IOV_RESOURCES + i;
+@@ -113,9 +115,6 @@ static int virtfn_add(struct pci_dev *de
+ 	pci_device_add(virtfn, virtfn->bus);
+ 	mutex_unlock(&iov->dev->sriov->lock);
  
- 	jbd2_write_superblock(journal, WRITE_SYNC);
+-	virtfn->physfn = pci_dev_get(dev);
+-	virtfn->is_virtfn = 1;
+-
+ 	rc = pci_bus_add_device(virtfn);
+ 	sprintf(buf, "virtfn%u", id);
+ 	rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
 
 
