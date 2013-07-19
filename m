@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab3GSUXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:23:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61877 "EHLO
+	id S1752099Ab3GSUXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:23:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:59536 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3GSUXF (ORCPT
+	with ESMTP id S1751473Ab3GSUXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:23:05 -0400
+	Fri, 19 Jul 2013 16:23:06 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
@@ -14,117 +14,125 @@ Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 10/15] ARM: shmobile: r8a73a4: add a DMAC platform device and clock for it
-Date: Fri, 19 Jul 2013 22:22:51 +0200
-Message-Id: <1374265376-30777-1-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v2 12/15] ARM: shmobile: r8a7740: add DT nodes and clock aliases for three DMAC instances
+Date: Fri, 19 Jul 2013 22:22:53 +0200
+Message-Id: <1374265376-30777-3-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:hwYEamo4JI1JxqARE8Vf05c/ck/N2nD2GvgIFhq38Q+
- rKb8d8iHq1GDhNk2zHo2ZEm3iW3CBqK2lvLWsSm4RdsNs3bLKV
- j+fNlllrE1PvJY4Vy2J+VyIRjK9HmJcnCZ2UGZ1QFS8M6JBuI6
- N3VquZWp0vY3zHzCcTxRcdu8xwCmrIFY/x5bmkKVvfCxXsn3Qi
- jE90LCjOVr+XMD625tkO1ZbJCycPaKC4ZUo8NYK1TYPu+rtweI
- Sa5e72n56rlnCOq8IEzcEd4B7tWJZk8I0qgqip15de2zKBgNQS
- zlZHHptFBV714qfihEMDqcIE8bdo6Prqn8WCj9CvYjeF7yc9Gr
- 8stUvgGQ9fvs23/3JkgXlhdyXvor2PIpClII/DqyeedWcbmJHw
- cN0EU1cDUG03g==
+X-Provags-ID: V02:K0:FtlRrUIrhmMsFMc8xH8P/zDoSIE5so60W5vspntI+X7
+ fJoIMjlCHO+dnFQu3VduTQA7Hcl2nX6+Vxb/3yyg/WJiMHiiOx
+ TnH6USvNCqeufW0NgphuuAvHBzgQ2JynZgr9IfLDTyqYIIbkdW
+ N2ibf91numT8IUUtK2/1XV+Q4ADg2xzweKW0YLj2bX2xFdRl0S
+ 7JfALtJfKewrc9DUNyP/eg2wgBmPhU3LqIxp7+Wdz7SCDJNCTP
+ fvDaO/2FuxF1XwGaHr062XQSmd+8wbnvTFrGgBm9WBRJuA/uyO
+ +vqFOVLKMQ+UW1mS4A4Wp/R7ogkhT2kch+iLCQK9m68WGPN2mC
+ xtKDlzaxMDM6in9lqT+swFap4zBwTWryDFxMPmAfqHH56i4LZk
+ vrL/wYYZ4tqIg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a DMAC platform device and clock definitions for it on r8a73a4.
+This patch adds Device Tree support for the three generic DMA controller
+instances on r8a7740 in a DMA multiplexer node.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- arch/arm/mach-shmobile/clock-r8a73a4.c        |    4 +++-
- arch/arm/mach-shmobile/include/mach/r8a73a4.h |    9 +++++++++
- arch/arm/mach-shmobile/setup-r8a73a4.c        |   17 +++++++++++++++++
- 3 files changed, 29 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
-index 8ea5ef6..cd62b11 100644
---- a/arch/arm/mach-shmobile/clock-r8a73a4.c
-+++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
-@@ -504,7 +504,7 @@ static struct clk div6_clks[DIV6_NR] = {
+v2: Use "dma-controller" for DMA controller DT nodes
+
+ arch/arm/boot/dts/r8a7740.dtsi         |   61 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-shmobile/clock-r8a7740.c |    3 ++
+ 2 files changed, 64 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
+index e18a195..4797f1e 100644
+--- a/arch/arm/boot/dts/r8a7740.dtsi
++++ b/arch/arm/boot/dts/r8a7740.dtsi
+@@ -116,6 +116,67 @@
+ 			      0 149 0x4>;
+ 	};
  
- /* MSTP */
- enum {
--	MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
-+	MSTP218, MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
- 	MSTP329, MSTP323, MSTP318, MSTP317, MSTP316,
- 	MSTP315, MSTP314, MSTP313, MSTP312, MSTP305, MSTP300,
- 	MSTP411, MSTP410, MSTP409,
-@@ -519,6 +519,7 @@ static struct clk mstp_clks[MSTP_NR] = {
- 	[MSTP207] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 7, 0), /* SCIFB1 */
- 	[MSTP216] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 16, 0), /* SCIFB2 */
- 	[MSTP217] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 17, 0), /* SCIFB3 */
-+	[MSTP218] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR2, 18, 0), /* DMAC */
- 	[MSTP300] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 0, 0), /* IIC2 */
- 	[MSTP305] = SH_CLK_MSTP32(&div6_clks[DIV6_MMC1],SMSTPCR3, 5, 0), /* MMCIF1 */
- 	[MSTP312] = SH_CLK_MSTP32(&div6_clks[DIV6_SDHI2],SMSTPCR3, 12, 0), /* SDHI2 */
-@@ -578,6 +579,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("sh-sci.3", &mstp_clks[MSTP207]),
- 	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
- 	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
-+	CLKDEV_DEV_ID("shdma-r8a73a4.0", &mstp_clks[MSTP218]),
- 	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
- 	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
- 	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
-diff --git a/arch/arm/mach-shmobile/include/mach/r8a73a4.h b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
-index f3a9b70..3a0ea48 100644
---- a/arch/arm/mach-shmobile/include/mach/r8a73a4.h
-+++ b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
-@@ -1,6 +1,15 @@
- #ifndef __ASM_R8A73A4_H__
- #define __ASM_R8A73A4_H__
- 
-+/* DMA slave IDs */
-+enum {
-+	SHDMA_SLAVE_INVALID,
-+	SHDMA_SLAVE_MMCIF0_TX,
-+	SHDMA_SLAVE_MMCIF0_RX,
-+	SHDMA_SLAVE_MMCIF1_TX,
-+	SHDMA_SLAVE_MMCIF1_RX,
-+};
++	dmac: dma-multiplexer@0 {
++		compatible = "renesas,shdma-mux";
++		#dma-cells = <1>;
++		dma-channels = <6>;
++		dma-requests = <256>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
 +
- void r8a73a4_add_standard_devices(void);
- void r8a73a4_add_dt_devices(void);
- void r8a73a4_clock_init(void);
-diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
-index 630ea4e..ad7180e 100644
---- a/arch/arm/mach-shmobile/setup-r8a73a4.c
-+++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
-@@ -199,12 +199,29 @@ void __init r8a73a4_add_dt_devices(void)
- 	r8a7790_register_cmt(10);
- }
- 
-+/* DMA */
-+static struct resource dma_resources[] = {
-+	DEFINE_RES_MEM(0xe6700020, 0x89e0),
-+	DEFINE_RES_IRQ_NAMED(gic_spi(220), "error_irq"),
-+	{
-+		/* IRQ for channels 0-19 */
-+		.start  = gic_spi(200),
-+		.end    = gic_spi(219),
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+};
++		dma0: dma-controller@fe008020 {
++			compatible = "renesas,shdma-r8a7740";
++			reg = <0xfe008020 0x270>,
++				<0xfe009000 0xc>;
++			interrupt-parent = <&gic>;
++			interrupts = <0 34 4
++					0 28 4
++					0 29 4
++					0 30 4
++					0 31 4
++					0 32 4
++					0 33 4>;
++			interrupt-names = "error",
++					"ch0", "ch1", "ch2", "ch3",
++					"ch4", "ch5";
++		};
 +
-+#define r8a73a4_register_dmac()							\
-+	platform_device_register_simple("shdma-r8a73a4", 0,			\
-+				dma_resources, ARRAY_SIZE(dma_resources))
++		dma1: dma-controller@fe018020 {
++			compatible = "renesas,shdma-r8a7740";
++			reg = <0xfe018020 0x270>,
++				<0xfe019000 0xc>;
++			interrupt-parent = <&gic>;
++			interrupts = <0 41 4
++					0 35 4
++					0 36 4
++					0 37 4
++					0 38 4
++					0 39 4
++					0 40 4>;
++			interrupt-names = "error",
++					"ch0", "ch1", "ch2", "ch3",
++					"ch4", "ch5";
++		};
 +
- void __init r8a73a4_add_standard_devices(void)
- {
- 	r8a73a4_add_dt_devices();
- 	r8a73a4_register_irqc(0);
- 	r8a73a4_register_irqc(1);
- 	r8a73a4_register_thermal();
-+	r8a73a4_register_dmac();
- }
- 
- void __init r8a73a4_init_delay(void)
++		dma2: dma-controller@fe028020 {
++			compatible = "renesas,shdma-r8a7740";
++			reg = <0xfe028020 0x270>,
++				<0xfe029000 0xc>;
++			interrupt-parent = <&gic>;
++			interrupts = <0 48 4
++					0 42 4
++					0 43 4
++					0 44 4
++					0 45 4
++					0 46 4
++					0 47 4>;
++			interrupt-names = "error",
++					"ch0", "ch1", "ch2", "ch3",
++					"ch4", "ch5";
++		};
++	};
++
+ 	i2c0: i2c@fff20000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
+index 62b86f9..4e76fb8 100644
+--- a/arch/arm/mach-shmobile/clock-r8a7740.c
++++ b/arch/arm/mach-shmobile/clock-r8a7740.c
+@@ -576,8 +576,11 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("e6cb0000.sci",		&mstp_clks[MSTP207]),
+ 	CLKDEV_DEV_ID("sh-dma-engine.3",	&mstp_clks[MSTP214]),
+ 	CLKDEV_DEV_ID("shdma-r8a7740.2",	&mstp_clks[MSTP216]),
++	CLKDEV_DEV_ID("fe028020.dma-controller",&mstp_clks[MSTP216]),
+ 	CLKDEV_DEV_ID("shdma-r8a7740.1",	&mstp_clks[MSTP217]),
++	CLKDEV_DEV_ID("fe018020.dma-controller",&mstp_clks[MSTP217]),
+ 	CLKDEV_DEV_ID("shdma-r8a7740.0",	&mstp_clks[MSTP218]),
++	CLKDEV_DEV_ID("fe008020.dma-controller",&mstp_clks[MSTP218]),
+ 	CLKDEV_DEV_ID("sh-sci.7",		&mstp_clks[MSTP222]),
+ 	CLKDEV_DEV_ID("e6cd0000.sci",		&mstp_clks[MSTP222]),
+ 	CLKDEV_DEV_ID("sh-sci.6",		&mstp_clks[MSTP230]),
 -- 
 1.7.2.5
 
