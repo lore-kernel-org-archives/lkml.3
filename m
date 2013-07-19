@@ -1,49 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760764Ab3GSPqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:46:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48154 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab3GSPqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:46:39 -0400
-Date: Fri, 19 Jul 2013 08:46:48 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alexandru Juncu <alexj@rosedu.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        "andreas.dilger" <andreas.dilger@intel.com>,
-        "tao.peng" <tao.peng@emc.com>, driverdev <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lustre:libcfs: remove redundant code.
-Message-ID: <20130719154648.GA23116@kroah.com>
-References: <1374245148-24031-1-git-send-email-alexj@rosedu.org>
- <CAOJsxLGEmjY6wTp99DKQ4ZKO2oXq6102MczbjCHTUReuCTq-fw@mail.gmail.com>
- <CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
- <CAOJsxLFw4t-jwO4vDuMYfZA4uqH59h1c66xVPPFDO037OvGKSg@mail.gmail.com>
- <CAPhGq=Y30i0RWJTcomt5sRdKX6RDzdGHBo5L9D6coH8O0ej6kA@mail.gmail.com>
+	id S1760807Ab3GSPqu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:46:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26999 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760748Ab3GSPqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 11:46:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,702,1367996400"; 
+   d="scan'208";a="348462649"
+Date: Fri, 19 Jul 2013 08:46:37 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 06/23] perf doc: Add perf data file documentation
+Message-ID: <20130719154637.GY5643@tassilo.jf.intel.com>
+References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+ <1374083403-14591-7-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPhGq=Y30i0RWJTcomt5sRdKX6RDzdGHBo5L9D6coH8O0ej6kA@mail.gmail.com>
+In-Reply-To: <1374083403-14591-7-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 06:29:34PM +0300, Alexandru Juncu wrote:
-> On 19 July 2013 18:21, Pekka Enberg <penberg@kernel.org> wrote:
-> > On Fri, Jul 19, 2013 at 6:13 PM, Alexandru Juncu <alexj@rosedu.org> wrote:
-> >> I was thinking the same thing, but I hesitated because I didn't know
-> >> how used it was and I didn't want to break something.
-> >
-> > "git grep cfs_strdup" suggests that nobody uses it so you could just
-> > remove it completely...
-> 
-> Did a grep on the tree and yes, it's not used. But It's in a staging
-> directory so maybe the rest of the code has not been pushed in yet.
+On Wed, Jul 17, 2013 at 07:49:46PM +0200, Jiri Olsa wrote:
+> Adding perf data file documentation.
 
-Doesn't matter, if there are no users, please just remove it.
+FWIW I wrote the following python "construct" description of the data format
+some time ago. It's  more formal than yours. There were still a few things
+missing though and one mysterious bug.
 
-thanks,
+# A description of the perf.data file format in "construct"
+#
+from construct import *
 
-greg k-h
+def fork_exit(name): 
+    return Struct(name,
+                  SNInt32("pid"),
+                  SNInt32("ppid"),
+                  SNInt32("tid"),
+                  SNInt32("ptid"),
+                  UNInt64("time"))
+
+def throttle(name):
+    return Struct(name,
+                  UNInt64("time"),
+                  UNInt64("id"),
+                  UNInt64("stream_id"))
+
+def event(sample_type, read_format):
+    return Embedded(
+         Struct("event",
+                If(lambda ctx: sample_type.ip,
+                   UNInt64("ip")),
+                If(lambda ctx: sample_type.tid,
+                   Struct("tid",
+                          SNInt64("pid"),
+                          SNInt64("tid"))),
+                If(lambda ctx: sample_type.time,
+                   UNInt64("time")),
+                If(lambda ctx: sample_type.addr,
+                   UNInt64("addr")),
+                If(lambda ctx: sample_type.stream_id,
+                   UNInt64("stream_id")),
+                If(lambda ctx: sample_type.cpu,
+                   Struct("cpu",
+                          UNInt32("cpu"),
+                          UNInt32("res"))),
+                If(lambda ctx: sample_type.period,
+                   UNInt64("period")),
+                # XXX
+                #If(lambda ctx: sample_type.read,
+                #   read_format(rformat)),
+                If(lambda ctx: sample_type.callchain,
+                   Struct("callchain",
+                          UNInt64("nr"),
+                          Array(lambda ctx: ctx.nr,
+                                UNInt64("addr")))),
+                If(lambda ctx: sample_type.raw,
+                   Struct("raw",
+                          UNInt32("size"),
+                          Bytes("raw", lambda ctx: ctx.size))),
+                If(lambda ctx: sample_type.branch_stack,
+                   Struct("branch_stack",
+                          UNInt64("nr"),
+                          Array(lambda ctx: ctx.nr,
+                                Struct(None,
+                                       UNInt64("from"),
+                                       UNInt64("to"),
+                                       UNInt64("flags"))))), # XXX split
+                # both need parameters passed in
+                # sample reg
+                # stack user
+                If(lambda ctx: sample_type.weight,
+                   UNInt64("weight")),
+                If(lambda ctx: sample_type.data_src,
+                   UNInt64("data_src")),
+                Anchor("end_event"),
+                Padding(lambda ctx: max(0, ctx.size - ctx.end_event))))
+
+# XXX need to make OnDemand for large files
+
+def perf_event(sample_type, read_format):         
+    return Struct("perf_event",
+                    Anchor("start"),
+                    Enum(UNInt32("type"),
+                         MMAP                   = 1,
+                         LOST                   = 2,
+                         COMM                   = 3,
+                         EXIT                   = 4,
+                         THROTTLE               = 5,
+                         UNTHROTTLE             = 6,
+                         FORK                   = 7,
+                         READ                   = 8,
+                         SAMPLE                 = 9),
+                    UNInt16("misc"),
+                    UNInt16("size"),
+                    Switch("data",
+                           lambda ctx: ctx.type,
+                           {
+                              "MMAP": Struct("mmap",
+                                              SNInt32("pid"),
+                                              SNInt32("tid"),
+                                              UNInt64("addr"),
+                                              UNInt64("len"),
+                                              UNInt64("pgoff"),
+                                                CString("filename")),
+                              "LOST": Struct("lost",
+                                              UNInt64("id"),
+                                              UNInt64("lost")),
+                              "COMM": Struct("comm",
+                                             SNInt32("pid"),
+                                             SNInt32("tid"),
+                                             CString("comm")),
+                              "EXIT": fork_exit("exit"),
+                              "THROTTLE": throttle("thottle"),
+                              "UNTHROTTLE": throttle("unthottle"),
+                              "FORK": fork_exit("fork"),
+                              #"READ": read_format(read_format),
+                              "SAMPLE": event(sample_type, read_format),
+                           }),
+                        Anchor("end"),
+                        Padding(lambda ctx: ctx.size - (ctx.end - ctx.start))
+                    )
+
+def perf_event_seq(sample_type, read_format):
+    return GreedyRange(perf_event(sample_type, read_format))
+
+perf_event_attr_sizes = (64, 72, 80, 96)
+
+perf_event_attr = Struct("perf_event_attr",
+                         Anchor("start"),
+                         Enum(UNInt32("type"),
+                              HARDWARE = 0,
+                              SOFTWARE = 1,
+                              TRACEPOINT = 2,
+                              HW_CACHE = 3,
+                              RAW = 4,
+                              BREAKPOINT = 5),
+                         UNInt32("size"),
+                         UNInt64("config"),
+                         UNInt64("sample_period_freq"),
+                         BitStruct("sample_type",
+                                            Flag("ip"),
+                                            Flag("tid"),
+                                            Flag("time"),
+                                            Flag("addr"),
+                                            Flag("read"),
+                                            Flag("callchain"),
+                                            Flag("id"),
+                                            Flag("cpu"),
+                                            Flag("period"),
+                                            Flag("stream_id"),
+                                            Flag("raw"),
+                                            Flag("branch_stack"),
+                                            Flag("regs_user"),
+                                            Flag("stack_user"),
+                                            Flag("weight"),
+                                            Flag("data_src"),
+                                            Padding(64 - 16)),
+                         BitStruct("read_format",
+                                            Flag("total_time_enabled"),
+                                            Flag("total_time_running"),
+                                            Flag("id"),
+                                            Flag("group"),
+                                            Padding(64 - 4)),
+                         Embedded(BitStruct(None,
+                                            Flag("disabled"),
+                                            Flag("inherit"),
+                                            Flag("pinned"),            
+                                            Flag("exclusive"),      
+                                            Flag("exclude_user"),   
+                                            Flag("exclude_kernel"),
+                                            Flag("exclude_hv"),
+                                            Flag("exclude_idle"),
+                                            Flag("mmap"),
+                                            Flag("comm"),
+                                            Flag("freq"),
+                                            Flag("inherit_stat"),
+                                            Flag("enable_on_exec"),
+                                            Flag("task"),
+                                            Flag("watermark"),
+                                            BitField("precise_ip", 2),
+                                            Flag("mmap_data"),
+                                            Flag("sample_id_all"),
+                                            Flag("exclude_host"),
+                                            Flag("exclude_guest"),
+                                            Flag("exclude_callchain_kernel"),
+                                            Flag("exclude_callchain_user"),
+                                            Padding(41))),
+                         UNInt32("wakeup_events"),
+                         UNInt32("bp_type"),
+                         UNInt64("config1"),
+                         If(lambda ctx: ctx.size >= perf_event_attr_sizes[1],
+                            UNInt64("config2")),
+                         If(lambda ctx: ctx.size >= perf_event_attr_sizes[2],
+                            UNInt64("branch_sample_type")),
+                         If(lambda ctx: ctx.size >= perf_event_attr_sizes[3],
+                            Embedded(Struct(None,
+                                            UNInt64("sample_regs_user"),
+                                            UNInt32("sample_stack_user")))),
+                         Anchor("end"),
+                         Value("perf_event_attr_size", lambda ctx: ctx.end - ctx.start),
+                         Padding(lambda ctx: ctx.size - ctx.perf_event_attr_size))
+
+# assumes all attributes are the same size
+
+perf_file_attr = Struct("perf_file_attr",
+                        Peek(Embedded(Struct(None, UNInt32("type"), UNInt32("size")))),
+                        Array(lambda ctx: ctx._.size / ctx.size, perf_event_attr))
+
+perf_event_types = Struct("perf_file_attr",
+                          Anchor("here"),
+                          Padding(lambda ctx: ctx._.size))
+
+perf_data = OnDemand(Bytes("perf_data", lambda ctx: ctx.size))
+                             
+def perf_file_section(name, target):
+    return Struct(name,
+                  UNInt64("offset"),
+                  UNInt64("size"),
+                  Pointer(lambda ctx: ctx.offset, target))
+
+perf_file = Struct("perf_file_header",
+                   UNInt64("magic"), # XXX
+                   UNInt64("size"),
+                   UNInt64("attr_size"),
+                   perf_file_section("attrs", perf_file_attr),
+                   perf_file_section("data", perf_data),
+                   perf_file_section("event_types", perf_event_types),
+                   BitStruct("adds_features",
+                             Flag("tracing_data"),
+                             Flag("build_id"),
+                             Flag("hostname"),
+                             Flag("osrelease"),
+                             Flag("version"),
+                             Flag("arch"),
+                             Flag("nrcpus"),
+                             Flag("cpudesc"),
+                             Flag("cpuid"),
+                             Flag("total_mem"),
+                             Flag("cmdline"),
+                             Flag("event_desc"),
+                             Flag("cpu_topology"),
+                             Flag("numa_topology"),
+                             Flag("branch_stack"),
+                             Flag("pmu_mappings"),
+                             Flag("group_desc"),
+                             Padding(64 - 17)),
+                   Padding(3 * 8))
+
+def get_events(h):
+    data = h.data.perf_data.value
+    # assumes event 0 attributes applies to all samples?
+    # XXX
+    ev0 = h.attrs.perf_file_attr.perf_event_attr[0]
+    assert ev0.size in perf_event_attr_sizes
+    return perf_event_seq(ev0.sample_type, ev0.read_format).parse(data)
+
+if __name__ == '__main__':
+    import sys
+    
+    with open(sys.argv[1], "rb") as f:
+        h = perf_file.parse_stream(f)
+        print h
+        print get_events(h)
+
