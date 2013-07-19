@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935047Ab3GSCXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:23:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37700 "EHLO
+	id S935034Ab3GSCXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:23:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37689 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934874Ab3GSCXj (ORCPT
+	with ESMTP id S934860Ab3GSCXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:39 -0400
+	Thu, 18 Jul 2013 22:23:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 04/18] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
-Date: Thu, 18 Jul 2013 19:23:19 -0700
-Message-Id: <20130719021049.265966328@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 01/18] jbd2: fix theoretical race in jbd2__journal_restart
+Date: Thu, 18 Jul 2013 19:23:16 -0700
+Message-Id: <20130719021049.065993297@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -27,48 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
+commit 39c04153fda8c32e85b51c96eb5511a326ad7609 upstream.
 
-Without this memory barrier, the file-storage thread may fail to
-escape from the following while loop, because it may observe new
-common->thread_wakeup_needed and old bh->state which are updated by
-the callback functions.
+Once we decrement transaction->t_updates, if this is the last handle
+holding the transaction from closing, and once we release the
+t_handle_lock spinlock, it's possible for the transaction to commit
+and be released.  In practice with normal kernels, this probably won't
+happen, since the commit happens in a separate kernel thread and it's
+unlikely this could all happen within the space of a few CPU cycles.
 
-	/* Wait for the CBW to arrive */
-	while (bh->state != BUF_STATE_FULL) {
-		rc = sleep_thread(common);
-		if (rc)
-			return rc;
-	}
+On the other hand, with a real-time kernel, this could potentially
+happen, so save the tid found in transaction->t_tid before we release
+t_handle_lock.  It would require an insane configuration, such as one
+where the jbd2 thread was set to a very high real-time priority,
+perhaps because a high priority real-time thread is trying to read or
+write to a file system.  But some people who use real-time kernels
+have been known to do insane things, including controlling
+laser-wielding industrial robots.  :-)
 
-Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_mass_storage.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/jbd2/transaction.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -513,6 +513,7 @@ static int fsg_set_halt(struct fsg_dev *
- /* Caller must hold fsg->lock */
- static void wakeup_thread(struct fsg_common *common)
- {
-+	smp_wmb();	/* ensure the write of bh->state is complete */
- 	/* Tell the main thread that something has happened */
- 	common->thread_wakeup_needed = 1;
- 	if (common->thread_task)
-@@ -730,6 +731,7 @@ static int sleep_thread(struct fsg_commo
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	common->thread_wakeup_needed = 0;
-+	smp_rmb();	/* ensure the latest bh->state is visible */
- 	return rc;
- }
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -469,10 +469,10 @@ int jbd2__journal_restart(handle_t *hand
+ 		   &transaction->t_outstanding_credits);
+ 	if (atomic_dec_and_test(&transaction->t_updates))
+ 		wake_up(&journal->j_wait_updates);
++	tid = transaction->t_tid;
+ 	spin_unlock(&transaction->t_handle_lock);
  
+ 	jbd_debug(2, "restarting handle %p\n", handle);
+-	tid = transaction->t_tid;
+ 	need_to_start = !tid_geq(journal->j_commit_request, tid);
+ 	read_unlock(&journal->j_state_lock);
+ 	if (need_to_start)
 
 
