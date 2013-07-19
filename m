@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935009Ab3GSCXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:23:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37685 "EHLO
+	id S935109Ab3GSCdA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:33:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934848Ab3GSCXh (ORCPT
+	with ESMTP id S935003Ab3GSCXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:37 -0400
+	Thu, 18 Jul 2013 22:23:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Jie Liu <jeff.liu@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Sunil Mushran <sunil.mushran@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/18] ocfs2: xattr: fix inlined xattr reflink
-Date: Thu, 18 Jul 2013 19:23:26 -0700
-Message-Id: <20130719021049.736556100@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [ 15/18] ext4: fix data offset overflow in ext4_xattr_fiemap() on 32-bit archs
+Date: Thu, 18 Jul 2013 19:23:30 -0700
+Message-Id: <20130719021050.003259613@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -30,83 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
-commit ef962df057aaafd714f5c22ba3de1be459571fdf upstream.
+commit a60697f411eb365fb09e639e6f183fe33d1eb796 upstream.
 
-Inlined xattr shared free space of inode block with inlined data or data
-extent record, so the size of the later two should be adjusted when
-inlined xattr is enabled.  See ocfs2_xattr_ibody_init().  But this isn't
-done well when reflink.  For inode with inlined data, its max inlined
-data size is adjusted in ocfs2_duplicate_inline_data(), no problem.  But
-for inode with data extent record, its record count isn't adjusted.  Fix
-it, or data extent record and inlined xattr may overwrite each other,
-then cause data corruption or xattr failure.
+On 32-bit architectures with 32-bit sector_t computation of data offset
+in ext4_xattr_fiemap() can overflow resulting in reporting bogus data
+location. Fix the problem by typing block number to proper type before
+shifting.
 
-One panic caused by this bug in our test environment is the following:
-
-  kernel BUG at fs/ocfs2/xattr.c:1435!
-  invalid opcode: 0000 [#1] SMP
-  Pid: 10871, comm: multi_reflink_t Not tainted 2.6.39-300.17.1.el5uek #1
-  RIP: ocfs2_xa_offset_pointer+0x17/0x20 [ocfs2]
-  RSP: e02b:ffff88007a587948  EFLAGS: 00010283
-  RAX: 0000000000000000 RBX: 0000000000000010 RCX: 00000000000051e4
-  RDX: ffff880057092060 RSI: 0000000000000f80 RDI: ffff88007a587a68
-  RBP: ffff88007a587948 R08: 00000000000062f4 R09: 0000000000000000
-  R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000010
-  R13: ffff88007a587a68 R14: 0000000000000001 R15: ffff88007a587c68
-  FS:  00007fccff7f06e0(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
-  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00000000015cf000 CR3: 000000007aa76000 CR4: 0000000000000660
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process multi_reflink_t
-  Call Trace:
-    ocfs2_xa_reuse_entry+0x60/0x280 [ocfs2]
-    ocfs2_xa_prepare_entry+0x17e/0x2a0 [ocfs2]
-    ocfs2_xa_set+0xcc/0x250 [ocfs2]
-    ocfs2_xattr_ibody_set+0x98/0x230 [ocfs2]
-    __ocfs2_xattr_set_handle+0x4f/0x700 [ocfs2]
-    ocfs2_xattr_set+0x6c6/0x890 [ocfs2]
-    ocfs2_xattr_user_set+0x46/0x50 [ocfs2]
-    generic_setxattr+0x70/0x90
-    __vfs_setxattr_noperm+0x80/0x1a0
-    vfs_setxattr+0xa9/0xb0
-    setxattr+0xc3/0x120
-    sys_fsetxattr+0xa8/0xd0
-    system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Jie Liu <jeff.liu@oracle.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/xattr.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/ext4/extents.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ocfs2/xattr.c
-+++ b/fs/ocfs2/xattr.c
-@@ -6497,6 +6497,16 @@ static int ocfs2_reflink_xattr_inline(st
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4155,7 +4155,7 @@ static int ext4_xattr_fiemap(struct inod
+ 		error = ext4_get_inode_loc(inode, &iloc);
+ 		if (error)
+ 			return error;
+-		physical = iloc.bh->b_blocknr << blockbits;
++		physical = (__u64)iloc.bh->b_blocknr << blockbits;
+ 		offset = EXT4_GOOD_OLD_INODE_SIZE +
+ 				EXT4_I(inode)->i_extra_isize;
+ 		physical += offset;
+@@ -4163,7 +4163,7 @@ static int ext4_xattr_fiemap(struct inod
+ 		flags |= FIEMAP_EXTENT_DATA_INLINE;
+ 		brelse(iloc.bh);
+ 	} else { /* external block */
+-		physical = EXT4_I(inode)->i_file_acl << blockbits;
++		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
+ 		length = inode->i_sb->s_blocksize;
  	}
  
- 	new_oi = OCFS2_I(args->new_inode);
-+	/*
-+	 * Adjust extent record count to reserve space for extended attribute.
-+	 * Inline data count had been adjusted in ocfs2_duplicate_inline_data().
-+	 */
-+	if (!(new_oi->ip_dyn_features & OCFS2_INLINE_DATA_FL) &&
-+	    !(ocfs2_inode_is_fast_symlink(args->new_inode))) {
-+		struct ocfs2_extent_list *el = &new_di->id2.i_list;
-+		le16_add_cpu(&el->l_count, -(inline_size /
-+					sizeof(struct ocfs2_extent_rec)));
-+	}
- 	spin_lock(&new_oi->ip_lock);
- 	new_oi->ip_dyn_features |= OCFS2_HAS_XATTR_FL | OCFS2_INLINE_XATTR_FL;
- 	new_di->i_dyn_features = cpu_to_le16(new_oi->ip_dyn_features);
 
 
