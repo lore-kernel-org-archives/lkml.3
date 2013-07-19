@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965830Ab3GSFct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:32:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39994 "EHLO
+	id S965918Ab3GSFdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:33:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39988 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965771Ab3GSF1E (ORCPT
+	with ESMTP id S965763Ab3GSF1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:04 -0400
+	Fri, 19 Jul 2013 01:27:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 35/72] ACPI / PM: Fix corner case in acpi_bus_update_power()
-Date: Thu, 18 Jul 2013 22:25:52 -0700
-Message-Id: <20130719052602.267109824@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 43/72] iwlwifi: pcie: fix race in queue unmapping
+Date: Thu, 18 Jul 2013 22:26:00 -0700
+Message-Id: <20130719052602.809372947@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,68 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 91bdad0b6237c25a7bf8fd4604d0cc64a2005a23 upstream.
+commit b967613d7e7c7bad176f5627c55e2d8c5aa2480e upstream.
 
-The role of acpi_bus_update_power() is to update the given ACPI
-device object's power.state field to reflect the current physical
-state of the device (as inferred from the configuration of power
-resources and _PSC, if available).  For this purpose it calls
-acpi_device_set_power() that should update the power resources'
-reference counters and set power.state as appropriate.  However,
-that doesn't work if the "new" state is D1, D2 or D3hot and the
-the current value of power.state means D3cold, because in that
-case acpi_device_set_power() will refuse to transition the device
-from D3cold to non-D0.
+When a queue is disabled, it frees all its entries. Later,
+the op_mode might still get notifications from the firmware
+that triggers to free entries in the tx queue. The transport
+should be prepared for these races and know to ignore
+reclaim calls on queues that have been disabled and whose
+entries have been freed.
 
-To address this problem, make acpi_bus_update_power() call
-acpi_power_transition() directly to update the power resources'
-reference counters and only use acpi_device_set_power() to put
-the device into D0 if the current physical state of it cannot
-be determined.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/device_pm.c |   23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/tx.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -324,14 +324,27 @@ int acpi_bus_update_power(acpi_handle ha
- 	if (result)
- 		return result;
+--- a/drivers/net/wireless/iwlwifi/pcie/tx.c
++++ b/drivers/net/wireless/iwlwifi/pcie/tx.c
+@@ -576,9 +576,12 @@ static void iwl_pcie_txq_unmap(struct iw
  
--	if (state == ACPI_STATE_UNKNOWN)
-+	if (state == ACPI_STATE_UNKNOWN) {
- 		state = ACPI_STATE_D0;
--
--	result = acpi_device_set_power(device, state);
--	if (!result && state_p)
-+		result = acpi_device_set_power(device, state);
-+		if (result)
-+			return result;
-+	} else {
-+		if (device->power.flags.power_resources) {
-+			/*
-+			 * We don't need to really switch the state, bu we need
-+			 * to update the power resources' reference counters.
-+			 */
-+			result = acpi_power_transition(device, state);
-+			if (result)
-+				return result;
-+		}
-+		device->power.state = state;
-+	}
-+	if (state_p)
- 		*state_p = state;
- 
--	return result;
-+	return 0;
+ 	spin_lock_bh(&txq->lock);
+ 	while (q->write_ptr != q->read_ptr) {
++		IWL_DEBUG_TX_REPLY(trans, "Q %d Free %d\n",
++				   txq_id, q->read_ptr);
+ 		iwl_pcie_txq_free_tfd(trans, txq);
+ 		q->read_ptr = iwl_queue_inc_wrap(q->read_ptr, q->n_bd);
+ 	}
++	txq->active = false;
+ 	spin_unlock_bh(&txq->lock);
  }
- EXPORT_SYMBOL_GPL(acpi_bus_update_power);
  
+@@ -927,6 +930,12 @@ void iwl_trans_pcie_reclaim(struct iwl_t
+ 
+ 	spin_lock_bh(&txq->lock);
+ 
++	if (!txq->active) {
++		IWL_DEBUG_TX_QUEUES(trans, "Q %d inactive - ignoring idx %d\n",
++				    txq_id, ssn);
++		goto out;
++	}
++
+ 	if (txq->q.read_ptr == tfd_num)
+ 		goto out;
+ 
+@@ -1103,6 +1112,7 @@ void iwl_trans_pcie_txq_enable(struct iw
+ 		       (fifo << SCD_QUEUE_STTS_REG_POS_TXF) |
+ 		       (1 << SCD_QUEUE_STTS_REG_POS_WSL) |
+ 		       SCD_QUEUE_STTS_REG_MSK);
++	trans_pcie->txq[txq_id].active = true;
+ 	IWL_DEBUG_TX_QUEUES(trans, "Activate queue %d on FIFO %d WrPtr: %d\n",
+ 			    txq_id, fifo, ssn & 0xff);
+ }
 
 
