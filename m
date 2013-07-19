@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760228Ab3GSLdl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 07:33:41 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61049 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759989Ab3GSLdk (ORCPT
+	id S1760242Ab3GSLiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 07:38:07 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:60757 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760161Ab3GSLiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 07:33:40 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-7e-51e9241265d2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 10/23] perf tools: Introduce swap_header function
-References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
-	<1374083403-14591-11-git-send-email-jolsa@redhat.com>
-Date: Fri, 19 Jul 2013 20:33:37 +0900
-In-Reply-To: <1374083403-14591-11-git-send-email-jolsa@redhat.com> (Jiri
-	Olsa's message of "Wed, 17 Jul 2013 19:49:50 +0200")
-Message-ID: <87bo5ywzqm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 19 Jul 2013 07:38:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130716234438.C792C316@viggo.jf.intel.com>
+References: <20130716234438.C792C316@viggo.jf.intel.com>
+Date: Fri, 19 Jul 2013 17:08:03 +0530
+Message-ID: <CAC4Lta1mHixqfRSJKpydH3X9M_nQPCY3QSD86Tm=cnQ+KxpGYw@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
+From: Raghavendra KT <raghavendra.kt.linux@gmail.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Jul 2013 19:49:50 +0200, Jiri Olsa wrote:
-> Introducing swap_header function to make the swapping
-> code more clear and extensible.
+On Wed, Jul 17, 2013 at 5:14 AM, Dave Hansen <dave@sr71.net> wrote:
+>
+> I was investigating some TLB flush scaling issues and realized
+> that we do not have any good methods for figuring out how many
+> TLB flushes we are doing.
+>
+> It would be nice to be able to do these in generic code, but the
+> arch-independent calls don't explicitly specify whether we
+> actually need to do remote flushes or not.  In the end, we really
+> need to know if we actually _did_ global vs. local invalidations,
+> so that leaves us with few options other than to muck with the
+> counters from arch-specific code.
+>
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> ---
 
-[SNIP]
->  
-> +static int swap_header(struct perf_file_header *header)
-> +{
-> +	mem_bswap_64(header, offsetof(struct perf_file_header, adds_features));
-> +
-> +	if (header->size != sizeof(*header)) {
-> +		/* Support the previous format */
-> +		if (header->size == offsetof(typeof(*header), adds_features))
-> +			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
-> +		else
-> +			return -1;
-> +	} else
-> +		swap_features(header->adds_features);
-> +
-> +	return 0;
-> +}
-> +
->  int perf_file_header__read(struct perf_file_header *header,
->  			   struct perf_header *ph, int fd)
->  {
-> @@ -2562,19 +2578,8 @@ int perf_file_header__read(struct perf_file_header *header,
->  		return -1;
->  	}
->  
-> -	if (ph->needs_swap) {
-> -		mem_bswap_64(header, offsetof(struct perf_file_header,
-> -			     adds_features));
-> -	}
-> -
-> -	if (header->size != sizeof(*header)) {
-> -		/* Support the previous format */
-> -		if (header->size == offsetof(typeof(*header), adds_features))
-> -			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
-> -		else
-> -			return -1;
-> -	} else if (ph->needs_swap)
-> -		swap_features(header->adds_features);
-> +	if (ph->needs_swap && swap_header(header))
-> +		return -1;
+Hi Dave,
+While measuring non - PLE performance, one of the bottleneck, I am seeing is
+flush tlbs.
+perf had helped in alaysing a bit there, but this patch would help
+in precise calculation. It will aslo help in tuning the PLE window
+experiments (larger PLE window
+would affect remote flush TLBs)
 
-Doesn't it change existing behavior?  It looks like supporting previous
-format on a same endian machines will be removed by this patch.
+Thanks for this patch. Tested the patch on my sandybridge.box
 
-Thanks,
-Namhyung
+Tested-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
