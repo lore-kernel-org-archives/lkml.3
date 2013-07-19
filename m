@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759994Ab3GSI1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:27:55 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:32870 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759975Ab3GSI1u (ORCPT
+	id S1759984Ab3GSI2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:28:55 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:33231 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab3GSI2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:27:50 -0400
-Date: Fri, 19 Jul 2013 10:27:49 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+	Fri, 19 Jul 2013 04:28:52 -0400
+Date: Fri, 19 Jul 2013 10:28:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        hector.palacios@digi.com, Thomas Petazzoni <thomas@free-electrons.com>,
-        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 0/3] Few ignored framebuffer fixes/additions
-Message-ID: <20130719082749.GB5106@lukather>
-References: <1373902022-20439-1-git-send-email-maxime.ripard@free-electrons.com>
- <20130717143709.f8879fb7f0a5d55859e96838@linux-foundation.org>
+Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
+Message-ID: <20130719082848.GA25784@gmail.com>
+References: <20130716234438.C792C316@viggo.jf.intel.com>
+ <20130717072100.GA14359@gmail.com>
+ <20130718135157.2262e28b2c6e0f43a4d0fe7a@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XOIedfhf+7KOe/yw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130717143709.f8879fb7f0a5d55859e96838@linux-foundation.org>
+In-Reply-To: <20130718135157.2262e28b2c6e0f43a4d0fe7a@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---XOIedfhf+7KOe/yw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Hi Andrew,
+> On Wed, 17 Jul 2013 09:21:00 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > 
+> > * Dave Hansen <dave@sr71.net> wrote:
+> > 
+> > > I was investigating some TLB flush scaling issues and realized
+> > > that we do not have any good methods for figuring out how many
+> > > TLB flushes we are doing.
+> > > 
+> > > It would be nice to be able to do these in generic code, but the
+> > > arch-independent calls don't explicitly specify whether we
+> > > actually need to do remote flushes or not.  In the end, we really
+> > > need to know if we actually _did_ global vs. local invalidations,
+> > > so that leaves us with few options other than to muck with the
+> > > counters from arch-specific code.
+> 
+> Spose so, if you really think it's worth it.  It's all downside for 
+> uniprocessor machines. [...]
 
-On Wed, Jul 17, 2013 at 02:37:09PM -0700, Andrew Morton wrote:
-> On Mon, 15 Jul 2013 17:26:59 +0200 Maxime Ripard <maxime.ripard@free-elec=
-trons.com> wrote:
->=20
-> > Sorry to bother you again with the framebuffer stuff but the new
-> > maintainer doesn't appear to be responsive either.
->=20
-> Jean-Christophe is doing things - on 11 July he sent out a call for
-> late patches to linux-fbdev@vger.kernel.org.
->=20
-> So hopefully the resend of this patch series will be handled
-> appropriately?
+UP is slowly going extinct, but in any case these counters ought to inform 
+us about TLB flushes even on UP systems:
 
-Hopefully. We'll see how it turns out then, and let you know.
+> > > +		NR_TLB_LOCAL_FLUSH_ALL,
+> > > +		NR_TLB_LOCAL_FLUSH_ONE,
+> > > +		NR_TLB_LOCAL_FLUSH_ONE_KERNEL,
+
+While these ought to be compiled out on UP kernels:
+
+> > > +		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
+> > > +		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
+
+Right?
+
+> > Please fix the vertical alignment of comments.
+> 
+> I looked - this isn't practical.
+> 
+> It would be nice to actually document these things though.  We don't 
+> *have* to squeeze the comment into the RHS.
+
+Agreed.
 
 Thanks,
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---XOIedfhf+7KOe/yw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR6PiFAAoJEBx+YmzsjxAgVAEQAKX0DZTXlsUffgonwy7AY4M5
-DBgKJr4OCyISLEdpdAFr/HDIxvkZfQNlqoJ+v9Cb8Asx6vDNnHYPfJwUoUf/hTIU
-prGcOXnwPPeICwnmDtedLYYDthXTBpWMh0xi9c1Iy74RIVpcZhR8coV+jwWmVT7Y
-oH31/T6PU6ilFkx4cxBhsREHODPnWhI/5/Zr0pjRpKg67x9D9tIxbBvElI3RnGNu
-8SdDNYM1TaZESNLo82VoUT4+46zv+HntTpYHDCH+wa9CTVWw/YiSwFpw9rG5Z/iQ
-6YScHMjG6RVWCwVFU76/deZEOqgsv++PZJZ9EDjVHTPQyBVVThRWWtqS/nAgN7EK
-s44G5nluR47rutrk/d4NM0sDEJTM7Ru+H0S4hPc5B2FG5pVg7jMfQVGR0pd1EloI
-ZDgZ8UFBeNoS7As/EwPVfRAgAsupRV5w6xb5QqxYx22tUFCEdGB84EZYTh4H5fnT
-CKGsp/pghcZ+WzlODI2UtxrnZY3mAT7KKlcbkJjibztojGSzKjhpVPsCmXOGZO7r
-gE++4KP/iPkq9DmVObZJL6yxkXKuFjtZ0V+PLFzmifOF2sRvEazKNm7MpH7mNkhH
-SCEE0ihNwHtAMKEAD4O05T23lyROd5PZhVBhK8jY0Fgs9YPlzF7XGQjYpd9KJsBT
-myTRqt6GM/T/ZJKawzmp
-=v2mM
------END PGP SIGNATURE-----
-
---XOIedfhf+7KOe/yw--
+	Ingo
