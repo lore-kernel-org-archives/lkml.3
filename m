@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965513Ab3GSFXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:23:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39465 "EHLO
+	id S965533Ab3GSFX5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:23:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39458 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965466Ab3GSFWc (ORCPT
+	with ESMTP id S965463Ab3GSFWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:32 -0400
+	Fri, 19 Jul 2013 01:22:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        steve <sanpatr1@in.ibm.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 38/38] Handle big endianness in NTLM (ntlmv2) authentication
-Date: Thu, 18 Jul 2013 22:21:54 -0700
-Message-Id: <20130719052050.476628770@linuxfoundation.org>
+        UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>,
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 09/38] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
+Date: Thu, 18 Jul 2013 22:21:25 -0700
+Message-Id: <20130719052048.517099335@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -28,80 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@us.ibm.com>
+From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
 
-commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
+commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
 
-This is RH bug 970891
-Uppercasing of username during calculation of ntlmv2 hash fails
-because UniStrupr function does not handle big endian wchars.
+Without this memory barrier, the file-storage thread may fail to
+escape from the following while loop, because it may observe new
+common->thread_wakeup_needed and old bh->state which are updated by
+the callback functions.
 
-Also fix a comment in the same code to reflect its correct usage.
+	/* Wait for the CBW to arrive */
+	while (bh->state != BUF_STATE_FULL) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
 
-[To make it easier for stable (rather than require 2nd patch) fixed
-this patch of Shirish's to remove endian warning generated
-by sparse -- steve f.]
-
-Reported-by: steve <sanpatr1@in.ibm.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifs_unicode.h |    8 ++++----
- fs/cifs/cifsencrypt.c  |    6 +++---
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/gadget/f_mass_storage.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/cifs/cifs_unicode.h
-+++ b/fs/cifs/cifs_unicode.h
-@@ -327,14 +327,14 @@ UniToupper(register wchar_t uc)
- /*
-  * UniStrupr:  Upper case a unicode string
-  */
--static inline wchar_t *
--UniStrupr(register wchar_t *upin)
-+static inline __le16 *
-+UniStrupr(register __le16 *upin)
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -413,6 +413,7 @@ static int fsg_set_halt(struct fsg_dev *
+ /* Caller must hold fsg->lock */
+ static void wakeup_thread(struct fsg_common *common)
  {
--	register wchar_t *up;
-+	register __le16 *up;
- 
- 	up = upin;
- 	while (*up) {		/* For all characters */
--		*up = UniToupper(*up);
-+		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
- 		up++;
++	smp_wmb();	/* ensure the write of bh->state is complete */
+ 	/* Tell the main thread that something has happened */
+ 	common->thread_wakeup_needed = 1;
+ 	if (common->thread_task)
+@@ -632,6 +633,7 @@ static int sleep_thread(struct fsg_commo
  	}
- 	return upin;		/* Return input pointer */
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -415,7 +415,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 	int rc = 0;
- 	int len;
- 	char nt_hash[CIFS_NTHASH_SIZE];
--	wchar_t *user;
-+	__le16 *user;
- 	wchar_t *domain;
- 	wchar_t *server;
+ 	__set_current_state(TASK_RUNNING);
+ 	common->thread_wakeup_needed = 0;
++	smp_rmb();	/* ensure the latest bh->state is visible */
+ 	return rc;
+ }
  
-@@ -440,7 +440,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 		return rc;
- 	}
- 
--	/* convert ses->user_name to unicode and uppercase */
-+	/* convert ses->user_name to unicode */
- 	len = ses->user_name ? strlen(ses->user_name) : 0;
- 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
- 	if (user == NULL) {
-@@ -450,7 +450,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 	}
- 
- 	if (len) {
--		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
-+		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
- 		UniStrupr(user);
- 	} else {
- 		memset(user, '\0', 2);
 
 
