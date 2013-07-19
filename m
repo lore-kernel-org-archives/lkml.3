@@ -1,147 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab3GSXvw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 19:51:52 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:60277 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3GSXvu (ORCPT
+	id S1753131Ab3GSX5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 19:57:53 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:12347 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab3GSX5v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 19:51:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130717093051.GK3421@sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
-	<51E628F8.6030303@gmail.com>
-	<20130717093051.GK3421@sgi.com>
-Date: Fri, 19 Jul 2013 16:51:49 -0700
-X-Google-Sender-Auth: 7YLsUeEd4CRNK_BJr_oC3ZQN78o
-Message-ID: <CAE9FiQUnsENuMGAXgxmJq+u-NnXW4fEXR-JKww8LY_8jOfoeBA@mail.gmail.com>
-Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-From: Yinghai Lu <yinghai@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Sam Ben <sam.bennn@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
-Content-Type: multipart/mixed; boundary=90e6ba6e901ca9348804e1e602df
+	Fri, 19 Jul 2013 19:57:51 -0400
+X-AuditID: cbfec37d-b7f036d000004805-9e-51e9d27db1f0
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/18] 3.0.87-stable review
+Thread-topic: [ 00/18] 3.0.87-stable review
+Thread-index: AQHOhNr2OwQ+lI5xpEaujHdHiGzfSg==
+Date: Fri, 19 Jul 2013 23:57:48 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61746B61@sisaex01sj>
+References: <20130719021048.965829361@linuxfoundation.org>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e+wr27tpZeBBsdarS3mrF/DZtG8eD2b
+	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4Mp4e+AlY8E1sYozc+wbGB8IdTFyckgImEj823WHHcIWk7hwbz0biC0ksIxR4urmyi5G
+	LiC7l0liw/o9bBDOfEaJ9bcWgFWxCahLfH69A6xbRMBYov/sLDCbWeAYk0RHZ1kXIweHsICW
+	xMUbnBAl2hKTp85nAgmLCOhJXN0aAGKyCKhK7D1ZBlLBK2AvsWjbJRaIE6wkvkyZzgRiMwKd
+	9v3UGiaI4eISza03WSBOFpBYsuc8M4QtKvHy8T9WkJESAooS21dbQZTrSXz8c5sRwtaWePLu
+	AivEKkGJH5PvsUxgFJuFZOosJC2zkLTMQtKygJFlFaNYaXFyQXFSemqFiV5xYm5xaV66XnJ+
+	7iZGSMTV7mC8/9XmEKMAB6MSD++FFS8DhVgTy4orcw8xSnAwK4nwFqQBhXhTEiurUovy44tK
+	c1KLDzEycXBKNTAanqu5IZP6UL/XgmeLQMv0J2kXXbT8xdSf5yYl/ctb+cZF4CLH+1VFO+7U
+	9vTf8V7D62lRs2/7/MxL9vza/Qm+yVXlNbFuL6/xXF5XeHL/6paZjAVuV0olNj8wjn/7/N1Z
+	oTiT70/ay9QvbSwX9L693fb8j9g9cql6DiavMiQ2zHcU9xXcvVKJpTgj0VCLuag4EQBGkvQP
+	lgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba6e901ca9348804e1e602df
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Wed, Jul 17, 2013 at 2:30 AM, Robin Holt <holt@sgi.com> wrote:
-> On Wed, Jul 17, 2013 at 01:17:44PM +0800, Sam Ben wrote:
->> >With this patch, we did boot a 16TiB machine.  Without the patches,
->> >the v3.10 kernel with the same configuration took 407 seconds for
->> >free_all_bootmem.  With the patches and operating on 2MiB pages instead
->> >of 1GiB, it took 26 seconds so performance was improved.  I have no feel
->> >for how the 1GiB chunk size will perform.
->>
->> How to test how much time spend on free_all_bootmem?
+On 07/19/2013 05:52 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.87 release.
+> There are 18 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> We had put a pr_emerg at the beginning and end of free_all_bootmem and
-> then used a modified version of script which record the time in uSecs
-> at the beginning of each line of output.
+> Responses should be made by Sun Jul 21 02:10:01 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.87-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-used two patches, found 3TiB system will take 100s before slub is ready.
 
-about three portions:
-1. sparse vmemap buf allocation, it is with bootmem wrapper, so clear those
-struct page area take about 30s.
-2. memmap_init_zone: take about 25s
-3. mem_init/free_all_bootmem about 30s.
+Patches applied cleanly to 3.0.86, 3.4.54, 3.9.10, and 3.10.1
 
-so still wonder why 16TiB will need hours.
+3.9.11-rc1 patch failed to build:
+x64-64, mipsel, mips, powerpc, and tile: build failed with the following 
+error:
 
-also your patches looks like only address 2 and 3.
+    LD      ipc/built-in.o
+    CC [M]  fs/cifs/inode.o
+fs/cifs/inode.c: In function ‘cifs_all_info_to_fattr’:
+fs/cifs/inode.c:560:4: error: implicit declaration of function
+‘cifs_dbg’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[2]: *** [fs/cifs/inode.o] Error 1
+make[1]: *** [fs/cifs] Error 2
+make: *** [fs] Error 2
+make: *** Waiting for unfinished jobs....
+    CC      security/selinux/hooks.o
 
-Yinghai
+I have CONFIG_CIFS=m in my config and CONFIG_CIFS_DEBUG is disabled.
+cifs_dbg() is not defined.
 
---90e6ba6e901ca9348804e1e602df
-Content-Type: application/octet-stream; name="printk_time_tsc_0.patch"
-Content-Disposition: attachment; filename="printk_time_tsc_0.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hjc1alqv0
+Compiled and booted on the following systems:
 
-U3ViamVjdDogW1BBVENIXSBwcmludGtfdGltZTogcHJlcGFyZSBzdHViIGZvciB1c2luZyBvdGhl
-ciB0aGFuIGNwdV9jbG9jawoKLXYyOiByZWZyZXNoIHRvIHYzLjEwCgpTaWduZWQtb2ZmLWJ5OiBZ
-aW5naGFpIEx1IDx5aGx1Lmtlcm5lbEBnbWFpbC5jb20+CgotLS0KIGluY2x1ZGUvbGludXgvcHJp
-bnRrLmggfCAgICAzICsrKwogaW5pdC9tYWluLmMgICAgICAgICAgICB8ICAgIDEgKwoga2VybmVs
-L3ByaW50ay5jICAgICAgICB8ICAgMTcgKysrKysrKysrKysrKysrLS0KIDMgZmlsZXMgY2hhbmdl
-ZCwgMTkgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvaW5p
-dC9tYWluLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5pdC9tYWluLmMKKysrIGxp
-bnV4LTIuNi9pbml0L21haW4uYwpAQCAtNjAxLDYgKzYwMSw3IEBAIGFzbWxpbmthZ2Ugdm9pZCBf
-X2luaXQgc3RhcnRfa2VybmVsKHZvaWQKIAkJbGF0ZV90aW1lX2luaXQoKTsKIAlzY2hlZF9jbG9j
-a19pbml0KCk7CiAJY2FsaWJyYXRlX2RlbGF5KCk7CisJc2V0X3ByaW50a190aW1lX2Nsb2NrKGxv
-Y2FsX2Nsb2NrKTsKIAlwaWRtYXBfaW5pdCgpOwogCWFub25fdm1hX2luaXQoKTsKICNpZmRlZiBD
-T05GSUdfWDg2CkluZGV4OiBsaW51eC0yLjYva2VybmVsL3ByaW50ay5jCj09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0t
-IGxpbnV4LTIuNi5vcmlnL2tlcm5lbC9wcmludGsuYworKysgbGludXgtMi42L2tlcm5lbC9wcmlu
-dGsuYwpAQCAtMjE3LDYgKzIxNywxOSBAQCBzdHJ1Y3QgbG9nIHsKIHN0YXRpYyBERUZJTkVfUkFX
-X1NQSU5MT0NLKGxvZ2J1Zl9sb2NrKTsKIAogI2lmZGVmIENPTkZJR19QUklOVEsKKworc3RhdGlj
-IHU2NCBkZWZhdWx0X3ByaW50a190aW1lX2Nsb2NrKHZvaWQpCit7CisJcmV0dXJuIDA7Cit9CisK
-K3N0YXRpYyB1NjQgKCpwcmludGtfdGltZV9jbG9jaykodm9pZCkgPSBkZWZhdWx0X3ByaW50a190
-aW1lX2Nsb2NrOworCit2b2lkIHNldF9wcmludGtfdGltZV9jbG9jayh1NjQgKCpmbikodm9pZCkp
-Cit7CisJcHJpbnRrX3RpbWVfY2xvY2sgPSBmbjsKK30KKwogREVDTEFSRV9XQUlUX1FVRVVFX0hF
-QUQobG9nX3dhaXQpOwogLyogdGhlIG5leHQgcHJpbnRrIHJlY29yZCB0byByZWFkIGJ5IHN5c2xv
-ZyhSRUFEKSBvciAvcHJvYy9rbXNnICovCiBzdGF0aWMgdTY0IHN5c2xvZ19zZXE7CkBAIC0zNTQs
-NyArMzY3LDcgQEAgc3RhdGljIHZvaWQgbG9nX3N0b3JlKGludCBmYWNpbGl0eSwgaW50CiAJaWYg
-KHRzX25zZWMgPiAwKQogCQltc2ctPnRzX25zZWMgPSB0c19uc2VjOwogCWVsc2UKLQkJbXNnLT50
-c19uc2VjID0gbG9jYWxfY2xvY2soKTsKKwkJbXNnLT50c19uc2VjID0gcHJpbnRrX3RpbWVfY2xv
-Y2soKTsKIAltZW1zZXQobG9nX2RpY3QobXNnKSArIGRpY3RfbGVuLCAwLCBwYWRfbGVuKTsKIAlt
-c2ctPmxlbiA9IHNpemVvZihzdHJ1Y3QgbG9nKSArIHRleHRfbGVuICsgZGljdF9sZW4gKyBwYWRf
-bGVuOwogCkBAIC0xNDU3LDcgKzE0NzAsNyBAQCBzdGF0aWMgYm9vbCBjb250X2FkZChpbnQgZmFj
-aWxpdHksIGludCBsCiAJCWNvbnQuZmFjaWxpdHkgPSBmYWNpbGl0eTsKIAkJY29udC5sZXZlbCA9
-IGxldmVsOwogCQljb250Lm93bmVyID0gY3VycmVudDsKLQkJY29udC50c19uc2VjID0gbG9jYWxf
-Y2xvY2soKTsKKwkJY29udC50c19uc2VjID0gcHJpbnRrX3RpbWVfY2xvY2soKTsKIAkJY29udC5m
-bGFncyA9IDA7CiAJCWNvbnQuY29ucyA9IDA7CiAJCWNvbnQuZmx1c2hlZCA9IGZhbHNlOwpJbmRl
-eDogbGludXgtMi42L2luY2x1ZGUvbGludXgvcHJpbnRrLmgKPT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
-Mi42Lm9yaWcvaW5jbHVkZS9saW51eC9wcmludGsuaAorKysgbGludXgtMi42L2luY2x1ZGUvbGlu
-dXgvcHJpbnRrLmgKQEAgLTEwNyw2ICsxMDcsNyBAQCB2b2lkIGVhcmx5X3ByaW50ayhjb25zdCBj
-aGFyICpzLCAuLi4pIHsKICNlbmRpZgogCiAjaWZkZWYgQ09ORklHX1BSSU5USworZXh0ZXJuIHZv
-aWQgc2V0X3ByaW50a190aW1lX2Nsb2NrKHU2NCAoKmZuKSh2b2lkKSk7CiBhc21saW5rYWdlIF9f
-cHJpbnRmKDUsIDApCiBpbnQgdnByaW50a19lbWl0KGludCBmYWNpbGl0eSwgaW50IGxldmVsLAog
-CQkgY29uc3QgY2hhciAqZGljdCwgc2l6ZV90IGRpY3RsZW4sCkBAIC0xNTAsNiArMTUxLDggQEAg
-dm9pZCBkdW1wX3N0YWNrX3NldF9hcmNoX2Rlc2MoY29uc3QgY2hhcgogdm9pZCBkdW1wX3N0YWNr
-X3ByaW50X2luZm8oY29uc3QgY2hhciAqbG9nX2x2bCk7CiB2b2lkIHNob3dfcmVnc19wcmludF9p
-bmZvKGNvbnN0IGNoYXIgKmxvZ19sdmwpOwogI2Vsc2UKK3N0YXRpYyBpbmxpbmUgdm9pZCBzZXRf
-cHJpbnRrX3RpbWVfY2xvY2sodTY0ICgqZm4pKHZvaWQpKSB7IH0KKwogc3RhdGljIGlubGluZSBf
-X3ByaW50ZigxLCAwKQogaW50IHZwcmludGsoY29uc3QgY2hhciAqcywgdmFfbGlzdCBhcmdzKQog
-ewo=
---90e6ba6e901ca9348804e1e602df
-Content-Type: application/octet-stream; name="printk_time_tsc_1.patch"
-Content-Disposition: attachment; filename="printk_time_tsc_1.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hjc1au5d1
+Samsung Series 9 900X4C Intel Corei5:
+     (3.4.54-rc1, 3.9.10-rc1, 3.10.2-rc2)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+     (3.0.87-rc1, 3.4.54-rc1, 3.9.10-rc1?, and 3.10.2-rc2)
 
-U3ViamVjdDogW1BBVENIXSB4ODY6IHByaW50a190aW1lIHRvIHVzZSB0c2MgYmVmb3JlIGNwdV9j
-bG9jayBpcyByZWFkeQoKc28gY2FuIGdldCB0c2MgdmFsdWUgb24gcHJpbnRrCgpuZWVkIHRvIGFw
-cGx5IGFmdGVyCglbUEFUQ0hdIHByaW50a190aW1lOiBwcmVwYXJlIHN0dWIgZm9yIHVzaW5nIG90
-aGVyIHRoYW4gY3B1X2Nsb2NrCgotdjI6IHJlZnJlc2ggb24gdjMuMTAKClNpZ25lZC1vZmYtYnk6
-IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogYXJjaC94ODYva2VybmVsL2Nw
-dS9jb21tb24uYyB8ICAgMjEgKysrKysrKysrKysrKysrKysrKysrCiAxIGZpbGUgY2hhbmdlZCwg
-MjEgaW5zZXJ0aW9ucygrKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvY3B1L2Nv
-bW1vbi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9jcHUv
-Y29tbW9uLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvY3B1L2NvbW1vbi5jCkBAIC03
-MzcsNiArNzM3LDI1IEBAIHN0YXRpYyB2b2lkIF9faW5pdCBlYXJseV9pZGVudGlmeV9jcHUoc3QK
-IAlzZXR1cF9mb3JjZV9jcHVfY2FwKFg4Nl9GRUFUVVJFX0FMV0FZUyk7CiB9CiAKK3N0YXRpYyB1
-NjQgX19pbml0ZGF0YSB0c2NfY2xvY2tfYmFzZTsKKworc3RhdGljIF9faW5pdCB1NjQgdHNjX2Ns
-b2NrX29mZnNldCh2b2lkKQoreworCXVuc2lnbmVkIGxvbmcgbG9uZyB0OworCisJcmR0c2NsbCh0
-KTsKKworCXJldHVybiB0IC0gdHNjX2Nsb2NrX2Jhc2U7Cit9CisKK3N0YXRpYyBfX2luaXQgdm9p
-ZCBlYXJseV9wcmludGtfdGltZV9pbml0KHZvaWQpCit7CisJaWYgKGNwdV9oYXNfdHNjKSB7CisJ
-CXJkdHNjbGwodHNjX2Nsb2NrX2Jhc2UpOworCQlzZXRfcHJpbnRrX3RpbWVfY2xvY2sodHNjX2Ns
-b2NrX29mZnNldCk7CisJfQorfQorCiB2b2lkIF9faW5pdCBlYXJseV9jcHVfaW5pdCh2b2lkKQog
-ewogCWNvbnN0IHN0cnVjdCBjcHVfZGV2ICpjb25zdCAqY2RldjsKQEAgLTc2MSw2ICs3ODAsOCBA
-QCB2b2lkIF9faW5pdCBlYXJseV9jcHVfaW5pdCh2b2lkKQogCX0KIAogCWVhcmx5X2lkZW50aWZ5
-X2NwdSgmYm9vdF9jcHVfZGF0YSk7CisKKwllYXJseV9wcmludGtfdGltZV9pbml0KCk7CiB9CiAK
-IC8qCg==
---90e6ba6e901ca9348804e1e602df--
+dmesgs for all releases look good. No regressions compared to the 
+previous dmesgs for each of these releases. dmesg emerg, crit, alert, 
+err are clean. No regressions in warn.
+
+Cross-compile testing:
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+     (3.0.87-rc1, 3.4.54-rc1, 3.9.10-rc1?, and 3.10.2-rc2)
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.9.y, and 3.10.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, 3.9.y, and 3.10.y
+mips: defconfig passed on all, except 3.9.10
+mipsel: defconfig passed on all, except 3.9.10
+powerpc: wii_defconfig passed on all, except 3.9.10
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all, except 3.9.10
+
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
