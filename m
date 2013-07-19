@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab3GSVAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:00:39 -0400
-Received: from science.horizon.com ([71.41.210.146]:33131 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752552Ab3GSVAi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:00:38 -0400
-Date: 19 Jul 2013 17:00:36 -0400
-Message-ID: <20130719210036.5543.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: hpa@zytor.com, linux@horizon.com
-Subject: Re: 3.10.0 i386 uniprocessor panic
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <51E974A9.3050608@zytor.com>
+	id S1752726Ab3GSVAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:00:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4121 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752552Ab3GSVAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 17:00:41 -0400
+Message-ID: <51E9A8E0.8080404@redhat.com>
+Date: Fri, 19 Jul 2013 23:00:16 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jason Wang <jasowang@redhat.com>, gleb@redhat.com, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vadim Rozenfeld <vrozenfe@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: Re: [PATCH] x86: properly handle KVM emulation of hyperv
+References: <1374229505-19470-1-git-send-email-jasowang@redhat.com> <51E92CAB.7020906@redhat.com> <51E9A896.8070408@zytor.com>
+In-Reply-To: <51E9A896.8070408@zytor.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> EIP is at 0xc143a091
->> EAX: c143a090 EBX: 00000100 ECX: f3150000 EDX: c143a090
->> ESI: c143a090 EDI: c143a090 EBP: c143a090 ESP: f3151eec
->>  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
->> CR0: 80050033 CR2: a090c143 CR3: 331c6000 CR4: 000007d0
->> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
->> DR6: ffff0ff0 DR7: 00000400
+Il 19/07/2013 22:59, H. Peter Anvin ha scritto:
+>>> >> -		cpuid(KVM_CPUID_SIGNATURE, &eax, &ebx, &ecx, &edx);
+>>> >> -		memcpy(signature + 0, &ebx, 4);
+>>> >> -		memcpy(signature + 4, &ecx, 4);
+>>> >> -		memcpy(signature + 8, &edx, 4);
+>>> >> -		signature[12] = 0;
+>>> >> -
+>>> >> -		if (strcmp(signature, "KVMKVMKVM") == 0)
+>>> >> +		if (kvm_para_available_function(KVM_CPUID_SIGNATURE) ||
+>>> >> +		    kvm_para_available_function(KVM_CPUID_SIGNATURE_NEXT))
+>>> >>  			return true;
+>>> >>  	}
+>> > 
+>> > Nice catch.  Just one small thing, you should loop until 0x40010000, as
+>> > done in arch/x86/include/asm/xen/hypervisor.h, in case one day a third
+>> > hypervisor implements three extensions (Hyper-V, KVM and its own set).
+>> > 
+> Any way we can centralize this stuff?
 
->> (The CR2 value looks particularly odd.)
+I guess a function cpuid_hypervisor_base("KVMKVMKVM") that does the scan?
 
-> Indeed it does; it is a user space value, but it doesn't look like
-> either a normal user space value nor really as a trivially buggered-up
-> kernel pointer value, unless the 0xc143... at the bottom is the upper
-> half of a kernel pointer, in which case we probably obtained this value
-> from a corrupt, misaligned pointer.
-
-Er... I assumed you'd see instantly that it was the 0xc143a090 value
-that's in 5 registers (EAX/EDX/ESI/EDI/EBP), and IP-1, but with the
-halves swapped.
-
-How the heck the halves got swapped is confusing me...
+Paolo
