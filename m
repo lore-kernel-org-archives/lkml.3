@@ -1,51 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759574Ab3GSASc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:18:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34317 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759546Ab3GSASa (ORCPT
+	id S1759582Ab3GSATV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:19:21 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:39467 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754786Ab3GSATU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:18:30 -0400
-Date: Thu, 18 Jul 2013 17:18:28 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-arm-msm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 08/17] ocksource: dbx500-prcmu: Switch to
- sched_clock_register()
-Message-ID: <20130719001828.GE27430@codeaurora.org>
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
- <1374189690-10810-9-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374189690-10810-9-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Jul 2013 20:19:20 -0400
+Message-ID: <1374193152.2076.8.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] hugepage: allow parallelization of the hugepage fault
+ path
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
+        Anton Blanchard <anton@samba.org>
+Date: Thu, 18 Jul 2013 17:19:12 -0700
+In-Reply-To: <20130718090719.GB9761@lge.com>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+	 <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+	 <20130715072432.GA28053@voom.fritz.box>
+	 <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+	 <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
+	 <20130718090719.GB9761@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18, Stephen Boyd wrote:
-> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
-> the 64 bit function to allow us to remove the 32 bit registration
-> interface.
+On Thu, 2013-07-18 at 18:07 +0900, Joonsoo Kim wrote:
+> On Wed, Jul 17, 2013 at 12:50:25PM -0700, Davidlohr Bueso wrote:
 > 
-> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
+> > From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > 
+> > - Cleaned up and forward ported to Linus' latest.
+> > - Cache aligned mutexes.
+> > - Keep non SMP systems using a single mutex.
+> > 
+> > It was found that this mutex can become quite contended
+> > during the early phases of large databases which make use of huge pages - for instance
+> > startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
+> > reports that this mutex can be one of the top 5 most contended locks in the kernel during
+> > the first few minutes:
+> > 
+> >     	     hugetlb_instantiation_mutex:   10678     10678
+> >              ---------------------------
+> >              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+> >              ---------------------------
+> >              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+> > 
+> > contentions:          10678
+> > acquisitions:         99476
+> > waittime-total: 76888911.01 us
+> 
+> Hello,
+> I have a question :)
+> 
+> So, each contention takes 7.6 ms in your result.
 
-Hmph, the subject got messed up. If I don't resend please correct
-to clocksource.
+Well, that's the total wait time. I can see your concern, but no, things
+aren't *that* bad. The average amount of time spent waiting for the lock
+would be 76888911.01/10678 = 7200us
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> Do you map this area with VM_NORESERVE?
+> If we map with VM_RESERVE, when page fault, we just dequeue a huge page from a queue and clear
+> a page and then map it to a page table. So I guess, it shouldn't take so long.
+> I'm wondering why it takes so long.
+> 
+
+I cannot really say. This is proprietary software. AFAICT if Oracle is
+anything like Posgres, than probably no.
+
+
+> And do you use 16KB-size hugepage?
+
+No, 2Mb pages.
+
+> If so, region handling could takes some times. If you access the area as random order,
+> the number of region can be more than 90000. I guess, this can be one reason to too long
+> waittime.
+> 
+> Thanks.
+
+Thanks,
+Davidlohr
+
+
