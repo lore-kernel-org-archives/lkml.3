@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab3GSJ3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 05:29:32 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:35381 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759890Ab3GSJ3a (ORCPT
+	id S1760082Ab3GSJi1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 05:38:27 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36219 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759915Ab3GSJi0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 05:29:30 -0400
+	Fri, 19 Jul 2013 05:38:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130711161353.GV11243@lukather>
-References: <1373121329.13289.2.camel@phoenix>
-	<20130711161353.GV11243@lukather>
-Date: Fri, 19 Jul 2013 11:29:30 +0200
-X-Google-Sender-Auth: S0Jx6Cnrw3vKbRy0DUvsFx9CK_o
-Message-ID: <CAMuHMdWP6NtXxmesakPKmxAk1MS2eByEHALAnQQHf8MJcCfk0g@mail.gmail.com>
-Subject: Re: [PATCH RFT] irqchip: sun4i: Remove wrong irq_ack callback implementation
+In-Reply-To: <loom.20130719T094257-159@post.gmane.org>
+References: <201307182241.r6IMfmap003013@terminus.zytor.com>
+	<CA+55aFx38ogZxxg2uHXKsPFHU4p4yvxvUE1i8DiPWZ4SdEDANg@mail.gmail.com>
+	<51E8BF9F.5080007@zytor.com>
+	<loom.20130719T094257-159@post.gmane.org>
+Date: Fri, 19 Jul 2013 11:38:25 +0200
+X-Google-Sender-Auth: Hfw2AsSpGtRCf_U5GTuOLDwSTC8
+Message-ID: <CAMuHMdWmaVJz8Vm0bxxNDUjswo=DwdSuDapPeW+BDYR9h0qDCA@mail.gmail.com>
+Subject: Re: [OT] Re: [GIT PULL] x86 fixes for 3.11-rc2
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Axel Lin <axel.lin@ingics.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Lukasz Sokol <el.es.cr@gmail.com>, "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 6:13 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Sat, Jul 06, 2013 at 10:35:29PM +0800, Axel Lin wrote:
->> According to the datasheet[1], the Interrupt IRQ Pending Registers are
->> read-only. The implementation of sun4i_irq_ack() looks wrong because it writes
->> to these read-only registers.
->
-> Right, but the datasheet also says that these registers are "clear"
-> register, which might indicate that it's actually R/W.
+On Fri, Jul 19, 2013 at 9:45 AM, Lukasz Sokol <el.es.cr@gmail.com> wrote:
+> H. Peter Anvin <hpa <at> zytor.com> writes:
+>> Ehkä meidän sääntö, että kiroilu on sallittu vain suomeksi (ja venäjä,
+>> muuten Al Viro todennäköisesti räjähtää.)
 
-I guess it means that the flags are cleared automatically on read?
-That's not so uncommon for interrupt pending registers.
+Can we please stop writing these _mixed_ English/Finnish emails?
+As Chrome only offers to translate _pure_ Finnish emails, that would save
+most of us a copy-and-paste trip to translate.google.com ;-)
+
+> Try pasting that back into Google Translate ;) see what Viro is translated
+> to  ;)
+>
+> -L ;)
+
+Da!
 
 Gr{oetje,eeting}s,
 
