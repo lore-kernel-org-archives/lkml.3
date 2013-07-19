@@ -1,79 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760756Ab3GSPUg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:20:36 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22829 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760724Ab3GSPUd (ORCPT
+	id S1760770Ab3GSPVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:21:17 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:55677 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760724Ab3GSPVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:20:33 -0400
-Date: Fri, 19 Jul 2013 11:20:16 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Piotr Sarna <p.sarna@partner.samsung.com>
-Cc: bob.liu@oracle.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        b.zolnierkie@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] zcache: fix "zcache=" kernel parameter
-Message-ID: <20130719152016.GA13009@localhost.localdomain>
-References: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
+	Fri, 19 Jul 2013 11:21:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
+References: <1374245148-24031-1-git-send-email-alexj@rosedu.org>
+	<CAOJsxLGEmjY6wTp99DKQ4ZKO2oXq6102MczbjCHTUReuCTq-fw@mail.gmail.com>
+	<CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
+Date: Fri, 19 Jul 2013 18:21:15 +0300
+X-Google-Sender-Auth: Mh4xXNHib7BJZ56VT--Uaq-NQIY
+Message-ID: <CAOJsxLFw4t-jwO4vDuMYfZA4uqH59h1c66xVPPFDO037OvGKSg@mail.gmail.com>
+Subject: Re: [PATCH] lustre:libcfs: remove redundant code.
+From: Pekka Enberg <penberg@kernel.org>
+To: Alexandru Juncu <alexj@rosedu.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, andreas.dilger@intel.com,
+        tao.peng@emc.com, driverdev <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 04:46:41PM +0200, Piotr Sarna wrote:
-> Commit 835f2f5 ("staging: zcache: enable zcache to be built/loaded as
-> a module") introduced an incorrect handling of "zcache=" parameter.
-> 
-> Inside zcache_comp_init() function, zcache_comp_name variable is
-> checked for being empty. If not empty, the above variable is tested
-> for being compatible with Crypto API. Unfortunately, after that
-> function ends unconditionally (by the "goto out" directive) and returns:
-> - non-zero value if verification succeeded, wrongly indicating an error
-> - zero value if verification failed, falsely informing that function
->   zcache_comp_init() ended properly.
-> 
-> A solution to this problem is as following:
-> 1. Move the "goto out" directive inside the "if (!ret)" statement
-> 2. In case that crypto_has_comp() returned 0, change the value of ret
->    to non-zero before "goto out" to indicate an error.
-> 
-> Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
-> Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+On Fri, Jul 19, 2013 at 6:13 PM, Alexandru Juncu <alexj@rosedu.org> wrote:
+> I was thinking the same thing, but I hesitated because I didn't know
+> how used it was and I didn't want to break something.
 
-You can also add
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-
-> ---
->  drivers/staging/zcache/zcache-main.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index dcceed2..81972fa 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
->  #else
->  	if (*zcache_comp_name != '\0') {
->  		ret = crypto_has_comp(zcache_comp_name, 0, 0);
-> -		if (!ret)
-> +		if (!ret) {
->  			pr_info("zcache: %s not supported\n",
->  					zcache_comp_name);
-> -		goto out;
-> +			ret = 1;
-> +			goto out;
-> +		}
->  	}
->  	if (!ret)
->  		strcpy(zcache_comp_name, "lzo");
-> -- 
-> 1.7.9.5
-> 
+"git grep cfs_strdup" suggests that nobody uses it so you could just
+remove it completely...
