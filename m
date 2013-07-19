@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935167Ab3GSC2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:28:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37824 "EHLO
+	id S935170Ab3GSC2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:28:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37821 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935117Ab3GSCZF (ORCPT
+	with ESMTP id S935113Ab3GSCZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:05 -0400
+	Thu, 18 Jul 2013 22:25:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 06/24] USB: option,qcserial: move Novatel Gobi1K IDs to qcserial
-Date: Thu, 18 Jul 2013 19:24:38 -0700
-Message-Id: <20130719022404.450684356@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 05/24] ext3,ext4: dont mess with dir_file->f_pos in htree_dirblock_to_tree()
+Date: Thu, 18 Jul 2013 19:24:37 -0700
+Message-Id: <20130719022404.384029586@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -26,58 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit a254810a86aaaac4ac6ba44fa934558b042a17a7 upstream.
+commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
 
-These devices are all Gobi1K devices (according to the Windows INF
-files) and should be handled by qcserial instead of option.  Their
-network port is handled by qmi_wwan.
+Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
+in-core rbtree for use by call_filldir().  All updates of ->f_pos are
+done by the latter; bumping it here (on error) is obviously wrong - we
+might very well have it nowhere near the block we'd found an error in.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c   |    4 ----
- drivers/usb/serial/qcserial.c |    8 +++++++-
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ fs/ext3/namei.c |    7 ++-----
+ fs/ext4/namei.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -159,8 +159,6 @@ static void option_instat_callback(struc
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
--#define NOVATELWIRELESS_PRODUCT_G1		0xA001
--#define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
- 
-@@ -744,8 +742,6 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC547) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1_M) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -37,7 +37,13 @@ static const struct usb_device_id id_tab
- 	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
- 	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
- 	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
--	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel/Verizon USB-1000 */
-+	{DEVICE_G1K(0x1410, 0xa002)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa003)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa004)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa005)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa006)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa007)},	/* Novatel Gobi Modem device */
- 	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
- 	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
- 	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -573,11 +573,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
+ 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
+ 						+((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse (bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext3fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (ext4_check_dir_entry(dir, NULL, de, bh,
+ 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
+ 					 + ((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse(bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext4fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
 
 
