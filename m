@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab3GSSsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:48:19 -0400
-Received: from ring0.de ([91.143.88.219]:52350 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752937Ab3GSSsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:48:17 -0400
-X-Greylist: delayed 2027 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Jul 2013 14:48:17 EDT
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: elektranox.org]
-Date: Fri, 19 Jul 2013 20:14:16 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        aaro.koskinen@iki.fi, linux-omap@vger.kernel.org,
-        lauri.leukkunen@nokia.com
-Subject: Re: N900 device tree conversion: how to do first step
-Message-ID: <20130719181416.GA1204@earth.universe>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>, pali.rohar@gmail.com,
-	kernel list <linux-kernel@vger.kernel.org>,
-	linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-	aaro.koskinen@iki.fi, linux-omap@vger.kernel.org,
-	lauri.leukkunen@nokia.com
-References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+	id S934300Ab3GSSso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:48:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35702 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933964Ab3GSSsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 14:48:42 -0400
+Message-ID: <51E98A07.4050402@wwwdotorg.org>
+Date: Fri, 19 Jul 2013 12:48:39 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
-Content-Disposition: inline
-In-Reply-To: <20130609015944.GA23559@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, wni@nvidia.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, l.stach@pengutronix.de
+Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
+ zone build
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com> <20130717220942.GB990@roeck-us.net> <51E7F341.8020508@ti.com> <51E8234D.1020607@wwwdotorg.org> <20130718212108.GC4110@roeck-us.net>
+In-Reply-To: <20130718212108.GC4110@roeck-us.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/18/2013 03:21 PM, Guenter Roeck wrote:
+> On Thu, Jul 18, 2013 at 11:18:05AM -0600, Stephen Warren wrote:
+>> On 07/18/2013 07:53 AM, Eduardo Valentin wrote:
+>>> Hello Guenter,
+>>>
+>>> On 17-07-2013 18:09, Guenter Roeck wrote:
+>>>> On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin
+>>>> wrote:
+>>>>> Hello all,
+>>>>>
+>>>>> As you noticed, I am working in a way to represent thermal
+>>>>> data using device tree [1]. Essentially, this should be a way
+>>>>> to say what to do with a sensor and how to associate (cooling)
+>>>>> actions with it.
+>>>>>
+>>>> Seems to me that goes way beyond the supposed scope of devicetree
+>>>> data. Devicetree data is supposed to describe hardware, not its
+>>>> configuration or use. This is clearly a use case.
+>>>
+>>> Thanks for rising your voice here. It is important to know what
+>>> hwmon ppl think about this.
+>>
+>> I meant to find time to read Guenter's original email where he
+>> initially objected to putting data into DT, and determine exactly what
+>> was being objected to. I still haven't:-( However, the arguments that
+>> Eduardo stated in his email do make sense to me; I agree that
+>> temperature limits really are a description of HW. Details of which
+>> cooling methods to invoke when certain temperature limits are reached
+>> is also part of the HW/system design, and hence I would tend to agree
+>> that they're appropriate to include in DT. Anyway, that's just my 2
+>> cents on the matter:-)
+> 
+> Many systems have multiple profiles for various use cases (high performance,
+> low power etc), and limits are different based on the use case. If that means
+> you are going to have multiple devicetree variants based on the profile,
+> I would argue that you crossed the line.
 
---C7zPtVaVf+AK4Oqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, I can see that argument. However, a counter-point:
 
-Hi,
+* I believe we do need a DT binding to describe the absolute thermal
+limits of a system, for safety/correctness of system operation.
 
-On Sun, Jun 09, 2013 at 03:59:44AM +0200, Pavel Machek wrote:
-> I'd like to convert Nokia N900 to device tree.
->=20
-> Unfortunately, serial port is not easily available (very special cable
-> would be needed, does someone know where to get one?)
+* We need to define a syntax/schema to represent that.
 
-One way to get one is building it yourself. I finished mine yesterday:
+* If we then want to implement additional profiles with stricter limits,
+do we really want to invent a different syntax/schema to represent
+those? Representing them in the same way seems like good use of the
+design, mind-share, etc.
 
-http://elektranox.org/n900/adapter/index.html
+* Perhaps that doesn't mean that the additional profiles have to be in
+DT though; just that we somehow make any other representation of those
+profiles as close to the DT representation in syntax/structure as we
+can, to get maximum re-use.
 
--- Sebastian
+> With thermal profiles it gets even more
+> complicated, as those parameters may be played around with and changed
+> multiple times to find the best settings to achieve optimal cooling.
 
---C7zPtVaVf+AK4Oqc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+To me, that sounds more like fixing a bug in the initial data, rather
+than something which fundamentally affects how the data should be
+represented.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> Does this describe hardware ? I don't think so, but, as I mentioned before,
+> maybe I am wrong.
 
-iQIcBAEBCAAGBQJR6YH3AAoJENju1/PIO/qa4AUP/A/PMxO7JXevqRqpadVwUHWe
-cqMCdksgCF+iMTnwmIl/s53Vx78qnL9PXHihxD4+BK+qO5ELX7zvliW0sT3LfjNl
-lsKVMW58Lei2gNBAOWs8elcD0/0wrfqxlQNqOrBtr7NNyi0PCEkKxR+3GDjCByKn
-zcgctecqfPjUhfTvHNKHGg+C9L2O2NoQOaUhH0obY5S8RNDg2th9ywQ/dy+cK6C5
-9DPTnAM/NuWGkU9BrTzDHtq3zKsZqmGDK0q3o6HrrnI3yZKrWqX7015moeyu94/B
-89OqvIBrj1nH1HZ+95ZPfbuvN8neRIL5ZM9JeS4n2cheHumoxjGIUNNRTrYkfEkk
-0UvEe5xuWclS0B7TopzYozA6rKpJuRw5lroKf5UPMPU5T9C/plHysikYfTp2QHLt
-ZYNI4yWKJL2KWKl1b7vsiTdfyFweRD4sCesnVS+NLxlhgQh3EnNatQfzbiaNHoyc
-8hz4LGXyXNAyHQUPJC6/NpRsUmrGOHK7W3+SRWzWqZdB9NgCLGzJyPWW1aYoxKu9
-yQ3iCzUN7Cr8SrQag2nwnXTUSOKCN8FYIdHtR3iUpMxwhGgif/2vFh7fX0RQ9Q7U
-m3otvuEB5BUWs40ZcU4RwDWLDa+INk7A3PMk2sFzHcvfUFI63CHfMclxGwow8/BI
-P8YG8dPzZ9WFNNsmWwR+
-=jDnC
------END PGP SIGNATURE-----
-
---C7zPtVaVf+AK4Oqc--
