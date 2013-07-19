@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965846Ab3GSFcQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:32:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39999 "EHLO
+	id S965773Ab3GSF1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:27:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965796Ab3GSF1K (ORCPT
+	with ESMTP id S965490Ab3GSF06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:10 -0400
+	Fri, 19 Jul 2013 01:26:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: [ 53/72] ext4: fix overflows in SEEK_HOLE, SEEK_DATA implementations
-Date: Thu, 18 Jul 2013 22:26:10 -0700
-Message-Id: <20130719052603.481202873@linuxfoundation.org>
+        Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 37/72] Input: bcm5974 - add support for the 2013 MacBook Air
+Date: Thu, 18 Jul 2013 22:25:54 -0700
+Message-Id: <20130719052602.400119106@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,87 +27,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Dmitry Torokhov <rydberg@euromail.se>
 
-commit e7293fd146846e2a44d29e0477e0860c60fb856b upstream.
+commit 148c1c8ad3c4170186ebe6ea5900adde27d2a0e7 upstream.
 
-ext4_lblk_t is just u32 so multiplying it by blocksize can easily
-overflow for files larger than 4 GB. Fix that by properly typing the
-block offsets before shifting.
+The June 2013 Macbook Air (13'') has a new trackpad protocol; four new
+values are inserted in the header, and the mode switch is no longer
+needed. This patch adds support for the new devices.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/file.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/input/mouse/bcm5974.c |   36 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 34 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -312,7 +312,7 @@ static int ext4_find_unwritten_pgoff(str
- 	blkbits = inode->i_sb->s_blocksize_bits;
- 	startoff = *offset;
- 	lastoff = startoff;
--	endoff = (map->m_lblk + map->m_len) << blkbits;
-+	endoff = (loff_t)(map->m_lblk + map->m_len) << blkbits;
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -88,6 +88,10 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
++/* MacbookAir6,2 (unibody, June 2013) */
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
  
- 	index = startoff >> PAGE_CACHE_SHIFT;
- 	end = endoff >> PAGE_CACHE_SHIFT;
-@@ -457,7 +457,7 @@ static loff_t ext4_seek_data(struct file
- 		ret = ext4_map_blocks(NULL, inode, &map, 0);
- 		if (ret > 0 && !(map.m_flags & EXT4_MAP_UNWRITTEN)) {
- 			if (last != start)
--				dataoff = last << blkbits;
-+				dataoff = (loff_t)last << blkbits;
- 			break;
- 		}
+ #define BCM5974_DEVICE(prod) {					\
+ 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
+@@ -145,6 +149,10 @@ static const struct usb_device_id bcm597
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
++	/* MacbookAir6,2 */
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
+ 	/* Terminating entry */
+ 	{}
+ };
+@@ -172,15 +180,18 @@ struct bt_data {
+ /* trackpad header types */
+ enum tp_type {
+ 	TYPE1,			/* plain trackpad */
+-	TYPE2			/* button integrated in trackpad */
++	TYPE2,			/* button integrated in trackpad */
++	TYPE3			/* additional header fields since June 2013 */
+ };
  
-@@ -468,7 +468,7 @@ static loff_t ext4_seek_data(struct file
- 		ext4_es_find_delayed_extent_range(inode, last, last, &es);
- 		if (es.es_len != 0 && in_range(last, es.es_lblk, es.es_len)) {
- 			if (last != start)
--				dataoff = last << blkbits;
-+				dataoff = (loff_t)last << blkbits;
- 			break;
- 		}
+ /* trackpad finger data offsets, le16-aligned */
+ #define FINGER_TYPE1		(13 * sizeof(__le16))
+ #define FINGER_TYPE2		(15 * sizeof(__le16))
++#define FINGER_TYPE3		(19 * sizeof(__le16))
  
-@@ -486,7 +486,7 @@ static loff_t ext4_seek_data(struct file
- 		}
+ /* trackpad button data offsets */
+ #define BUTTON_TYPE2		15
++#define BUTTON_TYPE3		23
  
- 		last++;
--		dataoff = last << blkbits;
-+		dataoff = (loff_t)last << blkbits;
- 	} while (last <= end);
+ /* list of device capability bits */
+ #define HAS_INTEGRATED_BUTTON	1
+@@ -400,6 +411,19 @@ static const struct bcm5974_config bcm59
+ 		{ SN_COORD, -150, 6730 },
+ 		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
+ 	},
++	{
++		USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI,
++		USB_DEVICE_ID_APPLE_WELLSPRING8_ISO,
++		USB_DEVICE_ID_APPLE_WELLSPRING8_JIS,
++		HAS_INTEGRATED_BUTTON,
++		0, sizeof(struct bt_data),
++		0x83, TYPE3, FINGER_TYPE3, FINGER_TYPE3 + SIZEOF_ALL_FINGERS,
++		{ SN_PRESSURE, 0, 300 },
++		{ SN_WIDTH, 0, 2048 },
++		{ SN_COORD, -4620, 5140 },
++		{ SN_COORD, -150, 6600 },
++		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
++	},
+ 	{}
+ };
  
- 	mutex_unlock(&inode->i_mutex);
-@@ -540,7 +540,7 @@ static loff_t ext4_seek_hole(struct file
- 		ret = ext4_map_blocks(NULL, inode, &map, 0);
- 		if (ret > 0 && !(map.m_flags & EXT4_MAP_UNWRITTEN)) {
- 			last += ret;
--			holeoff = last << blkbits;
-+			holeoff = (loff_t)last << blkbits;
- 			continue;
- 		}
+@@ -557,6 +581,9 @@ static int report_tp_state(struct bcm597
+ 		input_report_key(input, BTN_LEFT, ibt);
+ 	}
  
-@@ -551,7 +551,7 @@ static loff_t ext4_seek_hole(struct file
- 		ext4_es_find_delayed_extent_range(inode, last, last, &es);
- 		if (es.es_len != 0 && in_range(last, es.es_lblk, es.es_len)) {
- 			last = es.es_lblk + es.es_len;
--			holeoff = last << blkbits;
-+			holeoff = (loff_t)last << blkbits;
- 			continue;
- 		}
++	if (c->tp_type == TYPE3)
++		input_report_key(input, BTN_LEFT, dev->tp_data[BUTTON_TYPE3]);
++
+ 	input_sync(input);
  
-@@ -566,7 +566,7 @@ static loff_t ext4_seek_hole(struct file
- 							      &map, &holeoff);
- 			if (!unwritten) {
- 				last += ret;
--				holeoff = last << blkbits;
-+				holeoff = (loff_t)last << blkbits;
- 				continue;
- 			}
- 		}
+ 	return 0;
+@@ -572,9 +599,14 @@ static int report_tp_state(struct bcm597
+ 
+ static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
+ {
+-	char *data = kmalloc(8, GFP_KERNEL);
+ 	int retval = 0, size;
++	char *data;
++
++	/* Type 3 does not require a mode switch */
++	if (dev->cfg.tp_type == TYPE3)
++		return 0;
+ 
++	data = kmalloc(8, GFP_KERNEL);
+ 	if (!data) {
+ 		dev_err(&dev->intf->dev, "out of memory\n");
+ 		retval = -ENOMEM;
 
 
