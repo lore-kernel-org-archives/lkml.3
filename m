@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965822Ab3GSF1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:27:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40007 "EHLO
+	id S965859Ab3GSFau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:30:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965761Ab3GSF1L (ORCPT
+	with ESMTP id S965817Ab3GSF1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:11 -0400
+	Fri, 19 Jul 2013 01:27:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [ 55/72] ext4: fix overflow when counting used blocks on 32-bit architectures
-Date: Thu, 18 Jul 2013 22:26:12 -0700
-Message-Id: <20130719052603.616836136@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 61/72] ARM: 7768/1: prevent risks of out-of-bound access in ASID allocator
+Date: Thu, 18 Jul 2013 22:26:18 -0700
+Message-Id: <20130719052604.040702161@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,43 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Marc Zyngier <Marc.Zyngier@arm.com>
 
-commit 8af8eecc1331dbf5e8c662022272cf667e213da5 upstream.
+commit b8e4a4740fa2b17c0a447b3ab783b3dc10702e27 upstream.
 
-The arithmetics adding delalloc blocks to the number of used blocks in
-ext4_getattr() can easily overflow on 32-bit archs as we first multiply
-number of blocks by blocksize and then divide back by 512. Make the
-arithmetics more clever and also use proper type (unsigned long long
-instead of unsigned long).
+On a CPU that never ran anything, both the active and reserved ASID
+fields are set to zero. In this case the ASID_TO_IDX() macro will
+return -1, which is not a very useful value to index a bitmap.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Instead of trying to offset the ASID so that ASID #1 is actually
+bit 0 in the asid_map bitmap, just always ignore bit 0 and start
+the search from bit 1. This makes the code a bit more readable,
+and without risk of OoB access.
+
+Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mm/context.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4808,7 +4808,7 @@ int ext4_getattr(struct vfsmount *mnt, s
- 		 struct kstat *stat)
- {
- 	struct inode *inode;
--	unsigned long delalloc_blocks;
-+	unsigned long long delalloc_blocks;
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -39,10 +39,7 @@
+  * non 64-bit operations.
+  */
+ #define ASID_FIRST_VERSION	(1ULL << ASID_BITS)
+-#define NUM_USER_ASIDS		(ASID_FIRST_VERSION - 1)
+-
+-#define ASID_TO_IDX(asid)	((asid & ~ASID_MASK) - 1)
+-#define IDX_TO_ASID(idx)	((idx + 1) & ~ASID_MASK)
++#define NUM_USER_ASIDS		ASID_FIRST_VERSION
  
- 	inode = dentry->d_inode;
- 	generic_fillattr(inode, stat);
-@@ -4826,7 +4826,7 @@ int ext4_getattr(struct vfsmount *mnt, s
- 	delalloc_blocks = EXT4_C2B(EXT4_SB(inode->i_sb),
- 				EXT4_I(inode)->i_reserved_data_blocks);
- 
--	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
-+	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
- 	return 0;
- }
+ static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
+ static atomic64_t asid_generation = ATOMIC64_INIT(ASID_FIRST_VERSION);
+@@ -137,7 +134,7 @@ static void flush_context(unsigned int c
+ 			 */
+ 			if (asid == 0)
+ 				asid = per_cpu(reserved_asids, i);
+-			__set_bit(ASID_TO_IDX(asid), asid_map);
++			__set_bit(asid & ~ASID_MASK, asid_map);
+ 		}
+ 		per_cpu(reserved_asids, i) = asid;
+ 	}
+@@ -176,17 +173,19 @@ static u64 new_context(struct mm_struct
+ 		/*
+ 		 * Allocate a free ASID. If we can't find one, take a
+ 		 * note of the currently active ASIDs and mark the TLBs
+-		 * as requiring flushes.
++		 * as requiring flushes. We always count from ASID #1,
++		 * as we reserve ASID #0 to switch via TTBR0 and indicate
++		 * rollover events.
+ 		 */
+-		asid = find_first_zero_bit(asid_map, NUM_USER_ASIDS);
++		asid = find_next_zero_bit(asid_map, NUM_USER_ASIDS, 1);
+ 		if (asid == NUM_USER_ASIDS) {
+ 			generation = atomic64_add_return(ASID_FIRST_VERSION,
+ 							 &asid_generation);
+ 			flush_context(cpu);
+-			asid = find_first_zero_bit(asid_map, NUM_USER_ASIDS);
++			asid = find_next_zero_bit(asid_map, NUM_USER_ASIDS, 1);
+ 		}
+ 		__set_bit(asid, asid_map);
+-		asid = generation | IDX_TO_ASID(asid);
++		asid |= generation;
+ 		cpumask_clear(mm_cpumask(mm));
+ 	}
  
 
 
