@@ -1,156 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760662Ab3GSOQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:16:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28808 "EHLO
+	id S965226Ab3GSOQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:16:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30454 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760537Ab3GSOOw (ORCPT
+	with ESMTP id S1760569Ab3GSOOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 10:14:52 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=l085ywIRUycA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JrCiACugA8MA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=UGgH4vjygpHbasOjjw8A:9 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=GIv12JQBCo4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qxAwZi55NAMA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=-5kFnHe8gWvU2TnmosgA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130719141449.236038495@goodmis.org>
+Message-Id: <20130719141450.253881041@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 19 Jul 2013 10:12:30 -0400
+Date: Fri, 19 Jul 2013 10:12:36 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next-3.11][PATCH 06/12] tracing/perf: Move the PERF_MAX_TRACE_SIZE check into
- perf_trace_buf_prepare()
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [for-next-3.11][PATCH 12/12] tracing: Do not (ab)use trace_seq in event_id_read()
 References: <20130719141224.703522101@goodmis.org>
-Content-Disposition: inline; filename=0006-tracing-perf-Move-the-PERF_MAX_TRACE_SIZE-check-into.patch
+Content-Disposition: inline; filename=0012-tracing-Do-not-ab-use-trace_seq-in-event_id_read.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-Every perf_trace_buf_prepare() caller does
-WARN_ONCE(size > PERF_MAX_TRACE_SIZE, message) and "message" is
-almost the same.
+event_id_read() has no reason to kmalloc "struct trace_seq"
+(more than PAGE_SIZE!), it can use a small buffer instead.
 
-Shift this WARN_ONCE() into perf_trace_buf_prepare(). This changes
-the meaning of _ONCE, but I think this is fine.
+Note: "if (*ppos) return 0" looks strange and even wrong,
+simple_read_from_buffer() handles ppos != 0 case corrrectly.
 
-	- 4947014 2932448 10104832  17984294  1126b26 vmlinux
-	+ 4948422 2932448 10104832  17985702  11270a6 vmlinux
+And it seems that almost every user of trace_seq in this file
+should be converted too. Unless you use seq_open(), trace_seq
+buys nothing compared to the raw buffer, but it needs a bit
+more memory and code.
 
-on my build.
+Link: http://lkml.kernel.org/r/20130718184712.GA4786@redhat.com
 
-Link: http://lkml.kernel.org/r/20130617170211.GA19813@redhat.com
-
-Acked-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/trace/ftrace.h          |    4 ----
- kernel/trace/trace_event_perf.c |    4 ++++
- kernel/trace/trace_kprobe.c     |    6 ------
- kernel/trace/trace_syscalls.c   |   12 ------------
- kernel/trace/trace_uprobe.c     |    2 --
- 5 files changed, 4 insertions(+), 24 deletions(-)
+ kernel/trace/trace_events.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index d615f78..41a6643 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -670,10 +670,6 @@ perf_trace_##call(void *__data, proto)					\
- 			     sizeof(u64));				\
- 	__entry_size -= sizeof(u32);					\
- 									\
--	if (WARN_ONCE(__entry_size > PERF_MAX_TRACE_SIZE,		\
--		      "profile buffer not large enough"))		\
--		return;							\
--									\
- 	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
- 		__entry_size, event_call->event.type, &__regs, &rctx);	\
- 	if (!entry)							\
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 12df557..80c36bc 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -236,6 +236,10 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 76defd9..898f868 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -947,23 +947,14 @@ static ssize_t
+ event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ {
+ 	struct ftrace_event_call *call = filp->private_data;
+-	struct trace_seq *s;
+-	int r;
++	char buf[32];
++	int len;
  
- 	BUILD_BUG_ON(PERF_MAX_TRACE_SIZE % sizeof(unsigned long));
+ 	if (*ppos)
+ 		return 0;
  
-+	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
-+			"perf buffer not large enough"))
-+		return NULL;
-+
- 	pc = preempt_count();
- 
- 	*rctxp = perf_swevent_get_recursion_context();
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 7ed6976..ae6ce83 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1087,9 +1087,6 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
- 	__size = sizeof(*entry) + tp->size + dsize;
- 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
--	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
--		     "profile buffer not large enough"))
--		return;
- 
- 	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
- 	if (!entry)
-@@ -1120,9 +1117,6 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 	__size = sizeof(*entry) + tp->size + dsize;
- 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
--	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
--		     "profile buffer not large enough"))
--		return;
- 
- 	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
- 	if (!entry)
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index ac00857..8fd0365 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -575,10 +575,6 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	size = ALIGN(size + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
- 
--	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
--		      "perf buffer not large enough"))
--		return;
+-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+-	if (!s)
+-		return -ENOMEM;
 -
- 	rec = (struct syscall_trace_enter *)perf_trace_buf_prepare(size,
- 				sys_data->enter_event->event.type, regs, &rctx);
- 	if (!rec)
-@@ -652,14 +648,6 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	size = ALIGN(sizeof(*rec) + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
- 
--	/*
--	 * Impossible, but be paranoid with the future
--	 * How to put this check outside runtime?
--	 */
--	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
--		"exit event has grown above perf buffer size"))
--		return;
+-	trace_seq_init(s);
+-	trace_seq_printf(s, "%d\n", call->event.type);
 -
- 	rec = (struct syscall_trace_exit *)perf_trace_buf_prepare(size,
- 				sys_data->exit_event->event.type, regs, &rctx);
- 	if (!rec)
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index d5d0cd3..a23d2d7 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -818,8 +818,6 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+-	r = simple_read_from_buffer(ubuf, cnt, ppos,
+-				    s->buffer, s->len);
+-	kfree(s);
+-	return r;
++	len = sprintf(buf, "%d\n", call->event.type);
++	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
+ }
  
- 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
- 	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
--	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
--		return;
- 
- 	preempt_disable();
- 	head = this_cpu_ptr(call->perf_events);
+ static ssize_t
 -- 
 1.7.10.4
 
