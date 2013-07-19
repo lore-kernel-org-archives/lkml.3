@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965508Ab3GSKfv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:35:51 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:43306 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965089Ab3GSKfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:35:47 -0400
-Date: Fri, 19 Jul 2013 12:35:43 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        "Hohndel, Dirk" <dirk.hohndel@intel.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130719103542.GB26716@gmail.com>
-References: <CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
- <20130715174659.GC15531@xanatos>
- <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
- <20130715180403.GD15531@xanatos>
- <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <alpine.DEB.2.02.1307172336410.4089@ionos.tec.linutronix.de>
- <20130718154814.GA5440@xanatos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718154814.GA5440@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965640Ab3GSKgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:36:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53121 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965089Ab3GSKgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 06:36:15 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: gleb@redhat.com, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Vadim Rozenfeld <vrozenfe@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH] x86: properly handle KVM emulation of hyperv
+Date: Fri, 19 Jul 2013 18:25:05 +0800
+Message-Id: <1374229505-19470-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Recent kvm has some basic support of hyperv, this will cause the guest to
+identify itself running on top of hyperv instead of kvm which will disable kvm
+pv functionality. Solve this by check kvm para platform first and also check
+KVM_CPUID_SIGNATURE_NEXT which were set when kvm emulate hyperv.
 
-* Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Vadim Rozenfeld <vrozenfe@redhat.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ arch/x86/include/asm/kvm_para.h      |   25 +++++++++++++++++--------
+ arch/x86/include/uapi/asm/kvm_para.h |    1 +
+ arch/x86/kernel/cpu/hypervisor.c     |    2 +-
+ 3 files changed, 19 insertions(+), 9 deletions(-)
 
-> On Thu, Jul 18, 2013 at 02:42:16AM +0200, Thomas Gleixner wrote:
-> > If you can point me to a single instance of Linus "abusing" someone
-> > who is not one of his trusted persons, who really should be able to
-> > deal with that, or someone who did not provoke him to go into rant
-> > mode, then I'm all on your side.
-> 
-> Not that I think this link will sway you, and this thread *should*
-> really die down so we can discuss this at KS instead:
-> 
-> https://plus.google.com/+LinusTorvalds/posts/1vyfmNCYpi5
-> 
-> "So here's a plea: if you have anything to do with security in a distro,
-> and think that my kids (replace "my kids" with "sales people on the
-> road" if you think your main customers are businesses) need to have the
-> root password to access some wireless network, or to be able to print
-> out a paper, or to change the date-and-time settings, please just kill
-> yourself now. The world will be a better place."
-> 
-> Linus asked someone to go kill themselves. [...]
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 695399f..aa8f3a7 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -85,22 +85,31 @@ static inline long kvm_hypercall4(unsigned int nr, unsigned long p1,
+ 	return ret;
+ }
+ 
+-static inline bool kvm_para_available(void)
++static inline bool kvm_para_available_function(unsigned int function)
+ {
+ 	unsigned int eax, ebx, ecx, edx;
+ 	char signature[13];
+ 
++	cpuid(function, &eax, &ebx, &ecx, &edx);
++	memcpy(signature + 0, &ebx, 4);
++	memcpy(signature + 4, &ecx, 4);
++	memcpy(signature + 8, &edx, 4);
++	signature[12] = 0;
++
++	if (strcmp(signature, "KVMKVMKVM") == 0)
++		return true;
++
++	return false;
++}
++
++static inline bool kvm_para_available(void)
++{
+ 	if (boot_cpu_data.cpuid_level < 0)
+ 		return false;	/* So we don't blow up on old processors */
+ 
+ 	if (cpu_has_hypervisor) {
+-		cpuid(KVM_CPUID_SIGNATURE, &eax, &ebx, &ecx, &edx);
+-		memcpy(signature + 0, &ebx, 4);
+-		memcpy(signature + 4, &ecx, 4);
+-		memcpy(signature + 8, &edx, 4);
+-		signature[12] = 0;
+-
+-		if (strcmp(signature, "KVMKVMKVM") == 0)
++		if (kvm_para_available_function(KVM_CPUID_SIGNATURE) ||
++		    kvm_para_available_function(KVM_CPUID_SIGNATURE_NEXT))
+ 			return true;
+ 	}
+ 
+diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+index 06fdbd9..4e3ffd8 100644
+--- a/arch/x86/include/uapi/asm/kvm_para.h
++++ b/arch/x86/include/uapi/asm/kvm_para.h
+@@ -8,6 +8,7 @@
+  * should be used to determine that a VM is running under KVM.
+  */
+ #define KVM_CPUID_SIGNATURE	0x40000000
++#define KVM_CPUID_SIGNATURE_NEXT	0x40000100
+ 
+ /* This CPUID returns a feature bitmap in eax.  Before enabling a particular
+  * paravirtualization, the appropriate feature bit should be checked.
+diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+index 8727921..3e149b6 100644
+--- a/arch/x86/kernel/cpu/hypervisor.c
++++ b/arch/x86/kernel/cpu/hypervisor.c
+@@ -36,10 +36,10 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
+ 	&x86_hyper_xen_hvm,
+ #endif
+ 	&x86_hyper_vmware,
+-	&x86_hyper_ms_hyperv,
+ #ifdef CONFIG_KVM_GUEST
+ 	&x86_hyper_kvm,
+ #endif
++	&x86_hyper_ms_hyperv,
+ };
+ 
+ const struct hypervisor_x86 *x86_hyper;
+-- 
+1.7.1
 
-No, he did not.
-
-He, as he declared it in the first stentences of his post, was venting and 
-cursing:
-
-   Venting.
-
-   I don't think I can talk about "security" people without cursing, so
-   you might want to avert your eyes now.
-
-I'm, as the author of several security patches, partly a distro "security 
-person" too, and I was not offended, I took away the message from Linus:
-
-don't "fix" perceived security threats by cumbersome security measures, 
-because users will address that by creating even larger security threats:
-
-   http://www.merseyworld.com/precinct/Apr99/prec8.html
-
-Thanks,
-
-	Ingo
