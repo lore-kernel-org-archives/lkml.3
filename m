@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966056Ab3GSFtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:49:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39371 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965325Ab3GSFWL (ORCPT
+	id S965574Ab3GSFuQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:50:16 -0400
+Received: from mel.act-europe.fr ([194.98.77.210]:58143 "EHLO
+	smtp.eu.adacore.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965330Ab3GSFuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yu Liu <liuyu.ac@gmail.com>, Shane Huang <shane.huang@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 26/38] ahci: remove pmp link online check in FBS EH
-Date: Thu, 18 Jul 2013 22:21:42 -0700
-Message-Id: <20130719052049.666397249@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
-References: <20130719052047.858393825@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 19 Jul 2013 01:50:13 -0400
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Jul 2013 01:50:13 EDT
+Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=iso-8859-1
+From: Tristan Gingold <gingold@adacore.com>
+In-Reply-To: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
+Date: Fri, 19 Jul 2013 07:43:40 +0200
+Cc: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <0513AB0D-9821-4817-BAF6-5378E5BCD0C0@adacore.com>
+References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On Jul 19, 2013, at 2:26 AM, Andy Lutomirski wrote:
 
-From: Shane Huang <shane.huang@amd.com>
+> Windows has a feature that I've wanted on Linux forever: stack-based
+> (i.e. scoped) exception handling.  The upshot is that you can do,
+> roughly, this (pseudocode):
 
-commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
+[...]
 
-ata_link_online() check in ahci_error_intr() is unnecessary, it should
-be removed otherwise may lead to lockup with FBS enabled PMP.
-http://marc.info/?l=linux-ide&m=137050421603272&w=2
+Indeed Windows and OpenVMS have such a mechanism. That's clean and
+library friendly, but please read:
+https://www.usenix.org/conference/wiess-2000/c-exception-handling-ia64
+to understand how it hurts optimization.
 
-Reported-by: Yu Liu <liuyu.ac@gmail.com>
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+(And no, raising an exception from an handler doesn't always work,
+ due to optimizations allowed by the gcc exception mechanism).
 
----
- drivers/ata/libahci.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1560,8 +1560,7 @@ static void ahci_error_intr(struct ata_p
- 		u32 fbs = readl(port_mmio + PORT_FBS);
- 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
- 
--		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
--		    ata_link_online(&ap->pmp_link[pmp])) {
-+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
- 			link = &ap->pmp_link[pmp];
- 			fbs_need_dec = true;
- 		}
-
+Regards,
+Tristan.
 
