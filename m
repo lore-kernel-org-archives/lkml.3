@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965834Ab3GSFga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:36:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39923 "EHLO
+	id S965930Ab3GSFgp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:36:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965702Ab3GSF0w (ORCPT
+	with ESMTP id S965697Ab3GSF0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:52 -0400
+	Fri, 19 Jul 2013 01:26:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 46/72] ahci: AHCI-mode SATA patch for Intel Coleto Creek DeviceIDs
-Date: Thu, 18 Jul 2013 22:26:03 -0700
-Message-Id: <20130719052603.010059152@linuxfoundation.org>
+        Shane Huang <shane.huang@amd.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 45/72] ahci: Add AMD CZ SATA device ID
+Date: Thu, 18 Jul 2013 22:26:02 -0700
+Message-Id: <20130719052602.942799000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,29 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Shane Huang <shane.huang@amd.com>
 
-commit 1cfc7df3de10c40ed459e13cce6de616023bf41c upstream.
+commit fafe5c3d82a470d73de53e6b08eb4e28d974d895 upstream.
 
-This patch adds the AHCI-mode SATA DeviceIDs for the Intel Coleto Creek PCH.
+To add AMD CZ SATA controller device ID of IDE mode.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+[bhelgaas: drop pci_ids.h update]
+Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/ahci.c   |    1 +
+ drivers/pci/quirks.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
 --- a/drivers/ata/ahci.c
 +++ b/drivers/ata/ahci.c
-@@ -291,6 +291,7 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x8d64), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
+@@ -310,6 +310,7 @@ static const struct pci_device_id ahci_p
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	/* AMD */
+ 	{ PCI_VDEVICE(AMD, 0x7800), board_ahci }, /* AMD Hudson-2 */
++	{ PCI_VDEVICE(AMD, 0x7900), board_ahci }, /* AMD CZ */
+ 	/* AMD is using RAID class only for ahci controllers */
+ 	{ PCI_VENDOR_ID_AMD, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	  PCI_CLASS_STORAGE_RAID << 8, 0xffffff, board_ahci },
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -1022,6 +1022,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_A
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP700_SATA, quirk_amd_ide_mode);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
++DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
+ 
+ /*
+  *	Serverworks CSB5 IDE does not fully support native mode
 
 
