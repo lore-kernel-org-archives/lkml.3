@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab3GSVgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:36:04 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:38649 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab3GSVgC (ORCPT
+	id S1752896Ab3GSVhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:37:01 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:43856 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751793Ab3GSVg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:36:02 -0400
-Message-ID: <51E9B13E.5060602@hp.com>
-Date: Fri, 19 Jul 2013 17:35:58 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Fri, 19 Jul 2013 17:36:59 -0400
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Jul 2013 17:36:59 EDT
+X-IronPort-AV: E=Sophos;i="4.89,704,1367964000"; 
+   d="scan'208";a="26677018"
+Date: Fri, 19 Jul 2013 23:27:09 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Felix Fietkau <nbd@openwrt.org>
+Subject: Re: [PATCH] backports: backport drvdata = NULL core driver fixes
+In-Reply-To: <CAB=NE6VHgure2+2VA=XWtaii4Wc_rG7YZ=_ZetgGnvouh7HJPw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1307192326080.2229@localhost6.localdomain6>
+References: <1374191339-10124-1-git-send-email-mcgrof@do-not-panic.com> <Pine.LNX.4.44L0.1307191012330.1055-100000@iolanthe.rowland.org> <CAB=NE6XmxX0UQkbchU_AKJOyENcn0auBGMPzru5C4nohg_v1sQ@mail.gmail.com>
+ <CAB=NE6VHgure2+2VA=XWtaii4Wc_rG7YZ=_ZetgGnvouh7HJPw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: JBeulich@novell.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock implementation
-References: <20130719211148.10251.qmail@science.horizon.com>
-In-Reply-To: <20130719211148.10251.qmail@science.horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 05:11 PM, George Spelvin wrote:
->> What I have in mind is to have 2 separate rwlock initializers - one for
->> fair and one for reader-bias behavior. So the lock owners can decide
->> what behavior do they want with a one line change.
-> That's definitely a nicer patch, if it will work.  I was imagining that,
-> even for a single (type of) lock, only a few uses require reader bias
-> (because they might be recursive, or are in an interrupt), but you'd
-> want most read_lock sites to be fair.
+On Fri, 19 Jul 2013, Luis R. Rodriguez wrote:
 
-Yes, fair rwlock will be the default.
+> On Fri, Jul 19, 2013 at 2:07 PM, Luis R. Rodriguez
+> <mcgrof@do-not-panic.com> wrote:
+> >> This is not a very good idea.  Although setting drvdata to NULL allowed
+> >> a lot of code to be removed, it also exposed a bunch of hidden bugs --
+> >> drivers were using the drvdata value even after their remove function
+> >> returned.
+> >
+> > Eek, have we not SmPL'ify'd a proof yet to ensure code like this no
+> > longer exists? Julia? :)
+> 
+> Come to think of it, perhaps we should require *proof* with SmPL like
+> this in future to avoid regressions ?
 
-> Deciding on a per-lock basis means that one potentially recursive call
-> means you can't use fair queueing anywhere.
->
-> I was hoping that the number of necessary unfair calls would
-> be small enough that making the read_lock default fair and
-> only marking the unfair call sites would be enough.
->
-> But I don't really know until doing a survey of the calls.
-I think so. The queue read/write lock, if merged, will be an optional 
-feature for people to try out to see if they see any problem in any of 
-the existing rwlock. So far, I didn't encounter any problem in my testing.
+Is it a concurrency problem?  SmPL is not so good at that in the general 
+case.  One would have to know a specific case where other functions of the 
+driver can be invoked after remove.
 
-BTW, I also tried my version of the rwlock without the waiting queue. In 
-high contention case, it performs slightly better than the 
-__read_lock_failed changes suggested by Ingo at least for the 
-reader-bias one. It is still not as good as the full version with the 
-waiting queue. I should be able to provide more performance data next week.
-
-Regards,
-Longman
+julia
