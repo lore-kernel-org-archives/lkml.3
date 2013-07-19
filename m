@@ -1,127 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760708Ab3GSORF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:17:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20315 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760478Ab3GSOOu (ORCPT
+	id S965302Ab3GSORM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:17:12 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50790 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760711Ab3GSORH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:14:50 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=4U3_82tFUK0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=xPjNCgM_G5MA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=jh-iv98KKLfRA23Un2MA:9 a=hPjdaMEvmhQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130719141448.727040869@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 19 Jul 2013 10:12:27 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [for-next-3.11][PATCH 03/12] tracing: Typo fix on ring buffer comments
-References: <20130719141224.703522101@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Typo-fix-on-ring-buffer-comments.patch
+	Fri, 19 Jul 2013 10:17:07 -0400
+Date: Fri, 19 Jul 2013 10:17:06 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+cc: backports@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Julia Lawall <julia.lawall@lip6.fr>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Felix Fietkau <nbd@openwrt.org>
+Subject: Re: [PATCH] backports: backport drvdata = NULL core driver fixes
+In-Reply-To: <1374191339-10124-1-git-send-email-mcgrof@do-not-panic.com>
+Message-ID: <Pine.LNX.4.44L0.1307191012330.1055-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+On Thu, 18 Jul 2013, Luis R. Rodriguez wrote:
 
-There have some mismatch between comments with
-real function name, update it.
+> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+> 
+> The Linux kernel had tons of code which at times cleared the
+> drvdata upon probe failure or release. There are however a bunch
+> of drivers that didn't clear this.
+> 
+> Commit 0998d063 implmented clearing this upon device_release_driver()
+> and dealt with probe failure on driver_probe_device(). After this the
+> kernel was cleaned up separately with *tons* of patches to remove all
+> these driver specific settings given that the clearing is now done
+> internally by the device core.
+> 
+> Instead of ifdef'ing code back in for older code where it was properly
+> in place backport this by piggy backing the new required code upon the
+> calls used in place. There is a small race here upon device_release_driver()
+> but we can live with that theoretical race.
+> 
+> Due to the way we hack this backport we can't use a separate namespace
+> as we have with other symbols.
+> 
+> mcgrof@frijol ~/linux-stable (git::master)$ git describe --contains \
+> 	0998d0631001288a5974afc0b2a5f568bcdecb4d
+> v3.6-rc1~99^2~14^2~17
+> 
+> commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+> Author: Hans de Goede <hdegoede@redhat.com>
+> Date:   Wed May 23 00:09:34 2012 +0200
+> 
+>     device-core: Ensure drvdata = NULL when no driver is bound
+> 
+>     1) drvdata is for a driver to store a pointer to driver specific data
+>     2) If no driver is bound, there is no driver specific data associated with
+>        the device
+>     3) Thus logically drvdata should be NULL if no driver is bound.
+> 
+>     But many drivers don't clear drvdata on device_release, or set drvdata
+>     early on in probe and leave it set on probe error. Both of which results
+>     in a dangling pointer in drvdata.
+> 
+>     This patch enforce for drvdata to be NULL after device_release or on probe
+>     failure.
+> 
+>     Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-This patch also add some missed function arguments
-description.
+This is not a very good idea.  Although setting drvdata to NULL allowed
+a lot of code to be removed, it also exposed a bunch of hidden bugs --
+drivers were using the drvdata value even after their remove function
+returned.
 
-Link: http://lkml.kernel.org/r/51E3B3B2.4080307@huawei.com
+Several commits have been applied to fix those bugs.  Finding and
+backporting them and their dependencies will not be easy.
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ring_buffer.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+I suggest this patch not be applied.
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index eef2e56..cc2f66f 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1066,7 +1066,7 @@ static int rb_check_list(struct ring_buffer_per_cpu *cpu_buffer,
- }
- 
- /**
-- * check_pages - integrity check of buffer pages
-+ * rb_check_pages - integrity check of buffer pages
-  * @cpu_buffer: CPU buffer with pages to test
-  *
-  * As a safety measure we check to make sure the data pages have not
-@@ -1258,7 +1258,7 @@ static int rb_cpu_notify(struct notifier_block *self,
- #endif
- 
- /**
-- * ring_buffer_alloc - allocate a new ring_buffer
-+ * __ring_buffer_alloc - allocate a new ring_buffer
-  * @size: the size in bytes per cpu that is needed.
-  * @flags: attributes to set for the ring buffer.
-  *
-@@ -1607,6 +1607,7 @@ static void update_pages_handler(struct work_struct *work)
-  * ring_buffer_resize - resize the ring buffer
-  * @buffer: the buffer to resize.
-  * @size: the new size.
-+ * @cpu_id: the cpu buffer to resize
-  *
-  * Minimum size is 2 * BUF_PAGE_SIZE.
-  *
-@@ -3956,11 +3957,11 @@ EXPORT_SYMBOL_GPL(ring_buffer_consume);
-  * expected.
-  *
-  * After a sequence of ring_buffer_read_prepare calls, the user is
-- * expected to make at least one call to ring_buffer_prepare_sync.
-+ * expected to make at least one call to ring_buffer_read_prepare_sync.
-  * Afterwards, ring_buffer_read_start is invoked to get things going
-  * for real.
-  *
-- * This overall must be paired with ring_buffer_finish.
-+ * This overall must be paired with ring_buffer_read_finish.
-  */
- struct ring_buffer_iter *
- ring_buffer_read_prepare(struct ring_buffer *buffer, int cpu)
-@@ -4009,7 +4010,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_read_prepare_sync);
-  * an intervening ring_buffer_read_prepare_sync must have been
-  * performed.
-  *
-- * Must be paired with ring_buffer_finish.
-+ * Must be paired with ring_buffer_read_finish.
-  */
- void
- ring_buffer_read_start(struct ring_buffer_iter *iter)
-@@ -4031,7 +4032,7 @@ ring_buffer_read_start(struct ring_buffer_iter *iter)
- EXPORT_SYMBOL_GPL(ring_buffer_read_start);
- 
- /**
-- * ring_buffer_finish - finish reading the iterator of the buffer
-+ * ring_buffer_read_finish - finish reading the iterator of the buffer
-  * @iter: The iterator retrieved by ring_buffer_start
-  *
-  * This re-enables the recording to the buffer, and frees the
-@@ -4346,6 +4347,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
- /**
-  * ring_buffer_alloc_read_page - allocate a page to read from buffer
-  * @buffer: the buffer to allocate for.
-+ * @cpu: the cpu buffer to allocate.
-  *
-  * This function is used in conjunction with ring_buffer_read_page.
-  * When reading a full page from the ring buffer, these functions
-@@ -4403,7 +4405,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_free_read_page);
-  * to swap with a page in the ring buffer.
-  *
-  * for example:
-- *	rpage = ring_buffer_alloc_read_page(buffer);
-+ *	rpage = ring_buffer_alloc_read_page(buffer, cpu);
-  *	if (!rpage)
-  *		return error;
-  *	ret = ring_buffer_read_page(buffer, &rpage, len, cpu, 0);
--- 
-1.7.10.4
-
+Alan Stern
 
