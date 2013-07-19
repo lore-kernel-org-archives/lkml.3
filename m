@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760828Ab3GSPdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:33:38 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:59570 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760350Ab3GSPdf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:33:35 -0400
-Date: Fri, 19 Jul 2013 17:33:32 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v3 0/8] extend hugepage migration
-Message-ID: <20130719153332.GG6123@two.firstfloor.org>
-References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1760728Ab3GSPij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:38:39 -0400
+Received: from mail.sysmocom.de ([144.76.43.93]:63680 "EHLO mail.sysmocom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752615Ab3GSPii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 11:38:38 -0400
+X-Greylist: delayed 633 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Jul 2013 11:38:38 EDT
+Date: Fri, 19 Jul 2013 17:28:00 +0200
+From: Holger Hans Peter Freyther <holger@freyther.de>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: /proc/timer_list and weird behavior with dropbear
+Message-ID: <20130719152800.GA20792@xiaoyu.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="3V7upXqbjpZ4EhLz"
 Content-Disposition: inline
-In-Reply-To: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 05:34:24PM -0400, Naoya Horiguchi wrote:
-> Here is the 3rd version of hugepage migration patchset.
-> I rebased it onto v3.11-rc1 and applied most of your feedbacks.
-> 
-> Some works referred to in previous discussion (shown below) are not included
-> in this patchset, but likely to be done after this work.
->  - using page walker in check_range
->  - split page table lock for pmd/pud based hugepage (maybe applicable to thp)
 
-I did a quick read through the patchkit and it looks all good to me.
-It also closes a long standing gap. Thanks!
+--3V7upXqbjpZ4EhLz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: Andi Kleen <ak@linux.intel.com>
+Dear Nathan,
 
-> Hugepage migration of 1GB hugepage is not enabled for now, because
-> I'm not sure whether users of 1GB hugepage really want it.
-> We need to spare free hugepage in order to do migration, but I don't
-> think that users want to 1GB memory to idle for that purpose
-> (currently we can't expand/shrink 1GB hugepage pool after boot).
+I am currently upgrading a kernel for a TI Davinci DM644x based design
+from Linux 3.2 to Linux 3.10.1. I have a funny re-producible issue that
+goes away by reverting b3956a896ea57f25cacd74708b8fab611543a81d.
 
-I think we'll need 1GB migration sooner or later. As memory sizes
-go up 1GB use will be more common, and the limitation of not
-expanding/shrinking 1GB will be eventually fixed.
+The dropbear sshd will open several files after accepting a connection to
+generate some entropy. The "/proc/timer_list" file is part of that[1].
+It will open that file and will try to read until the end of the file, but
+most of the time this end never comes. According to strace the read on the
+fd will always return 2048. I have attached the testcase I am using to
+re-produce the issue.
 
-It would be just a straight forward extension of your patchkit,
-right?
+Can this be re-produced by anyone else?
 
--Andi
+holger
+
+
+
+[1] https://secure.ucc.asn.au/hg/dropbear/file/028fa77f952f/random.c#l204
+
+
+--3V7upXqbjpZ4EhLz
+Content-Type: text/x-csrc; charset=us-ascii
+Content-Disposition: attachment; filename="proc_test.c"
+
+#include <sys/stat.h>
+#include <fcntl.h>
+
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <sys/time.h>
+       #include <sys/types.h>
+       #include <unistd.h>
+
+
+int main(int argc, char **argv)
+{
+	fd_set rfds;
+	struct timeval tv;
+	char buf[2048];
+
+	int fd = open("/proc/timer_list", O_RDONLY, O_NONBLOCK);
+	if (fd < 0) {
+		perror("Failed to open");
+		abort();
+	}
+
+	FD_ZERO(&rfds);
+	FD_SET(fd, &rfds);
+
+
+	while (1) {
+		tv.tv_sec = 2;
+		tv.tv_usec = 0;
+
+		int retval = select(fd + 1, &rfds, NULL, NULL, &tv);
+		if (retval == -1)
+			perror("select()");
+		else if (retval) {
+			int ret = read(fd, buf, sizeof(buf));
+			if (ret == 0)
+				return EXIT_SUCCESS;
+		} else {
+			printf("TIMEOUT...\n");
+		}
+	}
+}
+
+--3V7upXqbjpZ4EhLz--
