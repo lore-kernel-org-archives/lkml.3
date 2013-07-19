@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965540Ab3GSFZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:25:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39432 "EHLO
+	id S965447Ab3GSFZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:25:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965439Ab3GSFW0 (ORCPT
+	with ESMTP id S965432Ab3GSFWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:26 -0400
+	Fri, 19 Jul 2013 01:22:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        =?UTF-8?q?Axel=20K=C3=B6llhofer?= <AxelKoellhofer@web.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 03/38] rtlwifi: rtl8723ae: Fix typo in firmware names
-Date: Thu, 18 Jul 2013 22:21:19 -0700
-Message-Id: <20130719052048.107918798@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 36/38] memcg, kmem: fix reference count handling on the error path
+Date: Thu, 18 Jul 2013 22:21:52 -0700
+Message-Id: <20130719052050.342794558@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,43 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 73e088ed17c2880a963cc760a78af8a06d4a4d9d upstream.
+commit f37a96914d1aea10fed8d9af10251f0b9caea31b upstream.
 
-The driver loads its firmware from files rtlwifi/rtl8723fw*.bin, but the
-MODULE_FIRMWARE macros refer to rtlwifi/RTL8723aefw*.bin.
+mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem fails.
+This is not correct because only memcg_propagate_kmem takes an
+additional reference while mem_cgroup_sockets_init is allowed to fail as
+well (although no current implementation fails) but it doesn't take any
+reference.  This all suggests that it should be memcg_propagate_kmem
+that should clean up after itself so this patch moves mem_cgroup_put
+over there.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Axel Köllhofer <AxelKoellhofer@web.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Unfortunately this is not that easy (as pointed out by Li Zefan) because
+memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it is
+marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
+memcg_propagate_kmem fails so the additional reference is dropped in
+that case in kmem_cgroup_destroy which means that the reference would be
+dropped two times.
+
+The easiest way then would be to simply remove mem_cgrroup_put from
+mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
+thing.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8723ae/sw.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/memcontrol.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/sw.c
-@@ -251,7 +251,7 @@ static struct rtl_hal_cfg rtl8723ae_hal_
- 	.bar_id = 2,
- 	.write_readback = true,
- 	.name = "rtl8723ae_pci",
--	.fw_name = "rtlwifi/rtl8723aefw.bin",
-+	.fw_name = "rtlwifi/rtl8723fw.bin",
- 	.ops = &rtl8723ae_hal_ops,
- 	.mod_params = &rtl8723ae_mod_params,
- 	.maps[SYS_ISO_CTRL] = REG_SYS_ISO_CTRL,
-@@ -353,8 +353,8 @@ MODULE_AUTHOR("Realtek WlanFAE	<wlanfae@
- MODULE_AUTHOR("Larry Finger	<Larry.Finger@lwfinger.net>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Realtek 8723E 802.11n PCI wireless");
--MODULE_FIRMWARE("rtlwifi/rtl8723aefw.bin");
--MODULE_FIRMWARE("rtlwifi/rtl8723aefw_B.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8723fw.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8723fw_B.bin");
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6179,14 +6179,6 @@ mem_cgroup_css_online(struct cgroup *con
  
- module_param_named(swenc, rtl8723ae_mod_params.sw_crypto, bool, 0444);
- module_param_named(debug, rtl8723ae_mod_params.debug, int, 0444);
+ 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
+ 	mutex_unlock(&memcg_create_mutex);
+-	if (error) {
+-		/*
+-		 * We call put now because our (and parent's) refcnts
+-		 * are already in place. mem_cgroup_put() will internally
+-		 * call __mem_cgroup_free, so return directly
+-		 */
+-		mem_cgroup_put(memcg);
+-	}
+ 	return error;
+ }
+ 
 
 
