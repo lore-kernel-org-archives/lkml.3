@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760814Ab3GSQ32 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:29:28 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:41532 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab3GSQ30 (ORCPT
+	id S1760867Ab3GSQ3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:29:31 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:47399 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab3GSQ32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:29:26 -0400
+	Fri, 19 Jul 2013 12:29:28 -0400
+Date: Fri, 19 Jul 2013 16:29:24 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Andy Lutomirski <luto@amacapital.net>
+CC: <linux-kernel@vger.kernel.org>, <gcc@gcc.gnu.org>
+Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
+In-Reply-To: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1307191603480.9428@digraph.polyomino.org.uk>
+References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130719154648.GA23116@kroah.com>
-References: <1374245148-24031-1-git-send-email-alexj@rosedu.org>
-	<CAOJsxLGEmjY6wTp99DKQ4ZKO2oXq6102MczbjCHTUReuCTq-fw@mail.gmail.com>
-	<CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
-	<CAOJsxLFw4t-jwO4vDuMYfZA4uqH59h1c66xVPPFDO037OvGKSg@mail.gmail.com>
-	<CAPhGq=Y30i0RWJTcomt5sRdKX6RDzdGHBo5L9D6coH8O0ej6kA@mail.gmail.com>
-	<20130719154648.GA23116@kroah.com>
-Date: Fri, 19 Jul 2013 19:29:25 +0300
-Message-ID: <CAEnQRZBa5DNir15GK0mWsWTFu7yu1jyn=M2h76agbaXeszuy-w@mail.gmail.com>
-Subject: Re: [PATCH] lustre:libcfs: remove redundant code.
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alexandru Juncu <alexj@rosedu.org>, Pekka Enberg <penberg@kernel.org>,
-        "andreas.dilger" <andreas.dilger@intel.com>,
-        "tao.peng" <tao.peng@emc.com>, driverdev <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>, pebolle@tiscali.nl
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 19 Jul 2013 16:29:27.0611 (UTC) FILETIME=[233AC8B0:01CE849D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 6:46 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Jul 19, 2013 at 06:29:34PM +0300, Alexandru Juncu wrote:
->> On 19 July 2013 18:21, Pekka Enberg <penberg@kernel.org> wrote:
->> > On Fri, Jul 19, 2013 at 6:13 PM, Alexandru Juncu <alexj@rosedu.org> wrote:
->> >> I was thinking the same thing, but I hesitated because I didn't know
->> >> how used it was and I didn't want to break something.
->> >
->> > "git grep cfs_strdup" suggests that nobody uses it so you could just
->> > remove it completely...
->>
->> Did a grep on the tree and yes, it's not used. But It's in a staging
->> directory so maybe the rest of the code has not been pushed in yet.
->
-> Doesn't matter, if there are no users, please just remove it.
+On Thu, 18 Jul 2013, Andy Lutomirski wrote:
 
-Hi Greg,
+> 2. It's localized.  So you can mmap something, read from it *and
+> handle SIGBUS*, and unmap.
 
-There is already a similar patch for this https://lkml.org/lkml/2013/7/17/742,
-already reviewed by Andreas Dilger.
+There is of course no guarantee that possibly faulting memory accesses are 
+preserved (GCC should never introduce such an access where it wouldn't 
+occur in the abstract machine, but may well *remove* accesses that aren't 
+required).  Hopefully you don't want to rely on a guarantee that faults 
+will happen....
 
-thanks,
-Daniel.
+> It's worth noting that SIGBUS isn't the only interesting signal here.
+> SIGFPE could work, too.  I'm not sure whether SIGPIPE would make
+
+The SIGFPE case could potentially be relevant for C bindings to IEEE 
+754-2008 (clause 8) alternate exception handling, where the expectation is 
+that various forms of exception handling attribute can be associated with 
+a block.  Though what such bindings will end up looking like, and to what 
+extent the various cases involved will correspond to things that could be 
+implemented using SIGFPE, remains to be seen - checking floating-point 
+exception flags after each operation could turn out to be a better 
+implementation approach in some cases.  The C floating-point group hasn't 
+got as far as designing such bindings yet (currently working on parts 1-3 
+of draft TS 18661, and optional attributes are to go in part 5).
+
+(Note: although I'm interested in these floating-point issues and am 
+reviewing all the parts of the draft C bindings as they become available, 
+I don't have current plans for implementing them - or the remaining bits 
+of C99/C11 Annex F and Annex G not yet implemented in GCC.  There's 
+certainly a lot of work to be done there in both GCC and glibc, with the 
+exception handling attributes from part 5, and rounding mode attributes 
+from part 1, probably among the larger pieces.)
+
+-- 
+Joseph S. Myers
+joseph@codesourcery.com
