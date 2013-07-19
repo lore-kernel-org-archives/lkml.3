@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965476Ab3GSFWd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:22:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39441 "EHLO
+	id S965496Ab3GSFXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:23:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39473 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965415Ab3GSFW1 (ORCPT
+	with ESMTP id S965472Ab3GSFWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:27 -0400
+	Fri, 19 Jul 2013 01:22:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>
-Subject: [ 05/38] jbd2: move superblock checksum calculation to jbd2_write_superblock()
-Date: Thu, 18 Jul 2013 22:21:21 -0700
-Message-Id: <20130719052048.242681120@linuxfoundation.org>
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 37/38] mm/memory-hotplug: fix lowmem count overflow when offline pages
+Date: Thu, 18 Jul 2013 22:21:53 -0700
+Message-Id: <20130719052050.409700339@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -27,48 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit fe52d17cdd343ac43c85cf72940a58865b9d3bfb upstream.
+commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
 
-Some of the functions which modify the jbd2 superblock were not
-updating the checksum before calling jbd2_write_superblock().  Move
-the call to jbd2_superblock_csum_set() to jbd2_write_superblock(), so
-that the checksum is calculated consistently.
+The logic for the memory-remove code fails to correctly account the
+Total High Memory when a memory block which contains High Memory is
+offlined as shown in the example below.  The following patch fixes it.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Darrick J. Wong <darrick.wong@oracle.com>
+Before logic memory remove:
+
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
+
+After logic memory remove:
+
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/journal.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/page_alloc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1320,6 +1320,7 @@ static int journal_reset(journal_t *jour
- static void jbd2_write_superblock(journal_t *journal, int write_op)
- {
- 	struct buffer_head *bh = journal->j_sb_buffer;
-+	journal_superblock_t *sb = journal->j_superblock;
- 	int ret;
- 
- 	trace_jbd2_write_superblock(journal, write_op);
-@@ -1341,6 +1342,7 @@ static void jbd2_write_superblock(journa
- 		clear_buffer_write_io_error(bh);
- 		set_buffer_uptodate(bh);
- 	}
-+	jbd2_superblock_csum_set(journal, sb);
- 	get_bh(bh);
- 	bh->b_end_io = end_buffer_write_sync;
- 	ret = submit_bh(write_op, bh);
-@@ -1437,7 +1439,6 @@ void jbd2_journal_update_sb_errno(journa
- 	jbd_debug(1, "JBD2: updating superblock error (errno %d)\n",
- 		  journal->j_errno);
- 	sb->s_errno    = cpu_to_be32(journal->j_errno);
--	jbd2_superblock_csum_set(journal, sb);
- 	read_unlock(&journal->j_state_lock);
- 
- 	jbd2_write_superblock(journal, WRITE_SYNC);
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6078,6 +6078,10 @@ __offline_isolated_pages(unsigned long s
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
++#ifdef CONFIG_HIGHMEM
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
++#endif
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 
 
