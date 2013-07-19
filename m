@@ -1,122 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760520Ab3GSNv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:51:27 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:51369 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759767Ab3GSNvZ (ORCPT
+	id S1760553Ab3GSNvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:51:31 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42725 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759866Ab3GSNv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:51:25 -0400
-Message-ID: <1374241882.26476.5.camel@edumazet-glaptop>
-Subject: Re: mod_timer: list_add corruption: WARNING: CPU: 1 PID: 0 at
- lib/list_debug.c:33 __list_add+0xbe/0xd0()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Cong Wang <amwang@redhat.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        netdev@vger.kernel.org
-Date: Fri, 19 Jul 2013 06:51:22 -0700
-In-Reply-To: <alpine.DEB.2.02.1307191523050.4089@ionos.tec.linutronix.de>
-References: <51E557C0.2060602@linux.vnet.ibm.com>
-	 <alpine.DEB.2.02.1307191323150.4089@ionos.tec.linutronix.de>
-	 <51E92769.7090106@linux.vnet.ibm.com>
-	 <alpine.DEB.2.02.1307191523050.4089@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 19 Jul 2013 09:51:29 -0400
+Date: Fri, 19 Jul 2013 09:50:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Julien Grall <julien.grall@linaro.org>
+Cc: stefano.stabellini@eu.citrix.com, ian.campbell@citrix.com,
+        patches@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Subject: Re: [PATCH v2] xen/arm: disable cpuidle and cpufreq when linux is
+ running as dom0
+Message-ID: <20130719135050.GA12144@localhost.localdomain>
+References: <1374233220-13770-1-git-send-email-julien.grall@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374233220-13770-1-git-send-email-julien.grall@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 15:40 +0200, Thomas Gleixner wrote:
-> On Fri, 19 Jul 2013, Srivatsa S. Bhat wrote:
-> > On 07/19/2013 04:55 PM, Thomas Gleixner wrote:
-> > > On Tue, 16 Jul 2013, Srivatsa S. Bhat wrote:
-> > >> ------------[ cut here ]------------
-> > >> WARNING: CPU: 1 PID: 0 at lib/list_debug.c:33 __list_add+0xbe/0xd0()
-> > >> list_add corruption. prev->next should be next (ffff8810396b5568), but was           (null). (prev=ffff88102c1344c0).
-> > > 
-> > > Can you please enable debugobjects?
-> > > 
-> > 
-> > Sure Thomas, please find the new traces below, with
-> > debug objects enabled.
-> > Regards,
-> > Srivatsa S. Bhat
-> > 
-> > 
-> > ------------[ cut here ]------------
-> > WARNING: CPU: 1 PID: 0 at lib/debugobjects.c:260 debug_print_object+0x8e/0xb0()
-> > ODEBUG: init active (active state 0) object type: timer_list hint: br_multicast_group_expired+0x0/0x110 [bridge]
+On Fri, Jul 19, 2013 at 12:27:00PM +0100, Julien Grall wrote:
+> When linux is running as dom0, Xen doesn't show the physical cpu but a
+> virtual CPU.
+> On some ARM SOC (for instance the exynos 5250), linux registers callbacks
+> for cpuidle and cpufreq. When these callbacks are called, they will modify
+> directly the physical cpu not the virtual one. It can impact the whole board
+> instead of only dom0.
 > 
-> So an active enqueued timer gets reinitialized. Not so pretty :)
+> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> >  [<ffffffff812b5aee>] debug_print_object+0x8e/0xb0
-> >  [<ffffffffa04247f0>] ? br_multicast_free_pg+0x20/0x20 [bridge]
-> >  [<ffffffff812b65e2>] ? __debug_object_init+0x42/0x3f0
-> >  [<ffffffff812b67bf>] __debug_object_init+0x21f/0x3f0
-> >  [<ffffffff812b69df>] debug_object_init+0x1f/0x30
-> >  [<ffffffff81060ea9>] init_timer_key+0x39/0x100
-> >  [<ffffffffa0425ec5>] br_ip4_multicast_query+0x155/0x380 [bridge]
+> ---
+>     Changes in v2:
+>         - Disable cpufreq
+> ---
+>  arch/arm/xen/enlighten.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
 > 
-> Here is the offending call site. I leave that to the network wizards.
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index 49839d8..af82792 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -24,6 +24,8 @@
+>  #include <linux/of.h>
+>  #include <linux/of_irq.h>
+>  #include <linux/of_address.h>
+> +#include <linux/cpuidle.h>
+> +#include <linux/cpufreq.h>
+>  
+>  #include <linux/mm.h>
+>  
+> @@ -292,6 +294,12 @@ static int __init xen_pm_init(void)
+>  {
+>  	pm_power_off = xen_power_off;
+>  	arm_pm_restart = xen_restart;
+> +	/*
+> +	 * Making sure board specific code will not set up ops for
+> +	 * cpu idle and cpu freq.
+> +	 */
+> +	disable_cpuidle();
+> +	disable_cpufreq();
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.10.4
 > 
-> > [<ffffffffa0427eef>] br_multicast_ipv4_rcv+0x2cf/0x3d0 [bridge]
-> > [<ffffffff8162140b>] ? _raw_spin_unlock+0x2b/0x50
-> > [<ffffffffa0419a9b>] ? br_fdb_update+0x1db/0x2b0 [bridge]
-> > [<ffffffffa04284b5>] br_multicast_rcv+0x45/0x60 [bridge]
-> > [<ffffffffa041bdfe>] br_handle_frame_finish+0x16e/0x3c0 [bridge]
-> > [<ffffffffa041bac8>] br_handle_frame+0x238/0x400 [bridge]
-> > [<ffffffffa041b890>] ? br_del_bridge+0x80/0x80 [bridge]
-> > [<ffffffff81539ca7>] __netif_receive_skb_core+0x237/0x960
-> > [<ffffffff81539ade>] ? __netif_receive_skb_core+0x6e/0x960
-> > [<ffffffff8153a3f7>] __netif_receive_skb+0x27/0x70
-> > [<ffffffff8153c6fd>] netif_receive_skb+0x2d/0x210
-> > [<ffffffff81527e65>] ? __netdev_alloc_skb+0xa5/0x110
-> > [<ffffffffa0129a0f>] be_rx_compl_process+0xef/0x140 [be2net]
-> > [<ffffffffa0129dc2>] be_process_rx+0xe2/0x1a0 [be2net]
-> > [<ffffffffa0129fbd>] be_poll+0x13d/0x1d0 [be2net]
-> > [<ffffffff8153dab8>] net_rx_action+0xd8/0x2a0
-> > [<ffffffff81058e19>] __do_softirq+0x149/0x400
-> > [<ffffffff8105922d>] irq_exit+0xed/0x100
-> > [<ffffffff8162d206>] do_IRQ+0x66/0xe0
-> 
-> Thanks,
-
-Bug added by :
-
-commit 9f00b2e7cf241fa389733d41b615efdaa2cb0f5b
-Author: Cong Wang <amwang@redhat.com>
-Date:   Tue May 21 21:52:55 2013 +0000
-
-    bridge: only expire the mdb entry when query is received
-    
-    Currently we arm the expire timer when the mdb entry is added,
-    however, this causes problem when there is no querier sent
-    out after that.
-    
-    So we should only arm the timer when a corresponding query is
-    received, as suggested by Herbert.
-    
-    And he also mentioned "if there is no querier then group
-    subscriptions shouldn't expire. There has to be at least one querier
-    in the network for this thing to work.  Otherwise it just degenerates
-    into a non-snooping switch, which is OK."
-    
-    Cc: Herbert Xu <herbert@gondor.apana.org.au>
-    Cc: Stephen Hemminger <stephen@networkplumber.org>
-    Cc: "David S. Miller" <davem@davemloft.net>
-    Cc: Adam Baker <linux@baker-net.org.uk>
-    Signed-off-by: Cong Wang <amwang@redhat.com>
-    Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-
-I guess following should help 
-
-
-
