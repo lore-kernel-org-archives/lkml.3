@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965684Ab3GSF0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:26:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39836 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965630Ab3GSF0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965664Ab3GSF0m (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Jul 2013 01:26:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39712 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965630Ab3GSF0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:26:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Heiko Schocher <hs@denx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 31/72] drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
-Date: Thu, 18 Jul 2013 22:25:48 -0700
-Message-Id: <20130719052601.998917151@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [ 26/72] parisc: optimize mtsp(0,sr) inline assembly
+Date: Thu, 18 Jul 2013 22:25:43 -0700
+Message-Id: <20130719052601.655272428@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -28,34 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 29ecd78c0fd6ee05f2c6b07b23823a6ae43c13ff upstream.
+commit 92b59929825d67db575043a76651865d16873b36 upstream.
 
-In the disable AIE irq code path, current code passes "1" to enable
-parameter of rv3029c2_rtc_i2c_alarm_set_irq().  Thus it does not disable
-AIE irq.
+If the value which should be moved into a space register is zero, we can
+optimize the inline assembly to become "mtsp %r0,%srX".
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Heiko Schocher <hs@denx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-rv3029c2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/parisc/include/asm/special_insns.h |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/rtc/rtc-rv3029c2.c
-+++ b/drivers/rtc/rtc-rv3029c2.c
-@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(st
- 		dev_dbg(&client->dev, "alarm IRQ armed\n");
- 	} else {
- 		/* disable AIE irq */
--		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
-+		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
- 		if (ret)
- 			return ret;
+--- a/arch/parisc/include/asm/special_insns.h
++++ b/arch/parisc/include/asm/special_insns.h
+@@ -32,9 +32,12 @@ static inline void set_eiem(unsigned lon
+ 	cr;				\
+ })
  
+-#define mtsp(gr, cr) \
+-	__asm__ __volatile__("mtsp %0,%1" \
++#define mtsp(val, cr) \
++	{ if (__builtin_constant_p(val) && ((val) == 0)) \
++	 __asm__ __volatile__("mtsp %%r0,%0" : : "i" (cr) : "memory"); \
++	else \
++	 __asm__ __volatile__("mtsp %0,%1" \
+ 		: /* no outputs */ \
+-		: "r" (gr), "i" (cr) : "memory")
++		: "r" (val), "i" (cr) : "memory"); }
+ 
+ #endif /* __PARISC_SPECIAL_INSNS_H */
 
 
