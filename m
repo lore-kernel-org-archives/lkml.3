@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760421Ab3GSQWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:22:19 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37995 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab3GSQWR (ORCPT
+	id S1760627Ab3GSQXP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:23:15 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:59949 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759422Ab3GSQXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:22:17 -0400
-Message-ID: <51E967B6.8010305@gmail.com>
-Date: Fri, 19 Jul 2013 09:22:14 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 19 Jul 2013 12:23:14 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
-Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
-References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com> <51E88AEF.8040701@gmail.com> <CALCETrXnVBPNGGTQQoXnpEmjXHxbhiWx+4RuMVQLRG5sfMpofA@mail.gmail.com> <51E893BC.6070400@gmail.com> <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
-In-Reply-To: <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1374250046.15242.7.camel@x61.thuisdomein>
+References: <1374245148-24031-1-git-send-email-alexj@rosedu.org>
+ <CAOJsxLGEmjY6wTp99DKQ4ZKO2oXq6102MczbjCHTUReuCTq-fw@mail.gmail.com>
+ <CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
+ <CAOJsxLFw4t-jwO4vDuMYfZA4uqH59h1c66xVPPFDO037OvGKSg@mail.gmail.com>
+ <CAPhGq=Y30i0RWJTcomt5sRdKX6RDzdGHBo5L9D6coH8O0ej6kA@mail.gmail.com>
+ <20130719154648.GA23116@kroah.com> <1374250046.15242.7.camel@x61.thuisdomein>
+From: Alexandru Juncu <alexj@rosedu.org>
+Date: Fri, 19 Jul 2013 19:22:53 +0300
+X-Google-Sender-Auth: a3ZFeoX0KCrqocc0Jcs2cEGuadU
+Message-ID: <CAPhGq=YW671ey1MUih_O2=2r-gjVVo8v=ac7nYrsHQ232KoxOw@mail.gmail.com>
+Subject: Re: [PATCH] lustre:libcfs: remove redundant code.
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "andreas.dilger" <andreas.dilger@intel.com>,
+        "tao.peng" <tao.peng@emc.com>, driverdev <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 08:29 PM, Andy Lutomirski wrote:
-> On Thu, Jul 18, 2013 at 6:17 PM, David Daney <ddaney.cavm@gmail.com> wrote:
->> On 07/18/2013 05:50 PM, Andy Lutomirski wrote:
->>>
->>> On Thu, Jul 18, 2013 at 5:40 PM, David Daney <ddaney.cavm@gmail.com>
->>> wrote:
->>>>
->>>> On 07/18/2013 05:26 PM, Andy Lutomirski wrote:
->>>>
->>>>
->>>> How is this different than throwing exceptions from a signal handler?
->>>
->>>
->>> Two ways.  First, exceptions thrown from a signal handler can't be
->>> retries.
->>
->>
->> ??
+On 19 July 2013 19:07, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Fri, 2013-07-19 at 08:46 -0700, Greg Kroah-Hartman wrote:
+>> Doesn't matter, if there are no users, please just remove it.
 >
-> s/retries/retried, by which I mean that you can't do things like
-> implementing virtual memory in userspace by catching SIGSEGV, calling
-> mmap, and resuming.
+> Is that, basically, your approach to staging cleanups?
 >
->>
->>
->>> Second, and more importantly, installing a signal handler in
->>> a library is a terrible idea.
->>
->>
->> The signal handler would be installed by main() before calling into the
->> library.  You have to have a small amount of boiler plate code to set it up,
->> but the libraries wouldn't have to be modified if they were already
->> exception safe.
->>
->> FWIW the libgcj java runtime environment uses this strategy for handling
->> NullPointerExceptions and DivideByZeroError(sp?).  Since all that code for
->> the most part follows the standard C++ ABIs, it is an example of this
->> technique that has been deployed in many environments.
+> I ask because I noticed that "drivers/staging/lustre/lustre/ptlrpc/gss/"
+> is only built if CONFIG_PTLRPC_GSS is set. But the corresponding Kconfig
+> symbol is nowhere to be found.
 >
-> Other way around: a *library* that wants to use exception handling
-> can't do so safely without the cooperation, or at least understanding,
-> of the main program and every other library that wants to do something
-> similar.  Suppose my library installs a SIGFPE handler and throws
-> my_sigfpe_exception and your library installs a SIGFPE handler and
-> throws your_sigfpe_exception.  The result: one wins and the other
-> crashes due to an unhandled exception.
->
-> In my particular usecase, I have code (known to the main program) that
-> catches all kinds of fatal signals to log nice error messages before
-> dying.  That means that I can't use a library that handles signals for
-> any other purpose.  Right now I want to have a small snippet of code
-> handle SIGBUS, but now I need to coordinate it with everything else.
->
-> If this stuff were unified, then everything would just work.
+> Or do you prefer that I poke the people involved in (this case in)
+> Lustre before suggesting a drastic cleanup like that?
 
-That's right.  But I think the Linux kernel already supplies all the 
-needed functionality to do this.  It is really a matter of choosing a 
-userspace implementation and standardizing your entire system around it. 
-  In the realm of GNU/GLibc/Linux, it is really more of social/political 
-exercise rather than a technical problem.
 
-David Daney
 
+Thanks for the comments!
+
+The comment for that function is "Duplicate a string in a
+platform-independent way" so it might be because it's called by code
+that also run on non-Linux systems.
