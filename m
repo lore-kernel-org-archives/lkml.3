@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965737Ab3GSF05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:26:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39944 "EHLO
+	id S965849Ab3GSFel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:34:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965490Ab3GSF0z (ORCPT
+	with ESMTP id S965734Ab3GSF05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:55 -0400
+	Fri, 19 Jul 2013 01:26:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 50/72] Btrfs: hold the tree mod lock in __tree_mod_log_rewind
-Date: Thu, 18 Jul 2013 22:26:07 -0700
-Message-Id: <20130719052603.280057926@linuxfoundation.org>
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 36/72] HID: apple: Add support for the 2013 Macbook Air
+Date: Thu, 18 Jul 2013 22:25:53 -0700
+Message-Id: <20130719052602.333512509@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,72 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Dmitry Torokhov <rydberg@euromail.se>
 
-commit f1ca7e98a67da618d8595866e0860308525154da upstream.
+commit 9d9a04ee758b4c1fcc7586d065cdde7a7607e156 upstream.
 
-We need to hold the tree mod log lock in __tree_mod_log_rewind since we walk
-forward in the tree mod entries, otherwise we'll end up with random entries and
-trip the BUG_ON() at the front of __tree_mod_log_rewind.  This fixes the panics
-people were seeing when running
+This patch adds keyboard support for MacbookAir6,2 as WELLSPRING8
+(0x0291, 0x0292, 0x0293). The touchpad is handled in a separate
+bcm5974 patch, as usual.
 
-find /whatever -type f -exec btrfs fi defrag {} \;
-
-Thansk,
-
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ctree.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/hid/hid-apple.c |    6 ++++++
+ drivers/hid/hid-core.c  |    6 ++++++
+ drivers/hid/hid-ids.h   |    3 +++
+ 3 files changed, 15 insertions(+)
 
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -1161,8 +1161,8 @@ __tree_mod_log_oldest_root(struct btrfs_
-  * time_seq).
-  */
- static void
--__tree_mod_log_rewind(struct extent_buffer *eb, u64 time_seq,
--		      struct tree_mod_elem *first_tm)
-+__tree_mod_log_rewind(struct btrfs_fs_info *fs_info, struct extent_buffer *eb,
-+		      u64 time_seq, struct tree_mod_elem *first_tm)
- {
- 	u32 n;
- 	struct rb_node *next;
-@@ -1172,6 +1172,7 @@ __tree_mod_log_rewind(struct extent_buff
- 	unsigned long p_size = sizeof(struct btrfs_key_ptr);
- 
- 	n = btrfs_header_nritems(eb);
-+	tree_mod_log_read_lock(fs_info);
- 	while (tm && tm->seq >= time_seq) {
- 		/*
- 		 * all the operations are recorded with the operator used for
-@@ -1226,6 +1227,7 @@ __tree_mod_log_rewind(struct extent_buff
- 		if (tm->index != first_tm->index)
- 			break;
- 	}
-+	tree_mod_log_read_unlock(fs_info);
- 	btrfs_set_header_nritems(eb, n);
- }
- 
-@@ -1274,7 +1276,7 @@ tree_mod_log_rewind(struct btrfs_fs_info
- 
- 	extent_buffer_get(eb_rewin);
- 	btrfs_tree_read_lock(eb_rewin);
--	__tree_mod_log_rewind(eb_rewin, time_seq, tm);
-+	__tree_mod_log_rewind(fs_info, eb_rewin, time_seq, tm);
- 	WARN_ON(btrfs_header_nritems(eb_rewin) >
- 		BTRFS_NODEPTRS_PER_BLOCK(fs_info->tree_root));
- 
-@@ -1350,7 +1352,7 @@ get_old_root(struct btrfs_root *root, u6
- 		btrfs_set_header_generation(eb, old_generation);
- 	}
- 	if (tm)
--		__tree_mod_log_rewind(eb, time_seq, tm);
-+		__tree_mod_log_rewind(root->fs_info, eb, time_seq, tm);
- 	else
- 		WARN_ON(btrfs_header_level(eb) != 0);
- 	WARN_ON(btrfs_header_nritems(eb) > BTRFS_NODEPTRS_PER_BLOCK(root));
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -524,6 +524,12 @@ static const struct hid_device_id apple_
+ 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
+ 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
++		.driver_data = APPLE_HAS_FN },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
++		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
++		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1547,6 +1547,9 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
+@@ -2179,6 +2182,9 @@ static const struct hid_device_id hid_mo
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+ 	{ }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -135,6 +135,9 @@
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI  0x0255
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
+ #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
+ #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
+ #define USB_DEVICE_ID_APPLE_IRCONTROL	0x8240
 
 
