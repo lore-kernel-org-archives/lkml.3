@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760442Ab3GSMKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:10:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760341Ab3GSMKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 08:10:42 -0400
-Message-ID: <51E92CAB.7020906@redhat.com>
-Date: Fri, 19 Jul 2013 14:10:19 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1760460Ab3GSMLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:11:42 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51443 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760421Ab3GSMLl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 08:11:41 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-63-51e92cfb3b64
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 15/23] perf tools: Add perf data version 3 header read
+References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
+	<1374083403-14591-16-git-send-email-jolsa@redhat.com>
+Date: Fri, 19 Jul 2013 21:11:39 +0900
+In-Reply-To: <1374083403-14591-16-git-send-email-jolsa@redhat.com> (Jiri
+	Olsa's message of "Wed, 17 Jul 2013 19:49:55 +0200")
+Message-ID: <8738rawxz8.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: gleb@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vadim Rozenfeld <vrozenfe@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: [PATCH] x86: properly handle KVM emulation of hyperv
-References: <1374229505-19470-1-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1374229505-19470-1-git-send-email-jasowang@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/07/2013 12:25, Jason Wang ha scritto:
-> Recent kvm has some basic support of hyperv, this will cause the guest to
-> identify itself running on top of hyperv instead of kvm which will disable kvm
-> pv functionality. Solve this by check kvm para platform first and also check
-> KVM_CPUID_SIGNATURE_NEXT which were set when kvm emulate hyperv.
-> 
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Vadim Rozenfeld <vrozenfe@redhat.com>
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  arch/x86/include/asm/kvm_para.h      |   25 +++++++++++++++++--------
->  arch/x86/include/uapi/asm/kvm_para.h |    1 +
->  arch/x86/kernel/cpu/hypervisor.c     |    2 +-
->  3 files changed, 19 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index 695399f..aa8f3a7 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -85,22 +85,31 @@ static inline long kvm_hypercall4(unsigned int nr, unsigned long p1,
->  	return ret;
+On Wed, 17 Jul 2013 19:49:55 +0200, Jiri Olsa wrote:
+> Adding perf data version 3 header read code to load
+> data for v3 format.
+>
+[SNIP]
+> +
+> +	session = container_of(header, struct perf_session, header);
+> +	if (session->evlist)
+> +		return 0;
+
+I guess we need version check here.  The v2 format still needs to
+process it even though it's session already has a evlist, right?
+
+Thanks,
+Namhyung
+
+>  
+>  	evlist = read_event_desc(header, fd);
+>  	if (!evlist)
+> -		return 0;
+> +		return -1;
+>  
+> -	session = container_of(header, struct perf_session, header);
+> +	ph = &session->header;
+>  
+> -	list_for_each_entry(evsel, &evlist->entries, node)
+> -		perf_evlist__set_event_name(session->evlist, evsel);
+> +	if (ph->version <= PERF_HEADER_VERSION_2) {
+> +		list_for_each_entry(evsel, &evlist->entries, node)
+> +			perf_evlist__set_event_name(session->evlist, evsel);
+> +
+> +		perf_evlist__delete(evlist);
+> +	} else {
+> +		session->evlist = evlist;
+> +		symbol_conf.nr_events = evlist->nr_entries;
+> +	}
+>  
+> -	perf_evlist__delete(evlist);
+>  	return 0;
 >  }
->  
-> -static inline bool kvm_para_available(void)
-> +static inline bool kvm_para_available_function(unsigned int function)
->  {
->  	unsigned int eax, ebx, ecx, edx;
->  	char signature[13];
->  
-> +	cpuid(function, &eax, &ebx, &ecx, &edx);
-> +	memcpy(signature + 0, &ebx, 4);
-> +	memcpy(signature + 4, &ecx, 4);
-> +	memcpy(signature + 8, &edx, 4);
-> +	signature[12] = 0;
-> +
-> +	if (strcmp(signature, "KVMKVMKVM") == 0)
-> +		return true;
-> +
-> +	return false;
-> +}
-> +
-> +static inline bool kvm_para_available(void)
-> +{
->  	if (boot_cpu_data.cpuid_level < 0)
->  		return false;	/* So we don't blow up on old processors */
->  
->  	if (cpu_has_hypervisor) {
-> -		cpuid(KVM_CPUID_SIGNATURE, &eax, &ebx, &ecx, &edx);
-> -		memcpy(signature + 0, &ebx, 4);
-> -		memcpy(signature + 4, &ecx, 4);
-> -		memcpy(signature + 8, &edx, 4);
-> -		signature[12] = 0;
-> -
-> -		if (strcmp(signature, "KVMKVMKVM") == 0)
-> +		if (kvm_para_available_function(KVM_CPUID_SIGNATURE) ||
-> +		    kvm_para_available_function(KVM_CPUID_SIGNATURE_NEXT))
->  			return true;
->  	}
-
-Nice catch.  Just one small thing, you should loop until 0x40010000, as
-done in arch/x86/include/asm/xen/hypervisor.h, in case one day a third
-hypervisor implements three extensions (Hyper-V, KVM and its own set).
-
-Paolo
-
