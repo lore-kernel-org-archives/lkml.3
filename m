@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965927Ab3GSFh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:37:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39910 "EHLO
+	id S965945Ab3GSFij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:38:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39892 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965606Ab3GSF0t (ORCPT
+	with ESMTP id S965431Ab3GSF0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:49 -0400
+	Fri, 19 Jul 2013 01:26:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten ter Huurne <maarten@treewalker.org>,
-        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Subject: [ 08/72] ext4: fix corruption when online resizing a fs with 1K block size
-Date: Thu, 18 Jul 2013 22:25:25 -0700
-Message-Id: <20130719052600.429858412@linuxfoundation.org>
+        Tobias Kluge <zielscheibe@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 03/72] rtlwifi: rtl8192cu: Add new USB ID for TP-Link TL-WN8200ND
+Date: Thu, 18 Jul 2013 22:25:20 -0700
+Message-Id: <20130719052600.089745148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,39 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten ter Huurne <maarten@treewalker.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 6ca792edc13c409e8d4eb9001e048264c6a2eb64 upstream.
+commit c4d827c5ccc3a49227dbf9d4b248a2e86f388023 upstream.
 
-Subtracting the number of the first data block places the superblock
-backups one block too early, corrupting the file system. When the block
-size is larger than 1K, the first data block is 0, so the subtraction
-has no effect and no corruption occurs.
+This is a new device for this driver.
 
-Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+Reported-by: Tobias Kluge <zielscheibe@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Tobias Kluge <zielscheibe@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1656,12 +1656,10 @@ errout:
- 		err = err2;
- 
- 	if (!err) {
--		ext4_fsblk_t first_block;
--		first_block = ext4_group_first_block_no(sb, 0);
- 		if (test_opt(sb, DEBUG))
- 			printk(KERN_DEBUG "EXT4-fs: extended group to %llu "
- 			       "blocks\n", ext4_blocks_count(es));
--		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr - first_block,
-+		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr,
- 			       (char *)es, sizeof(struct ext4_super_block), 0);
- 	}
- 	return err;
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -359,6 +359,7 @@ static struct usb_device_id rtl8192c_usb
+ 	{RTL_USB_DEVICE(0x2001, 0x330a, rtl92cu_hal_cfg)}, /*D-Link-Alpha*/
+ 	{RTL_USB_DEVICE(0x2019, 0xab2b, rtl92cu_hal_cfg)}, /*Planex -Abocom*/
+ 	{RTL_USB_DEVICE(0x20f4, 0x624d, rtl92cu_hal_cfg)}, /*TRENDNet*/
++	{RTL_USB_DEVICE(0x2357, 0x0100, rtl92cu_hal_cfg)}, /*TP-Link WN8200ND*/
+ 	{RTL_USB_DEVICE(0x7392, 0x7822, rtl92cu_hal_cfg)}, /*Edimax -Edimax*/
+ 	{}
+ };
 
 
