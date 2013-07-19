@@ -1,173 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab3GSWNw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 18:13:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35340 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab3GSWNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 18:13:50 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: backports@vger.kernel.org
-Cc: jani.nikula@intel.com, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Felix Fietkau <nbd@openwrt.org>
-Subject: [PATCH v2 01/10] backports: backport drvdata = NULL core driver fixes
-Date: Fri, 19 Jul 2013 15:13:20 -0700
-Message-Id: <1374272009-26152-2-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1374272009-26152-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1374272009-26152-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1752214Ab3GSWZW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 18:25:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48815 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751092Ab3GSWZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 18:25:21 -0400
+Message-ID: <51E9BCC9.7070909@zytor.com>
+Date: Fri, 19 Jul 2013 15:25:13 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: George Spelvin <linux@horizon.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 3.10.0 i386 uniprocessor panic
+References: <20130719210036.5543.qmail@science.horizon.com>
+In-Reply-To: <20130719210036.5543.qmail@science.horizon.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+On 07/19/2013 02:00 PM, George Spelvin wrote:
+>>> EIP is at 0xc143a091
+>>> EAX: c143a090 EBX: 00000100 ECX: f3150000 EDX: c143a090
+>>> ESI: c143a090 EDI: c143a090 EBP: c143a090 ESP: f3151eec
+>>>  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+>>> CR0: 80050033 CR2: a090c143 CR3: 331c6000 CR4: 000007d0
+>>> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+>>> DR6: ffff0ff0 DR7: 00000400
+> 
+>>> (The CR2 value looks particularly odd.)
+> 
+>> Indeed it does; it is a user space value, but it doesn't look like
+>> either a normal user space value nor really as a trivially buggered-up
+>> kernel pointer value, unless the 0xc143... at the bottom is the upper
+>> half of a kernel pointer, in which case we probably obtained this value
+>> from a corrupt, misaligned pointer.
+> 
+> Er... I assumed you'd see instantly that it was the 0xc143a090 value
+> that's in 5 registers (EAX/EDX/ESI/EDI/EBP), and IP-1, but with the
+> halves swapped.
 
-The Linux kernel had tons of code which at times cleared the
-drvdata upon probe failure or release. There are however a bunch
-of drivers that didn't clear this.
+That would have requiring me to actually pay attention.  I claim
+undercaffeination.
 
-Commit 0998d063 implmented clearing this upon device_release_driver()
-and dealt with probe failure on driver_probe_device(). After this the
-kernel was cleaned up separately with *tons* of patches to remove all
-these driver specific settings given that the clearing is now done
-internally by the device core.
+> How the heck the halves got swapped is confusing me...
 
-Instead of ifdef'ing code back in for older code where it was properly
-in place backport this by piggy backing the new required code upon the
-calls used in place. There is a small race here upon device_release_driver()
-but we can live with that theoretical race.
+Disassembling the "code" (which is really data) makes it kind of obvious:
 
-Due to the way we hack this backport we can't use a separate namespace
-as we have with other symbols.
+C143A090  90                nop
+C143A091  A043C190A0        mov al,[0xa090c143]	 ; fault here
 
-mcgrof@frijol ~/linux-stable (git::master)$ git describe --contains \
-	0998d0631001288a5974afc0b2a5f568bcdecb4d
-v3.6-rc1~99^2~14^2~17
+We jumped into data which contained a series of self-pointers
+(presumably empty double-linked lists), and the first two bytes became
+opcodes...
 
-I count 65 patches implemented after this:
+Unfortunately the disassembly of call_timer_fn.isra.37 doesn't really
+tell us anything other than that the passed-in value of %eax was bogus.
+ It is *very* interesting, though, that that value is present in so many
+registers (in fact, the ONLY GPRs which didn't have that value are %ebx
+and %ecx, which are set by that function itself.)
 
-mcgrof@frijol ~/linux-stable (git::master)$ git format-patch \
-	--grep="device-core: Ensure drvdata = NULL when no driver is bound" \
-	 -o null-drv-fix v3.6-rc1~99^2~14^2~17..
+A disassembly of the calling function, i.e.:
 
-  TL;DR
+ [<c1024524>] ? run_timer_softirq+0x150/0x165
 
-Alan Stern argued that perhaps applying this to backports wasn't a good
-idea given that evidence shows that the original patch actually exposed
-tons of bugs in driver code where they were doing the wrong thing.
-While this may be true if the original patch was a bad idea it should
-be reverted, and if a bug is found upstream, then by all means
-finding it through backports will only accelerate the pace at which
-we fix these exposed bugs. That is, if a bug is found due to this on
-backports then a respective fix for it should go upstream, not to
-backports. This is the benefit of providing backports releases: keep
-your users engaged on upstream fixes.
+... would be a good idea, at least.
 
-Furthermore I am in hopes that perhaps we can SmPL'ify the bugs
-instead and in the future perhaps require SmPL to proove that
-the what the original patch was doing won't affect the inverse
-of what the patch was trying to do -- that is drivers doing the
-wrong thing.
-
-commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-Author: Hans de Goede <hdegoede@redhat.com>
-Date:   Wed May 23 00:09:34 2012 +0200
-
-    device-core: Ensure drvdata = NULL when no driver is bound
-
-    1) drvdata is for a driver to store a pointer to driver specific data
-    2) If no driver is bound, there is no driver specific data associated with
-       the device
-    3) Thus logically drvdata should be NULL if no driver is bound.
-
-    But many drivers don't clear drvdata on device_release, or set drvdata
-    early on in probe and leave it set on probe error. Both of which results
-    in a dangling pointer in drvdata.
-
-    This patch enforce for drvdata to be NULL after device_release or on probe
-    failure.
-
-    Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Tested with ckmake against next-20130618:
-
-1   2.6.24              [  OK  ]
-2   2.6.25              [  OK  ]
-3   2.6.26              [  OK  ]
-4   2.6.27              [  OK  ]
-5   2.6.28              [  OK  ]
-6   2.6.29              [  OK  ]
-7   2.6.30              [  OK  ]
-8   2.6.31              [  OK  ]
-9   2.6.32              [  OK  ]
-10  2.6.33              [  OK  ]
-11  2.6.34              [  OK  ]
-12  2.6.35              [  OK  ]
-13  2.6.36              [  OK  ]
-14  2.6.37              [  OK  ]
-15  2.6.38              [  OK  ]
-16  2.6.39              [  OK  ]
-17  3.0.79              [  OK  ]
-18  3.1.10              [  OK  ]
-19  3.10-rc1            [  OK  ]
-20  3.2.45              [  OK  ]
-21  3.3.8               [  OK  ]
-22  3.4.46              [  OK  ]
-23  3.5.7               [  OK  ]
-24  3.6.11              [  OK  ]
-25  3.7.10              [  OK  ]
-26  3.8.13              [  OK  ]
-27  3.9.3               [  OK  ]
-
-real    32m2.332s
-user    860m23.688s
-sys     121m20.840s
-
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
----
- backport/backport-include/linux/device.h |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/backport/backport-include/linux/device.h b/backport/backport-include/linux/device.h
-index c2f80e2..ba55d0e 100644
---- a/backport/backport-include/linux/device.h
-+++ b/backport/backport-include/linux/device.h
-@@ -176,4 +176,23 @@ extern int dev_set_name(struct device *dev, const char *name, ...)
- 			__attribute__((format(printf, 2, 3)));
- #endif
- 
-+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,6,0)
-+#define driver_probe_device(__drv, __dev)		\
-+({							\
-+ 	int ret;					\
-+ 	ret = (driver_probe_device)(__drv, __dev);	\
-+ 	if (ret)					\
-+		dev_set_drvdata(__dev, NULL);		\
-+ 	return ret;					\
-+})
-+
-+#define device_release_driver(__dev)			\
-+({							\
-+ 	(device_release_driver)(__dev);			\
-+ 	device_lock(__dev);				\
-+ 	dev_set_drvdata(__dev, NULL);			\
-+ 	device_unlock(__dev);				\
-+})
-+#endif /* LINUX_VERSION_CODE <= KERNEL_VERSION(3,6,0) */
-+
- #endif /* __BACKPORT_DEVICE_H */
--- 
-1.7.10.4
+	-hpa
 
