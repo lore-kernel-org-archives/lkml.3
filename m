@@ -1,125 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965308Ab3GSS5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:57:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43382 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965022Ab3GSS5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:57:34 -0400
-Message-ID: <51E98BD3.8000307@ti.com>
-Date: Fri, 19 Jul 2013 14:56:19 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
+	id S1761118Ab3GSS7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:59:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46457 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760042Ab3GSS7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 14:59:00 -0400
+Message-ID: <51E98C71.5010709@wwwdotorg.org>
+Date: Fri, 19 Jul 2013 12:58:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <wni@nvidia.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <l.stach@pengutronix.de>
-Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
- zone build
-References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com> <20130717220942.GB990@roeck-us.net> <51E7F341.8020508@ti.com> <20130718211154.GB4110@roeck-us.net> <51E9413C.2080007@ti.com> <51E98941.2090306@wwwdotorg.org>
-In-Reply-To: <51E98941.2090306@wwwdotorg.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2EJNRIGLQXUVRFXKOPBFB"
+To: Tony Lindgren <tony@atomide.com>
+CC: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+References: <20130716090310.5541.36777.stgit@localhost> <20130716090536.5541.36289.stgit@localhost> <51E70B5D.6030802@wwwdotorg.org> <20130718073638.GP7656@atomide.com> <51E84180.6080902@wwwdotorg.org> <20130719073957.GZ7656@atomide.com>
+In-Reply-To: <20130719073957.GZ7656@atomide.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2EJNRIGLQXUVRFXKOPBFB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 19-07-2013 14:45, Stephen Warren wrote:
-> On 07/19/2013 07:38 AM, Eduardo Valentin wrote:
->> On 18-07-2013 17:11, Guenter Roeck wrote:
->>> On Thu, Jul 18, 2013 at 09:53:05AM -0400, Eduardo Valentin
->>> wrote:
->>>> Hello Guenter,
->>>>
->>>> On 17-07-2013 18:09, Guenter Roeck wrote:
->>>>> On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin
->>>>> wrote:
->>>>>> Hello all,
->>>>>>
->>>>>> As you noticed, I am working in a way to represent thermal
->>>>>> data using device tree [1]. Essentially, this should be a
->>>>>> way to say what to do with a sensor and how to associate
->>>>>> (cooling) actions with it.
->>>>>>
->>>>> Seems to me that goes way beyond the supposed scope of
->>>>> devicetree data. Devicetree data is supposed to describe
->>>>> hardware, not its configuration or use. This is clearly a use
->>>>> case.
->>>>
->>>> Thanks for rising your voice here. It is important to know what
->>>> hwmon ppl think about this.
->>>>
->>> Sorry, I don't know what ppl stands for.
+On 07/19/2013 01:39 AM, Tony Lindgren wrote:
+> * Stephen Warren <swarren@wwwdotorg.org> [130718 12:33]:
+>> On 07/18/2013 01:36 AM, Tony Lindgren wrote:
+>>> * Stephen Warren <swarren@wwwdotorg.org> [130717 14:30]:
+>>>> On 07/16/2013 03:05 AM, Tony Lindgren wrote:
+>> ...
+>>>> Why shouldn't e.g. a pinctrl-based I2C mux also be able to do runtime
+>>>> PM? Does the mux setting select which states are used for runtime PM, or
+>>>> does runtime PM override the basic mux setting, or must the pincrl-I2C
+>>>> mux manually implement custom runtime-PM/pinctrl interaction since
+>>>> there's no generic answer to those questions? How many more custom
+>>>> exceptions will there be?
 >>>
->>>>>
->>>>> Guenter
->>>>
->>>> As your answers to the series are giving same argument, I chose
->>>> to answer on patch 0. I would be happier if you could elaborate
->>>> a bit more on your concern, specially if you take hwmon cap
->>>> here, and give your view with that perspective.
->>>>
->>>> I also considered that this work could be abusing of DT
->>>> purposes. But let me explain why I still think it makes sense
->>>> to have it.
->>>>
->>> Ultimately, you are making my point here. If you considered it,
->>> did you ask devicetree experts for an opinion ? Did you discuss
->>> the subject on the devicetree-discuss mailing list ? If so, what
->>> was the result ?
+>>> The idea is that runtime PM will never touch the basic mux settings
+>>> at all. The "default" state should be considered a static state
+>>> that is claimed during driver probe, and released when the driver
+>>> is unloaded. This is typically let's say 90% of the pins for any
+>>> device.
+>>>
+>>> For runtime PM, we can just toggle the PM related pinctrl states as
+>>> they have been verified to match the active state during init.
+>>>
+>>> So I don't see why pinctrl-I2C would have to do anything specific.
+>>> All that is required is that the pins are grouped for the consumer
+>>> driver, and we can provide some automated checks on the states for
+>>> runtime PM.
 >>
->> Although I have asked, I didn't get any feedback.=20
->> https://lkml.org/lkml/2013/4/11/760
+>> So, consider a pinctrl-based I2C mux. It has 2 states to cover two I2C
+>> buses:
 >>
->> But now I am requesting feedback in a formal (patch) way.
+>> a) bus 1: I2C controller is muxed out onto one set of pins.
 >>
->> Consider this patch series as official request for (devicetree
->> experts and everyone involved) opinions.
->=20
-> I might suggest (a) sending the email "To" the DT maintainer, rather
-> than just CC'ing him, (b) perhaps start a new thread just to present
-> the proposed DT binding, and get feedback on that. A thread with a new
-> subject like "[RFC] DT binding for thermal zones" might get more
-> attention than a patch submission; the subject line of this patch
-> doesn't stand much (since it implies to me it's more about build
-> issues than DT bindings even though it does mention DT).
->=20
+>> b) bus 2: I2C controller is muxed out onto another set of pins.
+>>
+>> Now, the system could go idle in either of those 2 states, and then
+>> later need to return to one of those states. I just don't see how that
+>> would work, since the runtime PM code in this series switches to *an*
+>> active state when the device becomes non-idle. If the definition of the
+>> idle state switches the mux function for both sets of pins to some
+>> idle/quiescent value, then you'd need to do different reprogramming when
+>> going back to "the" active state; I guess the system would need to
+>> remember which state was active before switching to idle, then switch
+>> back to that same state rather than hard-coding the active state name as
+>> "active"...
+> 
+> I think the only sane way to deal with this is to make the I2C controller
+> to show up as two separate I2C controller instances. Then use runtime
+> PM to save and restore the state for each instance, and locking between
+> the two driver instances.
+> 
+> For the pin muxing part, I'd do this:
+> 
+> 			i2c1 instance	i2c2 instance	notes
+> default_state		0 pins		0 pins		(or dedicated pins only)
+> active_state		all pins	alls pins
+> idle_state		safe mode	safe mode
+> 
+> Then when i2c1 instance is done, it's runtime PM suspend muxes the pins
+> to safe mode, or some nop state. Then when i2c2 instance is woken, it's
+> runtime PM resume muxes pins to i2c2.
 
-OK. I will do that.  Sounds reasonable. Resending this series as RFC
-again, but now addressed to DT folks.
+I see two issues with that approach:
 
->=20
+1) Runtime PM doesn't always put a device into an idle state as soon as
+its work is done. Sometimes (always?) there is a delay between when the
+device is last used and when the HW is actually made idle so that if the
+device is re-activated quickly, the kernel hasn't wasted time making it
+idle then active again. You'd have to force that delay to complete when
+switching between the two virtual controller devices.
 
+2) This requires two separate device objects for the two I2C instances.
+I guess you could have the driver for the one I2C mux node end up
+instantiating two child devices for this purpose, and hence make that
+happen without needing to change the DT ABI. However, that sure feels
+complex...
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+I wonder if it wouldn't be better to have active/idle/sleep as
+"modifiers" to the state name rather than alternatives, so you end up
+with states named:
 
-Eduardo Valentin
+default
+nobus:active
+nobus:idle
+nobus:sleep
+bus0:active
+bus0:idle
+bus0:sleep
+bus1:active
+bus1:idle
+bus1:sleep
 
-
-------enig2EJNRIGLQXUVRFXKOPBFB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlHpi9MACgkQCXcVR3XQvP0SygD9E4+vYpXP4fXBPyphBsmiXA7P
-uJGfRTR/JxqVNuAe2WgBAMNH4RaYCQfr2IiTGC+HIvlpbyv0jviLDXFxBrDbo4QS
-=vAfR
------END PGP SIGNATURE-----
-
-------enig2EJNRIGLQXUVRFXKOPBFB--
+Of course, if you continue on with that approach (i.e. you add more
+sub-fields each separated by a colon), you end up with a huge
+combinatorial mess of state names.
