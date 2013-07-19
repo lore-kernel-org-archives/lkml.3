@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966075Ab3GSFtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:49:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39366 "EHLO
+	id S966056Ab3GSFtx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:49:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39371 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965322Ab3GSFWL (ORCPT
+	with ESMTP id S965325Ab3GSFWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:22:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 25/38] PCI: Fix refcount issue in pci_create_root_bus() error recovery path
-Date: Thu, 18 Jul 2013 22:21:41 -0700
-Message-Id: <20130719052049.599403974@linuxfoundation.org>
+        Yu Liu <liuyu.ac@gmail.com>, Shane Huang <shane.huang@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 26/38] ahci: remove pmp link online check in FBS EH
+Date: Thu, 18 Jul 2013 22:21:42 -0700
+Message-Id: <20130719052049.666397249@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -26,54 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Shane Huang <shane.huang@amd.com>
 
-commit 343df771e671d821478dd3ef525a0610b808dbf8 upstream.
+commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
 
-After calling device_register(&bridge->dev), the bridge is reference-
-counted, and it is illegal to call kfree() on it except in the release
-function.
+ata_link_online() check in ahci_error_intr() is unnecessary, it should
+be removed otherwise may lead to lockup with FBS enabled PMP.
+http://marc.info/?l=linux-ide&m=137050421603272&w=2
 
-[bhelgaas: changelog, use put_device() after device_register() failure]
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reported-by: Yu Liu <liuyu.ac@gmail.com>
+Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/ata/libahci.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1694,12 +1694,16 @@ struct pci_bus *pci_create_root_bus(stru
- 	bridge->dev.release = pci_release_bus_bridge_dev;
- 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
- 	error = pcibios_root_bridge_prepare(bridge);
--	if (error)
--		goto bridge_dev_reg_err;
-+	if (error) {
-+		kfree(bridge);
-+		goto err_out;
-+	}
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1560,8 +1560,7 @@ static void ahci_error_intr(struct ata_p
+ 		u32 fbs = readl(port_mmio + PORT_FBS);
+ 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
  
- 	error = device_register(&bridge->dev);
--	if (error)
--		goto bridge_dev_reg_err;
-+	if (error) {
-+		put_device(&bridge->dev);
-+		goto err_out;
-+	}
- 	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
- 	pci_set_bus_of_node(b);
-@@ -1753,8 +1757,6 @@ struct pci_bus *pci_create_root_bus(stru
- class_dev_reg_err:
- 	put_device(&bridge->dev);
- 	device_unregister(&bridge->dev);
--bridge_dev_reg_err:
--	kfree(bridge);
- err_out:
- 	kfree(b);
- 	return NULL;
+-		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
+-		    ata_link_online(&ap->pmp_link[pmp])) {
++		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
+ 			link = &ap->pmp_link[pmp];
+ 			fbs_need_dec = true;
+ 		}
 
 
