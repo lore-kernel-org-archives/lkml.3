@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965447Ab3GSFZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:25:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39427 "EHLO
+	id S965547Ab3GSF0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:26:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965432Ab3GSFWZ (ORCPT
+	with ESMTP id S965391Ab3GSFWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:25 -0400
+	Fri, 19 Jul 2013 01:22:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Tomasz Figa <t.figa@samsung.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 36/38] memcg, kmem: fix reference count handling on the error path
-Date: Thu, 18 Jul 2013 22:21:52 -0700
-Message-Id: <20130719052050.342794558@linuxfoundation.org>
+Subject: [ 35/38] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
+Date: Thu, 18 Jul 2013 22:21:51 -0700
+Message-Id: <20130719052050.275740304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -32,60 +32,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-commit f37a96914d1aea10fed8d9af10251f0b9caea31b upstream.
+commit da331ba8e9c5de72a27e50f71105395bba6eebe0 upstream.
 
-mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem fails.
-This is not correct because only memcg_propagate_kmem takes an
-additional reference while mem_cgroup_sockets_init is allowed to fail as
-well (although no current implementation fails) but it doesn't take any
-reference.  This all suggests that it should be memcg_propagate_kmem
-that should clean up after itself so this patch moves mem_cgroup_put
-over there.
+tasklet_kill() may sleep so call it before taking pch->lock.
 
-Unfortunately this is not that easy (as pointed out by Li Zefan) because
-memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it is
-marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
-memcg_propagate_kmem fails so the additional reference is dropped in
-that case in kmem_cgroup_destroy which means that the reference would be
-dropped two times.
+Fixes following lockup:
 
-The easiest way then would be to simply remove mem_cgrroup_put from
-mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
-thing.
+  BUG: scheduling while atomic: cat/2383/0x00000002
+  Modules linked in:
+    unwind_backtrace+0x0/0xfc
+    __schedule_bug+0x4c/0x58
+    __schedule+0x690/0x6e0
+    sys_sched_yield+0x70/0x78
+    tasklet_kill+0x34/0x8c
+    pl330_free_chan_resources+0x24/0x88
+    dma_chan_put+0x4c/0x50
+  [...]
+  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
+   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
+    unwind_backtrace+0x0/0xfc
+    do_raw_spin_lock+0x194/0x204
+    _raw_spin_lock_irqsave+0x20/0x28
+    pl330_tasklet+0x2c/0x5a8
+    tasklet_action+0xfc/0x114
+    __do_softirq+0xe4/0x19c
+    irq_exit+0x98/0x9c
+    handle_IPI+0x124/0x16c
+    gic_handle_irq+0x64/0x68
+    __irq_svc+0x40/0x70
+    cpuidle_wrap_enter+0x4c/0xa0
+    cpuidle_enter_state+0x18/0x68
+    cpuidle_idle_call+0xac/0xe0
+    cpu_idle+0xac/0xf0
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/dma/pl330.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6179,14 +6179,6 @@ mem_cgroup_css_online(struct cgroup *con
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2485,10 +2485,10 @@ static void pl330_free_chan_resources(st
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
+ 	unsigned long flags;
  
- 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
- 	mutex_unlock(&memcg_create_mutex);
--	if (error) {
--		/*
--		 * We call put now because our (and parent's) refcnts
--		 * are already in place. mem_cgroup_put() will internally
--		 * call __mem_cgroup_free, so return directly
--		 */
--		mem_cgroup_put(memcg);
--	}
- 	return error;
- }
+-	spin_lock_irqsave(&pch->lock, flags);
+-
+ 	tasklet_kill(&pch->task);
+ 
++	spin_lock_irqsave(&pch->lock, flags);
++
+ 	pl330_release_channel(pch->pl330_chid);
+ 	pch->pl330_chid = NULL;
  
 
 
