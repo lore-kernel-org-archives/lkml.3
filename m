@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935390Ab3GSHsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:48:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35493 "EHLO
+	id S965358Ab3GSHss (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:48:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35513 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935322Ab3GSHs0 (ORCPT
+	with ESMTP id S935322Ab3GSHsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:48:26 -0400
-Date: Fri, 19 Jul 2013 00:48:09 -0700
+	Fri, 19 Jul 2013 03:48:45 -0400
+Date: Fri, 19 Jul 2013 00:48:28 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-f36f83f947ede547833e462696893f866df77324@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+Message-ID: <tip-2bbc5874251830fee170a0fc97fa5788717d2fd9@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
         jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1370324779-16921-1-git-send-email-namhyung@kernel.org>
-References: <1370324779-16921-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1370337737-30812-3-git-send-email-namhyung@kernel.org>
+References: <1370337737-30812-3-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf sched:
-  Move struct perf_sched definition out of cmd_sched()
-Git-Commit-ID: f36f83f947ede547833e462696893f866df77324
+Subject: [tip:perf/core] perf gtk/hists: Add support for callchains
+Git-Commit-ID: 2bbc5874251830fee170a0fc97fa5788717d2fd9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,90 +31,138 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:48:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:48:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f36f83f947ede547833e462696893f866df77324
-Gitweb:     http://git.kernel.org/tip/f36f83f947ede547833e462696893f866df77324
+Commit-ID:  2bbc5874251830fee170a0fc97fa5788717d2fd9
+Gitweb:     http://git.kernel.org/tip/2bbc5874251830fee170a0fc97fa5788717d2fd9
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 4 Jun 2013 14:46:19 +0900
+AuthorDate: Tue, 4 Jun 2013 18:22:13 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:52:35 -0300
+CommitDate: Fri, 12 Jul 2013 13:52:38 -0300
 
-perf sched: Move struct perf_sched definition out of cmd_sched()
+perf gtk/hists: Add support for callchains
 
-For some reason it consumed quite amount of compile time when declared
-as local variable, and it disappeared when moved out of the function.
-Moving other variables/tables didn't help.
+Display callchain information in the symbol column.  It's only enabled
+when recorded with -g and has symbol sort key.
 
-On my system this single-file-change build time reduced from 11s to 3s.
-
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1370324779-16921-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1370337737-30812-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-sched.c | 41 +++++++++++++++++++++--------------------
- 1 file changed, 21 insertions(+), 20 deletions(-)
+ tools/perf/ui/gtk/hists.c | 65 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index fed9ae4..fba4a94 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1662,28 +1662,29 @@ static int __cmd_record(int argc, const char **argv)
- 	return cmd_record(i, rec_argv, NULL);
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index cb6a9b4..226c7e1 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -124,6 +124,55 @@ void perf_gtk__init_hpp(void)
+ 				perf_gtk__hpp_color_overhead_guest_us;
  }
  
-+static const char default_sort_order[] = "avg, max, switch, runtime";
-+static struct perf_sched sched = {
-+	.tool = {
-+		.sample		 = perf_sched__process_tracepoint_sample,
-+		.comm		 = perf_event__process_comm,
-+		.lost		 = perf_event__process_lost,
-+		.fork		 = perf_event__process_fork,
-+		.ordered_samples = true,
-+	},
-+	.cmp_pid	      = LIST_HEAD_INIT(sched.cmp_pid),
-+	.sort_list	      = LIST_HEAD_INIT(sched.sort_list),
-+	.start_work_mutex     = PTHREAD_MUTEX_INITIALIZER,
-+	.work_done_wait_mutex = PTHREAD_MUTEX_INITIALIZER,
-+	.curr_pid	      = { [0 ... MAX_CPUS - 1] = -1 },
-+	.sort_order	      = default_sort_order,
-+	.replay_repeat	      = 10,
-+	.profile_cpu	      = -1,
-+	.next_shortname1      = 'A',
-+	.next_shortname2      = '0',
-+};
++static void callchain_list__sym_name(struct callchain_list *cl,
++				     char *bf, size_t bfsize)
++{
++	if (cl->ms.sym)
++		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
++	else
++		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
++}
 +
- int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
++static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
++				    GtkTreeIter *parent, int col)
++{
++	struct rb_node *nd;
++	bool has_single_node = (rb_first(root) == rb_last(root));
++
++	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
++		struct callchain_node *node;
++		struct callchain_list *chain;
++		GtkTreeIter iter, new_parent;
++		bool need_new_parent;
++
++		node = rb_entry(nd, struct callchain_node, rb_node);
++
++		new_parent = *parent;
++		need_new_parent = !has_single_node && (node->val_nr > 1);
++
++		list_for_each_entry(chain, &node->val, list) {
++			char buf[128];
++
++			gtk_tree_store_append(store, &iter, &new_parent);
++
++			callchain_list__sym_name(chain, buf, sizeof(buf));
++			gtk_tree_store_set(store, &iter, col, buf, -1);
++
++			if (need_new_parent) {
++				/*
++				 * Only show the top-most symbol in a callchain
++				 * if it's not the only callchain.
++				 */
++				new_parent = iter;
++				need_new_parent = false;
++			}
++		}
++
++		/* Now 'iter' contains info of the last callchain_list */
++		perf_gtk__add_callchain(&node->rb_root, store, &iter, col);
++	}
++}
++
+ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 				 float min_pcnt)
  {
--	const char default_sort_order[] = "avg, max, switch, runtime";
--	struct perf_sched sched = {
--		.tool = {
--			.sample		 = perf_sched__process_tracepoint_sample,
--			.comm		 = perf_event__process_comm,
--			.lost		 = perf_event__process_lost,
--			.fork		 = perf_event__process_fork,
--			.ordered_samples = true,
--		},
--		.cmp_pid	      = LIST_HEAD_INIT(sched.cmp_pid),
--		.sort_list	      = LIST_HEAD_INIT(sched.sort_list),
--		.start_work_mutex     = PTHREAD_MUTEX_INITIALIZER,
--		.work_done_wait_mutex = PTHREAD_MUTEX_INITIALIZER,
--		.curr_pid	      = { [0 ... MAX_CPUS - 1] = -1 },
--		.sort_order	      = default_sort_order,
--		.replay_repeat	      = 10,
--		.profile_cpu	      = -1,
--		.next_shortname1      = 'A',
--		.next_shortname2      = '0',
--	};
- 	const struct option latency_options[] = {
- 	OPT_STRING('s', "sort", &sched.sort_order, "key[,key2...]",
- 		   "sort by key(s): runtime, switch, avg, max"),
+@@ -135,6 +184,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	struct rb_node *nd;
+ 	GtkWidget *view;
+ 	int col_idx;
++	int sym_col = -1;
+ 	int nr_cols;
+ 	char s[512];
+ 
+@@ -153,6 +203,9 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		if (se->elide)
+ 			continue;
+ 
++		if (se == &sort_sym)
++			sym_col = nr_cols;
++
+ 		col_types[nr_cols++] = G_TYPE_STRING;
+ 	}
+ 
+@@ -183,6 +236,13 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 							    col_idx++, NULL);
+ 	}
+ 
++	if (symbol_conf.use_callchain && sort__has_sym) {
++		GtkTreeViewColumn *column;
++
++		column = gtk_tree_view_get_column(GTK_TREE_VIEW(view), sym_col);
++		gtk_tree_view_set_expander_column(GTK_TREE_VIEW(view), column);
++	}
++
+ 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
+ 
+ 	g_object_unref(GTK_TREE_MODEL(store));
+@@ -221,6 +281,11 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 
+ 			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
+ 		}
++
++		if (symbol_conf.use_callchain && sort__has_sym) {
++			perf_gtk__add_callchain(&h->sorted_chain, store, &iter,
++						sym_col);
++		}
+ 	}
+ 
+ 	gtk_container_add(GTK_CONTAINER(window), view);
