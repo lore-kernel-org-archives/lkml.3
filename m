@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab3GSQ3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:29:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49819 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab3GSQ3j (ORCPT
+	id S934766Ab3GSQcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:32:21 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48273 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760870Ab3GSQ3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:29:39 -0400
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms@verge.net.au>, Vinod Koul <vinod.koul@intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 01/15] DMA: shdma: add support for DMAC configuration data, supplied via device ID
-Date: Fri, 19 Jul 2013 18:29:26 +0200
-Message-Id: <1374251374-30186-2-git-send-email-g.liakhovetski@gmx.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:XKP4FdBuXBZSDpN2rTSg6tatjIw0UK6U4biW1jIr6CS
- SpZNS6Mr+6STu4vjAR+cJL6FozvYQ8fRr8wRY67zr+tMq1JI/p
- tyy+OcHyer0ToQT/HNB0mdTxZext/m3FwPasD8nZeLlw6CVvF5
- X1pbn2iIAAf2ErAG/b1oKO/1RIPKagwjGsT8AxSdaQngY6uKA+
- 7J6Mdms2R5bdVozOfwhNlanOk5oYR2yWmq5BijgCq29l1QCxIJ
- 3rtsjVSbk/YlZfNjs291RRsQJMLJPbio7p1IXlgIb72c4x2syf
- eDS/UUCzOLzAnqXTy9TYZxbPVDyuLHFh+7QDVuDW5odATKczPT
- 0X1ZzIkF9hr2t56An8sodIwZaqiVq/ud9gxrY9Wiq5JBBKQ4/q
- BffhFcq8kxw6A==
+	Fri, 19 Jul 2013 12:29:41 -0400
+Date: Fri, 19 Jul 2013 09:29:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Christopher Covington <cov@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 04/17] sched_clock: Add support for >32 bit
+ sched_clock
+Message-ID: <20130719162939.GG27430@codeaurora.org>
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
+ <1374189690-10810-5-git-send-email-sboyd@codeaurora.org>
+ <20130719092319.GA4681@tarshish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130719092319.GA4681@tarshish>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is going to facilitate DT support by eliminating the need in AUXDATA
-and avoiding creating complex DT data. This also fits well with DMAC
-devices, because SoCs with them often have multiple identical DMAC
-instances and it is perfectly valid to use a single configuration data set
-for all of them.
+On 07/19, Baruch Siach wrote:
+> On Thu, Jul 18, 2013 at 04:21:17PM -0700, Stephen Boyd wrote:
+> > @@ -110,14 +123,13 @@ void __init setup_sched_clock(u32 (*read)(void), int
+> >   bits, unsigned long rate)
+> >  	if (cd.rate > rate)
+> >  		return;
+> >  
+> > -	BUG_ON(bits > 32);
+> >  	WARN_ON(!irqs_disabled());
+> >  	read_sched_clock = read;
+> > -	sched_clock_mask = (1 << bits) - 1;
+> > +	sched_clock_mask = CLOCKSOURCE_MASK(bits);
+> 
+> Note that this conflicts with my integer overflow fix 
+> (http://article.gmane.org/gmane.linux.ports.arm.kernel/252498) that I hope 
+> will get merged before 3.11 is out.
+> 
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
- drivers/dma/sh/Makefile              |    2 ++
- drivers/dma/sh/{shdma.c => shdmac.c} |   11 ++++++++++-
- 2 files changed, 12 insertions(+), 1 deletions(-)
- rename drivers/dma/sh/{shdma.c => shdmac.c} (98%)
+Thanks for the heads up. The conflict looks minor and I'll rebase
+if necessary.
 
-diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
-index c962138..893ee09 100644
---- a/drivers/dma/sh/Makefile
-+++ b/drivers/dma/sh/Makefile
-@@ -1,3 +1,5 @@
- obj-$(CONFIG_SH_DMAE_BASE) += shdma-base.o shdma-of.o
- obj-$(CONFIG_SH_DMAE) += shdma.o
-+shdma-y := shdmac.o
-+shdma-objs := $(shdma-y)
- obj-$(CONFIG_SUDMAC) += sudmac.o
-diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdmac.c
-similarity index 98%
-rename from drivers/dma/sh/shdma.c
-rename to drivers/dma/sh/shdmac.c
-index 5153af1..751a4e3 100644
---- a/drivers/dma/sh/shdma.c
-+++ b/drivers/dma/sh/shdmac.c
-@@ -665,7 +665,7 @@ static const struct shdma_ops sh_dmae_shdma_ops = {
- 
- static int sh_dmae_probe(struct platform_device *pdev)
- {
--	struct sh_dmae_pdata *pdata = pdev->dev.platform_data;
-+	struct sh_dmae_pdata *pdata;
- 	unsigned long irqflags = IRQF_DISABLED,
- 		chan_flag[SH_DMAE_MAX_CHANNELS] = {};
- 	int errirq, chan_irq[SH_DMAE_MAX_CHANNELS];
-@@ -674,6 +674,8 @@ static int sh_dmae_probe(struct platform_device *pdev)
- 	struct dma_device *dma_dev;
- 	struct resource *chan, *dmars, *errirq_res, *chanirq_res;
- 
-+	pdata = (void *)pdev->id_entry->driver_data ? : pdev->dev.platform_data;
-+
- 	/* get platform data */
- 	if (!pdata || !pdata->channel_num)
- 		return -ENODEV;
-@@ -903,6 +905,12 @@ static const struct of_device_id sh_dmae_of_match[] = {
- };
- MODULE_DEVICE_TABLE(of, sh_dmae_of_match);
- 
-+const struct platform_device_id sh_dmae_id_table[] = {
-+	{.name = SH_DMAE_DRV_NAME,},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(platform, sh_dmae_id_table);
-+
- static struct platform_driver sh_dmae_driver = {
- 	.driver 	= {
- 		.owner	= THIS_MODULE,
-@@ -912,6 +920,7 @@ static struct platform_driver sh_dmae_driver = {
- 	},
- 	.remove		= sh_dmae_remove,
- 	.shutdown	= sh_dmae_shutdown,
-+	.id_table	= sh_dmae_id_table,
- };
- 
- static int __init sh_dmae_init(void)
 -- 
-1.7.2.5
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
