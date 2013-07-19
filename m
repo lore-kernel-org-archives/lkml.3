@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760252Ab3GSKtE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:49:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54145 "EHLO bear.ext.ti.com"
+	id S1760267Ab3GSKtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:49:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54177 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760235Ab3GSKtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:49:00 -0400
-Message-ID: <51E9197F.7010608@ti.com>
-Date: Fri, 19 Jul 2013 16:18:31 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1760229Ab3GSKtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 06:49:50 -0400
+Message-ID: <51E919CA.8060805@ti.com>
+Date: Fri, 19 Jul 2013 13:49:46 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, Nishanth Menon <nm@ti.com>,
-        <balbi@ti.com>, <linux@arm.linux.org.uk>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <rnayak@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com> <51E87C98.5030001@ti.com> <20130719071728.GX7656@atomide.com>
-In-Reply-To: <20130719071728.GX7656@atomide.com>
+To: Arend van Spriel <arend@broadcom.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no ethernet
+References: <51E7AA24.6080600@broadcom.com> <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com>
+In-Reply-To: <51E916C0.8080206@broadcom.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 July 2013 12:47 PM, Tony Lindgren wrote:
->> On Thursday 18 July 2013 02:56 PM, Nishanth Menon wrote:
+On 07/19/2013 01:36 PM, Arend van Spriel wrote:
+> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
+>> Then for the SDIO with device tree, take a look at the following
+>> patches:
 >>
->> Since the cross-bar is not limited t0 IRQ lines and applicable for
->> DMA request lines as well, making it IRQ chip doesn't make sense. Its
->> not typical pin control functionality either but at least that framework
->> is much closer to consider as an option.
->>
->> Actually its more of setting up the IRQ and DMA pins maps once
->> at boot for a given SOC based on chosen configuration by the
->> board. So I am leaning towards pinctrl as well. Just haven't
->> thought enough about whether thats the best approach.
->>
->> CC'ing Linus W and Tony L whether we can use pinctrl framework
->> for such an IP and if yes how ;-).
-> If it really muxes signals then using pinctrl seems logical.
-> Especially if the registers are in the SCM block.
->
-> It might be already possible to handle it already with
-> pinctrl-single,bits for the muxing part.
- I also thought of using the pinctrl itself.
- But then i wanted  to have the error handling as well,
- hence did this.
+>> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
+>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
+> 
+> I have been looking at the pandaboard patch in the series above and I do have a question. Among other things the patch adds these dt entries.
+> 
+> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP | MODE0 */
+> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP | MODE0 */
+> 
+> If I look at the similar names in the deceased board-omap4panda.c:
+> 
+> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
+> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
+> 
+> and in mux44xx.h:
+> 
+> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
+> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
+> 
+> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is probably an explanation to it and it would help my understanding to know where this difference comes from. Hope you can help me out here.
+> 
 
-Regards,
- Sricharan
+If you see omap4.dtsi, omap4_pmx_core starts at register address 0x4a100040.
+
+So, you need to subtract 0x40 from the offsets defined in mux44xx.h for pmx_core registers.
+
+NOTE: omap4_pmx_wkup starts at a different address. Those are for wakeup domain
+control registers.
+
+cheers,
+-roger
+
