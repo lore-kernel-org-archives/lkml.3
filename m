@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935205Ab3GSC1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:27:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37844 "EHLO
+	id S935186Ab3GSC1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:27:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37840 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935167Ab3GSCZN (ORCPT
+	with ESMTP id S935069Ab3GSCZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:13 -0400
+	Thu, 18 Jul 2013 22:25:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [ 20/24] ext4: fix overflow when counting used blocks on 32-bit architectures
-Date: Thu, 18 Jul 2013 19:24:52 -0700
-Message-Id: <20130719022405.401613803@linuxfoundation.org>
+Subject: [ 19/24] ext4: fix data offset overflow in ext4_xattr_fiemap() on 32-bit archs
+Date: Thu, 18 Jul 2013 19:24:51 -0700
+Message-Id: <20130719022405.335453468@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -28,41 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kara <jack@suse.cz>
 
-commit 8af8eecc1331dbf5e8c662022272cf667e213da5 upstream.
+commit a60697f411eb365fb09e639e6f183fe33d1eb796 upstream.
 
-The arithmetics adding delalloc blocks to the number of used blocks in
-ext4_getattr() can easily overflow on 32-bit archs as we first multiply
-number of blocks by blocksize and then divide back by 512. Make the
-arithmetics more clever and also use proper type (unsigned long long
-instead of unsigned long).
+On 32-bit architectures with 32-bit sector_t computation of data offset
+in ext4_xattr_fiemap() can overflow resulting in reporting bogus data
+location. Fix the problem by typing block number to proper type before
+shifting.
 
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    4 ++--
+ fs/ext4/extents.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4221,7 +4221,7 @@ int ext4_getattr(struct vfsmount *mnt, s
- 		 struct kstat *stat)
- {
- 	struct inode *inode;
--	unsigned long delalloc_blocks;
-+	unsigned long long delalloc_blocks;
- 
- 	inode = dentry->d_inode;
- 	generic_fillattr(inode, stat);
-@@ -4238,7 +4238,7 @@ int ext4_getattr(struct vfsmount *mnt, s
- 	 */
- 	delalloc_blocks = EXT4_I(inode)->i_reserved_data_blocks;
- 
--	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
-+	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
- 	return 0;
- }
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4713,7 +4713,7 @@ static int ext4_xattr_fiemap(struct inod
+ 		error = ext4_get_inode_loc(inode, &iloc);
+ 		if (error)
+ 			return error;
+-		physical = iloc.bh->b_blocknr << blockbits;
++		physical = (__u64)iloc.bh->b_blocknr << blockbits;
+ 		offset = EXT4_GOOD_OLD_INODE_SIZE +
+ 				EXT4_I(inode)->i_extra_isize;
+ 		physical += offset;
+@@ -4721,7 +4721,7 @@ static int ext4_xattr_fiemap(struct inod
+ 		flags |= FIEMAP_EXTENT_DATA_INLINE;
+ 		brelse(iloc.bh);
+ 	} else { /* external block */
+-		physical = EXT4_I(inode)->i_file_acl << blockbits;
++		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
+ 		length = inode->i_sb->s_blocksize;
+ 	}
  
 
 
