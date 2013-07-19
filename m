@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760949Ab3GSQv6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:51:58 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36752 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab3GSQvz (ORCPT
+	id S1760921Ab3GSQyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:54:36 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.7]:36896 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760225Ab3GSQyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:51:55 -0400
-Date: Fri, 19 Jul 2013 18:51:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 2/3] init/Kconfig: VIRT_CPU_ACCOUNTING_GEN: drop 64-bit
- requirement
-Message-ID: <20130719165150.GD21752@somewhere>
-References: <1372876601-23881-1-git-send-email-khilman@linaro.org>
- <1372876601-23881-3-git-send-email-khilman@linaro.org>
+	Fri, 19 Jul 2013 12:54:35 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-12.tower-127.messagelabs.com!1374252861!7781029!20
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.9; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
+Organization: Vision Engraving Systems
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ASoC: ep93xx: fix build of ep93xx-ac97.c
+Date: Fri, 19 Jul 2013 09:53:25 -0700
+User-Agent: KMail/1.13.5 (Linux/3.7.0; KDE/4.4.5; x86_64; ; )
+CC: <alsa-devel@alsa-project.org>, Ryan Mallon <rmallon@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372876601-23881-3-git-send-email-khilman@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <201307190953.25957.hsweeten@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 11:36:40AM -0700, Kevin Hilman wrote:
-> The 64-bit requirement can be removed after the conversion of the nsec
-> granularity cputime to work on !64_BIT, which was done in commit
-> 8c23b80e (cputime_nsecs: use math64.h for nsec resolution conversion
-> helpers)
-> 
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Fix the build of this driver. It was broken by:
 
-So I finally sat down and checked all the use of cputime_t (I probably
-missed some) to make sure that readers are safe against concurrent write
-in 32 bits archs.
+Commit 453807f3006757a5661c4000262d7d9284b5214c
+ASoC: ep93xx: Use ep93xx_dma_params instead of ep93xx_pcm_dma_params
 
-And everything looks ok expect perhaps fs/[compat]binfmt_elf*.c that doesn't
-lock the signal struct before getting tsk->signal->cutime and stuff. But perhaps
-it's safe for some reason, I'll look more carefully. And I also need to
-check further itimers code.
+The removed struct ep93xx_pcm_dma_params use the member 'dma_port' to
+select the dma channel. The struct ep93xx_dma_data uses the member
+'port'.
 
-But I think I pushed back the ARM support long enough now so it's time to
-get this patch in. The above issues are mostly details that can be dealt
-with separately.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ryan Mallon <rmallon@gmail.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+---
+ sound/soc/cirrus/ep93xx-ac97.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Just one thing before we apply this. I haven't checked the arch/* potential
-unsafe uses of cputime. So it would be nice to bring a new
-CONFIG_HAVE_VIRT_CPU_ACCOUNTING_GEN. This won't require any specific arch
-support, it would just be there to inform the arch developer, through the help
-text, about the issue with cputime being u64 and resulting possible race.
-So the guy can have a look at cputime_t uses in his arch before finally enabling
-that config.
+diff --git a/sound/soc/cirrus/ep93xx-ac97.c b/sound/soc/cirrus/ep93xx-ac97.c
+index ac73c60..04491f0 100644
+--- a/sound/soc/cirrus/ep93xx-ac97.c
++++ b/sound/soc/cirrus/ep93xx-ac97.c
+@@ -102,13 +102,13 @@ static struct ep93xx_ac97_info *ep93xx_ac97_info;
+ 
+ static struct ep93xx_dma_data ep93xx_ac97_pcm_out = {
+ 	.name		= "ac97-pcm-out",
+-	.dma_port	= EP93XX_DMA_AAC1,
++	.port		= EP93XX_DMA_AAC1,
+ 	.direction	= DMA_MEM_TO_DEV,
+ };
+ 
+ static struct ep93xx_dma_data ep93xx_ac97_pcm_in = {
+ 	.name		= "ac97-pcm-in",
+-	.dma_port	= EP93XX_DMA_AAC1,
++	.port		= EP93XX_DMA_AAC1,
+ 	.direction	= DMA_DEV_TO_MEM,
+ };
+ 
+-- 
+1.8.3.2
 
-Also, of course check that arm is fine wrt. that and finally enable it :)
-
-Thanks!
-
-
-> ---
->  init/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 2d9b831..e151022 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -325,7 +325,7 @@ config VIRT_CPU_ACCOUNTING_NATIVE
->  
->  config VIRT_CPU_ACCOUNTING_GEN
->  	bool "Full dynticks CPU time accounting"
-> -	depends on HAVE_CONTEXT_TRACKING && 64BIT
-> +	depends on HAVE_CONTEXT_TRACKING
->  	select VIRT_CPU_ACCOUNTING
->  	select CONTEXT_TRACKING
->  	help
-> -- 
-> 1.8.3
-> 
