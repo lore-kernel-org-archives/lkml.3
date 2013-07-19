@@ -1,78 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759905Ab3GSIJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:09:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33609 "EHLO song.cn.fujitsu.com"
+	id S1759886Ab3GSIKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:10:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54371 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759873Ab3GSIJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:09:37 -0400
+	id S1759727Ab3GSIAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:00:55 -0400
 X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
-   d="scan'208";a="7947544"
-Message-ID: <51E8F36B.10501@cn.fujitsu.com>
-Date: Fri, 19 Jul 2013 16:06:03 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: ak@linux.intel.com, trbecker@trbecker.org, jmario@redhat.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH ] lib/crc32: update the comments of, crc32_{be,le}_generic()
+   d="scan'208";a="7947428"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH 04/21] acpi: Remove "continue" in macro INVALID_TABLE().
+Date: Fri, 19 Jul 2013 15:59:17 +0800
+Message-Id: <1374220774-29974-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 16:07:41,
+ 2013/07/19 15:58:37,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 16:07:42,
-	Serialize complete at 2013/07/19 16:07:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+ 2013/07/19 15:58:43,
+	Serialize complete at 2013/07/19 15:58:43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The macro INVALID_TABLE() is defined like this:
 
+ #define INVALID_TABLE(x, path, name)                                    \
+         { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+And it is used like this:
+
+	for (...) {
+		...
+		if (...)
+			INVALID_TABLE()
+		...
+	}
+
+The "continue" in the macro makes the code hard to understand.
+Change it to the style like other macros:
+
+ #define INVALID_TABLE(x, path, name)                                    \
+         do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
+
+So after this patch, this macro should be used like this:
+
+	for (...) {
+		...
+		if (...) {
+			INVALID_TABLE()
+			continue;
+		}
+		...
+	}
+
+Add the "continue" wherever the macro is called.
+(For now, it is only called in acpi_initrd_override().)
+
+The idea is from Yinghai Lu <yinghai@kernel.org>.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- lib/crc32.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ drivers/acpi/osl.c |   18 +++++++++++++-----
+ 1 files changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 072fbd8..4722659 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -131,11 +131,14 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- #endif
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index e721863..91d9f54 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -565,7 +565,7 @@ static const char * const table_sigs[] = {
  
- /**
-- * crc32_le() - Calculate bitwise little-endian Ethernet AUTODIN II CRC32
-+ * crc32_le_generic() - Calculate bitwise little-endian Ethernet AUTODIN II
-+ * 			CRC32/CRC32C
-  * @crc: seed value for computation.  ~0 for Ethernet, sometimes 0 for
-- *	other uses, or the previous crc32 value if computing incrementally.
-- * @p: pointer to buffer over which CRC is run
-+ *	other uses, or the previous crc32/crc32c value if computing incrementally.
-+ * @p: pointer to buffer over which CRC32/CRC32C is run
-  * @len: length of buffer @p
-+ * @tab: little-endian Ethernet table
-+ * @polynomial: CRC32/CRC32c LE polynomial
-  */
- static inline u32 __pure crc32_le_generic(u32 crc, unsigned char const *p,
- 					  size_t len, const u32 (*tab)[256],
-@@ -201,11 +204,13 @@ EXPORT_SYMBOL(crc32_le);
- EXPORT_SYMBOL(__crc32c_le);
+ /* Non-fatal errors: Affected tables/files are ignored */
+ #define INVALID_TABLE(x, path, name)					\
+-	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
++	do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
  
- /**
-- * crc32_be() - Calculate bitwise big-endian Ethernet AUTODIN II CRC32
-+ * crc32_be_generic() - Calculate bitwise big-endian Ethernet AUTODIN II CRC32
-  * @crc: seed value for computation.  ~0 for Ethernet, sometimes 0 for
-  *	other uses, or the previous crc32 value if computing incrementally.
-- * @p: pointer to buffer over which CRC is run
-+ * @p: pointer to buffer over which CRC32 is run
-  * @len: length of buffer @p
-+ * @tab: big-endian Ethernet table
-+ * @polynomial: CRC32 BE polynomial
-  */
- static inline u32 __pure crc32_be_generic(u32 crc, unsigned char const *p,
- 					  size_t len, const u32 (*tab)[256],
+ #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+ 
+@@ -593,9 +593,11 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 		data += offset;
+ 		size -= offset;
+ 
+-		if (file.size < sizeof(struct acpi_table_header))
++		if (file.size < sizeof(struct acpi_table_header)) {
+ 			INVALID_TABLE("Table smaller than ACPI header",
+ 				      cpio_path, file.name);
++			continue;
++		}
+ 
+ 		table = file.data;
+ 
+@@ -603,15 +605,21 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 			if (!memcmp(table->signature, table_sigs[sig], 4))
+ 				break;
+ 
+-		if (!table_sigs[sig])
++		if (!table_sigs[sig]) {
+ 			INVALID_TABLE("Unknown signature",
+ 				      cpio_path, file.name);
+-		if (file.size != table->length)
++			continue;
++		}
++		if (file.size != table->length) {
+ 			INVALID_TABLE("File length does not match table length",
+ 				      cpio_path, file.name);
+-		if (acpi_table_checksum(file.data, table->length))
++			continue;
++		}
++		if (acpi_table_checksum(file.data, table->length)) {
+ 			INVALID_TABLE("Bad table checksum",
+ 				      cpio_path, file.name);
++			continue;
++		}
+ 
+ 		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
+ 			table->signature, cpio_path, file.name, table->length);
 -- 
-1.7.7
+1.7.1
 
