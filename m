@@ -1,150 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933668Ab3GSFCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:02:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7979 "EHLO mx1.redhat.com"
+	id S933735Ab3GSFDH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:03:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35433 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759446Ab3GSFC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:02:29 -0400
-Date: Fri, 19 Jul 2013 08:03:51 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net V2 2/2] macvtap: do not zerocopy if iov needs more
- pages than MAX_SKB_FRAGS
-Message-ID: <20130719050351.GB8537@redhat.com>
-References: <1374116116-43844-1-git-send-email-jasowang@redhat.com>
- <1374116116-43844-2-git-send-email-jasowang@redhat.com>
+	id S932084Ab3GSFDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:03:05 -0400
+Message-ID: <51E8C87A.3030007@ti.com>
+Date: Fri, 19 Jul 2013 10:32:50 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374116116-43844-2-git-send-email-jasowang@redhat.com>
+To: Trent Piepho <tpiepho@gmail.com>
+CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>, <linux-omap@vger.kernel.org>,
+        <rnayak@ti.com>, <linux-kernel@vger.kernel.org>, <balbi@ti.com>
+Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
+References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>	<1374141687-10790-3-git-send-email-sourav.poddar@ti.com> <CA+7tXij7W_F0ZTQZ=YvK+qOLO+O-6WpTKxLerv8NXyrdydt7FA@mail.gmail.com>
+In-Reply-To: <CA+7tXij7W_F0ZTQZ=YvK+qOLO+O-6WpTKxLerv8NXyrdydt7FA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 10:55:16AM +0800, Jason Wang wrote:
-> We try to linearize part of the skb when the number of iov is greater than
-> MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-> one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-> network.
-> 
-> Solve this problem by calculate the pages needed for iov before trying to do
-> zerocopy and switch to use copy instead of zerocopy if it needs more than
-> MAX_SKB_FRAGS.
-> 
-> This is done through introducing a new helper to count the pages for iov, and
-> call uarg->callback() manually when switching from zerocopy to copy to notify
-> vhost.
-> 
-> We can do further optimization on top.
-> 
-> This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-> (macvtap: zerocopy: validate vectors before building skb).
-> 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+On Friday 19 July 2013 12:38 AM, Trent Piepho wrote:
+> On Thu, Jul 18, 2013 at 3:01 AM, Sourav Poddar<sourav.poddar@ti.com>  wrote:
+>> +Required properties:
+>> +- compatible : should be "ti,dra7xxx-qspi".
+>> +- reg: Should contain QSPI registers location and length.
+>> +- #address-cells, #size-cells : Must be present if the device has sub-nodes
+>> +- ti,hwmods: Name of the hwmod associated to the QSPI
+> What is ti,hwmods?  It's not clear from the description.  It also
+> doesn't appear to be used in the driver.  At least, I did not find any
+> occurrence of "hwmods" in the driver code.
+>
+>> +static inline unsigned long ti_qspi_readl_data(struct ti_qspi *qspi,
+>> +               unsigned long reg, int wlen)
+> "readl" means read LONG.  That's what the L is for.  But this does
+> different widths.
+>
+>> +{
+>> +       switch (wlen) {
+>> +       case 8:
+>> +               return readw(qspi->base + reg);
+>> +               break;
+> wlen == 8, but readw == 16 bit read?
+Yes, I need to change this. should be readb.
+> The break after the return isn't necessary.
+>
+>> +       case 16:
+>> +               return readb(qspi->base + reg);
+>> +               break;
+> wlen == 16, but readb == 8 bit read?
+>
+same here.
+>> +       case 32:
+>> +               return readl(qspi->base + reg);
+> wlen == 32, readl == 32, this one makes sense, but....
+>
+>> +static inline void ti_qspi_writel_data(struct ti_qspi *qspi,
+>> +               unsigned long val, unsigned long reg, int wlen)
+>> +       case 32:
+>> +               writeb(val, qspi->base + reg);
+>> +               break;
+> A 32 bit write uses an 8 bit write command, while read is 32 bits??
+>
+> This doesn't make a lot of sense.  If it's actually correct, there
+> should be come kind of comment about it.
+>
+Yes, I will change this in the next version.
+>> +
+>> +static int ti_qspi_setup(struct spi_device *spi)
+>> +{
+>> +
+>> +       clk_ctrl_reg = ti_qspi_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG);
+>> +
+>> +       clk_ctrl_reg&= ~QSPI_CLK_EN;
+>> +
+>> +       /* disable SCLK */
+>> +       ti_qspi_writel(qspi, clk_ctrl_reg, QSPI_SPI_CLOCK_CNTRL_REG);
+> Did you read this from Documentation/spi/spi-summary?
+>                  ** BUG ALERT:  for some reason the first version of
+>                  ** many spi_master drivers seems to get this wrong.
+>                  ** When you code setup(), ASSUME that the controller
+>                  ** is actively processing transfers for another device.
+>
+But I see in this documentation, that setup is usually used for setting up
+device clock rate, modes etc.
+So, what do you recommend here, should we move clk settings to prepare
+hardware ?
+>> +static int ti_qspi_probe(struct platform_device *pdev)
+>> +{
+>> +
+>> +       master->mode_bits = SPI_CPOL | SPI_CPHA;
+> Does your device support full duplex?  It doesn't look like it does.
+> You should set the SPI_MASER_HALF_DUPLEX flag in master->flags.
+>
+hmm. Ok, will add.
+>> +
+>> +       if (!of_property_read_u32(np, "ti,spi-num-cs",&num_cs))
+>> +               master->num_chipselect = num_cs;
+> You didn't document this property.  How is this different than the
+> "num-cs" property already documented in spi-bus bindings?
+>
+Actually, it is no different. This also means the total number of 
+chipselects.
+I used it from omap mcspi. I will make this property in accordance with the
+generic binding.
+Will also send a seperate patch for omap mcspi.
+>> +       qspi->base = devm_ioremap_resource(&pdev->dev, r);
+>> +       if (IS_ERR(qspi->base)) {
+>> +               ret = -ENOMEM;
+> Shouldn't that be ret = PTR_ERR(qspi->base)
+hmm.will change.
 
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-> ---
-> The patch is needed for -stable.
-> Changes from V1:
-> - remove the wrong comment
-> ---
->  drivers/net/macvtap.c |   62 +++++++++++++++++++++++++++++-------------------
->  1 files changed, 37 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index a7c5654..a98fb0e 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -698,6 +698,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
->  	return 0;
->  }
->  
-> +static unsigned long iov_pages(const struct iovec *iv, int offset,
-> +			       unsigned long nr_segs)
-> +{
-> +	unsigned long seg, base;
-> +	int pages = 0, len, size;
-> +
-> +	while (nr_segs && (offset >= iv->iov_len)) {
-> +		offset -= iv->iov_len;
-> +		++iv;
-> +		--nr_segs;
-> +	}
-> +
-> +	for (seg = 0; seg < nr_segs; seg++) {
-> +		base = (unsigned long)iv[seg].iov_base + offset;
-> +		len = iv[seg].iov_len - offset;
-> +		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-> +		pages += size;
-> +		offset = 0;
-> +	}
-> +
-> +	return pages;
-> +}
->  
->  /* Get packet from user space buffer */
->  static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-> @@ -744,31 +766,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->  	if (unlikely(count > UIO_MAXIOV))
->  		goto err;
->  
-> -	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
-> -		zerocopy = true;
-> -
-> -	if (zerocopy) {
-> -		/* Userspace may produce vectors with count greater than
-> -		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
-> -		 * to let the rest of data to be fit in the frags.
-> -		 */
-> -		if (count > MAX_SKB_FRAGS) {
-> -			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
-> -			if (copylen < vnet_hdr_len)
-> -				copylen = 0;
-> -			else
-> -				copylen -= vnet_hdr_len;
-> -		}
-> -		/* There are 256 bytes to be copied in skb, so there is enough
-> -		 * room for skb expand head in case it is used.
-> -		 * The rest buffer is mapped from userspace.
-> -		 */
-> -		if (copylen < vnet_hdr.hdr_len)
-> -			copylen = vnet_hdr.hdr_len;
-> -		if (!copylen)
-> -			copylen = GOODCOPY_LEN;
-> +	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-> +		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
->  		linear = copylen;
-> -	} else {
-> +		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-> +		    <= MAX_SKB_FRAGS)
-> +			zerocopy = true;
-> +	}
-> +
-> +	if (!zerocopy) {
->  		copylen = len;
->  		linear = vnet_hdr.hdr_len;
->  	}
-> @@ -780,9 +786,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->  
->  	if (zerocopy)
->  		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
-> -	else
-> +	else {
->  		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
->  						   len);
-> +		if (!err && m && m->msg_control) {
-> +			struct ubuf_info *uarg = m->msg_control;
-> +			uarg->callback(uarg, false);
-> +		}
-> +	}
-> +
->  	if (err)
->  		goto err_kfree;
->  
-> -- 
-> 1.7.1
