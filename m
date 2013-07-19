@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965501Ab3GSFWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:22:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39449 "EHLO
+	id S965488Ab3GSFWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:22:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39445 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965455Ab3GSFW3 (ORCPT
+	with ESMTP id S965420Ab3GSFW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:29 -0400
+	Fri, 19 Jul 2013 01:22:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten ter Huurne <maarten@treewalker.org>,
-        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Subject: [ 07/38] ext4: fix corruption when online resizing a fs with 1K block size
-Date: Thu, 18 Jul 2013 22:21:23 -0700
-Message-Id: <20130719052048.381829873@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 06/38] jbd2: fix theoretical race in jbd2__journal_restart
+Date: Thu, 18 Jul 2013 22:21:22 -0700
+Message-Id: <20130719052048.310443464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -27,39 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten ter Huurne <maarten@treewalker.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 6ca792edc13c409e8d4eb9001e048264c6a2eb64 upstream.
+commit 39c04153fda8c32e85b51c96eb5511a326ad7609 upstream.
 
-Subtracting the number of the first data block places the superblock
-backups one block too early, corrupting the file system. When the block
-size is larger than 1K, the first data block is 0, so the subtraction
-has no effect and no corruption occurs.
+Once we decrement transaction->t_updates, if this is the last handle
+holding the transaction from closing, and once we release the
+t_handle_lock spinlock, it's possible for the transaction to commit
+and be released.  In practice with normal kernels, this probably won't
+happen, since the commit happens in a separate kernel thread and it's
+unlikely this could all happen within the space of a few CPU cycles.
 
-Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+On the other hand, with a real-time kernel, this could potentially
+happen, so save the tid found in transaction->t_tid before we release
+t_handle_lock.  It would require an insane configuration, such as one
+where the jbd2 thread was set to a very high real-time priority,
+perhaps because a high priority real-time thread is trying to read or
+write to a file system.  But some people who use real-time kernels
+have been known to do insane things, including controlling
+laser-wielding industrial robots.  :-)
+
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ fs/jbd2/transaction.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1656,12 +1656,10 @@ errout:
- 		err = err2;
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -518,10 +518,10 @@ int jbd2__journal_restart(handle_t *hand
+ 		   &transaction->t_outstanding_credits);
+ 	if (atomic_dec_and_test(&transaction->t_updates))
+ 		wake_up(&journal->j_wait_updates);
++	tid = transaction->t_tid;
+ 	spin_unlock(&transaction->t_handle_lock);
  
- 	if (!err) {
--		ext4_fsblk_t first_block;
--		first_block = ext4_group_first_block_no(sb, 0);
- 		if (test_opt(sb, DEBUG))
- 			printk(KERN_DEBUG "EXT4-fs: extended group to %llu "
- 			       "blocks\n", ext4_blocks_count(es));
--		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr - first_block,
-+		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr,
- 			       (char *)es, sizeof(struct ext4_super_block), 0);
- 	}
- 	return err;
+ 	jbd_debug(2, "restarting handle %p\n", handle);
+-	tid = transaction->t_tid;
+ 	need_to_start = !tid_geq(journal->j_commit_request, tid);
+ 	read_unlock(&journal->j_state_lock);
+ 	if (need_to_start)
 
 
