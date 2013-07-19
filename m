@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab3GSQEd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:04:33 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52529 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751762Ab3GSQEb (ORCPT
+	id S1752753Ab3GSQHa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:07:30 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55762 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751340Ab3GSQH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:04:31 -0400
-Date: Fri, 19 Jul 2013 17:03:50 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 fixes for 3.11-rc2
-Message-ID: <20130719160336.GA22565@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 19 Jul 2013 12:07:28 -0400
+Message-ID: <1374250046.15242.7.camel@x61.thuisdomein>
+Subject: Re: [PATCH] lustre:libcfs: remove redundant code.
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexandru Juncu <alexj@rosedu.org>, Pekka Enberg <penberg@kernel.org>,
+        "andreas.dilger" <andreas.dilger@intel.com>,
+        "tao.peng" <tao.peng@emc.com>, driverdev <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Jul 2013 18:07:26 +0200
+In-Reply-To: <20130719154648.GA23116@kroah.com>
+References: <1374245148-24031-1-git-send-email-alexj@rosedu.org>
+	 <CAOJsxLGEmjY6wTp99DKQ4ZKO2oXq6102MczbjCHTUReuCTq-fw@mail.gmail.com>
+	 <CAPhGq=b6_7=i3e=9gkT9s5JZ+hAPcu8T_S+M9Yt60nt3vA6Nrw@mail.gmail.com>
+	 <CAOJsxLFw4t-jwO4vDuMYfZA4uqH59h1c66xVPPFDO037OvGKSg@mail.gmail.com>
+	 <CAPhGq=Y30i0RWJTcomt5sRdKX6RDzdGHBo5L9D6coH8O0ej6kA@mail.gmail.com>
+	 <20130719154648.GA23116@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Jul 2013 16:07:27.0041 (UTC) FILETIME=[101BCB10:01CE849A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2013-07-19 at 08:46 -0700, Greg Kroah-Hartman wrote:
+> Doesn't matter, if there are no users, please just remove it.
 
-Please pull the arm64 fixes below. Thanks.
+Is that, basically, your approach to staging cleanups?
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+I ask because I noticed that "drivers/staging/lustre/lustre/ptlrpc/gss/"
+is only built if CONFIG_PTLRPC_GSS is set. But the corresponding Kconfig
+symbol is nowhere to be found.
 
-  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
+Or do you prefer that I poke the people involved in (this case in)
+Lustre before suggesting a drastic cleanup like that?
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-stable
+Paul Bolle
 
-for you to fetch changes up to ff701306cd49aaff80fb852323b387812bc76491:
-
-  arm64: use common reboot infrastructure (2013-07-19 15:57:08 +0100)
-
-----------------------------------------------------------------
-- Post -rc1 update to the common reboot infrastructure.
-- Fixes (user cache maintenance fault handling, !COMPAT compilation, CPU
-  online and interrupt hanlding).
-
-----------------------------------------------------------------
-Catalin Marinas (1):
-      arm64: Only enable local interrupts after the CPU is marked online
-
-Chen Gang (1):
-      arm64: add '#ifdef CONFIG_COMPAT' for aarch32_break_handler()
-
-Marc Zyngier (1):
-      arm64: use common reboot infrastructure
-
-Will Deacon (1):
-      arm64: mm: don't treat user cache maintenance faults as writes
-
- arch/arm64/include/asm/debug-monitors.h |  7 -----
- arch/arm64/include/asm/system_misc.h    |  3 ++-
- arch/arm64/kernel/process.c             |  2 +-
- arch/arm64/kernel/smp.c                 | 15 ++++++-----
- arch/arm64/mm/fault.c                   | 46 ++++++++++++++-------------------
- 5 files changed, 31 insertions(+), 42 deletions(-)
-
--- 
-Catalin
