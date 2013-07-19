@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965519Ab3GSFX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:23:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965438Ab3GSFXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:23:54 -0400
-Date: Fri, 19 Jul 2013 10:53:45 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnd Bergmann <arnd@arndb.de>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 0/2] [BUGFIX] virtio/console: Fix two bugs of splice_write
-Message-ID: <20130719052345.GD3087@amit-x200.redhat.com>
-References: <20130718231927.3664.50418.stgit@yunodevel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718231927.3664.50418.stgit@yunodevel>
+	id S965504Ab3GSFYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:24:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39453 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965459Ab3GSFWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:22:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 08/38] ext3,ext4: dont mess with dir_file->f_pos in htree_dirblock_to_tree()
+Date: Thu, 18 Jul 2013 22:21:24 -0700
+Message-Id: <20130719052048.449134152@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
+References: <20130719052047.858393825@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 19 Jul 2013 [08:19:27], Yoshihiro YUNOMAE wrote:
-> Hi,
-> 
-> This patch set fixes two bugs of splice_write in the virtio-console driver.
-> 
-> [BUG1] Although pipe->nrbufs is empty, the driver tries to do splice_write.
->        => This induces oops in sg_init_table().
-> 
-> [BUG2] No lock for competition of splice_write.
->        => This induces oops in splice_from_pipe_feed() by bug of any user
->           application.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-Spotted a bug in the 2nd patch.  Do you want to also CC these to stable@?
+------------------
 
-		Amit
+From: Al Viro <viro@ZenIV.linux.org.uk>
+
+commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
+
+Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
+in-core rbtree for use by call_filldir().  All updates of ->f_pos are
+done by the latter; bumping it here (on error) is obviously wrong - we
+might very well have it nowhere near the block we'd found an error in.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext3/namei.c |    7 ++-----
+ fs/ext4/namei.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
+
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -576,11 +576,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
+ 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
+ 						+((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse (bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext3fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -917,11 +917,8 @@ static int htree_dirblock_to_tree(struct
+ 				bh->b_data, bh->b_size,
+ 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
+ 					 + ((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse(bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext4fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
+
+
