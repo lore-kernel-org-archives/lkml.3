@@ -1,295 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760954Ab3GSSPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:15:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51109 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3GSSPA (ORCPT
+	id S1760984Ab3GSSRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:17:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49696 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3GSSRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:15:00 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Roger Quadros <rogerq@ti.com>,
-        George Cherian <george.cherian@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] of: provide of_platform_unpopulate()
-Date: Fri, 19 Jul 2013 20:14:51 +0200
-Message-Id: <1374257691-31981-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.3.2
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Fri, 19 Jul 2013 14:17:46 -0400
+Date: Fri, 19 Jul 2013 11:17:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Paul Bolle <paul.bollee@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
+Subject: Re: mmotm 2013-07-18-16-40 uploaded
+Message-Id: <20130719111744.ce87390c8d8fa6b0b1c52eb6@linux-foundation.org>
+In-Reply-To: <20130719180035.GI17812@cmpxchg.org>
+References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com>
+	<51E8B34B.1070200@gmail.com>
+	<20130719180035.GI17812@cmpxchg.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I called of_platform_populate() on a device to get each child device
-probed and on rmmod and I need to reverse its doing. After a quick grep
-I did what others did as well and rmmod ended in:
+On Fri, 19 Jul 2013 14:00:35 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-| Unable to handle kernel NULL pointer dereference at virtual address 00000018
-| PC is at release_resource+0x18/0x80
-| Process rmmod (pid: 2005, stack limit = 0xedc30238)
-| [<c003add0>] (release_resource+0x18/0x80) from [<c0300e08>] (platform_device_del+0x78/0xac)
-| [<c0300e08>] (platform_device_del+0x78/0xac) from [<c0301358>] (platform_device_unregister+0xc/0x18)
+> > >A git tree which contains the memory management portion of this tree is
+> > >maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+> > >by Michal Hocko.  It contains the patches which are between the
+> > >"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+> > >file, http://www.ozlabs.org/~akpm/mmotm/series.
+> > >
+> > >
+> > >A full copy of the full kernel tree with the linux-next and mmotm patches
+> > >already applied is available through git within an hour of the mmotm
+> > >release.  Individual mmotm releases are tagged.  The master branch always
+> > >points to the latest release, so it's constantly rebasing.
+> > >
+> > >http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+> > >
+> > >To develop on top of mmotm git:
+> > >
+> > >   $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+> > >   $ git remote update mmotm
+> > >   $ git checkout -b topic mmotm/master
+> > >   <make changes, commit>
+> > >   $ git send-email mmotm/master.. [...]
+> > >
+> > >To rebase a branch with older patches to a new mmotm release:
+> > >
+> > >   $ git remote update mmotm
+> > >   $ git rebase --onto mmotm/master <topic base> topic
+> 
+> Andrew, that workflow is actually meant for
+> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
+> (i.e. the git remote add mmotm <michal's tree> does not make much
+> sense).  Michal's tree is append-only, so all this precision-rebasing
+> is unnecessary.
 
-The problem is that platform_device_del() "releases" each ressource in its
-tree. This does not work on platform_devices created by OF becuase they
-were never added via insert_resource(). As a consequence old->parent in
-__release_resource() is NULL and we explode while accessing ->child.
-So I either I do something completly wrong _or_ nobody here tested the
-rmmod path of their driver.
+Gee, I haven't looked at that text in a while...
 
-This patch provides a common function to unregister / remove devices
-which added to the system via of_platform_populate(). While this works
-now on my test case I have not tested any of the driver I modify here so
-feedback is greatly appreciated.
+Could you guys please check it, propose any fixes we should make?
 
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Doug Anderson <dianders@chromium.org>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Roger Quadros <rogerq@ti.com>
-Cc: George Cherian <george.cherian@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/bus/omap-ocp2scp.c     | 13 ++-----------
- drivers/iio/adc/exynos_adc.c   | 15 ++-------------
- drivers/mfd/omap-usb-host.c    |  9 +--------
- drivers/of/platform.c          | 22 ++++++++++++++++++++++
- drivers/usb/dwc3/dwc3-exynos.c | 11 +----------
- drivers/usb/dwc3/dwc3-omap.c   | 12 +-----------
- include/linux/of_platform.h    |  4 ++++
- 7 files changed, 33 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/bus/omap-ocp2scp.c b/drivers/bus/omap-ocp2scp.c
-index 5511f98..510bb9e 100644
---- a/drivers/bus/omap-ocp2scp.c
-+++ b/drivers/bus/omap-ocp2scp.c
-@@ -23,15 +23,6 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- 
--static int ocp2scp_remove_devices(struct device *dev, void *c)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--
--	platform_device_unregister(pdev);
--
--	return 0;
--}
--
- static int omap_ocp2scp_probe(struct platform_device *pdev)
- {
- 	int ret;
-@@ -51,7 +42,7 @@ static int omap_ocp2scp_probe(struct platform_device *pdev)
- 	return 0;
- 
- err0:
--	device_for_each_child(&pdev->dev, NULL, ocp2scp_remove_devices);
-+	of_platform_unpopulate(&pdev->dev);
- 
- 	return ret;
- }
-@@ -59,7 +50,7 @@ static int omap_ocp2scp_probe(struct platform_device *pdev)
- static int omap_ocp2scp_remove(struct platform_device *pdev)
- {
- 	pm_runtime_disable(&pdev->dev);
--	device_for_each_child(&pdev->dev, NULL, ocp2scp_remove_devices);
-+	of_platform_unpopulate(&pdev->dev);
- 
- 	return 0;
- }
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index 9809fc9..10248e1 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -216,15 +216,6 @@ static const struct iio_chan_spec exynos_adc_iio_channels[] = {
- 	ADC_CHANNEL(9, "adc9"),
- };
- 
--static int exynos_adc_remove_devices(struct device *dev, void *c)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--
--	platform_device_unregister(pdev);
--
--	return 0;
--}
--
- static void exynos_adc_hw_init(struct exynos_adc *info)
- {
- 	u32 con1, con2;
-@@ -357,8 +348,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_of_populate:
--	device_for_each_child(&pdev->dev, NULL,
--				exynos_adc_remove_devices);
-+	of_platform_unpopulate(&pdev->dev);
- 	regulator_disable(info->vdd);
- 	clk_disable_unprepare(info->clk);
- err_iio_dev:
-@@ -375,8 +365,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
- 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
- 	struct exynos_adc *info = iio_priv(indio_dev);
- 
--	device_for_each_child(&pdev->dev, NULL,
--				exynos_adc_remove_devices);
-+	of_platform_unpopulate(&pdev->dev);
- 	regulator_disable(info->vdd);
- 	clk_disable_unprepare(info->clk);
- 	writel(0, info->enable_reg);
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 759fae3..bb26cea 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -832,13 +832,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 	return ret;
- }
- 
--static int usbhs_omap_remove_child(struct device *dev, void *data)
--{
--	dev_info(dev, "unregistering\n");
--	platform_device_unregister(to_platform_device(dev));
--	return 0;
--}
--
- /**
-  * usbhs_omap_remove - shutdown processing for UHH & TLL HCDs
-  * @pdev: USB Host Controller being removed
-@@ -871,7 +864,7 @@ static int usbhs_omap_remove(struct platform_device *pdev)
- 	pm_runtime_disable(&pdev->dev);
- 
- 	/* remove children */
--	device_for_each_child(&pdev->dev, NULL, usbhs_omap_remove_child);
-+	of_platform_unpopulate(&pdev->dev);
- 	return 0;
- }
- 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index e0a6514..9cbb0c3 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -473,4 +473,26 @@ int of_platform_populate(struct device_node *root,
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(of_platform_populate);
-+
-+static int of_remove_populated_child(struct device *dev, void *d)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+
-+	of_device_unregister(pdev);
-+	return 0;
-+}
-+/**
-+ * of_platform_unpopulate() - Remove populated devices.
-+ * @parent: parent of the populated devices.
-+ *
-+ * The reverse of of_platform_populate() and can only be used a parent was
-+ * specified while invoking the former.
-+ */
-+void of_platform_unpopulate(struct device *parent)
-+{
-+	if (WARN_ON(!parent))
-+		return;
-+	device_for_each_child(parent, NULL, of_remove_populated_child);
-+}
-+EXPORT_SYMBOL_GPL(of_platform_unpopulate);
- #endif /* CONFIG_OF_ADDRESS */
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index 8ce9d7f..2bf5664 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -86,15 +86,6 @@ static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
- 	return ret;
- }
- 
--static int dwc3_exynos_remove_child(struct device *dev, void *unused)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--
--	platform_device_unregister(pdev);
--
--	return 0;
--}
--
- static int dwc3_exynos_probe(struct platform_device *pdev)
- {
- 	struct dwc3_exynos	*exynos;
-@@ -164,7 +155,7 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
- {
- 	struct dwc3_exynos	*exynos = platform_get_drvdata(pdev);
- 
--	device_for_each_child(&pdev->dev, NULL, dwc3_exynos_remove_child);
-+	of_platform_unpopulate(&pdev->dev);
- 	platform_device_unregister(exynos->usb2_phy);
- 	platform_device_unregister(exynos->usb3_phy);
- 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 077f110..8688613 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -327,15 +327,6 @@ static irqreturn_t dwc3_omap_interrupt(int irq, void *_omap)
- 	return IRQ_HANDLED;
- }
- 
--static int dwc3_omap_remove_core(struct device *dev, void *c)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--
--	platform_device_unregister(pdev);
--
--	return 0;
--}
--
- static void dwc3_omap_enable_irqs(struct dwc3_omap *omap)
- {
- 	u32			reg;
-@@ -529,8 +520,7 @@ static int dwc3_omap_remove(struct platform_device *pdev)
- 	dwc3_omap_disable_irqs(omap);
- 	pm_runtime_put_sync(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
--	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
--
-+	of_platform_unpopulate(&pdev->dev);
- 	return 0;
- }
- 
-diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
-index 05cb4a9..e354f9c 100644
---- a/include/linux/of_platform.h
-+++ b/include/linux/of_platform.h
-@@ -72,6 +72,7 @@ extern int of_platform_populate(struct device_node *root,
- 				const struct of_device_id *matches,
- 				const struct of_dev_auxdata *lookup,
- 				struct device *parent);
-+extern  void of_platform_unpopulate(struct device *parent);
- #else
- static inline int of_platform_populate(struct device_node *root,
- 					const struct of_device_id *matches,
-@@ -80,6 +81,9 @@ static inline int of_platform_populate(struct device_node *root,
- {
- 	return -ENODEV;
- }
-+static inline void of_platform_unpopulate(struct device *parent)
-+{
-+}
- #endif
- 
- #endif	/* _LINUX_OF_PLATFORM_H */
--- 
-1.8.3.2
+
+README for mm-of-the-moment:
+
+http://www.ozlabs.org/~akpm/mmotm/
+
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
+
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
+
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
+
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
+
+A git tree which contains the memory management portion of this tree is
+maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+by Michal Hocko.  It contains the patches which are between the
+"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+file, http://www.ozlabs.org/~akpm/mmotm/series.
+
+
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
+
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+
+To develop on top of mmotm git:
+
+  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
+
+To rebase a branch with older patches to a new mmotm release:
+
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
+
+
+
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
 
