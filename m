@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965777Ab3GSFgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:36:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39927 "EHLO
+	id S965834Ab3GSFga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:36:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39923 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965686Ab3GSF0w (ORCPT
+	with ESMTP id S965702Ab3GSF0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 01:26:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yu Liu <liuyu.ac@gmail.com>, Shane Huang <shane.huang@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 47/72] ahci: remove pmp link online check in FBS EH
-Date: Thu, 18 Jul 2013 22:26:04 -0700
-Message-Id: <20130719052603.076733286@linuxfoundation.org>
+        Seth Heasley <seth.heasley@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 46/72] ahci: AHCI-mode SATA patch for Intel Coleto Creek DeviceIDs
+Date: Thu, 18 Jul 2013 22:26:03 -0700
+Message-Id: <20130719052603.010059152@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,34 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
+commit 1cfc7df3de10c40ed459e13cce6de616023bf41c upstream.
 
-ata_link_online() check in ahci_error_intr() is unnecessary, it should
-be removed otherwise may lead to lockup with FBS enabled PMP.
-http://marc.info/?l=linux-ide&m=137050421603272&w=2
+This patch adds the AHCI-mode SATA DeviceIDs for the Intel Coleto Creek PCH.
 
-Reported-by: Yu Liu <liuyu.ac@gmail.com>
-Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libahci.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/ata/ahci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1560,8 +1560,7 @@ static void ahci_error_intr(struct ata_p
- 		u32 fbs = readl(port_mmio + PORT_FBS);
- 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -291,6 +291,7 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x8d64), board_ahci }, /* Wellsburg RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
++	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
  
--		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
--		    ata_link_online(&ap->pmp_link[pmp])) {
-+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
- 			link = &ap->pmp_link[pmp];
- 			fbs_need_dec = true;
- 		}
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
