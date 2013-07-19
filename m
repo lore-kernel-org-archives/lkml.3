@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935074Ab3GSCXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:23:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37691 "EHLO
+	id S935047Ab3GSCXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:23:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934875Ab3GSCXi (ORCPT
+	with ESMTP id S934874Ab3GSCXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:38 -0400
+	Thu, 18 Jul 2013 22:23:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 02/18] ext3,ext4: dont mess with dir_file->f_pos in htree_dirblock_to_tree()
-Date: Thu, 18 Jul 2013 19:23:17 -0700
-Message-Id: <20130719021049.132514575@linuxfoundation.org>
+        UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>,
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 04/18] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
+Date: Thu, 18 Jul 2013 19:23:19 -0700
+Message-Id: <20130719021049.265966328@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -26,55 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
 
-commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
+commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
 
-Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
-in-core rbtree for use by call_filldir().  All updates of ->f_pos are
-done by the latter; bumping it here (on error) is obviously wrong - we
-might very well have it nowhere near the block we'd found an error in.
+Without this memory barrier, the file-storage thread may fail to
+escape from the following while loop, because it may observe new
+common->thread_wakeup_needed and old bh->state which are updated by
+the callback functions.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+	/* Wait for the CBW to arrive */
+	while (bh->state != BUF_STATE_FULL) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
+
+Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext3/namei.c |    7 ++-----
- fs/ext4/namei.c |    7 ++-----
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/usb/gadget/f_mass_storage.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -584,11 +584,8 @@ static int htree_dirblock_to_tree(struct
- 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
- 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
- 						+((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse (bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext3fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
- 		if (ext4_check_dir_entry(dir, NULL, de, bh,
- 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
- 					 + ((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse(bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext4fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -513,6 +513,7 @@ static int fsg_set_halt(struct fsg_dev *
+ /* Caller must hold fsg->lock */
+ static void wakeup_thread(struct fsg_common *common)
+ {
++	smp_wmb();	/* ensure the write of bh->state is complete */
+ 	/* Tell the main thread that something has happened */
+ 	common->thread_wakeup_needed = 1;
+ 	if (common->thread_task)
+@@ -730,6 +731,7 @@ static int sleep_thread(struct fsg_commo
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ 	common->thread_wakeup_needed = 0;
++	smp_rmb();	/* ensure the latest bh->state is visible */
+ 	return rc;
+ }
+ 
 
 
