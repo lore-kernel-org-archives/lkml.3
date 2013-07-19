@@ -1,83 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760501Ab3GSNSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:18:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25823 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760485Ab3GSNSg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:18:36 -0400
-Date: Fri, 19 Jul 2013 15:18:19 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Brandon Philips <brandon@ifup.org>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: is kexec on Xen domU possible?
-Message-ID: <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
-References: <20130719020603.GA22932@kroah.com>
+	id S1760467Ab3GSNUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:20:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56167 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab3GSNUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:20:52 -0400
+Message-ID: <51E93D2C.1090202@ti.com>
+Date: Fri, 19 Jul 2013 18:50:44 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719020603.GA22932@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, <bigeasy@linutronix.de>
+Subject: Re: [PATCH v2 1/4] usb: phy: phy-omap-control: Add API to power and
+ wakeup
+References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-2-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1374237277-17769-2-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 07:06:03PM -0700, Greg KH wrote:
-> Hi all,
->
-> I was messing around with kexec and it seems to work just fine on KVM,
-> but for Xen domU images, it doesn't work at all.  Daniel, I saw some
-> patches from you back in September 2012 for adding this support for
-> Dom0, but they don't seem to have gone into the kernel (but other
+Hi,
 
-At first I was going use existing in Xen kexec implementation for Dom0.
-However, after some discussion on Xen-devel and LKML we stated that
-this implementation is completely broken and should be rewriten. David
-Vrabel from Citrix wrote new kexec implementation for Xen which does
-not relay on Linux kernel. I hope that it will be included in Xen 4.4 release.
+On Friday 19 July 2013 06:04 PM, George Cherian wrote:
+> on/off USB PHY for AM335X
+> 
+> Add APIs to
+> 	-power on/off USB PHY for AM335X
+> 	-enable/disable PHY wakeup.
+> 
+> This API will be called from phy-amxxxx-usb driver.
+> 
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>  drivers/usb/phy/phy-omap-control.c   | 67 ++++++++++++++++++++++++++++++++++++
+>  include/linux/usb/omap_control_usb.h | 24 +++++++++++++
+>  2 files changed, 91 insertions(+)
+> 
+> diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
+> index 1419ced..4f2502c 100644
+> --- a/drivers/usb/phy/phy-omap-control.c
+> +++ b/drivers/usb/phy/phy-omap-control.c
+> @@ -46,6 +46,73 @@ struct device *omap_get_control_dev(void)
+>  EXPORT_SYMBOL_GPL(omap_get_control_dev);
+>  
+>  /**
+> + * omap_control_am335x_phy_wkup - PHY wakeup on/off  using control
+> + *	module
+> + * @dev: the control module device
+> + * @on: 0 to off and 1 to on PHY wakeup feature
 
-> patches went into kexec-tools at that time.)  You mention that domU
+%s/off/disable %s/on/enable
+> + * @id: phy id 0 or 1 for phy instance 0 and 1 repectively
+> + *
+> + * AMXXXX PHY driver should call this API to enable or disable PHY wakeup.
+> + */
+> +void omap_control_am335x_phy_wkup(struct device *dev, bool on, u8 id)
+> +{
+> +	u32 val;
+> +	u32 *phy_wkup_reg;
+> +	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
+> +
+> +	if (control_usb->type != OMAP_CTRL_DEV_TYPE3 || id < 0 || id > 1)
+> +		return;
+> +
+> +	phy_wkup_reg = control_usb->dev_conf + AM335X_USB_WKUP_OFFSET;
+> +	val = readl(phy_wkup_reg);
+> +
+> +	if (on)
+> +		val |= id ? AM335X_USB1_WKUP_CTRL_ENABLE :
+> +				AM335X_USB0_WKUP_CTRL_ENABLE;
+> +	 else
+> +		val &= id ? ~AM335X_USB1_WKUP_CTRL_ENABLE :
+> +				~AM335X_USB0_WKUP_CTRL_ENABLE;
+> +
+> +
 
-These are mostly fixes which were needed for planned Xen kexec support.
-IIRC, they are also needed for systems using ancient Xen Linux Kernel 2.18.
-However, most of this implementation will be replaced by new one written
-by David Vrabel. It will contain support only for new Xen Dom0 kexec implentation.
+You really need two blank spaces here?
+> +	writel(val, phy_wkup_reg);
+> +}
+> +EXPORT_SYMBOL_GPL(omap_control_am335x_phy_wkup);
+> +
+> +/**
+> + * omap_control_am335x_phy_power - power on/off the serializer using control
+> + *	module
+> + * @dev: the control module device
+> + * @on: 0 to off and 1 to on based on powering on or off the PHY
+> + * @id: phy id 0 or 1 for phy instance 0 and 1 repectively
+> + *
+> + * AMXXXX PHY driver should call this API to power on or off the PHY.
+> + */
+> +void omap_control_am335x_phy_power(struct device *dev, bool on, u8 id)
+> +{
+> +	u32 val;
+> +	u32 *phy_pwr_reg;
+> +	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
+> +
+> +	if (control_usb->type != OMAP_CTRL_DEV_TYPE3 || id < 0 || id > 1)
+> +		return;
+> +
+> +	phy_pwr_reg = GET_PHY_POWER_REG(control_usb->dev_conf, id);
+> +	val = readl(phy_pwr_reg);
+> +
+> +	if (on) {
+> +		val &= ~(AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN);
+> +		val |= AM335X_USBPHY_OTGVDET_EN |
+> +			AM335X_USBPHY_OTGSESSEND_EN;
+> +	} else
+> +		val |= AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN;
+> +
+> +
+ditto.
+> +	writel(val, phy_pwr_reg);
+> +}
+> +EXPORT_SYMBOL_GPL(omap_control_am335x_phy_power);
+> +
+> +
+ditto.
+> +/**
+>   * omap_control_usb3_phy_power - power on/off the serializer using control
+>   *	module
+>   * @dev: the control module device
+> diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
+> index 27b5b8c..a92b417 100644
+> --- a/include/linux/usb/omap_control_usb.h
+> +++ b/include/linux/usb/omap_control_usb.h
+> @@ -45,6 +45,7 @@ enum omap_control_usb_mode {
+>  /* To differentiate ctrl module IP having either mailbox or USB3 PHY power */
+>  #define	OMAP_CTRL_DEV_TYPE1		0x1
+>  #define	OMAP_CTRL_DEV_TYPE2		0x2
+> +#define	OMAP_CTRL_DEV_TYPE3		0x3
+>  
+>  #define	OMAP_CTRL_DEV_PHY_PD		BIT(0)
+>  
+> @@ -63,10 +64,23 @@ enum omap_control_usb_mode {
+>  #define	OMAP_CTRL_USB3_PHY_TX_RX_POWERON	0x3
+>  #define	OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF	0x0
+>  
+> +#define GET_PHY_POWER_REG(base, id)	((u32 *)base + (id * 2))
 
-> support is "easy" after your patches go in, is that because Dom0 needs
-> to support this, or is it something specific to only domU?
+how about
+#define GET_PHY_POWER_REG(base, id)	((u32 *)(base) + ((id) * 2))
+> +#define AM335X_USBPHY_CM_PWRDN		(1 << 0)
+> +#define AM335X_USBPHY_OTG_PWRDN		(1 << 1)
+> +#define AM335X_USBPHY_OTGVDET_EN		(1 << 19)
+> +#define AM335X_USBPHY_OTGSESSEND_EN	(1 << 20)
+> +#define AM335X_USB_WKUP_OFFSET		0xA
+> +#define AM335X_USB0_WKUP_CTRL_ENABLE	(1 << 0)
+> +#define AM335X_USB1_WKUP_CTRL_ENABLE	(1 << 8)
+> +
+> +
+> +
 
-In case of domU we should consider following cases:
-  - PV guests: there is no support for kexec at this time;
-    Once I wrote an implementatation for that type of guests
-    for one company but according to our agreement I could not
-    publish this code; However, I could use it as a base for
-    publicly available kexec implementation; Currently, I do
-    not have any plans to work on this due to some more important
-    stuff to do; However, question about kexec support for PV
-    guests is raised from time to time and maybe this issue
-    will be much more important than others once,
-  - HVM guests: kexec should work without any issue,
-  - PVonHVM guests: IIRC, there were some issues with PV
-    drivers but they were fixed some time ago by patches
-    posted by Olaf Hering,
-  - PVH guests: those type of guests are not available in Xen
-    current releases yet; However, Konrad Wilk done some preliminary
-    work on kexec support but there are still some issues to resolve.
+too many blank lines...
 
-I do not know what are you trying to do but if you would like
-to get some crash dumps there is also another solution to that.
-You could use xm/xl dump-core from Dom0 to get dumps of domU memory.
-
-> Also, what's the status of those patches for the kernel, I don't see
-> them reposted anywhere, did you drop them?
-
-They were dropped. Please look above for details.
-
-I hope that helps.
-
-Daniel
+Thanks
+Kishon
