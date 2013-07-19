@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760787Ab3GSPkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:40:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48120 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140Ab3GSPkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:40:15 -0400
-Date: Fri, 19 Jul 2013 08:40:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/72] 3.10.2-stable review
-Message-ID: <20130719154024.GA22704@kroah.com>
-References: <20130719052559.852627424@linuxfoundation.org>
- <8761w7dn65.fsf@turtle.gmx.de>
+	id S1760808Ab3GSPlu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:41:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18326 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759619Ab3GSPlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 11:41:49 -0400
+Date: Fri, 19 Jul 2013 17:36:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tracing: Kill the unbalanced tr->ref++ in
+	tracing_buffers_open()
+Message-ID: <20130719153644.GA18899@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8761w7dn65.fsf@turtle.gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 09:27:46AM +0200, Sven Joachim wrote:
-> On 2013-07-19 07:25 +0200, Greg Kroah-Hartman wrote:
-> 
-> > This is the start of the stable review cycle for the 3.10.2 release.
-> > There are 72 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Sun Jul 21 05:25:08 UTC 2013.
-> > Anything received after that time might be too late.
-> >
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.2-rc1.gz
-> 
-> I've spent just half an hour trying to figure out why this kernel failed
-> to install with an incomprehensible error message:
-> 
-> ,----
-> |  BUILDDEB
-> | rm: invalid option -- 'c'
-> | Try `rm --help' for more information.
-> | make[2]: *** [_modinst_] Error 1
-> `----
-> 
-> It turned out that there's a trailing space in the 
-> 
-> SUBLEVEL = 2 
-> 
-> line in the Makefile, and that extra space ends up in MODLIB, finally
-> passing the 'rm' command _two_ parameters rather than one, the second
-> starting with "-rc1".
+tracing_buffers_open() does trace_array_get() and then it wrongly
+inrcements tr->ref again under trace_types_lock. This means that
+every caller leaks trace_array:
 
-Very strange, my editor doesn't show me trailing spaces like it used to,
-I must have upgraded something recently...
+	# cd /sys/kernel/debug/tracing/
+	# mkdir instances/X
+	# true < instances/X/per_cpu/cpu0/trace_pipe_raw
+	# rmdir instances/X
+	rmdir: failed to remove `instances/X': Device or resource busy
 
-Anyway, sorry about that, I've uploaded a -rc2 version of the patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.2-rc2.gz
-that should have solved this issue.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-If not, please let me know.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ee471fb..278c5f5 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4944,8 +4944,6 @@ static int tracing_buffers_open(struct inode *inode, struct file *filp)
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+-	tr->ref++;
+-
+ 	info->iter.tr		= tr;
+ 	info->iter.cpu_file	= tc->cpu;
+ 	info->iter.trace	= tr->current_trace;
+-- 
+1.5.5.1
 
-thanks,
 
-greg k-h
