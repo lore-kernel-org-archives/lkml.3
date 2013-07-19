@@ -1,152 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965979Ab3GSFkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:40:47 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:43066 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965646Ab3GSFkp (ORCPT
+	id S965972Ab3GSFlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:41:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39724 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965644Ab3GSF0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:40:45 -0400
-Date: Thu, 18 Jul 2013 22:40:40 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: [ 37/72] Input: bcm5974 - add support for the 2013 MacBook Air
-Message-ID: <20130719054040.GA20435@core.coreip.homeip.net>
+	Fri, 19 Jul 2013 01:26:39 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-pci@vger.kernel.org
+Subject: [ 29/72] xen/pcifront: Deal with toolstack missing XenbusStateClosing state.
+Date: Thu, 18 Jul 2013 22:25:46 -0700
+Message-Id: <20130719052601.856152676@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
- <20130719052602.400119106@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719052602.400119106@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Jul 18, 2013 at 10:25:54PM -0700, Greg Kroah-Hartman wrote:
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Dmitry Torokhov <rydberg@euromail.se>
+------------------
 
-Any chance you could change this to read "Henrik Rydberg"? My import
-script messed up. And on hid part as well...
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Thanks!
+commit 098b1aeaf4d6149953b8f1f8d55c21d85536fbff upstream.
 
-> 
-> commit 148c1c8ad3c4170186ebe6ea5900adde27d2a0e7 upstream.
-> 
-> The June 2013 Macbook Air (13'') has a new trackpad protocol; four new
-> values are inserted in the header, and the mode switch is no longer
-> needed. This patch adds support for the new devices.
-> 
-> Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  drivers/input/mouse/bcm5974.c |   36 ++++++++++++++++++++++++++++++++++--
->  1 file changed, 34 insertions(+), 2 deletions(-)
-> 
-> --- a/drivers/input/mouse/bcm5974.c
-> +++ b/drivers/input/mouse/bcm5974.c
-> @@ -88,6 +88,10 @@
->  #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
->  #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
->  #define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
-> +/* MacbookAir6,2 (unibody, June 2013) */
-> +#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
-> +#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
-> +#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
->  
->  #define BCM5974_DEVICE(prod) {					\
->  	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-> @@ -145,6 +149,10 @@ static const struct usb_device_id bcm597
->  	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
->  	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
->  	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
-> +	/* MacbookAir6,2 */
-> +	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
-> +	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
-> +	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
->  	/* Terminating entry */
->  	{}
->  };
-> @@ -172,15 +180,18 @@ struct bt_data {
->  /* trackpad header types */
->  enum tp_type {
->  	TYPE1,			/* plain trackpad */
-> -	TYPE2			/* button integrated in trackpad */
-> +	TYPE2,			/* button integrated in trackpad */
-> +	TYPE3			/* additional header fields since June 2013 */
->  };
->  
->  /* trackpad finger data offsets, le16-aligned */
->  #define FINGER_TYPE1		(13 * sizeof(__le16))
->  #define FINGER_TYPE2		(15 * sizeof(__le16))
-> +#define FINGER_TYPE3		(19 * sizeof(__le16))
->  
->  /* trackpad button data offsets */
->  #define BUTTON_TYPE2		15
-> +#define BUTTON_TYPE3		23
->  
->  /* list of device capability bits */
->  #define HAS_INTEGRATED_BUTTON	1
-> @@ -400,6 +411,19 @@ static const struct bcm5974_config bcm59
->  		{ SN_COORD, -150, 6730 },
->  		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
->  	},
-> +	{
-> +		USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI,
-> +		USB_DEVICE_ID_APPLE_WELLSPRING8_ISO,
-> +		USB_DEVICE_ID_APPLE_WELLSPRING8_JIS,
-> +		HAS_INTEGRATED_BUTTON,
-> +		0, sizeof(struct bt_data),
-> +		0x83, TYPE3, FINGER_TYPE3, FINGER_TYPE3 + SIZEOF_ALL_FINGERS,
-> +		{ SN_PRESSURE, 0, 300 },
-> +		{ SN_WIDTH, 0, 2048 },
-> +		{ SN_COORD, -4620, 5140 },
-> +		{ SN_COORD, -150, 6600 },
-> +		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
-> +	},
->  	{}
->  };
->  
-> @@ -557,6 +581,9 @@ static int report_tp_state(struct bcm597
->  		input_report_key(input, BTN_LEFT, ibt);
->  	}
->  
-> +	if (c->tp_type == TYPE3)
-> +		input_report_key(input, BTN_LEFT, dev->tp_data[BUTTON_TYPE3]);
-> +
->  	input_sync(input);
->  
->  	return 0;
-> @@ -572,9 +599,14 @@ static int report_tp_state(struct bcm597
->  
->  static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
->  {
-> -	char *data = kmalloc(8, GFP_KERNEL);
->  	int retval = 0, size;
-> +	char *data;
-> +
-> +	/* Type 3 does not require a mode switch */
-> +	if (dev->cfg.tp_type == TYPE3)
-> +		return 0;
->  
-> +	data = kmalloc(8, GFP_KERNEL);
->  	if (!data) {
->  		dev_err(&dev->intf->dev, "out of memory\n");
->  		retval = -ENOMEM;
-> 
-> 
+There are two tool-stack that can instruct the Xen PCI frontend
+and backend to change states: 'xm' (Python code with a daemon),
+and 'xl' (C library - does not keep state changes).
 
--- 
-Dmitry
+With the 'xm', the path to disconnect a single PCI device (xm pci-detach
+<guest> <BDF>) is:
+
+4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)->5(Closing*).
+
+The * is for states that the tool-stack sets. For 'xl', it is similar:
+
+4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
+
+Both of them also tear down the XenBus structure, so the backend
+state ends up going in the 3(Initialised) and calls pcifront_xenbus_remove.
+
+When a PCI device is plugged back in (xm pci-attach <guest> <BDF>)
+both of them follow the same pattern:
+
+2(InitWait*), 3(Initialized*), 4(Connected*)->4(Connected).
+
+[xen-pcifront ignores the 2,3 state changes and only acts when
+4 (Connected) has been reached]
+
+Note that this is for a _single_ PCI device. If there were two
+PCI devices and only one was disconnected 'xm' would show the same
+state changes.
+
+The problem is that git commit 3d925320e9e2de162bd138bf97816bda8c3f71be
+("xen/pcifront: Use Xen-SWIOTLB when initting if required") introduced
+a mechanism to initialize the SWIOTLB when the Xen PCI front moves to
+Connected state. It also had some aggressive seatbelt code check that
+would warn the user if one tried to change to Connected state without
+hitting first the Closing state:
+
+ pcifront pci-0: PCI frontend already installed!
+
+However, that code can be relaxed and we can continue on working
+even if the frontend is instructed to be the 'Connected' state with
+no devices and then gets tickled to be in 'Connected' state again.
+
+In other words, this 4(Connected)->5(Closing)->4(Connected) state
+was expected, while 4(Connected)->.... anything but 5(Closing)->4(Connected)
+was not. This patch removes that aggressive check and allows
+Xen pcifront to work with the 'xl' toolstack (for one or more
+PCI devices) and with 'xm' toolstack (for more than two PCI
+devices).
+
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org
+[v2: Added in the description about two PCI devices]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/xen-pcifront.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -678,10 +678,9 @@ static int pcifront_connect_and_init_dma
+ 	if (!pcifront_dev) {
+ 		dev_info(&pdev->xdev->dev, "Installing PCI frontend\n");
+ 		pcifront_dev = pdev;
+-	} else {
+-		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
++	} else
+ 		err = -EEXIST;
+-	}
++
+ 	spin_unlock(&pcifront_dev_lock);
+ 
+ 	if (!err && !swiotlb_nr_tbl()) {
+@@ -848,7 +847,7 @@ static int pcifront_try_connect(struct p
+ 		goto out;
+ 
+ 	err = pcifront_connect_and_init_dma(pdev);
+-	if (err) {
++	if (err && err != -EEXIST) {
+ 		xenbus_dev_fatal(pdev->xdev, err,
+ 				 "Error setting up PCI Frontend");
+ 		goto out;
+
+
