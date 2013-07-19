@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935219Ab3GSCZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:25:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37869 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935194Ab3GSCZQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S935195Ab3GSCZQ (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 18 Jul 2013 22:25:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37847 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935181Ab3GSCZO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 22:25:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 18/24] timer: Fix jiffies wrap behavior of round_jiffies_common()
-Date: Thu, 18 Jul 2013 19:24:50 -0700
-Message-Id: <20130719022405.268285428@linuxfoundation.org>
+        Nagachandra P <nagachandra@gmail.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 21/24] ext4: dont allow ext4_free_blocks() to fail due to ENOMEM
+Date: Thu, 18 Jul 2013 19:24:53 -0700
+Message-Id: <20130719022405.468438506@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -29,40 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bart.vanassche@gmail.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1 upstream.
+commit e7676a704ee0a1ef71a6b23760b5a8f6896cb1a1 upstream.
 
-Direct compare of jiffies related values does not work in the wrap
-around case. Replace it with time_is_after_jiffies().
+The filesystem should not be marked inconsistent if ext4_free_blocks()
+is not able to allocate memory.  Unfortunately some callers (most
+notably ext4_truncate) don't have a way to reflect an error back up to
+the VFS.  And even if we did, most userspace applications won't deal
+with most system calls returning ENOMEM anyway.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Link: http://lkml.kernel.org/r/519BC066.5080600@acm.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Nagachandra P <nagachandra@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/timer.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/ext4/mballoc.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -145,9 +145,11 @@ static unsigned long round_jiffies_commo
- 	/* now that we have rounded, subtract the extra skew again */
- 	j -= cpu * 3;
- 
--	if (j <= jiffies) /* rounding ate our timeout entirely; */
--		return original;
--	return j;
-+	/*
-+	 * Make sure j is still in the future. Otherwise return the
-+	 * unmodified value.
-+	 */
-+	return time_is_after_jiffies(j) ? j : original;
- }
- 
- /**
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4639,11 +4639,16 @@ do_more:
+ 		 * blocks being freed are metadata. these blocks shouldn't
+ 		 * be used until this transaction is committed
+ 		 */
++	retry:
+ 		new_entry = kmem_cache_alloc(ext4_free_data_cachep, GFP_NOFS);
+ 		if (!new_entry) {
+-			ext4_mb_unload_buddy(&e4b);
+-			err = -ENOMEM;
+-			goto error_return;
++			/*
++			 * We use a retry loop because
++			 * ext4_free_blocks() is not allowed to fail.
++			 */
++			cond_resched();
++			congestion_wait(BLK_RW_ASYNC, HZ/50);
++			goto retry;
+ 		}
+ 		new_entry->efd_start_cluster = bit;
+ 		new_entry->efd_group = block_group;
 
 
