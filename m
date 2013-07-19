@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab3GSXus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 19:50:48 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62117 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752057Ab3GSXuq (ORCPT
+	id S1753325Ab3GSXuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 19:50:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53157 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab3GSXuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 19:50:46 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ak <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
-Date: Sat, 20 Jul 2013 02:00:44 +0200
-Message-ID: <2745724.Y86yAFA8gy@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130719231630.GC1701@kroah.com>
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <4295105.1txhDL4OOg@vostro.rjw.lan> <20130719231630.GC1701@kroah.com>
+	Fri, 19 Jul 2013 19:50:50 -0400
+Date: Fri, 19 Jul 2013 16:50:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: kyungmin.park@samsung.com, balbi@ti.com, jg1.han@samsung.com,
+        s.nawrocki@samsung.com, kgene.kim@samsung.com, grant.likely@linaro.org,
+        tony@atomide.com, arnd@arndb.de, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+Message-ID: <20130719235055.GB11498@kroah.com>
+References: <1374129984-765-1-git-send-email-kishon@ti.com>
+ <1374129984-765-2-git-send-email-kishon@ti.com>
+ <20130718072004.GA16720@kroah.com>
+ <51E7AE88.3050007@ti.com>
+ <20130718154954.GA31961@kroah.com>
+ <51E8D086.809@ti.com>
+ <20130719054311.GA14638@kroah.com>
+ <51E8D4E0.8060200@ti.com>
+ <20130719062941.GA23611@kroah.com>
+ <51E8DE51.1060404@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E8DE51.1060404@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 19, 2013 04:16:30 PM Greg Kroah-Hartman wrote:
-> On Fri, Jul 19, 2013 at 11:38:04PM +0200, Rafael J. Wysocki wrote:
-> > Alas, this is not the one I'd like to apply.
-> > 
-> > With that patch applied, new device objects are created to avoid binding the
-> > processor driver directly to the cpu system device objects, because that
-> > apparently confuses udev and it starts to ignore the cpu modalias once the
-> > driver has been bound to any of those objects.
-> > 
-> > I've verified in the meantime that this indeed is the case.
-> > 
-> > A link to the patch in question: https://patchwork.kernel.org/patch/2830561/
-> > 
-> > Greg, I asked you some time ago whether or not it was possible for udev to stop
-> > autoloading modules that matched the cpu modalias after a driver had been bound
-> > to the cpu system device objects and you said "no".  However, this time I can
-> > say with certainty that that really is the case.  So, the question now is
-> > whether or not we can do anything in the kernel to avoid that confusion in udev
-> > instead of applying the patch linked above (which is beyond ugly in my not so
-> > humble opinion)?
+On Fri, Jul 19, 2013 at 12:06:01PM +0530, Kishon Vijay Abraham I wrote:
+> Hi,
 > 
-> udev isn't doing any module loading, 'modprobe' is just being called for
-> any new module alias that shows up in the system, and all of the drivers
-> that match it then get loaded.
+> On Friday 19 July 2013 11:59 AM, Greg KH wrote:
+> > On Fri, Jul 19, 2013 at 11:25:44AM +0530, Kishon Vijay Abraham I wrote:
+> >> Hi,
+> >>
+> >> On Friday 19 July 2013 11:13 AM, Greg KH wrote:
+> >>> On Fri, Jul 19, 2013 at 11:07:10AM +0530, Kishon Vijay Abraham I wrote:
+> >>>>>>>> +	ret = dev_set_name(&phy->dev, "%s.%d", dev_name(dev), id);
+> >>>>>>>
+> >>>>>>> Your naming is odd, no "phy" anywhere in it?  You rely on the sender to
+> >>>>>>> never send a duplicate name.id pair?  Why not create your own ids based
+> >>>>>>> on the number of phys in the system, like almost all other classes and
+> >>>>>>> subsystems do?
+> >>>>>>
+> >>>>>> hmm.. some PHY drivers use the id they provide to perform some of their
+> >>>>>> internal operation as in [1] (This is used only if a single PHY provider
+> >>>>>> implements multiple PHYS). Probably I'll add an option like PLATFORM_DEVID_AUTO
+> >>>>>> to give the PHY drivers an option to use auto id.
+> >>>>>>
+> >>>>>> [1] ->
+> >>>>>> http://archive.arm.linux.org.uk/lurker/message/20130628.134308.4a8f7668.ca.html
+> >>>>>
+> >>>>> No, who cares about the id?  No one outside of the phy core ever should,
+> >>>>> because you pass back the only pointer that they really do care about,
+> >>>>> if they need to do anything with the device.  Use that, and then you can
+> >>>>
+> >>>> hmm.. ok.
+> >>>>
+> >>>>> rip out all of the "search for a phy by a string" logic, as that's not
+> >>>>
+> >>>> Actually this is needed for non-dt boot case. In the case of dt boot, we use a
+> >>>> phandle by which the controller can get a reference to the phy. But in the case
+> >>>> of non-dt boot, the controller can get a reference to the phy only by label.
+> >>>
+> >>> I don't understand.  They registered the phy, and got back a pointer to
+> >>> it.  Why can't they save it in their local structure to use it again
+> >>> later if needed?  They should never have to "ask" for the device, as the
+> >>
+> >> One is a *PHY provider* driver which is a driver for some PHY device. This will
+> >> use phy_create to create the phy.
+> >> The other is a *PHY consumer* driver which might be any controller driver (can
+> >> be USB/SATA/PCIE). The PHY consumer will use phy_get to get a reference to the
+> >> phy (by *phandle* in the case of dt boot and *label* in the case of non-dt boot).
+> >>> device id might be unknown if there are multiple devices in the system.
+> >>
+> >> I agree with you on the device id part. That need not be known to the PHY driver.
+> > 
+> > How does a consumer know which "label" to use in a non-dt system if
+> > there are multiple PHYs in the system?
+> 
+> That should be passed using platform data.
 
-The problem is that that doesn't happen when a driver is bound to the
-cpu system device objects.  modprobe is just not called for modules that
-match the cpu modalias in that case.
+Ick, don't pass strings around, pass pointers.  If you have platform
+data you can get to, then put the pointer there, don't use a "name".
 
-If I call modprobe manually for any of the modules in question, it loads
-and works no problem.
+thanks,
 
-> How is it a problem if a module is attempted to be loaded that is
-> already loaded?  How is it a problem if a different module is loaded for
-> a device already bound to a driver?  Both of those should be total
-> "no-ops" for the kernel.
-
-Precisely, but that's not what happens in practice, hence my question.
-
-The situation is this:
-
-- With 3.11-rc1 modules that match the CPU modalias are not loaded
-  automatically (that is, modprobe is not called for them by udev) after
-  the processor module is loaded.
-- With 3.10 they are loaded automatically at any time.
-- With the patch at https://patchwork.kernel.org/patch/2830561/ on top of
-  3.11-rc1 the situation is the same as for 3.10.
-
-Therefore we have a kernel regression from 3.10 (with respect to the existing
-user space which is udev) in 3.11-rc1 3.10 and the patch at
-https://patchwork.kernel.org/patch/2830561/ makes that regression go away.
-
-However, that patch is totally voodoo programming, so I wonder if there is any
-saner alternative or we really need to do voodoo programming in the kernel to
-work around udev's confusion.
-
-> But, I don't know anything about the cpu code, how is loading a module
-> causing problems?  That sounds like it needs to be fixes, as any root
-> user can load modules whenever they want, you can't protect the kernel
-> from doing that.
-
-Yes, that needs to be fixed, but I don't know *why* it is a problem in the
-first place.  I'd like to understand what's going on, because I don't
-right now.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+greg k-h
