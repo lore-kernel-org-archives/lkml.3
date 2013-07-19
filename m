@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965875Ab3GSHug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:50:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35654 "EHLO
+	id S965908Ab3GSHuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:50:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35667 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965829Ab3GSHua (ORCPT
+	with ESMTP id S965829Ab3GSHuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:50:30 -0400
-Date: Fri, 19 Jul 2013 00:49:53 -0700
+	Fri, 19 Jul 2013 03:50:40 -0400
+Date: Fri, 19 Jul 2013 00:50:03 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-93edcbd91d888c7530c7fc749176fc935b8e2287@git.kernel.org>
+Message-ID: <tip-27389d7823f573be8eaff32fb4abe564e181eb71@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
@@ -20,11 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1372944040-32690-8-git-send-email-adrian.hunter@intel.com>
-References: <1372944040-32690-8-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1372944040-32690-9-git-send-email-adrian.hunter@intel.com>
+References: <1372944040-32690-9-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Tidy duplicated munmap code
-Git-Commit-ID: 93edcbd91d888c7530c7fc749176fc935b8e2287
+Subject: [tip:perf/core] perf tools: Validate perf event header size
+Git-Commit-ID: 27389d7823f573be8eaff32fb4abe564e181eb71
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,25 +33,26 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:49:59 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:50:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  93edcbd91d888c7530c7fc749176fc935b8e2287
-Gitweb:     http://git.kernel.org/tip/93edcbd91d888c7530c7fc749176fc935b8e2287
+Commit-ID:  27389d7823f573be8eaff32fb4abe564e181eb71
+Gitweb:     http://git.kernel.org/tip/27389d7823f573be8eaff32fb4abe564e181eb71
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 4 Jul 2013 16:20:26 +0300
+AuthorDate: Thu, 4 Jul 2013 16:20:27 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:52:54 -0300
+CommitDate: Fri, 12 Jul 2013 13:53:48 -0300
 
-perf evlist: Tidy duplicated munmap code
+perf tools: Validate perf event header size
 
-The same lines of code are used in three places.  Make it a new function
-'__perf_evlist__munmap()'.
+The 'size' variable includes the header so must be at least
+'sizeof(struct perf_event_header)'.  Error out immediately if that is
+not the case.  Also don't byte-swap the header until it is actually
+"fetched" from the mmap region.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -61,70 +62,49 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1372944040-32690-8-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1372944040-32690-9-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
+ tools/perf/util/session.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index d8f34e0..42ea4e9 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -403,16 +403,20 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 6b71b88..951a1cf 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1094,8 +1094,10 @@ more:
+ 		perf_event_header__bswap(&event->header);
+ 
+ 	size = event->header.size;
+-	if (size == 0)
+-		size = 8;
++	if (size < sizeof(struct perf_event_header)) {
++		pr_err("bad event header size\n");
++		goto out_err;
++	}
+ 
+ 	if (size > cur_size) {
+ 		void *new = realloc(buf, size);
+@@ -1164,8 +1166,12 @@ fetch_mmaped_event(struct perf_session *session,
+ 	if (session->header.needs_swap)
+ 		perf_event_header__bswap(&event->header);
+ 
+-	if (head + event->header.size > mmap_size)
++	if (head + event->header.size > mmap_size) {
++		/* We're not fetching the event so swap back again */
++		if (session->header.needs_swap)
++			perf_event_header__bswap(&event->header);
+ 		return NULL;
++	}
+ 
  	return event;
  }
+@@ -1245,7 +1251,7 @@ more:
  
-+static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
-+{
-+	if (evlist->mmap[idx].base != NULL) {
-+		munmap(evlist->mmap[idx].base, evlist->mmap_len);
-+		evlist->mmap[idx].base = NULL;
-+	}
-+}
-+
- void perf_evlist__munmap(struct perf_evlist *evlist)
- {
- 	int i;
+ 	size = event->header.size;
  
--	for (i = 0; i < evlist->nr_mmaps; i++) {
--		if (evlist->mmap[i].base != NULL) {
--			munmap(evlist->mmap[i].base, evlist->mmap_len);
--			evlist->mmap[i].base = NULL;
--		}
--	}
-+	for (i = 0; i < evlist->nr_mmaps; i++)
-+		__perf_evlist__munmap(evlist, i);
- 
- 	free(evlist->mmap);
- 	evlist->mmap = NULL;
-@@ -477,12 +481,8 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 	return 0;
- 
- out_unmap:
--	for (cpu = 0; cpu < nr_cpus; cpu++) {
--		if (evlist->mmap[cpu].base != NULL) {
--			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
--			evlist->mmap[cpu].base = NULL;
--		}
--	}
-+	for (cpu = 0; cpu < nr_cpus; cpu++)
-+		__perf_evlist__munmap(evlist, cpu);
- 	return -1;
- }
- 
-@@ -517,12 +517,8 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 	return 0;
- 
- out_unmap:
--	for (thread = 0; thread < nr_threads; thread++) {
--		if (evlist->mmap[thread].base != NULL) {
--			munmap(evlist->mmap[thread].base, evlist->mmap_len);
--			evlist->mmap[thread].base = NULL;
--		}
--	}
-+	for (thread = 0; thread < nr_threads; thread++)
-+		__perf_evlist__munmap(evlist, thread);
- 	return -1;
- }
- 
+-	if (size == 0 ||
++	if (size < sizeof(struct perf_event_header) ||
+ 	    perf_session__process_event(session, event, tool, file_pos) < 0) {
+ 		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
+ 		       file_offset + head, event->header.size,
