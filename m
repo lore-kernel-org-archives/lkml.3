@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965012Ab3GSAsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:48:18 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:61296 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759509Ab3GSAsR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:48:17 -0400
+	id S965283Ab3GSAtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:49:32 -0400
+Received: from mx11.netapp.com ([216.240.18.76]:43941 "EHLO mx11.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965089Ab3GSAtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Jul 2013 20:49:31 -0400
+X-IronPort-AV: E=Sophos;i="4.89,697,1367996400"; 
+   d="scan'208";a="34829860"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "christian.suenkenberg@student.kit.edu" 
+	<christian.suenkenberg@student.kit.edu>,
+        "dyoung@redhat.com" <dyoung@redhat.com>, Peter Anvin <hpa@zytor.com>,
+        "jencce.kernel@gmail.com" <jencce.kernel@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "onny@project-insanity.org" <onny@project-insanity.org>,
+        "pageexec@gmail.com" <pageexec@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 fixes for 3.11-rc2
+Thread-Topic: [GIT PULL] x86 fixes for 3.11-rc2
+Thread-Index: AQHOhBl46sdqGAarFEm2E13TGojE25lroM0A
+Date: Fri, 19 Jul 2013 00:49:30 +0000
+Message-ID: <1374194970.27573.44.camel@leira.trondhjem.org>
+References: <201307182241.r6IMfmap003013@terminus.zytor.com>
+	 <CA+55aFx38ogZxxg2uHXKsPFHU4p4yvxvUE1i8DiPWZ4SdEDANg@mail.gmail.com>
+In-Reply-To: <CA+55aFx38ogZxxg2uHXKsPFHU4p4yvxvUE1i8DiPWZ4SdEDANg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <DA071F0C80C94D4F8AEEBE52F2E6AFA1@hq.netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <20130716152737.507bc6f1cc7cfe069e97d245@canb.auug.org.au>
-References: <20130716152737.507bc6f1cc7cfe069e97d245@canb.auug.org.au>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 18 Jul 2013 20:47:45 -0400
-X-Google-Sender-Auth: fN47dNWQl_1RW2VLngDXJLMuFl4
-Message-ID: <CAP=VYLr7fL4a8VTHdgX=GWT9kApP7e2NLHtftTL4_v9VJ097ng@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the cpuinit tree with the
- hwmon-staging tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6J0nbs6007300
 
-On Tue, Jul 16, 2013 at 1:27 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Paul,
->
-> Today's linux-next merge of the cpuinit tree got a conflict in
-> drivers/hwmon/coretemp.c between commit cc58db361386 ("hwmon: (coretemp)
-> Atom CPUs don't support TjMax; no warning needed") from the hwmon-staging
-> tree and commit "hwmon: delete __cpuinit usage from all hwmon files" from
-> the cpuinit tree.
->
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On Thu, 2013-07-18 at 17:46 -0700, Linus Torvalds wrote:
 
-Hi Stephen,
+> Finnish is hard. But good for swearing.
 
-As the cpuinit tree was merged today, can you drop it from the
-linux-next process?   Thanks again for your help in testing this
-and dealing with the patch queue like an akpm/mmotm source.
+Only because the ratio of vowels to consonants causes an immediate
+outbreak of swearing among those who try...
 
-Paul.
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->
-> diff --cc drivers/hwmon/coretemp.c
-> index be58da1,2e5e2dc..0000000
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@@ -317,20 -316,7 +316,19 @@@ static int adjust_tjmax(struct cpuinfo_
->         return tjmax;
->   }
->
->  +static bool cpu_has_tjmax(struct cpuinfo_x86 *c)
->  +{
->  +      u8 model = c->x86_model;
->  +
->  +      return model > 0xe &&
->  +             model != 0x1c &&
->  +             model != 0x26 &&
->  +             model != 0x27 &&
->  +             model != 0x35 &&
->  +             model != 0x36;
->  +}
->  +
-> - static int __cpuinit get_tjmax(struct cpuinfo_x86 *c, u32 id,
-> -                              struct device *dev)
-> + static int get_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
->   {
->         int err;
->         u32 eax, edx;
+Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
