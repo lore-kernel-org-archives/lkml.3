@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759921Ab3GSINS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:13:18 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54008 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759433Ab3GSIND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:13:03 -0400
-Date: Fri, 19 Jul 2013 09:12:58 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Nathan Rutman <nathan_rutman@xyratex.com>, Peng Tao <bergwolf@gmail.com>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [lustre mess] is mgc_fs_setup() reachable at all?
-Message-ID: <20130719081258.GE4165@ZenIV.linux.org.uk>
-References: <20130718090835.GZ4165@ZenIV.linux.org.uk>
- <CA+a=Yy49WfQVJAYybUzVvigi9b--kuagqKxBEH+yy0RZSKVnQA@mail.gmail.com>
- <5DD1CAAA-2008-47F9-B3B6-8D342B28D08C@xyratex.com>
- <20130718190703.GB4165@ZenIV.linux.org.uk>
- <3F4C226D-9D3B-46FA-9C8C-55268B2F904F@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3F4C226D-9D3B-46FA-9C8C-55268B2F904F@dilger.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759948Ab3GSINb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:13:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18296 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759433Ab3GSINX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:13:23 -0400
+X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
+   d="scan'208";a="7947591"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH 19/21] x86, numa: Save nid when reserve memory into memblock.reserved[].
+Date: Fri, 19 Jul 2013 15:59:32 +0800
+Message-Id: <1374220774-29974-20-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/19 15:58:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/19 15:58:49,
+	Serialize complete at 2013/07/19 15:58:49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 02:57:11PM -0600, Andreas Dilger wrote:
+We have introduced numa_sync_memblock_nid to synchronize nid info in
+memblock.reserved[] and numa_meminfo. But memblock_reserve() always
+reserve memory with MAX_NUMNODES, even after numa_meminfo has been
+initialized.
 
-> > _THAT_ was going to be a remotely supplied data?  I really hope I've
-> > misparsed what you said above...
-> > 
-> > And that still leaves the question about the code path that could
-> > lead to execution of mgc_fs_setup().
-> 
-> The KEY_SET_FS is only used in the server code, not on the client.
-> The MGC code is shared between client and server to mount the
-> filesystem and fetch the cluster configuration from the management
-> server.  In the case of a server mount, it also has to mount the
-> underlying block device, which isn't true on the client, so this
-> code is indeed unused.
+So this patch improves memblock_reserve() to reserve memory with
+correct nid.
 
-Wait a minute...  So we have client side of things in staging, with
-parts shared with the server, which is *not* in tree at all?  That
-sounds painful - any changes done to the client code either risk
-to break the server, or have the copies of the shared stuff diverge...
+Reported-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ include/linux/memblock.h |    1 +
+ include/linux/mm.h       |    9 +++++++++
+ mm/memblock.c            |   11 +++++++++--
+ 3 files changed, 19 insertions(+), 2 deletions(-)
 
-I honestly have no idea about your plans wrt merging; are you going
-to put the server side of things there as well?
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 8d71795..d520015 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -63,6 +63,7 @@ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve_hotpluggable(phys_addr_t base, phys_addr_t size, int nid);
++int memblock_reserve_node(phys_addr_t base, phys_addr_t size, int nid);
+ void memblock_free_hotpluggable(void);
+ void memblock_trim_memory(phys_addr_t align);
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e0c8528..baa1aac 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1665,6 +1665,15 @@ unsigned long change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
+ #endif
+ 
++#ifdef CONFIG_NUMA
++int __init early_numa_find_range_nid(u64 start, u64 size);
++#else
++static inline int __init early_numa_find_range_nid(u64 start, u64 size)
++{
++	return 0;
++}
++#endif
++
+ struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
+ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+ 			unsigned long pfn, unsigned long size, pgprot_t);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 631b727..1f5dc12 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -597,12 +597,19 @@ static int __init_memblock memblock_reserve_region(phys_addr_t base,
+ 	return memblock_add_region(_rgn, base, size, nid, flags);
+ }
+ 
+-int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++int __init_memblock memblock_reserve_node(phys_addr_t base,
++					  phys_addr_t size, int nid)
+ {
+-	return memblock_reserve_region(base, size, MAX_NUMNODES,
++	return memblock_reserve_region(base, size, nid,
+ 				       MEMBLK_FLAGS_DEFAULT);
+ }
+ 
++int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++{
++	int nid = early_numa_find_range_nid(base, size);
++	return memblock_reserve_node(base, size, nid);
++}
++
+ int __init_memblock memblock_reserve_hotpluggable(phys_addr_t base,
+ 						  phys_addr_t size, int nid)
+ {
+-- 
+1.7.1
 
-Another thing: is your ll_statfs_internal() safe to call right up to
-the moment when client_common_put_super calls lprocfs_unregister_mountpoint?
-Because procfs IO *can* come right until the procfs entry removal;
-said removal will act as a barrier, so it won't leak past the return from
-remove_proc_entry(), but that's it.
-
-While we are at procfs side of thing, looks like you need exclusion between
-ll_..._seq_write() that clear/set bits in ->ll_flags; at least I haven't
-found anything that would prevent the races among those.
