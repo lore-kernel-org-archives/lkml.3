@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760345Ab3GSMIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 08:08:52 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51974 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760285Ab3GSMIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760329Ab3GSMIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 08:08:50 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:58127 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760297Ab3GSMIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 08:08:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+Date: Fri, 19 Jul 2013 14:08:41 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
-Date: Fri, 19 Jul 2013 14:18:41 +0200
-Message-ID: <5137167.kOnaWbA4s1@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51E8B923.5090201@gmail.com>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com> <1444243.g9GbxN3NM0@vostro.rjw.lan> <51E8B923.5090201@gmail.com>
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [ATTEND] How to act on LKML
+Message-ID: <20130719120841.GH26716@gmail.com>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+ <51E4BFA9.1030600@zytor.com>
+ <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+ <1373991399.6458.6.camel@gandalf.local.home>
+ <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+ <51E59F79.1040903@zytor.com>
+ <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+ <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+ <20130717144043.GA16513@xanatos>
+ <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 18, 2013 09:57:23 PM Robert Hancock wrote:
-> On 07/03/2013 03:40 PM, Rafael J. Wysocki wrote:
-> > On Wednesday, July 03, 2013 05:04:53 PM Mika Westerberg wrote:
-> >> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >>
-> >> Correct ACPI PCI hotplug imeplementation should have _RMV method in a
-> >> PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
-> >> deeper in hierarchy:
-> >>
-> >> Device (RP05)
-> >> {
-> >>     // ...
-> >>     Device (HRUP)
-> >>     {
-> >>         // ...
-> >>         Device (HRDN)
-> >>         {
-> >>             // ...
-> >>             Device (EPUP)
-> >>             {
-> >>                 // ...
-> >>                 Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
-> >>                 {
-> >>                     Return (One)
-> >>                 }
-> >>             }
-> >>         }
-> >>     }
-> >> }
-> >>
-> >> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> >> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> ---
-> >>   drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
-> >>   1 file changed, 13 insertions(+)
-> >>
-> >> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
-> >> index 2a47e82..d92ebfb 100644
-> >> --- a/drivers/pci/hotplug/acpi_pcihp.c
-> >> +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> >> @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
-> >>   	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
-> >>   	if (ACPI_SUCCESS(status) && removable)
-> >>   		return 1;
-> >> +
-> >> +	/*
-> >> +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
-> >> +	 *
-> >> +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
-> >> +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
-> >> +	 * deeper in hierarchy.
-> >> +	 */
-> >> +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
-> >> +			&removable);
-> >
-> > Well, calling stuff like this directly from a general function is kind of ugly.
-> >
-> > Can we use something like a quirk instead?  A DMI check or something?
-> 
-> Presumably this device functions under Windows so clearly Windows is 
-> capable of dealing with this case, so we should too.
-> 
-> There are way too many of these silly DMI checks in the kernel - we 
-> should be way more hesitant to add more of them. They're almost 
-> guaranteed to be incomplete. I would say they should be avoided whenever 
-> possible unless there's some reason why a general workaround can't be used.
 
-This horse is already dead. :-)
+* Felipe Contreras <felipe.contreras@gmail.com> wrote:
 
-Please check the series I posted the day before yesterday.
+> [...]
+> 
+> Anyway, through the discussion it has been established that swearing is 
+> rare, most of often directed to the code, and on exceptional occasions 
+> directed to people, when they *deserve* it. And you seem to be implying 
+> that women can't tolerate that, so a change needs to be made in order to 
+> attract more women to the project. Is that correct?
+
+While I don't talk for Sarah, the way you have put it is broadly correct 
+(although your formulation is adversarial and leading): most communities 
+dominated by women are hugely offputting to males and communities 
+dominated by males are hugely offputting to women.
+
+Open communities dominated by one gender (males in most cases) that want 
+to essentially double their creative brain capacity by attracting the 
+other gender are well advised to try to figure out a solution to that 
+problem.
+
+> Personally I don't believe that. Essentially every other open source 
+> project out there, except the Linux kernel, has some kind code of 
+> conduct, whether it's implicit or explicit, and yet they don't have many 
+> developer women either. But fine, let's suppose what you say it's true.
+
+Code of conduct is unfortunately not enough - there's many conscious and 
+subconscious dimensions to a community that make it offputting to one 
+gender or the other and once a community becomes a mono-culture by one 
+gender (due to historic gender bias or due to sheer luck) it's (very) hard 
+to change it.
+
+> As Linus already pointed out, not everybody has to work with everybody.
+
+That's not the point though, the point is to potentially roughly double 
+the creative brain capacity of the Linux kernel project.
+
+Even if you don't care about gender fairness, that kind of bona fide 
+benefit to the project is worth a try or two I think ...
 
 Thanks,
-Rafael
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	Ingo
