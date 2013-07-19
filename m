@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965184Ab3GSHRi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:17:38 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33782 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759727Ab3GSHRg (ORCPT
+	id S1759793Ab3GSHUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:20:16 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:63386 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759663Ab3GSHUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:17:36 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19SE0QWl/PNK4p0LAPNokO/
-Date: Fri, 19 Jul 2013 00:17:29 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Nishanth Menon <nm@ti.com>, balbi@ti.com, Sricharan R <r.sricharan@ti.com>,
-        linux@arm.linux.org.uk, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, rnayak@ti.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-Message-ID: <20130719071728.GX7656@atomide.com>
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com>
- <1374165830-6367-2-git-send-email-r.sricharan@ti.com>
- <51E83A4F.5080904@ti.com>
- <51E87C98.5030001@ti.com>
+	Fri, 19 Jul 2013 03:20:14 -0400
+Date: Fri, 19 Jul 2013 10:21:23 +0300
+From: Daniil Bolsun <dan.bolsun@gmail.com>
+To: Matthias Urlichs <smurf@smurf.noris.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [PATCH] usbserial: append Petatel NP10T device to GSM modems list
+Message-ID: <20130719072123.GA3486@l33t.onliner>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E87C98.5030001@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thursday 18 July 2013 02:56 PM, Nishanth Menon wrote:
-> 
-> Since the cross-bar is not limited t0 IRQ lines and applicable for
-> DMA request lines as well, making it IRQ chip doesn't make sense. Its
-> not typical pin control functionality either but at least that framework
-> is much closer to consider as an option.
-> 
-> Actually its more of setting up the IRQ and DMA pins maps once
-> at boot for a given SOC based on chosen configuration by the
-> board. So I am leaning towards pinctrl as well. Just haven't
-> thought enough about whether thats the best approach.
-> 
-> CC'ing Linus W and Tony L whether we can use pinctrl framework
-> for such an IP and if yes how ;-).
+This patch was tested on 3.10.1 kernel.
 
-If it really muxes signals then using pinctrl seems logical.
-Especially if the registers are in the SCM block.
+Same models of Petatel NP10T modems have different device IDs.
+Unfortunately they have no additional revision information on a board
+which may treat them as different devices. Currently I've seen only
+two NP10T devices with various IDs. Possibly Petatel NP10T list will
+be appended upon devices with new IDs will appear.
 
-It might be already possible to handle it already with
-pinctrl-single,bits for the muxing part.
+Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
 
-Regards,
-
-Tony
+--- linux-3.10.1/drivers/usb/serial/option.c	2013-07-01 01:13:29.000000000 +0300
++++ linux-3.10.1.np10t/drivers/usb/serial/option.c	2013-07-18 16:15:36.902600324 +0300
+@@ -446,7 +446,8 @@ static void option_instat_callback(struc
+ 
+ /* Hyundai Petatel Inc. products */
+ #define PETATEL_VENDOR_ID			0x1ff4
+-#define PETATEL_PRODUCT_NP10T			0x600e
++#define PETATEL_PRODUCT_NP10T_600A		0x600a
++#define PETATEL_PRODUCT_NP10T_600E		0x600e
+ 
+ /* TP-LINK Incorporated products */
+ #define TPLINK_VENDOR_ID			0x2357
+@@ -1333,7 +1334,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x02, 0x01) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+-	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600A) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600E) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
