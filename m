@@ -1,114 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760488Ab3GSOjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:39:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40042 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759308Ab3GSOjL (ORCPT
+	id S1760610Ab3GSOja (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:39:30 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61875 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760543Ab3GSOj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:39:11 -0400
-Message-ID: <51E94F7C.9090302@canonical.com>
-Date: Fri, 19 Jul 2013 10:38:52 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 19 Jul 2013 10:39:26 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, ak <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
+Date: Fri, 19 Jul 2013 16:49:22 +0200
+Message-ID: <2493652.fjZLqTL8IF@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <3364013.pHWIsx89Eq@vostro.rjw.lan>
+References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <1374188894.22432.354.camel@schen9-DESK> <3364013.pHWIsx89Eq@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>, jkosina@suse.cz,
-        benjamin.tissoires@gmail.com, adlr@chromium.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying
- device issue""
-References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com> <51E84FD1.4050400@hurleysoftware.com> <20130718220936.GA8025@xanatos> <51E87C1F.1090301@hurleysoftware.com>
-In-Reply-To: <51E87C1F.1090301@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 07:37 PM, Peter Hurley wrote:
-> On 07/18/2013 06:09 PM, Sarah Sharp wrote:
->> On Thu, Jul 18, 2013 at 04:28:01PM -0400, Peter Hurley wrote:
->>> [ +cc Sarah Sharp, linux-usb ]
->>>
->>> On 07/18/2013 09:21 AM, Nestor Lopez Casado wrote:
->>>> This reverts commit 8af6c08830b1ae114d1a8b548b1f8b056e068887.
->>>>
->>>> This patch re-adds the workaround introduced by 596264082f10dd4
->>>> which was reverted by 8af6c08830b1ae114.
->>>>
->>>> The original patch 596264 was needed to overcome a situation where
->>>> the hid-core would drop incoming reports while probe() was being
->>>> executed.
->>>>
->>>> This issue was solved by c849a6143bec520af which added
->>>> hid_device_io_start() and hid_device_io_stop() that enable a specific
->>>> hid driver to opt-in for input reports while its probe() is being
->>>> executed.
->>>>
->>>> Commit a9dd22b730857347 modified hid-logitech-dj so as to use the
->>>> functionality added to hid-core. Having done that, workaround 596264
->>>> was no longer necessary and was reverted by 8af6c08.
->>>>
->>>> We now encounter a different problem that ends up 'again' thwarting
->>>> the Unifying receiver enumeration. The problem is time and usb
->>>> controller
->>>> dependent. Ocasionally the reports sent to the usb receiver to start
->>>> the paired devices enumeration fail with -EPIPE and the receiver never
->>>> gets to enumerate the paired devices.
->>>>
->>>> With dcd9006b1b053c7b1c the problem was "hidden" as the call to the
->>>> usb
->>>> driver became asynchronous and none was catching the error from the
->>>> failing URB.
->>>>
->>>> As the root cause for this failing SET_REPORT is not understood yet,
->>>> -possibly a race on the usb controller drivers or a problem with the
->>>> Unifying receiver- reintroducing this workaround solves the problem.
->>>
->>>
->>> Before we revert to using the workaround, I'd like to suggest that
->>> this new "hidden" problem may be an interaction with the xhci_hcd host
->>> controller driver only.
->>>
->>> Looking at the related bug, the OP indicates the machine only has
->>> USB3 ports. Additionally, comments #7, #100, and #104 of the original
->>> bug report [1] add additional information that would seem to confirm
->>> this suspicion.
->>
->> Question: does this USB device need a control transfer to reset its
->> endpoints when the endpoints are not actually halted?  If so, yes, that
->> is a known xHCI driver bug that needs to be fixed.  The xHCI host will
->> not accept a Reset Endpoint command when the endpoints are not actually
->> halted, but the USB core will send the control transfer to reset the
->> endpoint.  That means the device and host toggles will be out of sync,
->> and all messages will start to fail with -EPIPE.
->>
->> Can the OP capture a usbmon trace when the device starts failing?  That
->> will reveal whether this actually is the issue.  dmesg output with
->> CONFIG_USB_DEBUG and CONFIG_USB_XHCI_HCD_DEBUGGING turned on would also
->> be helpful.
->
-> Sarah,
->
-> I forwarded your usbmon capture request to the OP in the bug report
-> (I don't have an email address for the reporter).
->
-> As far as getting printk output from a custom kernel, I think that may
-> be beyond the reporter's capability. Perhaps one of the Ubuntu devs
-> triaging this bug could provide a test kernel for the OP with those
-> options on.
->
-> Joseph, would you be willing to do that?
+On Friday, July 19, 2013 03:03:36 PM Rafael J. Wysocki wrote:
+> On Thursday, July 18, 2013 04:08:14 PM Tim Chen wrote:
+> > On Fri, 2013-07-19 at 00:17 +0200, Rafael J. Wysocki wrote:
+> > > On 7/18/2013 11:00 PM, Tim Chen wrote:
+> > > > On Thu, 2013-07-18 at 12:47 +0900, Tetsuo Handa wrote:
+> > > >> Tim Chen wrote:
+> > > >>>>> Your approach is quite complicated.  I think something simpler like the
+> > > >>>>> following will work:
+> > > >>>> We cannot benefit from PCLMULQDQ. Is it acceptable for you?
+> > > >>>
+> > > >>> The following code in crct10dif-pclmul_glue.c
+> > > >>>
+> > > >>> static const struct x86_cpu_id crct10dif_cpu_id[] = {
+> > > >>>          X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
+> > > >>>          {}
+> > > >>> };
+> > > >>> MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+> > > >>>
+> > > >>> will put the module in the device table and get the module
+> > > >>> loaded, as long as the cpu support PCLMULQDQ. So we should be able
+> > > >>> to benefit.
+> > > >> Excuse me, how can crct10dif-pclmul.ko get loaded automatically?
+> > > >> Did you test CONFIG_CRYPTO_CRCT10DIF_PCLMUL=m with below debug message?
+> > > > The code:
+> > > >
+> > > > static const struct x86_cpu_id crct10dif_cpu_id[] = {
+> > > >           X86_FEATURE_MATCH(X86_FEATURE_PCLMULQDQ),
+> > > >           {}
+> > > > };
+> > > > MODULE_DEVICE_TABLE(x86cpu, crct10dif_cpu_id);
+> > > >
+> > > > causes the following line to be added to modules.alias file:
+> > > >
+> > > > alias x86cpu:vendor:*:family:*:model:*:feature:*0081* crct10dif_pclmul
+> > > >
+> > > > This should cause udev to load the crct10dif_pclml module when cpu
+> > > > support the PCLMULQDQ (feature code 0081).  I did my testing during
+> > > > development on 3.10 and the module was indeed loaded.
+> > > >
+> > > > However, I found that the following commit under 3.11-rc1 broke
+> > > > the mechanism after some bisection.
+> > > >
+> > > > commit ac212b6980d8d5eda705864fc5a8ecddc6d6eacc
+> > > > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > Date:   Fri May 3 00:26:22 2013 +0200
+> > > >
+> > > >      ACPI / processor: Use common hotplug infrastructure
+> > > >      
+> > > >      Split the ACPI processor driver into two parts, one that is
+> > > >      non-modular, resides in the ACPI core and handles the enumeration
+> > > >      and hotplug of processors and one that implements the rest of the
+> > > >      existing processor driver functionality.
+> > > >      
+> > > > Rafael, can you check and see if this can be fixed so those optimized
+> > > > crypto modules for Intel cpu that support them can be loaded?
+> > > 
+> > > I think this is an ordering issue between udev startup and the time when 
+> > > devices are registered.
+> > 
+> > Something that can be fixed?
+> 
+> I'm sure it can be fixes, but I'm not sure whether it's a udev bug or real
+> breakage in the kernel yet.  I need to figure out that part.
 
-Sure thing.  I'll build a kernel and request that the bug reporter
-collect usbmon data.
+OK
 
-Thanks everyone for the feedback!
+I wonder if the appended patch makes the issue go away for you?
 
->
-> Regards,
-> Peter Hurley
+Rafael
+
+
+---
+ drivers/acpi/acpi_platform.c    |   24 +++++++++++++-----------
+ drivers/acpi/acpi_processor.c   |   14 ++++----------
+ drivers/acpi/processor_driver.c |   26 ++++++++++++++------------
+ 3 files changed, 31 insertions(+), 33 deletions(-)
+
+Index: linux-pm/drivers/acpi/acpi_processor.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/acpi_processor.c
++++ linux-pm/drivers/acpi/acpi_processor.c
+@@ -397,20 +397,14 @@ static int __cpuinit acpi_processor_add(
+ 		result = -ENODEV;
+ 		goto err;
+ 	}
+-
+-	result = acpi_bind_one(dev, pr->handle);
+-	if (result)
+-		goto err;
+-
+ 	pr->dev = dev;
+ 	dev->offline = pr->flags.need_hotplug_init;
+ 
+-	/* Trigger the processor driver's .probe() if present. */
+-	if (device_attach(dev) >= 0)
+-		return 1;
++	result = acpi_create_platform_device(device, id);
++	if (result > 0)
++		return result;
+ 
+-	dev_err(dev, "Processor driver could not be attached\n");
+-	acpi_unbind_one(dev);
++	dev_err(dev, "Unable to create processor platform device\n");
+ 
+  err:
+ 	free_cpumask_var(pr->throttling.shared_cpu_map);
+Index: linux-pm/drivers/acpi/acpi_platform.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/acpi_platform.c
++++ linux-pm/drivers/acpi/acpi_platform.c
+@@ -52,7 +52,7 @@ int acpi_create_platform_device(struct a
+ 	struct platform_device_info pdevinfo;
+ 	struct resource_list_entry *rentry;
+ 	struct list_head resource_list;
+-	struct resource *resources;
++	struct resource *resources = NULL;
+ 	int count;
+ 
+ 	/* If the ACPI node already has a physical device attached, skip it. */
+@@ -61,20 +61,22 @@ int acpi_create_platform_device(struct a
+ 
+ 	INIT_LIST_HEAD(&resource_list);
+ 	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
+-	if (count <= 0)
++	if (count < 0) {
+ 		return 0;
++	} else if (count > 0) {
++		resources = kmalloc(count * sizeof(struct resource),
++				    GFP_KERNEL);
++		if (!resources) {
++			dev_err(&adev->dev, "No memory for resources\n");
++			acpi_dev_free_resource_list(&resource_list);
++			return -ENOMEM;
++		}
++		count = 0;
++		list_for_each_entry(rentry, &resource_list, node)
++			resources[count++] = rentry->res;
+ 
+-	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
+-	if (!resources) {
+-		dev_err(&adev->dev, "No memory for resources\n");
+ 		acpi_dev_free_resource_list(&resource_list);
+-		return -ENOMEM;
+ 	}
+-	count = 0;
+-	list_for_each_entry(rentry, &resource_list, node)
+-		resources[count++] = rentry->res;
+-
+-	acpi_dev_free_resource_list(&resource_list);
+ 
+ 	memset(&pdevinfo, 0, sizeof(pdevinfo));
+ 	/*
+Index: linux-pm/drivers/acpi/processor_driver.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/processor_driver.c
++++ linux-pm/drivers/acpi/processor_driver.c
+@@ -36,6 +36,7 @@
+ #include <linux/cpuidle.h>
+ #include <linux/slab.h>
+ #include <linux/acpi.h>
++#include <linux/platform_device.h>
+ 
+ #include <acpi/processor.h>
+ 
+@@ -54,8 +55,8 @@ MODULE_AUTHOR("Paul Diefenbaugh");
+ MODULE_DESCRIPTION("ACPI Processor Driver");
+ MODULE_LICENSE("GPL");
+ 
+-static int acpi_processor_start(struct device *dev);
+-static int acpi_processor_stop(struct device *dev);
++static int acpi_processor_start(struct platform_device *pdev);
++static int acpi_processor_stop(struct platform_device *pdev);
+ 
+ static const struct acpi_device_id processor_device_ids[] = {
+ 	{ACPI_PROCESSOR_OBJECT_HID, 0},
+@@ -64,10 +65,11 @@ static const struct acpi_device_id proce
+ };
+ MODULE_DEVICE_TABLE(acpi, processor_device_ids);
+ 
+-static struct device_driver acpi_processor_driver = {
+-	.name = "processor",
+-	.bus = &cpu_subsys,
+-	.acpi_match_table = processor_device_ids,
++static struct platform_driver acpi_processor_driver = {
++	.driver = {
++		.name = "processor",
++		.acpi_match_table = processor_device_ids,
++	},
+ 	.probe = acpi_processor_start,
+ 	.remove = acpi_processor_stop,
+ };
+@@ -222,22 +224,22 @@ static __cpuinit int __acpi_processor_st
+ 	return result;
+ }
+ 
+-static int __cpuinit acpi_processor_start(struct device *dev)
++static int __cpuinit acpi_processor_start(struct platform_device *pdev)
+ {
+ 	struct acpi_device *device;
+ 
+-	if (acpi_bus_get_device(ACPI_HANDLE(dev), &device))
++	if (acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &device))
+ 		return -ENODEV;
+ 
+ 	return __acpi_processor_start(device);
+ }
+ 
+-static int acpi_processor_stop(struct device *dev)
++static int acpi_processor_stop(struct platform_device *pdev)
+ {
+ 	struct acpi_device *device;
+ 	struct acpi_processor *pr;
+ 
+-	if (acpi_bus_get_device(ACPI_HANDLE(dev), &device))
++	if (acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &device))
+ 		return 0;
+ 
+ 	acpi_remove_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
+@@ -271,7 +273,7 @@ static int __init acpi_processor_driver_
+ 	if (acpi_disabled)
+ 		return 0;
+ 
+-	result = driver_register(&acpi_processor_driver);
++	result = platform_driver_register(&acpi_processor_driver);
+ 	if (result < 0)
+ 		return result;
+ 
+@@ -292,7 +294,7 @@ static void __exit acpi_processor_driver
+ 	acpi_thermal_cpufreq_exit();
+ 	unregister_hotcpu_notifier(&acpi_cpu_notifier);
+ 	acpi_processor_syscore_exit();
+-	driver_unregister(&acpi_processor_driver);
++	platform_driver_unregister(&acpi_processor_driver);
+ }
+ 
+ module_init(acpi_processor_driver_init);
 
