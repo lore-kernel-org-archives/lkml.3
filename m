@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759702Ab3GSGu2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 02:50:28 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:49460 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834Ab3GSGu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 02:50:26 -0400
-Date: Fri, 19 Jul 2013 08:50:20 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v7 0/5] kdump: Allow ELF header creation in new kernel
-Message-ID: <20130719085020.28daef68@mschwide>
-In-Reply-To: <20130718133541.GB785@redhat.com>
-References: <OF6010D9F0.5A45F2CF-ONC1257BAB.002B1F3E-C1257BAB.002B2812@de.ibm.com>
-	<20130717180049.3b9c6ec8@holzheu>
-	<20130717214207.GB27633@redhat.com>
-	<20130718124004.098b85f4@holzheu>
-	<20130718124754.7453756e@mschwide>
-	<20130718133541.GB785@redhat.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071906-8372-0000-0000-0000069EB3C6
+	id S934320Ab3GSGwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 02:52:50 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:10421
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759681Ab3GSGwr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 02:52:47 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h1de096h8275bh8275dha509lz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
+From: Gupta Ruchika-R66431 <R66431@freescale.com>
+To: Stoica Cristian-B18196 <B18196@freescale.com>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geanta Neag Horia Ioan-B05471 <B05471@freescale.com>,
+        Stoica Cristian-B18196 <B18196@freescale.com>
+Subject: RE: [PATCH] crypto: remove double execution of the same test suite
+Thread-Topic: [PATCH] crypto: remove double execution of the same test suite
+Thread-Index: AQHOg9FjNPue39lsmE+4dsBBH4vfOplrkT/w
+Date: Fri, 19 Jul 2013 06:52:43 +0000
+Message-ID: <B2B5EF0D8FDD10429C8DE6C4C2B38282093EE905@039-SN2MPN1-022.039d.mgd.msft.net>
+References: <1374163027-17201-1-git-send-email-cristian.stoica@freescale.com>
+In-Reply-To: <1374163027-17201-1-git-send-email-cristian.stoica@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.60]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Jul 2013 09:35:41 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+Reviewed-by: Ruchika Gupta <ruchika.gupta@freescale.com>
 
-> On Thu, Jul 18, 2013 at 12:47:54PM +0200, Martin Schwidefsky wrote:
-> > On Thu, 18 Jul 2013 12:40:04 +0200
-> > Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
-> > 
-> > > On Wed, 17 Jul 2013 17:42:07 -0400
-> > > Vivek Goyal <vgoyal@redhat.com> wrote:
-> > > > On Wed, Jul 17, 2013 at 06:00:49PM +0200, Michael Holzheu wrote:
-> > > 
-> > > [snip]
-> > > 
-> > > > > But this is all additional effort now and would not be necessary if we
-> > > > > integrate this patch series in 3.11.
-> > > > > 
-> > > > > Perhaps we should let Andrew decide here.
-> > > > 
-> > > > Hi Michael,
-> > > > 
-> > > > Given the fact that andrew too prefers a fix to get s390 working at this
-> > > > stage can we modify s390 copy_from_oldmem() to be able to copy to 
-> > > > vmalloc() memory area.
-> > > > 
-> > > > For mmap(), let us disable it on s390. And rest of the cleanups w.r.t
-> > > > ELF header swap etc, let us now target that for 3.12.
-> > > > 
-> > > > Sounds reasonable?
-> > > 
-> > > Hi Vivek,
-> > > 
-> > > Ok this is not our preferred solution but we can't expect that life is
-> > > always easy ;-)
-> > > 
-> > > Our s390 kernel maintainer Martin Schwidefsky agreed to send the following
-> > > two patches upstream for 3.11:
-> > > 
-> > >  * s390/kdump: Disable mmap for s390
-> > >  * s390/kdump: Allow copy_oldmem_page() copy to virtual memory
-> > 
-> > Patches have been added to 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git features
-> > 
-> > They will go upstream with my next pull request.
-> > 
+> -----Original Message-----
+> From: linux-crypto-owner@vger.kernel.org [mailto:linux-crypto-
+> owner@vger.kernel.org] On Behalf Of Cristian Stoica
+> Sent: Thursday, July 18, 2013 9:27 PM
+> To: herbert@gondor.hengli.com.au
+> Cc: davem@davemloft.net; linux-crypto@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Geanta Neag Horia Ioan-B05471; Stoica Cristian-
+> B18196
+> Subject: [PATCH] crypto: remove double execution of the same test suite
 > 
-> If everything related to crash dump is going through Andrew, wouldn't
-> it make sense that even these fixes go through him?
+> This patch removes redundant execution of the same test suite in cases where
+> alg and driver variables are the same (e.g. when alg_test is called from
+> tcrypt_test)
 > 
-> https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=5a74953ff56aa870d6913ef4d81934f5c620c59d
+> Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+> ---
+>  crypto/testmgr.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> https://git.kernel.org/cgit/linux/kernel/git/s390/linux.git/commit/?h=features&id=191a2fa0a8d2bbb64c98f9b1976fcb37ee5eae6b
+> diff --git a/crypto/testmgr.c b/crypto/testmgr.c index 2f00607..e091ef6
+> 100644
+> --- a/crypto/testmgr.c
+> +++ b/crypto/testmgr.c
+> @@ -3234,7 +3234,7 @@ int alg_test(const char *driver, const char *alg, u32
+> type, u32 mask)
+>  	if (i >= 0)
+>  		rc |= alg_test_descs[i].test(alg_test_descs + i, driver,
+>  					     type, mask);
+> -	if (j >= 0)
+> +	if (j >= 0 && j != i)
+>  		rc |= alg_test_descs[j].test(alg_test_descs + j, driver,
+>  					     type, mask);
+> 
+> --
+> 1.8.1.5
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Most of the architecture specific kdump patches for s390 have gone through me,
-and these two fall into that category. If you insist we can route them over
-Andrew, it just seems easier to me via the s390 tree.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
 
