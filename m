@@ -1,212 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760050Ab3GSOhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:37:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab3GSOhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 10:37:53 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130718213126.12710.qmail@science.horizon.com>
-References: <20130718213126.12710.qmail@science.horizon.com>
-To: "George Spelvin" <linux@horizon.com>
-Cc: dhowells@redhat.com, joe@perches.com, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Assoc_array: Drop leaf-type concept
-Date: Fri, 19 Jul 2013 15:37:41 +0100
-Message-ID: <6877.1374244661@warthog.procyon.org.uk>
+	id S1760217Ab3GSOjD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:39:03 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:33301 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759069Ab3GSOjB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 10:39:01 -0400
+X-Auth-Info: E2qDwTroADPHn2Mh1BdWE2UciNf79TIfleGO4wLLpoI=
+From: Marek Vasut <marex@denx.de>
+To: Hector Palacios <hector.palacios@digi.com>
+Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify scale
+Date: Fri, 19 Jul 2013 16:39:01 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        alexandre.belloni@free-electrons.com, jic23@kernel.org,
+        lars@metafoo.de, fabio.estevam@freescale.com
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <1374225208-28940-6-git-send-email-hector.palacios@digi.com>
+In-Reply-To: <1374225208-28940-6-git-send-email-hector.palacios@digi.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307191639.01240.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-George Spelvin <linux@horizon.com> wrote:
+Dear Hector Palacios,
 
-> Looks cleaner.
-
-Thanks!
-
-> The larger issues that bother me:
+> Added write_raw function to manipulate the optional divider_by_two
+> through the scaling attribute out of the available scales.
 > 
-> 1) The fact that the abstract daya type "index key" provides access to
->    a byte string "index key" is a bit confusing.  I'd describe it as
->    follows:  (Based on my current understanding.)
+> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+> ---
+>  drivers/staging/iio/adc/mxs-lradc.c | 55
+> ++++++++++++++++++++++++++++++++++++- 1 file changed, 54 insertions(+), 1
+> deletion(-)
 > 
+> diff --git a/drivers/staging/iio/adc/mxs-lradc.c
+> b/drivers/staging/iio/adc/mxs-lradc.c index c929733..286cde2 100644
+> --- a/drivers/staging/iio/adc/mxs-lradc.c
+> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+> @@ -144,6 +144,7 @@ struct mxs_lradc {
 > 
->    Each object has an associated "index key" that is used for lookup.
->    The index key is a string of bits which is stored "inside" the object,
->    however all access to it is done through method functions, so it is
->    not necessary to explicitly store it anywhere.
+>  	uint32_t		vref_mv[LRADC_MAX_TOTAL_CHANS];
+>  	unsigned int		scale_avail[LRADC_MAX_TOTAL_CHANS][2][2];
+> +	unsigned int		is_divided[LRADC_MAX_TOTAL_CHANS];
+
+Why not use bitfield ? ;-)
+
+>  	/*
+>  	 * Touchscreen LRADC channels receives a private slot in the CTRL4
+> @@ -202,6 +203,7 @@ struct mxs_lradc {
+>  #define	LRADC_CTRL1_LRADC_IRQ_OFFSET		0
 > 
->    For example, it is possible to have the leading portion of the
->    index_key be a hash of the remainder.
+>  #define	LRADC_CTRL2				0x20
+> +#define	LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET	24
+>  #define	LRADC_CTRL2_TEMPSENSE_PWD		(1 << 15)
 > 
->    Index keys may be variable-length, but must be self-delimiting.
->    Specifically, two different index keys must differ at some bit position
->    before the end of the shorter of the two.
-
-This is a reasonable summary - but there's no requirement for the index key to
-be a string of bits in its native form.  It's just that it must be presented to
-my routines as a bit string.  It doesn't even need to be stored inside the
-object - though I did note you quoted that.  Maybe "associated with"?
-
->    Some index key methods take an isolated "const void *index_key"
->    argument, while others take an object pointer.
-
-Indeed.  Sometimes I have an explicit index key available (look up, for
-example) and sometimes I only have the object available (determining whether a
-key I'm inserting matches a key I already have when debating shortcut
-creation).
-
-The reason assoc_array_insert() takes an explicit index key _and_ an object
-(which provides an implicit index key) is that it permits me to use
-assoc_array_walk() - which only wants the the explicit index key.
-
-> 2) The code does not look 32-bit safe.  In particular, keyring_get_key_chunk
->    assumes the hash is BITS_PER_LONG long, but keyring_diff_objects 
->    assumes it's 8*8 bits...
-
-Good point.  Fixed.
-
-> 3) I presume you looked at wider tries like Judy arrays and found that
->    a fan-out of 16 was better?
-
-I have not looked at Judy arrays, but I have looked at the other stuff Linux
-has available and some stuff beyond that.
-
-To select the algorithm, I started off with a list of criteria:
-
- (1) It must not be necessary to modify an object to be able to include it in
-     the container.  That means no list_head, rb_node or similar emplacement
-     within the object.
-
- (2) Can't use nodes > PAGE_SIZE.  Preferably they'd be much smaller.
-
- (3) Having lots of blocks that have one object pointer and two or three
-     metadata pointers is bad.  I'd prefer a much higher object-to-meta pointer
-     ratio.
-
- (4) All algorithms must be non-recursive functions as stack space is at a
-     premium.  Also can't rely on being able to allocate extra space during R/O
-     accesses.
-
- (5) Must be possible for RCU R/O accesses to be concurrent with modification.
-
- (6) Reading must be non-sleeping (so no use of a semaphore for reading).
-
- (7) Concurrent modification is not a requirement.
-
- (8) Needs to be primarily optimised for direct walking to a node by index key.
-
- (9) Needs reasonable iteration performance too.
-
-(10) Modifications shouldn't have to replace a lot of internal blocks.
-
-I think the biggest pain is actually the non-recursive algorithm criterion.
-
-I have actually used this container before for a disk-based tree.
-
-
-Anyway, with regards to the size of the fan out, I wanted a compromise between
-having slack available so as not to get too deep a tree too quickly whilst not
-have too much slack space - after all, kernel memory is not easily reclaimable.
-
-However, the biggest factor was that I decided to grab the index key a chunk at
-a time.  The logical choice for chunk size was register size (ie. unsigned
-long) and ideally there would be no wastage in the chunk I got back.  This
-means a fan out that divides exactly in to 2^32 and 2^64.  From that point of
-view, the choices are 2^(N^2).  A fan out of 16 seems nice as it's a nibble or
-one hex digit.
-
-Another factor was that I wanted, if possible, to have keyring objects to
-cluster together to make iterating over them easier (and I know when to stop
-iterating over them because the rest of the objects are just keys), but still
-have them fan out to make them easier to look up directly.  The direct lookup
-is of lesser importance because keyrings tend not to point to many other
-keyrings.
-
-> 4) There are 3/7 unused bytes in an assoc_array_node, after parent_slot.
->    Would it be worth storing 16/48 bits of index key and 3/4 bits of
->    number of levels to skip per assoc_array_node?
->    Since parent_slot is actually only 4 bits, you could store 4 bits
->    of nubmer of levels and 56 bits (up to 14 levels, plus the one
->    from the famout) of index key.
+>  #define	LRADC_STATUS				0x40
+> @@ -310,7 +312,8 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+>  		break;
+>  	case IIO_CHAN_INFO_SCALE:
+>  		*val = lradc->vref_mv[chan->channel];
+> -		*val2 = chan->scan_type.realbits;
+> +		*val2 = chan->scan_type.realbits -
+> +			lradc->is_divided[chan->channel];
+>  		ret = IIO_VAL_FRACTIONAL_LOG2;
+>  		break;
+>  	default:
+> @@ -323,6 +326,54 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+>  	return ret;
+>  }
 > 
->    With 32-way fanout, you could fit 5 bits of parent index, 25/55 bits of
->    index key, and encode the number of levels to skip (0-5/11) more carefully.
+> +static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
+> +			       const struct iio_chan_spec *chan,
+> +			       int val, int val2, long m)
+> +{
+> +	struct mxs_lradc *lradc = iio_priv(iio_dev);
+> +	int ret;
+> +
+> +	ret = mutex_trylock(&lradc->lock);
+> +	if (!ret)
+> +		return -EBUSY;
+> +
+> +	switch (m) {
+> +	case IIO_CHAN_INFO_SCALE:
+> +		ret = -EINVAL;
+> +		if (val == lradc->scale_avail[chan->channel][0][0] &&
+> +		    val2 == lradc->scale_avail[chan->channel][0][1]) {
+> +			/* [0] -> divider by two disabled */
 
-You mean merge some shortcut representation into a node?  Maybe.  It gets
-messy, though, if the parent of such a node gets folded into *its* parent and
-leaves the "skip+node" out of range of the index key storage that it has.  Now
-you have to replace the "skip node" too (or insert a shortcut).  Multiply by
-the fanout...
+This comment is confusing, you use [0] in different dimensions of the array. So 
+is the stuff below.
 
-Actually, I'd rather store the index key nibble for each object I have a
-pointer too.  That would take up another word sadly (16 * log2(16)), but would
-improve insertion and searching a bit.
+Still, how does this even work, can you show me and example how to set the 
+divider from userland ? Sorry, I'm a bit confused with this 3D-business here, 
+even if the comment in previous patch made it a bit clearer. Actually you can 
+use some #define to specify if you're accessing div/2 or div/1 portion of the 
+array to make it more readable.
 
-> 5) The big question: Why not use a hash table?  That's what people
->    usually expect when you say "associative array".  It would be simpler
->    and faster.
+Like ... scale_avail[chan->channel][LRADC_DIV_BY_2][LRADC_DECIMAL_PART] ... 
+would by nice.
 
-What I've implemented *is* in essence a series of nested hash tables;-)
+> +			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+> +			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
+> +			lradc->is_divided[chan->channel] = 0;
+> +			ret = 0;
+> +		} else if (val == lradc->scale_avail[chan->channel][1][0] &&
+> +			   val2 == lradc->scale_avail[chan->channel][1][1]) {
+> +			/* [1] -> divider by two enabled */
+> +			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+> +			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
+> +			lradc->is_divided[chan->channel] = 1;
+> +			ret = 0;
+> +		}
+> +
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		break;
+> +	}
+> +
+> +	mutex_unlock(&lradc->lock);
+> +
+> +	return ret;
+> +}
+> +
+> +static int mxs_lradc_write_raw_get_fmt(struct iio_dev *iio_dev,
+> +				       const struct iio_chan_spec *chan,
+> +				       long m)
+> +{
+> +	return IIO_VAL_INT_PLUS_NANO;
+> +}
+> +
+>  static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
+>  		struct device_attribute *attr,
+>  		char *buf,
+> @@ -400,6 +451,8 @@ static const struct attribute_group
+> mxs_lradc_attribute_group = { static const struct iio_info
+> mxs_lradc_iio_info = {
+>  	.driver_module		= THIS_MODULE,
+>  	.read_raw		= mxs_lradc_read_raw,
+> +	.write_raw		= mxs_lradc_write_raw,
+> +	.write_raw_get_fmt	= &mxs_lradc_write_raw_get_fmt,
 
-But, in answer, no, it wouldn't necessarily be faster, but yes, it would mostly
-be simpler[*].  The hash table approach would also be less memory efficient
-generally - though one can construct datasets that would be horribly
-inefficient for both algorithms - and much less efficient for mine.
+Is this & needed here ?
 
-[*] Until it comes to expanding or collapsing the hash table.  How do you work
-    out how much to expand it or contract it by to get a good spread of
-    objects?
+>  	.attrs			= &mxs_lradc_attribute_group,
+>  };
 
-A hash table would not be able to grow beyond PAGE_SIZE practically[**] - so a
-maximum of 512 buckets on most 64-bit systems (assuming no other per-bucket
-metadata for things like occupancy counts).  However, I'm looking at a case
-with a need to store ~36000 keys in a keyring - so on the order of 70 keys per
-hash bucket.  Assuming a perfect distribution, my array would require about
-2500 nodes in a tree four levels deep and the maximum number of
-index-key-to-object comparisons you'd have to make would be 16.
-
-[**] order>0 allocations are to be avoided where possible, but it would be
-     possible to stitch multiple pages together with a higher level pointer
-     block - which adds complexity.
-
-In a hash table the hash function is much more critical as it's only applied
-once and you may not have control over variety of data you're going to be asked
-to hash.  Also, in the keyrings case, you cannot link the objects (keys)
-directly into the hash table, so each object would need to be represented by a
-linkage block.
-
-Further, once you've got a few objects into a hash table, a traditional hash
-table is actually slower and less efficient because the object pointers are
-spread over more cachelines.
-
-I will grant you, though, that hash table look up, iteration, insertion and
-deletion are all simpler - the last two _provided_ you do not need to resize
-the hash table.
-
-But I won't grant you that a hash table would necessarily be faster for the
-given amount of metadata memory used.
-
->    RCU-safe resizeable hash tables are tricky, but a solved problem,
-
-Conceptually, that's not too hard - provided you are willing to accept a
-complete replacement of the entire metadata tree.  You have to do that so as
-not to destabilise iteration and lookup when items jump to a different bucket.
-Remember: modification shalt not block iteration or lookup.
-
->    There are universal hashing techniques for preventing hash collision
->    attacks.  
-
-I'm not too worried about attacks.  If someone really wants to attack, you
-can't really stop them.  The main difficulty with hashing is that you might
-have no control over the data you're hashing.  The upside is that there's no
-reason you have to only use one hashing function.  In my case, hashing
-functions could be per-keytype for example.
-
-David
+Best regards,
+Marek Vasut
