@@ -1,106 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab3GSAfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:35:23 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:3167 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759509Ab3GSAfW (ORCPT
+	id S1759592Ab3GSAkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:40:20 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:37952 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759509Ab3GSAkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:35:22 -0400
-Message-ID: <1374194116.2076.9.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] hugepage: allow parallelization of the hugepage fault
- path
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
-        Anton Blanchard <anton@samba.org>
-Date: Thu, 18 Jul 2013 17:35:16 -0700
-In-Reply-To: <1374193152.2076.8.camel@buesod1.americas.hpqcorp.net>
-References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
-	 <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
-	 <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
-	 <20130715072432.GA28053@voom.fritz.box>
-	 <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
-	 <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
-	 <20130718090719.GB9761@lge.com>
-	 <1374193152.2076.8.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Thu, 18 Jul 2013 20:40:19 -0400
+Message-ID: <51E88AEF.8040701@gmail.com>
+Date: Thu, 18 Jul 2013 17:40:15 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
+References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
+In-Reply-To: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-18 at 17:19 -0700, Davidlohr Bueso wrote:
-> On Thu, 2013-07-18 at 18:07 +0900, Joonsoo Kim wrote:
-> > On Wed, Jul 17, 2013 at 12:50:25PM -0700, Davidlohr Bueso wrote:
-> > 
-> > > From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > > 
-> > > - Cleaned up and forward ported to Linus' latest.
-> > > - Cache aligned mutexes.
-> > > - Keep non SMP systems using a single mutex.
-> > > 
-> > > It was found that this mutex can become quite contended
-> > > during the early phases of large databases which make use of huge pages - for instance
-> > > startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
-> > > reports that this mutex can be one of the top 5 most contended locks in the kernel during
-> > > the first few minutes:
-> > > 
-> > >     	     hugetlb_instantiation_mutex:   10678     10678
-> > >              ---------------------------
-> > >              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
-> > >              ---------------------------
-> > >              hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
-> > > 
-> > > contentions:          10678
-> > > acquisitions:         99476
-> > > waittime-total: 76888911.01 us
-> > 
-> > Hello,
-> > I have a question :)
-> > 
-> > So, each contention takes 7.6 ms in your result.
-> 
-> Well, that's the total wait time. I can see your concern, but no, things
-> aren't *that* bad. The average amount of time spent waiting for the lock
-> would be 76888911.01/10678 = 7200us
-> 
+On 07/18/2013 05:26 PM, Andy Lutomirski wrote:
+> Windows has a feature that I've wanted on Linux forever: stack-based
+> (i.e. scoped) exception handling.  The upshot is that you can do,
+> roughly, this (pseudocode):
+>
+> int callback(...)
+> {
+>    /* Called if code_that_may_fault faults.  May return "unwind to
+> landing pad", "propagate the fault", or "fixup and retry" */
+> }
+>
+> void my_function()
+> {
+>    __hideous_try_thing(callback) {
+>      code_that_may_fault();
+>    } blahblahblah {
+>      landing_pad_code();
+>    }
+> }
 
-Long day, I think this is what you were saying for the start :)
+How is this different than throwing exceptions from a signal handler?
 
-> > Do you map this area with VM_NORESERVE?
-> > If we map with VM_RESERVE, when page fault, we just dequeue a huge page from a queue and clear
-> > a page and then map it to a page table. So I guess, it shouldn't take so long.
-> > I'm wondering why it takes so long.
-> > 
-> 
-> I cannot really say. This is proprietary software. AFAICT if Oracle is
-> anything like Posgres, than probably no.
-> 
-> 
-> > And do you use 16KB-size hugepage?
-> 
-> No, 2Mb pages.
-> 
-> > If so, region handling could takes some times. If you access the area as random order,
-> > the number of region can be more than 90000. I guess, this can be one reason to too long
-> > waittime.
-> > 
-> > Thanks.
-> 
-> Thanks,
-> Davidlohr
-> 
+GCC already supports this on many architectures running on the Linux kernel.
 
+You can do it from C using incantations like those found in the GCC 
+testsuite's   gcc/testsuite/gcc.dg/cleanup-9.c file.
+
+ From C++ it is even easier, it is just a normal exception.
+
+David Daney
+
+
+>
+> Windows calls it SEH (structured exception handling), and the
+> implementation on 32-bit Windows is rather gnarly.  I don't really
+> know how it works on 64-bit windows, but I think it's saner.
+>
+> This has two really nice properties:
+>
+> 1. It works in libraries!
+>
+> 2. It's localized.  So you can mmap something, read from it *and
+> handle SIGBUS*, and unmap.
+>
+> Could Linux support such a thing?  Here's a sketch of a way:
+>
+>   - The kernel would need to have a fairly well-defined concept of
+> synchronous faults that can be handled with this mechanism.  Calls to
+> force_sig_info are probably the right thing to hook in to.
+>
+>   - The userspace runtime optionally registers (via a new syscall or
+> prctl, say) a handler for synchronous faults.
+>
+>   - When a synchronous fault happens, if the process (struct
+> sighand_struct) has a synchronous fault handler registered, the signal
+> is delivered to that handler, on the thread that faulted, instead of
+> via the normal signal handling mechanism.
+>
+>   - The userspace runtime walks the chain of personality handlers and
+> gives them a chance to respond.
+>
+>   - If no handler claims the fault, then the user code somehow* causes
+> ordinary signal delivery to happen.
+>
+> * This may need kernel help, too -- if the process is going to die, it
+> should die for the right reason, so perhaps there should be a syscall
+> to redeliver the signal.  If the runtime wants to be fancy and a
+> signal handler is installed, then there could be a fast path.  Maybe
+> if we got really fancy, it could live in the vdso.
+>
+> Now everyone wins!  After someone writes the libgcc support for this
+> (ugh!), then you can write CFI-based exception handlers in assembly!
+> Presumably you could write them in C++, too, if you don't care about
+> restarting, like this:
+>
+> try {
+>     code_that_may_fault();
+> } catch (cxxabi::synchronous_kernel_fault &) {
+>     amazingly_dont_crash();
+> }
+>
+> Is this worth persuing?  I'm not touching the gcc part with a ten-foot
+> pole, but I could probably do some of the kernel work.  I'm a bit
+> scared of libgcc, too.
+>
+> It's worth noting that SIGBUS isn't the only interesting signal here.
+> SIGFPE could work, too.  I'm not sure whether SIGPIPE would make
+> sense.  SIGSEGV would clearly work, but anyone using this mechanism
+> for SIGSEGV is probably asking for trouble.
+>
+>
+> --Andy
+>
+> P.S.  Just because you can probably get away with throwing a C++
+> exception from a signal handler right now does not mean it's a good
+> idea.  Especially in a library.
+>
+>
 
