@@ -1,57 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567Ab3GSVo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:44:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4769 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab3GSVoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:44:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,704,1367996400"; 
-   d="scan'208";a="373185391"
-Date: Fri, 19 Jul 2013 14:44:21 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Kurt H Maier <khm@sdf.org>, "Ted Ts'o" <tytso@mit.edu>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        ksummit-2013-discuss@lists.linuxfoundation.org
-Subject: Re:  Maybe it's time to shut this thread down (Was: Re: [ 00/19]
- 3.10.1-stable review)
-Message-ID: <20130719214421.GA5161@xanatos>
+	id S1751994Ab3GSVqR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:46:17 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:54658 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab3GSVqP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 17:46:15 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        James Smart <James.Smart@Emulex.Com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
+        "kmo@daterainc.com" <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Hannes Reinecke <hare@suse.de>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Thread-Topic: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Thread-Index: AQHOgqlzl9hpr72CpUKHCI3BOS12fZls/ECAgAAGhAA=
+Date: Fri, 19 Jul 2013 21:46:06 +0000
+Message-ID: <1374270366.2266.70.camel@dabdike>
+References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
+	 <20130712010223.GA15673@kroah.com>
+	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
+	 <51DFDFF5.80702@suse.de> <1373698410.2922.10.camel@dabdike>
+	 <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+	 <20130716211529.GQ22392@kernel.dk> <1374036751.2045.20.camel@dabdike>
+	 <1374268967.7397.1075.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1374268967.7397.1075.camel@haakon3.risingtidesystems.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.18.112.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <61166E467D94534E8BE65AEBA3D09E56@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718133008.GC30405@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 04:03:24PM -0400, Kurt H Maier wrote:
-> On Fri, Jul 19, 2013 at 12:01:27PM -0700, Sarah Sharp wrote:
-> > 
-> > I'm not trying to shut down this discussion.  But please, let's continue
-> > this discussion at KS, away from the court of public opinion.  I would
-> > love for this email to serve as a final summary of my opinion.  We can
-> > use this email to start a conversation at KS, and we can argue our
-> > hearts out there about the various points.
+On Fri, 2013-07-19 at 14:22 -0700, Nicholas A. Bellinger wrote:
+> On Wed, 2013-07-17 at 04:52 +0000, James Bottomley wrote:
+> > On Tue, 2013-07-16 at 15:15 -0600, Jens Axboe wrote:
+> > > On Tue, Jul 16 2013, Nicholas A. Bellinger wrote:
+> > > > On Sat, 2013-07-13 at 06:53 +0000, James Bottomley wrote:
 > 
-> Well more than half your argument is about how "the court of public
-> opinion" regards interactions on the mailing list.  Why is this
-> discussion exempt?
+> <SNIP>
+> 
+> > > > > Lets start with discussing this on the list, please, and then see where
+> > > > > we go from there ...
+> > > > > 
+> > > > 
+> > > > Yes, the discussion is beginning to make it's way to the list.  I've
+> > > > mostly been waiting for blk-mq to get a wider review before taking the
+> > > > early scsi-mq prototype driver to a larger public audience.
+> > > > 
+> > > > Primarily, I'm now reaching out to the people most effected by existing
+> > > > scsi_request_fn() based performance limitations.  Most of them have
+> > > > abandoned existing scsi_request_fn() based logic in favor of raw block
+> > > > make_request() based drivers, and are now estimating the amount of
+> > > > effort to move to an scsi-mq based approach.
+> > > > 
+> > > > Regardless, as the prototype progresses over the next months, having a
+> > > > face-to-face discussion with the key parties in the room would be very
+> > > > helpful given the large amount of effort involved to actually make this
+> > > > type of generational shift in SCSI actually happen.
+> > > 
+> > > There's a certain amount of overlap with the aio/O_DIRECT work as well.
+> > > But if it's not a general session, could always be a BOF or something.
+> > > 
+> > > I'll second the argument that most technical topics probably DO belong
+> > > in a topic related workshop. But that leaves us with basically only
+> > > process related topics at KS, I don't think it hurts to have a bit of
+> > > tech meat on the bone too. At least I personally miss that part of KS
+> > > from years gone by.
+> > 
+> > Heh well, given that most of the block mq discussions at LSF have been
+> > you saying you really should get around to cleaning up and posting the
+> > code, you'll understand my wanting to see that happen first ...
+> > 
+> > I suppose we could try to run a storage workshop within KS, but I think
+> > most of the mini summit slots have already gone.
+> 
+> That would be great, given there is a reasonable level of interest from
+> various parities, and the pain threshold for existing scsi small block
+> random I/O performance is high..
+> 
+> When will we know if there is a workshop / mini summit slot available..?
+> 
+> (CC'ing Mike Christie as well for open-iscsi/scsi-mq bits)
+> 
+> > There's also plumbers
+> > if all slots are gone (I would say that, being biased and on the
+> > programme committee) Ric is running the storage and Filesystems MC
+> > 
+> > http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/tracks/159
+> 
+> FYI, I'm not trying to 'sell' scsi-mq to the larger community yet, but
+> rather interested in getting the right scsi/block/LLD people in the same
+> room at KS for an hour or two to discuss implementation details, given
+> the scope of the effort involved.
 
-Come to KS!  You're more than welcome to discuss this with us there.
+Well, so that's why I think plumbers might be a better venue: we'll have
+more of the actual storage people there.  Usually we get at most 2-3
+storage people to KS compared to the 25 or so we usually have at LSF ...
+that makes KS not a very good venue for storage centric discussions.
 
-With some schedule wrangling, I think we can make the session on LKML
-communication styles take place on the overlapping day between KS and
-LinuxCon.  That should allow anyone from the wider open source community
-that wants to participate in this conversation do so.
+James
 
-Sarah Sharp
