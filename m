@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965504Ab3GSFYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:24:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39453 "EHLO
+	id S965526Ab3GSFYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:24:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39439 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965459Ab3GSFWa (ORCPT
+	with ESMTP id S965446Ab3GSFW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:30 -0400
+	Fri, 19 Jul 2013 01:22:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 08/38] ext3,ext4: dont mess with dir_file->f_pos in htree_dirblock_to_tree()
-Date: Thu, 18 Jul 2013 22:21:24 -0700
-Message-Id: <20130719052048.449134152@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 04/38] rtlwifi: rtl8192cu: Fix duplicate if test
+Date: Thu, 18 Jul 2013 22:21:20 -0700
+Message-Id: <20130719052048.174965994@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -26,55 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
+commit 10d0b9030a3f86e1e26c710c7580524d7787d688 upstream.
 
-Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
-in-core rbtree for use by call_filldir().  All updates of ->f_pos are
-done by the latter; bumping it here (on error) is obviously wrong - we
-might very well have it nowhere near the block we'd found an error in.
+A typo causes routine rtl92cu_phy_rf6052_set_cck_txpower() to test the
+same condition twice. The problem was found using cppcheck-1.49, and the
+proper fix was verified against the pre-mac80211 version of the code.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+This patch was originally included as commit 1288aa4, but was accidentally
+reverted in a later patch.
+
+Reported-by: David Binderman <dcb314@hotmail.com> [original report]
+Reported-by: Andrea Morello <andrea.merello@gmail.com> [report of accidental reversion]
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext3/namei.c |    7 ++-----
- fs/ext4/namei.c |    7 ++-----
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -576,11 +576,8 @@ static int htree_dirblock_to_tree(struct
- 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
- 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
- 						+((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse (bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext3fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -917,11 +917,8 @@ static int htree_dirblock_to_tree(struct
- 				bh->b_data, bh->b_size,
- 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
- 					 + ((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse(bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext4fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
+@@ -104,7 +104,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
+ 			tx_agc[RF90_PATH_A] = 0x10101010;
+ 			tx_agc[RF90_PATH_B] = 0x10101010;
+ 		} else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
+-			   TXHIGHPWRLEVEL_LEVEL1) {
++			   TXHIGHPWRLEVEL_LEVEL2) {
+ 			tx_agc[RF90_PATH_A] = 0x00000000;
+ 			tx_agc[RF90_PATH_B] = 0x00000000;
+ 		} else{
 
 
