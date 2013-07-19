@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab3GSVhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:37:01 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:43856 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751793Ab3GSVg7 (ORCPT
+	id S1752973Ab3GSVhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:37:48 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58651 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab3GSVhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:36:59 -0400
-X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Jul 2013 17:36:59 EDT
-X-IronPort-AV: E=Sophos;i="4.89,704,1367964000"; 
-   d="scan'208";a="26677018"
-Date: Fri, 19 Jul 2013 23:27:09 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-cc: Alan Stern <stern@rowland.harvard.edu>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Felix Fietkau <nbd@openwrt.org>
-Subject: Re: [PATCH] backports: backport drvdata = NULL core driver fixes
-In-Reply-To: <CAB=NE6VHgure2+2VA=XWtaii4Wc_rG7YZ=_ZetgGnvouh7HJPw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1307192326080.2229@localhost6.localdomain6>
-References: <1374191339-10124-1-git-send-email-mcgrof@do-not-panic.com> <Pine.LNX.4.44L0.1307191012330.1055-100000@iolanthe.rowland.org> <CAB=NE6XmxX0UQkbchU_AKJOyENcn0auBGMPzru5C4nohg_v1sQ@mail.gmail.com>
- <CAB=NE6VHgure2+2VA=XWtaii4Wc_rG7YZ=_ZetgGnvouh7HJPw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 19 Jul 2013 17:37:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1373987681-18245-1-git-send-email-abbotti@mev.co.uk>
+References: <1373987681-18245-1-git-send-email-abbotti@mev.co.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 19 Jul 2013 15:37:26 -0600
+Message-ID: <CAErSpo4daNsF0BTJhqdZ0hrBpS+EQ3Z1_-C_LN=ec9fLafNkog@mail.gmail.com>
+Subject: Re: [PATCH 0/4] pci_ids, 8250_pci: remove PCI_VENDOR_ID_ADDIDATA_OLD
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-serial@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Jul 2013, Luis R. Rodriguez wrote:
+On Tue, Jul 16, 2013 at 9:14 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+> The 8250_pci driver uses PCI_VENDOR_ID_ADDIDATA_OLD (0x10e8),
+> PCI_DEVICE_ID_ADDIDATA_APCI7800 (0x818e) to recognize the original
+> ADDI-DATA APCI-7800 PCI serial card.  However vendor ID 0x10e8 was
+> assigned by PCI-SIG to Applied Micro Circuits Corporation (AMCC) and the
+> associated device ID 0x818e was assigned by AMCC to ADDI-DATA.
+>
+> Comedi already defines PCI_VENDOR_ID_AMCC as 0x10e8 in one of its header
+> files, so that definition can be moved into pci_ids.h and the 8250_pci
+> driver changed to use it.  The PCI_DEVICE_ID_ADDIDATA_APCI7800 define
+> seems out of place in pci_ids.h since it isn't associated with
+> ADDI-DATA's vendor ID but with AMCC's vendor ID.  It's only used in
+> 8250_pci.c so it can be moved there and renamed to something more
+> sensible.
+>
+> 1) pci_ids.h: move PCI_VENDOR_ID_AMCC here
+> 2) serial: 8250_pci: replace PCI_VENDOR_ID_ADDIDATA_OLD
+> 3) serial: 8250_pci: use local device ID for ADDI-DATA APCI-7800
+> 4) pci_ids.h: remove PCI_VENDOR_ID_ADDIDATA_OLD and
+>    PCI_DEVICE_ID_ADDIDATA_APCI7800
+>
+>  drivers/staging/comedi/comedidev.h | 1 -
+>  drivers/tty/serial/8250/8250_pci.c | 9 +++++----
+>  include/linux/pci_ids.h            | 4 ++--
+>  3 files changed, 7 insertions(+), 7 deletions(-)
 
-> On Fri, Jul 19, 2013 at 2:07 PM, Luis R. Rodriguez
-> <mcgrof@do-not-panic.com> wrote:
-> >> This is not a very good idea.  Although setting drvdata to NULL allowed
-> >> a lot of code to be removed, it also exposed a bunch of hidden bugs --
-> >> drivers were using the drvdata value even after their remove function
-> >> returned.
-> >
-> > Eek, have we not SmPL'ify'd a proof yet to ensure code like this no
-> > longer exists? Julia? :)
-> 
-> Come to think of it, perhaps we should require *proof* with SmPL like
-> this in future to avoid regressions ?
+For patches 1 & 4 (the ones that touch pci_ids.h):
 
-Is it a concurrency problem?  SmPL is not so good at that in the general 
-case.  One would have to know a specific case where other functions of the 
-driver can be invoked after remove.
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-julia
+Please merge them along with the 8250 changes.
