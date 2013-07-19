@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761269Ab3GSTRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:17:46 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:32803 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761186Ab3GSTRn (ORCPT
+	id S932931Ab3GSTUj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:20:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50521 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab3GSTUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:17:43 -0400
-X-ASG-Debug-ID: 1374261462-0421b5021f163590001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Fri, 19 Jul 2013 15:17:40 -0400
-From: Josef Bacik <jbacik@fusionio.com>
-To: <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL] btrfs update
-Message-ID: <20130719191740.GA2255@localhost.localdomain>
-X-ASG-Orig-Subj: [GIT PULL] btrfs update
+	Fri, 19 Jul 2013 15:20:37 -0400
+Date: Fri, 19 Jul 2013 12:20:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniil Bolsun <dan.bolsun@gmail.com>
+Cc: Matthias Urlichs <smurf@smurf.noris.de>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usbserial: append Petatel NP10T device to GSM modems list
+Message-ID: <20130719192043.GA2222@kroah.com>
+References: <20130719072123.GA3486@l33t.onliner>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1374261462
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.137243
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20130719072123.GA3486@l33t.onliner>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jul 19, 2013 at 10:21:23AM +0300, Daniil Bolsun wrote:
+> This patch was tested on 3.10.1 kernel.
+> 
+> Same models of Petatel NP10T modems have different device IDs.
+> Unfortunately they have no additional revision information on a board
+> which may treat them as different devices. Currently I've seen only
+> two NP10T devices with various IDs. Possibly Petatel NP10T list will
+> be appended upon devices with new IDs will appear.
+> 
+> Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
 
-I'm playing the role of Chris Mason this week while he's on vacation.  There are
-a few critical fixes for btrfs here, all regressions and have been tested well.
-Please pull from
+Much better resubmission, thanks.  I'll queue it up in a few days and
+you will get an automated email from my system then.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/josef/btrfs-next.git for-linus
-
-I've based it off a recent pull of your tree, hopefully that's the right thing.
-Thanks,
-
-Josef Bacik (3):
-      Btrfs: update drop progress before stopping snapshot dropping
-      Btrfs: fix lock leak when resuming snapshot deletion
-      Btrfs: re-add root to dead root list if we stop dropping it
-
-Stefan Behrens (1):
-      Btrfs: fix wrong write offset when replacing a device
-
- fs/btrfs/extent-tree.c |   27 +++++++++++++++++++++------
- fs/btrfs/scrub.c       |    2 +-
- 2 files changed, 22 insertions(+), 7 deletions(-)
+greg k-h
