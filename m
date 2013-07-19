@@ -1,103 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965370Ab3GSIgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:36:00 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:32906 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab3GSIf4 (ORCPT
+	id S965538Ab3GSIgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:36:08 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:45516 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760003Ab3GSIgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:35:56 -0400
-Date: Fri, 19 Jul 2013 10:35:55 +0200
-From: "'Maxime Ripard'" <maxime.ripard@free-electrons.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Jingoo Han <jg1.han@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Alexandre Belloni'" <alexandre.belloni@free-electrons.com>,
-        hector.palacios@digi.com,
-        "'Thomas Petazzoni'" <thomas@free-electrons.com>,
-        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 2/3] video: hx8357: Make IM pins optional
-Message-ID: <20130719083555.GC5106@lukather>
-References: <1373902022-20439-1-git-send-email-maxime.ripard@free-electrons.com>
- <1373902022-20439-3-git-send-email-maxime.ripard@free-electrons.com>
- <003501ce81be$4a945ed0$dfbd1c70$@samsung.com>
- <1373945380.7549.26.camel@marge.simpson.net>
+	Fri, 19 Jul 2013 04:36:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vOmOzSkFvhd7u8Ms"
-Content-Disposition: inline
-In-Reply-To: <1373945380.7549.26.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51E87C1F.1090301@hurleysoftware.com>
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+	<51E84FD1.4050400@hurleysoftware.com>
+	<20130718220936.GA8025@xanatos>
+	<51E87C1F.1090301@hurleysoftware.com>
+Date: Fri, 19 Jul 2013 10:35:57 +0200
+Message-ID: <CAN+gG=HKe0eNBmwaf=h6nzR9U3DPC-Hvb1W-uwVqjih5AiKUuQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing
+ Unifying device issue""
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        joseph.salisbury@canonical.com,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Jiri Kosina <jkosina@suse.cz>, Andrew de los Reyes <adlr@chromium.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, wujun zhou <zwj.echo@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Peter,
 
---vOmOzSkFvhd7u8Ms
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+thanks for forwarding this to the appropriate people & mailing list.
 
-Hi Jingoo, Mike,
+Hi Sarah,
 
-On Tue, Jul 16, 2013 at 05:29:40AM +0200, Mike Galbraith wrote:
-> On Tue, 2013-07-16 at 09:49 +0900, Jingoo Han wrote:=20
-> > On Tuesday, July 16, 2013 12:27 AM, Maxime Ripard wrote:
->=20
-> > > +
-> > > +			ret =3D devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
-> > > +						    GPIOF_OUT_INIT_LOW, "im_pins");
-> >=20
-> > This makes a checkpatch warning such as 'WARNING: line over 80 characte=
-rs'.
-> > How about the following?
-> >=20
-> > 			ret =3D devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
-> > 						GPIOF_OUT_INIT_LOW, "im_pins");
->=20
-> IIRC, some maintainers gripe (davem?) when they see such alignment,
-> preferring the original arg below arg alignment vs strict 80 column.
+thanks for starting investigating this :)
 
-As far as I know, the coding guide styles are quite fuzzy about this:
-  - The new line is not required to be aligned with the braces above
-  - Yet, the emacs config given does indent like this.
-  - 80 characters is said not to be a hard limit
+On Fri, Jul 19, 2013 at 1:37 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>>>
+>>>
+>>>
+>>> Before we revert to using the workaround, I'd like to suggest that
+>>> this new "hidden" problem may be an interaction with the xhci_hcd host
+>>> controller driver only.
+>>>
+>>> Looking at the related bug, the OP indicates the machine only has
+>>> USB3 ports. Additionally, comments #7, #100, and #104 of the original
+>>> bug report [1] add additional information that would seem to confirm
+>>> this suspicion.
 
-I don't really know if there's a better solution here, except maybe:
-ret =3D devm_gpio_request_one(&spi-dev, lcd->im_pins[i],
-			    GPIOF_OUT_INIT_LOW,
-			    "im_pins");
+Definitively, this is a USB3 problem. However, it is not generic (I
+can not reproduce it with my USB3 boards.)
 
-But it's not really a big deal, is it?
+>>
+>>
+>> Question: does this USB device need a control transfer to reset its
+>> endpoints when the endpoints are not actually halted?  If so, yes, that
+>> is a known xHCI driver bug that needs to be fixed.  The xHCI host will
+>> not accept a Reset Endpoint command when the endpoints are not actually
+>> halted, but the USB core will send the control transfer to reset the
+>> endpoint.  That means the device and host toggles will be out of sync,
+>> and all messages will start to fail with -EPIPE.
+>>
+>> Can the OP capture a usbmon trace when the device starts failing?  That
+>> will reveal whether this actually is the issue.  dmesg output with
+>> CONFIG_USB_DEBUG and CONFIG_USB_XHCI_HCD_DEBUGGING turned on would also
+>> be helpful.
+>
 
-Maxime
+Here is another linux-input thread were you have the usbmon traces:
+http://www.spinics.net/lists/linux-input/msg26542.html
+Wujun Zhou already did one test of a kernel patch for me (which did
+not solve the problem, because I was not at the USB level), so I bet
+he will be able to do some testings for you.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+In the logs he posted (logitech_work.pcapng.gz), the interesting part
+is starting from the capture #45:
 
---vOmOzSkFvhd7u8Ms
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+#45: SET_REPORT request to switch the receiver to the "DJ" mode (the
+receiver stops sending regular HID events, but goes into its
+proprietary protocol)
+#47: SET_REPORT response -> all good
+#48: SET_REPORT request to ask the receiver to enumerate all of his
+devices (it is called right after we received the previous response)
+#49: SET_REPORT response -> -EPIPE
+#50: URB_INTERRUPT_IN (~3 seconds later) -> the device is working normally
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The weird thing is that only the first enumeration message failed with
+-EPIPE: the device answers later control transfer correctly (#54 /
+#55).
 
-iQIcBAEBAgAGBQJR6PpqAAoJEBx+YmzsjxAgf8EP/i2RJuYd+QHxsbrKqLpQ8+wL
-worAFgbqVtU1s3oebNvdNkM0JSPBsOwauj1Npmr/UFW5mbt6S2zBjQi6c1v9AH2s
-mftB0AdNQpZ93Lu6cnYYdCLEILuaJXy67hqrxOM5vDgabzx/kCgjJ/SkZG5eOtzL
-e3/pNyuP08pDG8ksysSzCn3tkf6ptx/Z/4LI2pEvc2O0ub0OxydCE7tqbRLlAkQI
-KejLPAeb+wUFj30FEJiks+3By3I3kli52gwU1KYRecAAOA0p+MMGT2+4iD7L0SnS
-Vu9gBAljdioOMXGvG80q+t4NL7H1ZchcN0IcK3u4dGCiL8287yeOpOsmoSm1zElZ
-BQSYAcOvOWn72VN7Q+wysiMCjklLX5iuYpwUNm/EJrBDRSKB0Bc2k2dXtC2Ama90
-ESZJd2XOoG6IkC71pZsWXdXMKMKv5PIfThXDU9W1VNhrlfuHMbpx6qFM2jMS6Y0a
-XcCzgY7izwAyf0ycLGtDiBt6sw2gNcLDPH6+8RdOlEL2Aa9MK8OJVSpGwCOurPxn
-SHCtLlqVvcWiPXKMfqf8zDLqGzNrQj2kW0W2VSpIb+yxfofoDFUvHKwa373Y49rI
-Y0rsd9mplo4FE6AI45bU920qUlYfkFKEScqBNkMfam6tKk0SFyrs+mjwjSBxoEW1
-/jAkpxF/AK9HTB4cSvAY
-=RVce
------END PGP SIGNATURE-----
+>
+> Sarah,
+>
+> I forwarded your usbmon capture request to the OP in the bug report
+> (I don't have an email address for the reporter).
+>
 
---vOmOzSkFvhd7u8Ms--
+Here are some other helpful information:
+the first "fix" we have done is dcd9006b1b053c7b1c. It is linked to
+several bugs:
+
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072082
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1039143
+https://bugzilla.redhat.com/show_bug.cgi?id=840391
+https://bugzilla.kernel.org/show_bug.cgi?id=49781
+
+Most of them are people complaining, but in one of the comments,
+adding a 500ms wait between the two control transfer (switch to DJ +
+enumerate) fixed the -EPIPE problem. I interpreted it as a scheduled
+problem (using direct call to usb_control_msg() vs use the scheduled
+one usbhid_submit_message()) but it was just delaying the problem out
+of the probe. Unfortunately, I missed that as I did not asked for the
+usbmon traces at that time.
+
+One last thing, I understood that Linus is also experiencing this
+problem... Adding him in CC to let him know of the progress.
+
+Cheers,
+Benjamin
