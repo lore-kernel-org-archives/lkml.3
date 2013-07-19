@@ -1,149 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935257Ab3GSCfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:35:22 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41213 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934310Ab3GSCfT (ORCPT
+	id S1759598Ab3GSCih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:38:37 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:63582 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab3GSCig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:35:19 -0400
-Date: Thu, 18 Jul 2013 19:35:09 -0700 (PDT)
-Message-Id: <20130718.193509.1259783040844404673.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 18 Jul 2013 19:35:12 -0700 (PDT)
+	Thu, 18 Jul 2013 22:38:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374183272-10153-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1374183272-10153-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Fri, 19 Jul 2013 10:38:35 +0800
+Message-ID: <CAJd=RBD-uCuqyD0OTJ119woikBSyd8=A7uhHp5kUJeweS+2okQ@mail.gmail.com>
+Subject: Re: [PATCH 1/8] migrate: make core migration code aware of hugepage
+From: Hillf Danton <dhillf@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey Naoya,
 
-A couple interesting SKB fragment handling fixes, please the usual
-small bits here and there:
+On Fri, Jul 19, 2013 at 5:34 AM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> Before enabling each user of page migration to support hugepage,
+> this patch enables the list of pages for migration to link not only
+> LRU pages, but also hugepages. As a result, putback_movable_pages()
+> and migrate_pages() can handle both of LRU pages and hugepages.
+>
+> ChangeLog v3:
+>  - revert introducing migrate_movable_pages
+>  - add isolate_huge_page
+>
+> ChangeLog v2:
+>  - move code removing VM_HUGETLB from vma_migratable check into a
+>    separate patch
+>  - hold hugetlb_lock in putback_active_hugepage
+>  - update comment near the definition of hugetlb_lock
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  include/linux/hugetlb.h |  6 ++++++
+>  mm/hugetlb.c            | 32 +++++++++++++++++++++++++++++++-
+>  mm/migrate.c            | 10 +++++++++-
+>  3 files changed, 46 insertions(+), 2 deletions(-)
+>
+> diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
+> index c2b1801..0b7a9e7 100644
+> --- v3.11-rc1.orig/include/linux/hugetlb.h
+> +++ v3.11-rc1/include/linux/hugetlb.h
+> @@ -66,6 +66,9 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
+>                                                 vm_flags_t vm_flags);
+>  void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
+>  int dequeue_hwpoisoned_huge_page(struct page *page);
+> +bool isolate_huge_page(struct page *page, struct list_head *l);
+> +void putback_active_hugepage(struct page *page);
+> +void putback_active_hugepages(struct list_head *l);
+>  void copy_huge_page(struct page *dst, struct page *src);
+>
+>  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
+> @@ -134,6 +137,9 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+>         return 0;
+>  }
+>
+> +#define isolate_huge_page(p, l) false
+> +#define putback_active_hugepage(p)
 
-1) Fix 64-bit divide build failure on 32-bit platforms in mlx5, from
-   Tim Gardner.
+Add do{}while(o), ok?
 
-2) Get rid of a stupid reimplementation on "%*phC" in our sysfs MAC
-   address printing helper.
+> +#define putback_active_hugepages(l)
+>  static inline void copy_huge_page(struct page *dst, struct page *src)
+>  {
+>  }
+> diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
+> index 83aff0a..4c48a70 100644
+> --- v3.11-rc1.orig/mm/hugetlb.c
+> +++ v3.11-rc1/mm/hugetlb.c
+> @@ -48,7 +48,8 @@ static unsigned long __initdata default_hstate_max_huge_pages;
+>  static unsigned long __initdata default_hstate_size;
+>
+>  /*
+> - * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
+> + * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
+> + * free_huge_pages, and surplus_huge_pages.
+>   */
+>  DEFINE_SPINLOCK(hugetlb_lock);
+>
+> @@ -3431,3 +3432,32 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
+>         return ret;
+>  }
+>  #endif
+> +
+> +bool isolate_huge_page(struct page *page, struct list_head *l)
 
-3) Fix NETIF_F_SG capability advertisement in hyperv driver, if the
-   device can't do checksumming offloads then it shouldn't say it can
-   do SG either.  From Haiyang Zhang.
+Can we replace the page parameter with p?
 
-4) bgmac needs to depend on PHYLIB, from Hauke Mehrtens.
+> +{
+> +       VM_BUG_ON(!PageHead(page));
+> +       if (!get_page_unless_zero(page))
+> +               return false;
+> +       spin_lock(&hugetlb_lock);
+> +       list_move_tail(&page->lru, l);
+> +       spin_unlock(&hugetlb_lock);
+> +       return true;
+> +}
+> +
+> +void putback_active_hugepage(struct page *page)
+> +{
+> +       VM_BUG_ON(!PageHead(page));
+> +       spin_lock(&hugetlb_lock);
+> +       list_move_tail(&page->lru, &(page_hstate(page))->hugepage_activelist);
+> +       spin_unlock(&hugetlb_lock);
+> +       put_page(page);
+> +}
+> +
+> +void putback_active_hugepages(struct list_head *l)
+> +{
+> +       struct page *page;
+> +       struct page *page2;
+> +
+> +       list_for_each_entry_safe(page, page2, l, lru)
+> +               putback_active_hugepage(page);
 
-5) Don't leak DMA mappings on mapping failures, from Neil Horman.
+Can we acquire hugetlb_lock only once?
 
-6) We need to reset the transport header of SKBs in ipv4 before we
-   attempt to perform early socket demux, just like ipv6 does.  From
-   Eric Dumazet.
-
-7) Add missing locking on vxlan device removal, from Stephen
-   Hemminger.
-
-8) xen-netfront has to make two passes over an SKB to prepare it for
-   transfer.  One pass calculates the number of slots needed, the
-   second massages the SKB and fills the slots.  Unfortunately, the
-   first pass doesn't calculate the number of slots properly so we can
-   end up trying to build a MAX_SKB_FRAGS + 1 SKB which doesn't work
-   out so well.  Fix from Jan Beulich with help and discussion with
-   several others.
-
-9) Fix a similar problem in tun and macvtap, which have to split up
-   scatter-gather elements at PAGE_SIZE boundaries.  Don't do zerocopy
-   if it would result in a > MAX_SKB_FRAGS skb.  Fixes from Jason
-   Wang.
-
-10) On receive, once we've decoded the VLAN state completely, clear
-    skb->vlan_tci.  Otherwise demuxed tunnels underneath can trigger
-    the VLAN code again, corrupting the packet.  Fix from Eric
-    Dumazet.
-
-Please pull, thanks a lot!
-
-The following changes since commit 47188d39b5deeebf41f87a02af1b3935866364cf:
-
-  Merge tag 'ext4_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-07-14 21:47:51 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 3e3aac497513c669e1c62c71e1d552ea85c1d974:
-
-  vlan: fix a race in egress prio management (2013-07-18 13:07:13 -0700)
-
-----------------------------------------------------------------
-Daniel Baluta (1):
-      ndisc: bool initializations should use true and false
-
-David S. Miller (1):
-      net: Fix sysfs_format_mac() code duplication.
-
-Dragos Foianu (2):
-      ethtool: fixed trailing statements in ethtool
-      net/irda: fixed style issues in irlan_eth
-
-Eric Dumazet (3):
-      ipv4: set transport header earlier
-      vlan: mask vlan prio bits
-      vlan: fix a race in egress prio management
-
-Haiyang Zhang (1):
-      hyperv: Fix the NETIF_F_SG flag setting in netvsc
-
-Hauke Mehrtens (1):
-      bgmac: add dependency to phylib
-
-Jan Beulich (1):
-      xen-netfront: pull on receive skb may need to happen earlier
-
-Jason Wang (4):
-      macvtap: fix the missing ret value of TUNSETQUEUE
-      macvtap: do not assume 802.1Q when send vlan packets
-      tuntap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
-      macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
-
-Neil Horman (1):
-      atl1e: unmap partially mapped skb on dma error and free skb
-
-Paolo Valente (1):
-      pkt_sched: sch_qfq: remove a source of high packet delay/jitter
-
-Sarveshwar Bandi (1):
-      be2net: Fix to avoid hardware workaround when not needed
-
-Tim Gardner (1):
-      mlx5 core: Fix __udivdi3 when compiling for 32 bit arches
-
-stephen hemminger (1):
-      vxlan: add necessary locking on device removal
-
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c   | 24 ++++++++++++++++++-
- drivers/net/ethernet/broadcom/Kconfig             |  1 +
- drivers/net/ethernet/emulex/benet/be_main.c       | 14 +++++++----
- drivers/net/ethernet/mellanox/mlx5/core/debugfs.c |  2 +-
- drivers/net/hyperv/netvsc_drv.c                   |  4 ++--
- drivers/net/macvtap.c                             | 65 ++++++++++++++++++++++++++++++---------------------
- drivers/net/tun.c                                 | 62 ++++++++++++++++++++++++++++++-------------------
- drivers/net/vxlan.c                               |  6 +++++
- drivers/net/xen-netfront.c                        | 31 +++++++++++--------------
- include/linux/if_vlan.h                           |  3 +--
- net/8021q/vlan_core.c                             |  2 +-
- net/8021q/vlan_dev.c                              |  7 ++++++
- net/core/dev.c                                    | 11 +++++++--
- net/core/ethtool.c                                | 30 ++++++++++++++++--------
- net/ethernet/eth.c                                | 21 +----------------
- net/ipv4/ip_input.c                               |  7 +++---
- net/ipv6/ndisc.c                                  |  6 ++---
- net/irda/irlan/irlan_eth.c                        | 31 +++++++++++--------------
- net/sched/sch_qfq.c                               | 85 ++++++++++++++++++++++++++++++++++++++++++++-----------------------
- 19 files changed, 248 insertions(+), 164 deletions(-)
+> +}
+> diff --git v3.11-rc1.orig/mm/migrate.c v3.11-rc1/mm/migrate.c
+> index 6f0c244..b44a067 100644
+> --- v3.11-rc1.orig/mm/migrate.c
+> +++ v3.11-rc1/mm/migrate.c
+> @@ -100,6 +100,10 @@ void putback_movable_pages(struct list_head *l)
+>         struct page *page2;
+>
+>         list_for_each_entry_safe(page, page2, l, lru) {
+> +               if (unlikely(PageHuge(page))) {
+> +                       putback_active_hugepage(page);
+> +                       continue;
+> +               }
+>                 list_del(&page->lru);
+>                 dec_zone_page_state(page, NR_ISOLATED_ANON +
+>                                 page_is_file_cache(page));
+> @@ -1025,7 +1029,11 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+>                 list_for_each_entry_safe(page, page2, from, lru) {
+>                         cond_resched();
+>
+> -                       rc = unmap_and_move(get_new_page, private,
+> +                       if (PageHuge(page))
+> +                               rc = unmap_and_move_huge_page(get_new_page,
+> +                                               private, page, pass > 2, mode);
+> +                       else
+> +                               rc = unmap_and_move(get_new_page, private,
+>                                                 page, pass > 2, mode);
+>
+Is this hunk unclean merge?
