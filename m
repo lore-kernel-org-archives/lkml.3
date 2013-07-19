@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760651Ab3GSOO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:14:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32652 "EHLO
+	id S1760633Ab3GSOO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:14:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28808 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765Ab3GSOOu (ORCPT
+	with ESMTP id S1751551Ab3GSOOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 10:14:50 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=xVgifgPhGo0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=CYTwX-1TC0UA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=9eudB-iudPty_y5Cnl4A:9 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=OtYG3TwmGo8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Jt5mE-_EwH0A:10 a=VwQbUJbxAAAA:8 a=bVhYIKo0QyJuZe5aPtoA:9 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130719141448.888692179@goodmis.org>
+Message-Id: <20130719141224.703522101@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 19 Jul 2013 10:12:28 -0400
+Date: Fri, 19 Jul 2013 10:12:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next-3.11][PATCH 04/12] tracing/function: Avoid perf_trace_buf_*() if
- event_function.perf_events is empty
-References: <20130719141224.703522101@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-function-Avoid-perf_trace_buf_-if-event_func.patch
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next-3.11][PATCH 00/12] tracing: Cleanups and fixes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+These are mostly cleanups and some minor fixes. Still working on
+fixing a theoretical race with trace events.
 
-perf_trace_buf_prepare() + perf_trace_buf_submit(head, task => NULL)
-make no sense if hlist_empty(head). Change perf_ftrace_function_call()
-to check event_function.perf_events beforehand.
+-- Steve
 
-Link: http://lkml.kernel.org/r/20130617170204.GA19803@redhat.com
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_event_perf.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 84b1e04..12df557 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -266,6 +266,10 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
- 	struct pt_regs regs;
- 	int rctx;
- 
-+	head = this_cpu_ptr(event_function.perf_events);
-+	if (hlist_empty(head))
-+		return;
-+
- #define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
- 		    sizeof(u64)) - sizeof(u32))
- 
-@@ -279,8 +283,6 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
- 
- 	entry->ip = ip;
- 	entry->parent_ip = parent_ip;
--
--	head = this_cpu_ptr(event_function.perf_events);
- 	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
- 			      1, &regs, head, NULL);
- 
--- 
-1.7.10.4
+Head SHA1: cd458ba9d5a5592d37b5145e560071e91ea762ac
 
 
+Alexander Z Lam (2):
+      tracing: Fix error handling to ensure instances can always be removed
+      tracing: Miscellaneous fixes for trace_array ref counting
+
+Masami Hiramatsu (1):
+      tracing/kprobe: Wait for disabling all running kprobe handlers
+
+Oleg Nesterov (5):
+      tracing/function: Avoid perf_trace_buf_*() if event_function.perf_events is empty
+      tracing/syscall: Avoid perf_trace_buf_*() if sys_data->perf_events is empty
+      tracing/perf: Move the PERF_MAX_TRACE_SIZE check into perf_trace_buf_prepare()
+      tracing: Simplify the iteration logic in f_start/f_next
+      tracing: Do not (ab)use trace_seq in event_id_read()
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Add ref_data to function and fgraph tracer structs
+
+zhangwei(Jovi) (3):
+      tracing: Use correct config guard CONFIG_STACK_TRACER
+      tracing: Use trace_seq_puts()/trace_seq_putc() where possible
+      tracing: Typo fix on ring buffer comments
+
+----
+ include/trace/ftrace.h               |    4 --
+ kernel/trace/ring_buffer.c           |   26 ++++-----
+ kernel/trace/trace.c                 |   32 +++++++----
+ kernel/trace/trace.h                 |    9 ++++
+ kernel/trace/trace_event_perf.c      |   10 +++-
+ kernel/trace/trace_events.c          |   98 ++++++++++++++++------------------
+ kernel/trace/trace_events_filter.c   |    4 +-
+ kernel/trace/trace_functions.c       |    2 +-
+ kernel/trace/trace_functions_graph.c |   54 +++++++++----------
+ kernel/trace/trace_kprobe.c          |   29 +++++-----
+ kernel/trace/trace_mmiotrace.c       |    8 +--
+ kernel/trace/trace_output.c          |   14 ++---
+ kernel/trace/trace_syscalls.c        |   26 ++++-----
+ kernel/trace/trace_uprobe.c          |    2 -
+ 14 files changed, 166 insertions(+), 152 deletions(-)
