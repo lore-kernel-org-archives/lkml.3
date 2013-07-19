@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965859Ab3GSFau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:30:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40035 "EHLO
+	id S965865Ab3GSFbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:31:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965817Ab3GSF1Q (ORCPT
+	with ESMTP id S965510Ab3GSF1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:16 -0400
+	Fri, 19 Jul 2013 01:27:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+        Catalin Carinas <catalin.marinas@arm.com>,
         Marc Zyngier <marc.zyngier@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 61/72] ARM: 7768/1: prevent risks of out-of-bound access in ASID allocator
-Date: Thu, 18 Jul 2013 22:26:18 -0700
-Message-Id: <20130719052604.040702161@linuxfoundation.org>
+Subject: [ 60/72] ARM: 7767/1: let the ASID allocator handle suspended animation
+Date: Thu, 18 Jul 2013 22:26:17 -0700
+Message-Id: <20130719052603.973434963@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -31,74 +31,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marc Zyngier <Marc.Zyngier@arm.com>
 
-commit b8e4a4740fa2b17c0a447b3ab783b3dc10702e27 upstream.
+commit ae120d9edfe96628f03d87634acda0bfa7110632 upstream.
 
-On a CPU that never ran anything, both the active and reserved ASID
-fields are set to zero. In this case the ASID_TO_IDX() macro will
-return -1, which is not a very useful value to index a bitmap.
+When a CPU is running a process, the ASID for that process is
+held in a per-CPU variable (the "active ASIDs" array). When
+the ASID allocator handles a rollover, it copies the active
+ASIDs into a "reserved ASIDs" array to ensure that a process
+currently running on another CPU will continue to run unaffected.
+The active array is zero-ed to indicate that a rollover occurred.
 
-Instead of trying to offset the ASID so that ASID #1 is actually
-bit 0 in the asid_map bitmap, just always ignore bit 0 and start
-the search from bit 1. This makes the code a bit more readable,
-and without risk of OoB access.
+Because of this mechanism, a reserved ASID is only remembered for
+a single rollover. A subsequent rollover will completely refill
+the reserved ASIDs array.
+
+In a severely oversubscribed environment where a CPU can be
+prevented from running for extended periods of time (think virtual
+machines), the above has a horrible side effect:
+
+[P{a} denotes process P running with ASID a]
+
+	CPU-0		CPU-1
+
+	A{x}				[active = <x 0>]
+
+	[suspended]	runs B{y}	[active = <x y>]
+
+					[rollover:
+					 active = <0 0>
+					 reserved = <x y>]
+
+			runs B{y}	[active = <0 y>
+					 reserved = <x y>]
+
+					[rollover:
+					 active = <0 0>
+					 reserved = <0 y>]
+
+			runs C{x}	[active = <0 x>]
+
+	[resumes]
+
+	runs A{x}
+
+At that stage, both A and C have the same ASID, with deadly
+consequences.
+
+The fix is to preserve reserved ASIDs across rollovers if
+the CPU doesn't have an active ASID when the rollover occurs.
 
 Acked-by: Will Deacon <will.deacon@arm.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Catalin Carinas <catalin.marinas@arm.com>
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/context.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ arch/arm/mm/context.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 --- a/arch/arm/mm/context.c
 +++ b/arch/arm/mm/context.c
-@@ -39,10 +39,7 @@
-  * non 64-bit operations.
-  */
- #define ASID_FIRST_VERSION	(1ULL << ASID_BITS)
--#define NUM_USER_ASIDS		(ASID_FIRST_VERSION - 1)
--
--#define ASID_TO_IDX(asid)	((asid & ~ASID_MASK) - 1)
--#define IDX_TO_ASID(idx)	((idx + 1) & ~ASID_MASK)
-+#define NUM_USER_ASIDS		ASID_FIRST_VERSION
- 
- static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
- static atomic64_t asid_generation = ATOMIC64_INIT(ASID_FIRST_VERSION);
-@@ -137,7 +134,7 @@ static void flush_context(unsigned int c
- 			 */
- 			if (asid == 0)
- 				asid = per_cpu(reserved_asids, i);
--			__set_bit(ASID_TO_IDX(asid), asid_map);
-+			__set_bit(asid & ~ASID_MASK, asid_map);
+@@ -128,6 +128,15 @@ static void flush_context(unsigned int c
+ 			asid = 0;
+ 		} else {
+ 			asid = atomic64_xchg(&per_cpu(active_asids, i), 0);
++			/*
++			 * If this CPU has already been through a
++			 * rollover, but hasn't run another task in
++			 * the meantime, we must preserve its reserved
++			 * ASID, as this is the only trace we have of
++			 * the process it is still running.
++			 */
++			if (asid == 0)
++				asid = per_cpu(reserved_asids, i);
+ 			__set_bit(ASID_TO_IDX(asid), asid_map);
  		}
  		per_cpu(reserved_asids, i) = asid;
- 	}
-@@ -176,17 +173,19 @@ static u64 new_context(struct mm_struct
- 		/*
- 		 * Allocate a free ASID. If we can't find one, take a
- 		 * note of the currently active ASIDs and mark the TLBs
--		 * as requiring flushes.
-+		 * as requiring flushes. We always count from ASID #1,
-+		 * as we reserve ASID #0 to switch via TTBR0 and indicate
-+		 * rollover events.
- 		 */
--		asid = find_first_zero_bit(asid_map, NUM_USER_ASIDS);
-+		asid = find_next_zero_bit(asid_map, NUM_USER_ASIDS, 1);
- 		if (asid == NUM_USER_ASIDS) {
- 			generation = atomic64_add_return(ASID_FIRST_VERSION,
- 							 &asid_generation);
- 			flush_context(cpu);
--			asid = find_first_zero_bit(asid_map, NUM_USER_ASIDS);
-+			asid = find_next_zero_bit(asid_map, NUM_USER_ASIDS, 1);
- 		}
- 		__set_bit(asid, asid_map);
--		asid = generation | IDX_TO_ASID(asid);
-+		asid |= generation;
- 		cpumask_clear(mm_cpumask(mm));
- 	}
- 
 
 
