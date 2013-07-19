@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935255Ab3GSCdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:33:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37723 "EHLO
+	id S935133Ab3GSCdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:33:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934987Ab3GSCXm (ORCPT
+	with ESMTP id S1759441Ab3GSCXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:42 -0400
+	Thu, 18 Jul 2013 22:23:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Heiko Schocher <hs@denx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 09/18] drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
-Date: Thu, 18 Jul 2013 19:23:24 -0700
-Message-Id: <20130719021049.599989431@linuxfoundation.org>
+        Yu Liu <liuyu.ac@gmail.com>, Shane Huang <shane.huang@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 13/18] ahci: remove pmp link online check in FBS EH
+Date: Thu, 18 Jul 2013 19:23:28 -0700
+Message-Id: <20130719021049.870089104@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -28,34 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Shane Huang <shane.huang@amd.com>
 
-commit 29ecd78c0fd6ee05f2c6b07b23823a6ae43c13ff upstream.
+commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
 
-In the disable AIE irq code path, current code passes "1" to enable
-parameter of rv3029c2_rtc_i2c_alarm_set_irq().  Thus it does not disable
-AIE irq.
+ata_link_online() check in ahci_error_intr() is unnecessary, it should
+be removed otherwise may lead to lockup with FBS enabled PMP.
+http://marc.info/?l=linux-ide&m=137050421603272&w=2
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Heiko Schocher <hs@denx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Yu Liu <liuyu.ac@gmail.com>
+Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-rv3029c2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libahci.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/rtc/rtc-rv3029c2.c
-+++ b/drivers/rtc/rtc-rv3029c2.c
-@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(st
- 		dev_dbg(&client->dev, "alarm IRQ armed\n");
- 	} else {
- 		/* disable AIE irq */
--		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
-+		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
- 		if (ret)
- 			return ret;
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1495,8 +1495,7 @@ static void ahci_error_intr(struct ata_p
+ 		u32 fbs = readl(port_mmio + PORT_FBS);
+ 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
  
+-		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
+-		    ata_link_online(&ap->pmp_link[pmp])) {
++		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
+ 			link = &ap->pmp_link[pmp];
+ 			fbs_need_dec = true;
+ 		}
 
 
