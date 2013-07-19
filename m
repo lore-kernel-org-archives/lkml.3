@@ -1,275 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759999Ab3GSIfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:35:46 -0400
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:49672 "EHLO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab3GSIfm (ORCPT
+	id S965370Ab3GSIgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:36:00 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:32906 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412Ab3GSIf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:35:42 -0400
+	Fri, 19 Jul 2013 04:35:56 -0400
+Date: Fri, 19 Jul 2013 10:35:55 +0200
+From: "'Maxime Ripard'" <maxime.ripard@free-electrons.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Alexandre Belloni'" <alexandre.belloni@free-electrons.com>,
+        hector.palacios@digi.com,
+        "'Thomas Petazzoni'" <thomas@free-electrons.com>,
+        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 2/3] video: hx8357: Make IM pins optional
+Message-ID: <20130719083555.GC5106@lukather>
+References: <1373902022-20439-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1373902022-20439-3-git-send-email-maxime.ripard@free-electrons.com>
+ <003501ce81be$4a945ed0$dfbd1c70$@samsung.com>
+ <1373945380.7549.26.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <51E7B9DA.9040803@metafoo.de>
-References: <1374059564-6872-1-git-send-email-oleksandr.kozaruk@ti.com>
-	<1374059564-6872-3-git-send-email-oleksandr.kozaruk@ti.com>
-	<51E6DCB5.3070302@metafoo.de>
-	<CAPb7_muAzO-jRqgcm89fcKT-hTLq38Aj2p0WAWjGjN9DoQUwPg@mail.gmail.com>
-	<51E7B9DA.9040803@metafoo.de>
-Date: Fri, 19 Jul 2013 11:35:41 +0300
-Message-ID: <CAPb7_ms36YnT2VVkhngCEonwihtgHSMWO0uQQxsr58rUCgRPLA@mail.gmail.com>
-Subject: Re: [PATCH v5 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
-From: Oleksandr Kozaruk <oleksandr.kozaruk@globallogic.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: tony@atomide.com, benoit.cousson@linaro.org, rnayak@ti.com,
-        peter.ujfalusi@ti.com, kishon@ti.com, jic23@cam.ac.uk,
-        grant.likely@linaro.org, rob.herring@calxeda.com,
-        sameo@linux.intel.com, ch.naveen@samsung.com, poeschel@lemonage.de,
-        milo.kim@ti.com, balajitk@ti.com, gg@slimlogic.co.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vOmOzSkFvhd7u8Ms"
+Content-Disposition: inline
+In-Reply-To: <1373945380.7549.26.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lars,
 
-On Thu, Jul 18, 2013 at 12:48 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 07/18/2013 10:36 AM, Oleksandr Kozaruk wrote:
->> Hello Lars,
->>
->> On Wed, Jul 17, 2013 at 9:04 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>>> +static int twl6032_calibration(struct twl6030_gpadc_data *gpadc)
->>>> +{
->>>> +     int chn, d1 = 0, d2 = 0, temp;
->>>> +     u8 trim_regs[17];
->>>> +     int ret;
->>>> +
->>>> +     ret = twl_i2c_read(TWL6030_MODULE_ID2, trim_regs + 1,
->>>> +                     TWL6030_GPADC_TRIM1, 16);
->>>> +     if (ret < 0) {
->>>> +             dev_err(gpadc->dev, "calibration failed\n");
->>>> +             return ret;
->>>> +     }
->>>> +
->>>> +     /*
->>>> +      * Loop to calculate the value needed for returning voltages from
->>>> +      * GPADC not values.
->>>> +      *
->>>> +      * gain is calculated to 3 decimal places fixed point.
->>>> +      */
->>>> +     for (chn = 0; chn < TWL6032_GPADC_MAX_CHANNELS; chn++) {
->>>> +
->>>> +             switch (chn) {
->>>> +             case 0:
->>>> +             case 1:
->>>> +             case 2:
->>>> +             case 3:
->>>> +             case 4:
->>>> +             case 5:
->>>> +             case 6:
->>>> +             case 11:
->>>> +             case 12:
->>>> +             case 13:
->>>> +             case 14:
->>>> +                     /* D1 */
->>>> +                     d1 = (trim_regs[3] & 0x1F) << 2;
->>>> +                     d1 |= (trim_regs[1] & 0x06) >> 1;
->>>> +                     if (trim_regs[1] & 0x01)
->>>> +                             d1 = -d1;
->>>> +
->>>> +                     /* D2 */
->>>> +                     d2 = (trim_regs[4] & 0x3F) << 2;
->>>> +                     d2 |= (trim_regs[2] & 0x06) >> 1;
->>>> +                     if (trim_regs[2] & 0x01)
->>>> +                             d2 = -d2;
->>>> +                     break;
->>>> +             case 8:
->>>> +                     /* D1 */
->>>> +                     temp = (trim_regs[3] & 0x1F) << 2;
->>>> +                     temp |= (trim_regs[1] & 0x06) >> 1;
->>>> +                     if (trim_regs[1] & 0x01)
->>>> +                             temp = -temp;
->>>> +
->>>> +                     d1 = (trim_regs[8] & 0x18) << 1;
->>>> +                     d1 |= (trim_regs[7] & 0x1E) >> 1;
->>>> +                     if (trim_regs[7] & 0x01)
->>>> +                             d1 = -d1;
->>>> +
->>>> +                     d1 += temp;
->>>> +
->>>> +                     /* D2 */
->>>> +                     temp = (trim_regs[4] & 0x3F) << 2;
->>>> +                     temp |= (trim_regs[2] & 0x06) >> 1;
->>>> +                     if (trim_regs[2] & 0x01)
->>>> +                             temp = -temp;
->>>> +
->>>> +                     d2 = (trim_regs[10] & 0x1F) << 2;
->>>> +                     d2 |= (trim_regs[8] & 0x06) >> 1;
->>>> +                     if (trim_regs[8] & 0x01)
->>>> +                             d2 = -d2;
->>>> +
->>>> +                     d2 += temp;
->>>> +                     break;
->>>> +             case 9:
->>>> +                     /* D1 */
->>>> +                     temp = (trim_regs[3] & 0x1F) << 2;
->>>> +                     temp |= (trim_regs[1] & 0x06) >> 1;
->>>> +                     if (trim_regs[1] & 0x01)
->>>> +                             temp = -temp;
->>>> +
->>>> +                     d1 = (trim_regs[14] & 0x18) << 1;
->>>> +                     d1 |= (trim_regs[12] & 0x1E) >> 1;
->>>> +                     if (trim_regs[12] & 0x01)
->>>> +                             d1 = -d1;
->>>> +
->>>> +                     d1 += temp;
->>>> +
->>>> +                     /* D2 */
->>>> +                     temp = (trim_regs[4] & 0x3F) << 2;
->>>> +                     temp |= (trim_regs[2] & 0x06) >> 1;
->>>> +                     if (trim_regs[2] & 0x01)
->>>> +                             temp = -temp;
->>>> +
->>>> +                     d2 = (trim_regs[16] & 0x1F) << 2;
->>>> +                     d2 |= (trim_regs[14] & 0x06) >> 1;
->>>> +                     if (trim_regs[14] & 0x01)
->>>> +                             d2 = -d2;
->>>> +
->>>> +                     d2 += temp;
->>>> +             case 10:
->>>> +                     /* D1 */
->>>> +                     d1 = (trim_regs[11] & 0x0F) << 3;
->>>> +                     d1 |= (trim_regs[9] & 0x0E) >> 1;
->>>> +                     if (trim_regs[9] & 0x01)
->>>> +                             d1 = -d1;
->>>> +
->>>> +                     /* D2 */
->>>> +                     d2 = (trim_regs[15] & 0x0F) << 3;
->>>> +                     d2 |= (trim_regs[13] & 0x0E) >> 1;
->>>> +                     if (trim_regs[13] & 0x01)
->>>> +                             d2 = -d2;
->>>> +                     break;
->>>> +             case 7:
->>>> +             case 18:
->>>> +                     /* D1 */
->>>> +                     temp = (trim_regs[3] & 0x1F) << 2;
->>>> +                     temp |= (trim_regs[1] & 0x06) >> 1;
->>>> +                     if (trim_regs[1] & 0x01)
->>>> +                             temp = -temp;
->>>> +
->>>> +                     d1 = (trim_regs[5] & 0x7E) >> 1;
->>>> +                     if (trim_regs[5] & 0x01)
->>>> +                             d1 = -d1;
->>>> +.
->>>> +                     d1 += temp;
->>>> +
->>>> +                     /* D2 */
->>>> +                     temp = (trim_regs[4] & 0x3F) << 2;
->>>> +                     temp |= (trim_regs[2] & 0x06) >> 1;
->>>> +                     if (trim_regs[2] & 0x01)
->>>> +                             temp = -temp;
->>>> +
->>>> +                     d2 = (trim_regs[6] & 0xFE) >> 1;
->>>> +                     if (trim_regs[6] & 0x01)
->>>> +                             d2 = -d2;
->>>> +
->>>> +                     d2 += temp;
->>>> +                     break;
->>>
->>>
->>> There is quite a bit of copy paste in here. Putting the bit swizziling into
->>> a helper function should also improbe legibility.
->>
->> Trimming bits are scattered randomly between registers and in
->> different bit positions.
->> I don't see any commonalities, that could be generalized. as Graeme
->> said about it "it's a bane of my life".
->
-> The pattern is pretty regular though, how about:
->
->
-> int twl6032_get_trim_value(u8 *trim_regs, unsigned int reg0,
->         unsigned int reg1, unsigned int mask0, unsigned int mask1,
->         unsigned int shift0)
-> {
->         int val;
->
->         val = (trim_regs[reg0] & mask0) << shift0;
->         val |= (trim_regs[reg1] & mask1) >> 1;
->         if (trim_regs[reg1] & 0x01)
->                 val = -val;
->
->         return val;
-> }
->
-> and then
->
->         d1 = twl6032_get_trim_value(trim_regs, 3, 1, 0x1f, 0x06, 2);
->         d2 = twl6032_get_trim_value(trim_regs, 4, 2, 0x3f, 0x06, 2);
->
-> and so on.
+--vOmOzSkFvhd7u8Ms
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you. I think legibility is better now, I even found a bug - in
-case 9 'break' was missing.
-Though it is not without special case for channels 7, 18:
-	for (chn = 0; chn < TWL6032_GPADC_MAX_CHANNELS; chn++) {
+Hi Jingoo, Mike,
 
-		switch (chn) {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 6:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-			d1 = twl6032_get_trim_value(trim_regs, 3, 1, 0x1f, 0x06, 2);
-			d2 = twl6032_get_trim_value(trim_regs, 4, 2, 0x3f, 0x06, 2);
-			break;
-		case 8:
-			temp = twl6032_get_trim_value(trim_regs, 3, 1, 0x1f, 0x06, 2);
-			d1 = temp + twl6032_get_trim_value(trim_regs, 8, 7, 0x18, 0x1E, 1);
+On Tue, Jul 16, 2013 at 05:29:40AM +0200, Mike Galbraith wrote:
+> On Tue, 2013-07-16 at 09:49 +0900, Jingoo Han wrote:=20
+> > On Tuesday, July 16, 2013 12:27 AM, Maxime Ripard wrote:
+>=20
+> > > +
+> > > +			ret =3D devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
+> > > +						    GPIOF_OUT_INIT_LOW, "im_pins");
+> >=20
+> > This makes a checkpatch warning such as 'WARNING: line over 80 characte=
+rs'.
+> > How about the following?
+> >=20
+> > 			ret =3D devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
+> > 						GPIOF_OUT_INIT_LOW, "im_pins");
+>=20
+> IIRC, some maintainers gripe (davem?) when they see such alignment,
+> preferring the original arg below arg alignment vs strict 80 column.
 
-			temp = twl6032_get_trim_value(trim_regs, 4, 2, 0x3F, 0x06, 2);
-			d2 = temp + twl6032_get_trim_value(trim_regs, 10, 8, 0x1F, 0x06, 2);
-			break;
-		case 9:
-			temp = twl6032_get_trim_value(trim_regs, 3, 1, 0x1f, 0x06, 2);
-			d1 = temp + twl6032_get_trim_value(trim_regs, 14, 12, 0x18, 0x1E, 1);
+As far as I know, the coding guide styles are quite fuzzy about this:
+  - The new line is not required to be aligned with the braces above
+  - Yet, the emacs config given does indent like this.
+  - 80 characters is said not to be a hard limit
 
-			temp = twl6032_get_trim_value(trim_regs, 4, 2, 0x3f, 0x06, 2);
-			d2 = temp + twl6032_get_trim_value(trim_regs, 16, 14, 0x1F, 0x06, 1);
-			break;
-		case 10:
-			d1 = twl6032_get_trim_value(trim_regs, 11, 9, 0x0f, 0x0E, 3);
-			d2 = twl6032_get_trim_value(trim_regs, 15, 13, 0x0f, 0x0E, 3);
-			break;
-		case 7:
-		case 18:
-			temp = twl6032_get_trim_value(trim_regs, 3, 1, 0x1f, 0x06, 2);
+I don't really know if there's a better solution here, except maybe:
+ret =3D devm_gpio_request_one(&spi-dev, lcd->im_pins[i],
+			    GPIOF_OUT_INIT_LOW,
+			    "im_pins");
 
-			d1 = (trim_regs[5] & 0x7E) >> 1;
-			if (trim_regs[5] & 0x01)
-				d1 = -d1;
-			d1 += temp;
+But it's not really a big deal, is it?
 
-			temp = twl6032_get_trim_value(trim_regs, 4, 2, 0x3f, 0x06, 2);
+Maxime
 
-			d2 = (trim_regs[6] & 0xFE) >> 1;
-			if (trim_regs[6] & 0x01)
-				d2 = -d2;
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-			d2 += temp;
-			break;
-		default:
-			/* No data for other channels */
-			continue;
-		}
+--vOmOzSkFvhd7u8Ms
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Regards,
-Oleksandr Kozaruk
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR6PpqAAoJEBx+YmzsjxAgf8EP/i2RJuYd+QHxsbrKqLpQ8+wL
+worAFgbqVtU1s3oebNvdNkM0JSPBsOwauj1Npmr/UFW5mbt6S2zBjQi6c1v9AH2s
+mftB0AdNQpZ93Lu6cnYYdCLEILuaJXy67hqrxOM5vDgabzx/kCgjJ/SkZG5eOtzL
+e3/pNyuP08pDG8ksysSzCn3tkf6ptx/Z/4LI2pEvc2O0ub0OxydCE7tqbRLlAkQI
+KejLPAeb+wUFj30FEJiks+3By3I3kli52gwU1KYRecAAOA0p+MMGT2+4iD7L0SnS
+Vu9gBAljdioOMXGvG80q+t4NL7H1ZchcN0IcK3u4dGCiL8287yeOpOsmoSm1zElZ
+BQSYAcOvOWn72VN7Q+wysiMCjklLX5iuYpwUNm/EJrBDRSKB0Bc2k2dXtC2Ama90
+ESZJd2XOoG6IkC71pZsWXdXMKMKv5PIfThXDU9W1VNhrlfuHMbpx6qFM2jMS6Y0a
+XcCzgY7izwAyf0ycLGtDiBt6sw2gNcLDPH6+8RdOlEL2Aa9MK8OJVSpGwCOurPxn
+SHCtLlqVvcWiPXKMfqf8zDLqGzNrQj2kW0W2VSpIb+yxfofoDFUvHKwa373Y49rI
+Y0rsd9mplo4FE6AI45bU920qUlYfkFKEScqBNkMfam6tKk0SFyrs+mjwjSBxoEW1
+/jAkpxF/AK9HTB4cSvAY
+=RVce
+-----END PGP SIGNATURE-----
+
+--vOmOzSkFvhd7u8Ms--
