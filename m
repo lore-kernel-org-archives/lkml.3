@@ -1,74 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760654Ab3GSQRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:17:15 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:53091 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab3GSQRN (ORCPT
+	id S1760715Ab3GSQRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:17:32 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:43492 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab3GSQRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:17:13 -0400
-Date: Fri, 19 Jul 2013 18:17:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 3/3] ARM: Kconfig: allow virt CPU accounting
-Message-ID: <20130719161708.GB21752@somewhere>
-References: <1372876601-23881-1-git-send-email-khilman@linaro.org>
- <1372876601-23881-4-git-send-email-khilman@linaro.org>
+	Fri, 19 Jul 2013 12:17:30 -0400
+X-Auth-Info: n3Q3heHxlcTxBo6P9swOVmn5AqR88Kku8PHB1u11C3U=
+From: Marek Vasut <marex@denx.de>
+To: Hector Palacios <hector.palacios@digi.com>
+Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify scale
+Date: Fri, 19 Jul 2013 18:17:26 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
+Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307191639.01240.marex@denx.de> <51E95BEC.5080703@digi.com>
+In-Reply-To: <51E95BEC.5080703@digi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372876601-23881-4-git-send-email-khilman@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307191817.27102.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 11:36:41AM -0700, Kevin Hilman wrote:
-> With the 64-bit requirement removed from virt CPU accounting,
-> allow ARM platforms to enable it.
+Dear Hector Palacios,
+
+> Dear Marek,
 > 
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> ---
->  arch/arm/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
+> On 07/19/2013 04:39 PM, Marek Vasut wrote:
+> > Dear Hector Palacios,
+> > 
+> >> Added write_raw function to manipulate the optional divider_by_two
+> >> through the scaling attribute out of the available scales.
+> >> 
+> >> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+> >> ---
+> >> 
+> >>   drivers/staging/iio/adc/mxs-lradc.c | 55
+> >> 
+> >> ++++++++++++++++++++++++++++++++++++- 1 file changed, 54 insertions(+),
+> >> 1 deletion(-)
+> >> 
+> >> diff --git a/drivers/staging/iio/adc/mxs-lradc.c
+> >> b/drivers/staging/iio/adc/mxs-lradc.c index c929733..286cde2 100644
+> >> --- a/drivers/staging/iio/adc/mxs-lradc.c
+> >> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+> >> @@ -144,6 +144,7 @@ struct mxs_lradc {
+> >> 
+> >>   	uint32_t		vref_mv[LRADC_MAX_TOTAL_CHANS];
+> >>   	unsigned int		scale_avail[LRADC_MAX_TOTAL_CHANS][2][2];
+> >> 
+> >> +	unsigned int		is_divided[LRADC_MAX_TOTAL_CHANS];
+> > 
+> > Why not use bitfield ? ;-)
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 136f263..7850612 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -61,6 +61,7 @@ config ARM
->  	select OLD_SIGSUSPEND3
->  	select OLD_SIGACTION
->  	select HAVE_CONTEXT_TRACKING
-> +	select HAVE_VIRT_CPU_ACCOUNTING
-
-I think you got confused here. HAVE_VIRT_CPU_ACCOUNTING is the arch capability
-for VIRT_CPU_ACCOUNTING_NATIVE, not for VIRT_CPU_ACCOUNTING_GEN that only requires
-support for context tracking.
-
-That's my bad, all those names start to be confusing now.
-The VIRT based Kconfig naming is a bit weird, that doesn't really reflect what the feature
-is doing. "Virtual cputime accounting" just doesn't give any clue, except perhaps suggesting
-the stuff deals with virtualization while it actually has nothing to do with.
-I don't even know what virtual refers to here.
-
-Same goes for vtime based APIs. In fact I just based my work on the legacy that was
-there and expanded further the non-sense ;-)
-
-I'll need to do a big renaming one day.
-
-But to begin with I should rename s/HAVE_VIRT_CPU_ACCOUNTING/HAVE_VIRT_CPU_ACCOUNTING_NATIVE.
-
-
-
->  	help
->  	  The ARM series is a line of low-power-consumption RISC chip designs
->  	  licensed by ARM Ltd and targeted at embedded applications and
-> -- 
-> 1.8.3
+> This is used in some math below and an unsigned int looked more
+> appropriate:
 > 
+> 	case IIO_CHAN_INFO_SCALE:
+> 		*val = lradc->vref_mv[chan->channel];
+> 		*val2 = chan->scan_type.realbits -
+> 			lradc->is_divided[chan->channel];
+> 		ret = IIO_VAL_FRACTIONAL_LOG2;
+> 		break;
+
+Oh ok.
+
+> >>   	/*
+> >>   	
+> >>   	 * Touchscreen LRADC channels receives a private slot in the CTRL4
+> >> 
+> >> @@ -202,6 +203,7 @@ struct mxs_lradc {
+> >> 
+> >>   #define	LRADC_CTRL1_LRADC_IRQ_OFFSET		0
+> >>   
+> >>   #define	LRADC_CTRL2				0x20
+> >> 
+> >> +#define	LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET	24
+> >> 
+> >>   #define	LRADC_CTRL2_TEMPSENSE_PWD		(1 << 15)
+> >>   
+> >>   #define	LRADC_STATUS				0x40
+> >> 
+> >> @@ -310,7 +312,8 @@ static int mxs_lradc_read_raw(struct iio_dev
+> >> *iio_dev,
+> >> 
+> >>   		break;
+> >>   	
+> >>   	case IIO_CHAN_INFO_SCALE:
+> >>   		*val = lradc->vref_mv[chan->channel];
+> >> 
+> >> -		*val2 = chan->scan_type.realbits;
+> >> +		*val2 = chan->scan_type.realbits -
+> >> +			lradc->is_divided[chan->channel];
+> >> 
+> >>   		ret = IIO_VAL_FRACTIONAL_LOG2;
+> >>   		break;
+> >>   	
+> >>   	default:
+> >> @@ -323,6 +326,54 @@ static int mxs_lradc_read_raw(struct iio_dev
+> >> *iio_dev,
+> >> 
+> >>   	return ret;
+> >>   
+> >>   }
+> >> 
+> >> +static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
+> >> +			       const struct iio_chan_spec *chan,
+> >> +			       int val, int val2, long m)
+> >> +{
+> >> +	struct mxs_lradc *lradc = iio_priv(iio_dev);
+> >> +	int ret;
+> >> +
+> >> +	ret = mutex_trylock(&lradc->lock);
+> >> +	if (!ret)
+> >> +		return -EBUSY;
+> >> +
+> >> +	switch (m) {
+> >> +	case IIO_CHAN_INFO_SCALE:
+> >> +		ret = -EINVAL;
+> >> +		if (val == lradc->scale_avail[chan->channel][0][0] &&
+> >> +		    val2 == lradc->scale_avail[chan->channel][0][1]) {
+> >> +			/* [0] -> divider by two disabled */
+> > 
+> > This comment is confusing, you use [0] in different dimensions of the
+> > array. So is the stuff below.
+> > 
+> > Still, how does this even work, can you show me and example how to set
+> > the divider from userland ? Sorry, I'm a bit confused with this
+> > 3D-business here, even if the comment in previous patch made it a bit
+> > clearer. Actually you can use some #define to specify if you're
+> > accessing div/2 or div/1 portion of the array to make it more readable.
+> > 
+> > Like ... scale_avail[chan->channel][LRADC_DIV_BY_2][LRADC_DECIMAL_PART]
+> > ... would by nice.
+> 
+> Agreed.
+> 
+> How it works:
+> # cd /sys/devices/80000000.apb/80040000.apbx/80050000.lradc/iio:device0
+> 
+> Here you have three entries per channel:
+> in_voltageX_raw		-> the sample raw value
+> in_voltageX_scale	-> the scale to multiply the raw value to get the 
+voltage
+> in mV in_voltageX_scale_available -> lists the available scales of the
+> channel
+> 
+> For example for channel 0:
+> 
+> # cat in_voltage0_scale_available
+> 0.451660156 0.903320312	(two scales available, first with divider by two
+> disabled, second with divider by two enabled)
+> 
+> # cat in_voltage0_scale
+> 0.451660156			(divider by two is currently disabled)
+> 
+> # cat in_voltage0_raw		(shows measured value)
+> 1000
+> 
+> If you multiply the value by the scale you get: 1000 * 0.451660156 = 451.6
+> mV
+> 
+> # echo 0.903320312 > in_voltage0_scale	(enables the divider by two)
+
+Ok, so I have to remember this value : '0.903320312' in case I want to enable 
+divide-by-two functionality? Hmmmm ... why would this interface not work:
+
+echo 2 > in_voltage0_scale
+
+or 
+
+echo 1 > in_voltage0_scale
+
+?
+
+> # cat in_voltage0_raw		(shows measured value)
+> 500
+> 
+> Voltage at channel is the same but now measured value is applying the scale
+> so it shows half the value than before. Now if you multiply: 500 *
+> 0.903320312 = 451.6 mV (the same voltage but you now have a bigger scale
+> and can measure up to 3.7V).
+> 
+> Other channels (like 10 on the MX28) will show different scales because of
+> fixed predividers.
+> The multi-dimension array is needed to store the big decimal number.
+
+Yes, understood. Thanks for the explanation, it really helped!
