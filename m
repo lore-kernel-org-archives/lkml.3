@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab3GSFDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:03:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35433 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932084Ab3GSFDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:03:05 -0400
-Message-ID: <51E8C87A.3030007@ti.com>
-Date: Fri, 19 Jul 2013 10:32:50 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Trent Piepho <tpiepho@gmail.com>
-CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
-        <grant.likely@linaro.org>, <linux-omap@vger.kernel.org>,
-        <rnayak@ti.com>, <linux-kernel@vger.kernel.org>, <balbi@ti.com>
-Subject: Re: [PATCHv4 2/3] drivers: spi: Add qspi flash controller
-References: <1374141687-10790-1-git-send-email-sourav.poddar@ti.com>	<1374141687-10790-3-git-send-email-sourav.poddar@ti.com> <CA+7tXij7W_F0ZTQZ=YvK+qOLO+O-6WpTKxLerv8NXyrdydt7FA@mail.gmail.com>
-In-Reply-To: <CA+7tXij7W_F0ZTQZ=YvK+qOLO+O-6WpTKxLerv8NXyrdydt7FA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S933763Ab3GSFGb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:06:31 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:64197 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3GSFG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:06:29 -0400
+Message-ID: <1374210382.895.2.camel@phoenix>
+Subject: [PATCH] regulator: 88pm800: Add missing n_voltages setting for bucks
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: "Joseph(Yossi) Hanin" <yhanin@marvell.com>, Yi Zhang <yizhang@marvell.com>,
+        Chao Xie <chao.xie@marvell.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 19 Jul 2013 13:06:22 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 July 2013 12:38 AM, Trent Piepho wrote:
-> On Thu, Jul 18, 2013 at 3:01 AM, Sourav Poddar<sourav.poddar@ti.com>  wrote:
->> +Required properties:
->> +- compatible : should be "ti,dra7xxx-qspi".
->> +- reg: Should contain QSPI registers location and length.
->> +- #address-cells, #size-cells : Must be present if the device has sub-nodes
->> +- ti,hwmods: Name of the hwmod associated to the QSPI
-> What is ti,hwmods?  It's not clear from the description.  It also
-> doesn't appear to be used in the driver.  At least, I did not find any
-> occurrence of "hwmods" in the driver code.
->
->> +static inline unsigned long ti_qspi_readl_data(struct ti_qspi *qspi,
->> +               unsigned long reg, int wlen)
-> "readl" means read LONG.  That's what the L is for.  But this does
-> different widths.
->
->> +{
->> +       switch (wlen) {
->> +       case 8:
->> +               return readw(qspi->base + reg);
->> +               break;
-> wlen == 8, but readw == 16 bit read?
-Yes, I need to change this. should be readb.
-> The break after the return isn't necessary.
->
->> +       case 16:
->> +               return readb(qspi->base + reg);
->> +               break;
-> wlen == 16, but readb == 8 bit read?
->
-same here.
->> +       case 32:
->> +               return readl(qspi->base + reg);
-> wlen == 32, readl == 32, this one makes sense, but....
->
->> +static inline void ti_qspi_writel_data(struct ti_qspi *qspi,
->> +               unsigned long val, unsigned long reg, int wlen)
->> +       case 32:
->> +               writeb(val, qspi->base + reg);
->> +               break;
-> A 32 bit write uses an 8 bit write command, while read is 32 bits??
->
-> This doesn't make a lot of sense.  If it's actually correct, there
-> should be come kind of comment about it.
->
-Yes, I will change this in the next version.
->> +
->> +static int ti_qspi_setup(struct spi_device *spi)
->> +{
->> +
->> +       clk_ctrl_reg = ti_qspi_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG);
->> +
->> +       clk_ctrl_reg&= ~QSPI_CLK_EN;
->> +
->> +       /* disable SCLK */
->> +       ti_qspi_writel(qspi, clk_ctrl_reg, QSPI_SPI_CLOCK_CNTRL_REG);
-> Did you read this from Documentation/spi/spi-summary?
->                  ** BUG ALERT:  for some reason the first version of
->                  ** many spi_master drivers seems to get this wrong.
->                  ** When you code setup(), ASSUME that the controller
->                  ** is actively processing transfers for another device.
->
-But I see in this documentation, that setup is usually used for setting up
-device clock rate, modes etc.
-So, what do you recommend here, should we move clk settings to prepare
-hardware ?
->> +static int ti_qspi_probe(struct platform_device *pdev)
->> +{
->> +
->> +       master->mode_bits = SPI_CPOL | SPI_CPHA;
-> Does your device support full duplex?  It doesn't look like it does.
-> You should set the SPI_MASER_HALF_DUPLEX flag in master->flags.
->
-hmm. Ok, will add.
->> +
->> +       if (!of_property_read_u32(np, "ti,spi-num-cs",&num_cs))
->> +               master->num_chipselect = num_cs;
-> You didn't document this property.  How is this different than the
-> "num-cs" property already documented in spi-bus bindings?
->
-Actually, it is no different. This also means the total number of 
-chipselects.
-I used it from omap mcspi. I will make this property in accordance with the
-generic binding.
-Will also send a seperate patch for omap mcspi.
->> +       qspi->base = devm_ioremap_resource(&pdev->dev, r);
->> +       if (IS_ERR(qspi->base)) {
->> +               ret = -ENOMEM;
-> Shouldn't that be ret = PTR_ERR(qspi->base)
-hmm.will change.
+Some regulator APIs are broken if n_voltages setting is not set.
+e.g. regulator_count_voltages(), regulator_list_voltage(), and
+regulator_can_change_voltage() do not work if n_voltages setting is missing.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/88pm800.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/regulator/88pm800.c b/drivers/regulator/88pm800.c
+index fc0c352..b4c29b1 100644
+--- a/drivers/regulator/88pm800.c
++++ b/drivers/regulator/88pm800.c
+@@ -91,8 +91,9 @@ struct pm800_regulators {
+  * amax - the current
+  * Buck has 2 kinds of voltage steps. It is easy to find voltage by ranges,
+  * not the constant voltage table.
++ * n_volt - Number of available selectors
+  */
+-#define PM800_BUCK(vreg, ereg, ebit, amax, volt_ranges)			\
++#define PM800_BUCK(vreg, ereg, ebit, amax, volt_ranges, n_volt)		\
+ {									\
+ 	.desc	= {							\
+ 		.name	= #vreg,					\
+@@ -100,6 +101,7 @@ struct pm800_regulators {
+ 		.type	= REGULATOR_VOLTAGE,				\
+ 		.id	= PM800_ID_##vreg,				\
+ 		.owner	= THIS_MODULE,					\
++		.n_voltages		= n_volt,			\
+ 		.linear_ranges		= volt_ranges,			\
+ 		.n_linear_ranges	= ARRAY_SIZE(volt_ranges),	\
+ 		.vsel_reg		= PM800_##vreg,			\
+@@ -204,11 +206,11 @@ static struct regulator_ops pm800_volt_table_ops = {
+ 
+ /* The array is indexed by id(PM800_ID_XXX) */
+ static struct pm800_regulator_info pm800_regulator_info[] = {
+-	PM800_BUCK(BUCK1, BUCK_ENA, 0, 3000000, buck1_volt_range),
+-	PM800_BUCK(BUCK2, BUCK_ENA, 1, 1200000, buck2_5_volt_range),
+-	PM800_BUCK(BUCK3, BUCK_ENA, 2, 1200000, buck2_5_volt_range),
+-	PM800_BUCK(BUCK4, BUCK_ENA, 3, 1200000, buck2_5_volt_range),
+-	PM800_BUCK(BUCK5, BUCK_ENA, 4, 1200000, buck2_5_volt_range),
++	PM800_BUCK(BUCK1, BUCK_ENA, 0, 3000000, buck1_volt_range, 0x55),
++	PM800_BUCK(BUCK2, BUCK_ENA, 1, 1200000, buck2_5_volt_range, 0x73),
++	PM800_BUCK(BUCK3, BUCK_ENA, 2, 1200000, buck2_5_volt_range, 0x73),
++	PM800_BUCK(BUCK4, BUCK_ENA, 3, 1200000, buck2_5_volt_range, 0x73),
++	PM800_BUCK(BUCK5, BUCK_ENA, 4, 1200000, buck2_5_volt_range, 0x73),
+ 
+ 	PM800_LDO(LDO1, LDO_ENA1_1, 0, 200000, ldo1_volt_table),
+ 	PM800_LDO(LDO2, LDO_ENA1_1, 1, 10000, ldo2_volt_table),
+-- 
+1.8.1.2
+
+
 
