@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761052Ab3GSSuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:50:04 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53975 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760286Ab3GSSuB (ORCPT
+	id S1761029Ab3GSSwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:52:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47740 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3GSSwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:50:01 -0400
-Message-ID: <51E9897F.5030205@linux.vnet.ibm.com>
-Date: Sat, 20 Jul 2013 00:16:23 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 19 Jul 2013 14:52:30 -0400
+Message-ID: <51E98AEC.5000802@wwwdotorg.org>
+Date: Fri, 19 Jul 2013 12:52:28 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Cong Wang <amwang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        netdev@vger.kernel.org
-Subject: Re: mod_timer: list_add corruption: WARNING: CPU: 1 PID: 0 at lib/list_debug.c:33
- __list_add+0xbe/0xd0()
-References: <51E557C0.2060602@linux.vnet.ibm.com> <alpine.DEB.2.02.1307191323150.4089@ionos.tec.linutronix.de> <51E92769.7090106@linux.vnet.ibm.com> <alpine.DEB.2.02.1307191523050.4089@ionos.tec.linutronix.de> <1374241882.26476.5.camel@edumazet-glaptop> <alpine.DEB.2.02.1307191834460.4089@ionos.tec.linutronix.de> <1374254778.26476.18.camel@edumazet-glaptop>
-In-Reply-To: <1374254778.26476.18.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
+To: Tony Lindgren <tony@atomide.com>
+CC: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+References: <20130716090310.5541.36777.stgit@localhost> <20130716090536.5541.36289.stgit@localhost> <51E70953.1000601@wwwdotorg.org> <20130718072034.GO7656@atomide.com> <51E8401E.8040705@wwwdotorg.org> <20130719072927.GY7656@atomide.com>
+In-Reply-To: <20130719072927.GY7656@atomide.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071918-0260-0000-0000-00000356B681
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 10:56 PM, Eric Dumazet wrote:
-> On Fri, 2013-07-19 at 18:38 +0200, Thomas Gleixner wrote:
->> On Fri, 19 Jul 2013, Eric Dumazet wrote:
->>>
->>> I guess following should help 
+On 07/19/2013 01:29 AM, Tony Lindgren wrote:
+> * Stephen Warren <swarren@wwwdotorg.org> [130718 12:27]:
+>> On 07/18/2013 01:25 AM, Tony Lindgren wrote:
+>>> * Stephen Warren <swarren@wwwdotorg.org> [130717 14:21]:
+>>>> On 07/16/2013 03:05 AM, Tony Lindgren wrote:
+>>>>> To toggle dynamic states, let's add the optional active state in
+>>>>> addition to the static default state. Then if the optional active
+>>>>> state is defined, we can require that idle and sleep states cover
+>>>>> the same pingroups as the active state.
+>>>>>
+>>>>> Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
+>>>>> to use instead of pinctrl_select() to avoid breaking existing users.
+>>>>>
+>>>>> With pinctrl_check_dynamic() we can check that idle and sleep states
+>>>>> match the active state for pingroups during init, and don't need to
+>>>>> do it during runtime.
+>>>>>
+>>>>> Then with the states pre-validated, pinctrl_select_dynamic() can
+>>>>> just toggle between the dynamic states without extra checks.
+>>>>>
+>>>>> Note that pinctr_select_state() still has valid use cases, such as
+>>>>> changing states when the pins can be shared between two drivers
+>>>>> and don't necessarily cover the same pingroups. For dynamic runtime
+>>>>> toggling of pin states, we should eventually always use just
+>>>>> pinctrl_select_dynamic().
 >>
->> Applying the empty patch does not work very well. Could you try again
->> after the caffeine reached your brain, please ? :)
+>>>>> @@ -1241,7 +1371,13 @@ static int pinctrl_pm_select_state(struct device *dev, struct pinctrl_state *sta
+>>>>>  		return 0;
+>>>>>  	if (IS_ERR(state))
+>>>>>  		return 0; /* No such state */
+>>>>> -	ret = pinctrl_select_state(pins->p, state);
+>>>>> +
+>>>>> +	/* Configured for proper dynamic muxing? */
+>>>>> +	if (!IS_ERR(dev->pins->active_state))
+>>>>> +		ret = pinctrl_select_dynamic(pins->p, state);
+>>>>> +	else
+>>>>> +		ret = pinctrl_select_state(pins->p, state);
+>>>>
+>>>> Hmmm. I'm not quite sure this is right... Surely this function should
+>>>> just do nothing if the dynamic states aren't defined? The system should
+>>>> just, and only, be in the "default" state and never do anything else.
+>>>
+>>> This keeps the existing behaviour. We should be able to drop the
+>>> call to pinctrl_select_state() here after the existing use in
+>>> drivers has been fixed.
+>>
+>> How many DT-based systems already have multiple of default/idle/sleep
+>> states defined in DT? Right now, since the kernel code uses
+>> pinctrl_select_state() to switch between those, the state definitions
+>> need to define /all/ pins used by those states, not just the dynamic
+>> ones. However, with this series in place, the default state should only
+>> include the static pins, and the active/idle/sleep states should only
+>> include the dynamic pins. That's a change to the DT bindings, since it
+>> changes how the DT must be written, and causes older DTs to be
+>> incompatible with newer kernels and vice-versa.
 > 
-> hmm, right ;)
+> Well we can keep the current behaviour with pinctrl_select_state() around
+> as long as needed. For the legacy cases, there is no active state defined
+> and we fall back to pinctrl_select_state().
+>  
+>> So, do we just ignore this DT ABI change again, or insist on doing it in
+>> some compatible way? DT ABI-ness is a PITA:-(
 > 
+> I'd vote for keeping the existing behaviour with pinctrl_select_state()
+> when no active state is defined.
 
-This patch fixes the issue for me - the system has been idle for more
-than an hour now without any problems (earlier, i used to get the traces
-within 5 minutes of idle time).
+Yes, I think that will work, since the active state cannot exist before
+this new scheme is in place.
 
-Thanks a lot for the fix!
-
-Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
-Regards,
-Srivatsa S. Bhat
-
-> diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-> index 69af490..4b99c9a 100644
-> --- a/net/bridge/br_multicast.c
-> +++ b/net/bridge/br_multicast.c
-> @@ -619,6 +619,9 @@ rehash:
->  	mp->br = br;
->  	mp->addr = *group;
-> 
-> +	setup_timer(&mp->timer, br_multicast_group_expired,
-> +		    (unsigned long)mp);
-> +
->  	hlist_add_head_rcu(&mp->hlist[mdb->ver], &mdb->mhash[hash]);
->  	mdb->size++;
-> 
-> @@ -1126,7 +1129,6 @@ static int br_ip4_multicast_query(struct net_bridge *br,
->  	if (!mp)
->  		goto out;
-> 
-> -	setup_timer(&mp->timer, br_multicast_group_expired, (unsigned long)mp);
->  	mod_timer(&mp->timer, now + br->multicast_membership_interval);
->  	mp->timer_armed = true;
-> 
-> @@ -1204,7 +1206,6 @@ static int br_ip6_multicast_query(struct net_bridge *br,
->  	if (!mp)
->  		goto out;
-> 
-> -	setup_timer(&mp->timer, br_multicast_group_expired, (unsigned long)mp);
->  	mod_timer(&mp->timer, now + br->multicast_membership_interval);
->  	mp->timer_armed = true;
-> 
-
+But, this needs to be very clearly spell out in the DT binding
+documentation: If you have states default/idle/sleep, they're complete
+alternatives, whereas if you have states default/active/idle/sleep, the
+latter 3 are alternatives that build on top of the first. I foresee mass
+confusion, but perhaps I'm being pessimistic.
