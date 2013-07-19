@@ -1,92 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab3GSEE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 00:04:57 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:51831 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab3GSEE4 (ORCPT
+	id S1751880Ab3GSEIF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 00:08:05 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:42966 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3GSEID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 00:04:56 -0400
+	Fri, 19 Jul 2013 00:08:03 -0400
+X-Spam-Score: -100.8
+Message-ID: <51E8BB66.6020002@asianux.com>
+Date: Fri, 19 Jul 2013 12:07:02 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1374203899-w7jwqowi-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1374183272-10153-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<CAJd=RBD-uCuqyD0OTJ119woikBSyd8=A7uhHp5kUJeweS+2okQ@mail.gmail.com>
-	<1374203899-w7jwqowi-mutt-n-horiguchi@ah.jp.nec.com>
-Date: Fri, 19 Jul 2013 12:04:56 +0800
-Message-ID: <CAJd=RBDxVdkAhuozG04kDVwr71c9Yy+nQNjqHPeVbq-KbKb4MA@mail.gmail.com>
-Subject: Re: [PATCH 1/8] migrate: make core migration code aware of hugepage
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: George Spelvin <linux@horizon.com>, reiserfs-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] reiserfs: check/extend buffer length for printing functions
+References: <51E65A68.8070009@asianux.com> <51E76ED7.303@asianux.com> <51E7994D.1060300@asianux.com> <20130718074316.GY4165@ZenIV.linux.org.uk> <51E79F24.2050504@asianux.com> <51E7A4C1.4020309@asianux.com>
+In-Reply-To: <51E7A4C1.4020309@asianux.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 11:18 AM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
->> > +bool isolate_huge_page(struct page *page, struct list_head *l)
+On 07/18/2013 04:18 PM, Chen Gang wrote:
+> On 07/18/2013 03:54 PM, Chen Gang wrote:
+>> On 07/18/2013 03:43 PM, Al Viro wrote:
+>>> On Thu, Jul 18, 2013 at 03:29:17PM +0800, Chen Gang wrote:
+>>>>> On 07/18/2013 12:28 PM, Chen Gang wrote:
+>>>>>>>  
+>>>>>>>>>  	strcpy(fmt1, fmt);
+>>>>>>>>> @@ -199,46 +214,51 @@ static void prepare_error_buf(const char *fmt, va_list args)
+>>>>>>>>>  	while ((k = is_there_reiserfs_struct(fmt1, &what)) != NULL) {
+>>>>>>>>>  		*k = 0;
+>>>>>>>>>  
+>>>>>>>>> -		p += vsprintf(p, fmt1, args);
+>>>>>>>>> +		p += vsnprintf(p, left, fmt1, args);
+>>>>>
+>>>>> At least, need use vscnprintf() instead of vsnprintf(), since we need
+>>>>> the real written length return.
+>>> 		n = vsnprintf(p, left, ....);
+>>> 		left -= n;
+>>> 		if (left <= 0) /* overflow */
+>>> 			break;	/* or whatever's suitable here */
+>>> 		p += n;
+>>>
+>>>
 >>
->> Can we replace the page parameter with p?
->
-> Yes. Maybe it's strange to use the full name "page" for one parameter
-> and an extremely shortened one "l" for another one.
->
-Actually i mean the l arg could be replaced with something else ;)
-
->> > +
->> > +void putback_active_hugepage(struct page *page)
->> > +{
->> > +       VM_BUG_ON(!PageHead(page));
->> > +       spin_lock(&hugetlb_lock);
->> > +       list_move_tail(&page->lru, &(page_hstate(page))->hugepage_activelist);
->> > +       spin_unlock(&hugetlb_lock);
->> > +       put_page(page);
->> > +}
->> > +
->> > +void putback_active_hugepages(struct list_head *l)
->> > +{
->> > +       struct page *page;
->> > +       struct page *page2;
->> > +
->> > +       list_for_each_entry_safe(page, page2, l, lru)
->> > +               putback_active_hugepage(page);
+>> Yeah, it is really a better fix. :-)
 >>
->> Can we acquire hugetlb_lock only once?
->
-> I'm not sure which is the best. In general, fine-grained locking is
-> preferred because other lock contenders wait less.
-> Could you tell some specific reason to hold lock outside the loop?
->
-No anything special, looks we can do list splice after taking lock,
-then we no longer contend it.
+>>
+>> And now I am just testing, and find another issue about it, I am just
+>> analyzing it it.
+> 
+> 
+> even only change vsprintf() to vsnprintf(), it will report '<7' !!
+> 
 
->> > @@ -1025,7 +1029,11 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
->> >                 list_for_each_entry_safe(page, page2, from, lru) {
->> >                         cond_resched();
->> >
->> > -                       rc = unmap_and_move(get_new_page, private,
->> > +                       if (PageHuge(page))
->> > +                               rc = unmap_and_move_huge_page(get_new_page,
->> > +                                               private, page, pass > 2, mode);
->> > +                       else
->> > +                               rc = unmap_and_move(get_new_page, private,
->> >                                                 page, pass > 2, mode);
->> >
->> Is this hunk unclean merge?
->
-> Sorry, I don't catch the point. This patch is based on v3.11-rc1 and
-> the present HEAD has no changes from that release.
-> Or do you mean that other trees have some conflicts? (my brief checking
-> on -mm/-next didn't find that...)
->
-Looks this hunk should appear in 2/8 or later, as 1/8 is focusing
-on hugepage->lru?
+I finish analyzing it, it is not an issue.
+
+'<7>' or '<5>' ... is the level, '<7>' is 'KERN_DEBUG', '<5>' is
+'KERN_NOTICE' ...
+
+For system log, the kernel always print level before time stamp, but
+when we type command 'dmesg', it will skip them at the head of a line
+(also skip the empty line).
+
+It is implemented in "kernel/printk.c", below.
+
+ 887 static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+ 888 {
+ 889         size_t len = 0;
+ 890         unsigned int prefix = (msg->facility << 3) | msg->level;
+ 891 
+ 892         if (syslog) {
+ 893                 if (buf) {
+ 894                         len += sprintf(buf, "<%u>", prefix);
+ 895                 } else {
+ 896                         len += 3;
+ 897                         if (prefix > 999)
+ 898                                 len += 3;
+ 899                         else if (prefix > 99)
+ 900                                 len += 2;
+ 901                         else if (prefix > 9)
+ 902                                 len++;
+ 903                 }
+ 904         }
+ 905 
+ 906         len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+ 907         return len;
+ 908 }
+ 909 
+
+
+When a string truncated by force (may without '\n'). It may print level
+and time stamp not at the head of the line, which can not be skipped by
+dmesg.
+
+That is the reason why we can not see it.
+
+
+We can try to modify the print_prefix() in "kernel/printk.c" to test
+the result which I provide above.
+
+  e.g. append addition information after the time stamp to be sure that this function is really affect to all lines which command 'dmesg' displays.
+  e.g. use "\n<%u>" instead of "<%u>" and dummy 'syslog', to know dmesg will skip the level at the head of the line, and also skip the empty line.
+
+
+And next, I will send patch v2 for this patch.
+
+Welcome any additional suggestions, checking, or completions.
+
+:-)
+
+Thanks.
+
+> ----------------------------diff begin---------------------------------
+> 
+> diff --git a/fs/reiserfs/prints.c b/fs/reiserfs/prints.c
+> index c0b1112..9dd79be 100644
+> --- a/fs/reiserfs/prints.c
+> +++ b/fs/reiserfs/prints.c
+> @@ -238,7 +238,8 @@ static void prepare_error_buf(const char *fmt, va_list args)
+>  		p += strlen(p);
+>  		fmt1 = k + 2;
+>  	}
+> -	vsprintf(p, fmt1, args);
+> +
+> +	vsnprintf(p, 13, fmt1, args);
+>  	spin_unlock(&error_lock);
+>  
+>  }
+> 
+> ----------------------------diff end-----------------------------------
+> 
+> This patch seems related with this new issue.  So After I finish
+> analyzing it (get root cause), then send the patch v2 for this patch.
+> 
+> 
+> Thanks.
+> 
+>>
+>> For next-20130717, let reiserfs build-in, when "mount /dev/sda11
+>> /mnt/sda11" (assume sda11 is reiserfs filesystem).
+>>
+>> I modify the code like this (just only use vsnprintf instead of vsprintf):
+>>
+>> --------------------------diff begin------------------------------
+>>
+>> diff --git a/fs/reiserfs/prints.c b/fs/reiserfs/prints.c
+>> index c0b1112..3a38a62 100644
+>> --- a/fs/reiserfs/prints.c
+>> +++ b/fs/reiserfs/prints.c
+>> @@ -10,7 +10,7 @@
+>>  
+>>  #include <stdarg.h>
+>>  
+>> -static char error_buf[1024];
+>> +static char error_buf[13];
+>>  static char fmt_buf[1024];
+>>  static char off_buf[80];
+>>  
+>> @@ -195,7 +195,7 @@ static void prepare_error_buf(const char *fmt, va_list args)
+>>  	spin_lock(&error_lock);
+>>  
+>>  	strcpy(fmt1, fmt);
+>> -
+>> +#if 0
+>>  	while ((k = is_there_reiserfs_struct(fmt1, &what)) != NULL) {
+>>  		*k = 0;
+>>  
+>> @@ -238,7 +238,8 @@ static void prepare_error_buf(const char *fmt, va_list args)
+>>  		p += strlen(p);
+>>  		fmt1 = k + 2;
+>>  	}
+>> -	vsprintf(p, fmt1, args);
+>> +#endif
+>> +	vsnprintf(p, 13, fmt1, args);
+>>  	spin_unlock(&error_lock);
+>>  
+>>  }
+>>
+>> --------------------------diff end--------------------------------
+>>
+>>
+>> The output has '<7>':
+>>
+>> [root@dhcp122 ~]# dmesg
+>> [   38.797073] REISERFS (device sda11): found reiser
+>> [   38.797089] REISERFS warning (device sda11):  reiserfs_fill_super: CONFIG_REISE
+>> [   38.797095] REISERFS warning (device sda11):  reiserfs_fill_super: - it is slow
+>> [   38.797098] REISERFS (device sda11): using orderereiserfs: using flush barriers
+>> [   38.800507] REISERFS (device sda11): journal para
+>> [   38.801158] REISERFS (device sda11): checking tra<7>[   38.801165] REISERFS debug (device sda11): journal-1153
+>> [   38.801405] REISERFS debug (device sda11): journal-1206
+>> [   38.801410] REISERFS debug (device sda11): journal-1299
+>> [   38.817621] REISERFS (device sda11): Using r5 has
+>> [   38.817906] SELinux: initialized (dev sda11, type reiserfs), uses genfs_contexts
+>>
+>>
+>>
+>> Welcome any suggestions or completions.
+>>
+>> Thanks.
+>>
+> 
+> 
+
+
+-- 
+Chen Gang
