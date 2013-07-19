@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965845Ab3GSFaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:30:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40043 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965761Ab3GSF1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965822Ab3GSF1R (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Jul 2013 01:27:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40007 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965761Ab3GSF1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:27:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Liu <r64343@freescale.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 63/72] ARM: 7778/1: smp_twd: twd_update_frequency need be run on all online CPUs
-Date: Thu, 18 Jul 2013 22:26:20 -0700
-Message-Id: <20130719052604.175456121@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [ 55/72] ext4: fix overflow when counting used blocks on 32-bit architectures
+Date: Thu, 18 Jul 2013 22:26:12 -0700
+Message-Id: <20130719052603.616836136@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -30,41 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Liu <r64343@freescale.com>
+From: Jan Kara <jack@suse.cz>
 
-commit cbbe6f82b489e7ceba4ad7c833bd3a76cd0084cb upstream.
+commit 8af8eecc1331dbf5e8c662022272cf667e213da5 upstream.
 
-When the local timer freq changed, the twd_update_frequency function
-should be run all the CPUs include itself, otherwise, the twd freq will
-not get updated and the local timer will not run correcttly.
+The arithmetics adding delalloc blocks to the number of used blocks in
+ext4_getattr() can easily overflow on 32-bit archs as we first multiply
+number of blocks by blocksize and then divide back by 512. Make the
+arithmetics more clever and also use proper type (unsigned long long
+instead of unsigned long).
 
-smp_call_function will run functions on all other CPUs, but not include
-himself, this is not correct,use on_each_cpu instead to fix this issue.
-
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Jason Liu <r64343@freescale.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/smp_twd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/inode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -120,7 +120,7 @@ static int twd_rate_change(struct notifi
- 	 * changing cpu.
- 	 */
- 	if (flags == POST_RATE_CHANGE)
--		smp_call_function(twd_update_frequency,
-+		on_each_cpu(twd_update_frequency,
- 				  (void *)&cnd->new_rate, 1);
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4808,7 +4808,7 @@ int ext4_getattr(struct vfsmount *mnt, s
+ 		 struct kstat *stat)
+ {
+ 	struct inode *inode;
+-	unsigned long delalloc_blocks;
++	unsigned long long delalloc_blocks;
  
- 	return NOTIFY_OK;
+ 	inode = dentry->d_inode;
+ 	generic_fillattr(inode, stat);
+@@ -4826,7 +4826,7 @@ int ext4_getattr(struct vfsmount *mnt, s
+ 	delalloc_blocks = EXT4_C2B(EXT4_SB(inode->i_sb),
+ 				EXT4_I(inode)->i_reserved_data_blocks);
+ 
+-	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
++	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
+ 	return 0;
+ }
+ 
 
 
