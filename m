@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760923Ab3GSSdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:33:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44835 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753570Ab3GSSc7 (ORCPT
+	id S1761038Ab3GSSdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:33:07 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:37313 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760939Ab3GSSdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:32:59 -0400
-Date: Fri, 19 Jul 2013 20:32:35 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Brandon Philips <brandon@ifup.org>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: is kexec on Xen domU possible?
-Message-ID: <20130719183235.GA12267@debian70-amd64.local.net-space.pl>
-References: <20130719020603.GA22932@kroah.com>
- <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
- <20130719151243.GA15488@kroah.com>
+	Fri, 19 Jul 2013 14:33:01 -0400
+Message-ID: <51E98663.2040308@cogentembedded.com>
+Date: Fri, 19 Jul 2013 22:33:07 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719151243.GA15488@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
+        balbi@ti.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, kishon@ti.com
+Subject: Re: [PATCH v2 3/4] arm: dts: Add USB phy nodes for AM33XX
+References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-4-git-send-email-george.cherian@ti.com> <51E94571.8080805@cogentembedded.com> <51E94B30.9070805@linutronix.de>
+In-Reply-To: <51E94B30.9070805@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 08:12:43AM -0700, Greg KH wrote:
-> On Fri, Jul 19, 2013 at 03:18:19PM +0200, Daniel Kiper wrote:
-> > > support is "easy" after your patches go in, is that because Dom0 needs
-> > > to support this, or is it something specific to only domU?
-> >
-> > In case of domU we should consider following cases:
-> >   - PV guests: there is no support for kexec at this time;
-> >     Once I wrote an implementatation for that type of guests
-> >     for one company but according to our agreement I could not
-> >     publish this code; However, I could use it as a base for
-> >     publicly available kexec implementation; Currently, I do
-> >     not have any plans to work on this due to some more important
-> >     stuff to do; However, question about kexec support for PV
-> >     guests is raised from time to time and maybe this issue
-> >     will be much more important than others once,
-> >   - HVM guests: kexec should work without any issue,
-> >   - PVonHVM guests: IIRC, there were some issues with PV
-> >     drivers but they were fixed some time ago by patches
-> >     posted by Olaf Hering,
-> >   - PVH guests: those type of guests are not available in Xen
-> >     current releases yet; However, Konrad Wilk done some preliminary
-> >     work on kexec support but there are still some issues to resolve.
-> >
-> > I do not know what are you trying to do but if you would like
-> > to get some crash dumps there is also another solution to that.
-> > You could use xm/xl dump-core from Dom0 to get dumps of domU memory.
->
-> As Brandon said, we were trying to use kexec in a PV guest in domU to
-> run another kernel.  I had assumed this wouldn't need support from dom0.
+Hello.
 
-You are right.
+On 07/19/2013 06:20 PM, Sebastian Andrzej Siewior wrote:
 
-> As you have implemented this in the past, did you need to change dom0 in
-> order to achieve this, and if so, why?
+>>> diff --git a/arch/arm/boot/dts/am33xx.dtsi
+>>> b/arch/arm/boot/dts/am33xx.dtsi
+>>> index 8e1248f..e3890c4 100644
+>>> --- a/arch/arm/boot/dts/am33xx.dtsi
+>>> +++ b/arch/arm/boot/dts/am33xx.dtsi
+>>> @@ -326,21 +326,59 @@
+>>>                status = "disabled";
+>>>            };
+>>>
+>>> -        usb@47400000 {
+>>> -            compatible = "ti,musb-am33xx";
+>>> -            reg = <0x47400000 0x1000    /* usbss */
+>>> -                   0x47401000 0x800        /* musb instance 0 */
+>>> -                   0x47401800 0x800>;    /* musb instance 1 */
+>>> -            interrupts = <17        /* usbss */
+>>> -                      18        /* musb instance 0 */
+>>> -                      19>;        /* musb instance 1 */
+>>> -            multipoint = <1>;
+>>> -            num-eps = <16>;
+>>> -            ram-bits = <12>;
+>>> -            port0-mode = <3>;
+>>> -            port1-mode = <3>;
+>>> -            power = <250>;
+>>> -            ti,hwmods = "usb_otg_hs";
+>>> +        phy1: am335x-usb0@44e10620 {
 
-It was strong requirement to not change anything in hypervisor or dom0.
-I succeeded to do that but it requires changes in kernel and kexec-tools.
+>>     Shouldn't the PHYs be *under* the usb0/1 device nodes in the hierarchy?
+>> They're not on the same bus as the MUSB controllers for sure.
 
-> The errors that the kexec tools seem to run into is finding the memory
-> to place the new kernel into, is that just an issue that PV guests
-> aren't given enough kernel memory in which to replicate themselves from
-> dom0?
+> I redo the complete thing. I have now:
 
-There are a lot of differences between baremetal machines and PV guests.
-For example you are not able to do identity mapping per se in PV guests.
-Arguments to new kernel are passed in completely different way. etc.
+> usb: usb@47400000 {
+> 	compatible = "ti,am33xx-usb";
+> 	
+> 	usb0_phy: phy@47401300 {
+> 		compatible = "ti,am335x-usb-phy";
+> 	}
+> 	usb0: usb@47401000 {
+> 		musb0: usb@47401400 {
+> 			compatible = "mg,musbmhdrc";
+> 		}
+> 	}
+> 	usb1_phy: phy@47402300 {
+> 		compatible = "ti,am335x-usb-phy";
+> 	}
+> 	usb1: usb@47402000 {
+> 		musb1: usb@47402400 {
+> 			compatible = "mg,musbmhdrc";
+> 		}
+> 	}
+> }
 
-Daniel
+> And you want usb0_phy to be child of usb0? In the TRM they are all in
+> the same block.
+
+    Ah, the fact that PHYs didn't have the "reg" property got me muddled, I 
+didn't pay attention to the address part of the node names... BTW, where is 
+the "reg" prop? I see PHYs share the address space with 
+"omap-control-usb@44e10620" device -- what's the point with this?
+
+> Sebastian
+
+WBR, Sergei
+
