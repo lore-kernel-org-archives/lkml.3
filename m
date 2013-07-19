@@ -1,80 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934963Ab3GSAxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 20:53:24 -0400
-Received: from p01c11o148.mxlogic.net ([208.65.144.71]:40222 "EHLO
-	p01c11o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933632Ab3GSAxW (ORCPT
+	id S934995Ab3GSA6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 20:58:22 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:54645 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934913Ab3GSA6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 20:53:22 -0400
-X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Jul 2013 20:53:22 EDT
-X-MXL-Hash: 51e88e0232586da4-b00cdbaa93b05583faf43d82bd373b6ffa7d1808
-X-MXL-Hash: 51e88c445501f058-337b0cb1edd8affe17924beb2014ced418e7d296
-From: Amit Uttamchandani <auttamchandani@logicube.com>
-To: Francois Romieu <romieu@fr.zoreil.com>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Amit Uttamchandani <auttamchandani@logicube.com>
-Subject: [PATCH 1/1] net/velocity: add poll controller function for velocity nic
-Date: Thu, 18 Jul 2013 17:45:22 -0700
-Message-Id: <1374194722-6051-1-git-send-email-auttamchandani@logicube.com>
-X-Mailer: git-send-email 1.8.0.rc0
-X-OriginalArrivalTime: 19 Jul 2013 00:44:01.0546 (UTC) FILETIME=[0FDC2EA0:01CE8419]
-X-AnalysisOut: [v=2.0 cv=HamjuF48 c=1 sm=1 a=0uUgrnGYR7mgTYOISY3a5A==:17 a]
-X-AnalysisOut: [=Uue4Aaq5qpMA:10 a=odQdQWa4cxwA:10 a=BLceEmwcHowA:10 a=zin]
-X-AnalysisOut: [YphYSAAAA:8 a=TZWQCrQRazAA:10 a=hUnu6iea5als1xh4zjEA:9 a=Z]
-X-AnalysisOut: [aEPcxSHRvoA:10]
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010122901)]
-X-MAIL-FROM: <auttamchandani@logicube.com>
-X-SOURCE-IP: [209.239.228.35]
+	Thu, 18 Jul 2013 20:58:21 -0400
+Message-ID: <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Thu, 18 Jul 2013 18:03:45 -0700
+In-Reply-To: <20130719003034.GG28005@kernel.dk>
+References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+	 <51E83E32.9050306@cs.wisc.edu>
+	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+	 <20130719003034.GG28005@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add poll controller function for velocity nic.
+On Thu, 2013-07-18 at 18:30 -0600, Jens Axboe wrote:
+> On Thu, Jul 18 2013, Nicholas A. Bellinger wrote:
+> > On Thu, 2013-07-18 at 13:12 -0600, Mike Christie wrote:
+> > > On 07/18/2013 12:51 PM, Nicholas A. Bellinger wrote:
+> > > > On Wed, 2013-07-17 at 18:19 +0200, Alexander Gordeev wrote:
+> > > >> On Tue, Jul 16, 2013 at 02:38:03PM -0700, Nicholas A. Bellinger wrote:
+> > > >>> [    7.927818] scsi_execute(): Calling blk_mq_free_request >>>
+> > > >>> [    7.927826] scsi 0:0:0:0: Direct-Access     ATA      ST9500530NS      CC03 PQ: 0 ANSI: 5
+> > > >>>
+> > > >>> OK, so INQUIRY response payload is looking as expected here.
+> > > >>
+> > > >> Yep. It is not on the top of my head, but I remember something like INQUIRYs
+> > > >> are emulated and thus do not have payload.
+> > > >>
+> > > >>> [    7.927960] sd 0:0:0:0: [sda] Sector size 0 reported, assuming 512.
+> > > >>> [    7.927964] sd 0:0:0:0: [sda] 1 512-byte logical blocks: (512 B/512 B)
+> > > >>> [    7.927965] sd 0:0:0:0: [sda] 0-byte physical blocks
+> > > >>>
+> > > >>> Strange..  READ_CAPACITY appears to be returning a payload as zeros..?
+> > > >>
+> > > >> Yep. Because blk_execute_rq() does not put the proper callback and data do
+> > > >> not get copied from sg's to bounce buffer. That is why I tried to use
+> > > >> blk_mq_execute_rq() instead. Once I do that, data start getting read and
+> > > >> booting stops elsewhere.
+> > > > 
+> > > > Mmmmmm.
+> > > > 
+> > > > The call to blk_queue_bounce() exists within blk_mq_make_request(), but
+> > > > AFAICT this should still be getting invoked regardless of if the struct
+> > > > request is dispatched into blk-mq via the modified blk_execute_rq() ->
+> > > > blk_execute_rq_nowait() -> blk_mq_insert_request() codepath, or directly
+> > > > via blk_mq_execute_rq()..
+> > > > 
+> > > 
+> > > blk_mq_make_request is not called from the blk insert/execute paths.
+> > > blk_mq_make_request takes a bio and tries to merge it with a request and
+> > > adds it to the queue. It is only called when the make_request_fn is
+> > > called like when generic_make_request is called.
+> > > 
+> > > blk_mq_insert_request adds a already formed request to the queue. It is
+> > > already formed so that is why that path does not bounce bios. The
+> > > bios/pages should already be added within the drivers restrictions. So
+> > > for the read_cap path, the call to blk_rq_map_kern in scsi_execute does
+> > > the blk_queue_bounce call.
+> > > 
+> > 
+> > <nod>, just noticed the blk_queue_bounce() in blk_rq_map_kern().  
+> > 
+> > Not sure why this doesn't seem to be doing what it's supposed to for
+> > libata just yet..
+> 
+> How are you make the request from the bio? It'd be pretty trivial to
+> ensure that it gets bounced properly... blk_mq_execute_rq() assumes a
+> fully complete request, so it wont bounce anything.
+> 
 
-Signed-off-by: Amit Uttamchandani <auttamchandani@logicube.com>
----
- drivers/net/ethernet/via/via-velocity.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+>From what I gather for REQ_TYPE_BLOCK_PC, scsi_execute() ->
+blk_rq_map_kern() -> blk_rq_append_bio() -> blk_rq_bio_prep() is what
+does the request setup from the bios returned by bio_[copy,map]_kern()
+in blk_rq_map_kern() code.
 
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index 1d6dc41..ef77631 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -2376,6 +2376,23 @@ out_0:
- 	return ret;
- }
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+/**
-+ *  velocity_poll_controller		-	Velocity Poll controller function
-+ *  @dev: network device
-+ *
-+ *
-+ *  Used by NETCONSOLE and other diagnostic tools to allow network I/P
-+ *  with interrupts disabled.
-+ */
-+static void velocity_poll_controller(struct net_device *dev)
-+{
-+	disable_irq(dev->irq);
-+	velocity_intr(dev->irq, dev);
-+	enable_irq(dev->irq);
-+}
-+#endif
-+
- /**
-  *	velocity_mii_ioctl		-	MII ioctl handler
-  *	@dev: network device
-@@ -2641,6 +2658,9 @@ static const struct net_device_ops velocity_netdev_ops = {
- 	.ndo_do_ioctl		= velocity_ioctl,
- 	.ndo_vlan_rx_add_vid	= velocity_vlan_rx_add_vid,
- 	.ndo_vlan_rx_kill_vid	= velocity_vlan_rx_kill_vid,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_poll_controller = velocity_poll_controller,
-+#endif
- };
- 
- /**
--- 
-1.8.0.rc0
+blk_queue_bounce() is called immediately after blk_rq_append_bio() here,
+which AFAICT looks like it's doing the correct thing for scsi-mq..
+
+What is strange here is that libata-scsi.c CDB emulation code is doing
+the same stuff for both INQUIRY (that seems to be OK) and READ_CAPACITY
+(that is returning zeros), which makes me think that something else is
+going on..
+
+Alexander, where you able to re-test using sdev->sdev_mq_reg.queue_depth
+= 1 in scsi_mq_alloc_queue()..?
+
+--nab
 
