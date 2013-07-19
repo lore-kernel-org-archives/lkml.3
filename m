@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760963Ab3GSSAl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:00:41 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50517 "EHLO zene.cmpxchg.org"
+	id S1760953Ab3GSSFm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:05:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55294 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760657Ab3GSSAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:00:40 -0400
-Date: Fri, 19 Jul 2013 14:00:35 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Paul Bolle <paul.bollee@gmail.com>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-07-18-16-40 uploaded
-Message-ID: <20130719180035.GI17812@cmpxchg.org>
-References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com>
- <51E8B34B.1070200@gmail.com>
+	id S1759372Ab3GSSFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 14:05:41 -0400
+Date: Fri, 19 Jul 2013 14:05:30 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC 2/2] watchdog: update watchdog_tresh properly
+Message-ID: <20130719180530.GO126784@redhat.com>
+References: <1374224699-13255-1-git-send-email-mhocko@suse.cz>
+ <1374224699-13255-2-git-send-email-mhocko@suse.cz>
+ <20130719160852.GM126784@redhat.com>
+ <20130719163750.GC9759@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E8B34B.1070200@gmail.com>
+In-Reply-To: <20130719163750.GC9759@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 11:32:27PM -0400, Paul Bolle wrote:
-> On 07/18/2013 07:41 PM, akpm@linux-foundation.org wrote:
-> >The mm-of-the-moment snapshot 2013-07-18-16-40 has been uploaded to
-> >
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> >
-> >mmotm-readme.txt says
-> >
-> >README for mm-of-the-moment:
-> >
-> >http://www.ozlabs.org/~akpm/mmotm/
-> >
-> >This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> >more than once a week.
-> >
-> >You will need quilt to apply these patches to the latest Linus release (3.x
-> >or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> >http://ozlabs.org/~akpm/mmotm/series
-> >
-> >The file broken-out.tar.gz contains two datestamp files: .DATE and
-> >.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-> >followed by the base kernel version against which this patch series is to
-> >be applied.
-> >
-> >This tree is partially included in linux-next.  To see which patches are
-> >included in linux-next, consult the `series' file.  Only the patches
-> >within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-> >linux-next.
-> >
-> >A git tree which contains the memory management portion of this tree is
-> >maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> >by Michal Hocko.  It contains the patches which are between the
-> >"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-> >file, http://www.ozlabs.org/~akpm/mmotm/series.
-> >
-> >
-> >A full copy of the full kernel tree with the linux-next and mmotm patches
-> >already applied is available through git within an hour of the mmotm
-> >release.  Individual mmotm releases are tagged.  The master branch always
-> >points to the latest release, so it's constantly rebasing.
-> >
-> >http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-> >
-> >To develop on top of mmotm git:
-> >
-> >   $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> >   $ git remote update mmotm
-> >   $ git checkout -b topic mmotm/master
-> >   <make changes, commit>
-> >   $ git send-email mmotm/master.. [...]
-> >
-> >To rebase a branch with older patches to a new mmotm release:
-> >
-> >   $ git remote update mmotm
-> >   $ git rebase --onto mmotm/master <topic base> topic
+On Fri, Jul 19, 2013 at 06:37:50PM +0200, Michal Hocko wrote:
+> On Fri 19-07-13 12:08:52, Don Zickus wrote:
+> > On Fri, Jul 19, 2013 at 11:04:59AM +0200, Michal Hocko wrote:
+> > > watchdog_tresh controls how often nmi perf event counter checks per-cpu
+> > > hrtimer_interrupts counter and blows up if the counter hasn't changed
+> > > since the last check. The counter is updated by per-cpu watchdog_hrtimer
+> > > hrtimer which is scheduled with 2/5 watchdog_thresh period which
+> > > guarantees that hrtimer is scheduled 2 times per the main period. Both
+> > > hrtimer and perf event are started together when the watchdog is
+> > > enabled.
+> > > 
+> > > So far so good. But...
+> > > 
+> > > But what happens when watchdog_thresh is updated from sysctl handler?
+> > > 
+> > > proc_dowatchdog will set a new sampling period and hrtimer callback
+> > > (watchdog_timer_fn) will use the new value in the next round.
+> > > The problem, however, is that nobody tells the perf event that the
+> > > sampling period has changed so it is ticking with the period configured
+> > > when it has been set up.
+> > > 
+> > > This might result in an ear riping dissonance between perf and hrtimer
+> > > parts if the watchdog_thresh is increased. And even worse it might lead
+> > > to KABOOM if the watchdog is configured to panic on such a spurious
+> > > lockup.
+> > 
+> > Heh.  Good point.
+> > 
+> > What if we keep it simpler.
+> > 
+> > if (old_thresh != watchdog_thresh)
+> >   watchdog_disable_all_cpus()
+> >   wathcdog_enable_all_cpus()
+> 
+> Those would do nothing because of watchdog_disabled checks. It is also
 
-Andrew, that workflow is actually meant for
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
-(i.e. the git remote add mmotm <michal's tree> does not make much
-sense).  Michal's tree is append-only, so all this precision-rebasing
-is unnecessary.
+I guess I am missing something because I don't see the watchdog_disabled
+checks getting in the way.  If the watchdog is already enabled, then the
+disable/enable approach should work correctly, no?  The watchdog_disabled
+only blocks from re-disabling or re-enabling the watchdog IIUC.
 
-> The -mm tree is
-> git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git or
-> linux-next -mm branch?
 
-It depends what you want for the base.  What's in linux-next is based
-on linux-next, so the latest and greatest.
+> much more heavy than necessary. I hope we can get a perf API which just
+> update the perf event period directly and we do not have to call even
+> watchdog_nmi_{en,dis}able
 
-Michal's -mm tree is based on the latest Linus release, and so more
-stable.  Or at least the craziness is contained to mm stuff.
+Well the reason for the heaviness is, even with the proposed API you
+suggest, there is a problem with the softlockup's hrtimer.  If you set the
+watchdog_thresh high like say 60 seconds, then the hrtimer fires every 12
+seconds or so (while the nmi watchdog fires every 60 seconds or so).
+
+Now lets adjust the theshold down to 10 seconds.  The current code doesn't
+reset the hrtimer to the new value until it goes off again (which at worse
+case is 12 seconds).  The API you propose would allow the nmi_watchdog to
+fire in 10 seconds.  As a result you would have a potential to cause a
+panic on a false lockup.
+
+So if you are going to adjust the nmi_watchdog, you have to adjust the
+softlockup value too.  Hence the heavy-ness.
+
+Unless you have another solution for the above problem?
+
+Cheers,
+Don
