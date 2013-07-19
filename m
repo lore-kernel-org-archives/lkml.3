@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966063Ab3GSFuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:50:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39361 "EHLO
+	id S966045Ab3GSFvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:51:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965291Ab3GSFWK (ORCPT
+	with ESMTP id S965274Ab3GSFWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:10 -0400
+	Fri, 19 Jul 2013 01:22:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xudong Hao <xudong.hao@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 24/38] PCI: Finish SR-IOV VF setup before adding the device
-Date: Thu, 18 Jul 2013 22:21:40 -0700
-Message-Id: <20130719052049.532797847@linuxfoundation.org>
+        Paul Clements <paul.clements@steeleye.com>,
+        Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 23/38] nbd: correct disconnect behavior
+Date: Thu, 18 Jul 2013 22:21:39 -0700
+Message-Id: <20130719052049.466159804@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -27,50 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xudong Hao <xudong.hao@intel.com>
+From: Paul Clements <paul.clements@steeleye.com>
 
-commit fbf33f516bdbcc2ab1ba1e54dfb720b0cfaa6874 upstream.
+commit c378f70adbc1bbecd9e6db145019f14b2f688c7c upstream.
 
-Commit 4f535093cf "PCI: Put pci_dev in device tree as early as possible"
-moves device registering from pci_bus_add_devices() to pci_device_add().
-That causes problems for virtual functions because device_add(&virtfn->dev)
-is called before setting the virtfn->is_virtfn flag, which then causes Xen
-to report PCI virtual functions as PCI physical functions.
+Currently, when a disconnect is requested by the user (via NBD_DISCONNECT
+ioctl) the return from NBD_DO_IT is undefined (it is usually one of
+several error codes).  This means that nbd-client does not know if a
+manual disconnect was performed or whether a network error occurred.
+Because of this, nbd-client's persist mode (which tries to reconnect after
+error, but not after manual disconnect) does not always work correctly.
 
-Fix it by setting virtfn->is_virtfn before calling pci_device_add().
+This change fixes this by causing NBD_DO_IT to always return 0 if a user
+requests a disconnect.  This means that nbd-client can correctly either
+persist the connection (if an error occurred) or disconnect (if the user
+requested it).
 
-[Jiang Liu]: Move the setting of virtfn->is_virtfn ahead further for better
-readability and modify changelog.
-
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Acked-by: Rob Landley <rob@landley.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/iov.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/block/nbd.c |    7 ++++++-
+ include/linux/nbd.h |    1 +
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -92,6 +92,8 @@ static int virtfn_add(struct pci_dev *de
- 	pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_DID, &virtfn->device);
- 	pci_setup_device(virtfn);
- 	virtfn->dev.parent = dev->dev.parent;
-+	virtfn->physfn = pci_dev_get(dev);
-+	virtfn->is_virtfn = 1;
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -623,8 +623,10 @@ static int __nbd_ioctl(struct block_devi
+ 		if (!nbd->sock)
+ 			return -EINVAL;
  
- 	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
- 		res = dev->resource + PCI_IOV_RESOURCES + i;
-@@ -113,9 +115,6 @@ static int virtfn_add(struct pci_dev *de
- 	pci_device_add(virtfn, virtfn->bus);
- 	mutex_unlock(&iov->dev->sriov->lock);
++		nbd->disconnect = 1;
++
+ 		nbd_send_req(nbd, &sreq);
+-                return 0;
++		return 0;
+ 	}
+  
+ 	case NBD_CLEAR_SOCK: {
+@@ -654,6 +656,7 @@ static int __nbd_ioctl(struct block_devi
+ 				nbd->sock = SOCKET_I(inode);
+ 				if (max_part > 0)
+ 					bdev->bd_invalidated = 1;
++				nbd->disconnect = 0; /* we're connected now */
+ 				return 0;
+ 			} else {
+ 				fput(file);
+@@ -743,6 +746,8 @@ static int __nbd_ioctl(struct block_devi
+ 		set_capacity(nbd->disk, 0);
+ 		if (max_part > 0)
+ 			ioctl_by_bdev(bdev, BLKRRPART, 0);
++		if (nbd->disconnect) /* user requested, ignore socket errors */
++			return 0;
+ 		return nbd->harderror;
+ 	}
  
--	virtfn->physfn = pci_dev_get(dev);
--	virtfn->is_virtfn = 1;
--
- 	rc = pci_bus_add_device(virtfn);
- 	sprintf(buf, "virtfn%u", id);
- 	rc = sysfs_create_link(&dev->dev.kobj, &virtfn->dev.kobj, buf);
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -41,6 +41,7 @@ struct nbd_device {
+ 	u64 bytesize;
+ 	pid_t pid; /* pid of nbd-client, if attached */
+ 	int xmit_timeout;
++	int disconnect; /* a disconnect has been requested by user */
+ };
+ 
+ #endif
 
 
