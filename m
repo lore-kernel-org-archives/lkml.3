@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030237Ab3GSHw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:52:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35795 "EHLO
+	id S966123Ab3GSHwh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:52:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35804 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965772Ab3GSHwZ (ORCPT
+	with ESMTP id S965772Ab3GSHwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:52:25 -0400
-Date: Fri, 19 Jul 2013 00:52:06 -0700
+	Fri, 19 Jul 2013 03:52:33 -0400
+Date: Fri, 19 Jul 2013 00:52:15 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-8j3xer54ltvs76t0fh01gcvu@git.kernel.org>
+Message-ID: <tip-tr6su3wfm20k2m5npjggyvtw@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
@@ -20,8 +20,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf diff:
-  Change diff command to work over multiple data files
-Git-Commit-ID: 22aeb7f597650284591ad0f61b069ded3ecf91db
+  Update perf diff documentation for multiple data comparison
+Git-Commit-ID: 3a3beae81dae4960cac99fb6deeaca371f0790eb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,23 +30,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:52:12 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Jul 2013 00:52:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  22aeb7f597650284591ad0f61b069ded3ecf91db
-Gitweb:     http://git.kernel.org/tip/22aeb7f597650284591ad0f61b069ded3ecf91db
+Commit-ID:  3a3beae81dae4960cac99fb6deeaca371f0790eb
+Gitweb:     http://git.kernel.org/tip/3a3beae81dae4960cac99fb6deeaca371f0790eb
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sat, 1 Dec 2012 22:00:00 +0100
+AuthorDate: Wed, 24 Oct 2012 14:56:51 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Jul 2013 13:54:11 -0300
+CommitDate: Fri, 12 Jul 2013 13:54:13 -0300
 
-perf diff: Change diff command to work over multiple data files
+perf diff: Update perf diff documentation for multiple data comparison
 
-Adding diff command the flexibility to specify multiple data files on
-input. If not input file is given the standard behaviour stands and diff
-inspects 'perf.data' and 'perf.data.old' files.
+Updating perf diff documentation to include multiple perf data files
+comparison.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Reviewed-by: Namhyung Kim <namhyung@kernel.org>
@@ -55,214 +54,135 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-8j3xer54ltvs76t0fh01gcvu@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-tr6su3wfm20k2m5npjggyvtw@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 99 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 66 insertions(+), 33 deletions(-)
+ tools/perf/Documentation/perf-diff.txt | 73 +++++++++++++++++++++++++++++-----
+ 1 file changed, 64 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 7787ee2..cc7bf4f 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -44,6 +44,7 @@ struct data__file {
- 	struct perf_session	*session;
- 	const char		*file;
- 	int			 idx;
-+	struct hists		*hists;
- 	struct diff_hpp_fmt	 fmt[PERF_HPP_DIFF__MAX_INDEX];
- };
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index 5b3123d..2d134f3 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -3,17 +3,17 @@ perf-diff(1)
  
-@@ -56,6 +57,7 @@ static int data__files_cnt;
- 	     i++, d = &data__files[i])
+ NAME
+ ----
+-perf-diff - Read two perf.data files and display the differential profile
++perf-diff - Read perf.data files and display the differential profile
  
- #define data__for_each_file(i, d) data__for_each_file_start(i, d, 0)
-+#define data__for_each_file_new(i, d) data__for_each_file_start(i, d, 1)
+ SYNOPSIS
+ --------
+ [verse]
+-'perf diff' [oldfile] [newfile]
++'perf diff' [baseline file] [data file1] [[data file2] ... ]
  
- static char diff__default_sort_order[] = "dso,symbol";
- static bool force;
-@@ -525,23 +527,19 @@ static void hists__compute_resort(struct hists *hists)
- 	}
- }
+ DESCRIPTION
+ -----------
+-This command displays the performance difference amongst two perf.data files
+-captured via perf record.
++This command displays the performance difference amongst two or more perf.data
++files captured via perf record.
  
--static void hists__process(struct hists *base, struct hists *new)
-+static void hists__process(struct hists *hists)
- {
--	hists__match(base, new);
--
- 	if (show_baseline_only)
--		hists__baseline_only(base);
--	else
--		hists__link(base, new);
-+		hists__baseline_only(hists);
+ If no parameters are passed it will assume perf.data.old and perf.data.
  
- 	if (sort_compute) {
--		hists__precompute(base);
--		hists__compute_resort(base);
-+		hists__precompute(hists);
-+		hists__compute_resort(hists);
- 	} else {
--		hists__output_resort(base);
-+		hists__output_resort(hists);
- 	}
+@@ -87,6 +87,59 @@ OPTIONS
+ --formula::
+         Show formula for given computation.
  
--	hists__fprintf(base, true, 0, 0, 0, stdout);
-+	hists__fprintf(hists, true, 0, 0, 0, stdout);
- }
- 
- static void data__fprintf(void)
-@@ -561,27 +559,40 @@ static void data__fprintf(void)
- 
- static void data_process(void)
- {
--	struct perf_evlist *evlist_old = data__files[0].session->evlist;
--	struct perf_evlist *evlist_new = data__files[1].session->evlist;
--	struct perf_evsel *evsel_old;
-+	struct perf_evlist *evlist_base = data__files[0].session->evlist;
-+	struct perf_evsel *evsel_base;
- 	bool first = true;
- 
--	list_for_each_entry(evsel_old, &evlist_old->entries, node) {
--		struct perf_evsel *evsel_new;
-+	list_for_each_entry(evsel_base, &evlist_base->entries, node) {
-+		struct data__file *d;
-+		int i;
- 
--		evsel_new = evsel_match(evsel_old, evlist_new);
--		if (!evsel_new)
--			continue;
-+		data__for_each_file_new(i, d) {
-+			struct perf_evlist *evlist = d->session->evlist;
-+			struct perf_evsel *evsel;
++COMPARISON
++----------
++The comparison is governed by the baseline file. The baseline perf.data
++file is iterated for samples. All other perf.data files specified on
++the command line are searched for the baseline sample pair. If the pair
++is found, specified computation is made and result is displayed.
 +
-+			evsel = evsel_match(evsel_base, evlist);
-+			if (!evsel)
-+				continue;
++All samples from non-baseline perf.data files, that do not match any
++baseline entry, are displayed with empty space within baseline column
++and possible computation results (delta) in their related column.
 +
-+			d->hists = &evsel->hists;
++Example files samples:
++- file A with samples f1, f2, f3, f4,    f6
++- file B with samples     f2,     f4, f5
++- file C with samples f1, f2,         f5
 +
-+			hists__match(&evsel_base->hists, &evsel->hists);
++Example output:
++  x - computation takes place for pair
++  b - baseline sample percentage
 +
-+			if (!show_baseline_only)
-+				hists__link(&evsel_base->hists,
-+					    &evsel->hists);
-+		}
- 
- 		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
--			perf_evsel__name(evsel_old));
-+			perf_evsel__name(evsel_base));
- 
- 		first = false;
- 
--		if (verbose)
-+		if (verbose || data__files_cnt > 2)
- 			data__fprintf();
- 
--		hists__process(&evsel_old->hists, &evsel_new->hists);
-+		hists__process(&evsel_base->hists);
- 	}
- }
- 
-@@ -780,10 +791,29 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
- 	};
- }
- 
-+static struct hist_entry *get_pair(struct hist_entry *he,
-+				   struct diff_hpp_fmt *dfmt)
-+{
-+	void *ptr = dfmt - dfmt->idx;
-+	struct data__file *d = container_of(ptr, struct data__file, fmt);
++- perf diff A B C
 +
-+	if (hist_entry__has_pairs(he)) {
-+		struct hist_entry *pair;
++  baseline/A compute/B compute/C  samples
++  ---------------------------------------
++  b                    x          f1
++  b          x         x          f2
++  b                               f3
++  b          x                    f4
++  b                               f6
++             x         x          f5
 +
-+		list_for_each_entry(pair, &he->pairs.head, pairs.node)
-+			if (pair->hists == d->hists)
-+				return pair;
-+	}
++- perf diff B A C
 +
-+	return NULL;
-+}
++  baseline/B compute/A compute/C  samples
++  ---------------------------------------
++  b          x         x          f2
++  b          x                    f4
++  b                    x          f5
++             x         x          f1
++             x                    f3
++             x                    f6
 +
- static void
--__hpp__entry_global(struct hist_entry *he, int idx, char *buf, size_t size)
-+__hpp__entry_global(struct hist_entry *he, struct diff_hpp_fmt *dfmt,
-+		    char *buf, size_t size)
- {
--	struct hist_entry *pair = hist_entry__next_pair(he);
-+	struct hist_entry *pair = get_pair(he, dfmt);
-+	int idx = dfmt->idx;
- 
- 	/* baseline is special */
- 	if (idx == PERF_HPP_DIFF__BASELINE)
-@@ -803,7 +833,7 @@ static int hpp__entry_global(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
- 		container_of(_fmt, struct diff_hpp_fmt, fmt);
- 	char buf[MAX_COL_WIDTH] = " ";
- 
--	__hpp__entry_global(he, dfmt->idx, buf, MAX_COL_WIDTH);
-+	__hpp__entry_global(he, dfmt, buf, MAX_COL_WIDTH);
- 
- 	if (symbol_conf.field_sep)
- 		return scnprintf(hpp->buf, hpp->size, "%s", buf);
-@@ -832,7 +862,7 @@ static int hpp__width(struct perf_hpp_fmt *fmt,
- 	return dfmt->header_width;
- }
- 
--static void init_header(struct diff_hpp_fmt *dfmt)
-+static void init_header(struct data__file *d, struct diff_hpp_fmt *dfmt)
- {
- #define MAX_HEADER_NAME 100
- 	char buf_indent[MAX_HEADER_NAME];
-@@ -847,6 +877,9 @@ static void init_header(struct diff_hpp_fmt *dfmt)
- 	/* Only our defined HPP fmts should appear here. */
- 	BUG_ON(!header);
- 
-+	if (data__files_cnt > 2)
-+		scnprintf(buf, MAX_HEADER_NAME, "%s/%d", header, d->idx);
++- perf diff C B A
 +
- #define NAME (data__files_cnt > 2 ? buf : header)
- 	dfmt->header_width = width;
- 	width = (int) strlen(NAME);
-@@ -876,7 +909,7 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	if (idx == PERF_HPP_DIFF__BASELINE)
- 		fmt->color = hpp__color_baseline;
++  baseline/C compute/B compute/A  samples
++  ---------------------------------------
++  b                    x          f1
++  b          x         x          f2
++  b          x                    f5
++                       x          f3
++             x         x          f4
++                       x          f6
++
+ COMPARISON METHODS
+ ------------------
+ delta
+@@ -96,7 +149,7 @@ If specified the 'Delta' column is displayed with value 'd' computed as:
+   d = A->period_percent - B->period_percent
  
--	init_header(dfmt);
-+	init_header(d, dfmt);
- 	perf_hpp__column_register(fmt);
- }
+ with:
+-  - A/B being matching hist entry from first/second file specified
++  - A/B being matching hist entry from data/baseline file specified
+     (or perf.data/perf.data.old) respectively.
  
-@@ -921,18 +954,18 @@ static int data_init(int argc, const char **argv)
- 		"perf.data.old",
- 		"perf.data",
- 	};
-+	bool use_default = true;
- 	int i;
+   - period_percent being the % of the hist entry period value within
+@@ -109,24 +162,26 @@ If specified the 'Ratio' column is displayed with value 'r' computed as:
+   r = A->period / B->period
  
- 	data__files_cnt = 2;
+ with:
+-  - A/B being matching hist entry from first/second file specified
++  - A/B being matching hist entry from data/baseline file specified
+     (or perf.data/perf.data.old) respectively.
  
- 	if (argc) {
--		if (argc > 2)
--			usage_with_options(diff_usage, options);
--		if (argc == 2) {
--			defaults[0] = argv[0];
--			defaults[1] = argv[1];
--		} else
-+		if (argc == 1)
- 			defaults[1] = argv[0];
-+		else {
-+			data__files_cnt = argc;
-+			use_default = false;
-+		}
- 	} else if (symbol_conf.default_guest_vmlinux_name ||
- 		   symbol_conf.default_guest_kallsyms) {
- 		defaults[0] = "perf.data.host";
-@@ -944,7 +977,7 @@ static int data_init(int argc, const char **argv)
- 		return -ENOMEM;
+   - period being the hist entry period value
  
- 	data__for_each_file(i, d) {
--		d->file = defaults[i];
-+		d->file = use_default ? defaults[i] : argv[i];
- 		d->idx  = i;
- 	}
+-wdiff
+-~~~~~
++wdiff:WEIGHT-B,WEIGHT-A
++~~~~~~~~~~~~~~~~~~~~~~~
+ If specified the 'Weighted diff' column is displayed with value 'd' computed as:
  
+    d = B->period * WEIGHT-A - A->period * WEIGHT-B
+ 
+-  - A/B being matching hist entry from first/second file specified
++  - A/B being matching hist entry from data/baseline file specified
+     (or perf.data/perf.data.old) respectively.
+ 
+   - period being the hist entry period value
+ 
+   - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
+     behind ':' separator like '-c wdiff:1,2'.
++    - WIEGHT-A being the weight of the data file
++    - WIEGHT-B being the weight of the baseline data file
+ 
+ SEE ALSO
+ --------
