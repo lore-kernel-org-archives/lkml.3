@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760118Ab3GSL1G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 07:27:06 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45383 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab3GSL1D (ORCPT
+	id S1760208Ab3GSL1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 07:27:12 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56064 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3GSL1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 07:27:03 -0400
-Message-ID: <51E921EC.5040501@linux.vnet.ibm.com>
-Date: Fri, 19 Jul 2013 16:54:28 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
-References: <1374220211.5447.9.camel@j-VirtualBox>
-In-Reply-To: <1374220211.5447.9.camel@j-VirtualBox>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071911-1618-0000-0000-0000044D4B24
+	Fri, 19 Jul 2013 07:27:08 -0400
+From: Julien Grall <julien.grall@linaro.org>
+To: stefano.stabellini@eu.citrix.com
+Cc: ian.campbell@citrix.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org, konrad.wilk@oracle.com,
+        Julien Grall <julien.grall@linaro.org>
+Subject: [PATCH v2] xen/arm: disable cpuidle and cpufreq when linux is running as dom0
+Date: Fri, 19 Jul 2013 12:27:00 +0100
+Message-Id: <1374233220-13770-1-git-send-email-julien.grall@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Json,
+When linux is running as dom0, Xen doesn't show the physical cpu but a
+virtual CPU.
+On some ARM SOC (for instance the exynos 5250), linux registers callbacks
+for cpuidle and cpufreq. When these callbacks are called, they will modify
+directly the physical cpu not the virtual one. It can impact the whole board
+instead of only dom0.
 
-I ran ebizzy and kernbench benchmarks on your 3.11-rc1 + your        "V1
-patch" on a 1 socket, 16 core powerpc machine. I thought I would let you
-know the results before I try your V2.
+Signed-off-by: Julien Grall <julien.grall@linaro.org>
 
-Ebizzy: 30 seconds run. The table below shows the improvement in the
-number of records completed. I have not spent enough time on the patch
-to explain such a big improvement.
+---
+    Changes in v2:
+        - Disable cpufreq
+---
+ arch/arm/xen/enlighten.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Number_of_threads   %improvement_with_patch
-    4                          41.86%
-    8                          9.8%
-   12                          34.77%
-   16                          28.37%
-
-While on kernbench there was no significant change in the observation.
-
-I will try patch V2 and let you know the results.
-
-Regards
-Preeti U Murthy
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 49839d8..af82792 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -24,6 +24,8 @@
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
++#include <linux/cpuidle.h>
++#include <linux/cpufreq.h>
+ 
+ #include <linux/mm.h>
+ 
+@@ -292,6 +294,12 @@ static int __init xen_pm_init(void)
+ {
+ 	pm_power_off = xen_power_off;
+ 	arm_pm_restart = xen_restart;
++	/*
++	 * Making sure board specific code will not set up ops for
++	 * cpu idle and cpu freq.
++	 */
++	disable_cpuidle();
++	disable_cpufreq();
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
 
