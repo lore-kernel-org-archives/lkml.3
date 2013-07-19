@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965402Ab3GSFWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:22:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39350 "EHLO
+	id S965450Ab3GSFW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:22:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965267Ab3GSFWI (ORCPT
+	with ESMTP id S965415Ab3GSFWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:22:08 -0400
+	Fri, 19 Jul 2013 01:22:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Jie Liu <jeff.liu@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Sunil Mushran <sunil.mushran@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 22/38] ocfs2: xattr: fix inlined xattr reflink
-Date: Thu, 18 Jul 2013 22:21:38 -0700
-Message-Id: <20130719052049.399112920@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [ 33/38] ext4: fix overflow when counting used blocks on 32-bit architectures
+Date: Thu, 18 Jul 2013 22:21:49 -0700
+Message-Id: <20130719052050.142708621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
 References: <20130719052047.858393825@linuxfoundation.org>
@@ -30,83 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
-commit ef962df057aaafd714f5c22ba3de1be459571fdf upstream.
+commit 8af8eecc1331dbf5e8c662022272cf667e213da5 upstream.
 
-Inlined xattr shared free space of inode block with inlined data or data
-extent record, so the size of the later two should be adjusted when
-inlined xattr is enabled.  See ocfs2_xattr_ibody_init().  But this isn't
-done well when reflink.  For inode with inlined data, its max inlined
-data size is adjusted in ocfs2_duplicate_inline_data(), no problem.  But
-for inode with data extent record, its record count isn't adjusted.  Fix
-it, or data extent record and inlined xattr may overwrite each other,
-then cause data corruption or xattr failure.
+The arithmetics adding delalloc blocks to the number of used blocks in
+ext4_getattr() can easily overflow on 32-bit archs as we first multiply
+number of blocks by blocksize and then divide back by 512. Make the
+arithmetics more clever and also use proper type (unsigned long long
+instead of unsigned long).
 
-One panic caused by this bug in our test environment is the following:
-
-  kernel BUG at fs/ocfs2/xattr.c:1435!
-  invalid opcode: 0000 [#1] SMP
-  Pid: 10871, comm: multi_reflink_t Not tainted 2.6.39-300.17.1.el5uek #1
-  RIP: ocfs2_xa_offset_pointer+0x17/0x20 [ocfs2]
-  RSP: e02b:ffff88007a587948  EFLAGS: 00010283
-  RAX: 0000000000000000 RBX: 0000000000000010 RCX: 00000000000051e4
-  RDX: ffff880057092060 RSI: 0000000000000f80 RDI: ffff88007a587a68
-  RBP: ffff88007a587948 R08: 00000000000062f4 R09: 0000000000000000
-  R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000010
-  R13: ffff88007a587a68 R14: 0000000000000001 R15: ffff88007a587c68
-  FS:  00007fccff7f06e0(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
-  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00000000015cf000 CR3: 000000007aa76000 CR4: 0000000000000660
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process multi_reflink_t
-  Call Trace:
-    ocfs2_xa_reuse_entry+0x60/0x280 [ocfs2]
-    ocfs2_xa_prepare_entry+0x17e/0x2a0 [ocfs2]
-    ocfs2_xa_set+0xcc/0x250 [ocfs2]
-    ocfs2_xattr_ibody_set+0x98/0x230 [ocfs2]
-    __ocfs2_xattr_set_handle+0x4f/0x700 [ocfs2]
-    ocfs2_xattr_set+0x6c6/0x890 [ocfs2]
-    ocfs2_xattr_user_set+0x46/0x50 [ocfs2]
-    generic_setxattr+0x70/0x90
-    __vfs_setxattr_noperm+0x80/0x1a0
-    vfs_setxattr+0xa9/0xb0
-    setxattr+0xc3/0x120
-    sys_fsetxattr+0xa8/0xd0
-    system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Jie Liu <jeff.liu@oracle.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/xattr.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/ext4/inode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ocfs2/xattr.c
-+++ b/fs/ocfs2/xattr.c
-@@ -6499,6 +6499,16 @@ static int ocfs2_reflink_xattr_inline(st
- 	}
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4616,7 +4616,7 @@ int ext4_getattr(struct vfsmount *mnt, s
+ 		 struct kstat *stat)
+ {
+ 	struct inode *inode;
+-	unsigned long delalloc_blocks;
++	unsigned long long delalloc_blocks;
  
- 	new_oi = OCFS2_I(args->new_inode);
-+	/*
-+	 * Adjust extent record count to reserve space for extended attribute.
-+	 * Inline data count had been adjusted in ocfs2_duplicate_inline_data().
-+	 */
-+	if (!(new_oi->ip_dyn_features & OCFS2_INLINE_DATA_FL) &&
-+	    !(ocfs2_inode_is_fast_symlink(args->new_inode))) {
-+		struct ocfs2_extent_list *el = &new_di->id2.i_list;
-+		le16_add_cpu(&el->l_count, -(inline_size /
-+					sizeof(struct ocfs2_extent_rec)));
-+	}
- 	spin_lock(&new_oi->ip_lock);
- 	new_oi->ip_dyn_features |= OCFS2_HAS_XATTR_FL | OCFS2_INLINE_XATTR_FL;
- 	new_di->i_dyn_features = cpu_to_le16(new_oi->ip_dyn_features);
+ 	inode = dentry->d_inode;
+ 	generic_fillattr(inode, stat);
+@@ -4634,7 +4634,7 @@ int ext4_getattr(struct vfsmount *mnt, s
+ 	delalloc_blocks = EXT4_C2B(EXT4_SB(inode->i_sb),
+ 				EXT4_I(inode)->i_reserved_data_blocks);
+ 
+-	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
++	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
+ 	return 0;
+ }
+ 
 
 
