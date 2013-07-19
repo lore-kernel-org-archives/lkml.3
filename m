@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759829Ab3GSHY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:24:58 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:43543 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759783Ab3GSHY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:24:57 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <51E71202.5060207@codeaurora.org>
-References: <20130625200211.GA11625@codeaurora.org> <20130628000853.GB11547@quad.lixom.net> <20130708153528.GB830@codeaurora.org> <51E71202.5060207@codeaurora.org>
+	id S1759850Ab3GSH1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:27:52 -0400
+Received: from mout.gmx.net ([212.227.15.18]:50601 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759790Ab3GSH1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 03:27:50 -0400
+From: Sven Joachim <svenjoac@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/72] 3.10.2-stable review
+References: <20130719052559.852627424@linuxfoundation.org>
+Date: Fri, 19 Jul 2013 09:27:46 +0200
+In-Reply-To: <20130719052559.852627424@linuxfoundation.org> (Greg
+	Kroah-Hartman's message of "Thu, 18 Jul 2013 22:25:17 -0700")
+Message-ID: <8761w7dn65.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [GIT PULL] Remove ARM local timer API
-From: Olof Johansson <olof@lixom.net>
-Date: Fri, 19 Jul 2013 09:24:35 +0200
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>, Barry Song <baohua.song@csr.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <40771222-cc0f-4826-b14f-8dcdb4abb673@email.android.com>
+Content-Type: text/plain
+X-Provags-ID: V03:K0:tqRJFB8FpgLzvuZhTRDw/0Ld9xH1UfBf3DldvUZbj87z9InxsuM
+ WnqXYqeVpxSlU+c4vTAjeKWePiJSl9YNpI/obZlxj6zwIwKi5Ek7fSpOIObSrrbNDGWEGP8
+ 8ptv2Zmyo04WU5tW1ry2XrWsroxInM8HNC9/4GDNd/drX+p4c2LhTlJXDS//Af3FvaFr3jx
+ fV2hw42lFAMLXbRlHVcrA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013-07-19 07:25 +0200, Greg Kroah-Hartman wrote:
 
-
-Stephen Boyd <sboyd@codeaurora.org> wrote:
-
->On 07/08/13 08:35, Stephen Boyd wrote:
->> On 06/27, Olof Johansson wrote:
->>> On Tue, Jun 25, 2013 at 01:02:12PM -0700, Stephen Boyd wrote:
->>>> Olof/Arnd,
->>>>
->>>> These patches remove the ARM local timer API. The ARM architected
->>>> timers have already moved away from this API so this series
->>>> migrates the rest of the users allowing us to remove the API
->>>> entirely. Thomas has been kind enough to take the first two
->>>> patches into timers/core in the tip tree (thanks Thomas!) so I've
->>>> merged that into v3.10-rc1 and then applied the rest of the
->>>> patches on top. Let me know if this is acceptable.
->>> We need guarantees from Thomas that the branch is stable and will
->never be
->>> rebased before it hit Linus tree, or we'll be in a world of pain for
->>> dependencies like these.
->>>
->>> Thomas, is this branch stable or do you anticipate a rebase?
->>>
->> This branch has merged into Linus' tree. Can this go through the
->> arm-soc tree now?
->>
+> This is the start of the stable review cycle for the 3.10.2 release.
+> There are 72 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
->The merge window is over now. Can this be merged for 3.12?
+> Responses should be made by Sun Jul 21 05:25:08 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.2-rc1.gz
 
-Yes, I am still traveling and haven't done any merges for 3.12 yet. This is first in the queue, I should get to it over the weekend or early next week.
+I've spent just half an hour trying to figure out why this kernel failed
+to install with an incomprehensible error message:
 
+,----
+|  BUILDDEB
+| rm: invalid option -- 'c'
+| Try `rm --help' for more information.
+| make[2]: *** [_modinst_] Error 1
+`----
 
--Olof
+It turned out that there's a trailing space in the 
 
+SUBLEVEL = 2 
+
+line in the Makefile, and that extra space ends up in MODLIB, finally
+passing the 'rm' command _two_ parameters rather than one, the second
+starting with "-rc1".
+
+Cheers,
+       Sven
