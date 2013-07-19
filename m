@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964929Ab3GSKMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:12:15 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:17980 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab3GSKMN (ORCPT
+	id S1760159Ab3GSKNh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 06:13:37 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:40947 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab3GSKNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:12:13 -0400
-X-IronPort-AV: E=Sophos;i="4.89,700,1367971200"; 
-   d="scan'208";a="6869501"
-Message-ID: <1374228731.13645.45.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] arm: choose debug/uncompress.h include when uncompress
- debug is disabled
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Julien Grall <julien.grall@linaro.org>, <linux@arm.linux.org.uk>,
-        "Patch Tracking" <patches@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, "Olof Johansson" <olof@lixom.net>
-Date: Fri, 19 Jul 2013 11:12:11 +0100
-In-Reply-To: <alpine.DEB.2.02.1307191103520.8258@kaball.uk.xensource.com>
-References: <1373897706-15331-1-git-send-email-julien.grall@linaro.org>
-	   <alpine.DEB.2.02.1307171420350.8258@kaball.uk.xensource.com>
-	   <CAPnVf8yH7PBOSSC57qJv+pWmsinRUxGr81QUPH9GoOkKw2oo3Q@mail.gmail.com>
-	  <1374222736.26728.128.camel@kazak.uk.xensource.com>
-	 <alpine.DEB.2.02.1307191049070.8258@kaball.uk.xensource.com>
-	 <1374228043.13645.44.camel@kazak.uk.xensource.com>
-	 <alpine.DEB.2.02.1307191103520.8258@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Fri, 19 Jul 2013 06:13:35 -0400
+Date: Fri, 19 Jul 2013 12:13:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Mark Brown <broonie@kernel.org>,
+        Takashi Iwai <tiwai@suse.de>, David Lang <david@lang.hm>,
+        "ksummit-2013-discuss@lists.linux-foundation.org" 
+	<ksummit-2013-discuss@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+Message-ID: <20130719101330.GA26716@gmail.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130712005023.GB31005@thunk.org>
+ <20130712051451.GC25815@1wt.eu>
+ <alpine.DEB.2.02.1307160017120.16723@nftneq.ynat.uz>
+ <s5hwqoqv4oo.wl%tiwai@suse.de>
+ <20130716165933.GU22506@sirena.org.uk>
+ <3908561D78D1C84285E8C5FCA982C28F31C845B1@ORSMSX106.amr.corp.intel.com>
+ <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzViZyMydimtes+a7neRRg1ibW5QUg3+bV2kjQASvgSpg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 11:06 +0100, Stefano Stabellini wrote:
-> On Fri, 19 Jul 2013, Ian Campbell wrote:
-> > On Fri, 2013-07-19 at 10:52 +0100, Stefano Stabellini wrote:
-> > > On Fri, 19 Jul 2013, Ian Campbell wrote:
-> > > > On Thu, 2013-07-18 at 17:15 +0100, Julien Grall wrote:
-> > > > > On 17 July 2013 14:25, Stefano Stabellini
-> > > > > <stefano.stabellini@eu.citrix.com> wrote:
-> > > > > > On Mon, 15 Jul 2013, Julien Grall wrote:
-> > > > > >> Even if uncompress debug is disabled, some board will continue to print
-> > > > > >> information during uncompress step.
-> > > > > >
-> > > > > > Are you talking about DEBUG_UNCOMPRESS?
-> > > > > > Should I read the sentence as "even if DEBUG_UNCOMPRESS is not selected,
-> > > > > > some board will continue to print information during the uncompress step"?
-> > > > > 
-> > > > > Yes. On the arndale, uncompress log are directly output on UART-2.
-> > > > > This is annoying because Xen doesn't expose the UART to dom0.
-> > > > 
-> > > > This is because Xen wants/tries to use the UART as its own console,
-> > > > right?
-> > > > 
-> > > > There are at least two other options: Either Xen uses a different UART
-> > > > to that configured statically into the kernel image (depends on how many
-> > > > UARTs the platform exposes) or Xen uses no serial console at all.
-> > > > 
-> > > > Of course long term we just need to wait for the exynos stuff to get
-> > > > integrated into the multiplatform kernel.
-> > > > 
-> > > > Having no Xen serial console is not as bad as it seems for actual
-> > > > deployment, it is actually already the default on x86 (a serial console
-> > > > needs to be explicitly configured). The Xen console would still be
-> > > > available via the "xl dmesg" command and for debug environments people
-> > > > can just hack around the issue for now (until MP kernels arrive for the
-> > > > platform).
-> > > > 
-> > > > Perhaps a useful compromise would be for Xen to initially use the
-> > > > console but to hand it over to dom0 once it starts (similar to how we
-> > > > handle VGA where it is present), Xen could also steal it back on panic
-> > > > (since dom0 isn't going to be using it after that...).
-> > > 
-> > > I like this last option, it looks like the best compromise.
-> > > 
-> > > 
-> > > > Alternatively, since these early UART routines tend to be pretty simple
-> > > > polled affairs, we could also consider extending the existing vpl011
-> > > > code to have platform configurable addresses for the output and status
-> > > > registers and a configurable fixed value for the read of the status
-> > > > register. I'm not keen to have this code turn into a full "emulator" but
-> > > > so long as it stays within the remit given in vpl011.c:
-> > > >         /*
-> > > >          * This is not intended to be a full emulation of a PL011
-> > > >          * device. Rather it is intended to provide a sufficient veneer of one
-> > > >          * that early code (such as Linux's boot time decompressor) which
-> > > >          * hardcodes output directly to such a device are able to make progress.
-> > > >          *
-> > > >          * This device is not intended to be enumerable or exposed to the OS
-> > > >          * (e.g. via Device Tree).
-> > > >          */
-> > > > then I think I could live with it getting a bit more flexible about
-> > > > where the registers live in order to be able to handle more UART
-> > > > variants.
-> > >  
-> > > We could end up emulating way too many devices and not all the platforms
-> > > expect a pl011 uart.
-> > 
-> > My point was that all of these debug routines expect exactly two things:
-> >   * An output register where they can write a character
-> >   * A status register which when read indicates that a new byte can be 
-> >     sent
-> > 
-> > The existing pl011.c could be extended to provide this level of
-> > functionality for *any* UART, at least to the degree required by this
-> > code, almost trivially, by simply making the two addresses and the
-> > static status register value configurable.
-> > 
-> > The status register value is static for us because we have no FIFOs and
-> > just accumulate into a buffer to be sent to the real console, so it is
-> > always possible to send another byte.
-> > 
-> > ISTR some talk of doing something similar for the early-printk stuff via
-> > DT, might have imagined that though...
->  
-> That's interesting but what about the meaning of the various bits of the
-> status register? It's not going to be always the same for the various
-> uarts, we would need to take into account at least that.
 
-Yes, hence making the static value read from the status register
-configurable too.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Ian.
+> [...]
+> 
+> Anyway, the point I'm making is that Q&A is limited and often even 
+> actively misleading ("Hey, I have three tested-by's, so it must be 
+> fine"), and we might actually want to have a new class of "non-critical 
+> patch that might be worth backporting to stable, but only do so after 
+> it's been in a release for some time". Because while it might be an 
+> "obvious" fix, maybe it's not critical enough that it needs to be 
+> backported _now_ - maybe it could wait a month or two, and get wider 
+> testing.
 
+The way I typically mark those kinds of fixes is that I don't add a 
+stable@vger.kernel.org tag to the commit and wait for explicit complaints 
+to come up. I also sometimes remove -stable backport tags from fix 
+submissions.
 
+Requests for backports will arrive with a time delay (if at all), which 
+gives the perfect opportunity to review its upstream status (whether there 
+are followup problems with the patch, etc.) and forward the commit to 
+-stable, at which point it's already been upstream for a couple of weeks, 
+sometimes months.
+
+I don't think this scenario needs to be or can be automated via a special 
+tag: the main problem is that when the fix is applied we rarely know how 
+widely users care about it. I think dealing with them 'statistically' 
+(i.e. waiting for a backport request) measures that property pretty 
+accurately.
+
+The nice thing about it is that it all self-balances if people just add 
+-stable backport tags more judiciously.
+
+Thanks,
+
+	Ingo
