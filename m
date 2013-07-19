@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab3GSSSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:18:53 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:35290 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760631Ab3GSSSv (ORCPT
+	id S1761001Ab3GSSUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:20:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39463 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3GSSUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:18:51 -0400
-Message-ID: <51E98310.7020103@cogentembedded.com>
-Date: Fri, 19 Jul 2013 22:18:56 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 19 Jul 2013 14:20:03 -0400
+Date: Fri, 19 Jul 2013 20:19:46 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Brandon Philips <brandon@ifup.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: is kexec on Xen domU possible?
+Message-ID: <20130719181946.GG11233@debian70-amd64.local.net-space.pl>
+References: <20130719020603.GA22932@kroah.com>
+ <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
+ <CAK7GKxnB933DkO8qM6HxZCbDVNn4ze5Ere7ZWnXxBieYMg88dQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>, tony@atomide.com,
-        benoit.cousson@linaro.org, rnayak@ti.com, peter.ujfalusi@ti.com,
-        kishon@ti.com, jic23@cam.ac.uk, grant.likely@linaro.org,
-        rob.herring@calxeda.com, lars@metafoo.de, sameo@linux.intel.com,
-        ch.naveen@samsung.com, poeschel@lemonage.de, milo.kim@ti.com,
-        balajitk@ti.com, gg@slimlogic.co.uk, linux-iio@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 1/2] ARM: dts: twl: Add GPADC data to device tree
-References: <1374226039-16943-1-git-send-email-oleksandr.kozaruk@ti.com> <1374226039-16943-2-git-send-email-oleksandr.kozaruk@ti.com> <51E94F97.40002@cogentembedded.com> <51E95DEB.7010702@ti.com>
-In-Reply-To: <51E95DEB.7010702@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK7GKxnB933DkO8qM6HxZCbDVNn4ze5Ere7ZWnXxBieYMg88dQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Jul 19, 2013 at 07:58:40AM -0700, Brandon Philips wrote:
+> On Fri, Jul 19, 2013 at 6:18 AM, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> >   - PV guests: there is no support for kexec at this time;
+> >     Once I wrote an implementatation for that type of guests
+> >     for one company but according to our agreement I could not
+> >     publish this code; However, I could use it as a base for
+> >     publicly available kexec implementation; Currently, I do
+> >     not have any plans to work on this due to some more important
+> >     stuff to do; However, question about kexec support for PV
+> >     guests is raised from time to time and maybe this issue
+> >     will be much more important than others once,
+>
+> To do kexec on PV guests is there a dependency on support from the dom0?
 
-On 07/19/2013 07:40 PM, Grygorii Strashko wrote:
+No.
 
->>> GPADC is the general purpose ADC present on twl6030.
->>> The dt data is interrupt used to trigger end of ADC
->>> conversion.
+> e.g. if we recreated your patches and merged them into 3.12 and booted
+> on a XenServer from a few years ago would it work?
 
->>> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
->>> ---
->>>   arch/arm/boot/dts/twl6030.dtsi | 6 ++++++
->>>   1 file changed, 6 insertions(+)
+No.
 
->>> diff --git a/arch/arm/boot/dts/twl6030.dtsi
->>> b/arch/arm/boot/dts/twl6030.dtsi
->>> index 2e3bd31..d7d4c28 100644
->>> --- a/arch/arm/boot/dts/twl6030.dtsi
->>> +++ b/arch/arm/boot/dts/twl6030.dtsi
->>> @@ -103,4 +103,10 @@
->>>           compatible = "ti,twl6030-pwmled";
->>>           #pwm-cells = <2>;
->>>       };
->>> +
->>> +    adc: gpadc {
+> What I want to do is use kexec on existing public cloud providers,
+> that use Xen, like AWS or Rackspace.
 
->>     Read my lips: the node should be called just "adc", not "gpadc".
->        ^^^^^^^^^^^^ Are you sure?
+Look for HVM or PVonHVM guests support in this providers.
+Sadly, there is no support for kexec on PV guests.
 
-    I didn't know how to express my disappointment from Oleksandr's inability 
-to understand what I wanted to convey to him from 2 attempts... first, he 
-changed the label instead of the node name, then he only dropped "twl6030_" 
-prefix from the name. I should probably have been even more specific before.
-
-> Why? The name was selected according to the documentation on device "General
-> purpose analog-to-digital converter (GPADC)".
-
-    Sigh, we simply don't care whether this ADC is general-purpose or not.
-The main thing it is ADC.
-
-> PS. Following your logic - "GPIO" need to renamed to "IO" everywhere ;P
-
-    GPIO is well known and established abbreviation, contrasted to GPADC.
-Moreover, ePAPR spec lists "gpio" as a generic node name.
-
-WBR, Sergei
-
+Daniel
