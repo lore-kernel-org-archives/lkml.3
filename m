@@ -1,141 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760066Ab3GSItA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:49:00 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:35335 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760046Ab3GSIss (ORCPT
+	id S1760007Ab3GSIzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:55:14 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:49061 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759726Ab3GSIzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:48:48 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-media@vger.kernel.org
-Cc: alipowski@interia.pl, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, srinivas.kandagatla@gmail.com,
-        srinivas.kandagatla@st.com, sean@mess.org
-Subject: [PATCH v1 2/2] media: lirc: Allow lirc dev to talk to rc device
-Date: Fri, 19 Jul 2013 09:39:37 +0100
-Message-Id: <1374223177-5035-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1374223132-4924-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1374223132-4924-1-git-send-email-srinivas.kandagatla@st.com>
+	Fri, 19 Jul 2013 04:55:10 -0400
+Message-ID: <1374224105.3819.1.camel@phoenix>
+Subject: [PATCH RESEND] irqchip: sun4i: Remove wrong irq_ack callback
+ implementation
+From: Axel Lin <axel.lin@ingics.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 19 Jul 2013 16:55:05 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+According to the datasheet[1], the Interrupt IRQ Pending Registers are
+read-only. The implementation of sun4i_irq_ack() is worng becasue it writes
+to these read-only registers.
 
-The use case is simple, if any rc device has allowed protocols =
-RC_TYPE_LIRC and map_name = RC_MAP_LIRC set, the driver open will be never
-called. The reason for this is, all of the key maps except lirc have some
-KEYS in there map, so during rc_register_device process these keys are
-matched against the input drivers and open is performed, so for the case
-of RC_MAP_EMPTY, a vt/keyboard is matched and the driver open is
-performed.
+This patch removes the wrong irq_ack callback implementation and all the code
+writing to these read-only registers in sun4i_of_init().
 
-In case of lirc, there is no match and result is that there is no open
-performed, however the lirc-dev will go ahead and create a /dev/lirc0
-node. Now when lircd/mode2 opens this device, no data is available
-because the driver was never opened.
+[1] http://dl.linux-sunxi.org/A10/A10%20User%20Manual%20-%20v1.20%20%282012-04-09%2c%20DECRYPTED%29.pdf
 
-Other case pointed by Sean Young, As rc device gets opened via the
-input interface. If the input device is never opened (e.g. embedded with
-no console) then the rc open is never called and lirc will not work
-either. So that's another case.
-
-lirc_dev seems to have no link with actual rc device w.r.t open/close.
-This patch adds rc_dev pointer to lirc_driver structure for cases like
-this, so that it can do the open/close of the real driver in accordance
-to lircd/mode2 open/close.
-
-Without this patch its impossible to open a rc device which has
-RC_TYPE_LIRC ad RC_MAP_LIRC set.
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/media/rc/ir-lirc-codec.c |    1 +
- drivers/media/rc/lirc_dev.c      |   16 ++++++++++++++++
- include/media/lirc_dev.h         |    1 +
- 3 files changed, 18 insertions(+), 0 deletions(-)
+This patch was sent on https://lkml.org/lkml/2013/7/6/59
+This resend rebase it on top of 3.11-rc1.
 
-diff --git a/drivers/media/rc/ir-lirc-codec.c b/drivers/media/rc/ir-lirc-codec.c
-index e456126..d5ad27f 100644
---- a/drivers/media/rc/ir-lirc-codec.c
-+++ b/drivers/media/rc/ir-lirc-codec.c
-@@ -375,6 +375,7 @@ static int ir_lirc_register(struct rc_dev *dev)
- 	drv->code_length = sizeof(struct ir_raw_event) * 8;
- 	drv->fops = &lirc_fops;
- 	drv->dev = &dev->dev;
-+	drv->rc_dev = dev;
- 	drv->owner = THIS_MODULE;
+Thanks,
+Axel
+ drivers/irqchip/irq-sun4i.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+index a5438d8..29b75c0a 100644
+--- a/drivers/irqchip/irq-sun4i.c
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -38,18 +38,6 @@ static struct irq_domain *sun4i_irq_domain;
  
- 	drv->minor = lirc_register_driver(drv);
-diff --git a/drivers/media/rc/lirc_dev.c b/drivers/media/rc/lirc_dev.c
-index 8dc057b..5f69fc0 100644
---- a/drivers/media/rc/lirc_dev.c
-+++ b/drivers/media/rc/lirc_dev.c
-@@ -35,6 +35,7 @@
- #include <linux/device.h>
- #include <linux/cdev.h>
+ static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
  
-+#include <media/rc-core.h>
- #include <media/lirc.h>
- #include <media/lirc_dev.h>
- 
-@@ -437,6 +438,7 @@ EXPORT_SYMBOL(lirc_unregister_driver);
- int lirc_dev_fop_open(struct inode *inode, struct file *file)
+-static void sun4i_irq_ack(struct irq_data *irqd)
+-{
+-	unsigned int irq = irqd_to_hwirq(irqd);
+-	unsigned int irq_off = irq % 32;
+-	int reg = irq / 32;
+-	u32 val;
+-
+-	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
+-	writel(val | (1 << irq_off),
+-	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
+-}
+-
+ static void sun4i_irq_mask(struct irq_data *irqd)
  {
- 	struct irctl *ir;
-+	struct rc_dev *rc_dev;
- 	struct cdev *cdev;
- 	int retval = 0;
+ 	unsigned int irq = irqd_to_hwirq(irqd);
+@@ -76,7 +64,6 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
  
-@@ -467,6 +469,15 @@ int lirc_dev_fop_open(struct inode *inode, struct file *file)
- 		goto error;
- 	}
+ static struct irq_chip sun4i_irq_chip = {
+ 	.name		= "sun4i_irq",
+-	.irq_ack	= sun4i_irq_ack,
+ 	.irq_mask	= sun4i_irq_mask,
+ 	.irq_unmask	= sun4i_irq_unmask,
+ };
+@@ -114,11 +101,6 @@ static int __init sun4i_of_init(struct device_node *node,
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
  
-+	rc_dev = ir->d.rc_dev;
-+	if (rc_dev && !rc_dev->users++ && rc_dev->open) {
-+		retval = rc_dev->open(rc_dev);
-+		if (retval) {
-+			rc_dev->users--;
-+			goto error;
-+		}
-+	}
-+
- 	cdev = ir->cdev;
- 	if (try_module_get(cdev->owner)) {
- 		ir->open++;
-@@ -499,6 +510,7 @@ int lirc_dev_fop_close(struct inode *inode, struct file *file)
- {
- 	struct irctl *ir = irctls[iminor(inode)];
- 	struct cdev *cdev;
-+	struct rc_dev *rc_dev;
+-	/* Clear all the pending interrupts */
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(1));
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(2));
+-
+ 	/* Enable protection mode */
+ 	writel(0x01, sun4i_irq_base + SUN4I_IRQ_PROTECTION_REG);
  
- 	if (!ir) {
- 		printk(KERN_ERR "%s: called with invalid irctl\n", __func__);
-@@ -511,6 +523,10 @@ int lirc_dev_fop_close(struct inode *inode, struct file *file)
- 
- 	WARN_ON(mutex_lock_killable(&lirc_dev_lock));
- 
-+	rc_dev = ir->d.rc_dev;
-+	if (rc_dev && !--rc_dev->users && rc_dev->close)
-+		rc_dev->close(rc_dev);
-+
- 	ir->open--;
- 	if (ir->attached) {
- 		ir->d.set_use_dec(ir->d.data);
-diff --git a/include/media/lirc_dev.h b/include/media/lirc_dev.h
-index 168dd0b..96dccb6 100644
---- a/include/media/lirc_dev.h
-+++ b/include/media/lirc_dev.h
-@@ -139,6 +139,7 @@ struct lirc_driver {
- 	struct lirc_buffer *rbuf;
- 	int (*set_use_inc) (void *data);
- 	void (*set_use_dec) (void *data);
-+	struct rc_dev *rc_dev;
- 	const struct file_operations *fops;
- 	struct device *dev;
- 	struct module *owner;
 -- 
-1.7.6.5
+1.8.1.2
+
+
 
