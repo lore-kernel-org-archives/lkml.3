@@ -1,91 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab3GSU1Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:27:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25240 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab3GSU1Y (ORCPT
+	id S1751786Ab3GSUcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:32:05 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39193 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab3GSUcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 16:27:24 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=RlVDF7lzNMQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=R1XAcQrJXZkA:10 a=20KFwNOVAAAA:8 a=ayC55rCoAAAA:8 a=uo9KpuxPFzrzqbvv0iYA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=q9mC2fbAJx8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374265641.3356.31.camel@gandalf.local.home>
-Subject: Re: [PATCH RESEND 0/3] Teach perf_trace_##call() to check
- hlist_empty(perf_events)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 19 Jul 2013 16:27:21 -0400
-In-Reply-To: <20130719074339.GA22597@gmail.com>
-References: <20130718183018.GA4043@redhat.com>
-	 <20130719074339.GA22597@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Fri, 19 Jul 2013 16:32:02 -0400
+Message-ID: <51E9A240.3000108@kernel.org>
+Date: Fri, 19 Jul 2013 21:32:00 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Hector Palacios <hector.palacios@digi.com>
+CC: Marek Vasut <marex@denx.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify
+ scale
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <1374225208-28940-6-git-send-email-hector.palacios@digi.com> <201307191639.01240.marex@denx.de> <51E95BEC.5080703@digi.com>
+In-Reply-To: <51E95BEC.5080703@digi.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-19 at 09:43 +0200, Ingo Molnar wrote:
-> * Oleg Nesterov <oleg@redhat.com> wrote:
+On 07/19/2013 04:31 PM, Hector Palacios wrote:
+> Dear Marek,
 > 
-> > Hello.
-> > 
-> > The patches are the same, I only tried to update the changelogs a bit.
-> > I am also quoting my old email below, to explain what this hack tries
-> > to do.
-> > 
-> > 	Say, "perf record -e sched:sched_switch -p1".
-> > 
-> > 	Every task except /sbin/init will do perf_trace_sched_switch() and
-> > 	perf_trace_buf_prepare() + perf_trace_buf_submit for no reason(),
-> > 	it doesn't have a counter.
-> > 
-> > 	So it makes sense to add the fast-path check at the start of
-> > 	perf_trace_##call(),
-> > 
-> > 		if (hlist_empty(event_call->perf_events))
-> > 			return;
-> > 
-> > 	The problem is, we should not do this if __task != NULL (iow, if
-> > 	DECLARE_EVENT_CLASS() uses __perf_task()), perf_tp_event() has the
-> > 	additional code for this case.
-> > 
-> > 	So we should do
-> > 
-> > 		if (!__task && hlist_empty(event_call->perf_events))
-> > 			return;
-> > 
-> > 	But __task is changed by "{ assign; }" block right before
-> > 	perf_trace_buf_submit(). Too late for the fast-path check,
-> > 	we already called perf_trace_buf_prepare/fetch_regs.
-> > 
-> > 	So. After 2/3 __perf_task() (and __perf_count/addr) is called
-> > 	when ftrace_get_offsets_##call(args) evaluates the arguments,
-> > 	and we can check !__task && hlist_empty() right after that.
-> > 
-> > Oleg.
+> On 07/19/2013 04:39 PM, Marek Vasut wrote:
+>> Dear Hector Palacios,
+>>
+>>> Added write_raw function to manipulate the optional divider_by_two
+>>> through the scaling attribute out of the available scales.
+>>>
+>>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+>>> ---
+>>>   drivers/staging/iio/adc/mxs-lradc.c | 55
+>>> ++++++++++++++++++++++++++++++++++++- 1 file changed, 54 insertions(+), 1
+>>> deletion(-)
+>>>
+>>> diff --git a/drivers/staging/iio/adc/mxs-lradc.c
+>>> b/drivers/staging/iio/adc/mxs-lradc.c index c929733..286cde2 100644
+>>> --- a/drivers/staging/iio/adc/mxs-lradc.c
+>>> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+>>> @@ -144,6 +144,7 @@ struct mxs_lradc {
+>>>
+>>>       uint32_t        vref_mv[LRADC_MAX_TOTAL_CHANS];
+>>>       unsigned int        scale_avail[LRADC_MAX_TOTAL_CHANS][2][2];
+>>> +    unsigned int        is_divided[LRADC_MAX_TOTAL_CHANS];
+>>
+>> Why not use bitfield ? ;-)
 > 
-> Nice improvement.
+> This is used in some math below and an unsigned int looked more appropriate:
 > 
-> Peter, Steve, any objections?
+>     case IIO_CHAN_INFO_SCALE:
+>         *val = lradc->vref_mv[chan->channel];
+>         *val2 = chan->scan_type.realbits -
+>             lradc->is_divided[chan->channel];
+>         ret = IIO_VAL_FRACTIONAL_LOG2;
+>         break;
 > 
+>>
+>>>       /*
+>>>        * Touchscreen LRADC channels receives a private slot in the CTRL4
+>>> @@ -202,6 +203,7 @@ struct mxs_lradc {
+>>>   #define    LRADC_CTRL1_LRADC_IRQ_OFFSET        0
+>>>
+>>>   #define    LRADC_CTRL2                0x20
+>>> +#define    LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET    24
+>>>   #define    LRADC_CTRL2_TEMPSENSE_PWD        (1 << 15)
+>>>
+>>>   #define    LRADC_STATUS                0x40
+>>> @@ -310,7 +312,8 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+>>>           break;
+>>>       case IIO_CHAN_INFO_SCALE:
+>>>           *val = lradc->vref_mv[chan->channel];
+>>> -        *val2 = chan->scan_type.realbits;
+>>> +        *val2 = chan->scan_type.realbits -
+>>> +            lradc->is_divided[chan->channel];
+>>>           ret = IIO_VAL_FRACTIONAL_LOG2;
+>>>           break;
+>>>       default:
+>>> @@ -323,6 +326,54 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+>>>       return ret;
+>>>   }
+>>>
+>>> +static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
+>>> +                   const struct iio_chan_spec *chan,
+>>> +                   int val, int val2, long m)
+>>> +{
+>>> +    struct mxs_lradc *lradc = iio_priv(iio_dev);
+>>> +    int ret;
+>>> +
+>>> +    ret = mutex_trylock(&lradc->lock);
+>>> +    if (!ret)
+>>> +        return -EBUSY;
+>>> +
+>>> +    switch (m) {
+>>> +    case IIO_CHAN_INFO_SCALE:
+>>> +        ret = -EINVAL;
+>>> +        if (val == lradc->scale_avail[chan->channel][0][0] &&
+>>> +            val2 == lradc->scale_avail[chan->channel][0][1]) {
+>>> +            /* [0] -> divider by two disabled */
+>>
+>> This comment is confusing, you use [0] in different dimensions of the array. So
+>> is the stuff below.
+>>
+>> Still, how does this even work, can you show me and example how to set the
+>> divider from userland ? Sorry, I'm a bit confused with this 3D-business here,
+>> even if the comment in previous patch made it a bit clearer. Actually you can
+>> use some #define to specify if you're accessing div/2 or div/1 portion of the
+>> array to make it more readable.
+>>
+>> Like ... scale_avail[chan->channel][LRADC_DIV_BY_2][LRADC_DECIMAL_PART] ...
+>> would by nice.
+> 
+> Agreed.
+Could even make the int + nano part a structure then you could have
+scale_avail[chan->channel][LRADC_DIV_BY_2].integer / .nano
 
-Yep, agreed.
+might not be worth the hassel though for the slight gain in readability.
 
-
-The whole series...
-
-Reviewed-and-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-
+I'm happy either way.
+> 
+> How it works:
+> # cd /sys/devices/80000000.apb/80040000.apbx/80050000.lradc/iio:device0
+> 
+> Here you have three entries per channel:
+> in_voltageX_raw        -> the sample raw value
+> in_voltageX_scale    -> the scale to multiply the raw value to get the voltage in mV
+> in_voltageX_scale_available -> lists the available scales of the channel
+> 
+> For example for channel 0:
+> 
+> # cat in_voltage0_scale_available
+> 0.451660156 0.903320312    (two scales available, first with divider by two disabled, second with divider by two enabled)
+> 
+> # cat in_voltage0_scale
+> 0.451660156            (divider by two is currently disabled)
+> 
+> # cat in_voltage0_raw        (shows measured value)
+> 1000
+> 
+> If you multiply the value by the scale you get: 1000 * 0.451660156 = 451.6 mV
+> 
+> # echo 0.903320312 > in_voltage0_scale    (enables the divider by two)
+> 
+> # cat in_voltage0_raw        (shows measured value)
+> 500
+> 
+> Voltage at channel is the same but now measured value is applying the scale so it shows half the value than before. Now
+> if you multiply: 500 * 0.903320312 = 451.6 mV (the same voltage but you now have a bigger scale and can measure up to
+> 3.7V).
+> 
+> Other channels (like 10 on the MX28) will show different scales because of fixed predividers.
+> The multi-dimension array is needed to store the big decimal number.
+> 
+>>> +            writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+>>> +                   lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
+>>> +            lradc->is_divided[chan->channel] = 0;
+>>> +            ret = 0;
+>>> +        } else if (val == lradc->scale_avail[chan->channel][1][0] &&
+>>> +               val2 == lradc->scale_avail[chan->channel][1][1]) {
+>>> +            /* [1] -> divider by two enabled */
+>>> +            writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
+>>> +                   lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
+>>> +            lradc->is_divided[chan->channel] = 1;
+>>> +            ret = 0;
+>>> +        }
+>>> +
+>>> +        break;
+>>> +    default:
+>>> +        ret = -EINVAL;
+>>> +        break;
+>>> +    }
+>>> +
+>>> +    mutex_unlock(&lradc->lock);
+>>> +
+>>> +    return ret;
+>>> +}
+>>> +
+>>> +static int mxs_lradc_write_raw_get_fmt(struct iio_dev *iio_dev,
+>>> +                       const struct iio_chan_spec *chan,
+>>> +                       long m)
+>>> +{
+>>> +    return IIO_VAL_INT_PLUS_NANO;
+>>> +}
+>>> +
+>>>   static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
+>>>           struct device_attribute *attr,
+>>>           char *buf,
+>>> @@ -400,6 +451,8 @@ static const struct attribute_group
+>>> mxs_lradc_attribute_group = { static const struct iio_info
+>>> mxs_lradc_iio_info = {
+>>>       .driver_module        = THIS_MODULE,
+>>>       .read_raw        = mxs_lradc_read_raw,
+>>> +    .write_raw        = mxs_lradc_write_raw,
+>>> +    .write_raw_get_fmt    = &mxs_lradc_write_raw_get_fmt,
+>>
+>> Is this & needed here ?
+> 
+> No it isn't.
+> Thanks.
+> 
+> Best regards,
+> -- 
+> Hector Palacios
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
