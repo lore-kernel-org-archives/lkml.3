@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760199Ab3GSLZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 07:25:39 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:64173 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760125Ab3GSLZf (ORCPT
+	id S1760118Ab3GSL1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 07:27:06 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45383 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab3GSL1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 07:25:35 -0400
-Date: Fri, 19 Jul 2013 13:25:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Rob Landley <rob@landley.net>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130719112530.GE26716@gmail.com>
-References: <20130715155202.GC29526@xanatos>
- <1373915059.3719.4@driftwood>
+	Fri, 19 Jul 2013 07:27:03 -0400
+Message-ID: <51E921EC.5040501@linux.vnet.ibm.com>
+Date: Fri, 19 Jul 2013 16:54:28 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373915059.3719.4@driftwood>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Low <jason.low2@hp.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
+References: <1374220211.5447.9.camel@j-VirtualBox>
+In-Reply-To: <1374220211.5447.9.camel@j-VirtualBox>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071911-1618-0000-0000-0000044D4B24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Json,
 
-* Rob Landley <rob@landley.net> wrote:
+I ran ebizzy and kernbench benchmarks on your 3.11-rc1 + your        "V1
+patch" on a 1 socket, 16 core powerpc machine. I thought I would let you
+know the results before I try your V2.
 
-> On 07/15/2013 10:52:48 AM, Sarah Sharp wrote:
-> >On Fri, 12 Jul 2013 18:17:08 +0200, Ingo Molnar <mingo@kernel.org>
-> >wrote:
-> >> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >Let's discuss this at Kernel Summit where we can at least yell at each
-> >other in person.  Yeah, just try yelling at me about this.  I'll roar
-> >right back, louder, for all the people who lose their voice when they
-> >get yelled at by top maintainers.  I won't be the nice girl anymore.
-> 
-> Not _all_ of us lose our voice when yelled at by Linus's lieutenants. 
-> Some of us just post updates to the same darn patch series for 5 years 
-> (yes really; my perl removal series started in 2008 and was applied 
-> earlier this year), on the theory it's useful to the people actually 
-> applying it to their own trees (at one point, gentoo), and that someday 
-> the stars might be right and cthulu will arise from the deep and accept 
-> the patch series into his tree. (Or in my case, Andrew Morton.)
+Ebizzy: 30 seconds run. The table below shows the improvement in the
+number of records completed. I have not spent enough time on the patch
+to explain such a big improvement.
 
-I think part of the root cause was that kbuild maintainership changed 
-several times over the years and nobody really felt strongly enough about 
-the Perl removal series.
+Number_of_threads   %improvement_with_patch
+    4                          41.86%
+    8                          9.8%
+   12                          34.77%
+   16                          28.37%
 
-Despite best efforts there will always be long-lived Linux forks: the 
--rt/PREEMPT_RT kernel is meanwhile nearly a decade old now... :-/
+While on kernbench there was no significant change in the observation.
 
-Thanks,
+I will try patch V2 and let you know the results.
 
-	Ingo
+Regards
+Preeti U Murthy
+
