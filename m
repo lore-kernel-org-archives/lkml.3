@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966000Ab3GSFnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:43:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39685 "EHLO
+	id S966012Ab3GSFoA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:44:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39680 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965600Ab3GSF0b (ORCPT
+	with ESMTP id S965591Ab3GSF0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:31 -0400
+	Fri, 19 Jul 2013 01:26:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Disseldorp <ddiss@suse.de>, Steve French <smfrench@gmail.com>
-Subject: [ 01/72] CIFS use sensible file nlink values if unprovided
-Date: Thu, 18 Jul 2013 22:25:18 -0700
-Message-Id: <20130719052559.954064080@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 19/72] cgroup: fix umount vs cgroup_event_remove() race
+Date: Thu, 18 Jul 2013 22:25:36 -0700
+Message-Id: <20130719052601.181230149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,37 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@gmail.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 6658b9f70ebca5fc0795b1d6d733996af1e2caa7 upstream.
+commit 1c8158eeae0f37d0eee9f1fbe68080df6a408df2 upstream.
 
-Certain servers may not set the NumberOfLinks field in query file/path
-info responses. In such a case, cifs_inode_needs_reval() assumes that
-all regular files are hardlinks and triggers revalidation, leading to
-excessive and unnecessary network traffic.
+ commit 5db9a4d99b0157a513944e9a44d29c9cec2e91dc
+ Author: Tejun Heo <tj@kernel.org>
+ Date:   Sat Jul 7 16:08:18 2012 -0700
 
-This change hardcodes cf_nlink (and subsequently i_nlink) when not
-returned by the server, similar to what already occurs in cifs_mkdir().
+     cgroup: fix cgroup hierarchy umount race
 
-Signed-off-by: David Disseldorp <ddiss@suse.de>
-Signed-off-by: Steve French <smfrench@gmail.com>
+This commit fixed a race caused by the dput() in css_dput_fn(), but
+the dput() in cgroup_event_remove() can also lead to the same BUG().
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 20efd81..449b6cf 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -558,6 +558,11 @@ cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
- 			fattr->cf_mode &= ~(S_IWUGO);
+---
+ kernel/cgroup.c |   25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
+
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3727,6 +3727,23 @@ static int cgroup_write_notify_on_releas
+ }
  
- 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
-+		if (fattr->cf_nlink < 1) {
-+			cifs_dbg(1, "replacing bogus file nlink value %u\n",
-+				fattr->cf_nlink);
-+			fattr->cf_nlink = 1;
-+		}
- 	}
+ /*
++ * When dput() is called asynchronously, if umount has been done and
++ * then deactivate_super() in cgroup_free_fn() kills the superblock,
++ * there's a small window that vfs will see the root dentry with non-zero
++ * refcnt and trigger BUG().
++ *
++ * That's why we hold a reference before dput() and drop it right after.
++ */
++static void cgroup_dput(struct cgroup *cgrp)
++{
++	struct super_block *sb = cgrp->root->sb;
++
++	atomic_inc(&sb->s_active);
++	dput(cgrp->dentry);
++	deactivate_super(sb);
++}
++
++/*
+  * Unregister event and free resources.
+  *
+  * Gets called from workqueue.
+@@ -3746,7 +3763,7 @@ static void cgroup_event_remove(struct w
  
- 	fattr->cf_uid = cifs_sb->mnt_uid;
+ 	eventfd_ctx_put(event->eventfd);
+ 	kfree(event);
+-	dput(cgrp->dentry);
++	cgroup_dput(cgrp);
+ }
+ 
+ /*
+@@ -4031,12 +4048,8 @@ static void css_dput_fn(struct work_stru
+ {
+ 	struct cgroup_subsys_state *css =
+ 		container_of(work, struct cgroup_subsys_state, dput_work);
+-	struct dentry *dentry = css->cgroup->dentry;
+-	struct super_block *sb = dentry->d_sb;
+ 
+-	atomic_inc(&sb->s_active);
+-	dput(dentry);
+-	deactivate_super(sb);
++	cgroup_dput(css->cgroup);
+ }
+ 
+ static void init_cgroup_css(struct cgroup_subsys_state *css,
 
 
