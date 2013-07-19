@@ -1,134 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635Ab3GSDgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 23:36:21 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:49761 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759609Ab3GSDgU (ORCPT
+	id S1759631Ab3GSDoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 23:44:08 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62641 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759570Ab3GSDoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 23:36:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1374183272-10153-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1374183272-10153-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Fri, 19 Jul 2013 11:36:19 +0800
-Message-ID: <CAJd=RBBv6rhKqb-30SDaZF3DFf2Nc=Odfo8=uRXQ8m40v_1rKg@mail.gmail.com>
-Subject: Re: [PATCH 4/8] migrate: add hugepage migration code to move_pages()
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 18 Jul 2013 23:44:06 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: vinod.koul@intel.com
+Cc: linux-kernel@vger.kernel.org, andriy.shevchenko@linux.intel.com,
+        spear-devel@list.st.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] dmaengine/MAINTAINERS: Add Andy as Co-Maintainer of DW DMA Controller
+Date: Fri, 19 Jul 2013 09:13:58 +0530
+Message-Id: <db631755ca657e2841de51e72304fa6598c98508.1373970214.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 5:34 AM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> This patch extends move_pages() to handle vma with VM_HUGETLB set.
-> We will be able to migrate hugepage with move_pages(2) after
-> applying the enablement patch which comes later in this series.
->
-> We avoid getting refcount on tail pages of hugepage, because unlike thp,
-> hugepage is not split and we need not care about races with splitting.
->
-> And migration of larger (1GB for x86_64) hugepage are not enabled.
->
-> ChangeLog v3:
->  - revert introducing migrate_movable_pages
->  - follow_page_mask(FOLL_GET) returns NULL for tail pages
->  - use isolate_huge_page
->
-> ChangeLog v2:
->  - updated description and renamed patch title
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  mm/memory.c  | 12 ++++++++++--
->  mm/migrate.c | 13 +++++++++++--
->  2 files changed, 21 insertions(+), 4 deletions(-)
->
-> diff --git v3.11-rc1.orig/mm/memory.c v3.11-rc1/mm/memory.c
-> index 1ce2e2a..8c9a2cb 100644
-> --- v3.11-rc1.orig/mm/memory.c
-> +++ v3.11-rc1/mm/memory.c
-> @@ -1496,7 +1496,8 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
->         if (pud_none(*pud))
->                 goto no_page_table;
->         if (pud_huge(*pud) && vma->vm_flags & VM_HUGETLB) {
-> -               BUG_ON(flags & FOLL_GET);
-> +               if (flags & FOLL_GET)
-> +                       goto out;
->                 page = follow_huge_pud(mm, address, pud, flags & FOLL_WRITE);
->                 goto out;
->         }
-> @@ -1507,8 +1508,15 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
->         if (pmd_none(*pmd))
->                 goto no_page_table;
->         if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
-> -               BUG_ON(flags & FOLL_GET);
->                 page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
-> +               if (flags & FOLL_GET) {
-> +                       if (PageHead(page))
-> +                               get_page_foll(page);
-> +                       else {
-> +                               page = NULL;
-> +                               goto out;
-> +                       }
-> +               }
+Andy has done enough work on Synopsys Designware DMA Controller and I believe he
+should Co-Maintain this driver along with me. So this patch.
 
-Can get_page do the work for us, like the following?
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-		if (flags & FOLL_GET)
-			get_page(page);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5d3facf..a4d57d9 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7111,6 +7111,7 @@ F:	drivers/tty/serial
+ 
+ SYNOPSYS DESIGNWARE DMAC DRIVER
+ M:	Viresh Kumar <viresh.linux@gmail.com>
++M:	Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+ S:	Maintained
+ F:	include/linux/dw_dmac.h
+ F:	drivers/dma/dw/
+-- 
+1.7.12.rc2.18.g61b472e
 
->                 goto out;
->         }
->         if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
-> diff --git v3.11-rc1.orig/mm/migrate.c v3.11-rc1/mm/migrate.c
-> index 3ec47d3..d313737 100644
-> --- v3.11-rc1.orig/mm/migrate.c
-> +++ v3.11-rc1/mm/migrate.c
-> @@ -1092,7 +1092,11 @@ static struct page *new_page_node(struct page *p, unsigned long private,
->
->         *result = &pm->status;
->
-> -       return alloc_pages_exact_node(pm->node,
-> +       if (PageHuge(p))
-> +               return alloc_huge_page_node(page_hstate(compound_head(p)),
-> +                                       pm->node);
-> +       else
-> +               return alloc_pages_exact_node(pm->node,
->                                 GFP_HIGHUSER_MOVABLE | GFP_THISNODE, 0);
->  }
->
-> @@ -1152,6 +1156,11 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
->                                 !migrate_all)
->                         goto put_and_set;
->
-> +               if (PageHuge(page)) {
-> +                       isolate_huge_page(page, &pagelist);
-> +                       goto put_and_set;
-> +               }
-> +
->                 err = isolate_lru_page(page);
->                 if (!err) {
->                         list_add_tail(&page->lru, &pagelist);
-> @@ -1174,7 +1183,7 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
->                 err = migrate_pages(&pagelist, new_page_node,
->                                 (unsigned long)pm, MIGRATE_SYNC, MR_SYSCALL);
->                 if (err)
-> -                       putback_lru_pages(&pagelist);
-> +                       putback_movable_pages(&pagelist);
->         }
->
->         up_read(&mm->mmap_sem);
-> --
-> 1.8.3.1
->
