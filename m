@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934379Ab3GSIpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:45:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49059 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759955Ab3GSIpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:45:39 -0400
-Message-ID: <51E8FC8E.7090302@ti.com>
-Date: Fri, 19 Jul 2013 14:15:02 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1760016Ab3GSIrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:47:13 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:52056 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab3GSIrH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:47:07 -0400
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <gregkh@linuxfoundation.org>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2 0/4] usb: musb: fix USB enumeration issue in OMAP3
- platform
-References: <1373282057-20181-1-git-send-email-kishon@ti.com> <51E4DFA6.2010501@ti.com> <20130716124227.GC15036@arwen.pp.htv.fi>
-In-Reply-To: <20130716124227.GC15036@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130718192416.GA526@polaris.bitmath.org>
+References: <1373620101-16113-1-git-send-email-benjamin.tissoires@redhat.com>
+	<20130718192416.GA526@polaris.bitmath.org>
+Date: Fri, 19 Jul 2013 10:47:05 +0200
+Message-ID: <CAN+gG=G6jw0BkJejZ=Rb+Vzzey1=JdqiiYmMonwjt9G1R779Tg@mail.gmail.com>
+Subject: Re: [PATCH] HID: multitouch: do not init reports for multitouch devices
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+Hi Henrik,
 
-On Tuesday 16 July 2013 06:12 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Jul 16, 2013 at 11:22:38AM +0530, Kishon Vijay Abraham I wrote:
->> Tony,
+On Thu, Jul 18, 2013 at 9:24 PM,  <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> Some multitouch screens do not like to be polled for input reports.
+>> However, the Win8 spec says that all touches should be sent during
+>> each report, making the initialization of reports unnecessary.
+>> The Win7 spec is less precise, but we can safely assume that when
+>> the module is loaded (at boot), no one is touching the screen.
 >>
->> On Monday 08 July 2013 04:44 PM, Kishon Vijay Abraham I wrote:
->>> This series fixes the USB enumeration issue caused because of the controller
->>> not able to get a reference to the PHY because of incorrect binding in the
->>> board file.
->>>
->>> In the case of non-dt boot, the platform specific initialization file
->>> (board file) will do usb_bind_phy that binds the usb controller with the
->>> PHY using device names. After the device names are created using 
->>> PLATFORM_DEVID_AUTO, our original method of binding by device names doesn't
->>> work reliably (since the device name changes). Hence the usb controller
->>> is made to use labels for getting the PHY.
->>>
->>> Here the PHY name is added in the plat data of USB controller device which
->>> should be used by the controller driver to get the PHY.
->>> Two new APIs usb_get_phy_by_name and devm_usb_get_phy_by_name are added to
->>> be used by the controller to get the PHY by name.
->>
->> You haven't picked this patch series?
-> 
-> yeah and now it's too much to send during the -rc series. Here's what we
-> can do, we can to minimum fix for -rc series (patching the names again)
+>> Add the quirk HID_QUIRK_NO_INIT_REPORTS so that we do not have to
+>> introduce a quirk for each problematic device.
+>
+> I assume you have tested thoroughly for regressions? How about odd
+> eGalax devices, for instance? Changes affecting existing hardware
+> makes me nervous. Is it so bad to add this quirk on a per-device
+> basis? Or perhaps turned on by default for win8 devices only?
 
-There are a lot of different boards available using OMAP3 and the device names
-(PHY and MUSB) vary across each board (apparently). It will be difficult to
-find the device names (for PHY and MUSB) for all the different boards available
-(partly because of non-availability of all the boards) and test it.
+Aargh, I forgot the eGalax... (I don't have it anymore on my desk). I
+was pretty confident because Win [7-8] is not doing any quirks for the
+multitouch devices, and I had in mind that it did not asked for the
+reports at startup (at least, I am sure about it for HID/I2C). I'm not
+sure win 8 devices is a sufficient denominator, because this init
+sequence is not mentioned anywhere in the Win 8 spec. It's true that
+we are going to see fewer Win 7 devices, but I would say it's the
+exact same problem for win 7 and 8. Moreover, asking this for Win 8
+devices only will forces us to detect it in core before hid-multitouch
+is loaded because the init reports is called before the parsing.
 
-Thanks
-Kishon
+If I capture the Win 7 & Win 8 initialization events and I observe
+that they do not retrieve the reports, will it be sufficient as a
+guarantee to include this patch even if it is not widely tested under
+Linux?
+
+Cheers,
+Benjamin
