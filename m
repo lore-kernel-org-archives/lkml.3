@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760406Ab3GSNK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 09:10:27 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42109 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab3GSNK0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 09:10:26 -0400
-From: Julien Grall <julien.grall@linaro.org>
-To: stefano.stabellini@eu.citrix.com, konrad.wilk@oracle.com
-Cc: ian.campbell@citrix.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org, Julien Grall <julien.grall@linaro.org>
-Subject: [PATCH v2] xen/arm: enable PV control for ARM
-Date: Fri, 19 Jul 2013 14:09:59 +0100
-Message-Id: <1374239399-2498-1-git-send-email-julien.grall@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1760419Ab3GSNLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 09:11:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55671 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759922Ab3GSNLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 09:11:03 -0400
+Message-ID: <51E93ADA.3010402@ti.com>
+Date: Fri, 19 Jul 2013 16:10:50 +0300
+From: Illia Smyrnov <x0194613@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Input: omap-keypad: Cleanup - remove hardcoded values
+ and IRQ enabling/disabling
+References: <1374239027-3927-1-git-send-email-illia.smyrnov@globallogic.com>
+In-Reply-To: <1374239027-3927-1-git-send-email-illia.smyrnov@globallogic.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.193]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable power management from the toolstack for ARM guest.
+On 07/19/2013 04:03 PM, Illia Smyrnov wrote:
+> From: Illia Smyrnov <illia.smyrnov@ti.com>
+>
+> Replace unclear hardcoded values with bit field and remove
+> unnecessary IRQ enabling/disabling.
+>
+> Based on top of v3.10-rc1.
 
-Signed-off-by: Julien Grall <julien.grall@linaro.org>
+Sorry, it is typo here. Based on v3.11-rc1.
 
----
-    Changes in v2:
-        - Don't compile xen/cpu_hotplug.o with ARM64
----
- drivers/xen/Makefile |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 2bf461a..b550a94 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -1,9 +1,8 @@
--ifneq ($(CONFIG_ARM),y)
--obj-y	+= manage.o
-+ifneq ($(filter y, ($CONFIG_ARM) $(CONFIG_ARM64)),)
- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- endif
- obj-$(CONFIG_X86)			+= fallback.o
--obj-y	+= grant-table.o features.o events.o balloon.o time.o
-+obj-y	+= grant-table.o features.o events.o balloon.o time.o manage.o
- obj-y	+= xenbus/
- 
- nostackp := $(call cc-option, -fno-stack-protector)
--- 
-1.7.10.4
-
+>
+> Tested on OMAP4 SDP.
+>
+> Illia Smyrnov (2):
+>    Input: omap-keypad: Cleanup - use bitfiled instead of hardcoded
+>      values
+>    Input: omap-keypad: Cleanup - remove unnecessary IRQ
+>      enabling/disabling
+>
+>   drivers/input/keyboard/omap4-keypad.c |   40 ++++++++++++--------------------
+>   1 files changed, 15 insertions(+), 25 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
