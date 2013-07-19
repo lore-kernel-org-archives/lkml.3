@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759850Ab3GSH1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 03:27:52 -0400
-Received: from mout.gmx.net ([212.227.15.18]:50601 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759790Ab3GSH1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 03:27:50 -0400
-From: Sven Joachim <svenjoac@gmx.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/72] 3.10.2-stable review
-References: <20130719052559.852627424@linuxfoundation.org>
-Date: Fri, 19 Jul 2013 09:27:46 +0200
-In-Reply-To: <20130719052559.852627424@linuxfoundation.org> (Greg
-	Kroah-Hartman's message of "Thu, 18 Jul 2013 22:25:17 -0700")
-Message-ID: <8761w7dn65.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S934488Ab3GSH3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 03:29:32 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50467 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934032Ab3GSH3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 03:29:30 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+TdDg9soWHqtSh4K015brv
+Date: Fri, 19 Jul 2013 00:29:27 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+Message-ID: <20130719072927.GY7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
+ <20130716090536.5541.36289.stgit@localhost>
+ <51E70953.1000601@wwwdotorg.org>
+ <20130718072034.GO7656@atomide.com>
+ <51E8401E.8040705@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Provags-ID: V03:K0:tqRJFB8FpgLzvuZhTRDw/0Ld9xH1UfBf3DldvUZbj87z9InxsuM
- WnqXYqeVpxSlU+c4vTAjeKWePiJSl9YNpI/obZlxj6zwIwKi5Ek7fSpOIObSrrbNDGWEGP8
- 8ptv2Zmyo04WU5tW1ry2XrWsroxInM8HNC9/4GDNd/drX+p4c2LhTlJXDS//Af3FvaFr3jx
- fV2hw42lFAMLXbRlHVcrA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E8401E.8040705@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-07-19 07:25 +0200, Greg Kroah-Hartman wrote:
+* Stephen Warren <swarren@wwwdotorg.org> [130718 12:27]:
+> On 07/18/2013 01:25 AM, Tony Lindgren wrote:
+> > * Stephen Warren <swarren@wwwdotorg.org> [130717 14:21]:
+> >> On 07/16/2013 03:05 AM, Tony Lindgren wrote:
+> >>> To toggle dynamic states, let's add the optional active state in
+> >>> addition to the static default state. Then if the optional active
+> >>> state is defined, we can require that idle and sleep states cover
+> >>> the same pingroups as the active state.
+> >>>
+> >>> Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
+> >>> to use instead of pinctrl_select() to avoid breaking existing users.
+> >>>
+> >>> With pinctrl_check_dynamic() we can check that idle and sleep states
+> >>> match the active state for pingroups during init, and don't need to
+> >>> do it during runtime.
+> >>>
+> >>> Then with the states pre-validated, pinctrl_select_dynamic() can
+> >>> just toggle between the dynamic states without extra checks.
+> >>>
+> >>> Note that pinctr_select_state() still has valid use cases, such as
+> >>> changing states when the pins can be shared between two drivers
+> >>> and don't necessarily cover the same pingroups. For dynamic runtime
+> >>> toggling of pin states, we should eventually always use just
+> >>> pinctrl_select_dynamic().
+> 
+> >>> @@ -1241,7 +1371,13 @@ static int pinctrl_pm_select_state(struct device *dev, struct pinctrl_state *sta
+> >>>  		return 0;
+> >>>  	if (IS_ERR(state))
+> >>>  		return 0; /* No such state */
+> >>> -	ret = pinctrl_select_state(pins->p, state);
+> >>> +
+> >>> +	/* Configured for proper dynamic muxing? */
+> >>> +	if (!IS_ERR(dev->pins->active_state))
+> >>> +		ret = pinctrl_select_dynamic(pins->p, state);
+> >>> +	else
+> >>> +		ret = pinctrl_select_state(pins->p, state);
+> >>
+> >> Hmmm. I'm not quite sure this is right... Surely this function should
+> >> just do nothing if the dynamic states aren't defined? The system should
+> >> just, and only, be in the "default" state and never do anything else.
+> > 
+> > This keeps the existing behaviour. We should be able to drop the
+> > call to pinctrl_select_state() here after the existing use in
+> > drivers has been fixed.
+> 
+> How many DT-based systems already have multiple of default/idle/sleep
+> states defined in DT? Right now, since the kernel code uses
+> pinctrl_select_state() to switch between those, the state definitions
+> need to define /all/ pins used by those states, not just the dynamic
+> ones. However, with this series in place, the default state should only
+> include the static pins, and the active/idle/sleep states should only
+> include the dynamic pins. That's a change to the DT bindings, since it
+> changes how the DT must be written, and causes older DTs to be
+> incompatible with newer kernels and vice-versa.
 
-> This is the start of the stable review cycle for the 3.10.2 release.
-> There are 72 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sun Jul 21 05:25:08 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.2-rc1.gz
+Well we can keep the current behaviour with pinctrl_select_state() around
+as long as needed. For the legacy cases, there is no active state defined
+and we fall back to pinctrl_select_state().
+ 
+> So, do we just ignore this DT ABI change again, or insist on doing it in
+> some compatible way? DT ABI-ness is a PITA:-(
 
-I've spent just half an hour trying to figure out why this kernel failed
-to install with an incomprehensible error message:
+I'd vote for keeping the existing behaviour with pinctrl_select_state()
+when no active state is defined.
 
-,----
-|  BUILDDEB
-| rm: invalid option -- 'c'
-| Try `rm --help' for more information.
-| make[2]: *** [_modinst_] Error 1
-`----
+Regards,
 
-It turned out that there's a trailing space in the 
+Tony
 
-SUBLEVEL = 2 
-
-line in the Makefile, and that extra space ends up in MODLIB, finally
-passing the 'rm' command _two_ parameters rather than one, the second
-starting with "-rc1".
-
-Cheers,
-       Sven
