@@ -1,125 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965538Ab3GSIgI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:36:08 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:45516 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760003Ab3GSIgA (ORCPT
+	id S1760013Ab3GSIke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:40:34 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:65220 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759962Ab3GSIk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:36:00 -0400
+	Fri, 19 Jul 2013 04:40:28 -0400
+Date: Fri, 19 Jul 2013 10:40:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Weinberger <richard@nod.at>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock implementation
+Message-ID: <20130719084023.GB25784@gmail.com>
+References: <1373679249-27123-1-git-send-email-Waiman.Long@hp.com>
+ <1373679249-27123-2-git-send-email-Waiman.Long@hp.com>
+ <alpine.DEB.2.02.1307151657540.11918@ionos.tec.linutronix.de>
+ <51E49FA3.4030202@hp.com>
+ <20130718074204.GA22623@gmail.com>
+ <51E7F03A.4090305@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <51E87C1F.1090301@hurleysoftware.com>
-References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
-	<51E84FD1.4050400@hurleysoftware.com>
-	<20130718220936.GA8025@xanatos>
-	<51E87C1F.1090301@hurleysoftware.com>
-Date: Fri, 19 Jul 2013 10:35:57 +0200
-Message-ID: <CAN+gG=HKe0eNBmwaf=h6nzR9U3DPC-Hvb1W-uwVqjih5AiKUuQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing
- Unifying device issue""
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        joseph.salisbury@canonical.com,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Jiri Kosina <jkosina@suse.cz>, Andrew de los Reyes <adlr@chromium.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, wujun zhou <zwj.echo@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E7F03A.4090305@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
 
-thanks for forwarding this to the appropriate people & mailing list.
+* Waiman Long <waiman.long@hp.com> wrote:
 
-Hi Sarah,
+> On 07/18/2013 03:42 AM, Ingo Molnar wrote:
+> >* Waiman Long<waiman.long@hp.com>  wrote:
+> >
+> >>>>+ *    stealing the lock if come at the right moment, the granting of the
+> >>>>+ *    lock is mostly in FIFO order.
+> >>>>+ * 2. It is faster in high contention situation.
+> >>>Again, why is it faster?
+> >>The current rwlock implementation suffers from a thundering herd
+> >>problem. When many readers are waiting for the lock hold by a writer,
+> >>they will all jump in more or less at the same time when the writer
+> >>releases the lock. That is not the case with qrwlock. It has been shown
+> >>in many cases that avoiding this thundering herd problem can lead to
+> >>better performance.
+> >Btw., it's possible to further optimize this "writer releases the lock to
+> >multiple readers spinning" thundering herd scenario in the classic
+> >read_lock() case, without changing the queueing model.
+> >
+> >Right now read_lock() fast path is a single atomic instruction. When a
+> >writer releases the lock then it makes it available to all readers and
+> >each reader will execute a LOCK DEC instruction which will succeed.
+> >
+> >This is the relevant code in arch/x86/lib/rwlock.S [edited for
+> >readability]:
+> >
+> >__read_lock_failed():
+> >
+> >0:      LOCK_PREFIX
+> >         READ_LOCK_SIZE(inc) (%__lock_ptr)
+> >
+> >1:      rep; nop
+> >         READ_LOCK_SIZE(cmp) $1, (%__lock_ptr)
+> >         js      1b
+> >
+> >         LOCK_PREFIX READ_LOCK_SIZE(dec) (%__lock_ptr)
+> >         js      0b
+> >
+> >         ret
+> >
+> >This is where we could optimize: instead of signalling to each reader that
+> >it's fine to decrease the count and letting dozens of readers do that on
+> >the same cache-line, which ping-pongs around the numa cross-connect
+> >touching every other CPU as they execute the LOCK DEC instruction, we
+> >could let the _writer_ modify the count on unlock in essence, to the exact
+> >value that readers expect.
+> >
+> >Since read_lock() can never abort this should be relatively
+> >straightforward: the INC above could be left out, and the writer side
+> >needs to detect that there are no other writers waiting and can set the
+> >count to 'reader locked' value - which the readers will detect without
+> >modifying the cache line:
+> >
+> >__read_lock_failed():
+> >
+> >0:      rep; nop
+> >         READ_LOCK_SIZE(cmp) $1, (%__lock_ptr)
+> >         js      0b
+> >
+> >         ret
+> >
+> >(Unless I'm missing something that is.)
+> >
+> >That way the current write_unlock() followed by a 'thundering herd' of
+> >__read_lock_failed() atomic accesses is transformed into an efficient
+> >read-only broadcast of information with only a single update to the
+> >cacheline: the writer-updated cacheline propagates in parallel to every
+> >CPU and is cached there.
+> >
+> >On typical hardware this will be broadcast to all CPUs as part of regular
+> >MESI invalidation bus traffic.
+> >
+> >reader unlock will still have to modify the cacheline, so rwlocks will
+> >still have a fundamental scalability limit even in the read-only usecase.
+> 
+> I think that will work. The only drawback that I can see is the fairness 
+> argument. The current read/write lock implementation is unfair to the 
+> writer. That change will make it even more unfair to the writer and 
+> there is no easy way to detect a waiting writer unless we change the 
+> structure to add such a field. As a result, a steady stream of readers 
+> will have a higher chance of blocking out a writer indefinitely.
 
-thanks for starting investigating this :)
+The effect will have to be measured - but I don't think it's particularly 
+hard to tune the fairness balance between readers and writers: the change 
+I suggested would only affect the case when a writer already holding the 
+lock unlocks it.
 
-On Fri, Jul 19, 2013 at 1:37 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
->>>
->>>
->>>
->>> Before we revert to using the workaround, I'd like to suggest that
->>> this new "hidden" problem may be an interaction with the xhci_hcd host
->>> controller driver only.
->>>
->>> Looking at the related bug, the OP indicates the machine only has
->>> USB3 ports. Additionally, comments #7, #100, and #104 of the original
->>> bug report [1] add additional information that would seem to confirm
->>> this suspicion.
+But when a writer already holds the lock it can decide to pass that lock 
+to another writer-spinning instead of unlocking to all readers. This too 
+should be relatively straightforward to implement because neither 
+read_lock() nor write_lock() can abort and race.
 
-Definitively, this is a USB3 problem. However, it is not generic (I
-can not reproduce it with my USB3 boards.)
+Instead of doing:
 
->>
->>
->> Question: does this USB device need a control transfer to reset its
->> endpoints when the endpoints are not actually halted?  If so, yes, that
->> is a known xHCI driver bug that needs to be fixed.  The xHCI host will
->> not accept a Reset Endpoint command when the endpoints are not actually
->> halted, but the USB core will send the control transfer to reset the
->> endpoint.  That means the device and host toggles will be out of sync,
->> and all messages will start to fail with -EPIPE.
->>
->> Can the OP capture a usbmon trace when the device starts failing?  That
->> will reveal whether this actually is the issue.  dmesg output with
->> CONFIG_USB_DEBUG and CONFIG_USB_XHCI_HCD_DEBUGGING turned on would also
->> be helpful.
->
+static inline void arch_write_unlock(arch_rwlock_t *rw)
+{
+        asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
+                     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
+}
 
-Here is another linux-input thread were you have the usbmon traces:
-http://www.spinics.net/lists/linux-input/msg26542.html
-Wujun Zhou already did one test of a kernel patch for me (which did
-not solve the problem, because I was not at the USB level), so I bet
-he will be able to do some testings for you.
+the current owner could check whether there are other writers waiting and 
+could drop into a slowpath that passes ownership to one of the writers via 
+toggling bit 30 or so. This reduces the max number of writers by a factor 
+of 2.
 
-In the logs he posted (logitech_work.pcapng.gz), the interesting part
-is starting from the capture #45:
+But I'd implement this only if it proves to be a problem in practice.
 
-#45: SET_REPORT request to switch the receiver to the "DJ" mode (the
-receiver stops sending regular HID events, but goes into its
-proprietary protocol)
-#47: SET_REPORT response -> all good
-#48: SET_REPORT request to ask the receiver to enumerate all of his
-devices (it is called right after we received the previous response)
-#49: SET_REPORT response -> -EPIPE
-#50: URB_INTERRUPT_IN (~3 seconds later) -> the device is working normally
+I'd strongly suggest to first address the thundering herd problem of 
+write_unlock() and see how it affects scalability - before totally 
+replacing it all with a new, fundamentally heavier locking primitive!
 
-The weird thing is that only the first enumeration message failed with
--EPIPE: the device answers later control transfer correctly (#54 /
-#55).
+Thanks,
 
->
-> Sarah,
->
-> I forwarded your usbmon capture request to the OP in the bug report
-> (I don't have an email address for the reporter).
->
-
-Here are some other helpful information:
-the first "fix" we have done is dcd9006b1b053c7b1c. It is linked to
-several bugs:
-
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072082
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1039143
-https://bugzilla.redhat.com/show_bug.cgi?id=840391
-https://bugzilla.kernel.org/show_bug.cgi?id=49781
-
-Most of them are people complaining, but in one of the comments,
-adding a 500ms wait between the two control transfer (switch to DJ +
-enumerate) fixed the -EPIPE problem. I interpreted it as a scheduled
-problem (using direct call to usb_control_msg() vs use the scheduled
-one usbhid_submit_message()) but it was just delaying the problem out
-of the probe. Unfortunately, I missed that as I did not asked for the
-usbmon traces at that time.
-
-One last thing, I understood that Linus is also experiencing this
-problem... Adding him in CC to let him know of the progress.
-
-Cheers,
-Benjamin
+	Ingo
