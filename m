@@ -1,140 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab3GST6U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:58:20 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50523 "EHLO zene.cmpxchg.org"
+	id S1751586Ab3GSUCM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:02:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22167 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010Ab3GST6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:58:18 -0400
-Date: Fri, 19 Jul 2013 15:58:12 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Bolle <paul.bollee@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
-Subject: Re: mmotm 2013-07-18-16-40 uploaded
-Message-ID: <20130719195812.GJ17812@cmpxchg.org>
-References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com>
- <51E8B34B.1070200@gmail.com>
- <20130719180035.GI17812@cmpxchg.org>
- <20130719111744.ce87390c8d8fa6b0b1c52eb6@linux-foundation.org>
+	id S1751084Ab3GSUCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 16:02:10 -0400
+Date: Fri, 19 Jul 2013 16:01:58 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] ext4: fix a bug when we try to open a file with
+ O_TMPFILE flag
+Message-ID: <20130719200158.GA19449@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Darrick J. Wong" <darrick.wong@oracle.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org, Theodore Ts'o <tytso@mit.edu>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20130717161944.GA19405@redhat.com>
+ <20130719121405.GA3856@gmail.com>
+ <20130719193106.GD5785@blackbox.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130719111744.ce87390c8d8fa6b0b1c52eb6@linux-foundation.org>
+In-Reply-To: <20130719193106.GD5785@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 11:17:44AM -0700, Andrew Morton wrote:
-> On Fri, 19 Jul 2013 14:00:35 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > > >A git tree which contains the memory management portion of this tree is
-> > > >maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> > > >by Michal Hocko.  It contains the patches which are between the
-> > > >"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-> > > >file, http://www.ozlabs.org/~akpm/mmotm/series.
-> > > >
-> > > >
-> > > >A full copy of the full kernel tree with the linux-next and mmotm patches
-> > > >already applied is available through git within an hour of the mmotm
-> > > >release.  Individual mmotm releases are tagged.  The master branch always
-> > > >points to the latest release, so it's constantly rebasing.
-> > > >
-> > > >http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-> > > >
-> > > >To develop on top of mmotm git:
-> > > >
-> > > >   $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> > > >   $ git remote update mmotm
-> > > >   $ git checkout -b topic mmotm/master
-> > > >   <make changes, commit>
-> > > >   $ git send-email mmotm/master.. [...]
-> > > >
-> > > >To rebase a branch with older patches to a new mmotm release:
-> > > >
-> > > >   $ git remote update mmotm
-> > > >   $ git rebase --onto mmotm/master <topic base> topic
-> > 
-> > Andrew, that workflow is actually meant for
-> > http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
-> > (i.e. the git remote add mmotm <michal's tree> does not make much
-> > sense).  Michal's tree is append-only, so all this precision-rebasing
-> > is unnecessary.
-> 
-> Gee, I haven't looked at that text in a while...
-> 
-> Could you guys please check it, propose any fixes we should make?
-> 
-> 
-> 
-> README for mm-of-the-moment:
-> 
-> http://www.ozlabs.org/~akpm/mmotm/
-> 
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
-> 
-> You will need quilt to apply these patches to the latest Linus release (3.x
-> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> http://ozlabs.org/~akpm/mmotm/series
-> 
-> The file broken-out.tar.gz contains two datestamp files: .DATE and
-> .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-> followed by the base kernel version against which this patch series is to
-> be applied.
-> 
-> This tree is partially included in linux-next.  To see which patches are
-> included in linux-next, consult the `series' file.  Only the patches
-> within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-> linux-next.
-> 
-> A git tree which contains the memory management portion of this tree is
+On Fri, Jul 19, 2013 at 12:31:06PM -0700, Darrick J. Wong wrote:
+ > On Fri, Jul 19, 2013 at 08:14:05PM +0800, Zheng Liu wrote:
+ > > Hi Dave,
+ > > 
+ > > After applied this patch, the problem has been fixed in my own sand box.
+ > > But that would be great if you could give it a try.  I want to make sure
+ > > that this patch can fix the problem.  It looks like there has the same
+ > > problem in ext3.  So if this patch is fine, I will generate a patch for
+ > > ext3 file system.
+ > 
+ > Seems to fix the bug for me, both with your test case and also with trinity
+ > runs, so...
 
-                                                                ^^^
-                                                       on top of the latest
-                                                       Linus release
+Yeah, seems to be working here too. 
 
-maybe?
+ > Tested-by: Darrick J. Wong <darrick.wong@oracle.com>
+ > Tested-by: Darrick J. Wong <darrick.wong@oracle.com>
 
-> maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> by Michal Hocko.  It contains the patches which are between the
-> "#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-> file, http://www.ozlabs.org/~akpm/mmotm/series.
->
-> A full copy of the full kernel tree with the linux-next and mmotm patches
-> already applied is available through git within an hour of the mmotm
-> release.  Individual mmotm releases are tagged.  The master branch always
-> points to the latest release, so it's constantly rebasing.
-> 
-> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-> 
-> To develop on top of mmotm git:
-> 
->   $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+likewise,
 
-                           git://git.cmpxchg.org/linux-mmotm.git
+Tested-by: Dave Jones <davej@redhat.com>
 
->   $ git remote update mmotm
->   $ git checkout -b topic mmotm/master
->   <make changes, commit>
->   $ git send-email mmotm/master.. [...]
-> 
-> To rebase a branch with older patches to a new mmotm release:
-> 
->   $ git remote update mmotm
->   $ git rebase --onto mmotm/master <topic base> topic
-
-Michal started his mm.git to have a stable memory management
-development base, yet here is a long section on how to work with the
-much more awkward mmotm.git.  So I wonder if this whole section on how
-to develop against mmotm.git should be removed and only a reference to
-where it could be found left in.
-
-However, I have actually no idea what people use as an mm development
-base these days...  I know I base smaller things on the latest
-mmotm.git and send it out fairly quickly before even having to deal
-with rebasing and tracking changes in there.  Long term stuff I just
-base on the latest Linus release (suboptimal, I know).
-
-Michal?
+	Dave
