@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935133Ab3GSCdn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:33:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37728 "EHLO
+	id S935243Ab3GSCe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:34:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759441Ab3GSCXn (ORCPT
+	with ESMTP id S934964Ab3GSCXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:23:43 -0400
+	Thu, 18 Jul 2013 22:23:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yu Liu <liuyu.ac@gmail.com>, Shane Huang <shane.huang@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 13/18] ahci: remove pmp link online check in FBS EH
-Date: Thu, 18 Jul 2013 19:23:28 -0700
-Message-Id: <20130719021049.870089104@linuxfoundation.org>
+        Laszlo Ersek <lersek@redhat.com>, John Haxby <john.haxby@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 07/18] xen/time: remove blocked time accounting from xen "clockchip"
+Date: Thu, 18 Jul 2013 19:23:22 -0700
+Message-Id: <20130719021049.465789352@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -27,34 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Laszlo Ersek <lersek@redhat.com>
 
-commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
+commit 0b0c002c340e78173789f8afaa508070d838cf3d upstream.
 
-ata_link_online() check in ahci_error_intr() is unnecessary, it should
-be removed otherwise may lead to lockup with FBS enabled PMP.
-http://marc.info/?l=linux-ide&m=137050421603272&w=2
+... because the "clock_event_device framework" already accounts for idle
+time through the "event_handler" function pointer in
+xen_timer_interrupt().
 
-Reported-by: Yu Liu <liuyu.ac@gmail.com>
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The patch is intended as the completion of [1]. It should fix the double
+idle times seen in PV guests' /proc/stat [2]. It should be orthogonal to
+stolen time accounting (the removed code seems to be isolated).
+
+The approach may be completely misguided.
+
+[1] https://lkml.org/lkml/2011/10/6/10
+[2] http://lists.xensource.com/archives/html/xen-devel/2010-08/msg01068.html
+
+John took the time to retest this patch on top of v3.10 and reported:
+"idle time is correctly incremented for pv and hvm for the normal
+case, nohz=off and nohz=idle." so lets put this patch in.
+
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Signed-off-by: John Haxby <john.haxby@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libahci.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/x86/xen/time.c |   17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
 
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1495,8 +1495,7 @@ static void ahci_error_intr(struct ata_p
- 		u32 fbs = readl(port_mmio + PORT_FBS);
- 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runsta
+ /* snapshots of runstate info */
+ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
  
--		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
--		    ata_link_online(&ap->pmp_link[pmp])) {
-+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
- 			link = &ap->pmp_link[pmp];
- 			fbs_need_dec = true;
- 		}
+-/* unused ns of stolen and blocked time */
++/* unused ns of stolen time */
+ static DEFINE_PER_CPU(u64, xen_residual_stolen);
+-static DEFINE_PER_CPU(u64, xen_residual_blocked);
+ 
+ /* return an consistent snapshot of 64-bit time/counter value */
+ static u64 get64(const u64 *p)
+@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
+ {
+ 	struct vcpu_runstate_info state;
+ 	struct vcpu_runstate_info *snap;
+-	s64 blocked, runnable, offline, stolen;
++	s64 runnable, offline, stolen;
+ 	cputime_t ticks;
+ 
+ 	get_runstate_snapshot(&state);
+@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
+ 	snap = &__get_cpu_var(xen_runstate_snapshot);
+ 
+ 	/* work out how much time the VCPU has not been runn*ing*  */
+-	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
+ 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
+ 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
+ 
+@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
+ 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
+ 	__this_cpu_write(xen_residual_stolen, stolen);
+ 	account_steal_ticks(ticks);
+-
+-	/* Add the appropriate number of ticks of blocked time,
+-	   including any left-overs from last time. */
+-	blocked += __this_cpu_read(xen_residual_blocked);
+-
+-	if (blocked < 0)
+-		blocked = 0;
+-
+-	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
+-	__this_cpu_write(xen_residual_blocked, blocked);
+-	account_idle_ticks(ticks);
+ }
+ 
+ /* Get the TSC speed from Xen */
 
 
