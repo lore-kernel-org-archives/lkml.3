@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935149Ab3GSCZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:25:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37805 "EHLO
+	id S935136Ab3GSCZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:25:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37787 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935106Ab3GSCZC (ORCPT
+	with ESMTP id S935097Ab3GSCZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:02 -0400
+	Thu, 18 Jul 2013 22:25:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Disseldorp <ddiss@suse.de>, Steve French <smfrench@gmail.com>
-Subject: [ 01/24] CIFS use sensible file nlink values if unprovided
-Date: Thu, 18 Jul 2013 19:24:33 -0700
-Message-Id: <20130719022404.116566509@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 14/24] ACPI / EC: Add HP Folio 13 to ec_dmi_table in order to skip DSDT scan
+Date: Thu, 18 Jul 2013 19:24:46 -0700
+Message-Id: <20130719022404.999826748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -26,39 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@gmail.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 6658b9f70ebca5fc0795b1d6d733996af1e2caa7 upstream.
+commit eff9a4b62b14cf0d9913e3caf1f26f8b7a6105c9 upstream.
 
-Certain servers may not set the NumberOfLinks field in query file/path
-info responses. In such a case, cifs_inode_needs_reval() assumes that
-all regular files are hardlinks and triggers revalidation, leading to
-excessive and unnecessary network traffic.
+HP Folio 13's BIOS defines CMOS RTC Operation Region and the EC's
+_REG method will access that region.  To allow the CMOS RTC region
+handler to be installed before the EC _REG method is first invoked,
+add ec_skip_dsdt_scan() as HP Folio 13's callback to ec_dmi_table.
 
-This change hardcodes cf_nlink (and subsequently i_nlink) when not
-returned by the server, similar to what already occurs in cifs_mkdir().
-
-Signed-off-by: David Disseldorp <ddiss@suse.de>
-Signed-off-by: Steve French <smfrench@gmail.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=54621
+Reported-and-tested-by: Stefan Nagy <public@stefan-nagy.at>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/inode.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/acpi/ec.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -549,6 +549,11 @@ cifs_all_info_to_fattr(struct cifs_fattr
- 			fattr->cf_mode &= ~(S_IWUGO);
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -974,6 +974,10 @@ static struct dmi_system_id __initdata e
+ 	ec_enlarge_storm_threshold, "CLEVO hardware", {
+ 	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
+ 	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
++	{
++	ec_skip_dsdt_scan, "HP Folio 13", {
++	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
+ 	{},
+ };
  
- 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
-+		if (fattr->cf_nlink < 1) {
-+			cFYI(1, "replacing bogus file nlink value %u\n",
-+			     fattr->cf_nlink);
-+			fattr->cf_nlink = 1;
-+		}
- 	}
- 
- 	fattr->cf_uid = cifs_sb->mnt_uid;
 
 
