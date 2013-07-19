@@ -1,117 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760178Ab3GSJQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 05:16:08 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:57972 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3GSJQA (ORCPT
+	id S1760061Ab3GSJXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 05:23:05 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:43755 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab3GSJXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 05:16:00 -0400
-X-AuditID: 85900ec0-d42c9b900000151e-12-51e903cd5049
-Subject: [PATCH V2 1/2] [BUGFIX] virtio/console: Quit from splice_write if
- pipe->nrbufs is 0
-To: Amit Shah <amit.shah@redhat.com>, linux-kernel@vger.kernel.org
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
+	Fri, 19 Jul 2013 05:23:01 -0400
+Date: Fri, 19 Jul 2013 11:22:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Fri, 19 Jul 2013 18:19:54 +0900
-Message-ID: <20130719091954.9698.84901.stgit@yunodevel>
-In-Reply-To: <20130719091951.9698.95194.stgit@yunodevel>
-References: <20130719091951.9698.95194.stgit@yunodevel>
-User-Agent: StGit/0.16
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: mistakes in code vs. maintainer flow mistakes (was: [ 00/19]
+ 3.10.1-stable review)
+Message-ID: <20130719092256.GC25784@gmail.com>
+References: <CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+ <20130715180403.GD15531@xanatos>
+ <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+ <20130715184642.GE15531@xanatos>
+ <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
+ <20130715195316.GF15531@xanatos>
+ <20130715204135.GH15531@xanatos>
+ <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com>
+ <20130718103907.GC23558@gmail.com>
+ <20130718160754.GC5440@xanatos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718160754.GC5440@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quit from splice_write if pipe->nrbufs is 0 for avoiding oops in virtio-serial.
 
-When an application was doing splice from a kernel buffer to virtio-serial on
-a guest, the application received signal(SIGINT). This situation will normally
-happen, but the kernel executed a kernel panic by oops as follows:
+* Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
 
- BUG: unable to handle kernel paging request at ffff882071c8ef28
- IP: [<ffffffff812de48f>] sg_init_table+0x2f/0x50
- PGD 1fac067 PUD 0
- Oops: 0000 [#1] SMP
- Modules linked in: lockd sunrpc bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd microcode virtio_balloon virtio_net pcspkr soundcore i2c_piix4 i2c_core uinput floppy
- CPU: 1 PID: 908 Comm: trace-cmd Not tainted 3.10.0+ #49
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
- task: ffff880071c64650 ti: ffff88007bf24000 task.ti: ffff88007bf24000
- RIP: 0010:[<ffffffff812de48f>]  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
- RSP: 0018:ffff88007bf25dd8  EFLAGS: 00010286
- RAX: 0000001fffffffe0 RBX: ffff882071c8ef28 RCX: 0000000000000000
- RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880071c8ef48
- RBP: ffff88007bf25de8 R08: ffff88007fd15d40 R09: ffff880071c8ef48
- R10: ffffea0001c71040 R11: ffffffff8139c555 R12: 0000000000000000
- R13: ffff88007506a3c0 R14: ffff88007c862500 R15: ffff880071c8ef00
- FS:  00007f0a3646c740(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: ffff882071c8ef28 CR3: 000000007acbb000 CR4: 00000000000006e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Stack:
-  ffff880071c8ef48 ffff88007bf25e20 ffff88007bf25e88 ffffffff8139d6fa
-  ffff88007bf25e28 ffffffff8127a3f4 0000000000000000 0000000000000000
-  ffff880071c8ef48 0000100000000000 0000000000000003 ffff88007bf25e08
- Call Trace:
-  [<ffffffff8139d6fa>] port_fops_splice_write+0xaa/0x130
-  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
-  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
-  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
-  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
-  [<ffffffff8161f8c2>] system_call_fastpath+0x16/0x1b
- Code: c1 e2 05 48 89 e5 48 83 ec 10 4c 89 65 f8 41 89 f4 31 f6 48 89 5d f0 48 89 fb e8 8d ce ff ff 41 8d 44 24 ff 48 c1 e0 05 48 01 c3 <48> 8b 03 48 83 e0 fe 48 83 c8 02 48 89 03 48 8b 5d f0 4c 8b 65
- RIP  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
-  RSP <ffff88007bf25dd8>
- CR2: ffff882071c8ef28
- ---[ end trace 86323505eb42ea8f ]---
+> On Thu, Jul 18, 2013 at 12:39:07PM +0200, Ingo Molnar wrote:
+> > 
+> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > 
+> > > On Mon, Jul 15, 2013 at 1:41 PM, Sarah Sharp
+> > > <sarah.a.sharp@linux.intel.com> wrote:
+> > > >
+> > > > Oh, FFS, I just called out on private email for "playing the victim
+> > > > card".  I will repeat: this is not just about me, or other minorities.
+> > > > I should not have to ask for professional behavior on the mailing lists.
+> > > > Professional behavior should be the default.
+> > > 
+> > 
+> > > [...]
+> > > 
+> > > Because if you want me to "act professional", I can tell you that I'm 
+> > > not interested. I'm sitting in my home office wearign a bathrobe. The 
+> > > same way I'm not going to start wearing ties, I'm *also* not going to 
+> > > buy into the fake politeness, the lying, the office politics and 
+> > > backstabbing, the passive aggressiveness, and the buzzwords. Because 
+> > > THAT is what "acting professionally" results in: people resort to all 
+> > > kinds of really nasty things because they are forced to act out their 
+> > > normal urges in unnatural ways.
+> > 
+> > Sarah, that's a pretty potent argument by Linus, that "acting 
+> > professionally" risks replacing a raw but honest culture with a
+> > polished but dishonest culture - which is harmful to developing
+> > good technology.
+> > 
+> > That's a valid concern. What's your reply to that argument?
+> 
+> I don't feel the need to comment, because I feel it's a straw man 
+> argument.  I feel that way because I disagree with the definition of 
+> professionalism that people have been pushing.
 
-It seems to induce pagefault in sg_init_tabel() when pipe->nrbufs is equal to
-zero. This may happen in a following situation:
+I hope you won't take this as a sign of disrespect, but it's hard to keep 
+up with your somewhat fluid opinion about what exactly you find 
+objectionable :-/
 
-(1) The application normally does splice(read) from a kernel buffer, then does
-    splice(write) to virtio-serial.
-(2) The application receives SIGINT when is doing splice(read), so splice(read)
-    is failed by EINTR. However, the application does not finish the operation.
-(3) The application tries to do splice(write) without pipe->nrbufs.
-(4) The virtio-console driver tries to touch scatterlist structure sgl in
-    sg_init_table(), but the region is out of bound.
+Early in the thread you claimed it's about politeness:
 
-To avoid the case, a kernel should check whether pipe->nrbufs is empty or not
-when splice_write is executed in the virtio-console driver.
+> Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+>
+> [...] I've seen you be polite, and explain to clueless maintainers why 
+> there's no way you can revert their merge that caused regressions, and 
+> ask them to fit it without resorting to tearing them down emotionally:
+>
+>   http://marc.info/?l=linux-kernel&m=136130347127908&w=2
+>
+> You just don't want to take the time to be polite to everyone.  Don't 
+> give me the "I'm not polite" card.  Go write some documentation about 
+> what's acceptable for stable.
 
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/char/virtio_console.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+But now you claim something else, it's OK to be impolite, it's just not OK 
+to do XYZ ... and it's unclear to me what you mean under XYZ exactly. 
+Right now you say XYZ is "disrespect":
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 1b456fe..8722656 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -932,6 +932,13 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
- 	if (is_rproc_serial(port->out_vq->vdev))
- 		return -EINVAL;
- 
-+	/*
-+	 * pipe->nrbufs == 0 means there are no data to transfer,
-+	 * so this returns just 0 for no data.
-+	 */
-+	if (!pipe->nrbufs)
-+		return 0;
-+
- 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
- 	if (ret < 0)
- 		return ret;
+> To me, being "professional" means treating each other with respect.  I 
+> can show emotion, express displeasure, be direct, and still show respect 
+> for my fellow developers.
 
+But what is there to respect about a colossal maintainer f*ck-up, which is 
+inextricably tied to the person? Do you really think if Linus replaced 
+this:
+
+ "  Ingo, this is just so mind-boggingly STUPID, how did you even f*cking 
+    THINK of doing something like that??  "
+
+with a respectful and still truthful statement:
+
+ "
+   Ingo, I fully respect you [*] but this is just mind-boggingly
+   STUPID, how did you even f*cking THINK of doing something like that??
+
+   [*] Unless you keep doing such sh*t too many times, of course. Then I
+       won't respect you anymore and will ignore your patches. You are not 
+       my friend, you are a top level maintainer in a meritocracy. There's 
+       a way both up and down.
+ "
+
+then I would not feel just as bad about it all?
+
+> For example, I find the following statement to be both direct and 
+> respectful, because it's criticizing code, not the person:
+> 
+> "This code is SHIT!  It adds new warnings and it's marked for stable 
+> when it's clearly *crap code* that's not a bug fix.  I'm going to revert 
+> this merge, and I expect a fix from you IMMEDIATELY."
+> 
+> The following statement is not respectful, because it targets the 
+> person:
+> 
+> "Seriously, Maintainer.  Why are you pushing this kind of *crap* code to 
+> me again?  Why the hell did you mark it for stable when it's clearly not 
+> a bug fix?  Did you even try to f*cking compile this?"
+
+Well, but often it's the action of the maintainer that what was wrong, not 
+the patch primarily.
+
+Mistakes in patches and code happen all the time. Linus rarely if ever 
+flamed me for _that_ - sh*t happens.
+
+What he flames me for, and what you (with all due respect) still don't 
+seem to understand, are _META_ mistakes. Top level maintainer level 
+mistakes. Bad patterns of maintainer behavior that really should not occur 
+because they could affect many patches in the future, such as:
+
+ - trying to argue regressions away - i.e. not 'shutting up' in time, 
+   being a meta hindrance to problem resolution
+
+ - doing a sloppy Git flow, repeatedly
+
+ - not testing adequately, especially when the pull request occurs at a 
+   critical time (such as a couple of hours before -rc1)
+
+ - [ and many other meta mistakes ]
+
+None of those arguments are about code and still I fully expect Linus to 
+pin those on me if he notices a meta bug in my behavior and finds it 
+dangerous.
+
+> I would appreciate it if people would replace the word "professional" 
+> with "respectful" in this thread.  It means something different to me 
+> than other people, and respect is much closer to what I'm looking for.
+> 
+> I would appreciate it if kernel developers would show respect for each 
+> other, while focusing on criticizing code.  As Rusty said, be gentle 
+> with people.  You've called their baby ugly.
+
+But Linus doesn't really criticise mistakes in code primarily when he 
+flames top level maintainers!
+
+Read the very examples you dug out of the lkml archives, the Linus "worst 
+of" list. Sure, some bad code is almost always part of a specific 
+incident, but primarily he criticises the maintainer flow, and that is 
+fundamentally tied to the _person_.
+
+_That_ is why it might look to you as if the person was attacked, because 
+indeed the actions of the top level maintainer were wrong and are 
+criticised.
+
+... and now you want to 'shut down' the discussion. With all due respect, 
+you started it, you have put out various heavy accusations here and 
+elsewhere, so you might as well take responsibility for it and let the 
+discussion be brought to a conclusion, wherever that may take us, compared 
+to your initial view?
+
+Thanks,
+
+	Ingo
