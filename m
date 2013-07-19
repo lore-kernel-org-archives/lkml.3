@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935170Ab3GSC2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:28:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37821 "EHLO
+	id S935236Ab3GSC3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:29:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37817 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935113Ab3GSCZE (ORCPT
+	with ESMTP id S935042Ab3GSCZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Jul 2013 22:25:04 -0400
+	Thu, 18 Jul 2013 22:25:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 05/24] ext3,ext4: dont mess with dir_file->f_pos in htree_dirblock_to_tree()
-Date: Thu, 18 Jul 2013 19:24:37 -0700
-Message-Id: <20130719022404.384029586@linuxfoundation.org>
+        Yu Liu <liuyu.ac@gmail.com>, Shane Huang <shane.huang@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 17/24] ahci: remove pmp link online check in FBS EH
+Date: Thu, 18 Jul 2013 19:24:49 -0700
+Message-Id: <20130719022405.201938501@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719022404.015008451@linuxfoundation.org>
 References: <20130719022404.015008451@linuxfoundation.org>
@@ -26,55 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Shane Huang <shane.huang@amd.com>
 
-commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
+commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
 
-Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
-in-core rbtree for use by call_filldir().  All updates of ->f_pos are
-done by the latter; bumping it here (on error) is obviously wrong - we
-might very well have it nowhere near the block we'd found an error in.
+ata_link_online() check in ahci_error_intr() is unnecessary, it should
+be removed otherwise may lead to lockup with FBS enabled PMP.
+http://marc.info/?l=linux-ide&m=137050421603272&w=2
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Yu Liu <liuyu.ac@gmail.com>
+Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext3/namei.c |    7 ++-----
- fs/ext4/namei.c |    7 ++-----
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/ata/libahci.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -573,11 +573,8 @@ static int htree_dirblock_to_tree(struct
- 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
- 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
- 						+((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse (bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1543,8 +1543,7 @@ static void ahci_error_intr(struct ata_p
+ 		u32 fbs = readl(port_mmio + PORT_FBS);
+ 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
+ 
+-		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
+-		    ata_link_online(&ap->pmp_link[pmp])) {
++		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
+ 			link = &ap->pmp_link[pmp];
+ 			fbs_need_dec = true;
  		}
- 		ext3fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
- 		if (ext4_check_dir_entry(dir, NULL, de, bh,
- 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
- 					 + ((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse(bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext4fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
 
 
