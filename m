@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760184Ab3GSK5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 06:57:14 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1381 "EHLO mms2.broadcom.com"
+	id S1751256Ab3GSLBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 07:01:51 -0400
+Received: from pequod.mess.org ([46.65.169.142]:52100 "EHLO pequod.mess.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab3GSK5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 06:57:12 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <51E91B80.1050609@broadcom.com>
-Date: Fri, 19 Jul 2013 12:57:04 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1750741Ab3GSLBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 07:01:50 -0400
+Date: Fri, 19 Jul 2013 12:01:47 +0100
+From: Sean Young <sean@mess.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: linux-media@vger.kernel.org, alipowski@interia.pl,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel@vger.kernel.org, srinivas.kandagatla@gmail.com
+Subject: Re: [PATCH v1 1/2] media: rc: Add user count to rc dev.
+Message-ID: <20130719110147.GA1104@pequod.mess.org>
+References: <1374223132-4924-1-git-send-email-srinivas.kandagatla@st.com>
+ <1374223167-4980-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-To: "Roger Quadros" <rogerq@ti.com>
-cc: "Tony Lindgren" <tony@atomide.com>, linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
- ethernet
-References: <51E7AA24.6080600@broadcom.com>
- <20130718085951.GT7656@atomide.com> <51E916C0.8080206@broadcom.com>
- <51E919CA.8060805@ti.com>
-In-Reply-To: <51E919CA.8060805@ti.com>
-X-WSS-ID: 7DF7C5911R045929920-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374223167-4980-1-git-send-email-srinivas.kandagatla@st.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 12:49 PM, Roger Quadros wrote:
-> On 07/19/2013 01:36 PM, Arend van Spriel wrote:
->> On 07/18/2013 10:59 AM, Tony Lindgren wrote:
->>> Then for the SDIO with device tree, take a look at the following
->>> patches:
->>>
->>> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
->>> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
->>
->> I have been looking at the pandaboard patch in the series above and I do have a question. Among other things the patch adds these dt entries.
->>
->> +            0x108 0x118    /* sdmmc5_clk.sdmmc5_clk INPUT_PULLUP | MODE0 */
->> +            0x10a 0x118    /* sdmmc5_cmd.sdmmc5_cmd INPUT_PULLUP | MODE0 */
->>
->> If I look at the similar names in the deceased board-omap4panda.c:
->>
->> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CMD, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
->> board-omap4panda.c:    OMAP4_MUX(SDMMC5_CLK, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
->>
->> and in mux44xx.h:
->>
->> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CLK_OFFSET    0x0148
->> mux44xx.h:#define OMAP4_CTRL_MODULE_PAD_SDMMC5_CMD_OFFSET    0x014a
->>
->> So how did 0x0148 get 0x0108 in DT and 0x014a get 0x010a. There is probably an explanation to it and it would help my understanding to know where this difference comes from. Hope you can help me out here.
->>
->
-> If you see omap4.dtsi, omap4_pmx_core starts at register address 0x4a100040.
->
-> So, you need to subtract 0x40 from the offsets defined in mux44xx.h for pmx_core registers.
+On Fri, Jul 19, 2013 at 09:39:27AM +0100, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> 
+> This patch adds user count to rc_dev structure, the reason to add this
+> new member is to allow other code like lirc to open rc device directly.
+> In the existing code, rc device is only opened by input subsystem which
+> works ok if we have any input drivers to match. But in case like lirc
+> where there will be no input driver, rc device will be never opened.
+> 
+> Having this user count variable will be useful to allow rc device to be
+> opened from code other than rc-main.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>  drivers/media/rc/rc-main.c |   11 +++++++++--
+>  include/media/rc-core.h    |    1 +
+>  2 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/rc/rc-main.c b/drivers/media/rc/rc-main.c
+> index 1cf382a..e800b96 100644
+> --- a/drivers/media/rc/rc-main.c
+> +++ b/drivers/media/rc/rc-main.c
+> @@ -702,15 +702,22 @@ EXPORT_SYMBOL_GPL(rc_keydown_notimeout);
+>  static int ir_open(struct input_dev *idev)
+>  {
+>  	struct rc_dev *rdev = input_get_drvdata(idev);
+> +	int rval = 0;
+>  
+> -	return rdev->open(rdev);
+> +	if (!rdev->users++)
+> +		rval = rdev->open(rdev);
+> +
+> +	if (rval)
+> +		rdev->users--;
+> +
+> +	return rval;
 
-That was what I was looking for. Thanks!
+This looks racey. Some locking is needed, I think rc_dev->lock should work
+fine for this. Here and in the lirc code path too.
 
-> NOTE: omap4_pmx_wkup starts at a different address. Those are for wakeup domain
-> control registers.
+Sean
 
-Will keep that in mind.
-
-Regards,
-Arend
-
-
+>  }
+>  
+>  static void ir_close(struct input_dev *idev)
+>  {
+>  	struct rc_dev *rdev = input_get_drvdata(idev);
+>  
+> -	 if (rdev)
+> +	 if (rdev && !--rdev->users)
+>  		rdev->close(rdev);
+>  }
+>  
+> diff --git a/include/media/rc-core.h b/include/media/rc-core.h
+> index 06a75de..b42016a 100644
+> --- a/include/media/rc-core.h
+> +++ b/include/media/rc-core.h
+> @@ -101,6 +101,7 @@ struct rc_dev {
+>  	bool				idle;
+>  	u64				allowed_protos;
+>  	u64				enabled_protocols;
+> +	u32				users;
+>  	u32				scanmask;
+>  	void				*priv;
+>  	spinlock_t			keylock;
+> -- 
+> 1.7.6.5
