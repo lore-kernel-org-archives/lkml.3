@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761194Ab3GSTOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 15:14:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50387 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab3GSTOq (ORCPT
+	id S1761224Ab3GSTP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 15:15:26 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:12635 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab3GSTPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 15:14:46 -0400
-Date: Fri, 19 Jul 2013 12:14:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Brandon Philips <brandon@ifup.org>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: is kexec on Xen domU possible?
-Message-ID: <20130719191449.GA1882@kroah.com>
-References: <20130719020603.GA22932@kroah.com>
- <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
- <20130719151243.GA15488@kroah.com>
- <20130719183235.GA12267@debian70-amd64.local.net-space.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719183235.GA12267@debian70-amd64.local.net-space.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Jul 2013 15:15:23 -0400
+Message-ID: <1374261318.1830.6.camel@j-VirtualBox>
+Subject: Re: [RFC] sched: Limit idle_balance() when it is being used too
+ frequently
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
+Date: Fri, 19 Jul 2013 12:15:18 -0700
+In-Reply-To: <20130719183717.GP27075@twins.programming.kicks-ass.net>
+References: <1374048701.6000.21.camel@j-VirtualBox>
+	 <20130717093913.GP23818@dyad.programming.kicks-ass.net>
+	 <1374076741.7412.35.camel@j-VirtualBox>
+	 <20130717161815.GR23818@dyad.programming.kicks-ass.net>
+	 <51E6D9B7.1030705@redhat.com>
+	 <20130717180156.GS23818@dyad.programming.kicks-ass.net>
+	 <1374120144.1816.45.camel@j-VirtualBox>
+	 <20130718093218.GH27075@twins.programming.kicks-ass.net>
+	 <51E7D89A.8010009@redhat.com> <1374174399.1792.42.camel@j-VirtualBox>
+	 <20130719183717.GP27075@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 08:32:35PM +0200, Daniel Kiper wrote:
-> On Fri, Jul 19, 2013 at 08:12:43AM -0700, Greg KH wrote:
-> > On Fri, Jul 19, 2013 at 03:18:19PM +0200, Daniel Kiper wrote:
-> > > > support is "easy" after your patches go in, is that because Dom0 needs
-> > > > to support this, or is it something specific to only domU?
-> > >
-> > > In case of domU we should consider following cases:
-> > >   - PV guests: there is no support for kexec at this time;
-> > >     Once I wrote an implementatation for that type of guests
-> > >     for one company but according to our agreement I could not
-> > >     publish this code; However, I could use it as a base for
-> > >     publicly available kexec implementation; Currently, I do
-> > >     not have any plans to work on this due to some more important
-> > >     stuff to do; However, question about kexec support for PV
-> > >     guests is raised from time to time and maybe this issue
-> > >     will be much more important than others once,
-> > >   - HVM guests: kexec should work without any issue,
-> > >   - PVonHVM guests: IIRC, there were some issues with PV
-> > >     drivers but they were fixed some time ago by patches
-> > >     posted by Olaf Hering,
-> > >   - PVH guests: those type of guests are not available in Xen
-> > >     current releases yet; However, Konrad Wilk done some preliminary
-> > >     work on kexec support but there are still some issues to resolve.
-> > >
-> > > I do not know what are you trying to do but if you would like
-> > > to get some crash dumps there is also another solution to that.
-> > > You could use xm/xl dump-core from Dom0 to get dumps of domU memory.
-> >
-> > As Brandon said, we were trying to use kexec in a PV guest in domU to
-> > run another kernel.  I had assumed this wouldn't need support from dom0.
+On Fri, 2013-07-19 at 20:37 +0200, Peter Zijlstra wrote:
+> On Thu, Jul 18, 2013 at 12:06:39PM -0700, Jason Low wrote:
 > 
-> You are right.
+> > N = 1
+> > -----
+> > 19.21%  reaim  [k] __read_lock_failed                     
+> > 14.79%  reaim  [k] mspin_lock                             
+> > 12.19%  reaim  [k] __write_lock_failed                    
+> > 7.87%   reaim  [k] _raw_spin_lock                          
+> > 2.03%   reaim  [k] start_this_handle                       
+> > 1.98%   reaim  [k] update_sd_lb_stats                      
+> > 1.92%   reaim  [k] mutex_spin_on_owner                     
+> > 1.86%   reaim  [k] update_cfs_rq_blocked_load              
+> > 1.14%   swapper  [k] intel_idle                              
+> > 1.10%   reaim  [.] add_long                                
+> > 1.09%   reaim  [.] add_int                                 
+> > 1.08%   reaim  [k] load_balance                            
 > 
-> > As you have implemented this in the past, did you need to change dom0 in
-> > order to achieve this, and if so, why?
+> But but but but.. wth is causing this? The only thing we do more of with
+> N=1 is idle_balance(); where would that cause __{read,write}_lock_failed
+> and or mspin_lock() contention like that.
 > 
-> It was strong requirement to not change anything in hypervisor or dom0.
-> I succeeded to do that but it requires changes in kernel and kexec-tools.
+> There shouldn't be a rwlock_t in the entire scheduler; those things suck
+> worse than quicksand.
 > 
-> > The errors that the kexec tools seem to run into is finding the memory
-> > to place the new kernel into, is that just an issue that PV guests
-> > aren't given enough kernel memory in which to replicate themselves from
-> > dom0?
-> 
-> There are a lot of differences between baremetal machines and PV guests.
-> For example you are not able to do identity mapping per se in PV guests.
-> Arguments to new kernel are passed in completely different way. etc.
+> If, as Rik thought, we'd have more rq->lock contention, then I'd
+> expected _raw_spin_lock to be up highest.
 
-Ok, thanks for confirming that it is possible, but doesn't currently
-work for pv guests.
+For this particular fserver workload, that mutex was acquired in the
+function calls from ext4_orphan_add() and ext4_orphan_del(). Those read
+and write lock calls were from start_this_handle(). 
 
-greg k-h
+Although these functions are not called within the idle_balance() code
+path, update_sd_lb_stats(), tg_load_down(), idle_cpu(), spin_lock(),
+ect... increases the time spent in the kernel and that appears to be
+indirectly causing more time to be spent acquiring those other kernel
+locks.
+
+Thanks,
+Jason
+
+
+
