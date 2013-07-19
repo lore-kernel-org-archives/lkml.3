@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760702Ab3GSPuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 11:50:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27536 "EHLO mx1.redhat.com"
+	id S1760767Ab3GSPwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 11:52:09 -0400
+Received: from www.sr71.net ([198.145.64.142]:42924 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab3GSPuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 11:50:22 -0400
-Date: Fri, 19 Jul 2013 11:49:36 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1374248976-te4ek4ys-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130719153332.GG6123@two.firstfloor.org>
-References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130719153332.GG6123@two.firstfloor.org>
-Subject: Re: [PATCH v3 0/8] extend hugepage migration
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1751167Ab3GSPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 11:52:07 -0400
+Message-ID: <51E9609D.4030201@sr71.net>
+Date: Fri, 19 Jul 2013 08:51:57 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
+References: <20130716234438.C792C316@viggo.jf.intel.com> <20130717072100.GA14359@gmail.com> <20130718135157.2262e28b2c6e0f43a4d0fe7a@linux-foundation.org> <20130719082848.GA25784@gmail.com>
+In-Reply-To: <20130719082848.GA25784@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130719153332.GG6123@two.firstfloor.org>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 05:33:32PM +0200, Andi Kleen wrote:
-> On Thu, Jul 18, 2013 at 05:34:24PM -0400, Naoya Horiguchi wrote:
-> > Here is the 3rd version of hugepage migration patchset.
-> > I rebased it onto v3.11-rc1 and applied most of your feedbacks.
-> > 
-> > Some works referred to in previous discussion (shown below) are not included
-> > in this patchset, but likely to be done after this work.
-> >  - using page walker in check_range
-> >  - split page table lock for pmd/pud based hugepage (maybe applicable to thp)
+On 07/19/2013 01:28 AM, Ingo Molnar wrote:
+> UP is slowly going extinct, but in any case these counters ought to inform 
+> us about TLB flushes even on UP systems:
 > 
-> I did a quick read through the patchkit and it looks all good to me.
-> It also closes a long standing gap. Thanks!
+>>>> > > > +		NR_TLB_LOCAL_FLUSH_ALL,
+>>>> > > > +		NR_TLB_LOCAL_FLUSH_ONE,
+>>>> > > > +		NR_TLB_LOCAL_FLUSH_ONE_KERNEL,
+> While these ought to be compiled out on UP kernels:
 > 
-> Acked-by: Andi Kleen <ak@linux.intel.com>
+>>>> > > > +		NR_TLB_REMOTE_FLUSH,	/* cpu tried to flush others' tlbs */
+>>>> > > > +		NR_TLB_REMOTE_FLUSH_RECEIVED,/* cpu received ipi for flush */
+> Right?
 
-Thank you.
-Can I add your Ack on the whole series?
+Yeah, it's useful on UP too.  But I realized that my changes were
+confined to the SMP code.  The UP code is almost all in one of the
+headers, and I didn't touch it.  So I've got some work there to fix it up.
 
-> > Hugepage migration of 1GB hugepage is not enabled for now, because
-> > I'm not sure whether users of 1GB hugepage really want it.
-> > We need to spare free hugepage in order to do migration, but I don't
-> > think that users want to 1GB memory to idle for that purpose
-> > (currently we can't expand/shrink 1GB hugepage pool after boot).
-> 
-> I think we'll need 1GB migration sooner or later. As memory sizes
-> go up 1GB use will be more common, and the limitation of not
-> expanding/shrinking 1GB will be eventually fixed.
-> 
-> It would be just a straight forward extension of your patchkit,
-> right?
-
-Right, I'm preparing for 1GB hugepages migration, but it's still
-lack of testing.
-
-Thanks,
-Naoya
