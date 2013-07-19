@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965897Ab3GSF2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:28:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40068 "EHLO
+	id S965911Ab3GSF2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:28:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40062 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965845Ab3GSF1V (ORCPT
+	with ESMTP id S965494Ab3GSF1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:21 -0400
+	Fri, 19 Jul 2013 01:27:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 68/72] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
-Date: Thu, 18 Jul 2013 22:26:25 -0700
-Message-Id: <20130719052604.510673628@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 67/72] ARM: mm: fix boot on SA1110 Assabet
+Date: Thu, 18 Jul 2013 22:26:24 -0700
+Message-Id: <20130719052604.444270826@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -32,68 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit da331ba8e9c5de72a27e50f71105395bba6eebe0 upstream.
+commit 319e0b4f02f73983c03a2ca38595fc6367929edf upstream.
 
-tasklet_kill() may sleep so call it before taking pch->lock.
+Commit 83db0384 (mm/ARM: use common help functions to free reserved
+pages) broke booting on the Assabet by trying to convert a PFN to
+a virtual address using the __va() macro.  This macro takes the
+physical address, not a PFN.  Fix this.
 
-Fixes following lockup:
-
-  BUG: scheduling while atomic: cat/2383/0x00000002
-  Modules linked in:
-    unwind_backtrace+0x0/0xfc
-    __schedule_bug+0x4c/0x58
-    __schedule+0x690/0x6e0
-    sys_sched_yield+0x70/0x78
-    tasklet_kill+0x34/0x8c
-    pl330_free_chan_resources+0x24/0x88
-    dma_chan_put+0x4c/0x50
-  [...]
-  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
-   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
-    unwind_backtrace+0x0/0xfc
-    do_raw_spin_lock+0x194/0x204
-    _raw_spin_lock_irqsave+0x20/0x28
-    pl330_tasklet+0x2c/0x5a8
-    tasklet_action+0xfc/0x114
-    __do_softirq+0xe4/0x19c
-    irq_exit+0x98/0x9c
-    handle_IPI+0x124/0x16c
-    gic_handle_irq+0x64/0x68
-    __irq_svc+0x40/0x70
-    cpuidle_wrap_enter+0x4c/0xa0
-    cpuidle_enter_state+0x18/0x68
-    cpuidle_idle_call+0xac/0xe0
-    cpu_idle+0xac/0xf0
-
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/pl330.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mm/init.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2485,10 +2485,10 @@ static void pl330_free_chan_resources(st
- 	struct dma_pl330_chan *pch = to_pchan(chan);
- 	unsigned long flags;
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -600,7 +600,7 @@ void __init mem_init(void)
  
--	spin_lock_irqsave(&pch->lock, flags);
--
- 	tasklet_kill(&pch->task);
+ #ifdef CONFIG_SA1111
+ 	/* now that our DMA memory is actually so designated, we can free it */
+-	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
++	free_reserved_area(__va(PHYS_OFFSET), swapper_pg_dir, 0, NULL);
+ #endif
  
-+	spin_lock_irqsave(&pch->lock, flags);
-+
- 	pl330_release_channel(pch->pl330_chid);
- 	pch->pl330_chid = NULL;
- 
+ 	free_highpages();
 
 
