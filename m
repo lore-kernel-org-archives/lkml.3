@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3GSVAn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 17:00:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4121 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab3GSVAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 17:00:41 -0400
-Message-ID: <51E9A8E0.8080404@redhat.com>
-Date: Fri, 19 Jul 2013 23:00:16 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752622Ab3GSVAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 17:00:38 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:37932 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab3GSVAh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 17:00:37 -0400
+Message-ID: <51E9A8FA.2080205@gmail.com>
+Date: Fri, 19 Jul 2013 15:00:42 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jason Wang <jasowang@redhat.com>, gleb@redhat.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vadim Rozenfeld <vrozenfe@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: [PATCH] x86: properly handle KVM emulation of hyperv
-References: <1374229505-19470-1-git-send-email-jasowang@redhat.com> <51E92CAB.7020906@redhat.com> <51E9A896.8070408@zytor.com>
-In-Reply-To: <51E9A896.8070408@zytor.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 0/3] Teach perf_trace_##call() to check hlist_empty(perf_events)
+References: <20130718183018.GA4043@redhat.com>  <20130719074339.GA22597@gmail.com> <1374265641.3356.31.camel@gandalf.local.home>
+In-Reply-To: <1374265641.3356.31.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/07/2013 22:59, H. Peter Anvin ha scritto:
->>> >> -		cpuid(KVM_CPUID_SIGNATURE, &eax, &ebx, &ecx, &edx);
->>> >> -		memcpy(signature + 0, &ebx, 4);
->>> >> -		memcpy(signature + 4, &ecx, 4);
->>> >> -		memcpy(signature + 8, &edx, 4);
->>> >> -		signature[12] = 0;
->>> >> -
->>> >> -		if (strcmp(signature, "KVMKVMKVM") == 0)
->>> >> +		if (kvm_para_available_function(KVM_CPUID_SIGNATURE) ||
->>> >> +		    kvm_para_available_function(KVM_CPUID_SIGNATURE_NEXT))
->>> >>  			return true;
->>> >>  	}
->> > 
->> > Nice catch.  Just one small thing, you should loop until 0x40010000, as
->> > done in arch/x86/include/asm/xen/hypervisor.h, in case one day a third
->> > hypervisor implements three extensions (Hyper-V, KVM and its own set).
->> > 
-> Any way we can centralize this stuff?
+On 7/19/13 2:27 PM, Steven Rostedt wrote:
+> On Fri, 2013-07-19 at 09:43 +0200, Ingo Molnar wrote:
+>> * Oleg Nesterov <oleg@redhat.com> wrote:
+>>
+>>> Hello.
+>>>
+>>> The patches are the same, I only tried to update the changelogs a bit.
+>>> I am also quoting my old email below, to explain what this hack tries
+>>> to do.
+>>>
+>>> 	Say, "perf record -e sched:sched_switch -p1".
+>>>
+>>> 	Every task except /sbin/init will do perf_trace_sched_switch() and
+>>> 	perf_trace_buf_prepare() + perf_trace_buf_submit for no reason(),
+>>> 	it doesn't have a counter.
+>>>
+>>> 	So it makes sense to add the fast-path check at the start of
+>>> 	perf_trace_##call(),
+>>>
+>>> 		if (hlist_empty(event_call->perf_events))
+>>> 			return;
+>>>
+>>> 	The problem is, we should not do this if __task != NULL (iow, if
+>>> 	DECLARE_EVENT_CLASS() uses __perf_task()), perf_tp_event() has the
+>>> 	additional code for this case.
+>>>
+>>> 	So we should do
+>>>
+>>> 		if (!__task && hlist_empty(event_call->perf_events))
+>>> 			return;
+>>>
+>>> 	But __task is changed by "{ assign; }" block right before
+>>> 	perf_trace_buf_submit(). Too late for the fast-path check,
+>>> 	we already called perf_trace_buf_prepare/fetch_regs.
+>>>
+>>> 	So. After 2/3 __perf_task() (and __perf_count/addr) is called
+>>> 	when ftrace_get_offsets_##call(args) evaluates the arguments,
+>>> 	and we can check !__task && hlist_empty() right after that.
+>>>
+>>> Oleg.
+>>
+>> Nice improvement.
+>>
+>> Peter, Steve, any objections?
+>>
+>
+> Yep, agreed.
+>
+>
+> The whole series...
+>
+> Reviewed-and-Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-I guess a function cpuid_hypervisor_base("KVMKVMKVM") that does the scan?
+For what it is worth,
+Tested-by: David Ahern <dsahern@gmail.com>
 
-Paolo
+
