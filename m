@@ -1,283 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759926Ab3GSILQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 04:11:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1854 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759433Ab3GSIAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 04:00:55 -0400
-X-IronPort-AV: E=Sophos;i="4.89,699,1367942400"; 
-   d="scan'208";a="7947427"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 02/21] memblock, numa: Introduce flag into memblock.
-Date: Fri, 19 Jul 2013 15:59:15 +0800
-Message-Id: <1374220774-29974-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 15:58:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/19 15:58:43,
-	Serialize complete at 2013/07/19 15:58:43
+	id S1759921Ab3GSINS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 04:13:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54008 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759433Ab3GSIND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 04:13:03 -0400
+Date: Fri, 19 Jul 2013 09:12:58 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Nathan Rutman <nathan_rutman@xyratex.com>, Peng Tao <bergwolf@gmail.com>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [lustre mess] is mgc_fs_setup() reachable at all?
+Message-ID: <20130719081258.GE4165@ZenIV.linux.org.uk>
+References: <20130718090835.GZ4165@ZenIV.linux.org.uk>
+ <CA+a=Yy49WfQVJAYybUzVvigi9b--kuagqKxBEH+yy0RZSKVnQA@mail.gmail.com>
+ <5DD1CAAA-2008-47F9-B3B6-8D342B28D08C@xyratex.com>
+ <20130718190703.GB4165@ZenIV.linux.org.uk>
+ <3F4C226D-9D3B-46FA-9C8C-55268B2F904F@dilger.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3F4C226D-9D3B-46FA-9C8C-55268B2F904F@dilger.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no flag in memblock to describe what type the memory is.
-Sometimes, we may use memblock to reserve some memory for special usage.
-And we want to know what kind of memory it is. So we need a way to
-differentiate memory for different usage.
+On Thu, Jul 18, 2013 at 02:57:11PM -0600, Andreas Dilger wrote:
 
-In hotplug environment, we want to reserve hotpluggable memory so the
-kernel won't be able to use it. And when the system is up, we have to
-free these hotpluggable memory to buddy. So we need to mark these memory
-first.
+> > _THAT_ was going to be a remotely supplied data?  I really hope I've
+> > misparsed what you said above...
+> > 
+> > And that still leaves the question about the code path that could
+> > lead to execution of mgc_fs_setup().
+> 
+> The KEY_SET_FS is only used in the server code, not on the client.
+> The MGC code is shared between client and server to mount the
+> filesystem and fetch the cluster configuration from the management
+> server.  In the case of a server mount, it also has to mount the
+> underlying block device, which isn't true on the client, so this
+> code is indeed unused.
 
-In order to do so, we need to mark out these special memory in memblock.
-In this patch, we introduce a new "flags" member into memblock_region:
-   struct memblock_region {
-           phys_addr_t base;
-           phys_addr_t size;
-           unsigned long flags;		/* This is new. */
-   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-           int nid;
-   #endif
-   };
+Wait a minute...  So we have client side of things in staging, with
+parts shared with the server, which is *not* in tree at all?  That
+sounds painful - any changes done to the client code either risk
+to break the server, or have the copies of the shared stuff diverge...
 
-This patch does the following things:
-1) Add "flags" member to memblock_region, and MEMBLK_DEFAULT flag for common usage.
-2) Modify the following APIs' prototype:
-	memblock_add_region()
-	memblock_insert_region()
-3) Add memblock_reserve_region() to support reserve memory with flags, and keep
-   memblock_reserve()'s prototype unmodified.
-4) Modify other APIs to support flags, but keep their prototype unmodified.
+I honestly have no idea about your plans wrt merging; are you going
+to put the server side of things there as well?
 
-The idea is from Wen Congyang <wency@cn.fujitsu.com> and Liu Jiang <jiang.liu@huawei.com>.
+Another thing: is your ll_statfs_internal() safe to call right up to
+the moment when client_common_put_super calls lprocfs_unregister_mountpoint?
+Because procfs IO *can* come right until the procfs entry removal;
+said removal will act as a barrier, so it won't leak past the return from
+remove_proc_entry(), but that's it.
 
-Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
-Suggested-by: Liu Jiang <jiang.liu@huawei.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- include/linux/memblock.h |    4 +++
- mm/memblock.c            |   55 +++++++++++++++++++++++++++++++++------------
- 2 files changed, 44 insertions(+), 15 deletions(-)
-
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index f388203..93f3453 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -19,9 +19,13 @@
- 
- #define INIT_MEMBLOCK_REGIONS	128
- 
-+/* Definition of memblock flags. */
-+#define MEMBLK_FLAGS_DEFAULT	0x0	/* default flag */
-+
- struct memblock_region {
- 	phys_addr_t base;
- 	phys_addr_t size;
-+	unsigned long flags;
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	int nid;
- #endif
-diff --git a/mm/memblock.c b/mm/memblock.c
-index c5fad93..9e871e9 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -157,6 +157,7 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 		type->cnt = 1;
- 		type->regions[0].base = 0;
- 		type->regions[0].size = 0;
-+		type->regions[0].flags = 0;
- 		memblock_set_region_node(&type->regions[0], MAX_NUMNODES);
- 	}
- }
-@@ -307,7 +308,8 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
- 
- 		if (this->base + this->size != next->base ||
- 		    memblock_get_region_node(this) !=
--		    memblock_get_region_node(next)) {
-+		    memblock_get_region_node(next) ||
-+		    this->flags != next->flags) {
- 			BUG_ON(this->base + this->size > next->base);
- 			i++;
- 			continue;
-@@ -327,13 +329,15 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
-  * @base:	base address of the new region
-  * @size:	size of the new region
-  * @nid:	node id of the new region
-+ * @flags:	flags of the new region
-  *
-  * Insert new memblock region [@base,@base+@size) into @type at @idx.
-  * @type must already have extra room to accomodate the new region.
-  */
- static void __init_memblock memblock_insert_region(struct memblock_type *type,
- 						   int idx, phys_addr_t base,
--						   phys_addr_t size, int nid)
-+						   phys_addr_t size,
-+						   int nid, unsigned long flags)
- {
- 	struct memblock_region *rgn = &type->regions[idx];
- 
-@@ -341,6 +345,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
- 	memmove(rgn + 1, rgn, (type->cnt - idx) * sizeof(*rgn));
- 	rgn->base = base;
- 	rgn->size = size;
-+	rgn->flags = flags;
- 	memblock_set_region_node(rgn, nid);
- 	type->cnt++;
- 	type->total_size += size;
-@@ -352,6 +357,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
-  * @base: base address of the new region
-  * @size: size of the new region
-  * @nid: nid of the new region
-+ * @flags: flags of the new region
-  *
-  * Add new memblock region [@base,@base+@size) into @type.  The new region
-  * is allowed to overlap with existing ones - overlaps don't affect already
-@@ -362,7 +368,8 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
-  * 0 on success, -errno on failure.
-  */
- static int __init_memblock memblock_add_region(struct memblock_type *type,
--				phys_addr_t base, phys_addr_t size, int nid)
-+				phys_addr_t base, phys_addr_t size,
-+				int nid, unsigned long flags)
- {
- 	bool insert = false;
- 	phys_addr_t obase = base;
-@@ -377,6 +384,7 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
- 		WARN_ON(type->cnt != 1 || type->total_size);
- 		type->regions[0].base = base;
- 		type->regions[0].size = size;
-+		type->regions[0].flags = flags;
- 		memblock_set_region_node(&type->regions[0], nid);
- 		type->total_size = size;
- 		return 0;
-@@ -407,7 +415,8 @@ repeat:
- 			nr_new++;
- 			if (insert)
- 				memblock_insert_region(type, i++, base,
--						       rbase - base, nid);
-+						       rbase - base, nid,
-+						       flags);
- 		}
- 		/* area below @rend is dealt with, forget about it */
- 		base = min(rend, end);
-@@ -417,7 +426,8 @@ repeat:
- 	if (base < end) {
- 		nr_new++;
- 		if (insert)
--			memblock_insert_region(type, i, base, end - base, nid);
-+			memblock_insert_region(type, i, base, end - base,
-+					       nid, flags);
- 	}
- 
- 	/*
-@@ -439,12 +449,14 @@ repeat:
- int __init_memblock memblock_add_node(phys_addr_t base, phys_addr_t size,
- 				       int nid)
- {
--	return memblock_add_region(&memblock.memory, base, size, nid);
-+	return memblock_add_region(&memblock.memory, base, size,
-+				   nid, MEMBLK_FLAGS_DEFAULT);
- }
- 
- int __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
- {
--	return memblock_add_region(&memblock.memory, base, size, MAX_NUMNODES);
-+	return memblock_add_region(&memblock.memory, base, size,
-+				   MAX_NUMNODES, MEMBLK_FLAGS_DEFAULT);
- }
- 
- /**
-@@ -499,7 +511,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 			rgn->size -= base - rbase;
- 			type->total_size -= base - rbase;
- 			memblock_insert_region(type, i, rbase, base - rbase,
--					       memblock_get_region_node(rgn));
-+					       memblock_get_region_node(rgn),
-+					       rgn->flags);
- 		} else if (rend > end) {
- 			/*
- 			 * @rgn intersects from above.  Split and redo the
-@@ -509,7 +522,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 			rgn->size -= end - rbase;
- 			type->total_size -= end - rbase;
- 			memblock_insert_region(type, i--, rbase, end - rbase,
--					       memblock_get_region_node(rgn));
-+					       memblock_get_region_node(rgn),
-+					       rgn->flags);
- 		} else {
- 			/* @rgn is fully contained, record it */
- 			if (!*end_rgn)
-@@ -551,16 +565,25 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
- 	return __memblock_remove(&memblock.reserved, base, size);
- }
- 
--int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
-+static int __init_memblock memblock_reserve_region(phys_addr_t base,
-+						   phys_addr_t size,
-+						   int nid,
-+						   unsigned long flags)
- {
- 	struct memblock_type *_rgn = &memblock.reserved;
- 
--	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
-+	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] with flags %#016lx %pF\n",
- 		     (unsigned long long)base,
- 		     (unsigned long long)base + size,
--		     (void *)_RET_IP_);
-+		     flags, (void *)_RET_IP_);
-+
-+	return memblock_add_region(_rgn, base, size, nid, flags);
-+}
- 
--	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
-+int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
-+{
-+	return memblock_reserve_region(base, size, MAX_NUMNODES,
-+				       MEMBLK_FLAGS_DEFAULT);
- }
- 
- /**
-@@ -985,6 +1008,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
- static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
- {
- 	unsigned long long base, size;
-+	unsigned long flags;
- 	int i;
- 
- 	pr_info(" %s.cnt  = 0x%lx\n", name, type->cnt);
-@@ -995,13 +1019,14 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
- 
- 		base = rgn->base;
- 		size = rgn->size;
-+		flags = rgn->flags;
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 		if (memblock_get_region_node(rgn) != MAX_NUMNODES)
- 			snprintf(nid_buf, sizeof(nid_buf), " on node %d",
- 				 memblock_get_region_node(rgn));
- #endif
--		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s\n",
--			name, i, base, base + size - 1, size, nid_buf);
-+		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s flags: %#lx\n",
-+			name, i, base, base + size - 1, size, nid_buf, flags);
- 	}
- }
- 
--- 
-1.7.1
-
+While we are at procfs side of thing, looks like you need exclusion between
+ll_..._seq_write() that clear/set bits in ->ll_flags; at least I haven't
+found anything that would prevent the races among those.
