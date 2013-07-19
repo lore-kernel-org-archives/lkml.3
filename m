@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab3GSQJG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:09:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5183 "EHLO mx1.redhat.com"
+	id S1760077Ab3GSQLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:11:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54191 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513Ab3GSQJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:09:05 -0400
-Date: Fri, 19 Jul 2013 12:08:52 -0400
+	id S1752040Ab3GSQLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 12:11:00 -0400
+Date: Fri, 19 Jul 2013 12:10:48 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: Michal Hocko <mhocko@suse.cz>
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC 2/2] watchdog: update watchdog_tresh properly
-Message-ID: <20130719160852.GM126784@redhat.com>
+Subject: Re: [RFC 1/2] watchdog: update watchdog attributes atomically
+Message-ID: <20130719161047.GN126784@redhat.com>
 References: <1374224699-13255-1-git-send-email-mhocko@suse.cz>
- <1374224699-13255-2-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374224699-13255-2-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1374224699-13255-1-git-send-email-mhocko@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 11:04:59AM +0200, Michal Hocko wrote:
-> watchdog_tresh controls how often nmi perf event counter checks per-cpu
-> hrtimer_interrupts counter and blows up if the counter hasn't changed
-> since the last check. The counter is updated by per-cpu watchdog_hrtimer
-> hrtimer which is scheduled with 2/5 watchdog_thresh period which
-> guarantees that hrtimer is scheduled 2 times per the main period. Both
-> hrtimer and perf event are started together when the watchdog is
-> enabled.
+On Fri, Jul 19, 2013 at 11:04:58AM +0200, Michal Hocko wrote:
+> proc_dowatchdog doesn't synchronize multiple callers which
+> might lead to confusion when two parallel callers might confuse
+> watchdog_enable_all_cpus resp. watchdog_disable_all_cpus (e.g. watchdog
+> gets enabled even if watchdog_thresh was set to 0 already).
 > 
-> So far so good. But...
+> This patch adds a local mutex which synchronizes callers to the sysctl
+> handler.
+
+Looks fine by me, except one little nitpick..
+
 > 
-> But what happens when watchdog_thresh is updated from sysctl handler?
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  kernel/watchdog.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 > 
-> proc_dowatchdog will set a new sampling period and hrtimer callback
-> (watchdog_timer_fn) will use the new value in the next round.
-> The problem, however, is that nobody tells the perf event that the
-> sampling period has changed so it is ticking with the period configured
-> when it has been set up.
-> 
-> This might result in an ear riping dissonance between perf and hrtimer
-> parts if the watchdog_thresh is increased. And even worse it might lead
-> to KABOOM if the watchdog is configured to panic on such a spurious
-> lockup.
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 1241d8c..2d64c02 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -520,13 +520,15 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+>  		    void __user *buffer, size_t *lenp, loff_t *ppos)
+>  {
+>  	int err, old_thresh, old_enabled;
+> +	static DEFINE_MUTEX(watchdog_proc_mutex);
 
-Heh.  Good point.
-
-What if we keep it simpler.
-
-if (old_thresh != watchdog_thresh)
-  watchdog_disable_all_cpus()
-  wathcdog_enable_all_cpus()
-
-The idea is that we are not changing thresholds that often and if we do, we
-should probably sync up all the timers and threads again.  Safer to start
-from scratch.
-
-Thoughts?
+Should we just make this global instead of hiding it as a static inside a
+function.  I don't know the kernel rules for deciding which approach makes
+sense.  I know it is the same result in either case...
 
 Cheers,
 Don
