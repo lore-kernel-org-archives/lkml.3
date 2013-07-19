@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965811Ab3GSF1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:27:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40089 "EHLO
+	id S965895Ab3GSF2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:28:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40073 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965804Ab3GSF1Y (ORCPT
+	with ESMTP id S965849Ab3GSF1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:24 -0400
+	Fri, 19 Jul 2013 01:27:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        steve <sanpatr1@in.ibm.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 71/72] Handle big endianness in NTLM (ntlmv2) authentication
-Date: Thu, 18 Jul 2013 22:26:28 -0700
-Message-Id: <20130719052604.713839974@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 69/72] memcg, kmem: fix reference count handling on the error path
+Date: Thu, 18 Jul 2013 22:26:26 -0700
+Message-Id: <20130719052604.577993025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -28,80 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@us.ibm.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
+commit f37a96914d1aea10fed8d9af10251f0b9caea31b upstream.
 
-This is RH bug 970891
-Uppercasing of username during calculation of ntlmv2 hash fails
-because UniStrupr function does not handle big endian wchars.
+mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem fails.
+This is not correct because only memcg_propagate_kmem takes an
+additional reference while mem_cgroup_sockets_init is allowed to fail as
+well (although no current implementation fails) but it doesn't take any
+reference.  This all suggests that it should be memcg_propagate_kmem
+that should clean up after itself so this patch moves mem_cgroup_put
+over there.
 
-Also fix a comment in the same code to reflect its correct usage.
+Unfortunately this is not that easy (as pointed out by Li Zefan) because
+memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it is
+marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
+memcg_propagate_kmem fails so the additional reference is dropped in
+that case in kmem_cgroup_destroy which means that the reference would be
+dropped two times.
 
-[To make it easier for stable (rather than require 2nd patch) fixed
-this patch of Shirish's to remove endian warning generated
-by sparse -- steve f.]
+The easiest way then would be to simply remove mem_cgrroup_put from
+mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
+thing.
 
-Reported-by: steve <sanpatr1@in.ibm.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifs_unicode.h |    8 ++++----
- fs/cifs/cifsencrypt.c  |    6 +++---
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ mm/memcontrol.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
---- a/fs/cifs/cifs_unicode.h
-+++ b/fs/cifs/cifs_unicode.h
-@@ -327,14 +327,14 @@ UniToupper(register wchar_t uc)
- /*
-  * UniStrupr:  Upper case a unicode string
-  */
--static inline wchar_t *
--UniStrupr(register wchar_t *upin)
-+static inline __le16 *
-+UniStrupr(register __le16 *upin)
- {
--	register wchar_t *up;
-+	register __le16 *up;
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6296,14 +6296,6 @@ mem_cgroup_css_online(struct cgroup *con
  
- 	up = upin;
- 	while (*up) {		/* For all characters */
--		*up = UniToupper(*up);
-+		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
- 		up++;
- 	}
- 	return upin;		/* Return input pointer */
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -414,7 +414,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 	int rc = 0;
- 	int len;
- 	char nt_hash[CIFS_NTHASH_SIZE];
--	wchar_t *user;
-+	__le16 *user;
- 	wchar_t *domain;
- 	wchar_t *server;
+ 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
+ 	mutex_unlock(&memcg_create_mutex);
+-	if (error) {
+-		/*
+-		 * We call put now because our (and parent's) refcnts
+-		 * are already in place. mem_cgroup_put() will internally
+-		 * call __mem_cgroup_free, so return directly
+-		 */
+-		mem_cgroup_put(memcg);
+-	}
+ 	return error;
+ }
  
-@@ -439,7 +439,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 		return rc;
- 	}
- 
--	/* convert ses->user_name to unicode and uppercase */
-+	/* convert ses->user_name to unicode */
- 	len = ses->user_name ? strlen(ses->user_name) : 0;
- 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
- 	if (user == NULL) {
-@@ -448,7 +448,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 	}
- 
- 	if (len) {
--		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
-+		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
- 		UniStrupr(user);
- 	} else {
- 		memset(user, '\0', 2);
 
 
