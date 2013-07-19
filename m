@@ -1,200 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760715Ab3GSQRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:17:32 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:43492 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3GSQRa (ORCPT
+	id S1760421Ab3GSQWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:22:19 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:37995 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab3GSQWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:17:30 -0400
-X-Auth-Info: n3Q3heHxlcTxBo6P9swOVmn5AqR88Kku8PHB1u11C3U=
-From: Marek Vasut <marex@denx.de>
-To: Hector Palacios <hector.palacios@digi.com>
-Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify scale
-Date: Fri, 19 Jul 2013 18:17:26 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
-Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307191639.01240.marex@denx.de> <51E95BEC.5080703@digi.com>
-In-Reply-To: <51E95BEC.5080703@digi.com>
+	Fri, 19 Jul 2013 12:22:17 -0400
+Message-ID: <51E967B6.8010305@gmail.com>
+Date: Fri, 19 Jul 2013 09:22:14 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Andy Lutomirski <luto@amacapital.net>
+CC: linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
+References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com> <51E88AEF.8040701@gmail.com> <CALCETrXnVBPNGGTQQoXnpEmjXHxbhiWx+4RuMVQLRG5sfMpofA@mail.gmail.com> <51E893BC.6070400@gmail.com> <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
+In-Reply-To: <CALCETrX2vU0aWdVKjOPGkVt1OzLp96xw9=PNaM1XaTEU8Y-HXg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307191817.27102.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Hector Palacios,
+On 07/18/2013 08:29 PM, Andy Lutomirski wrote:
+> On Thu, Jul 18, 2013 at 6:17 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+>> On 07/18/2013 05:50 PM, Andy Lutomirski wrote:
+>>>
+>>> On Thu, Jul 18, 2013 at 5:40 PM, David Daney <ddaney.cavm@gmail.com>
+>>> wrote:
+>>>>
+>>>> On 07/18/2013 05:26 PM, Andy Lutomirski wrote:
+>>>>
+>>>>
+>>>> How is this different than throwing exceptions from a signal handler?
+>>>
+>>>
+>>> Two ways.  First, exceptions thrown from a signal handler can't be
+>>> retries.
+>>
+>>
+>> ??
+>
+> s/retries/retried, by which I mean that you can't do things like
+> implementing virtual memory in userspace by catching SIGSEGV, calling
+> mmap, and resuming.
+>
+>>
+>>
+>>> Second, and more importantly, installing a signal handler in
+>>> a library is a terrible idea.
+>>
+>>
+>> The signal handler would be installed by main() before calling into the
+>> library.  You have to have a small amount of boiler plate code to set it up,
+>> but the libraries wouldn't have to be modified if they were already
+>> exception safe.
+>>
+>> FWIW the libgcj java runtime environment uses this strategy for handling
+>> NullPointerExceptions and DivideByZeroError(sp?).  Since all that code for
+>> the most part follows the standard C++ ABIs, it is an example of this
+>> technique that has been deployed in many environments.
+>
+> Other way around: a *library* that wants to use exception handling
+> can't do so safely without the cooperation, or at least understanding,
+> of the main program and every other library that wants to do something
+> similar.  Suppose my library installs a SIGFPE handler and throws
+> my_sigfpe_exception and your library installs a SIGFPE handler and
+> throws your_sigfpe_exception.  The result: one wins and the other
+> crashes due to an unhandled exception.
+>
+> In my particular usecase, I have code (known to the main program) that
+> catches all kinds of fatal signals to log nice error messages before
+> dying.  That means that I can't use a library that handles signals for
+> any other purpose.  Right now I want to have a small snippet of code
+> handle SIGBUS, but now I need to coordinate it with everything else.
+>
+> If this stuff were unified, then everything would just work.
 
-> Dear Marek,
-> 
-> On 07/19/2013 04:39 PM, Marek Vasut wrote:
-> > Dear Hector Palacios,
-> > 
-> >> Added write_raw function to manipulate the optional divider_by_two
-> >> through the scaling attribute out of the available scales.
-> >> 
-> >> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> >> ---
-> >> 
-> >>   drivers/staging/iio/adc/mxs-lradc.c | 55
-> >> 
-> >> ++++++++++++++++++++++++++++++++++++- 1 file changed, 54 insertions(+),
-> >> 1 deletion(-)
-> >> 
-> >> diff --git a/drivers/staging/iio/adc/mxs-lradc.c
-> >> b/drivers/staging/iio/adc/mxs-lradc.c index c929733..286cde2 100644
-> >> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> >> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> >> @@ -144,6 +144,7 @@ struct mxs_lradc {
-> >> 
-> >>   	uint32_t		vref_mv[LRADC_MAX_TOTAL_CHANS];
-> >>   	unsigned int		scale_avail[LRADC_MAX_TOTAL_CHANS][2][2];
-> >> 
-> >> +	unsigned int		is_divided[LRADC_MAX_TOTAL_CHANS];
-> > 
-> > Why not use bitfield ? ;-)
-> 
-> This is used in some math below and an unsigned int looked more
-> appropriate:
-> 
-> 	case IIO_CHAN_INFO_SCALE:
-> 		*val = lradc->vref_mv[chan->channel];
-> 		*val2 = chan->scan_type.realbits -
-> 			lradc->is_divided[chan->channel];
-> 		ret = IIO_VAL_FRACTIONAL_LOG2;
-> 		break;
+That's right.  But I think the Linux kernel already supplies all the 
+needed functionality to do this.  It is really a matter of choosing a 
+userspace implementation and standardizing your entire system around it. 
+  In the realm of GNU/GLibc/Linux, it is really more of social/political 
+exercise rather than a technical problem.
 
-Oh ok.
+David Daney
 
-> >>   	/*
-> >>   	
-> >>   	 * Touchscreen LRADC channels receives a private slot in the CTRL4
-> >> 
-> >> @@ -202,6 +203,7 @@ struct mxs_lradc {
-> >> 
-> >>   #define	LRADC_CTRL1_LRADC_IRQ_OFFSET		0
-> >>   
-> >>   #define	LRADC_CTRL2				0x20
-> >> 
-> >> +#define	LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET	24
-> >> 
-> >>   #define	LRADC_CTRL2_TEMPSENSE_PWD		(1 << 15)
-> >>   
-> >>   #define	LRADC_STATUS				0x40
-> >> 
-> >> @@ -310,7 +312,8 @@ static int mxs_lradc_read_raw(struct iio_dev
-> >> *iio_dev,
-> >> 
-> >>   		break;
-> >>   	
-> >>   	case IIO_CHAN_INFO_SCALE:
-> >>   		*val = lradc->vref_mv[chan->channel];
-> >> 
-> >> -		*val2 = chan->scan_type.realbits;
-> >> +		*val2 = chan->scan_type.realbits -
-> >> +			lradc->is_divided[chan->channel];
-> >> 
-> >>   		ret = IIO_VAL_FRACTIONAL_LOG2;
-> >>   		break;
-> >>   	
-> >>   	default:
-> >> @@ -323,6 +326,54 @@ static int mxs_lradc_read_raw(struct iio_dev
-> >> *iio_dev,
-> >> 
-> >>   	return ret;
-> >>   
-> >>   }
-> >> 
-> >> +static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
-> >> +			       const struct iio_chan_spec *chan,
-> >> +			       int val, int val2, long m)
-> >> +{
-> >> +	struct mxs_lradc *lradc = iio_priv(iio_dev);
-> >> +	int ret;
-> >> +
-> >> +	ret = mutex_trylock(&lradc->lock);
-> >> +	if (!ret)
-> >> +		return -EBUSY;
-> >> +
-> >> +	switch (m) {
-> >> +	case IIO_CHAN_INFO_SCALE:
-> >> +		ret = -EINVAL;
-> >> +		if (val == lradc->scale_avail[chan->channel][0][0] &&
-> >> +		    val2 == lradc->scale_avail[chan->channel][0][1]) {
-> >> +			/* [0] -> divider by two disabled */
-> > 
-> > This comment is confusing, you use [0] in different dimensions of the
-> > array. So is the stuff below.
-> > 
-> > Still, how does this even work, can you show me and example how to set
-> > the divider from userland ? Sorry, I'm a bit confused with this
-> > 3D-business here, even if the comment in previous patch made it a bit
-> > clearer. Actually you can use some #define to specify if you're
-> > accessing div/2 or div/1 portion of the array to make it more readable.
-> > 
-> > Like ... scale_avail[chan->channel][LRADC_DIV_BY_2][LRADC_DECIMAL_PART]
-> > ... would by nice.
-> 
-> Agreed.
-> 
-> How it works:
-> # cd /sys/devices/80000000.apb/80040000.apbx/80050000.lradc/iio:device0
-> 
-> Here you have three entries per channel:
-> in_voltageX_raw		-> the sample raw value
-> in_voltageX_scale	-> the scale to multiply the raw value to get the 
-voltage
-> in mV in_voltageX_scale_available -> lists the available scales of the
-> channel
-> 
-> For example for channel 0:
-> 
-> # cat in_voltage0_scale_available
-> 0.451660156 0.903320312	(two scales available, first with divider by two
-> disabled, second with divider by two enabled)
-> 
-> # cat in_voltage0_scale
-> 0.451660156			(divider by two is currently disabled)
-> 
-> # cat in_voltage0_raw		(shows measured value)
-> 1000
-> 
-> If you multiply the value by the scale you get: 1000 * 0.451660156 = 451.6
-> mV
-> 
-> # echo 0.903320312 > in_voltage0_scale	(enables the divider by two)
-
-Ok, so I have to remember this value : '0.903320312' in case I want to enable 
-divide-by-two functionality? Hmmmm ... why would this interface not work:
-
-echo 2 > in_voltage0_scale
-
-or 
-
-echo 1 > in_voltage0_scale
-
-?
-
-> # cat in_voltage0_raw		(shows measured value)
-> 500
-> 
-> Voltage at channel is the same but now measured value is applying the scale
-> so it shows half the value than before. Now if you multiply: 500 *
-> 0.903320312 = 451.6 mV (the same voltage but you now have a bigger scale
-> and can measure up to 3.7V).
-> 
-> Other channels (like 10 on the MX28) will show different scales because of
-> fixed predividers.
-> The multi-dimension array is needed to store the big decimal number.
-
-Yes, understood. Thanks for the explanation, it really helped!
