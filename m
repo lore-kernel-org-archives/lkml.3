@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965891Ab3GSFb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:31:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40025 "EHLO
+	id S965852Ab3GSFbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:31:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965812Ab3GSF1O (ORCPT
+	with ESMTP id S965809Ab3GSF1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:27:14 -0400
+	Fri, 19 Jul 2013 01:27:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jed Davis <jld@mozilla.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 59/72] ARM: 7765/1: perf: Record the user-mode PC in the call chain.
-Date: Thu, 18 Jul 2013 22:26:16 -0700
-Message-Id: <20130719052603.898094944@linuxfoundation.org>
+        Nagachandra P <nagachandra@gmail.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 58/72] ext4: dont allow ext4_free_blocks() to fail due to ENOMEM
+Date: Thu, 18 Jul 2013 22:26:15 -0700
+Message-Id: <20130719052603.830750716@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -27,35 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jed Davis <jld@mozilla.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit c5f927a6f62196226915f12194c9d0df4e2210d7 upstream.
+commit e7676a704ee0a1ef71a6b23760b5a8f6896cb1a1 upstream.
 
-With this change, we no longer lose the innermost entry in the user-mode
-part of the call chain.  See also the x86 port, which includes the ip.
+The filesystem should not be marked inconsistent if ext4_free_blocks()
+is not able to allocate memory.  Unfortunately some callers (most
+notably ext4_truncate) don't have a way to reflect an error back up to
+the VFS.  And even if we did, most userspace applications won't deal
+with most system calls returning ENOMEM anyway.
 
-It's possible to partially work around this problem by post-processing
-the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
-wasn't in the kernel when the sample was taken.
-
-Signed-off-by: Jed Davis <jld@mozilla.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Nagachandra P <nagachandra@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/perf_event.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/mballoc.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -569,6 +569,7 @@ perf_callchain_user(struct perf_callchai
- 		return;
- 	}
- 
-+	perf_callchain_store(entry, regs->ARM_pc);
- 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
- 
- 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4735,11 +4735,16 @@ do_more:
+ 		 * blocks being freed are metadata. these blocks shouldn't
+ 		 * be used until this transaction is committed
+ 		 */
++	retry:
+ 		new_entry = kmem_cache_alloc(ext4_free_data_cachep, GFP_NOFS);
+ 		if (!new_entry) {
+-			ext4_mb_unload_buddy(&e4b);
+-			err = -ENOMEM;
+-			goto error_return;
++			/*
++			 * We use a retry loop because
++			 * ext4_free_blocks() is not allowed to fail.
++			 */
++			cond_resched();
++			congestion_wait(BLK_RW_ASYNC, HZ/50);
++			goto retry;
+ 		}
+ 		new_entry->efd_start_cluster = bit;
+ 		new_entry->efd_group = block_group;
 
 
