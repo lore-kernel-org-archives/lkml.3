@@ -1,201 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab3GSOPv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 10:15:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32652 "EHLO
+	id S1760568Ab3GSOPt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 10:15:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28808 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760600Ab3GSOOz (ORCPT
+	with ESMTP id S1752402Ab3GSOOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 10:14:55 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=yLKm8batPPsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=mJgigVc9aycA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=fZUAx6Wx3NXLDUrKyAEA:9 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=tGu0RMdkLCQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=k0UNxTuNHs8A:10 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=40MIqcmNAAAA:8 a=7Ev89W78az0QUTzO2gEA:9 a=jeBq3FmKZ4MA:10 a=dGJ0OcVc7YAA:10 a=-tENaG0q7zQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130719141449.744316241@goodmis.org>
+Message-Id: <20130719141449.914545398@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 19 Jul 2013 10:12:33 -0400
+Date: Fri, 19 Jul 2013 10:12:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>,
-        Alexander Z Lam <azl@google.com>
-Subject: [for-next-3.11][PATCH 09/12] tracing: Miscellaneous fixes for trace_array ref counting
+        Andrew Morton <akpm@linux-foundation.org>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        Chen Gang <gang.chen@asianux.com>
+Subject: [for-next-3.11][PATCH 10/12] tracing: Add ref_data to function and fgraph tracer structs
 References: <20130719141224.703522101@goodmis.org>
-Content-Disposition: inline; filename=0009-tracing-Miscellaneous-fixes-for-trace_array-ref-coun.patch
+Content-Disposition: inline; filename=0010-tracing-Add-ref_data-to-function-and-fgraph-tracer-s.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Z Lam <azl@google.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Some error paths did not handle ref counting properly, and some trace files need
-ref counting.
+The selftest for function and function graph tracers are defined as
+__init, as they are only executed at boot up. The "tracer" structs
+that are associated to those tracers are not setup as __init as they
+are used after boot. To stop mismatch warnings, those structures
+need to be annotated with __ref_data.
 
-Link: http://lkml.kernel.org/r/1374171524-11948-1-git-send-email-azl@google.com
+Currently, the tracer structures are defined to __read_mostly, as they
+do not really change. But in the future they should be converted to
+consts, but that will take a little work because they have a "next"
+pointer that gets updated when they are registered. That will have to
+wait till the next major release.
 
-Cc: stable@vger.kernel.org # 3.10
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Cc: Alexander Z Lam <lambchop468@gmail.com>
-Signed-off-by: Alexander Z Lam <azl@google.com>
+Link: http://lkml.kernel.org/r/1373596735.17876.84.camel@gandalf.local.home
+
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Reported-by: Chen Gang <gang.chen@asianux.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c        |   24 ++++++++++++++++++------
- kernel/trace/trace_events.c |   21 +++++++++++++++++++--
- 2 files changed, 37 insertions(+), 8 deletions(-)
+ kernel/trace/trace.h                 |    9 +++++++++
+ kernel/trace/trace_functions.c       |    2 +-
+ kernel/trace/trace_functions_graph.c |    2 +-
+ 3 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 7c3da7b..7d9ceab 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3008,7 +3008,6 @@ static int tracing_release(struct inode *inode, struct file *file)
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4a4f6e1..57b7bb0 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -680,6 +680,15 @@ extern int trace_selftest_startup_sched_switch(struct tracer *trace,
+ 					       struct trace_array *tr);
+ extern int trace_selftest_startup_branch(struct tracer *trace,
+ 					 struct trace_array *tr);
++/*
++ * Tracer data references selftest functions that only occur
++ * on boot up. These can be __init functions. Thus, when selftests
++ * are enabled, then the tracers need to reference __init functions.
++ */
++#define __tracer_data		__refdata
++#else
++/* Tracers are seldom changed. Optimize when selftests are disabled. */
++#define __tracer_data		__read_mostly
+ #endif /* CONFIG_FTRACE_STARTUP_TEST */
  
- 	iter = m->private;
- 	tr = iter->tr;
--	trace_array_put(tr);
+ extern void *head_page(struct trace_array_cpu *data);
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index b863f93..38fe148 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -199,7 +199,7 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
+ 	return 0;
+ }
  
- 	mutex_lock(&trace_types_lock);
- 
-@@ -3023,6 +3022,9 @@ static int tracing_release(struct inode *inode, struct file *file)
- 	if (!iter->snapshot)
- 		/* reenable tracing if it was previously enabled */
- 		tracing_start_tr(tr);
-+
-+	__trace_array_put(tr);
-+
- 	mutex_unlock(&trace_types_lock);
- 
- 	mutex_destroy(&iter->mutex);
-@@ -3447,6 +3449,7 @@ tracing_trace_options_write(struct file *filp, const char __user *ubuf,
- static int tracing_trace_options_open(struct inode *inode, struct file *file)
+-static struct tracer function_trace __read_mostly =
++static struct tracer function_trace __tracer_data =
  {
- 	struct trace_array *tr = inode->i_private;
-+	int ret;
- 
- 	if (tracing_disabled)
- 		return -ENODEV;
-@@ -3454,7 +3457,11 @@ static int tracing_trace_options_open(struct inode *inode, struct file *file)
- 	if (trace_array_get(tr) < 0)
- 		return -ENODEV;
- 
--	return single_open(file, tracing_trace_options_show, inode->i_private);
-+	ret = single_open(file, tracing_trace_options_show, inode->i_private);
-+	if (ret < 0)
-+		trace_array_put(tr);
-+
-+	return ret;
- }
- 
- static const struct file_operations tracing_iter_fops = {
-@@ -3958,6 +3965,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
- 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
- 	if (!iter) {
- 		ret = -ENOMEM;
-+		__trace_array_put(tr);
- 		goto out;
- 	}
- 
-@@ -4704,21 +4712,24 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
- 			ret = PTR_ERR(iter);
- 	} else {
- 		/* Writes still need the seq_file to hold the private data */
-+		ret = -ENOMEM;
- 		m = kzalloc(sizeof(*m), GFP_KERNEL);
- 		if (!m)
--			return -ENOMEM;
-+			goto out;
- 		iter = kzalloc(sizeof(*iter), GFP_KERNEL);
- 		if (!iter) {
- 			kfree(m);
--			return -ENOMEM;
-+			goto out;
- 		}
-+		ret = 0;
-+
- 		iter->tr = tr;
- 		iter->trace_buffer = &tc->tr->max_buffer;
- 		iter->cpu_file = tc->cpu;
- 		m->private = iter;
- 		file->private_data = m;
- 	}
--
-+out:
- 	if (ret < 0)
- 		trace_array_put(tr);
- 
-@@ -5328,9 +5339,10 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
- }
- 
- static const struct file_operations tracing_stats_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_open_generic_tc,
- 	.read		= tracing_stats_read,
- 	.llseek		= generic_file_llseek,
-+	.release	= tracing_release_generic_tc,
+ 	.name		= "function",
+ 	.init		= function_trace_init,
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index d56ae9b..b5c0924 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -1448,7 +1448,7 @@ static struct trace_event graph_trace_ret_event = {
+ 	.funcs		= &graph_functions
  };
  
- #ifdef CONFIG_DYNAMIC_FTRACE
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 7d85429..7a75cb2 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1218,6 +1218,7 @@ show_header(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
- 
- static int ftrace_event_avail_open(struct inode *inode, struct file *file);
- static int ftrace_event_set_open(struct inode *inode, struct file *file);
-+static int ftrace_event_release(struct inode *inode, struct file *file);
- 
- static const struct seq_operations show_event_seq_ops = {
- 	.start = t_start,
-@@ -1245,7 +1246,7 @@ static const struct file_operations ftrace_set_event_fops = {
- 	.read = seq_read,
- 	.write = ftrace_event_write,
- 	.llseek = seq_lseek,
--	.release = seq_release,
-+	.release = ftrace_event_release,
- };
- 
- static const struct file_operations ftrace_enable_fops = {
-@@ -1323,6 +1324,15 @@ ftrace_event_open(struct inode *inode, struct file *file,
- 	return ret;
- }
- 
-+static int ftrace_event_release(struct inode *inode, struct file *file)
-+{
-+	struct trace_array *tr = inode->i_private;
-+
-+	trace_array_put(tr);
-+
-+	return seq_release(inode, file);
-+}
-+
- static int
- ftrace_event_avail_open(struct inode *inode, struct file *file)
- {
-@@ -1336,12 +1346,19 @@ ftrace_event_set_open(struct inode *inode, struct file *file)
- {
- 	const struct seq_operations *seq_ops = &show_set_event_seq_ops;
- 	struct trace_array *tr = inode->i_private;
-+	int ret;
-+
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
- 
- 	if ((file->f_mode & FMODE_WRITE) &&
- 	    (file->f_flags & O_TRUNC))
- 		ftrace_clear_events(tr);
- 
--	return ftrace_event_open(inode, file, seq_ops);
-+	ret = ftrace_event_open(inode, file, seq_ops);
-+	if (ret < 0)
-+		trace_array_put(tr);
-+	return ret;
- }
- 
- static struct event_subsystem *
+-static struct tracer graph_trace __read_mostly = {
++static struct tracer graph_trace __tracer_data = {
+ 	.name		= "function_graph",
+ 	.open		= graph_trace_open,
+ 	.pipe_open	= graph_trace_open,
 -- 
 1.7.10.4
 
