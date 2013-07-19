@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab3GSUXu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 16:23:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51355 "EHLO
+	id S1752050Ab3GSUXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 16:23:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51438 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab3GSUXG (ORCPT
+	with ESMTP id S1751444Ab3GSUXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Jul 2013 16:23:06 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
@@ -14,190 +14,210 @@ Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v2 11/15] ARM: shmobile: r8a7740: switch DMAC controllers to using device ID data
-Date: Fri, 19 Jul 2013 22:22:52 +0200
-Message-Id: <1374265376-30777-2-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v2 15/15] ARM: shmobile: r8a7740: add support for 2 RTDMACs
+Date: Fri, 19 Jul 2013 22:22:56 +0200
+Message-Id: <1374265376-30777-6-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:KXlrJWCMmVbOazOGOjdqU4/niKHoljaGIDP1C+mKaa4
- MBH/chWgYaszIC0LxGMrAZ+5LGc9PoyPZUcw/5IaFgTVSv/Ys/
- DrgqJWE+IJqpKhlrYZkW8SJOoXnFUFIQgM2sCAv0f9n97LYMhs
- rDDrjPf56Du/ZLk2pDItdPOlUy2/j36s1zTYANDp+lc3lPSBEY
- gukcF2bWRC6Zf8uZ6pBiNgbf6/RGzIWwqSSIPF4bdKetYovEAs
- lmaeCQBfQqT5NZi/BFyn14zNfkaqBHtyuHSVHtKuWeOKYtMoRX
- O/dA67rhCM3OJ37dxQqUbPbUu0Ez01EkaCbr69qZG74Ab7KTTl
- 5SI3pqcbiLLwjOx/f+MR2MIz4BgHYYir0PuRw2mUk1D/IF52dw
- i/9MSXIxtehSg==
+X-Provags-ID: V02:K0:kUGfYP3NUkjHStIiJdONbxx6uXq/1jeNx2p9S/+Nt0D
+ kcb0H7t3u98lVqpDHMR+miJ9ydeFfMWLy3CuCy6KHYOB7ncIUO
+ fXXoa0pQUrezjyrWu1N+1UYgPca4cm+64ssmAJ4jPqGTBEJf8G
+ r2Zz0QOpNc+pJg43b7fXUqTfjoPX8as7n1tTsvWtyc91z2GBUz
+ HaU+sMKFKRkeyKyX5mhFeE+k4t/+cJhS+wJMNzZfNXZbxOOZ1c
+ 4idTkvoSPg6wIUd/2auHZ53PUKt+ZNbJvAb9zI0WlN54VftBHF
+ 5ed1MW8NSCPUfmGNtqlUypzpjtpo22gzpfkWPO9p/tNMUmFdgb
+ 8CDt7lD72s+2qM9dvEeUuhJ6QZ2Fu1bi77Sb4qXT3egLfev92a
+ bZooqHlq2gajA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes DMAC platform data on r8a7740 and switches to using
-device ID data.
+In addition to 3 SYS-DMACs, r817740 SoCs also have 2 RT-DMACs. This patch
+adds support for them in both DT- amd non-DT-modes.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- arch/arm/mach-shmobile/clock-r8a7740.c |    6 +-
- arch/arm/mach-shmobile/setup-r8a7740.c |  106 +-------------------------------
- 2 files changed, 6 insertions(+), 106 deletions(-)
+ arch/arm/boot/dts/r8a7740.dtsi         |   34 +++++++++++++++
+ arch/arm/mach-shmobile/clock-r8a7740.c |    8 ++++
+ arch/arm/mach-shmobile/setup-r8a7740.c |   72 ++++++++++++++++++++++++++++++++
+ 3 files changed, 114 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
+index 4797f1e..638ada2 100644
+--- a/arch/arm/boot/dts/r8a7740.dtsi
++++ b/arch/arm/boot/dts/r8a7740.dtsi
+@@ -175,6 +175,40 @@
+ 					"ch0", "ch1", "ch2", "ch3",
+ 					"ch4", "ch5";
+ 		};
++
++		dma3: dma-controller@ffc18020 {
++			compatible = "renesas,shdma-r8a7740";
++			reg = <0xffc18020 0x270>,
++				<0xffc19000 0xc>;
++			interrupt-parent = <&gic>;
++			interrupts = <0 196 4
++					0 190 4
++					0 191 4
++					0 192 4
++					0 193 4
++					0 194 4
++					0 195 4>;
++			interrupt-names = "error",
++					"ch0", "ch1", "ch2", "ch3",
++					"ch4", "ch5";
++		};
++
++		dma4: dma-controller@ffc28020 {
++			compatible = "renesas,shdma-r8a7740";
++			reg = <0xffc28020 0x270>,
++				<0xffc29000 0xc>;
++			interrupt-parent = <&gic>;
++			interrupts = <0 158 4
++					0 152 4
++					0 153 4
++					0 154 4
++					0 155 4
++					0 156 4
++					0 157 4>;
++			interrupt-names = "error",
++					"ch0", "ch1", "ch2", "ch3",
++					"ch4", "ch5";
++		};
+ 	};
+ 
+ 	i2c0: i2c@fff20000 {
 diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
-index de10fd7..62b86f9 100644
+index 4e76fb8..2e67f6a 100644
 --- a/arch/arm/mach-shmobile/clock-r8a7740.c
 +++ b/arch/arm/mach-shmobile/clock-r8a7740.c
-@@ -575,9 +575,9 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("sh-sci.5",		&mstp_clks[MSTP207]),
- 	CLKDEV_DEV_ID("e6cb0000.sci",		&mstp_clks[MSTP207]),
- 	CLKDEV_DEV_ID("sh-dma-engine.3",	&mstp_clks[MSTP214]),
--	CLKDEV_DEV_ID("sh-dma-engine.2",	&mstp_clks[MSTP216]),
--	CLKDEV_DEV_ID("sh-dma-engine.1",	&mstp_clks[MSTP217]),
--	CLKDEV_DEV_ID("sh-dma-engine.0",	&mstp_clks[MSTP218]),
-+	CLKDEV_DEV_ID("shdma-r8a7740.2",	&mstp_clks[MSTP216]),
-+	CLKDEV_DEV_ID("shdma-r8a7740.1",	&mstp_clks[MSTP217]),
-+	CLKDEV_DEV_ID("shdma-r8a7740.0",	&mstp_clks[MSTP218]),
- 	CLKDEV_DEV_ID("sh-sci.7",		&mstp_clks[MSTP222]),
- 	CLKDEV_DEV_ID("e6cd0000.sci",		&mstp_clks[MSTP222]),
- 	CLKDEV_DEV_ID("sh-sci.6",		&mstp_clks[MSTP230]),
+@@ -451,6 +451,8 @@ static struct clk fsidivs[] = {
+ 
+ /* MSTP */
+ enum {
++	MSTP023, MSTP021,
++
+ 	MSTP128, MSTP127, MSTP125,
+ 	MSTP116, MSTP111, MSTP100, MSTP117,
+ 
+@@ -469,6 +471,8 @@ enum {
+ };
+ 
+ static struct clk mstp_clks[MSTP_NR] = {
++	[MSTP021] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR0, 21, 0), /* RT-DMAC1 */
++	[MSTP023] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR0, 23, 0), /* RT-DMAC2 */
+ 	[MSTP128] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR1, 28, 0), /* CEU21 */
+ 	[MSTP127] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR1, 27, 0), /* CEU20 */
+ 	[MSTP125] = SH_CLK_MSTP32(&div6_clks[DIV6_SUB],	SMSTPCR1, 25, 0), /* TMU0 */
+@@ -547,6 +551,10 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_CON_ID("sub_clk",		&div6_clks[DIV6_SUB]),
+ 
+ 	/* MSTP32 clocks */
++	CLKDEV_DEV_ID("shdma-r8a7740.4",	&mstp_clks[MSTP021]),
++	CLKDEV_DEV_ID("ffc18020.dma-controller",&mstp_clks[MSTP021]),
++	CLKDEV_DEV_ID("shdma-r8a7740.5",	&mstp_clks[MSTP023]),
++	CLKDEV_DEV_ID("ffc28020.dma-controller",&mstp_clks[MSTP023]),
+ 	CLKDEV_DEV_ID("sh_mobile_lcdc_fb.0",	&mstp_clks[MSTP100]),
+ 	CLKDEV_DEV_ID("sh_tmu.3",		&mstp_clks[MSTP111]),
+ 	CLKDEV_DEV_ID("sh_tmu.4",		&mstp_clks[MSTP111]),
 diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
-index 84c5bb6..01dcb3b 100644
+index 01dcb3b..2dc2d652 100644
 --- a/arch/arm/mach-shmobile/setup-r8a7740.c
 +++ b/arch/arm/mach-shmobile/setup-r8a7740.c
-@@ -542,97 +542,6 @@ static struct platform_device *r8a7740_early_devices[] __initdata = {
+@@ -626,6 +626,62 @@ static struct resource r8a7740_dmae2_resources[] = {
+ 	},
  };
  
- /* DMA */
--static const struct sh_dmae_slave_config r8a7740_dmae_slaves[] = {
--	{
--		.slave_id	= SHDMA_SLAVE_SDHI0_TX,
--		.addr		= 0xe6850030,
--		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xc1,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI0_RX,
--		.addr		= 0xe6850030,
--		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xc2,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI1_TX,
--		.addr		= 0xe6860030,
--		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xc9,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI1_RX,
--		.addr		= 0xe6860030,
--		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xca,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI2_TX,
--		.addr		= 0xe6870030,
--		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xcd,
--	}, {
--		.slave_id	= SHDMA_SLAVE_SDHI2_RX,
--		.addr		= 0xe6870030,
--		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
--		.mid_rid	= 0xce,
--	}, {
--		.slave_id	= SHDMA_SLAVE_FSIA_TX,
--		.addr		= 0xfe1f0024,
--		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
--		.mid_rid	= 0xb1,
--	}, {
--		.slave_id	= SHDMA_SLAVE_FSIA_RX,
--		.addr		= 0xfe1f0020,
--		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
--		.mid_rid	= 0xb2,
--	}, {
--		.slave_id	= SHDMA_SLAVE_FSIB_TX,
--		.addr		= 0xfe1f0064,
--		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
--		.mid_rid	= 0xb5,
--	}, {
--		.slave_id	= SHDMA_SLAVE_MMCIF_TX,
--		.addr		= 0xe6bd0034,
--		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
--		.mid_rid	= 0xd1,
--	}, {
--		.slave_id	= SHDMA_SLAVE_MMCIF_RX,
--		.addr		= 0xe6bd0034,
--		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
--		.mid_rid	= 0xd2,
--	},
--};
--
--#define DMA_CHANNEL(a, b, c)			\
--{						\
--	.offset		= a,			\
--	.dmars		= b,			\
--	.dmars_bit	= c,			\
--	.chclr_offset	= (0x220 - 0x20) + a	\
--}
--
--static const struct sh_dmae_channel r8a7740_dmae_channels[] = {
--	DMA_CHANNEL(0x00, 0, 0),
--	DMA_CHANNEL(0x10, 0, 8),
--	DMA_CHANNEL(0x20, 4, 0),
--	DMA_CHANNEL(0x30, 4, 8),
--	DMA_CHANNEL(0x50, 8, 0),
--	DMA_CHANNEL(0x60, 8, 8),
--};
--
--static struct sh_dmae_pdata dma_platform_data = {
--	.slave		= r8a7740_dmae_slaves,
--	.slave_num	= ARRAY_SIZE(r8a7740_dmae_slaves),
--	.channel	= r8a7740_dmae_channels,
--	.channel_num	= ARRAY_SIZE(r8a7740_dmae_channels),
--	.ts_low_shift	= TS_LOW_SHIFT,
--	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
--	.ts_high_shift	= TS_HI_SHIFT,
--	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
--	.ts_shift	= dma_ts_shift,
--	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
--	.dmaor_init	= DMAOR_DME,
--	.chclr_present	= 1,
--};
--
- /* Resource order important! */
- static struct resource r8a7740_dmae0_resources[] = {
- 	{
-@@ -718,33 +627,24 @@ static struct resource r8a7740_dmae2_resources[] = {
- };
- 
++/* Resource order important! */
++static struct resource r8a7740_rtdma0_resources[] = {
++	{
++		/* Channel registers and DMAOR */
++		.start	= 0xffc18020,
++		.end	= 0xffc1828f,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		/* DMARSx */
++		.start	= 0xffc19000,
++		.end	= 0xffc1900b,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.name	= "error_irq",
++		.start	= gic_spi(196),
++		.end	= gic_spi(196),
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		/* IRQ for channels 0-5 */
++		.start	= gic_spi(190),
++		.end	= gic_spi(195),
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++/* Resource order important! */
++static struct resource r8a7740_rtdma1_resources[] = {
++	{
++		/* Channel registers and DMAOR */
++		.start	= 0xffc28020,
++		.end	= 0xffc2828f,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		/* DMARSx */
++		.start	= 0xffc29000,
++		.end	= 0xffc2900b,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.name	= "error_irq",
++		.start	= gic_spi(158),
++		.end	= gic_spi(158),
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		/* IRQ for channels 0-5 */
++		.start	= gic_spi(152),
++		.end	= gic_spi(157),
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
  static struct platform_device dma0_device = {
--	.name		= "sh-dma-engine",
-+	.name		= "shdma-r8a7740",
+ 	.name		= "shdma-r8a7740",
  	.id		= 0,
- 	.resource	= r8a7740_dmae0_resources,
- 	.num_resources	= ARRAY_SIZE(r8a7740_dmae0_resources),
--	.dev		= {
--		.platform_data	= &dma_platform_data,
--	},
- };
- 
- static struct platform_device dma1_device = {
--	.name		= "sh-dma-engine",
-+	.name		= "shdma-r8a7740",
- 	.id		= 1,
- 	.resource	= r8a7740_dmae1_resources,
- 	.num_resources	= ARRAY_SIZE(r8a7740_dmae1_resources),
--	.dev		= {
--		.platform_data	= &dma_platform_data,
--	},
- };
- 
- static struct platform_device dma2_device = {
--	.name		= "sh-dma-engine",
-+	.name		= "shdma-r8a7740",
- 	.id		= 2,
- 	.resource	= r8a7740_dmae2_resources,
+@@ -647,6 +703,20 @@ static struct platform_device dma2_device = {
  	.num_resources	= ARRAY_SIZE(r8a7740_dmae2_resources),
--	.dev		= {
--		.platform_data	= &dma_platform_data,
--	},
  };
  
++static struct platform_device rtdma0_device = {
++	.name		= "shdma-r8a7740",
++	.id		= 4,
++	.resource	= r8a7740_rtdma0_resources,
++	.num_resources	= ARRAY_SIZE(r8a7740_rtdma0_resources),
++};
++
++static struct platform_device rtdma1_device = {
++	.name		= "shdma-r8a7740",
++	.id		= 5,
++	.resource	= r8a7740_rtdma1_resources,
++	.num_resources	= ARRAY_SIZE(r8a7740_rtdma1_resources),
++};
++
  /* USB-DMAC */
+ static const struct sh_dmae_channel r8a7740_usb_dma_channels[] = {
+ 	{
+@@ -781,6 +851,8 @@ static struct platform_device *r8a7740_late_devices[] __initdata = {
+ 	&dma0_device,
+ 	&dma1_device,
+ 	&dma2_device,
++	&rtdma0_device,
++	&rtdma1_device,
+ 	&usb_dma_device,
+ 	&pmu_device,
+ };
 -- 
 1.7.2.5
 
