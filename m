@@ -1,61 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760867Ab3GSQ3b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 12:29:31 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:47399 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab3GSQ32 (ORCPT
+	id S934152Ab3GSQ3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 12:29:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50494 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760645Ab3GSQ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 12:29:28 -0400
-Date: Fri, 19 Jul 2013 16:29:24 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: Andy Lutomirski <luto@amacapital.net>
-CC: <linux-kernel@vger.kernel.org>, <gcc@gcc.gnu.org>
-Subject: Re: [RFC / musing] Scoped exception handling in Linux userspace?
-In-Reply-To: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1307191603480.9428@digraph.polyomino.org.uk>
-References: <CALCETrVioVM=pdCU3WhU6qDtGQyqML=btBRZ5+aV6bASj9GkOQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 19 Jul 2013 16:29:27.0611 (UTC) FILETIME=[233AC8B0:01CE849D]
+	Fri, 19 Jul 2013 12:29:39 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Simon Horman <horms@verge.net.au>, Vinod Koul <vinod.koul@intel.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: [PATCH v2 07/15] DMA: shdma: add sh73a0 DMAC data to the device ID table
+Date: Fri, 19 Jul 2013 18:29:32 +0200
+Message-Id: <1374251374-30186-8-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1374251374-30186-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:hb1E0Fkr9BvqztiOlzGvUR6JNKr91dhUoSFe46xeIUn
+ ArN9/5FbpqwJu8DLKM/+uOBmEXxjVpoAU8/c9GyCWv/GRmUKEv
+ OjhHdGMe8pD4yXtsNcb9ZO723/aQJ4o3hN/3uctleLzs5n8GMZ
+ FtmZEGcHRh/dzuiD4fZOCln9FV6DF12Bbhw1TE8otvuTEQWply
+ AytMkgKvrh1MFssBAIirPPeM38wxugnOKOW8QPrLka21x0CTA/
+ beh1rUjizqQaAxvH1TFvu83Fd5cketVpw5xr6u+KiF5l211kdn
+ Io0VI3PUcrGVrymloIvJx5FF9c7j5twyObHz5IIewwQlooXvGy
+ W7rAKx+HzW6QUnHBuW23l/GQge/eBPXUxXMbipCxnRRWMky/uI
+ IkWsyrbzxTNYA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Jul 2013, Andy Lutomirski wrote:
+This configuration data will be re-used, when DMAC DT support is added to
+sh73a0, DMAC platform data in setup-sh73a0.c will be removed.
 
-> 2. It's localized.  So you can mmap something, read from it *and
-> handle SIGBUS*, and unmap.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
+ drivers/dma/sh/Kconfig        |    4 +
+ drivers/dma/sh/Makefile       |    1 +
+ drivers/dma/sh/shdma-sh73a0.c |  181 +++++++++++++++++++++++++++++++++++++++++
+ drivers/dma/sh/shdma.h        |    7 ++
+ drivers/dma/sh/shdmac.c       |    1 +
+ 5 files changed, 194 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/dma/sh/shdma-sh73a0.c
 
-There is of course no guarantee that possibly faulting memory accesses are 
-preserved (GCC should never introduce such an access where it wouldn't 
-occur in the abstract machine, but may well *remove* accesses that aren't 
-required).  Hopefully you don't want to rely on a guarantee that faults 
-will happen....
-
-> It's worth noting that SIGBUS isn't the only interesting signal here.
-> SIGFPE could work, too.  I'm not sure whether SIGPIPE would make
-
-The SIGFPE case could potentially be relevant for C bindings to IEEE 
-754-2008 (clause 8) alternate exception handling, where the expectation is 
-that various forms of exception handling attribute can be associated with 
-a block.  Though what such bindings will end up looking like, and to what 
-extent the various cases involved will correspond to things that could be 
-implemented using SIGFPE, remains to be seen - checking floating-point 
-exception flags after each operation could turn out to be a better 
-implementation approach in some cases.  The C floating-point group hasn't 
-got as far as designing such bindings yet (currently working on parts 1-3 
-of draft TS 18661, and optional attributes are to go in part 5).
-
-(Note: although I'm interested in these floating-point issues and am 
-reviewing all the parts of the draft C bindings as they become available, 
-I don't have current plans for implementing them - or the remaining bits 
-of C99/C11 Annex F and Annex G not yet implemented in GCC.  There's 
-certainly a lot of work to be done there in both GCC and glibc, with the 
-exception handling attributes from part 5, and rounding mode attributes 
-from part 1, probably among the larger pieces.)
-
+diff --git a/drivers/dma/sh/Kconfig b/drivers/dma/sh/Kconfig
+index 6921ba2..040d780 100644
+--- a/drivers/dma/sh/Kconfig
++++ b/drivers/dma/sh/Kconfig
+@@ -30,3 +30,7 @@ config SHDMA_R8A73A4
+ config SHDMA_R8A7740
+ 	def_bool y
+ 	depends on ARCH_R8A7740 && SH_DMAE != n
++
++config SHDMA_SH73A0
++	def_bool y
++	depends on ARCH_SH73A0 && SH_DMAE != n
+diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
+index e08489c..24c3149 100644
+--- a/drivers/dma/sh/Makefile
++++ b/drivers/dma/sh/Makefile
+@@ -3,5 +3,6 @@ obj-$(CONFIG_SH_DMAE) += shdma.o
+ shdma-y := shdmac.o
+ shdma-$(CONFIG_SHDMA_R8A7740) += shdma-r8a7740.o
+ shdma-$(CONFIG_SHDMA_R8A73A4) += shdma-r8a73a4.o
++shdma-$(CONFIG_SHDMA_SH73A0) += shdma-sh73a0.o
+ shdma-objs := $(shdma-y)
+ obj-$(CONFIG_SUDMAC) += sudmac.o
+diff --git a/drivers/dma/sh/shdma-sh73a0.c b/drivers/dma/sh/shdma-sh73a0.c
+new file mode 100644
+index 0000000..efd80ea
+--- /dev/null
++++ b/drivers/dma/sh/shdma-sh73a0.c
+@@ -0,0 +1,181 @@
++#include <linux/sh_dma.h>
++
++#include <mach/dma-register.h>
++#include <mach/sh73a0.h>
++
++static const struct sh_dmae_slave_config sh73a0_dmae_slaves[] = {
++	{
++		.slave_id	= SHDMA_SLAVE_SCIF0_TX,
++		.addr		= 0xe6c40020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x21,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF0_RX,
++		.addr		= 0xe6c40024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x22,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF1_TX,
++		.addr		= 0xe6c50020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x25,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF1_RX,
++		.addr		= 0xe6c50024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x26,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF2_TX,
++		.addr		= 0xe6c60020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x29,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF2_RX,
++		.addr		= 0xe6c60024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x2a,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF3_TX,
++		.addr		= 0xe6c70020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x2d,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF3_RX,
++		.addr		= 0xe6c70024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x2e,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF4_TX,
++		.addr		= 0xe6c80020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x39,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF4_RX,
++		.addr		= 0xe6c80024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x3a,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF5_TX,
++		.addr		= 0xe6cb0020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x35,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF5_RX,
++		.addr		= 0xe6cb0024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x36,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF6_TX,
++		.addr		= 0xe6cc0020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x1d,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF6_RX,
++		.addr		= 0xe6cc0024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x1e,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF7_TX,
++		.addr		= 0xe6cd0020,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x19,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF7_RX,
++		.addr		= 0xe6cd0024,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x1a,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF8_TX,
++		.addr		= 0xe6c30040,
++		.chcr		= CHCR_TX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x3d,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SCIF8_RX,
++		.addr		= 0xe6c30060,
++		.chcr		= CHCR_RX(XMIT_SZ_8BIT),
++		.mid_rid	= 0x3e,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI0_TX,
++		.addr		= 0xee100030,
++		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xc1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI0_RX,
++		.addr		= 0xee100030,
++		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xc2,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI1_TX,
++		.addr		= 0xee120030,
++		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xc9,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI1_RX,
++		.addr		= 0xee120030,
++		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xca,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI2_TX,
++		.addr		= 0xee140030,
++		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xcd,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI2_RX,
++		.addr		= 0xee140030,
++		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xce,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF_TX,
++		.addr		= 0xe6bd0034,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF_RX,
++		.addr		= 0xe6bd0034,
++		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd2,
++	},
++};
++
++#define DMAE_CHANNEL(_offset)					\
++	{							\
++		.offset         = _offset - 0x20,		\
++		.dmars          = _offset - 0x20 + 0x40,	\
++	}
++
++static const struct sh_dmae_channel sh73a0_dmae_channels[] = {
++	DMAE_CHANNEL(0x8000),
++	DMAE_CHANNEL(0x8080),
++	DMAE_CHANNEL(0x8100),
++	DMAE_CHANNEL(0x8180),
++	DMAE_CHANNEL(0x8200),
++	DMAE_CHANNEL(0x8280),
++	DMAE_CHANNEL(0x8300),
++	DMAE_CHANNEL(0x8380),
++	DMAE_CHANNEL(0x8400),
++	DMAE_CHANNEL(0x8480),
++	DMAE_CHANNEL(0x8500),
++	DMAE_CHANNEL(0x8580),
++	DMAE_CHANNEL(0x8600),
++	DMAE_CHANNEL(0x8680),
++	DMAE_CHANNEL(0x8700),
++	DMAE_CHANNEL(0x8780),
++	DMAE_CHANNEL(0x8800),
++	DMAE_CHANNEL(0x8880),
++	DMAE_CHANNEL(0x8900),
++	DMAE_CHANNEL(0x8980),
++};
++
++struct sh_dmae_pdata sh73a0_dma_pdata = {
++	.slave          = sh73a0_dmae_slaves,
++	.slave_num      = ARRAY_SIZE(sh73a0_dmae_slaves),
++	.channel        = sh73a0_dmae_channels,
++	.channel_num    = ARRAY_SIZE(sh73a0_dmae_channels),
++	.ts_low_shift   = TS_LOW_SHIFT,
++	.ts_low_mask    = TS_LOW_BIT << TS_LOW_SHIFT,
++	.ts_high_shift  = TS_HI_SHIFT,
++	.ts_high_mask   = TS_HI_BIT << TS_HI_SHIFT,
++	.ts_shift       = dma_ts_shift,
++	.ts_shift_num   = ARRAY_SIZE(dma_ts_shift),
++	.dmaor_init     = DMAOR_DME,
++};
+diff --git a/drivers/dma/sh/shdma.h b/drivers/dma/sh/shdma.h
+index ae0c65f..8394424 100644
+--- a/drivers/dma/sh/shdma.h
++++ b/drivers/dma/sh/shdma.h
+@@ -75,4 +75,11 @@ extern struct sh_dmae_pdata r8a7740_dma_pdata;
+ #define r8a7740_shdma_devid NULL
+ #endif
+ 
++#ifdef CONFIG_SHDMA_SH73A0
++extern struct sh_dmae_pdata sh73a0_dma_pdata;
++#define sh73a0_shdma_devid &sh73a0_dma_pdata
++#else
++#define sh73a0_shdma_devid NULL
++#endif
++
+ #endif	/* __DMA_SHDMA_H */
+diff --git a/drivers/dma/sh/shdmac.c b/drivers/dma/sh/shdmac.c
+index f80543c..ae89261 100644
+--- a/drivers/dma/sh/shdmac.c
++++ b/drivers/dma/sh/shdmac.c
+@@ -917,6 +917,7 @@ const struct platform_device_id sh_dmae_id_table[] = {
+ 	{.name = SH_DMAE_DRV_NAME,},
+ 	{.name = "shdma-r8a73a4", .driver_data = (kernel_ulong_t)r8a73a4_shdma_devid,},
+ 	{.name = "shdma-r8a7740", .driver_data = (kernel_ulong_t)r8a7740_shdma_devid,},
++	{.name = "shdma-sh73a0", .driver_data = (kernel_ulong_t)sh73a0_shdma_devid,},
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(platform, sh_dmae_id_table);
 -- 
-Joseph S. Myers
-joseph@codesourcery.com
+1.7.2.5
+
