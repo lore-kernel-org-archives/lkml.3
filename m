@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935273Ab3GSCdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Jul 2013 22:33:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37719 "EHLO
+	id S935255Ab3GSCdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Jul 2013 22:33:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37723 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934986Ab3GSCXm (ORCPT
+	with ESMTP id S934987Ab3GSCXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Jul 2013 22:23:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjarni Ingi Gislason <bjarniig@rhi.hi.is>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, 709647@bugs.debian.org
-Subject: [ 08/18] genirq: Fix can_request_irq() for IRQs without an action
-Date: Thu, 18 Jul 2013 19:23:23 -0700
-Message-Id: <20130719021049.532635029@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Heiko Schocher <hs@denx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 09/18] drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
+Date: Thu, 18 Jul 2013 19:23:24 -0700
+Message-Id: <20130719021049.599989431@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719021048.965829361@linuxfoundation.org>
 References: <20130719021048.965829361@linuxfoundation.org>
@@ -28,44 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 2779db8d37d4b542d9ca2575f5f178dbeaca6c86 upstream.
+commit 29ecd78c0fd6ee05f2c6b07b23823a6ae43c13ff upstream.
 
-Commit 02725e7471b8 ('genirq: Use irq_get/put functions'),
-inadvertently changed can_request_irq() to return 0 for IRQs that have
-no action.  This causes pcibios_lookup_irq() to select only IRQs that
-already have an action with IRQF_SHARED set, or to fail if there are
-none.  Change can_request_irq() to return 1 for IRQs that have no
-action (if the first two conditions are met).
+In the disable AIE irq code path, current code passes "1" to enable
+parameter of rv3029c2_rtc_i2c_alarm_set_irq().  Thus it does not disable
+AIE irq.
 
-Reported-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is>
-Tested-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is> (against 3.2)
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: 709647@bugs.debian.org
-Link: http://bugs.debian.org/709647
-Link: http://lkml.kernel.org/r/1372383630.23847.40.camel@deadeye.wl.decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Heiko Schocher <hs@denx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/manage.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-rv3029c2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -536,9 +536,9 @@ int can_request_irq(unsigned int irq, un
- 		return 0;
+--- a/drivers/rtc/rtc-rv3029c2.c
++++ b/drivers/rtc/rtc-rv3029c2.c
+@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(st
+ 		dev_dbg(&client->dev, "alarm IRQ armed\n");
+ 	} else {
+ 		/* disable AIE irq */
+-		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
++		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
+ 		if (ret)
+ 			return ret;
  
- 	if (irq_settings_can_request(desc)) {
--		if (desc->action)
--			if (irqflags & desc->action->flags & IRQF_SHARED)
--				canrequest =1;
-+		if (!desc->action ||
-+		    irqflags & desc->action->flags & IRQF_SHARED)
-+			canrequest = 1;
- 	}
- 	irq_put_desc_unlock(desc, flags);
- 	return canrequest;
 
 
