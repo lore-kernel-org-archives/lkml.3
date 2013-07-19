@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965506Ab3GSFXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:23:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965353Ab3GSFXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:23:22 -0400
-Date: Fri, 19 Jul 2013 10:53:12 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnd Bergmann <arnd@arndb.de>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 2/2] [BUGFIX] virtio/console: Add pipe_lock/unlock for
- splice_write
-Message-ID: <20130719052312.GC3087@amit-x200.redhat.com>
-References: <20130718231927.3664.50418.stgit@yunodevel>
- <20130718231932.3664.25089.stgit@yunodevel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130718231932.3664.25089.stgit@yunodevel>
+	id S965513Ab3GSFXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:23:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39465 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965466Ab3GSFWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 01:22:32 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        steve <sanpatr1@in.ibm.com>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 38/38] Handle big endianness in NTLM (ntlmv2) authentication
+Date: Thu, 18 Jul 2013 22:21:54 -0700
+Message-Id: <20130719052050.476628770@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20130719052047.858393825@linuxfoundation.org>
+References: <20130719052047.858393825@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 19 Jul 2013 [08:19:32], Yoshihiro YUNOMAE wrote:
-> Add pipe_lock/unlock for splice_write to avoid oops by following competition:
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index 8722656..4a28e4c 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -936,6 +936,7 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
->  	 * pipe->nrbufs == 0 means there are no data to transfer,
->  	 * so this returns just 0 for no data.
->  	 */
-> +	pipe_lock(pipe);
->  	if (!pipe->nrbufs)
->  		return 0;
->  
-> @@ -953,6 +954,7 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
->  	sgl.sg = buf->sg;
->  	sg_init_table(sgl.sg, sgl.size);
->  	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
-> +	pipe_unlock(pipe);
->  	if (likely(ret > 0))
->  		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
->  
-> 
+------------------
 
-You're not unlocking in all the error return cases.
+From: Steve French <smfrench@us.ibm.com>
 
-		Amit
+commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
+
+This is RH bug 970891
+Uppercasing of username during calculation of ntlmv2 hash fails
+because UniStrupr function does not handle big endian wchars.
+
+Also fix a comment in the same code to reflect its correct usage.
+
+[To make it easier for stable (rather than require 2nd patch) fixed
+this patch of Shirish's to remove endian warning generated
+by sparse -- steve f.]
+
+Reported-by: steve <sanpatr1@in.ibm.com>
+Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/cifs/cifs_unicode.h |    8 ++++----
+ fs/cifs/cifsencrypt.c  |    6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+--- a/fs/cifs/cifs_unicode.h
++++ b/fs/cifs/cifs_unicode.h
+@@ -327,14 +327,14 @@ UniToupper(register wchar_t uc)
+ /*
+  * UniStrupr:  Upper case a unicode string
+  */
+-static inline wchar_t *
+-UniStrupr(register wchar_t *upin)
++static inline __le16 *
++UniStrupr(register __le16 *upin)
+ {
+-	register wchar_t *up;
++	register __le16 *up;
+ 
+ 	up = upin;
+ 	while (*up) {		/* For all characters */
+-		*up = UniToupper(*up);
++		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
+ 		up++;
+ 	}
+ 	return upin;		/* Return input pointer */
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -415,7 +415,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 	int rc = 0;
+ 	int len;
+ 	char nt_hash[CIFS_NTHASH_SIZE];
+-	wchar_t *user;
++	__le16 *user;
+ 	wchar_t *domain;
+ 	wchar_t *server;
+ 
+@@ -440,7 +440,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 		return rc;
+ 	}
+ 
+-	/* convert ses->user_name to unicode and uppercase */
++	/* convert ses->user_name to unicode */
+ 	len = ses->user_name ? strlen(ses->user_name) : 0;
+ 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
+ 	if (user == NULL) {
+@@ -450,7 +450,7 @@ static int calc_ntlmv2_hash(struct cifs_
+ 	}
+ 
+ 	if (len) {
+-		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
++		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
+ 		UniStrupr(user);
+ 	} else {
+ 		memset(user, '\0', 2);
+
+
