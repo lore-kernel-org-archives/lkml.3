@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760073Ab3GSJJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 05:09:11 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:45581 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3GSJJH (ORCPT
+	id S1760081Ab3GSJLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 05:11:42 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56335 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3GSJLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 05:09:07 -0400
-Date: Fri, 19 Jul 2013 12:08:26 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        hyojun.im@lge.com, chan.jeong@lge.com
-Subject: [PATCH] LZ4: compression/decompression signedness mismatch (v2)
-Message-ID: <20130719090826.GB2275@swordfish>
-References: <20130712092400.GA2565@swordfish>
- <CADv+DGka4s1xc2UYqu+-EqHW8jA56JrtEE_sMsMOpc6NDmc6Zw@mail.gmail.com>
- <20130712094830.GA2257@swordfish.minsk.epam.com>
- <20130718211806.GB2394@swordfish>
- <CAMuHMdXCsRKpFQRwMTteQpBCbtuJVqmb9UvszHi3ffTS=RxJmw@mail.gmail.com>
- <20130719082710.GA11597@hulk>
+	Fri, 19 Jul 2013 05:11:40 -0400
+Message-ID: <51E901F3.8010203@linux.vnet.ibm.com>
+Date: Fri, 19 Jul 2013 14:38:03 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719082710.GA11597@hulk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        netdev@vger.kernel.org
+Subject: Re: mod_timer: list_add corruption: WARNING: CPU: 1 PID: 0 at lib/list_debug.c:33
+ __list_add+0xbe/0xd0()
+References: <51E557C0.2060602@linux.vnet.ibm.com> <51E8F759.4060202@linux.vnet.ibm.com>
+In-Reply-To: <51E8F759.4060202@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071908-0260-0000-0000-000003563EB9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LZ4 compression and decompression functions require different
-in signedness input/output parameters: unsigned char for
-compression and signed char for decompression.
+On 07/19/2013 01:52 PM, Srivatsa S. Bhat wrote:
+> On 07/16/2013 07:55 PM, Srivatsa S. Bhat wrote:
+>> Hi,
+>>
+>> I happened to hit these warnings on an idle system shortly after
+>> boot. And the machine locked up and sent NMIs to all CPUs, some of
+>> which have been captured below.
+>>
+>> Kernel version: v3.11-rc1 + 3 unrelated local cpufreq patches.
+>> Options set in .config (which are of interest here):
+>>
+>> CONFIG_TICK_ONESHOT=y
+>> CONFIG_NO_HZ_COMMON=y
+>> # CONFIG_HZ_PERIODIC is not set
+>> # CONFIG_NO_HZ_IDLE is not set
+>> CONFIG_NO_HZ_FULL=y
+>> CONFIG_NO_HZ_FULL_ALL=y
+>> CONFIG_NO_HZ=y
+>> CONFIG_HIGH_RES_TIMERS=y
+>>
+>> CONFIG_TREE_RCU=y
+>> # CONFIG_PREEMPT_RCU is not set
+>> CONFIG_RCU_STALL_COMMON=y
+>> CONFIG_CONTEXT_TRACKING=y
+>> CONFIG_RCU_USER_QS=y
+>> CONFIG_CONTEXT_TRACKING_FORCE=y
+>> CONFIG_RCU_FANOUT=64
+>> CONFIG_RCU_FANOUT_LEAF=16
+>> # CONFIG_RCU_FANOUT_EXACT is not set
+>> CONFIG_RCU_FAST_NO_HZ=y
+>> # CONFIG_TREE_RCU_TRACE is not set
+>> CONFIG_RCU_NOCB_CPU=y
+>> CONFIG_RCU_NOCB_CPU_ALL=y
+>>
+>>
+> 
+> Today I hit the same warnings, even without NO_HZ_FULL enabled.
+> I've attached my .config with this mail.
+>
 
-Change decompression API to require "(const) unsigned char *".
+Adding netdev mailing list to CC.
 
-v2: minor coding style fix.
+I had posted the warnings here:
+http://marc.info/?l=linux-kernel&m=137398492701587&w=2
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
----
-
- include/linux/lz4.h      | 8 ++++----
- lib/lz4/lz4_decompress.c | 8 ++++----
- 2 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/lz4.h b/include/linux/lz4.h
-index d21c13f..4356686 100644
---- a/include/linux/lz4.h
-+++ b/include/linux/lz4.h
-@@ -67,8 +67,8 @@ int lz4hc_compress(const unsigned char *src, size_t src_len,
-  *	note :  Destination buffer must be already allocated.
-  *		slightly faster than lz4_decompress_unknownoutputsize()
-  */
--int lz4_decompress(const char *src, size_t *src_len, char *dest,
--		size_t actual_dest_len);
-+int lz4_decompress(const unsigned char *src, size_t *src_len,
-+		unsigned char *dest, size_t actual_dest_len);
- 
- /*
-  * lz4_decompress_unknownoutputsize()
-@@ -82,6 +82,6 @@ int lz4_decompress(const char *src, size_t *src_len, char *dest,
-  *		  Error if return (< 0)
-  *	note :  Destination buffer must be already allocated.
-  */
--int lz4_decompress_unknownoutputsize(const char *src, size_t src_len,
--		char *dest, size_t *dest_len);
-+int lz4_decompress_unknownoutputsize(const unsigned char *src, size_t src_len,
-+		unsigned char *dest, size_t *dest_len);
- #endif
-diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
-index d3414ea..4c069b2 100644
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -283,8 +283,8 @@ _output_error:
- 	return (int) (-(((char *) ip) - source));
- }
- 
--int lz4_decompress(const char *src, size_t *src_len, char *dest,
--		size_t actual_dest_len)
-+int lz4_decompress(const unsigned char *src, size_t *src_len,
-+		unsigned char *dest, size_t actual_dest_len)
- {
- 	int ret = -1;
- 	int input_len = 0;
-@@ -302,8 +302,8 @@ exit_0:
- EXPORT_SYMBOL_GPL(lz4_decompress);
- #endif
- 
--int lz4_decompress_unknownoutputsize(const char *src, size_t src_len,
--		char *dest, size_t *dest_len)
-+int lz4_decompress_unknownoutputsize(const unsigned char *src, size_t src_len,
-+		unsigned char *dest, size_t *dest_len)
- {
- 	int ret = -1;
- 	int out_len = 0;
+Regards,
+Srivatsa S. Bhat
 
