@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965708Ab3GSFmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 01:42:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39707 "EHLO
+	id S965989Ab3GSFmq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 01:42:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965522Ab3GSF0f (ORCPT
+	with ESMTP id S965609Ab3GSF0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 01:26:35 -0400
+	Fri, 19 Jul 2013 01:26:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [ 24/72] parisc: Ensure volatile space register %sr1 is not clobbered
-Date: Thu, 18 Jul 2013 22:25:41 -0700
-Message-Id: <20130719052601.515259831@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [ 21/72] parisc: document the shadow registers
+Date: Thu, 18 Jul 2013 22:25:38 -0700
+Message-Id: <20130719052601.314654160@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <20130719052559.852627424@linuxfoundation.org>
 References: <20130719052559.852627424@linuxfoundation.org>
@@ -26,63 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Helge Deller <deller@gmx.de>
 
-commit e8d8fc219f9a0e63e7fb927881e6f4db8e7d34df upstream.
+commit a83f58bcb24003b9de2364de7c829a263423ead7 upstream.
 
-I still see the occasional random segv on rp3440.  Looking at one of
-these (a code 15), it appeared the problem must be with the cache
-handling of anonymous pages.  Reviewing this, I noticed that the space
-register %sr1 might be being clobbered when we flush an anonymous page.
-
-Register %sr1 is used for TLB purges in a couple of places.  These
-purges are needed on PA8800 and PA8900 processors to ensure cache
-consistency of flushed cache lines.
-
-The solution here is simply to move the %sr1 load into the TLB lock
-region needed to ensure that one purge executes at a time on SMP
-systems.  This was already the case for one use.  After a few days of
-operation, I haven't had a random segv on my rp3440.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
 Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/tlbflush.h |    5 +++--
- arch/parisc/kernel/cache.c         |    2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ Documentation/parisc/registers |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/parisc/include/asm/tlbflush.h
-+++ b/arch/parisc/include/asm/tlbflush.h
-@@ -63,13 +63,14 @@ static inline void flush_tlb_mm(struct m
- static inline void flush_tlb_page(struct vm_area_struct *vma,
- 	unsigned long addr)
- {
--	unsigned long flags;
-+	unsigned long flags, sid;
+--- a/Documentation/parisc/registers
++++ b/Documentation/parisc/registers
+@@ -78,6 +78,14 @@ Shadow Registers		used by interruption h
+ TOC enable bit			1
  
- 	/* For one page, it's not worth testing the split_tlb variable */
+ =========================================================================
++
++The PA-RISC architecture defines 7 registers as "shadow registers".
++Those are used in RETURN FROM INTERRUPTION AND RESTORE instruction to reduce
++the state save and restore time by eliminating the need for general register
++(GR) saves and restores in interruption handlers.
++Shadow registers are the GRs 1, 8, 9, 16, 17, 24, and 25.
++
++=========================================================================
+ Register usage notes, originally from John Marvin, with some additional
+ notes from Randolph Chung.
  
- 	mb();
--	mtsp(vma->vm_mm->context,1);
-+	sid = vma->vm_mm->context;
- 	purge_tlb_start(flags);
-+	mtsp(sid, 1);
- 	pdtlb(addr);
- 	pitlb(addr);
- 	purge_tlb_end(flags);
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -440,8 +440,8 @@ void __flush_tlb_range(unsigned long sid
- 	else {
- 		unsigned long flags;
- 
--		mtsp(sid, 1);
- 		purge_tlb_start(flags);
-+		mtsp(sid, 1);
- 		if (split_tlb) {
- 			while (npages--) {
- 				pdtlb(start);
 
 
