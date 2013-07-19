@@ -1,82 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761106Ab3GSSmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 14:42:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51200 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab3GSSmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 14:42:35 -0400
-Message-ID: <51E98897.6050105@linutronix.de>
-Date: Fri, 19 Jul 2013 20:42:31 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
-MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
-        balbi@ti.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-omap@vger.kernel.org, kishon@ti.com
-Subject: Re: [PATCH v2 3/4] arm: dts: Add USB phy nodes for AM33XX
-References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-4-git-send-email-george.cherian@ti.com> <51E94571.8080805@cogentembedded.com> <51E94B30.9070805@linutronix.de> <51E98663.2040308@cogentembedded.com>
-In-Reply-To: <51E98663.2040308@cogentembedded.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1760965Ab3GSSoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 14:44:08 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55498 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752645Ab3GSSoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 14:44:06 -0400
+Message-ID: <1374259443.2059.1.camel@joe-AO722>
+Subject: Re: [PATCH v6] power: new trace event to print device suspend and
+ resume time
+From: Joe Perches <joe@perches.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, gregkh@linuxfoundation.org,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paul.gortmaker@windriver.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Date: Fri, 19 Jul 2013 11:44:03 -0700
+In-Reply-To: <1374258440-7152-1-git-send-email-shuah.kh@samsung.com>
+References: <1374258440-7152-1-git-send-email-shuah.kh@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 08:33 PM, Sergei Shtylyov wrote:
-> Hello.
+On Fri, 2013-07-19 at 12:27 -0600, Shuah Khan wrote:
+> A new trace event is added to pm events to print time it takes to suspend and
+> resume a device.
 
-Hello,
+Thanks Shuah.
 
->> usb: usb@47400000 {
->>     compatible = "ti,am33xx-usb";
->>     
->>     usb0_phy: phy@47401300 {
->>         compatible = "ti,am335x-usb-phy";
->>     }
->>     usb0: usb@47401000 {
->>         musb0: usb@47401400 {
->>             compatible = "mg,musbmhdrc";
->>         }
->>     }
->>     usb1_phy: phy@47402300 {
->>         compatible = "ti,am335x-usb-phy";
->>     }
->>     usb1: usb@47402000 {
->>         musb1: usb@47402400 {
->>             compatible = "mg,musbmhdrc";
->>         }
->>     }
->> }
-> 
->> And you want usb0_phy to be child of usb0? In the TRM they are all in
->> the same block.
-> 
->    Ah, the fact that PHYs didn't have the "reg" property got me muddled,
-> I didn't pay attention to the address part of the node names... BTW,
-> where is the "reg" prop?
-
-I skipped it for the general idea. I planned to repost is today but I
-messed up dsps and need to get it working first…
-
-> I see PHYs share the address space with
-> "omap-control-usb@44e10620" device -- what's the point with this?
-
-I decided to get rid of this. Both phys have 8 bytes (2 registers)
-which are exclusive for them.
-There is one register for the wakeup which is shared by both.
-I changed this to limit it only to the 8bytes per phy. I care about
-wakeup later - hopefully George will take care of this :)
-
-> 
->> Sebastian
-> 
-> WBR, Sergei
-> 
-Sebastian
