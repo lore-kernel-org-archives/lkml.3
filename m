@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab3GTJn4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 05:43:56 -0400
-Received: from mout.gmx.net ([212.227.17.20]:64587 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab3GTJnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 05:43:55 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Sherry Hurwitz <sherry.hurwitz@amd.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] linux-firmware/AMD: add readme files for amd-ucode
-Date: Sat, 20 Jul 2013 11:43:44 +0200
-Message-ID: <1581606.2MIpuxPjZY@ax5200p>
-User-Agent: KMail/4.8.5 (Linux/3.5.0-27-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1374273832-5228-1-git-send-email-sherry.hurwitz@amd.com>
-References: <1374273832-5228-1-git-send-email-sherry.hurwitz@amd.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:43s06L+w6/MWQuDQUidsPoGN6/kB0uIcGNhtJk9Fsn4XdTu2Gvr
- bjiQCI5Jg1WCkljhe2dvlQKfwKBGUIH3KIIfV2imsVxUgSngP/JLzggsY/LJbn0v9MnEpMH
- +b5UfRC99uoS0k71HXFiKkAIWOZGYWfE/yZ4xJ8FjQbo4s8IePqw2d1QE+jyQ2JjkN4HBlP
- wZ0hWn2NKLET1FZ8vIjFA==
+	id S1752898Ab3GTJuN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 05:50:13 -0400
+Received: from asix.com.tw ([113.196.140.82]:65264 "EHLO freebsd2.asix.com.tw"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751768Ab3GTJuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 05:50:11 -0400
+X-Greylist: delayed 1798 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Jul 2013 05:50:09 EDT
+From: freddy@asix.com.tw
+To: davem@davemloft.net, netdev@vger.kernel.org, grundler@google.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, louis@asix.com.tw,
+        allan@asix.com.tw, Freddy Xin <freddy@asix.com.tw>
+Subject: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+Date: Sat, 20 Jul 2013 17:16:49 +0800
+Message-Id: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 July 2013 17:43:52 Sherry Hurwitz wrote:
-> File: README
-> File: microcode_amd.bin.README
-> File: microcode_amd_fam15h.bin.README
-> 
-> Signed-off-by: Sherry Hurwitz <sherry.hurwitz@amd.com>
-> ---
->  amd-ucode/README                          |   46
-> +++++++++++++++++++++++++++++ amd-ucode/microcode_amd.bin.README        |  
-> 29 ++++++++++++++++++ amd-ucode/microcode_amd_fam15h.bin.README |   13
-> ++++++++
->  3 files changed, 88 insertions(+)
->  create mode 100644 amd-ucode/README
->  create mode 100644 amd-ucode/microcode_amd.bin.README
->  create mode 100644 amd-ucode/microcode_amd_fam15h.bin.README
-> 
-> diff --git a/amd-ucode/README b/amd-ucode/README
-> new file mode 100644
-> index 0000000..a92831d
-> --- /dev/null
-> +++ b/amd-ucode/README
-> @@ -0,0 +1,46 @@
-> +This package provides latest microcode patches
-> +for AMD processor families >= 0x10.
-> +
-> +See http://www.amd64.org/support/microcode.html
-> +for details.
+From: Freddy Xin <freddy@asix.com.tw>
 
-Wasn't this URL deprecated (at least it's offline now)?
+Disable TSO and SG network features in reset() and bind() functions,
+and check the return value of skb_linearize() in tx_fixup() to prevent
+TX throttling.
 
-Marc
+Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+---
+ drivers/net/usb/ax88179_178a.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 1e3c302..eb71331 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -1029,7 +1029,7 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
+ 	dev->mii.supports_gmii = 1;
+ 
+ 	dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+-			      NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
++			      NETIF_F_RXCSUM;
+ 
+ 	dev->net->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+ 				 NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
+@@ -1173,7 +1173,9 @@ ax88179_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
+ 	if (((skb->len + 8) % frame_size) == 0)
+ 		tx_hdr2 |= 0x80008000;	/* Enable padding */
+ 
+-	skb_linearize(skb);
++	if (skb_linearize(skb))
++		return NULL;
++
+ 	headroom = skb_headroom(skb);
+ 	tailroom = skb_tailroom(skb);
+ 
+@@ -1317,7 +1319,7 @@ static int ax88179_reset(struct usbnet *dev)
+ 			  1, 1, tmp);
+ 
+ 	dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+-			      NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
++			      NETIF_F_RXCSUM;
+ 
+ 	dev->net->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+ 				 NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
+-- 
+1.8.1.2
 
