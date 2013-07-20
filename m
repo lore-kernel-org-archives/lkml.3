@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab3GTXH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 19:07:59 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:59784 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733Ab3GTXHk (ORCPT
+	id S1755381Ab3GTXIX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 19:08:23 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:47189 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab3GTXHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 19:07:40 -0400
+	Sat, 20 Jul 2013 19:07:53 -0400
 From: Andrea Adami <andrea.adami@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] sa1100: collie: fall back to jedec_probe flash detection
-Date: Sun, 21 Jul 2013 01:07:36 +0200
-Message-Id: <1374361656-3034-1-git-send-email-andrea.adami@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Marko Katic <dromede@gmail.com>
+Subject: [PATCH] pxa: sharpsl_param: fix invalid memory access in sharpsl_save_param()
+Date: Sun, 21 Jul 2013 01:07:50 +0200
+Message-Id: <1374361670-3214-1-git-send-email-andrea.adami@gmail.com>
 X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zaurus 5500 contains 2 LH28F640BFHE-PTTL90 (64M 4Mx16) and
-the LH28F640BFHE-PTTL90.pdf datasheet available on the net shows
-the exact erasesize and the OTP support.
-At the moment only jedec_probe can discover the chip and
-the NOR is mounted read only probably because of wrong vpp.
+From: Marko Katic <dromede@gmail.com>
 
+Unbreak kernel boot (tested with kexecboot)
+
+Patch was sent twice upstrream:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/137284.html
+Devices that call sharpsl_save_param() will hang on boot due to
+a memcpy call that uses a physical address that is no longer * accessible. Fix
+his by converting the physical address into a virtual one.
+
+Signed-off-by: Marko Katic <dromede@gmail.com>
+[andrea.adami@gmail.com: checkpatch.pl dislikes void * param_start]
 Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
 ---
- arch/arm/mach-sa1100/collie.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/common/sharpsl_param.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-sa1100/collie.c b/arch/arm/mach-sa1100/collie.c
-index 612a456..7fb96eb 100644
---- a/arch/arm/mach-sa1100/collie.c
-+++ b/arch/arm/mach-sa1100/collie.c
-@@ -289,7 +289,7 @@ static void collie_flash_exit(void)
- }
+diff --git a/arch/arm/common/sharpsl_param.c b/arch/arm/common/sharpsl_param.c
+index d56c932..b70b13a 100644
+--- a/arch/arm/common/sharpsl_param.c
++++ b/arch/arm/common/sharpsl_param.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/string.h>
++#include <asm/memory.h>
+ #include <asm/mach/sharpsl_param.h>
  
- static struct flash_platform_data collie_flash_data = {
--	.map_name	= "cfi_probe",
-+	.map_name	= "jedec_probe",
- 	.init		= collie_flash_init,
- 	.set_vpp	= collie_set_vpp,
- 	.exit		= collie_flash_exit,
+ /*
+@@ -41,7 +42,8 @@ EXPORT_SYMBOL(sharpsl_param);
+ 
+ void sharpsl_save_param(void)
+ {
+-	memcpy(&sharpsl_param, (void *)PARAM_BASE, sizeof(struct sharpsl_param_info));
++	void *param_start = phys_to_virt(PARAM_BASE);
++	memcpy(&sharpsl_param, param_start, sizeof(struct sharpsl_param_info));
+ 
+ 	if (sharpsl_param.comadj_keyword != COMADJ_MAGIC)
+ 		sharpsl_param.comadj=-1;
 -- 
 1.8.1.5
 
