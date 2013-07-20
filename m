@@ -1,308 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab3GTOsl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 10:48:41 -0400
-Received: from toccata.ens-lyon.org ([140.77.166.68]:60888 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139Ab3GTOsj (ORCPT
+	id S1754268Ab3GTOss (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 10:48:48 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:37935 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab3GTOso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 10:48:39 -0400
-Date: Sat, 20 Jul 2013 16:48:28 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Joe Perches <joe@perches.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [v3.11-rc1 PATCH 3/5] printk: Move braille console support into
- separate braille.[ch] files
-Message-ID: <20130720144828.GG5891@type>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Joe Perches <joe@perches.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
-References: <cover.1373922863.git.joe@perches.com>
- <441bf5d2de92efd3b6d43a9ea7d7a6436e486543.1373922863.git.joe@perches.com>
+	Sat, 20 Jul 2013 10:48:44 -0400
+X-ASG-Debug-ID: 1374331722-03d6a545824ec80001-xx1T2L
+X-Barracuda-Envelope-From: MChristie@fusionio.com
+Message-ID: <51EAA33C.9010405@fusionio.com>
+X-Barracuda-Apparent-Source-IP: 20.15.0.11
+Date: Sat, 20 Jul 2013 09:48:28 -0500
+From: Mike Christie <mchristie@fusionio.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <441bf5d2de92efd3b6d43a9ea7d7a6436e486543.1373922863.git.joe@perches.com>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Gordeev <agordeev@redhat.com>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>  <1373583637.7397.370.camel@haakon3.risingtidesystems.com>  <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>  <1373692812.7397.625.camel@haakon3.risingtidesystems.com>  <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>  <1374010683.7397.880.camel@haakon3.risingtidesystems.com>  <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>  <1374173515.7397.948.camel@haakon3.risingtidesystems.com>  <51E83E32.9050306@cs.wisc.edu>  <1374193399.7397.973.camel@haakon3.risingtidesystems.com>  <20130719003034.GG28005@kernel.dk>  <1374195825.7397.997.camel@haakon3.risingtidesystems.com>  <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>  <1374248000.2266.20.camel@dabdike>  <1374267684.7397.1058.camel@haakon3.risingtidesystems.com> <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+X-ASG-Orig-Subj: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+In-Reply-To: <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+Content-Type: multipart/mixed;
+	boundary="------------000603010606030309060206"
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1374331722
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.137254
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches, le Mon 15 Jul 2013 14:51:33 -0700, a écrit :
-> Create files with prototypes and static inlines for braille
-> support.  Make braille_console functions return 1 on success.
-> 
-> Corrected CONFIG_A11Y_BRAILLE_CONSOLE=n _braille_console_setup
-> return value to NULL.
-> 
-> link:  http://lkml.kernel.org/r/1350999678-17441-1-git-send-email-ming.lei@canonical.com
-> cc: Samuel Thibault <samuel.thibault@ens-lyon.org>
+--------------000603010606030309060206
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-Reviewed-By: Samuel Thibault <samuel.thibault@ens-lyon.org>
-
-Thanks,
-Samuel
-
-> cc: Ming Lei <ming.lei@canonical.com>
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/accessibility/braille/braille_console.c |  9 +++--
->  kernel/printk/Makefile                          |  1 +
->  kernel/printk/braille.c                         | 48 +++++++++++++++++++++++++
->  kernel/printk/braille.h                         | 48 +++++++++++++++++++++++++
->  kernel/printk/printk.c                          | 44 +++++++----------------
->  5 files changed, 117 insertions(+), 33 deletions(-)
->  create mode 100644 kernel/printk/braille.c
->  create mode 100644 kernel/printk/braille.h
+On 07/19/2013 11:56 PM, Nicholas A. Bellinger wrote:
+> On Fri, 2013-07-19 at 14:01 -0700, Nicholas A. Bellinger wrote:
+>> On Fri, 2013-07-19 at 08:33 -0700, James Bottomley wrote:
+>>> On Thu, 2013-07-18 at 23:34 -0700, Nicholas A. Bellinger wrote:
+>>>> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+>>>> index 0101af5..191bc15 100644
+>>>> --- a/drivers/ata/libata-scsi.c
+>>>> +++ b/drivers/ata/libata-scsi.c
+>>>> @@ -1144,7 +1144,11 @@ static int ata_scsi_dev_config(struct scsi_device *sdev,
+>>>>                         "sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
+>>>>                         sdev->sector_size);
+>>>>  
+>>>> -       blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
+>>>> +       if (!q->mq_ops) {
+>>>> +               blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
+>>>> +       } else {
+>>>> +               printk("Skipping dma_alignment for libata w/ scsi-mq\n");
+>>>> +       }
+>>>
+>>> Amazingly enough there is a reason for the dma alignment, and it wasn't
+>>> just to annoy you, so you can't blindly do this.
+>>>
+>>> The email thread is probably lost in the mists of time, but if I
+>>> remember correctly the problem is that some ahci DMA controllers barf if
+>>> the sector they're doing DMA on crosses a page boundary.  Some are
+>>> annoying enough to actually cause silent data corruption.  You won't
+>>> find every ahci DMA controller doing this, so the change will work for
+>>> some, but it will be hard to identify those it won't work for until
+>>> people start losing data.
+>>
+>> Thanks for the extra background.
+>>
+>> So at least from what I gather thus far this shouldn't be an issue for
+>> initial testing with scsi-mq <-> libata w/ ata_piix.
+>>
+>>>
+>>> The correct fix, obviously, is to do the bio copy on the kernel path for
+>>> unaligned data.  It is OK to assume that REQ_TYPE_FS data is correctly
+>>> aligned (because of the block to page alignment).
+>>>
+>>
+>> Indeed.  Looking into the bio_copy_kern() breakage next..
+>>
 > 
-> diff --git a/drivers/accessibility/braille/braille_console.c b/drivers/accessibility/braille/braille_console.c
-> index d21167b..dc34a5b 100644
-> --- a/drivers/accessibility/braille/braille_console.c
-> +++ b/drivers/accessibility/braille/braille_console.c
-> @@ -359,6 +359,9 @@ int braille_register_console(struct console *console, int index,
->  		char *console_options, char *braille_options)
->  {
->  	int ret;
-> +
-> +	if (!(console->flags & CON_BRL))
-> +		return 0;
->  	if (!console_options)
->  		/* Only support VisioBraille for now */
->  		console_options = "57600o8";
-> @@ -374,15 +377,17 @@ int braille_register_console(struct console *console, int index,
->  	braille_co = console;
->  	register_keyboard_notifier(&keyboard_notifier_block);
->  	register_vt_notifier(&vt_notifier_block);
-> -	return 0;
-> +	return 1;
->  }
+> OK, after further investigation the root cause is a actually a missing
+> bio->bio_end_io() -> bio_copy_kern_endio() -> bio_put() from the
+> blk_end_sync_rq() callback path that scsi-mq REQ_TYPE_BLOCK_PC is
+> currently using.
+> 
+> Including the following patch into the scsi-mq working branch now, and
+> reverting the libata dma_alignment=0x03 hack.
+> 
+> Alexander, care to give this a try..?
+> 
+> --nab
+> 
+> diff --git a/block/blk-exec.c b/block/blk-exec.c
+> index 0761c89..70303d2 100644
+> --- a/block/blk-exec.c
+> +++ b/block/blk-exec.c
+> @@ -25,7 +25,10 @@ static void blk_end_sync_rq(struct request *rq, int error)
+>         struct completion *waiting = rq->end_io_data;
 >  
->  int braille_unregister_console(struct console *console)
->  {
->  	if (braille_co != console)
->  		return -EINVAL;
-> +	if (!(console->flags & CON_BRL))
-> +		return 0;
->  	unregister_keyboard_notifier(&keyboard_notifier_block);
->  	unregister_vt_notifier(&vt_notifier_block);
->  	braille_co = NULL;
-> -	return 0;
-> +	return 1;
->  }
-> diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
-> index 36d306d..85405bd 100644
-> --- a/kernel/printk/Makefile
-> +++ b/kernel/printk/Makefile
-> @@ -1 +1,2 @@
->  obj-y	= printk.o
-> +obj-$(CONFIG_A11Y_BRAILLE_CONSOLE)	+= braille.o
-> diff --git a/kernel/printk/braille.c b/kernel/printk/braille.c
-> new file mode 100644
-> index 0000000..b51087f
-> --- /dev/null
-> +++ b/kernel/printk/braille.c
-> @@ -0,0 +1,48 @@
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/console.h>
-> +#include <linux/string.h>
-> +
-> +#include "console_cmdline.h"
-> +#include "braille.h"
-> +
-> +char *_braille_console_setup(char **str, char **brl_options)
-> +{
-> +	if (!memcmp(*str, "brl,", 4)) {
-> +		*brl_options = "";
-> +		*str += 4;
-> +	} else if (!memcmp(str, "brl=", 4)) {
-> +		*brl_options = *str + 4;
-> +		*str = strchr(*brl_options, ',');
-> +		if (!*str)
-> +			pr_err("need port name after brl=\n");
-> +		else
-> +			*((*str)++) = 0;
-> +	}
-> +
-> +	return *str;
-> +}
-> +
-> +int
-> +_braille_register_console(struct console *console, struct console_cmdline *c)
-> +{
-> +	int rtn = 0;
-> +
-> +	if (c->brl_options) {
-> +		console->flags |= CON_BRL;
-> +		rtn = braille_register_console(console, c->index, c->options,
-> +					       c->brl_options);
-> +	}
-> +
-> +	return rtn;
-> +}
-> +
-> +int
-> +_braille_unregister_console(struct console *console)
-> +{
-> +	if (console->flags & CON_BRL)
-> +		return braille_unregister_console(console);
-> +
-> +	return 0;
-> +}
-> diff --git a/kernel/printk/braille.h b/kernel/printk/braille.h
-> new file mode 100644
-> index 0000000..769d771
-> --- /dev/null
-> +++ b/kernel/printk/braille.h
-> @@ -0,0 +1,48 @@
-> +#ifndef _PRINTK_BRAILLE_H
-> +#define _PRINTK_BRAILLE_H
-> +
-> +#ifdef CONFIG_A11Y_BRAILLE_CONSOLE
-> +
-> +static inline void
-> +braille_set_options(struct console_cmdline *c, char *brl_options)
-> +{
-> +	c->brl_options = brl_options;
-> +}
-> +
-> +char *
-> +_braille_console_setup(char **str, char **brl_options);
-> +
-> +int
-> +_braille_register_console(struct console *console, struct console_cmdline *c);
-> +
-> +int
-> +_braille_unregister_console(struct console *console);
-> +
-> +#else
-> +
-> +static inline void
-> +braille_set_options(struct console_cmdline *c, char *brl_options)
-> +{
-> +}
-> +
-> +static inline char *
-> +_braille_console_setup(char **str, char **brl_options)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline int
-> +_braille_register_console(struct console *console, struct console_cmdline *c)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int
-> +_braille_unregister_console(struct console *console)
-> +{
-> +	return 0;
-> +}
-> +
-> +#endif
-> +
-> +#endif
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index 4e9a982..7c4020c 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -50,6 +50,7 @@
->  #include <trace/events/printk.h>
->  
->  #include "console_cmdline.h"
-> +#include "braille.h"
->  
->  /* printk's without a loglevel use this.. */
->  #define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
-> @@ -1767,9 +1768,8 @@ static int __add_preferred_console(char *name, int idx, char *options,
->  	c = &console_cmdline[i];
->  	strlcpy(c->name, name, sizeof(c->name));
->  	c->options = options;
-> -#ifdef CONFIG_A11Y_BRAILLE_CONSOLE
-> -	c->brl_options = brl_options;
-> -#endif
-> +	braille_set_options(c, brl_options);
-> +
->  	c->index = idx;
->  	return 0;
->  }
-> @@ -1782,20 +1782,8 @@ static int __init console_setup(char *str)
->  	char *s, *options, *brl_options = NULL;
->  	int idx;
->  
-> -#ifdef CONFIG_A11Y_BRAILLE_CONSOLE
-> -	if (!memcmp(str, "brl,", 4)) {
-> -		brl_options = "";
-> -		str += 4;
-> -	} else if (!memcmp(str, "brl=", 4)) {
-> -		brl_options = str + 4;
-> -		str = strchr(brl_options, ',');
-> -		if (!str) {
-> -			printk(KERN_ERR "need port name after brl=\n");
-> -			return 1;
-> -		}
-> -		*(str++) = 0;
-> -	}
-> -#endif
-> +	if (_braille_console_setup(&str, &brl_options))
-> +		return 1;
->  
->  	/*
->  	 * Decode str into name, index, options.
-> @@ -2289,16 +2277,10 @@ void register_console(struct console *newcon)
->  			continue;
->  		if (newcon->index < 0)
->  			newcon->index = console_cmdline[i].index;
-> -#ifdef CONFIG_A11Y_BRAILLE_CONSOLE
-> -		if (console_cmdline[i].brl_options) {
-> -			newcon->flags |= CON_BRL;
-> -			braille_register_console(newcon,
-> -					console_cmdline[i].index,
-> -					console_cmdline[i].options,
-> -					console_cmdline[i].brl_options);
-> +
-> +		if (_braille_register_console(newcon, &console_cmdline[i]))
->  			return;
-> -		}
-> -#endif
-> +
->  		if (newcon->setup &&
->  		    newcon->setup(newcon, console_cmdline[i].options) != 0)
->  			break;
-> @@ -2386,13 +2368,13 @@ EXPORT_SYMBOL(register_console);
->  int unregister_console(struct console *console)
->  {
->          struct console *a, *b;
-> -	int res = 1;
-> +	int res;
->  
-> -#ifdef CONFIG_A11Y_BRAILLE_CONSOLE
-> -	if (console->flags & CON_BRL)
-> -		return braille_unregister_console(console);
-> -#endif
-> +	res = _braille_unregister_console(console);
-> +	if (res)
-> +		return res;
->  
-> +	res = 1;
->  	console_lock();
->  	if (console_drivers == console) {
->  		console_drivers=console->next;
-> -- 
-> 1.8.1.2.459.gbcd45b4.dirty
+>         rq->end_io_data = NULL;
+> -       if (!rq->q->mq_ops) {
+> +       if (rq->q->mq_ops) {
+> +               if (rq->bio)
+> +                       bio_endio(rq->bio, error);
+> +       } else {
+>                 __blk_put_request(rq->q, rq);
+>         }
 > 
 
--- 
-Samuel
-After watching my newly-retired dad spend two weeks learning how to make a new
-folder, it became obvious that "intuitive" mostly means "what the writer or
-speaker of intuitive likes".
-(Bruce Ediger, bediger@teal.csn.org, in comp.os.linux.misc, on X the
-intuitiveness of a Mac interface.)
+
+This does not handle requests with multiple bios, and for the mq stye
+passthrough insertion completions you actually want to call
+blk_mq_finish_request in scsi_execute. Same for all the other
+passthrough code in your scsi mq tree. That is your root bug. Instead of
+doing that though I think we want to have the block layer free the bios
+like before.
+
+For the non mq calls, blk_end_request type of calls will complete the
+bios when blk_finish_request is called from that path. It will then call
+the rq end_io callback.
+
+I think the blk mq code assumes if the end_io callack is set that the
+end_io function will do the bio cleanup. See __blk_mq_end_io. Also see
+how blk_mq_execute_rq calls blk_mq_finish_request for an example of how
+rq passthrough execution and cleanup is being done in the mq paths.
+
+Now with the scsi mq changes, when blk_execute_rq_nowait calls
+blk_mq_insert_request it calls it with a old non mq style of end io
+function that does not complete the bios.
+
+What about the attached only compile tested patch. The patch has the mq
+block code work like the non mq code for bio cleanups.
+
+
+
+--------------000603010606030309060206
+Content-Type: text/plain; charset="UTF-8"; name="blk-mq-free-bio.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="blk-mq-free-bio.patch"
+
+YmxrLW1xOiBibGstbXEgc2hvdWxkIGZyZWUgYmlvcyBpbiBwYXNzIHRocm91Z2ggY2FzZQoK
+Rm9yIG5vbiBtcSBjYWxscywgdGhlIGJsb2NrIGxheWVyIHdpbGwgZnJlZSB0aGUgYmlvcyB3
+aGVuCmJsa19maW5pc2hfcmVxdWVzdCBpcyBjYWxsZWQuCgpGb3IgbXEgY2FsbHMsIHRoZSBi
+bGsgbXEgY29kZSB3YW50cyB0aGUgY2FsbGVyIHRvIGRvIHRoaXMuCgpUaGlzIHBhdGNoIGhh
+cyB0aGUgYmxrIG1xIGNvZGUgd29yayBsaWtlIHRoZSBub24gbXEgY29kZQphbmQgaGFzIHRo
+ZSBibG9jayBsYXllciBmcmVlIHRoZSBiaW9zLgoKU2lnbmVkLW9mZi1ieTogTWlrZSBDaHJp
+c3RpZSA8bWljaGFlbGNAY3Mud2lzYy5lZHU+CgpkaWZmIC0tZ2l0IGEvYmxvY2svYmxrLWZs
+dXNoLmMgYi9ibG9jay9ibGstZmx1c2guYwppbmRleCBjNTZjMzdkLi4zZTRjYzljIDEwMDY0
+NAotLS0gYS9ibG9jay9ibGstZmx1c2guYworKysgYi9ibG9jay9ibGstZmx1c2guYwpAQCAt
+MjMxLDcgKzIzMSw3IEBAIHN0YXRpYyB2b2lkIGZsdXNoX2VuZF9pbyhzdHJ1Y3QgcmVxdWVz
+dCAqZmx1c2hfcnEsIGludCBlcnJvcikKIAl1bnNpZ25lZCBsb25nIGZsYWdzID0gMDsKIAog
+CWlmIChxLT5tcV9vcHMpIHsKLQkJYmxrX21xX2ZpbmlzaF9yZXF1ZXN0KGZsdXNoX3JxLCBl
+cnJvcik7CisJCWJsa19tcV9mcmVlX3JlcXVlc3QoZmx1c2hfcnEpOwogCQlzcGluX2xvY2tf
+aXJxc2F2ZSgmcS0+bXFfZmx1c2hfbG9jaywgZmxhZ3MpOwogCX0KIAlydW5uaW5nID0gJnEt
+PmZsdXNoX3F1ZXVlW3EtPmZsdXNoX3J1bm5pbmdfaWR4XTsKZGlmZiAtLWdpdCBhL2Jsb2Nr
+L2Jsay1tcS5jIGIvYmxvY2svYmxrLW1xLmMKaW5kZXggNzk5ZDMwNS4uNTQ4OWI1YSAxMDA2
+NDQKLS0tIGEvYmxvY2svYmxrLW1xLmMKKysrIGIvYmxvY2svYmxrLW1xLmMKQEAgLTI3MCw3
+ICsyNzAsNyBAQCB2b2lkIGJsa19tcV9mcmVlX3JlcXVlc3Qoc3RydWN0IHJlcXVlc3QgKnJx
+KQogfQogRVhQT1JUX1NZTUJPTChibGtfbXFfZnJlZV9yZXF1ZXN0KTsKIAotdm9pZCBibGtf
+bXFfZmluaXNoX3JlcXVlc3Qoc3RydWN0IHJlcXVlc3QgKnJxLCBpbnQgZXJyb3IpCitzdGF0
+aWMgdm9pZCBibGtfbXFfZmluaXNoX3JlcXVlc3Qoc3RydWN0IHJlcXVlc3QgKnJxLCBpbnQg
+ZXJyb3IpCiB7CiAJc3RydWN0IGJpbyAqYmlvID0gcnEtPmJpbzsKIAl1bnNpZ25lZCBpbnQg
+Ynl0ZXMgPSAwOwpAQCAtMjg2LDIyICsyODYsMTcgQEAgdm9pZCBibGtfbXFfZmluaXNoX3Jl
+cXVlc3Qoc3RydWN0IHJlcXVlc3QgKnJxLCBpbnQgZXJyb3IpCiAKIAlibGtfYWNjb3VudF9p
+b19jb21wbGV0aW9uKHJxLCBieXRlcyk7CiAJYmxrX2FjY291bnRfaW9fZG9uZShycSk7Ci0J
+YmxrX21xX2ZyZWVfcmVxdWVzdChycSk7CiB9CiAKIHZvaWQgYmxrX21xX2NvbXBsZXRlX3Jl
+cXVlc3Qoc3RydWN0IHJlcXVlc3QgKnJxLCBpbnQgZXJyb3IpCiB7CiAJdHJhY2VfYmxvY2tf
+cnFfY29tcGxldGUocnEtPnEsIHJxKTsKKwlibGtfbXFfZmluaXNoX3JlcXVlc3QocnEsIGVy
+cm9yKTsKIAotCS8qCi0JICogSWYgLT5lbmRfaW8gaXMgc2V0LCBpdCdzIHJlc3BvbnNpYmxl
+IGZvciBkb2luZyB0aGUgcmVzdCBvZiB0aGUKLQkgKiBjb21wbGV0aW9uLgotCSAqLwogCWlm
+IChycS0+ZW5kX2lvKQogCQlycS0+ZW5kX2lvKHJxLCBlcnJvcik7CiAJZWxzZQotCQlibGtf
+bXFfZmluaXNoX3JlcXVlc3QocnEsIGVycm9yKTsKLQorCQlibGtfbXFfZnJlZV9yZXF1ZXN0
+KHJxKTsKIH0KIAogdm9pZCBfX2Jsa19tcV9lbmRfaW8oc3RydWN0IHJlcXVlc3QgKnJxLCBp
+bnQgZXJyb3IpCkBAIC05NzMsOCArOTY4LDcgQEAgaW50IGJsa19tcV9leGVjdXRlX3JxKHN0
+cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgcmVxdWVzdCAqcnEpCiAJaWYgKHJxLT5l
+cnJvcnMpCiAJCWVyciA9IC1FSU87CiAKLQlibGtfbXFfZmluaXNoX3JlcXVlc3QocnEsIHJx
+LT5lcnJvcnMpOwotCisJYmxrX21xX2ZyZWVfcmVxdWVzdChycSk7CiAJcmV0dXJuIGVycjsK
+IH0KIEVYUE9SVF9TWU1CT0woYmxrX21xX2V4ZWN1dGVfcnEpOwpkaWZmIC0tZ2l0IGEvYmxv
+Y2svYmxrLW1xLmggYi9ibG9jay9ibGstbXEuaAppbmRleCA0MmQwMTEwLi41MmJmMWY5IDEw
+MDY0NAotLS0gYS9ibG9jay9ibGstbXEuaAorKysgYi9ibG9jay9ibGstbXEuaApAQCAtMjcs
+NyArMjcsNiBAQCB2b2lkIGJsa19tcV9jb21wbGV0ZV9yZXF1ZXN0KHN0cnVjdCByZXF1ZXN0
+ICpycSwgaW50IGVycm9yKTsKIHZvaWQgYmxrX21xX3J1bl9yZXF1ZXN0KHN0cnVjdCByZXF1
+ZXN0ICpycSwgYm9vbCBydW5fcXVldWUsIGJvb2wgYXN5bmMpOwogdm9pZCBibGtfbXFfcnVu
+X2h3X3F1ZXVlKHN0cnVjdCBibGtfbXFfaHdfY3R4ICpoY3R4LCBib29sIGFzeW5jKTsKIHZv
+aWQgYmxrX21xX2luaXRfZmx1c2goc3RydWN0IHJlcXVlc3RfcXVldWUgKnEpOwotdm9pZCBi
+bGtfbXFfZmluaXNoX3JlcXVlc3Qoc3RydWN0IHJlcXVlc3QgKnJxLCBpbnQgZXJyb3IpOwog
+CiAvKgogICogQ1BVIGhvdHBsdWcgaGVscGVycwo=
+--------------000603010606030309060206--
