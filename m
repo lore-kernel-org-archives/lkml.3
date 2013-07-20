@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab3GTLsA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 07:48:00 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:62002 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab3GTLr6 (ORCPT
+	id S1753388Ab3GTMWS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 08:22:18 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:59538 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab3GTMWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 07:47:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1623844.aKWlCHQqy1@vostro.rjw.lan>
-References: <1623844.aKWlCHQqy1@vostro.rjw.lan>
-From: Kay Sievers <kay@vrfy.org>
-Date: Sat, 20 Jul 2013 13:47:37 +0200
-Message-ID: <CAPXgP122sX2eMYEhYam5AUaissw1r4g8PuZajSF7J_rVMFv+Ng@mail.gmail.com>
-Subject: Re: udev: New default rule for autoloading kernel modules matching
- CPU modalias
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, systemd-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 20 Jul 2013 08:22:16 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
+        devicetree-discuss@lists.ozlabs.org, devicetree@vger.kernel.org
+Subject: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
+Date: Fri, 19 Jul 2013 20:19:48 -0700
+Message-Id: <1374290388-19308-3-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
+References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 12:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+Device tree bindings require a lot more attention than they used to.
+We've got a group of volunteers willing to take over maintaining
+bindings. This patch adds them to the MAINTAINERS file.
 
-> After a recent change present in 3.11-rc1 there is a driver, called processor,
-> that can be bound to the CPU devices whose sysfs directories are located under
-> /sys/devices/system/cpu/.  A side effect of this is that, after the driver has
-> been bound to those devices, the kernel adds DRIVER=processor to ENV for CPU
-> uevents and they don't match the default rule for autoloading modules matching
-> MODALIAS:
->
-> DRIVER!="?*", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
->
-> any more.  However, there are some modules whose module aliases match specific
-> CPU features through the modalias string and those modules should be loaded
-> automatically if a compatible CPU is present.  Yet, with the processor driver
-> bound to the CPU devices the above rule is not sufficient for that, so we need
-> a new default udev rule allowing those modules to be autoloaded even if the
-> CPU devices have drivers.
->
-> On my test systems I added the following rule for that:
->
-> ACTION="add", SUBSYSTEM=="cpu", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
->
-> in a separate file, but I'm not a udev expert, so I guess it may be done in a
-> better way.
->
-> Can you please consider adding such a rule to the default set of udev rules?
+This group still needs to work out a process for maintainership and how
+they are going to work together. I recommend that they set up a shared
+tree on git.kernel.org that they each have commit access to similar to
+the tip tree or the arm-soc tree, but it is up to them.
 
-The DRIVER!="?*" is an optimization which made a huge difference at
-the time we called out to /sbin/modprobe from udev rules and all the
-devices which already had a driver would not cause needless execution
-of the rather expensive modprobe binary.
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: devicetree@vger.kernel.org
+---
+ MAINTAINERS | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-This obviously can't do the right thing for the completely generic,
-not bound to a driver-state, CPU modaliases when they have a driver
-now. :)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index bc286e4..12c95d5 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6050,13 +6050,24 @@ L:	devicetree@vger.kernel.org
+ W:	http://fdt.secretlab.ca
+ T:	git git://git.secretlab.ca/git/linux-2.6.git
+ S:	Maintained
+-F:	Documentation/devicetree
+ F:	drivers/of
+ F:	include/linux/of*.h
+ F:	scripts/dtc
+ K:	of_get_property
+ K:	of_match_table
+ 
++OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
++M:	Pawel Moll <pawel.moll@arm.com>
++M:	Mark Rutland <mark.rutland@arm.com>
++M:	Stephen Warren <swarren@wwwdotorg.org>
++M:	Ian Campbell <ian.campbell@citrix.com>
++L:	devicetree@vger.kernel.org
++S:	Maintained
++F:	Documentation/devicetree
++F:	arch/*/boot/dts
++F:	arch/*/
++F:	include/dt-bindings
++
+ OPENRISC ARCHITECTURE
+ M:	Jonas Bonn <jonas@southpole.se>
+ W:	http://openrisc.net
+-- 
+1.8.1.2
 
-These days we load the entire kmod modalias database into the udev
-process, and lookup what we need to load and load the module from
-within the udev worker process. It could be, that the optimization is
-not measurable on today's systems, if that's the case I'll remove it,
-which would be the simplest and most future proof option. Otherwise
-I'll add the CPU specific rule.
-
-I'll find that out and let you know.
-
-Thanks,
-Kay
