@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab3GTUEQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 16:04:16 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:62997 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab3GTUEP (ORCPT
+	id S1754894Ab3GTUJe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 16:09:34 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:60443 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab3GTUJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 16:04:15 -0400
+	Sat, 20 Jul 2013 16:09:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E815BC@DQHE06.ent.ti.com>
+In-Reply-To: <CACRpkdaJGwPLzzUuHFZye0N5iAwH2Vn8vbdwz6qv9v4F9bmGbg@mail.gmail.com>
 References: <A874F61F95741C4A9BA573A70FE3998F82E815BC@DQHE06.ent.ti.com>
-Date: Sat, 20 Jul 2013 22:04:13 +0200
-Message-ID: <CACRpkdaJGwPLzzUuHFZye0N5iAwH2Vn8vbdwz6qv9v4F9bmGbg@mail.gmail.com>
+	<CACRpkdaJGwPLzzUuHFZye0N5iAwH2Vn8vbdwz6qv9v4F9bmGbg@mail.gmail.com>
+Date: Sat, 20 Jul 2013 22:09:32 +0200
+Message-ID: <CACRpkdbsQqyA53RGs2m36Y=dh7yaXuwU8yJs=y2Dt52Pih_iLg@mail.gmail.com>
 Subject: Re: [PATCH 0/3] LP3943 MFD driver for a GPIO expander and a PWM generator
 From: Linus Walleij <linus.walleij@linaro.org>
 To: "Kim, Milo" <Milo.Kim@ti.com>
@@ -26,25 +27,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 4:38 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
+On Sat, Jul 20, 2013 at 10:04 PM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
 
-> LP3943 is an integrated device capable of driving 16 output channels.
-> It supports a GPIO expander and a PWM generator.
+> Do you have use cases not using it for LEDs but other thing or why
+> do you want to model the 16 LED lines as GPIO lines?
+> Why can't you just have a drivers/leds/* as for any other LED
+> chip?
 
-But actually the data sheet describes it as a LED driver with PWM
-chip.
+Bah forget this. Now I saw that application note in the GPIO
+portion patch.
 
-Do you have use cases not using it for LEDs but other thing or why
-do you want to model the 16 LED lines as GPIO lines?
-Why can't you just have a drivers/leds/* as for any other LED
-chip?
+But don't you want a drivers/leds/* driver for this as well?
 
-Atleast some good explanation of this needs to be found in the
-patch text and also as comments in Kconfig and the code I think.
-
-I'm just fearing that this is some way to satisfy a userspace that
-wants to use the sysfs interface to GPIO to control LEDs and these
-are much better off using the LED sysfs ABI.
+I imagine the MFD core should send a mask to GPIO and
+LEDs drivers stating which lines can be used for GPIO and
+which lines can be used for LEDs.
 
 Yours,
 Linus Walleij
