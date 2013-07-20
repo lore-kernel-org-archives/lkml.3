@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab3GTUpb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 16:45:31 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:54658 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754946Ab3GTUpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 16:45:30 -0400
+	id S1755072Ab3GTUuV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 16:50:21 -0400
+Received: from marc1.marc.info ([205.134.191.172]:36516 "EHLO mail.marc.info"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754100Ab3GTUuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 16:50:20 -0400
+Date: Sat, 20 Jul 2013 16:50:17 -0400
+From: Hank Leininger <hlein@marc.info>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: New device tree mailing list
+Message-ID: <20130720205017.GC1877@marklar.spinoli.org>
+Reply-To: Hank Leininger <hlein@marc.info>
+References: <CACxGe6t1MNMcL=0U9Cu7MOvPx-PCkWFf5iWGPZ=eAXSz-uuqEA@mail.gmail.com>
+ <1374283779.2059.19.camel@joe-AO722>
+ <CACRpkdZ=THRiyrDqwDR7NT97EpFCT474mjG8_S1_mEM0rJ1oEg@mail.gmail.com>
+ <20130720170047.GB1877@marklar.spinoli.org>
+ <CACxGe6v=sKb7acuEB3__sxdeq_7hnMLnwJxfPwiLxSPMfgo1oQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1374048297-4321-1-git-send-email-jonas.jensen@gmail.com>
-References: <1373985880-23469-1-git-send-email-jonas.jensen@gmail.com>
-	<1374048297-4321-1-git-send-email-jonas.jensen@gmail.com>
-Date: Sat, 20 Jul 2013 22:45:29 +0200
-Message-ID: <CACRpkdYktthfRsn9=9GjphXUbOEAswdCZCM48KFK2WRgBdj-Qw@mail.gmail.com>
-Subject: Re: [PATCH v9] ARM: clocksource: add support for MOXA ART SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="+xNpyl7Qekk2NvDX"
+Content-Disposition: inline
+In-Reply-To: <CACxGe6v=sKb7acuEB3__sxdeq_7hnMLnwJxfPwiLxSPMfgo1oQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 10:04 AM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
 
-> +#include <linux/clk.h>
-> +#include <linux/clockchips.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqreturn.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/io.h>
-> +#include <linux/clocksource.h>
+--+xNpyl7Qekk2NvDX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-#include <linux/bitops.h>
+On Sat, Jul 20, 2013 at 08:18:54PM +0100, Grant Likely wrote:
+> On Sat, Jul 20, 2013 at 6:00 PM, Hank Leininger <hlein@marc.info> wrote:
+> >
+> > I realize MARC didn't carry the old/original devicetree-discuss list at
+> > ozlabs.  I'm pulling down the archives from that list now.  Should I
+> > import them as 'devicetree-discuss' (historically accurate) or as
+> > 'devicetree' (so they will appear seamless in MARC w/the new vger list's
+> > traffic)?
+>=20
+> As long as it doesn't cause any problems with duplicate messages for
+> the next short little while, I would merge the two archives.
 
-> +#define TIMEREG_CR_1_ENABLE    BIT(0)
+Sold!  Importing them now as 'devicetree'.  Because I grabbed them at
+the same time as I subscribed to the new list, there shouldn't be any
+overlap/duplicates.
 
-Because BIT() comes from there. And we shall not rely on
-implicit #inclusion.
+Thanks,
 
-Apart from that:
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Hank
 
-Yours,
-Linus Walleij
+--+xNpyl7Qekk2NvDX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+
+iQEVAwUBUer4CUeo0UvhPpxqAQhL7wf8Ca7tmus7QXANGbX9N1ho1AFLwsJgZr8q
+JBdqRwMZTVbfBGGtQ6Z1y2ZDOt75xf+g0PBVjydAuC0ecrUvr1mT5K0ZpFplzuP3
+V9Y1IgnjFOF5qEYtea4kzZ02Rfcz0JMWS6eOhpQmMu+q+8rKqzcUrmqvq0dMyCdv
+CGOCwYduyxFm2ZQgojrZs3RfM+SNo6TmnPMkI+lWZ319Wohy7WPruQLRw2O2gS7L
+5E1fEOhuDGYOxLK7vu17Yi1BShjO2ttd23FFBNE659JYX+Y+MWw/JEdcyhAGl/hX
+3yUq+PXHXhP4OnKEIyA9bgb72YOg2mzTV2gADITKZMMkELLKgZkmTw==
+=bbtY
+-----END PGP SIGNATURE-----
+
+--+xNpyl7Qekk2NvDX--
