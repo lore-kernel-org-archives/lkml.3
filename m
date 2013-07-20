@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3GTMWg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 08:22:36 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:36407 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab3GTMWV (ORCPT
+	id S1754066Ab3GTMX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 08:23:59 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:60233 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680Ab3GTMWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 08:22:21 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 0/2] PM / OPP: updates to enable sharing OPPs info
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-In-Reply-To: <519B45C3.8050700@arm.com>
-References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <519B45C3.8050700@arm.com>
-Date: Sat, 20 Jul 2013 06:09:43 +0100
-Message-Id: <20130720050943.5EB853E169C@localhost>
+	Sat, 20 Jul 2013 08:22:34 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: Reusing DTSI files across trees with differing numbers of address-cells
+To: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <517B0B20.3000305@codeaurora.org>
+References: <517B0B20.3000305@codeaurora.org>
+Date: Sat, 20 Jul 2013 06:03:04 +0100
+Message-Id: <20130720050304.CF0F93E167A@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 May 2013 11:00:35 +0100, Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com> wrote:
-> Hi Rob, Grant,
+On Fri, 26 Apr 2013 16:17:52 -0700, Stepan Moskovchenko <stepanm@codeaurora.org> wrote:
 > 
-> On 01/05/13 12:11, Sudeep KarkadaNagesha wrote:
-> > From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> > 
-> > These are couple of updates to existing PM/OPP library to support
-> > sharing of OPPs between different device nodes.
-> > 
-> > Currently all the cpu nodes are parsed until the OPPs are found. This
-> > is essential to support cpuhotplug without having to replicate OPP
-> > information in all the cpu nodes.
-> > 
-> > However in systems with multiple cpu power domain, its better to have
-> > OPP entry for each cpu. To avoid replication, phandle can be specified
-> > to the node which contains the full OPP information.
-> > 
-> Is proposed option of phandle for OPP acceptable to avoid replication ?
-> Any suggestions to proceed on this ? This is needed to support CPU
-> hotplug on big LITTLE system where current methods like parsing all the
-> nodes or just CPU0 node will not work.
+> Hello. I am creating a DTS file for an ARM (Qualcomm MSM) target which 
+> supports LPAE, meaning that the target is capable of addressing memory 
+> beyond the standard 4GB boundary. To account for the fact that the 
+> memory node can contain reg addresses that exceed 32 bits, I am setting 
+> #address-cells and #size-cells to 2 at the top level of my tree, since 
+> this is what the kernel will use when parsing the memory node.
+> 
+> However, my internal tree contains multiple DTSI files with definitions 
+> for some hardware blocks that are used across multiple MSM targets, 
+> including ones that have #address-cells and #size-cells set to 1 at the 
+> top level, I would like to re-use some of these files in the tree for my 
+> LPAE-based target. Additionally, most MSM I/O devices are declared at 
+> the top level of the tree, rather than on a dedicated simple-bus.
+> 
+> To allow reuse of common hardware block definitions, I am considering 
+> moving all the MSM memory-mapped I/O devices to a dedicated /soc node 
+> (per the Power spec), declaring this node as a simple-bus with 
+> #address-cells and #size-cells of 1, and using the ranges property to 
+> map this bus into the top-level address space. Since MSM I/O devices are 
+> located at addresses below 4GB, I believe it is okay to keep them on a 
+> simple-bus with #address-cells=1.
+> 
+> Does this seem like a reasonable approach?
 
-Looks fine to me.
+Yes.
 
 g.
 
