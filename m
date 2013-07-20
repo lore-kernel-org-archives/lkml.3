@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3GTCDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 22:03:20 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:59171 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab3GTCDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 22:03:19 -0400
-Date: Sat, 20 Jul 2013 02:03:18 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: strange crashes in tcp_poll() via epoll_wait
-Message-ID: <20130720020318.GA12731@dcvr.yhbt.net>
-References: <1374251057.26476.17.camel@edumazet-glaptop>
- <20130719235008.GA4518@dcvr.yhbt.net>
- <1374279005.26476.31.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374279005.26476.31.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753565Ab3GTCHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 22:07:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3289 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab3GTCHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 22:07:44 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=-YTRjD98RaAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=q1GZVgvxtRzfWfVPF_4A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374286063.3356.59.camel@gandalf.local.home>
+Subject: Re: [ 00/72] 3.10.2-stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John <da_audiophile@yahoo.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Fri, 19 Jul 2013 22:07:43 -0400
+In-Reply-To: <1374284610.69280.YahooMailNeo@web140002.mail.bf1.yahoo.com>
+References: <1374284610.69280.YahooMailNeo@web140002.mail.bf1.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Fri, 2013-07-19 at 23:50 +0000, Eric Wong wrote:
-> > Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > > Hi Al
-> > > 
-> > > I tried to debug strange crashes in tcp_poll() called from
-> > > sys_epoll_wait() -> sock_poll()
-> > > 
-> > > The symptom is that sock->sk is NULL and we therefore dereference a NULL
-> > > pointer.
-> > > 
-> > > It's really rare crashes but still, it would be nice to understand where
-> > > is the bug. Presumably latest kernels would crash in sock_poll() because
-> > > of the sk_can_busy_loop(sock->sk) call.
-> > > 
-> > > We do test sock->sk being NULL in sock_fasync(), but epoll should be
-> > > safe because of existing synchronization (epmutex) ?
-> > 
-> > It should be safe because of ep->mtx, actually, as epmutex is not taken
-> > in sys_epoll_wait.
+Please don't strip Cc's. This mailing list gets over 600 emails a day.
+Nobody bothers to read all emails. By stripping the Cc's your message
+will likely be ignored.
+
+Luckily for you, I filter for stable releases.
+
+On Fri, 2013-07-19 at 18:43 -0700, John wrote:
+> Two hunks fail for me patching source from linux-3.10.tar.xz as shown:
 > 
-> Hmm, it might be more complex than that for multi threaded programs : 
-> 
-> eventpoll_release_file()
-> 
-> The problem might be because a thread closes a socket while an event
-> was queued for it.
+> patching file Documentation/parisc/registers
+> patching file Makefile
+> Hunk #1 FAILED at 1.
+> 1 out of 1 hunk FAILED -- saving rejects to file Makefile.rej
 
-But ep->mtx is also held when traversing the ready list with
-ep_send_events_proc.
+You need to apply it against 3.10.1, not 3.10.
 
-Can sock->sk somehow be NULL before hitting eventpoll_release_file?
+-- Steve
 
-> > I took a look at this but have not found anything.  I've yet to see this
-> > this on my machines.
-> > 
-> > When did you start noticing this?
-> 
-> Hard to say, but we have these crashes on a 3.3+ based kernel.
 
-So I don't think any of my epoll changes caused it.  Phew!
-
-> Probability of said crashes is very very low.
-
-This still worries me since I rely heavily on multi-threaded epoll.  I
-don't have a lot of cores/CPUs, though, so maybe it's harder to trigger
-any potential race as a result...
