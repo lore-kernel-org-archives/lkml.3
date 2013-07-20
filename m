@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3GTMfz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 08:35:55 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:64247 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3GTMfw (ORCPT
+	id S1754052Ab3GTNCc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 09:02:32 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:44842 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab3GTNCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 08:35:52 -0400
+	Sat, 20 Jul 2013 09:02:30 -0400
+Message-ID: <51EA8C23.5070408@linux.vnet.ibm.com>
+Date: Sat, 20 Jul 2013 18:39:55 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
-References: <1373944014.17876.255.camel@gandalf.local.home>
-	<51E4BFA9.1030600@zytor.com>
-	<alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-	<1373991399.6458.6.camel@gandalf.local.home>
-	<alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-	<51E59F79.1040903@zytor.com>
-	<alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
-	<CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
-	<20130717144043.GA16513@xanatos>
-	<CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
-	<20130719120841.GH26716@gmail.com>
-	<CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
-	<CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
-Date: Sat, 20 Jul 2013 07:35:50 -0500
-Message-ID: <CAMP44s2J2zESnYYwEtN-Q2_4ft_M8UpdLxZavtK5q2fZcFa=SQ@mail.gmail.com>
-Subject: Re: [ATTEND] How to act on LKML
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Chris Ball <cjb@laptop.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Hansen <dave@sr71.net>
+CC: Raghavendra KT <raghavendra.kt.linux@gmail.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org
+Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
+References: <20130716234438.C792C316@viggo.jf.intel.com> <CAC4Lta1mHixqfRSJKpydH3X9M_nQPCY3QSD86Tm=cnQ+KxpGYw@mail.gmail.com> <51E95932.5030902@sr71.net>
+In-Reply-To: <51E95932.5030902@sr71.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072012-8878-0000-0000-0000080A0156
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 3:03 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Fri, Jul 19, 2013 at 8:42 PM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Fri, Jul 19, 2013 at 7:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>>
->>> * Felipe Contreras <felipe.contreras@gmail.com> wrote:
->>
->>>> As Linus already pointed out, not everybody has to work with everybody.
->>>
->>> That's not the point though, the point is to potentially roughly double
->>> the creative brain capacity of the Linux kernel project.
->>
->> Unfortunately that's impossible; we all know there aren't as many
->> women programmers as there are men. So there's absolutely *nothing*
->> the Linux kernel can do to double the creative brain capacity of the
->> Linux kernel project (at least with respect to women).
+On 07/19/2013 08:50 PM, Dave Hansen wrote:
+> On 07/19/2013 04:38 AM, Raghavendra KT wrote:
+>> While measuring non - PLE performance, one of the bottleneck, I am seeing is
+>> flush tlbs.
+>> perf had helped in alaysing a bit there, but this patch would help
+>> in precise calculation. It will aslo help in tuning the PLE window
+>> experiments (larger PLE window
+>> would affect remote flush TLBs)
 >
-> There may be less women programmers than men programmers, but that
-> doesn't say anything about the ratio of female Linux kernel hackers vs.
-> female programmers.
+> Interesting.  What workload is that?  I've been having problems finding
+> workloads that are too consumed with TLB flushes.
+>
 
-I think it does, because Linux kernel programmers is a subset of
-programmers; the very best and very low-level. Unless women
-programmers are disproportionately biased towards low-level, and they
-are significantly better than their male counterparts, I wouldn't be
-holding my breath.
+Dave,
+ebizzy is the one. and dbench to some small extent.
 
-The best case scenario is that we are equal in that regard, in which
-case you probably would expect to double or triple the number of
-female programmers in Linux thanks to outreach programs, but certainly
-not match the amount of male ones.
+[root@codeblue ~]# cat /proc/vmstat  |grep nr_tlb ; 
+/root/data/script/do_ebizzy.sh;  cat /proc/vmstat  |grep nr_tlb
+nr_tlb_remote_flush 721
+nr_tlb_remote_flush_received 923
+nr_tlb_local_flush_all 13992
+nr_tlb_local_flush_one 0
+nr_tlb_local_flush_one_kernel 0
+7482 records/s
+real 120.00 s
+user 86.69 s
+sys  3746.57 s
+nr_tlb_remote_flush 912896
+nr_tlb_remote_flush_received 28261974
+nr_tlb_local_flush_all 926272
+nr_tlb_local_flush_one 0
+nr_tlb_local_flush_one_kernel 0
 
-> So let's hope we can prove you wrong soon ;-)
-
-I think you need more than "hope" to change one of the fundamental
-rules of LKML; be open and honest, even if that means expressing your
-opinion in a way that others might consider offensive and colorful.
-
--- 
-Felipe Contreras
