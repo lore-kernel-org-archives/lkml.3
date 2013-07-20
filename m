@@ -1,97 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab3GTKvq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 06:51:46 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62981 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753688Ab3GTKvo (ORCPT
+	id S1753925Ab3GTKwn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 06:52:43 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45117 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab3GTKwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 06:51:44 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ak <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
-Date: Sat, 20 Jul 2013 13:01:43 +0200
-Message-ID: <9823557.ylACl3Z50l@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <8043923.9cbosS4r2b@vostro.rjw.lan>
-References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <6518656.400qriFEKQ@vostro.rjw.lan> <8043923.9cbosS4r2b@vostro.rjw.lan>
+	Sat, 20 Jul 2013 06:52:42 -0400
+Message-ID: <51EA6BF7.5090101@kernel.org>
+Date: Sat, 20 Jul 2013 11:52:39 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
+Subject: Re: [PATCH 02/15] iio: ti_am335x_adc: Fix wrong samples received
+ on 1st read
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-3-git-send-email-zubair.lutfullah@gmail.com>
+In-Reply-To: <1374186086-5015-3-git-send-email-zubair.lutfullah@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 20, 2013 11:51:55 AM Rafael J. Wysocki wrote:
-> On Saturday, July 20, 2013 05:06:29 AM Rafael J. Wysocki wrote:
-> > On Saturday, July 20, 2013 02:00:44 AM Rafael J. Wysocki wrote:
-> > > On Friday, July 19, 2013 04:16:30 PM Greg Kroah-Hartman wrote:
-> > > > On Fri, Jul 19, 2013 at 11:38:04PM +0200, Rafael J. Wysocki wrote:
-> > > > > Alas, this is not the one I'd like to apply.
-> > > > > 
-> > > > > With that patch applied, new device objects are created to avoid binding the
-> > > > > processor driver directly to the cpu system device objects, because that
-> > > > > apparently confuses udev and it starts to ignore the cpu modalias once the
-> > > > > driver has been bound to any of those objects.
-> > > > > 
-> > > > > I've verified in the meantime that this indeed is the case.
-> > > > > 
-> > > > > A link to the patch in question: https://patchwork.kernel.org/patch/2830561/
-> > > > > 
-> > > > > Greg, I asked you some time ago whether or not it was possible for udev to stop
-> > > > > autoloading modules that matched the cpu modalias after a driver had been bound
-> > > > > to the cpu system device objects and you said "no".  However, this time I can
-> > > > > say with certainty that that really is the case.  So, the question now is
-> > > > > whether or not we can do anything in the kernel to avoid that confusion in udev
-> > > > > instead of applying the patch linked above (which is beyond ugly in my not so
-> > > > > humble opinion)?
-> > > > 
-> > > > udev isn't doing any module loading, 'modprobe' is just being called for
-> > > > any new module alias that shows up in the system, and all of the drivers
-> > > > that match it then get loaded.
-> > > 
-> > > The problem is that that doesn't happen when a driver is bound to the
-> > > cpu system device objects.  modprobe is just not called for modules that
-> > > match the cpu modalias in that case.
-> > > 
-> > > If I call modprobe manually for any of the modules in question, it loads
-> > > and works no problem.
-> > 
-> > OK, I know what's up.  udev has no rule that would allow it to load stuff on
-> > the basis of MODALIAS if DRIVER is set in the event properties.
-> > 
-> > So, the following rule needs to be added to udev rules for things to work
-> > as before:
-> > 
-> > DRIVER=="processor", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
-> > 
-> > To be precise, I added a file called 80-drivers.rules to /etc/udev/rules.d/
+On 07/18/2013 11:21 PM, Zubair Lutfullah wrote:
+> From: "Patil, Rachna" <rachna@ti.com>
 > 
-> Well, that wasn't a good idea, because the original 80-drivers.rules didn't
-> work then, but I renamed the new file (in /etc/udev/rules.d/) to 80-cpu.rules
-> and put this line (alone) into it:
+> Previously we tried to read data form ADC even before ADC sequencer
+> finished sampling. This led to wrong samples.
+> We now wait on ADC status register idle bit to be set.
 > 
-> ACTION="add", SUBSYSTEM=="cpu", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
+> Signed-off-by: Patil, Rachna <rachna@ti.com>
+> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 
-I made a mistake in the above, which should be:
+Hi,
 
-ACTION=="add", SUBSYSTEM=="cpu", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
+I have no problem with this patch, but as it is a fix it should have been part
+of a separate series from the new stuff.
 
-sorry about that.
+Fixes go into mainline normally within the current cycle whereas the other stuff
+will wait for the next merge window.
 
-> After that change everything works happily again.
+If you are rerolling the series, at the very least I would like this and any
+other fixes at the beginning and clearly marked as such.
 
 Thanks,
-Rafael
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jonathan
+> ---
+>  drivers/iio/adc/ti_am335x_adc.c      |   30 ++++++++++++++++++++++--------
+>  include/linux/mfd/ti_am335x_tscadc.h |   16 ++++++++++++++++
+>  2 files changed, 38 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> index 4427e8e..f73fee1 100644
+> --- a/drivers/iio/adc/ti_am335x_adc.c
+> +++ b/drivers/iio/adc/ti_am335x_adc.c
+> @@ -60,7 +60,6 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
+>  {
+>  	unsigned int stepconfig;
+>  	int i, steps;
+> -	u32 step_en;
+>  
+>  	/*
+>  	 * There are 16 configurable steps and 8 analog input
+> @@ -86,8 +85,7 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
+>  		adc_dev->channel_step[i] = steps;
+>  		steps++;
+>  	}
+> -	step_en = get_adc_step_mask(adc_dev);
+> -	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
+> +
+>  }
+>  
+>  static const char * const chan_name_ain[] = {
+> @@ -142,10 +140,22 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+>  		int *val, int *val2, long mask)
+>  {
+>  	struct tiadc_device *adc_dev = iio_priv(indio_dev);
+> -	int i;
+> -	unsigned int fifo1count, read;
+> +	int i, map_val;
+> +	unsigned int fifo1count, read, stepid;
+>  	u32 step = UINT_MAX;
+>  	bool found = false;
+> +	u32 step_en;
+> +	unsigned long timeout = jiffies + usecs_to_jiffies
+> +				(IDLE_TIMEOUT * adc_dev->channels);
+> +	step_en = get_adc_step_mask(adc_dev);
+> +	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
+> +
+> +	/* Wait for ADC sequencer to complete sampling */
+> +	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
+> +		if (time_after(jiffies, timeout))
+> +			return -EAGAIN;
+> +		}
+> +	map_val = chan->channel + TOTAL_CHANNELS;
+>  
+>  	/*
+>  	 * When the sub-system is first enabled,
+> @@ -170,12 +180,16 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+>  	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+>  	for (i = 0; i < fifo1count; i++) {
+>  		read = tiadc_readl(adc_dev, REG_FIFO1);
+> -		if (read >> 16 == step) {
+> -			*val = read & 0xfff;
+> +		stepid = read & FIFOREAD_CHNLID_MASK;
+> +		stepid = stepid >> 0x10;
+> +
+> +		if (stepid == map_val) {
+> +			read = read & FIFOREAD_DATA_MASK;
+>  			found = true;
+> +			*val = read;
+>  		}
+>  	}
+> -	am335x_tsc_se_update(adc_dev->mfd_tscadc);
+> +
+>  	if (found == false)
+>  		return -EBUSY;
+>  	return IIO_VAL_INT;
+> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+> index 8d73fe2..db1791b 100644
+> --- a/include/linux/mfd/ti_am335x_tscadc.h
+> +++ b/include/linux/mfd/ti_am335x_tscadc.h
+> @@ -113,11 +113,27 @@
+>  #define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
+>  #define CNTRLREG_TSCENB		BIT(7)
+>  
+> +/* FIFO READ Register */
+> +#define FIFOREAD_DATA_MASK (0xfff << 0)
+> +#define FIFOREAD_CHNLID_MASK (0xf << 16)
+> +
+> +/* Sequencer Status */
+> +#define SEQ_STATUS BIT(5)
+> +
+>  #define ADC_CLK			3000000
+>  #define	MAX_CLK_DIV		7
+>  #define TOTAL_STEPS		16
+>  #define TOTAL_CHANNELS		8
+>  
+> +/*
+> +* ADC runs at 3MHz, and it takes
+> +* 15 cycles to latch one data output.
+> +* Hence the idle time for ADC to
+> +* process one sample data would be
+> +* around 5 micro seconds.
+> +*/
+> +#define IDLE_TIMEOUT 5 /* microsec */
+> +
+>  #define TSCADC_CELLS		2
+>  
+>  struct ti_tscadc_dev {
+> 
