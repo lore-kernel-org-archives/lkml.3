@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab3GTVfi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 17:35:38 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:25077 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab3GTVfg convert rfc822-to-8bit (ORCPT
+	id S1755213Ab3GTWAJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 18:00:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab3GTWAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 17:35:36 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-6c-51eb02a7788a
-From: Daniel Phillips <d.phillips@partner.samsung.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, CAI Qian <caiqian@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        "ksummit-2013-discuss@lists.linux-foundation.org" 
-	<ksummit-2013-discuss@lists.linux-foundation.org>
-Subject: Re: [Ksummit-2013-discuss] Maybe it's time to shut this thread down
- (Was: Re: [ 00/19] 3.10.1-stable review)
-Thread-topic: [Ksummit-2013-discuss] Maybe it's time to shut this thread down
- (Was: Re: [ 00/19] 3.10.1-stable review)
-Thread-index: Ac6FkRCisDb5r2eeQr+ZSZ5Wfl77ZQ==
-Date: Sat, 20 Jul 2013 21:35:33 +0000
-Message-id: <1EC23D2B9975384993D85B5DB93AAE8861AA4D@sisaex01sj>
-References: <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
- <20130715184642.GE15531@xanatos>
- <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com>
- <20130715195316.GF15531@xanatos>
- <alpine.DEB.2.02.1307172336410.4089@ionos.tec.linutronix.de>
- <1368728064.2419741.1374117402465.JavaMail.root@redhat.com>
- <1374119254.6458.220.camel@gandalf.local.home>
- <305037674.2433057.1374120078349.JavaMail.root@redhat.com>
- <20130718132327.GB30405@thunk.org> <20130718133008.GC30405@thunk.org>
- <20130718155428.GB5440@xanatos>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9hP93lTK8DDWb3ClvMWb+GzaJz11FW
-	iy3Xm5gs7hzWsGhevJ7NYvaEeawWl3fNYbN4svAMk8Xqf6cYLfZ1PGCyaD5xitliwcZHjBab
-	N01ltnjU95bdorXnJ7sDv0fLvlvsHptWdbJ5vDt3jt3jxIzfLB7zTgZ67J+7ht1j8o3ljB5N
-	Z44ye7zfd5XNY+f3BnaPz5vkArijuGxSUnMyy1KL9O0SuDLermEtWMNacePsGuYGxrUsXYwc
-	HBICJhLTlxl2MXICmWISF+6tZ+ti5OIQEljGKDHnYxMLSEJIoJdJYsmsIojEfEaJnQ8uMoIk
-	2ATMJJYeP8MEYosI6EtMnNoD1s0s8JVF4uqzdewgCWGBcokp97oYIYoqJFZc+80GYetJPHy0
-	lRXEZhFQlXjVsAGshlfAXmLi/jssENu2sEhMON3IDJJgBLrv+6k1YNuYBcQlmltvskDcLSCx
-	ZM95ZghbVOLl43+sEK8pSmxfbQVRriWxfudxqFZtiSfvLrBC7BKU+DH5HssERrFZSKbOQtIy
-	C0nLLCQtCxhZVjGKlRYnFxQnpadWGOkVJ+YWl+al6yXn525ihKSF6h2Md7/aHGIU4GBU4uGN
-	YHwdKMSaWFZcmXuIUYKDWUmE1/LZq0Ah3pTEyqrUovz4otKc1OJDjEwcnFINjNVB3wskHqpY
-	TtFfmrPP4WFTD8uDdQVT3bcmlqW9YTcMN1Xw6P1WyPVaxDFR4ZjW/NYZG5Srg+d47Ym7bzJX
-	Pjoh9K6w2il/u5eekc9Skj+ZClaKqNcx9wh5JJj4/o09+1Hgbrr5luz6W34u8x7P4JETnCq/
-	weotz7JslnOqDp9OsN/X6klRYinOSDTUYi4qTgQANfZhHukCAAA=
+	Sat, 20 Jul 2013 18:00:07 -0400
+Date: Sat, 20 Jul 2013 15:00:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: kyungmin.park@samsung.com, balbi@ti.com, jg1.han@samsung.com,
+        s.nawrocki@samsung.com, kgene.kim@samsung.com, grant.likely@linaro.org,
+        tony@atomide.com, arnd@arndb.de, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+Message-ID: <20130720220006.GA7977@kroah.com>
+References: <20130718072004.GA16720@kroah.com>
+ <51E7AE88.3050007@ti.com>
+ <20130718154954.GA31961@kroah.com>
+ <51E8D086.809@ti.com>
+ <20130719054311.GA14638@kroah.com>
+ <51E8D4E0.8060200@ti.com>
+ <20130719062941.GA23611@kroah.com>
+ <51E8DE51.1060404@ti.com>
+ <20130719235055.GB11498@kroah.com>
+ <51EA01C4.2010006@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51EA01C4.2010006@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 03:54 PM, Sarah Sharp wrote:
-> Let's shift this discussion away from the terms "abuse" and
-> "professionalism" to "respect" and "civility".
+On Sat, Jul 20, 2013 at 08:49:32AM +0530, Kishon Vijay Abraham I wrote:
+> Hi,
+> 
+> On Saturday 20 July 2013 05:20 AM, Greg KH wrote:
+> >On Fri, Jul 19, 2013 at 12:06:01PM +0530, Kishon Vijay Abraham I wrote:
+> >>Hi,
+> >>
+> >>On Friday 19 July 2013 11:59 AM, Greg KH wrote:
+> >>>On Fri, Jul 19, 2013 at 11:25:44AM +0530, Kishon Vijay Abraham I wrote:
+> >>>>Hi,
+> >>>>
+> >>>>On Friday 19 July 2013 11:13 AM, Greg KH wrote:
+> >>>>>On Fri, Jul 19, 2013 at 11:07:10AM +0530, Kishon Vijay Abraham I wrote:
+> >>>>>>>>>>+	ret = dev_set_name(&phy->dev, "%s.%d", dev_name(dev), id);
+> >>>>>>>>>
+> >>>>>>>>>Your naming is odd, no "phy" anywhere in it?  You rely on the sender to
+> >>>>>>>>>never send a duplicate name.id pair?  Why not create your own ids based
+> >>>>>>>>>on the number of phys in the system, like almost all other classes and
+> >>>>>>>>>subsystems do?
+> >>>>>>>>
+> >>>>>>>>hmm.. some PHY drivers use the id they provide to perform some of their
+> >>>>>>>>internal operation as in [1] (This is used only if a single PHY provider
+> >>>>>>>>implements multiple PHYS). Probably I'll add an option like PLATFORM_DEVID_AUTO
+> >>>>>>>>to give the PHY drivers an option to use auto id.
+> >>>>>>>>
+> >>>>>>>>[1] ->
+> >>>>>>>>http://archive.arm.linux.org.uk/lurker/message/20130628.134308.4a8f7668.ca.html
+> >>>>>>>
+> >>>>>>>No, who cares about the id?  No one outside of the phy core ever should,
+> >>>>>>>because you pass back the only pointer that they really do care about,
+> >>>>>>>if they need to do anything with the device.  Use that, and then you can
+> >>>>>>
+> >>>>>>hmm.. ok.
+> >>>>>>
+> >>>>>>>rip out all of the "search for a phy by a string" logic, as that's not
+> >>>>>>
+> >>>>>>Actually this is needed for non-dt boot case. In the case of dt boot, we use a
+> >>>>>>phandle by which the controller can get a reference to the phy. But in the case
+> >>>>>>of non-dt boot, the controller can get a reference to the phy only by label.
+> >>>>>
+> >>>>>I don't understand.  They registered the phy, and got back a pointer to
+> >>>>>it.  Why can't they save it in their local structure to use it again
+> >>>>>later if needed?  They should never have to "ask" for the device, as the
+> >>>>
+> >>>>One is a *PHY provider* driver which is a driver for some PHY device. This will
+> >>>>use phy_create to create the phy.
+> >>>>The other is a *PHY consumer* driver which might be any controller driver (can
+> >>>>be USB/SATA/PCIE). The PHY consumer will use phy_get to get a reference to the
+> >>>>phy (by *phandle* in the case of dt boot and *label* in the case of non-dt boot).
+> >>>>>device id might be unknown if there are multiple devices in the system.
+> >>>>
+> >>>>I agree with you on the device id part. That need not be known to the PHY driver.
+> >>>
+> >>>How does a consumer know which "label" to use in a non-dt system if
+> >>>there are multiple PHYs in the system?
+> >>
+> >>That should be passed using platform data.
+> >
+> >Ick, don't pass strings around, pass pointers.  If you have platform
+> >data you can get to, then put the pointer there, don't use a "name".
+> 
+> I don't think I understood you here :-s We wont have phy pointer
+> when we create the device for the controller no?(it'll be done in
+> board file). Probably I'm missing something.
 
-Brilliant, and +1 for a session at KS. In the mean time, why don't we 
-all try to demonstrate the real meaning of respect and civility, by 
-practising it henceforth on LKML? KS ought to be about clarification, 
-reinforcement and specific techniques, as opposed to the question of 
-whether respect and civility are desirable in the first place. Nobody 
-needs to wait for KS to learn the basic truth they already know in their 
-heart.
+Why will you not have that pointer?  You can't rely on the "name" as the
+device id will not match up, so you should be able to rely on the
+pointer being in the structure that the board sets up, right?
 
-Regards,
+Don't use names, especially as ids can, and will, change, that is going
+to cause big problems.  Use pointers, this is C, we are supposed to be
+doing that :)
 
-Daniel
+thanks,
+
+greg k-h
