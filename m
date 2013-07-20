@@ -1,36 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab3GTAhX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 20:37:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54449 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab3GTAhW (ORCPT
+	id S1753341Ab3GTBPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 21:15:14 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55784 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab3GTBPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 20:37:22 -0400
-Date: Fri, 19 Jul 2013 17:37:21 -0700 (PDT)
-Message-Id: <20130719.173721.850231910179318409.davem@davemloft.net>
-To: mtesar@redhat.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sysctl net: Keep tcp_syn_retries inside the boundary
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1374235741-31266-1-git-send-email-mtesar@redhat.com>
-References: <1374235741-31266-1-git-send-email-mtesar@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 19 Jul 2013 17:37:22 -0700 (PDT)
+	Fri, 19 Jul 2013 21:15:13 -0400
+Date: Sat, 20 Jul 2013 02:15:11 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs fixes for -rc2
+Message-ID: <20130720011510.GI4165@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Tesar <mtesar@redhat.com>
-Date: Fri, 19 Jul 2013 14:09:01 +0200
+	sget() one is a long-standing bug and will need to go into
+-stable (in fact, it had been originally caught in RHEL6), the
+other two are 3.11-only.  Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-> Limit the min/max value passed to the
-> /proc/sys/net/ipv4/tcp_syn_retries.
-> 
-> Signed-off-by: Michal Tesar <mtesar@redhat.com>
+Shortlog:
+Al Viro (2):
+      allow O_TMPFILE to work with O_WRONLY
+      livelock avoidance in sget()
 
-Applied and queued up for -stable.
+Peng Tao (1):
+      vfs: constify dentry parameter in d_count()
+
+Diffstat:
+ fs/open.c                        |    2 ++
+ fs/super.c                       |   25 ++++++++++---------------
+ include/linux/dcache.h           |    2 +-
+ include/uapi/asm-generic/fcntl.h |    4 ++--
+ 4 files changed, 15 insertions(+), 18 deletions(-)
