@@ -1,124 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3GTI4y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 04:56:54 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47593 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab3GTI4u (ORCPT
+	id S1752631Ab3GTJmB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 05:42:01 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57475 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751909Ab3GTJl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 04:56:50 -0400
-Message-ID: <1374310605.30336.2.camel@phoenix>
-Subject: [PATCH RFT] regulator: tps65912: Convert tps65912_ops_ldo to use
- linear ranges
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Margarita Olaya Cabrera <magi@slimlogic.co.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sat, 20 Jul 2013 16:56:45 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 20 Jul 2013 05:41:58 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        ak <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
+Date: Sat, 20 Jul 2013 11:51:55 +0200
+Message-ID: <8043923.9cbosS4r2b@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <6518656.400qriFEKQ@vostro.rjw.lan>
+References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <2745724.Y86yAFA8gy@vostro.rjw.lan> <6518656.400qriFEKQ@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ldo voltage table is composed of linear ranges.
+On Saturday, July 20, 2013 05:06:29 AM Rafael J. Wysocki wrote:
+> On Saturday, July 20, 2013 02:00:44 AM Rafael J. Wysocki wrote:
+> > On Friday, July 19, 2013 04:16:30 PM Greg Kroah-Hartman wrote:
+> > > On Fri, Jul 19, 2013 at 11:38:04PM +0200, Rafael J. Wysocki wrote:
+> > > > Alas, this is not the one I'd like to apply.
+> > > > 
+> > > > With that patch applied, new device objects are created to avoid binding the
+> > > > processor driver directly to the cpu system device objects, because that
+> > > > apparently confuses udev and it starts to ignore the cpu modalias once the
+> > > > driver has been bound to any of those objects.
+> > > > 
+> > > > I've verified in the meantime that this indeed is the case.
+> > > > 
+> > > > A link to the patch in question: https://patchwork.kernel.org/patch/2830561/
+> > > > 
+> > > > Greg, I asked you some time ago whether or not it was possible for udev to stop
+> > > > autoloading modules that matched the cpu modalias after a driver had been bound
+> > > > to the cpu system device objects and you said "no".  However, this time I can
+> > > > say with certainty that that really is the case.  So, the question now is
+> > > > whether or not we can do anything in the kernel to avoid that confusion in udev
+> > > > instead of applying the patch linked above (which is beyond ugly in my not so
+> > > > humble opinion)?
+> > > 
+> > > udev isn't doing any module loading, 'modprobe' is just being called for
+> > > any new module alias that shows up in the system, and all of the drivers
+> > > that match it then get loaded.
+> > 
+> > The problem is that that doesn't happen when a driver is bound to the
+> > cpu system device objects.  modprobe is just not called for modules that
+> > match the cpu modalias in that case.
+> > 
+> > If I call modprobe manually for any of the modules in question, it loads
+> > and works no problem.
+> 
+> OK, I know what's up.  udev has no rule that would allow it to load stuff on
+> the basis of MODALIAS if DRIVER is set in the event properties.
+> 
+> So, the following rule needs to be added to udev rules for things to work
+> as before:
+> 
+> DRIVER=="processor", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
+> 
+> To be precise, I added a file called 80-drivers.rules to /etc/udev/rules.d/
 
-Below is the equation in original code (tps65912_vsel_to_uv_ldo):
-0 ... 32:      uv = vsel * 25000 + 800000;
-33 ... 60:     uv = (vsel - 32) * 50000 + 1600000;
-                  = (vsel -33) * 50000 + 1650000;
-61 ...63:      uv = (vsel - 60) * 100000 + 3000000;
-                  = (vsel - 61) * 100000 + 3100000;
+Well, that wasn't a good idea, because the original 80-drivers.rules didn't
+work then, but I renamed the new file (in /etc/udev/rules.d/) to 80-cpu.rules
+and put this line (alone) into it:
 
-This patch converts tps65912_ops_ldo to use multiple linear ranges APIs.
+ACTION="add", SUBSYSTEM=="cpu", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps65912-regulator.c | 39 +++++++++++++++++-----------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+After that change everything works happily again.
 
-diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
-index 17e994e..281e52a 100644
---- a/drivers/regulator/tps65912-regulator.c
-+++ b/drivers/regulator/tps65912-regulator.c
-@@ -118,6 +118,15 @@ struct tps65912_reg {
- 	int eco_reg;
- };
- 
-+static const struct regulator_linear_range tps65912_ldo_ranges[] = {
-+	{ .min_uV = 800000, .max_uV = 1600000, .min_sel =  0, .max_sel = 32,
-+	  .uV_step = 25000 },
-+	{ .min_uV = 1650000, .max_uV = 3000000, .min_sel = 33, .max_sel = 60,
-+	  .uV_step = 50000 },
-+	{ .min_uV = 3100000, .max_uV = 3300000, .min_sel = 61, .max_sel = 63,
-+	  .uV_step = 100000 },
-+};
-+
- static int tps65912_get_range(struct tps65912_reg *pmic, int id)
- {
- 	struct tps65912 *mfd = pmic->mfd;
-@@ -184,20 +193,6 @@ static unsigned long tps65912_vsel_to_uv_range3(u8 vsel)
- 	return uv;
- }
- 
--static unsigned long tps65912_vsel_to_uv_ldo(u8 vsel)
--{
--	unsigned long uv = 0;
--
--	if (vsel <= 32)
--		uv = ((vsel * 25000) + 800000);
--	else if (vsel > 32 && vsel <= 60)
--		uv = (((vsel - 32) * 50000) + 1600000);
--	else if (vsel > 60)
--		uv = (((vsel - 60) * 100000) + 3000000);
--
--	return uv;
--}
--
- static int tps65912_get_ctrl_register(int id)
- {
- 	if (id >= TPS65912_REG_DCDC1 && id <= TPS65912_REG_LDO4)
-@@ -376,9 +371,6 @@ static int tps65912_list_voltage(struct regulator_dev *dev, unsigned selector)
- 	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
- 	int range, voltage = 0, id = rdev_get_id(dev);
- 
--	if (id >= TPS65912_REG_LDO1 && id <= TPS65912_REG_LDO10)
--		return tps65912_vsel_to_uv_ldo(selector);
--
- 	if (id > TPS65912_REG_DCDC4)
- 		return -EINVAL;
- 
-@@ -456,7 +448,8 @@ static struct regulator_ops tps65912_ops_ldo = {
- 	.disable = tps65912_reg_disable,
- 	.get_voltage_sel = tps65912_get_voltage_sel,
- 	.set_voltage_sel = tps65912_set_voltage_sel,
--	.list_voltage = tps65912_list_voltage,
-+	.list_voltage = regulator_list_voltage_linear_range,
-+	.map_voltage = regulator_map_voltage_linear_range,
- };
- 
- static int tps65912_probe(struct platform_device *pdev)
-@@ -495,8 +488,14 @@ static int tps65912_probe(struct platform_device *pdev)
- 		pmic->desc[i].name = info->name;
- 		pmic->desc[i].id = i;
- 		pmic->desc[i].n_voltages = 64;
--		pmic->desc[i].ops = (i > TPS65912_REG_DCDC4 ?
--			&tps65912_ops_ldo : &tps65912_ops_dcdc);
-+		if (i > TPS65912_REG_DCDC4) {
-+			pmic->desc[i].ops = &tps65912_ops_ldo;
-+			pmic->desc[i].linear_ranges = tps65912_ldo_ranges;
-+			pmic->desc[i].n_linear_ranges =
-+					ARRAY_SIZE(tps65912_ldo_ranges);
-+		} else {
-+			pmic->desc[i].ops = &tps65912_ops_dcdc;
-+		}
- 		pmic->desc[i].type = REGULATOR_VOLTAGE;
- 		pmic->desc[i].owner = THIS_MODULE;
- 		range = tps65912_get_range(pmic, i);
+Thanks,
+Rafael
+
+
 -- 
-1.8.1.2
-
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
