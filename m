@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab3GTBfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 21:35:10 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39401 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751531Ab3GTBfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 21:35:08 -0400
-Date: Fri, 19 Jul 2013 21:35:00 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.11-rc1 regression] ext4_evict_inode triggers
- warn_slowpath_common on sparc64
-Message-ID: <20130720013500.GC12042@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org
-References: <20969.30581.961878.138915@pilspetsen.it.uu.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20969.30581.961878.138915@pilspetsen.it.uu.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1753459Ab3GTBgB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 21:36:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4891 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab3GTBgA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 21:36:00 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=_VFvyu300bgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=koCrvMhyhcMA:10 a=BXJWYrlj3RNJpKfsg1kA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374284157.3356.56.camel@gandalf.local.home>
+Subject: Re: [PATCH -tip  0/3] kprobes, x86: Move optprobe on top of
+ int3-based instruction patching
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        Jason Baron <jbaron@akamai.com>, yrl.pp-manager.tt@hitachi.com,
+        Borislav Petkov <bpetkov@suse.de>
+Date: Fri, 19 Jul 2013 21:35:57 -0400
+In-Reply-To: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
+References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 07:29:25PM +0200, Mikael Pettersson wrote:
-> I keep getting the following warning with 3.11-rc1 on sparc64:
+On Thu, 2013-07-18 at 20:47 +0900, Masami Hiramatsu wrote:
+> Hi,
 > 
-> ------------[ cut here ]------------
-> WARNING: CPU: 1 PID: 8174 at fs/ext4/inode.c:230 ext4_evict_inode+0x1f0/0x448()
-> Modules linked in: sunrpc af_packet ipv6 hid_generic snd_ali5451 snd_ac97_codec snd_seq snd_seq_device snd_pcm tg3 snd_timer flash ohci_pci hwmon snd soundcore ptp evdev sg i2c_ali1535 ohci_hcd pps_core snd_page_alloc i2c_core ac97_bus sr_mod cdrom pata_ali libata
-> CPU: 1 PID: 8174 Comm: xgcc Not tainted 3.11.0-rc1 #1
-> Call Trace:
->  [00000000004537b0] warn_slowpath_common+0x4c/0x64
->  [0000000000540d78] ext4_evict_inode+0x1f0/0x448
->  [00000000004f3938] evict+0xb8/0x190
->  [00000000004e99bc] do_unlinkat+0xf4/0x160
->  [0000000000406174] linux_sparc_syscall32+0x34/0x40
-> ---[ end trace cd72b9e3e68d89e4 ]---
+> Here is a series of kprobes and x86 patches for moving
+> optprobe (jump optimized kprobe) onto the int3-based
+> instruction patching (a.k.a. text_poke_bp, introduced by
+> Jiri Kosina).
 > 
-> The Comm varies, but the call trace always looks like that.  Happens a couple
-> of times per day, so far.  No other ill effects observed.  Didn't happen in 3.10
-> or older kernels.
+> Since this completely moves text_poke_smp* user to new
+> text_poke_bp, I also remove the old text_poke_smp* code
+> from alternative.c. As a side effect, it also fixes a
+> Kconfig warning about CONFIG_STOP_MACHINE dependency
+> confliction.
+> 
+> Thank you,
+> 
+> ---
+> 
+> Masami Hiramatsu (3):
+>       [CLEANUP] kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
+>       kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
+>       x86: Remove unused text_poke_smp and text_poke_smp_batch
 
-The fix, commit 822dbba33458cd6ad is already in Linus's tree, and will
-be included in -rc2.
+Nice work Masami!
 
-Note that this can cause memory corruption caused by a use-after-free.
-I've not noticed a problem in my personal testing, but it's been
-reported to me that with stress testing (using memory cgroups amonng
-other things) and the system wedged when the machine was rebooted
-after the tests were completed, and it only came back after the
-watchdog timer fired.  The fix up was one of the first things which
-Linus pulled after releasing -rc1, so you can merge 47188d39b5de to
-get the fixes.
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> 
+> 
+>  arch/x86/Kconfig                   |    5 --
+>  arch/x86/include/asm/alternative.h |   11 ----
+>  arch/x86/kernel/alternative.c      |   98 +-------------------------------
+>  arch/x86/kernel/kprobes/common.h   |    5 --
+>  arch/x86/kernel/kprobes/core.c     |    2 -
+>  arch/x86/kernel/kprobes/opt.c      |  110 +++++++-----------------------------
+>  6 files changed, 25 insertions(+), 206 deletions(-)
+> 
 
 
-Cheers,
-
-					- Ted
