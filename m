@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab3GTKuR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 06:50:17 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62931 "HELO
+	id S1753918Ab3GTKvq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 06:51:46 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62981 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753731Ab3GTKuO (ORCPT
+	with SMTP id S1753688Ab3GTKvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 06:50:14 -0400
+	Sat, 20 Jul 2013 06:51:44 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kay Sievers <kay@vrfy.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, systemd-devel@lists.freedesktop.org
-Subject: Re: udev: New default rule for autoloading kernel modules matching CPU modalias
-Date: Sat, 20 Jul 2013 13:00:12 +0200
-Message-ID: <59759957.oRusLgSSoH@vostro.rjw.lan>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        ak <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 3.11-rc1] crypto: Fix boot failure due to module dependency.
+Date: Sat, 20 Jul 2013 13:01:43 +0200
+Message-ID: <9823557.ylACl3Z50l@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1623844.aKWlCHQqy1@vostro.rjw.lan>
-References: <1623844.aKWlCHQqy1@vostro.rjw.lan>
+In-Reply-To: <8043923.9cbosS4r2b@vostro.rjw.lan>
+References: <201307180550.BDB51536.LHMQOOOVFJFSFt@I-love.SAKURA.ne.jp> <6518656.400qriFEKQ@vostro.rjw.lan> <8043923.9cbosS4r2b@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,40 +29,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 20, 2013 12:56:54 PM Rafael J. Wysocki wrote:
-> Hi Kay,
+On Saturday, July 20, 2013 11:51:55 AM Rafael J. Wysocki wrote:
+> On Saturday, July 20, 2013 05:06:29 AM Rafael J. Wysocki wrote:
+> > On Saturday, July 20, 2013 02:00:44 AM Rafael J. Wysocki wrote:
+> > > On Friday, July 19, 2013 04:16:30 PM Greg Kroah-Hartman wrote:
+> > > > On Fri, Jul 19, 2013 at 11:38:04PM +0200, Rafael J. Wysocki wrote:
+> > > > > Alas, this is not the one I'd like to apply.
+> > > > > 
+> > > > > With that patch applied, new device objects are created to avoid binding the
+> > > > > processor driver directly to the cpu system device objects, because that
+> > > > > apparently confuses udev and it starts to ignore the cpu modalias once the
+> > > > > driver has been bound to any of those objects.
+> > > > > 
+> > > > > I've verified in the meantime that this indeed is the case.
+> > > > > 
+> > > > > A link to the patch in question: https://patchwork.kernel.org/patch/2830561/
+> > > > > 
+> > > > > Greg, I asked you some time ago whether or not it was possible for udev to stop
+> > > > > autoloading modules that matched the cpu modalias after a driver had been bound
+> > > > > to the cpu system device objects and you said "no".  However, this time I can
+> > > > > say with certainty that that really is the case.  So, the question now is
+> > > > > whether or not we can do anything in the kernel to avoid that confusion in udev
+> > > > > instead of applying the patch linked above (which is beyond ugly in my not so
+> > > > > humble opinion)?
+> > > > 
+> > > > udev isn't doing any module loading, 'modprobe' is just being called for
+> > > > any new module alias that shows up in the system, and all of the drivers
+> > > > that match it then get loaded.
+> > > 
+> > > The problem is that that doesn't happen when a driver is bound to the
+> > > cpu system device objects.  modprobe is just not called for modules that
+> > > match the cpu modalias in that case.
+> > > 
+> > > If I call modprobe manually for any of the modules in question, it loads
+> > > and works no problem.
+> > 
+> > OK, I know what's up.  udev has no rule that would allow it to load stuff on
+> > the basis of MODALIAS if DRIVER is set in the event properties.
+> > 
+> > So, the following rule needs to be added to udev rules for things to work
+> > as before:
+> > 
+> > DRIVER=="processor", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
+> > 
+> > To be precise, I added a file called 80-drivers.rules to /etc/udev/rules.d/
 > 
-> After a recent change present in 3.11-rc1 there is a driver, called processor,
-> that can be bound to the CPU devices whose sysfs directories are located under
-> /sys/devices/system/cpu/.  A side effect of this is that, after the driver has
-> been bound to those devices, the kernel adds DRIVER=processor to ENV for CPU
-> uevents and they don't match the default rule for autoloading modules matching
-> MODALIAS:
-> 
-> DRIVER!="?*", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
-> 
-> any more.  However, there are some modules whose module aliases match specific
-> CPU features through the modalias string and those modules should be loaded
-> automatically if a compatible CPU is present.  Yet, with the processor driver
-> bound to the CPU devices the above rule is not sufficient for that, so we need
-> a new default udev rule allowing those modules to be autoloaded even if the
-> CPU devices have drivers.
-> 
-> On my test systems I added the following rule for that:
+> Well, that wasn't a good idea, because the original 80-drivers.rules didn't
+> work then, but I renamed the new file (in /etc/udev/rules.d/) to 80-cpu.rules
+> and put this line (alone) into it:
 > 
 > ACTION="add", SUBSYSTEM=="cpu", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
 
-That should have been:
+I made a mistake in the above, which should be:
 
 ACTION=="add", SUBSYSTEM=="cpu", ENV{MODALIAS}=="?*", IMPORT{builtin}="kmod load $env{MODALIAS}"
 
-sorry about the mistake.
+sorry about that.
 
-> in a separate file, but I'm not a udev expert, so I guess it may be done in a
-> better way.
-> 
-> Can you please consider adding such a rule to the default set of udev rules?
+> After that change everything works happily again.
 
+Thanks,
 Rafael
 
 
