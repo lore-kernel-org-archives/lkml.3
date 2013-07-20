@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab3GTMXh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 08:23:37 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:58941 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab3GTMWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753921Ab3GTMWg (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 20 Jul 2013 08:22:36 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:36407 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab3GTMWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 08:22:21 -0400
 From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Linux Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 1/3] MAINTAINERS: Remove Grant Likely
-Date: Fri, 19 Jul 2013 20:19:46 -0700
-Message-Id: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+Subject: Re: [PATCH 0/2] PM / OPP: updates to enable sharing OPPs info
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+In-Reply-To: <519B45C3.8050700@arm.com>
+References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <519B45C3.8050700@arm.com>
+Date: Sat, 20 Jul 2013 06:09:43 +0100
+Message-Id: <20130720050943.5EB853E169C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately, I'm no longer to spend the time needed on maintainership.
-It is time for me to step aside and pass maintainership to other
-engineers. I'm not disappearing from Linux development, but it would be
-irresponsible for me to hold onto a job that I am unable to do.
+On Tue, 21 May 2013 11:00:35 +0100, Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com> wrote:
+> Hi Rob, Grant,
+> 
+> On 01/05/13 12:11, Sudeep KarkadaNagesha wrote:
+> > From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> > 
+> > These are couple of updates to existing PM/OPP library to support
+> > sharing of OPPs between different device nodes.
+> > 
+> > Currently all the cpu nodes are parsed until the OPPs are found. This
+> > is essential to support cpuhotplug without having to replicate OPP
+> > information in all the cpu nodes.
+> > 
+> > However in systems with multiple cpu power domain, its better to have
+> > OPP entry for each cpu. To avoid replication, phandle can be specified
+> > to the node which contains the full OPP information.
+> > 
+> Is proposed option of phandle for OPP acceptable to avoid replication ?
+> Any suggestions to proceed on this ? This is needed to support CPU
+> hotplug on big LITTLE system where current methods like parsing all the
+> nodes or just CPU0 node will not work.
 
-v2: Leave my name on devicetree core code maintainership. Rob NAKed that
-    part of the patch. :)
+Looks fine to me.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Linux Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
----
- MAINTAINERS | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index bf61e04..844d7e8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3622,11 +3622,9 @@ F:	drivers/isdn/gigaset/
- F:	include/uapi/linux/gigaset_dev.h
- 
- GPIO SUBSYSTEM
--M:	Grant Likely <grant.likely@linaro.org>
- M:	Linus Walleij <linus.walleij@linaro.org>
- S:	Maintained
- L:	linux-gpio@vger.kernel.org
--T:	git git://git.secretlab.ca/git/linux-2.6.git
- F:	Documentation/gpio.txt
- F:	drivers/gpio/
- F:	include/linux/gpio*
-@@ -4472,8 +4470,6 @@ F:	drivers/irqchip/
- 
- IRQ DOMAINS (IRQ NUMBER MAPPING LIBRARY)
- M:	Benjamin Herrenschmidt <benh@kernel.crashing.org>
--M:	Grant Likely <grant.likely@linaro.org>
--T:	git git://git.secretlab.ca/git/linux-2.6.git irqdomain/next
- S:	Maintained
- F:	Documentation/IRQ-domain.txt
- F:	include/linux/irqdomain.h
-@@ -7746,7 +7742,6 @@ F:	drivers/clk/spear/
- 
- SPI SUBSYSTEM
- M:	Mark Brown <broonie@kernel.org>
--M:	Grant Likely <grant.likely@linaro.org>
- L:	linux-spi@vger.kernel.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git
- Q:	http://patchwork.kernel.org/project/spi-devel-general/list/
--- 
-1.8.1.2
+g.
 
