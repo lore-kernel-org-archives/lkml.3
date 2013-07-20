@@ -1,104 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3GTSiR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 14:38:17 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:56228 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723Ab3GTSiQ (ORCPT
+	id S1754803Ab3GTSk1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 14:40:27 -0400
+Received: from mail.tomasu.net ([64.85.170.232]:36304 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754723Ab3GTSk0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 14:38:16 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org
-Cc: bergwolf@gmail.com, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] staging: lustre: Fix typo in printk
-Date: Sun, 21 Jul 2013 03:38:08 +0900
-Message-Id: <1374345488-27894-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.3.3.820.ge3d4493
+	Sat, 20 Jul 2013 14:40:26 -0400
+From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: compile error on 3.10.1
+Date: Sat, 20 Jul 2013 12:39:34 -0600
+Message-ID: <4042881.r0jf4IMbXO@balsa>
+User-Agent: KMail/4.10.5 (Linux/3.9-1-amd64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <2288831.DxHLOohu6v@balsa>
+References: <36183925.Z4AeQk3t4j@balsa> <20130720180210.GA6190@kroah.com> <2288831.DxHLOohu6v@balsa>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in printk within staging/lustre
+On Sat 20 July 2013 12:07:03 Thomas Fjellstrom wrote:
+> On Sat 20 July 2013 11:02:10 you wrote:
+> > On Sat, Jul 20, 2013 at 09:59:57AM -0600, Thomas Fjellstrom wrote:
+> > > Hi, just trying to compile a vanilla kernel and building using
+> > > allmodconfig and using oldconfig with the debian 3.10.1 config as a
+> > > base.
+> > 
+> > > With the later config, I get the following:
+> > Is this new to 3.10.1 and works fine for 3.10.0?
+> 
+> I'll check.
+> 
+> All I've tested so far is debian's 2.6.32, 3.9.8, 3.10.1, and a vanilla
+> 3.10.1 (with allmodconfig and oldconfig+debian config).
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/staging/lustre/lustre/llite/vvp_io.c             | 2 +-
- drivers/staging/lustre/lustre/obdclass/genops.c          | 2 +-
- drivers/staging/lustre/lustre/obdecho/echo_client.c      | 2 +-
- drivers/staging/lustre/lustre/ptlrpc/gss/gss_krb5_mech.c | 6 +++---
- 4 files changed, 6 insertions(+), 6 deletions(-)
+I meant to say I only tried 3.10.1... I'm getting this and my last email 
+confused a little.
 
-diff --git a/drivers/staging/lustre/lustre/llite/vvp_io.c b/drivers/staging/lustre/lustre/llite/vvp_io.c
-index eb964ac..8001f2d 100644
---- a/drivers/staging/lustre/lustre/llite/vvp_io.c
-+++ b/drivers/staging/lustre/lustre/llite/vvp_io.c
-@@ -968,7 +968,7 @@ static int vvp_io_commit_write(const struct lu_env *env,
- 	LINVRNT(cl_page_is_vmlocked(env, pg));
- 	LASSERT(vmpage->mapping->host == inode);
- 
--	LU_OBJECT_HEADER(D_INODE, env, &obj->co_lu, "commiting page write\n");
-+	LU_OBJECT_HEADER(D_INODE, env, &obj->co_lu, "committing page write\n");
- 	CL_PAGE_HEADER(D_PAGE, env, pg, "committing: [%d, %d]\n", from, to);
- 
- 	/*
-diff --git a/drivers/staging/lustre/lustre/obdclass/genops.c b/drivers/staging/lustre/lustre/obdclass/genops.c
-index d96876e..ea041a3 100644
---- a/drivers/staging/lustre/lustre/obdclass/genops.c
-+++ b/drivers/staging/lustre/lustre/obdclass/genops.c
-@@ -1484,7 +1484,7 @@ int obd_export_evict_by_uuid(struct obd_device *obd, const char *uuid)
- 		CERROR("%s: can't disconnect %s: no exports found\n",
- 		       obd->obd_name, uuid);
- 	} else {
--		CWARN("%s: evicting %s at adminstrative request\n",
-+		CWARN("%s: evicting %s at administrative request\n",
- 		       obd->obd_name, doomed_exp->exp_client_uuid.uuid);
- 		class_fail_export(doomed_exp);
- 		class_export_put(doomed_exp);
-diff --git a/drivers/staging/lustre/lustre/obdecho/echo_client.c b/drivers/staging/lustre/lustre/obdecho/echo_client.c
-index 184195f..391878d 100644
---- a/drivers/staging/lustre/lustre/obdecho/echo_client.c
-+++ b/drivers/staging/lustre/lustre/obdecho/echo_client.c
-@@ -648,7 +648,7 @@ static int echo_site_init(const struct lu_env *env, struct echo_device *ed)
- 	/* initialize site */
- 	rc = cl_site_init(site, &ed->ed_cl);
- 	if (rc) {
--		CERROR("Cannot initilize site for echo client(%d)\n", rc);
-+		CERROR("Cannot initialize site for echo client(%d)\n", rc);
- 		return rc;
- 	}
- 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/gss/gss_krb5_mech.c b/drivers/staging/lustre/lustre/ptlrpc/gss/gss_krb5_mech.c
-index 4b28931..91da763 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/gss/gss_krb5_mech.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/gss/gss_krb5_mech.c
-@@ -341,7 +341,7 @@ __u32 import_context_rfc1964(struct krb5_ctx *kctx, char *p, char *end)
- 	if (p != end)
- 		goto out_err;
- 
--	CDEBUG(D_SEC, "succesfully imported rfc1964 context\n");
-+	CDEBUG(D_SEC, "successfully imported rfc1964 context\n");
- 	return 0;
- out_err:
- 	return GSS_S_FAILURE;
-@@ -403,7 +403,7 @@ __u32 import_context_rfc4121(struct krb5_ctx *kctx, char *p, char *end)
- 	if (get_keyblock(&p, end, &kctx->kc_keyc, keysize))
- 		goto out_err;
- 
--	CDEBUG(D_SEC, "succesfully imported v2 context\n");
-+	CDEBUG(D_SEC, "successfully imported v2 context\n");
- 	return 0;
- out_err:
- 	return GSS_S_FAILURE;
-@@ -494,7 +494,7 @@ __u32 gss_copy_reverse_context_kerberos(struct gss_ctx *gctx,
- 		goto out_err;
- 
- 	gctx_new->internal_ctx_id = knew;
--	CDEBUG(D_SEC, "succesfully copied reverse context\n");
-+	CDEBUG(D_SEC, "successfully copied reverse context\n");
- 	return GSS_S_COMPLETE;
- 
- out_err:
+Just tested the v3.10 tag from the stable repo and it exhibits the same 
+problem.
+
+> > >   CC [M]  drivers/net/wireless/ath/wil6210/debugfs.o
+> > > 
+> > > drivers/net/wireless/ath/wil6210/debugfs.c: In function
+> > > âwil_print_ringâ:
+> > > drivers/net/wireless/ath/wil6210/debugfs.c:163:11: error: pointer
+> > > targets
+> 
+> in
+> 
+> > > passing argument 5 of âhex_dump_to_bufferâ differ in signedness [-
+> > > Werror=pointer-sign]
+> > > 
+> > >            false);
+> > >            ^
+> > > 
+> > > In file included from include/linux/kernel.h:13:0,
+> > > 
+> > >                  from include/linux/cache.h:4,
+> > >                  from include/linux/time.h:4,
+> > >                  from include/linux/stat.h:18,
+> > >                  from include/linux/module.h:10,
+> > > 
+> > >                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
+> > > include/linux/printk.h:361:13: note: expected âchar *â but argument is
+> > > of
+> 
+> type
+> 
+> > > âunsigned char *â
+> > > 
+> > >  extern void hex_dump_to_buffer(const void *buf, size_t len,
+> > >  
+> > >              ^
+> > > 
+> > > drivers/net/wireless/ath/wil6210/debugfs.c: In function
+> > > âwil_txdesc_debugfs_showâ:
+> > > drivers/net/wireless/ath/wil6210/debugfs.c:429:10: error: pointer
+> > > targets
+> 
+> in
+> 
+> > > passing argument 5 of âhex_dump_to_bufferâ differ in signedness [-
+> > > Werror=pointer-sign]
+> > > 
+> > >           sizeof(printbuf), false);
+> > >           ^
+> > > 
+> > > In file included from include/linux/kernel.h:13:0,
+> > > 
+> > >                  from include/linux/cache.h:4,
+> > >                  from include/linux/time.h:4,
+> > >                  from include/linux/stat.h:18,
+> > >                  from include/linux/module.h:10,
+> > > 
+> > >                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
+> > > include/linux/printk.h:361:13: note: expected âchar *â but argument is
+> > > of
+> 
+> type
+> 
+> > > âunsigned char *â
+> > > 
+> > >  extern void hex_dump_to_buffer(const void *buf, size_t len,
+> > >  
+> > >              ^
+> > > 
+> > > cc1: all warnings being treated as errors
+> > > make[5]: *** [drivers/net/wireless/ath/wil6210/debugfs.o] Error 1
+> > > make[4]: *** [drivers/net/wireless/ath/wil6210] Error 2
+> > > make[3]: *** [drivers/net/wireless/ath] Error 2
+> > > make[2]: *** [drivers/net/wireless] Error 2
+> > > make[1]: *** [drivers/net] Error 2
+> > > make: *** [drivers] Error 2
+> > > 
+> > > There are also a bunch of warnings, most of the ones I could catch are
+> > > signedness related.
+> > 
+> > Care to send this to the atheros wireless developers?  I'm sure they
+> > would like to know about it.
+> 
+> Can do.
+
+Done.
+
+> > greg k-h
 -- 
-1.8.3.3.820.ge3d4493
-
+Thomas Fjellstrom
+tfjellstrom@strangesoft.net
