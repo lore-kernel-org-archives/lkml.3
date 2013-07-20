@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab3GTW7W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 18:59:22 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33728 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754733Ab3GTW7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 18:59:21 -0400
-Date: Sun, 21 Jul 2013 00:59:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Jacob Shin <jacob.shin@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.w.shin@gmail.com>
-Subject: Re: early microcode on amd is broken when no initramfs provided
-Message-ID: <20130720225911.GC13731@pd.tnic>
-References: <20130709183601.5d567a83@fem.tu-ilmenau.de>
- <20130710073049.GA15525@pd.tnic>
- <20130711230525.40bc6491@fem.tu-ilmenau.de>
- <20130716170055.GG4402@pd.tnic>
- <CAPVoSvQuzUQUgRgk6fhsxEhjWS8oPreo00u_urntaCzmERpOtg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPVoSvQuzUQUgRgk6fhsxEhjWS8oPreo00u_urntaCzmERpOtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755178Ab3GTXHj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 19:07:39 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53081 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab3GTXHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 19:07:37 -0400
+From: Andrea Adami <andrea.adami@gmail.com>
+To: linux-mtd@lists.infradead.org
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] mtd: jedec_probe: fix LH28F640BF definition
+Date: Sun, 21 Jul 2013 01:07:33 +0200
+Message-Id: <1374361653-3004-1-git-send-email-andrea.adami@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 09:01:33PM +0200, Torsten Kaiser wrote:
-> On Tue, Jul 16, 2013 at 7:00 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > On Thu, Jul 11, 2013 at 11:05:25PM +0200, Johannes Hirte wrote:
-> >> config is attached
-> >
-> > Ok, I can reproduce the hang with your config but even with:
-> >
-> > $ grep MICROCODE .config
-> > # CONFIG_MICROCODE is not set
-> > # CONFIG_MICROCODE_INTEL_EARLY is not set
-> > # CONFIG_MICROCODE_AMD_EARLY is not set
-> >
-> > which means, it cannot be microcode-related.
-> >
-> > And I'd bet if you wait a minute (yep, it should be exactly 60 seconds)
-> > the boot would probably continue. And if so, this is that 60 sec delay
-> > where the kernel tries to find firmware.
-> >
-> > Hmm...
-> 
-> I have the same problem: Booting 3.11-rc1 hangs after the line:
-> ACPI: Executed 3 blocks of module-level executable AML code
-> 
-> I bisected it down to the early microcode changes:
-> 757885e94a22bcc82beb9b1445c95218cb20ceab (the new early loading
-> implementation) and 6b3389ac21b5e557b957f1497d0ff22bf733e8c3 (small
-> fixup) completely fail to boot (No output beyond "Booting kernel") ,
-> from 275bbe2e299f1820ec8faa443d689469a9e6ecc5 ("Make
-> find_ucode_in_initrd() __init") I'm seeing this hang.
-> 
-> Just turning CONFIG_MICROCODE_EARLY off solves the problem: The system
-> now sucessfully boots 3.11-rc1.
+Zaurus 5500 contains 2 LH28F640BFHE-PTTL90 (64M 4Mx16) and
+the LH28F640BFHE-PTTL90.pdf datasheet available on the net shows
+the exact erasesize and the OTP support.
+At the moment only jedec_probe can discover the chip and
+the NOR is mounted read only probably because of wrong vpp.
 
-Ok, I need to be able to reproduce that first - I wasn't that successful
-with Johannes' setup.
+Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
+---
+ drivers/mtd/chips/jedec_probe.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-So, can you please send .config and how you're loading your microcode?
-Is it in the initrd or are you doing that later, how? Grub entry please.
-
-Also, is it just plain v3.11-rc1 or with patches ontop?
-
-Also, /proc/cpuinfo please.
-
-Thanks.
-
+diff --git a/drivers/mtd/chips/jedec_probe.c b/drivers/mtd/chips/jedec_probe.c
+index c443f52..7c0b27d 100644
+--- a/drivers/mtd/chips/jedec_probe.c
++++ b/drivers/mtd/chips/jedec_probe.c
+@@ -120,7 +120,7 @@
+ #define PM49FL008	0x006A
+ 
+ /* Sharp */
+-#define LH28F640BF	0x00b0
++#define LH28F640BF	0x00B0
+ 
+ /* ST - www.st.com */
+ #define M29F800AB	0x0058
+@@ -1299,13 +1299,14 @@ static const struct amd_flash_info jedec_table[] = {
+ 		.mfr_id		= CFI_MFR_SHARP,
+ 		.dev_id		= LH28F640BF,
+ 		.name		= "LH28F640BF",
+-		.devtypes	= CFI_DEVICETYPE_X8,
++		.devtypes	= CFI_DEVICETYPE_X16,
+ 		.uaddr		= MTD_UADDR_UNNECESSARY,
+-		.dev_size	= SIZE_4MiB,
+-		.cmd_set	= P_ID_INTEL_STD,
+-		.nr_regions	= 1,
++		.dev_size	= SIZE_8MiB,
++		.cmd_set	= P_ID_INTEL_EXT,
++		.nr_regions	= 2,
+ 		.regions	= {
+-			ERASEINFO(0x40000,16),
++			ERASEINFO(0x10000, 127),
++			ERASEINFO(0x02000, 8),
+ 		}
+ 	}, {
+ 		.mfr_id		= CFI_MFR_SST,
 -- 
-Regards/Gruss,
-    Boris.
+1.8.1.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
