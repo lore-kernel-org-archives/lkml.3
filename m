@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3GTDWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 23:22:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28333 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608Ab3GTDVt (ORCPT
+	id S1753730Ab3GTDgX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 23:36:23 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:32839 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753638Ab3GTDgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 23:21:49 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=EXkWTnSq5gMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=xOlegLBUYf4A:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=3nbZYyFuAAAA:8 a=ZArbDTPQWvNnl0OUvIkA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130720032147.057403529@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 19 Jul 2013 23:20:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        <stable@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next-3.11][PATCH 2/2] tracing: Kill the unbalanced tr->ref++ in tracing_buffers_open()
-References: <20130720032028.963792665@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Kill-the-unbalanced-tr-ref-in-tracing_buffer.patch
+	Fri, 19 Jul 2013 23:36:20 -0400
+Date: Fri, 19 Jul 2013 23:36:19 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Felix Fietkau <nbd@openwrt.org>
+Subject: Re: [PATCH] backports: backport drvdata = NULL core driver fixes
+In-Reply-To: <CAB=NE6WfbauZnzCT=jgfUtc2Roe7WfY=G7Z5OAobc9YLc0nCvw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1307192315470.24914-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+On Fri, 19 Jul 2013, Luis R. Rodriguez wrote:
 
-tracing_buffers_open() does trace_array_get() and then it wrongly
-inrcements tr->ref again under trace_types_lock. This means that
-every caller leaks trace_array:
+> Thanks Julia. In that case I'm going to just leave this in place given
+> that if there's a bug upstream we'll get it fixed as soon as a
+> respective patch gets upstream as well. That is, we are not using old
+> drivers, we use the same upstream drivers so if a regression was found
+> in backports the fix must go upstream s well. This is one of the
+> benefits of backporting -- the range of users and testers increases
+> and we still benefit from the upstream bandwagon.
 
-	# cd /sys/kernel/debug/tracing/
-	# mkdir instances/X
-	# true < instances/X/per_cpu/cpu0/trace_pipe_raw
-	# rmdir instances/X
-	rmdir: failed to remove `instances/X': Device or resource busy
+I don't understand.  If you're not using old drivers, and you
+incorporate all the upstream patches, then what's the difference
+between a backport and the current kernel?  In fact, if you're
+incorporating all the upstream driver patches, then why haven't you
+already got the drvdata change?
 
-Link: http://lkml.kernel.org/r/20130719153644.GA18899@redhat.com
+As one example of the sort of subtle problem exposed by the drvdata
+change, take a look at commit b2ca69907657.
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: stable@vger.kernel.org # 3.10
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |    2 --
- 1 file changed, 2 deletions(-)
+For more examples, see commits bf90ff5f3b8f, 638b9e15233c,
+51ef847df746, 289b076f89c2, 53636555b919, 99a6f73c495c, 003615302a16,
+94ab71ce2889, 3124d1d71d3d, c27f3efc5608, 95940a04bfe8, 5c1a0f418d8d,
+db5c8b524444, 8bf769eb5f6e, 4295fe7791a1, fa919751a2d2, a9556040119a,
+7bdce71822f4, and a1028f0abfb3.  Admittedly, these are all related
+problems in a single subsystem, but it gives you a little idea of how 
+far this goes.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 7d9ceab..3f24777 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4959,8 +4959,6 @@ static int tracing_buffers_open(struct inode *inode, struct file *filp)
- 
- 	mutex_lock(&trace_types_lock);
- 
--	tr->ref++;
--
- 	info->iter.tr		= tr;
- 	info->iter.cpu_file	= tc->cpu;
- 	info->iter.trace	= tr->current_trace;
--- 
-1.7.10.4
-
+Alan Stern
 
