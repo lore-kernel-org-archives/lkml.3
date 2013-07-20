@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3GTIla (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 04:41:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44639 "EHLO
+	id S1753566Ab3GTIl6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 04:41:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44633 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab3GTIkr (ORCPT
+	with ESMTP id S1752921Ab3GTIkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 04:40:47 -0400
+	Sat, 20 Jul 2013 04:40:22 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 12/12] apparmor: Add the profile introspection file to interface
-Date: Sat, 20 Jul 2013 01:38:47 -0700
-Message-Id: <1374309527-7082-13-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 08/12] apparmor: make free_profile available outside of policy.c
+Date: Sat, 20 Jul 2013 01:38:43 -0700
+Message-Id: <1374309527-7082-9-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374309527-7082-1-git-send-email-john.johansen@canonical.com>
 References: <1374309527-7082-1-git-send-email-john.johansen@canonical.com>
@@ -20,276 +20,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the dynamic namespace relative profiles file to the interace, to allow
-introspection of loaded profiles and their modes.
-
 Signed-off-by: John Johansen <john.johansen@canonical.com>
-Acked-by: Kees Cook <kees@ubuntu.com>
 ---
- security/apparmor/apparmorfs.c | 236 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 236 insertions(+)
+ security/apparmor/include/policy.h | 1 +
+ security/apparmor/policy.c         | 9 ++++-----
+ security/apparmor/policy_unpack.c  | 4 ++--
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
-index d6329aa..7a26608 100644
---- a/security/apparmor/apparmorfs.c
-+++ b/security/apparmor/apparmorfs.c
-@@ -20,6 +20,7 @@
- #include <linux/uaccess.h>
- #include <linux/namei.h>
- #include <linux/capability.h>
-+#include <linux/rcupdate.h>
- 
- #include "include/apparmor.h"
- #include "include/apparmorfs.h"
-@@ -512,6 +513,240 @@ fail2:
+diff --git a/security/apparmor/include/policy.h b/security/apparmor/include/policy.h
+index 4eafdd8..8a68226 100644
+--- a/security/apparmor/include/policy.h
++++ b/security/apparmor/include/policy.h
+@@ -228,6 +228,7 @@ struct aa_namespace *aa_find_namespace(struct aa_namespace *root,
+ void aa_free_replacedby_kref(struct kref *kref);
+ struct aa_profile *aa_alloc_profile(const char *name);
+ struct aa_profile *aa_new_null_profile(struct aa_profile *parent, int hat);
++void aa_free_profile(struct aa_profile *profile);
+ void aa_free_profile_kref(struct kref *kref);
+ struct aa_profile *aa_find_child(struct aa_profile *parent, const char *name);
+ struct aa_profile *aa_lookup_profile(struct aa_namespace *ns, const char *name);
+diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
+index aee2e71..7a80b0c 100644
+--- a/security/apparmor/policy.c
++++ b/security/apparmor/policy.c
+@@ -307,7 +307,6 @@ fail_ns:
+ 	return NULL;
  }
  
+-static void free_profile(struct aa_profile *profile);
+ /**
+  * free_namespace - free a profile namespace
+  * @ns: the namespace to free  (MAYBE NULL)
+@@ -324,7 +323,7 @@ static void free_namespace(struct aa_namespace *ns)
+ 	aa_put_namespace(ns->parent);
  
-+#define list_entry_next(pos, member) \
-+	list_entry(pos->member.next, typeof(*pos), member)
-+#define list_entry_is_head(pos, head, member) (&pos->member == (head))
-+
-+/**
-+ * __next_namespace - find the next namespace to list
-+ * @root: root namespace to stop search at (NOT NULL)
-+ * @ns: current ns position (NOT NULL)
-+ *
-+ * Find the next namespace from @ns under @root and handle all locking needed
-+ * while switching current namespace.
-+ *
-+ * Returns: next namespace or NULL if at last namespace under @root
-+ * Requires: ns->parent->lock to be held
-+ * NOTE: will not unlock root->lock
-+ */
-+static struct aa_namespace *__next_namespace(struct aa_namespace *root,
-+					     struct aa_namespace *ns)
-+{
-+	struct aa_namespace *parent, *next;
-+
-+	/* is next namespace a child */
-+	if (!list_empty(&ns->sub_ns)) {
-+		next = list_first_entry(&ns->sub_ns, typeof(*ns), base.list);
-+		mutex_lock(&next->lock);
-+		return next;
-+	}
-+
-+	/* check if the next ns is a sibling, parent, gp, .. */
-+	parent = ns->parent;
-+	while (parent) {
-+		mutex_unlock(&ns->lock);
-+		next = list_entry_next(ns, base.list);
-+		if (!list_entry_is_head(next, &parent->sub_ns, base.list)) {
-+			mutex_lock(&next->lock);
-+			return next;
-+		}
-+		if (parent == root)
-+			return NULL;
-+		ns = parent;
-+		parent = parent->parent;
-+	}
-+
-+	return NULL;
-+}
-+
-+/**
-+ * __first_profile - find the first profile in a namespace
-+ * @root: namespace that is root of profiles being displayed (NOT NULL)
-+ * @ns: namespace to start in   (NOT NULL)
-+ *
-+ * Returns: unrefcounted profile or NULL if no profile
-+ * Requires: profile->ns.lock to be held
-+ */
-+static struct aa_profile *__first_profile(struct aa_namespace *root,
-+					  struct aa_namespace *ns)
-+{
-+	for (; ns; ns = __next_namespace(root, ns)) {
-+		if (!list_empty(&ns->base.profiles))
-+			return list_first_entry(&ns->base.profiles,
-+						struct aa_profile, base.list);
-+	}
-+	return NULL;
-+}
-+
-+/**
-+ * __next_profile - step to the next profile in a profile tree
-+ * @profile: current profile in tree (NOT NULL)
-+ *
-+ * Perform a depth first traversal on the profile tree in a namespace
-+ *
-+ * Returns: next profile or NULL if done
-+ * Requires: profile->ns.lock to be held
-+ */
-+static struct aa_profile *__next_profile(struct aa_profile *p)
-+{
-+	struct aa_profile *parent;
-+	struct aa_namespace *ns = p->ns;
-+
-+	/* is next profile a child */
-+	if (!list_empty(&p->base.profiles))
-+		return list_first_entry(&p->base.profiles, typeof(*p),
-+					base.list);
-+
-+	/* is next profile a sibling, parent sibling, gp, sibling, .. */
-+	parent = rcu_dereference_protected(p->parent,
-+					   mutex_is_locked(&p->ns->lock));
-+	while (parent) {
-+		p = list_entry_next(p, base.list);
-+		if (!list_entry_is_head(p, &parent->base.profiles, base.list))
-+			return p;
-+		p = parent;
-+		parent = rcu_dereference_protected(parent->parent,
-+					    mutex_is_locked(&parent->ns->lock));
-+	}
-+
-+	/* is next another profile in the namespace */
-+	p = list_entry_next(p, base.list);
-+	if (!list_entry_is_head(p, &ns->base.profiles, base.list))
-+		return p;
-+
-+	return NULL;
-+}
-+
-+/**
-+ * next_profile - step to the next profile in where ever it may be
-+ * @root: root namespace  (NOT NULL)
-+ * @profile: current profile  (NOT NULL)
-+ *
-+ * Returns: next profile or NULL if there isn't one
-+ */
-+static struct aa_profile *next_profile(struct aa_namespace *root,
-+				       struct aa_profile *profile)
-+{
-+	struct aa_profile *next = __next_profile(profile);
-+	if (next)
-+		return next;
-+
-+	/* finished all profiles in namespace move to next namespace */
-+	return __first_profile(root, __next_namespace(root, profile->ns));
-+}
-+
-+/**
-+ * p_start - start a depth first traversal of profile tree
-+ * @f: seq_file to fill
-+ * @pos: current position
-+ *
-+ * Returns: first profile under current namespace or NULL if none found
-+ *
-+ * acquires first ns->lock
-+ */
-+static void *p_start(struct seq_file *f, loff_t *pos)
-+{
-+	struct aa_profile *profile = NULL;
-+	struct aa_namespace *root = aa_current_profile()->ns;
-+	loff_t l = *pos;
-+	f->private = aa_get_namespace(root);
-+
-+
-+	/* find the first profile */
-+	mutex_lock(&root->lock);
-+	profile = __first_profile(root, root);
-+
-+	/* skip to position */
-+	for (; profile && l > 0; l--)
-+		profile = next_profile(root, profile);
-+
-+	return profile;
-+}
-+
-+/**
-+ * p_next - read the next profile entry
-+ * @f: seq_file to fill
-+ * @p: profile previously returned
-+ * @pos: current position
-+ *
-+ * Returns: next profile after @p or NULL if none
-+ *
-+ * may acquire/release locks in namespace tree as necessary
-+ */
-+static void *p_next(struct seq_file *f, void *p, loff_t *pos)
-+{
-+	struct aa_profile *profile = p;
-+	struct aa_namespace *ns = f->private;
-+	(*pos)++;
-+
-+	return next_profile(ns, profile);
-+}
-+
-+/**
-+ * p_stop - stop depth first traversal
-+ * @f: seq_file we are filling
-+ * @p: the last profile writen
-+ *
-+ * Release all locking done by p_start/p_next on namespace tree
-+ */
-+static void p_stop(struct seq_file *f, void *p)
-+{
-+	struct aa_profile *profile = p;
-+	struct aa_namespace *root = f->private, *ns;
-+
-+	if (profile) {
-+		for (ns = profile->ns; ns && ns != root; ns = ns->parent)
-+			mutex_unlock(&ns->lock);
-+	}
-+	mutex_unlock(&root->lock);
-+	aa_put_namespace(root);
-+}
-+
-+/**
-+ * seq_show_profile - show a profile entry
-+ * @f: seq_file to file
-+ * @p: current position (profile)    (NOT NULL)
-+ *
-+ * Returns: error on failure
-+ */
-+static int seq_show_profile(struct seq_file *f, void *p)
-+{
-+	struct aa_profile *profile = (struct aa_profile *)p;
-+	struct aa_namespace *root = f->private;
-+
-+	if (profile->ns != root)
-+		seq_printf(f, ":%s://", aa_ns_name(root, profile->ns));
-+	seq_printf(f, "%s (%s)\n", profile->base.hname,
-+		   aa_profile_mode_names[profile->mode]);
-+
-+	return 0;
-+}
-+
-+static const struct seq_operations aa_fs_profiles_op = {
-+	.start = p_start,
-+	.next = p_next,
-+	.stop = p_stop,
-+	.show = seq_show_profile,
-+};
-+
-+static int profiles_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &aa_fs_profiles_op);
-+}
-+
-+static int profiles_release(struct inode *inode, struct file *file)
-+{
-+	return seq_release(inode, file);
-+}
-+
-+static const struct file_operations aa_fs_profiles_fops = {
-+	.open = profiles_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = profiles_release,
-+};
-+
-+
- /** Base file system setup **/
- static struct aa_fs_entry aa_fs_entry_file[] = {
- 	AA_FS_FILE_STRING("mask", "create read write exec append mmap_exec " \
-@@ -545,6 +780,7 @@ static struct aa_fs_entry aa_fs_entry_apparmor[] = {
- 	AA_FS_FILE_FOPS(".load", 0640, &aa_fs_profile_load),
- 	AA_FS_FILE_FOPS(".replace", 0640, &aa_fs_profile_replace),
- 	AA_FS_FILE_FOPS(".remove", 0640, &aa_fs_profile_remove),
-+	AA_FS_FILE_FOPS("profiles", 0640, &aa_fs_profiles_fops),
- 	AA_FS_DIR("features", aa_fs_entry_features),
- 	{ }
- };
+ 	ns->unconfined->ns = NULL;
+-	free_profile(ns->unconfined);
++	aa_free_profile(ns->unconfined);
+ 	kzfree(ns);
+ }
+ 
+@@ -568,7 +567,7 @@ void aa_free_replacedby_kref(struct kref *kref)
+ }
+ 
+ /**
+- * free_profile - free a profile
++ * aa_free_profile - free a profile
+  * @profile: the profile to free  (MAYBE NULL)
+  *
+  * Free a profile, its hats and null_profile. All references to the profile,
+@@ -577,7 +576,7 @@ void aa_free_replacedby_kref(struct kref *kref)
+  * If the profile was referenced from a task context, free_profile() will
+  * be called from an rcu callback routine, so we must not sleep here.
+  */
+-static void free_profile(struct aa_profile *profile)
++void aa_free_profile(struct aa_profile *profile)
+ {
+ 	AA_DEBUG("%s(%p)\n", __func__, profile);
+ 
+@@ -612,7 +611,7 @@ static void aa_free_profile_rcu(struct rcu_head *head)
+ 	if (p->flags & PFLAG_NS_COUNT)
+ 		free_namespace(p->ns);
+ 	else
+-		free_profile(p);
++		aa_free_profile(p);
+ }
+ 
+ /**
+diff --git a/security/apparmor/policy_unpack.c b/security/apparmor/policy_unpack.c
+index 869c063..e52d508 100644
+--- a/security/apparmor/policy_unpack.c
++++ b/security/apparmor/policy_unpack.c
+@@ -615,7 +615,7 @@ fail:
+ 	else if (!name)
+ 		name = "unknown";
+ 	audit_iface(profile, name, "failed to unpack profile", e, error);
+-	aa_put_profile(profile);
++	aa_free_profile(profile);
+ 
+ 	return ERR_PTR(error);
+ }
+@@ -764,7 +764,7 @@ int aa_unpack(void *udata, size_t size, struct list_head *lh, const char **ns)
+ 
+ 		error = verify_profile(profile);
+ 		if (error) {
+-			aa_put_profile(profile);
++			aa_free_profile(profile);
+ 			goto fail;
+ 		}
+ 
 -- 
 1.8.1.2
 
