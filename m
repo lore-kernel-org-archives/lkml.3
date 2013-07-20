@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab3GTHCR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 03:02:17 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:54833 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab3GTHCQ (ORCPT
+	id S1751355Ab3GTH2R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 03:28:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44276 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805Ab3GTH2P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 03:02:16 -0400
+	Sat, 20 Jul 2013 03:28:15 -0400
+From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: RE: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if UP
+ system
+Thread-Topic: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if
+ UP system
+Thread-Index: AQHOedkohMh8X6U+iEOl11iYZdcEeZltOz1g
+Date: Sat, 20 Jul 2013 07:27:25 +0000
+Message-ID: <B5906170F1614E41A8A28DE3B8D121433EEB180B@DBDE04.ent.ti.com>
+References: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1374242333-6852-20-git-send-email-lee.jones@linaro.org>
-References: <1374242333-6852-1-git-send-email-lee.jones@linaro.org>
-	<1374242333-6852-20-git-send-email-lee.jones@linaro.org>
-Date: Sat, 20 Jul 2013 12:32:15 +0530
-X-Google-Sender-Auth: wECZn8RaBllV-_ArRwuLoanQAsU
-Message-ID: <CAOh2x==EBzy6MMy0Jv1=VSAD7Kdw7=Jag8g4oz-kfRH0XafGaw@mail.gmail.com>
-Subject: Re: [PATCH 20/22] ARM: ux500: Remove '0x's from Spear 300 DTS file
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 7:28 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi,
+
+On Sat, Jul 06, 2013 at 05:09:33, Stephen Boyd wrote:
+> In a uniprocessor implementation the interrupt processor targets
+> registers are read-as-zero/write-ignored (RAZ/WI). Unfortunately
+> gic_get_cpumask() will print a critical message saying
+> 
+>  GIC CPU mask not found - kernel will fail to boot.
+> 
+> if these registers all read as zero, but there won't actually be
+> a problem on uniprocessor systems and the kernel will boot just
+> fine. Skip this check if we're running a UP kernel or if we
+> detect that the hardware only supports a single processor.
+> 
+> Cc: Nicolas Pitre <nico@linaro.org>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  arch/arm/boot/dts/spear300.dtsi | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/spear300.dtsi b/arch/arm/boot/dts/spear300.dtsi
-> index f79b3df..8970a4a 100644
-> --- a/arch/arm/boot/dts/spear300.dtsi
-> +++ b/arch/arm/boot/dts/spear300.dtsi
-> @@ -52,7 +52,7 @@
->                         status = "disabled";
->                 };
->
-> -               shirq: interrupt-controller@0x50000000 {
-> +               shirq: interrupt-controller@50000000 {
->                         compatible = "st,spear300-shirq";
->                         reg = <0x50000000 0x1000>;
->                         interrupts = <28>;
+> 
+> Maybe we should just drop the check entirely? It looks like it may
+> just be debug code that won't ever trigger in practice, even on the
+> 11MPCore that caused this code to be introduced.
+> 
 
-Should Ux500 come in subject line? And please write Spear as
-SPEAr.
+Apologies if I missed v2 of this patch if there was one. I could not
+locate it in my inbox or the list archives.
 
-Otherwise all three patches look fine.
+We have a yet to be released single-core A9 MPCore system (AM437x) which
+needs to co-exist in omap2plus_defconfig wherein NR_CPUS is set to 2. 
+This currently leads to the "GIC CPU mask not found..." being printed
+twice during bootup. If the check is really some debug code, can it be
+completely dropped?
 
-Ackedy-by: Viresh Kumar <viresh.kumar@linaro.org>
+Regards,
+Vaibhav B.
+
