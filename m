@@ -1,164 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3GTXIV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 19:08:21 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:48178 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab3GTXHw (ORCPT
+	id S1755101Ab3GTXIT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 19:08:19 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:50028 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab3GTXHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 19:07:52 -0400
+	Sat, 20 Jul 2013 19:07:49 -0400
 From: Andrea Adami <andrea.adami@gmail.com>
-To: linux-mmc@vger.kernel.org
-Cc: Chris Ball <cjb@laptop.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Marko Katic <dromede@gmail.com>
-Subject: [PATCH] mmc: pxamci: Refactor regulator support
-Date: Sun, 21 Jul 2013 01:07:48 +0200
-Message-Id: <1374361668-3184-1-git-send-email-andrea.adami@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] power supply: tosa_battery: get rid of irq_to_gpio usage
+Date: Sun, 21 Jul 2013 01:07:46 +0200
+Message-Id: <1374361666-3154-1-git-send-email-andrea.adami@gmail.com>
 X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marko Katic <dromede@gmail.com>
+Fix
+linux/drivers/power/tosa_battery.c:153:2: error: implicit declaration of
+function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+|   pr_info("tosa_bat_gpio irq: %d\n",
+gpio_get_value(irq_to_gpio(irq)));
 
-Here's an interesting scenario. The spitz machine has an
-Intersil 6271A voltage regulator and an ADS7846 touchscreen
-controller.
+as done for collie_battery.c with
+commit 629bcb4b72d49b3631ae3dd0fe1d345820fadfcc
 
-The ADS7846 driver _requires_ the use of a voltage regulator
-or if not present, CONFIG_REGULATOR_DUMMY should be used for proper operation.
-This was made mandatory by the following commit:
+Since 9d08d5d77a355510c2f5657c86b0a4b25acfe72c, irq_to_gpio() is no
+longer available but still in use by collie_battery.c. As it's just
+for a debug message, just get rid of this call.
 
-========================================
-91143379b01b2020d8878d627ebe9dfb9d6eb4c8
-Input: ads7846 - add regulator support
-
-The ADS7846/TSC2046 touchscreen controllers can (and usually are)
-connected to various regulators for power, so add regulator support.
-
-Valid regulator will now be required, so boards without complete
-regulator setup should either disable regulator framework or enable
-CONFIG_REGULATOR_DUMMY.
-========================================
-
-The ADS7846 in spitz machines is not connected to
-any power regulator so it needs CONFIG_REGULATOR_DUMMY enabled.
-So to support both the Intersil 6271A regulator and
-the ADS7846 controller, CONFIG_REGULATOR and CONFIG_REGULATOR_DUMMY have
-to be defined.
-
-However, enabling CONFIG_REGULATOR and CONFIG_REGULATOR_DUMMY
-will break pxamci driver and cause the following error output:
-
-pxa2xx-mci.0 supply vmmc not found, using dummy regulator
-pxa2xx-mci pxa2xx-mci.0: ocr_mask/setpower will not be used
-pxa2xx-mci pxa2xx-mci.0: could not set regulator OCR (-22)
-pxa2xx-mci pxa2xx-mci.0: unable to set power
-pxa2xx-mci pxa2xx-mci.0: could not set regulator OCR (-22)
-pxa2xx-mci pxa2xx-mci.0: unable to set power
-
-Above failures occur in two functions;
-pxamci_init_ocr() and pxamci_set_power().
-
-Regulator support in pxamci_init_ocr() is not
-written with the existence of the dummy regulator driver in
-mind. It does not check the return value of mmc_regulator_get_ocrmask()
-and it will only fall back to platform data if no regulator was found.
-
-pxamci_set_power() fails because it does not even try to fall back
-to platform data if mmc_regulator_set_ocr() fails. It
-expects a proper regulator or no regulator at all. It will
-only fall back to platform data if no regulator was found. It does
-not properly handle the possible existence of the dummy regulator.
-
-This patch refactors pxamci_init_ocr() and  pxamci_set_power() regulator
-support to be more modular, to do more checks and to always fall back
-to platform data.
-
-Signed-off-by: Marko Katic <dromede@gmail.com>
-[andrea.adami@gmail.com: checkpatch.pl dislikes lines over 80 chars]
 Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
 ---
- drivers/mmc/host/pxamci.c | 40 +++++++++++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 13 deletions(-)
+ drivers/power/tosa_battery.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
-index 2b2f65a..341d5dc 100644
---- a/drivers/mmc/host/pxamci.c
-+++ b/drivers/mmc/host/pxamci.c
-@@ -83,18 +83,26 @@ struct pxamci_host {
- static inline void pxamci_init_ocr(struct pxamci_host *host)
+diff --git a/drivers/power/tosa_battery.c b/drivers/power/tosa_battery.c
+index 0224de5..f4d80df 100644
+--- a/drivers/power/tosa_battery.c
++++ b/drivers/power/tosa_battery.c
+@@ -150,7 +150,7 @@ static void tosa_bat_external_power_changed(struct power_supply *psy)
+ 
+ static irqreturn_t tosa_bat_gpio_isr(int irq, void *data)
  {
- #ifdef CONFIG_REGULATOR
-+	int ocr_mask;
- 	host->vcc = regulator_get(mmc_dev(host->mmc), "vmmc");
- 
- 	if (IS_ERR(host->vcc))
- 		host->vcc = NULL;
- 	else {
--		host->mmc->ocr_avail = mmc_regulator_get_ocrmask(host->vcc);
--		if (host->pdata && host->pdata->ocr_mask)
-+		ocr_mask = mmc_regulator_get_ocrmask(host->vcc);
-+		if (ocr_mask <= 0)
-+			host->mmc->ocr_avail = 0;
-+		else
-+			host->mmc->ocr_avail = ocr_mask;
-+
-+		if (host->pdata &&
-+			host->pdata->ocr_mask &&
-+			host->mmc->ocr_avail)
- 			dev_warn(mmc_dev(host->mmc),
- 				"ocr_mask/setpower will not be used\n");
- 	}
- #endif
--	if (host->vcc == NULL) {
-+	if (host->vcc == NULL || host->mmc->ocr_avail == 0) {
- 		/* fall-back to platform data */
- 		host->mmc->ocr_avail = host->pdata ?
- 			host->pdata->ocr_mask :
-@@ -108,26 +116,32 @@ static inline int pxamci_set_power(struct pxamci_host *host,
- {
- 	int on;
- 
-+#ifdef CONFIG_REGULATOR
- 	if (host->vcc) {
--		int ret;
-+		int ret = 0;
- 
--		if (power_mode == MMC_POWER_UP) {
-+		if (power_mode == MMC_POWER_UP)
- 			ret = mmc_regulator_set_ocr(host->mmc, host->vcc, vdd);
--			if (ret)
--				return ret;
--		} else if (power_mode == MMC_POWER_OFF) {
-+
-+		if (power_mode == MMC_POWER_OFF)
- 			ret = mmc_regulator_set_ocr(host->mmc, host->vcc, 0);
--			if (ret)
--				return ret;
--		}
-+
-+		if (ret == 0)
-+			return 0;
-+		else
-+			dev_warn(mmc_dev(host->mmc),
-+			 "mmc_regulator_set_ocr failed, "
-+			 "falling back to platform data\n");
- 	}
--	if (!host->vcc && host->pdata &&
-+#endif
-+
-+	if (host->pdata &&
- 	    gpio_is_valid(host->pdata->gpio_power)) {
- 		on = ((1 << vdd) & host->pdata->ocr_mask);
- 		gpio_set_value(host->pdata->gpio_power,
- 			       !!on ^ host->pdata->gpio_power_invert);
- 	}
--	if (!host->vcc && host->pdata && host->pdata->setpower)
-+	if (host->pdata && host->pdata->setpower)
- 		host->pdata->setpower(mmc_dev(host->mmc), vdd);
- 
- 	return 0;
+-	pr_info("tosa_bat_gpio irq: %d\n", gpio_get_value(irq_to_gpio(irq)));
++	pr_info("tosa_bat_gpio irq\n");
+ 	schedule_work(&bat_work);
+ 	return IRQ_HANDLED;
+ }
 -- 
 1.8.1.5
 
