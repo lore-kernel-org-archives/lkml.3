@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3GTLVS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 07:21:18 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45388 "EHLO
+	id S1754007Ab3GTLZw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 07:25:52 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45471 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688Ab3GTLVQ (ORCPT
+	with ESMTP id S1753723Ab3GTLZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 07:21:16 -0400
-Message-ID: <51EA72AB.9060308@kernel.org>
-Date: Sat, 20 Jul 2013 12:21:15 +0100
+	Sat, 20 Jul 2013 07:25:51 -0400
+Message-ID: <51EA73BC.8050901@kernel.org>
+Date: Sat, 20 Jul 2013 12:25:48 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
-Subject: Re: [PATCH 08/15] iio: ti_am335x_adc: Handle overrun before threshold
- event
-References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-9-git-send-email-zubair.lutfullah@gmail.com>
-In-Reply-To: <1374186086-5015-9-git-send-email-zubair.lutfullah@gmail.com>
+Subject: Re: [PATCH 00/15] iio: ti_am335x_adc: Add continuous mode take 2
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
+In-Reply-To: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -26,63 +25,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+
 On 07/18/2013 11:21 PM, Zubair Lutfullah wrote:
-> From: Russ Dill <Russ.Dill@ti.com>
+> Patches now give correct authorship.
 > 
-> If an overrun occurs, the threshold event is meaningless, handle
-> the overrun event first.
+> and checkpatch.pl issues are checked for each patch.
 > 
-> Signed-off-by: Russ Dill <Russ.Dill@ti.com>
-> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+> I hope the actual code bashing can begin now.
+> 
+> A series of patches that add continuous sampling support
+> for the adc drivers for the am335x.
+> 
+> These apply on top of mfd-next after the recent set of patches
+> on this driver by Sebastian Andrzej Siewior
+> 
+> Tested on the Beaglebone Black running 3.11
+> 
+> Patil, Rachna (5):
+>   MFD: ti_tscadc: disable TSC config registers in adc mode
+>   iio: ti_am335x_adc: Fix wrong samples received on 1st read
+>   input: ti_tsc: Enable shared IRQ for TSC
+>   iio: mfd: input: ti_am335x_adc:Add support for continuous mode
+>   MFD: ti_tscadc: ADC Clock check not required
+> 
+> Russ Dill (10):
+>   iio: ti_am335x_adc: Handle set to clear IRQENABLE
+>   iio: ti_am335x_adc: Handle set to clear IRQSTATUS
+>   iio: ti_am335x_adc: Handle overrun before threshold event
+>   iio: ti_am335x_adc: Avoid double threshold event
+>   iio: ti_am335x_adc: Also clear threshold event when clearing overrun
+>     event
+>   iio: ti_am335x_adc: Print error and handle short FIFO events
+>   iio: ti_am335x_adc: Fix allocation count of FIFO buffer.
+>   iio: ti_am335x_adc: Fix capture operation during resume
+>   iio: ti_am335x_adc: Reset and clear overrun status before capture
+>   iio: ti_am335x_adc: Properly handle out of memory situation
 
-This is getting a little silly.  Would Russ mind if these get
-rolled up into the original patches?  Perhaps with his sign-off to
-reflect his various contributions?
+I am a little irritated by the mess we have here.  Russ has clearly done
+a lot of fine work cleaning up the earlier patches.  As a result
+we have a series of initial buggy patches and then a series of patches
+fixing them again.
 
-> ---
->  drivers/iio/adc/ti_am335x_adc.c |   24 ++++++++++--------------
->  1 file changed, 10 insertions(+), 14 deletions(-)
+As you are submitting these for mainline I would really like it all merged
+down into a clean series of clear patches.
+
+Part 1.  Any fixes that are unconnected to the rest of the series.  These will
+  then get sent upstream within this cycle.
+
+Part 2. Feature add patch. Here that is basically a single patch adding the
+  continous mode support.
+
+It is nice to maintain history and all but I would much rather have something
+that is easy to review, with appropriate comments or if people will give
+them, sign offs to reflect the various contributions.
+
+Jonathan
+
+
 > 
-> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> index 1c47818..7ac28a9 100644
-> --- a/drivers/iio/adc/ti_am335x_adc.c
-> +++ b/drivers/iio/adc/ti_am335x_adc.c
-> @@ -167,7 +167,16 @@ static irqreturn_t tiadc_irq(int irq, void *private)
->  	unsigned int status, config;
->  
->  	status = tiadc_readl(adc_dev, REG_IRQSTATUS);
-> -	if (status & IRQENB_FIFO1THRES) {
-> +	if (status & IRQENB_FIFO1OVRRUN) {
-> +		config = tiadc_readl(adc_dev, REG_CTRL);
-> +		config &= ~(CNTRLREG_TSCSSENB);
-> +		tiadc_writel(adc_dev, REG_CTRL, config);
-> +		tiadc_writel(adc_dev, REG_IRQSTATUS,
-> +				IRQENB_FIFO1OVRRUN | IRQENB_FIFO1UNDRFLW);
-> +		tiadc_writel(adc_dev, REG_CTRL,
-> +				(config | CNTRLREG_TSCSSENB));
-> +		return IRQ_HANDLED;
-> +	} else if (status & IRQENB_FIFO1THRES) {
->  		tiadc_writel(adc_dev, REG_IRQCLR,
->  				IRQENB_FIFO1THRES);
->  
-> @@ -180,19 +189,6 @@ static irqreturn_t tiadc_irq(int irq, void *private)
->  		tiadc_writel(adc_dev, REG_IRQSTATUS,
->  					IRQENB_FIFO1THRES);
->  		return IRQ_HANDLED;
-> -	} else if ((status &  IRQENB_FIFO1OVRRUN) ||
-> -			(status &  IRQENB_FIFO1UNDRFLW)) {
-> -		config = tiadc_readl(adc_dev,  REG_CTRL);
-> -		config &= ~(CNTRLREG_TSCSSENB);
-> -		tiadc_writel(adc_dev,  REG_CTRL, config);
-> -
-> -		tiadc_writel(adc_dev, REG_IRQSTATUS,
-> -				IRQENB_FIFO1OVRRUN |
-> -				IRQENB_FIFO1UNDRFLW);
-> -
-> -		tiadc_writel(adc_dev,  REG_CTRL,
-> -			(config |  CNTRLREG_TSCSSENB));
-> -		return IRQ_HANDLED;
->  	} else {
->  		return IRQ_NONE;
->  	}
+>  drivers/iio/adc/ti_am335x_adc.c           |  354 +++++++++++++++++++++++++----
+>  drivers/input/touchscreen/ti_am335x_tsc.c |   17 +-
+>  drivers/mfd/ti_am335x_tscadc.c            |   30 ++-
+>  include/linux/mfd/ti_am335x_tscadc.h      |   27 ++-
+>  4 files changed, 366 insertions(+), 62 deletions(-)
 > 
