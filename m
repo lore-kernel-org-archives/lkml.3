@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab3GTLRH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 07:17:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43517 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688Ab3GTLRG (ORCPT
+	id S1753979Ab3GTLTq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 07:19:46 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45366 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab3GTLTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 07:17:06 -0400
-Date: Sat, 20 Jul 2013 13:16:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mutex: Fix mutex_can_spin_on_owner
-Message-ID: <20130720111648.GQ27075@twins.programming.kicks-ass.net>
-References: <20130719183101.GA20909@twins.programming.kicks-ass.net>
- <51E98EB4.3080307@hp.com>
+	Sat, 20 Jul 2013 07:19:44 -0400
+Message-ID: <51EA724F.2060805@kernel.org>
+Date: Sat, 20 Jul 2013 12:19:43 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E98EB4.3080307@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
+Subject: Re: [PATCH 06/15] iio: ti_am335x_adc: Handle set to clear IRQENABLE
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-7-git-send-email-zubair.lutfullah@gmail.com>
+In-Reply-To: <1374186086-5015-7-git-send-email-zubair.lutfullah@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 03:08:36PM -0400, Waiman Long wrote:
-> On 07/19/2013 02:31 PM, Peter Zijlstra wrote:
-> >mutex_can_spin_on_owner() is broken in that it would allow the compiler
-> >to load lock->owner twice, seeing a pointer first time and a MULL
-> >pointer the second time.
-> >
-> >Signed-off-by: Peter Zijlstra<peterz@infradead.org>
-> >---
-> >  kernel/mutex.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> >diff --git a/kernel/mutex.c b/kernel/mutex.c
-> >index ff05f4b..7ff48c5 100644
-> >--- a/kernel/mutex.c
-> >+++ b/kernel/mutex.c
-> >@@ -209,11 +209,13 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
-> >   */
-> >  static inline int mutex_can_spin_on_owner(struct mutex *lock)
-> >  {
-> >+	struct task_struct *owner;
-> >  	int retval = 1;
-> >
-> >  	rcu_read_lock();
-> >-	if (lock->owner)
-> >-		retval = lock->owner->on_cpu;
-> >+	owner = ACCESS_ONCE(lock->owner);
-> >+	if (owner)
-> >+		retval = owner->on_cpu;
-> >  	rcu_read_unlock();
-> >  	/*
-> >  	 * if lock->owner is not set, the mutex owner may have just acquired
+On 07/18/2013 11:21 PM, Zubair Lutfullah wrote:
+> From: Russ Dill <Russ.Dill@ti.com>
 > 
-> I am fine with this change. However, the compiler is smart enough to not do
-> two memory accesses to the same memory location. So this will not change the
-> generated code. Below is the relevant x86 code for that section of code:
+> The driver is currently mishandling the IRQENABLE register. The driver
+> should write a 1 for bits it wishes to set, and a zero for bits it does not
+> wish to change. The read of the current register contents is not
+> necessary.
+> 
+> Write 0 = No action.
+> Read 0 = Interrupt disabled (masked).
+> Read 1 = Interrupt enabled.
+> Write 1 = Enable interrupt.
+> 
+> The current read/update/write method is currently not causing any
+> problems, but could cause confusion in the future.
+> 
+> Signed-off-by: Russ Dill <Russ.Dill@ti.com>
+> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 
-Yes I know, but the compiler would be allowed to do so; not so after the
-change.
+I guess this makes sense as a separate patch to maintain history, but
+I'd personally have preferred it rolled into the write places and
+appropriate credit given as comments.
 
-Also, GCC can be surprisingly stupid at times, depending on the options
-given, never rely/trust on anything you don't have to.
+I don't like the fact that the code will be broken in a known fashion
+at somepoints in this series...
 
-
+Jonathan
+> ---
+>  drivers/iio/adc/ti_am335x_adc.c |   14 ++++++--------
+>  1 file changed, 6 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> index c1b051c..b566e6a 100644
+> --- a/drivers/iio/adc/ti_am335x_adc.c
+> +++ b/drivers/iio/adc/ti_am335x_adc.c
+> @@ -207,7 +207,7 @@ static void tiadc_poll_handler(struct work_struct *work_s)
+>  		container_of(work_s, struct tiadc_device, poll_work);
+>  	struct iio_dev *idev = iio_priv_to_dev(adc_dev);
+>  	struct iio_buffer *buffer = idev->buffer;
+> -	unsigned int fifo1count, readx1, status;
+> +	unsigned int fifo1count, readx1;
+>  	int i;
+>  	u32 *inputbuffer;
+>  
+> @@ -223,9 +223,8 @@ static void tiadc_poll_handler(struct work_struct *work_s)
+>  	}
+>  
+>  	buffer->access->store_to(buffer, (u8 *) inputbuffer);
+> -	status = tiadc_readl(adc_dev, REG_IRQENABLE);
+>  	tiadc_writel(adc_dev, REG_IRQENABLE,
+> -			(status | IRQENB_FIFO1THRES));
+> +			IRQENB_FIFO1THRES);
+>  
+>  	kfree(inputbuffer);
+>  }
+> @@ -242,7 +241,7 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
+>  {
+>  	struct tiadc_device *adc_dev = iio_priv(idev);
+>  	struct iio_buffer *buffer = idev->buffer;
+> -	unsigned int enb, status, fifo1count;
+> +	unsigned int enb, fifo1count;
+>  	int stepnum, i;
+>  	u8 bit;
+>  
+> @@ -250,11 +249,10 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
+>  		pr_info("Data cannot be read continuously in one shot mode\n");
+>  		return -EINVAL;
+>  	} else {
+> -		status = tiadc_readl(adc_dev, REG_IRQENABLE);
+>  		tiadc_writel(adc_dev, REG_IRQENABLE,
+> -				(status | IRQENB_FIFO1THRES)|
+> -				 IRQENB_FIFO1OVRRUN |
+> -				 IRQENB_FIFO1UNDRFLW);
+> +				(IRQENB_FIFO1THRES |
+> +				IRQENB_FIFO1OVRRUN |
+> +				IRQENB_FIFO1UNDRFLW));
+>  
+>  		fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+>  		for (i = 0; i < fifo1count; i++)
+> 
