@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3GTTi7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 15:38:59 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:65426 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823Ab3GTTi5 (ORCPT
+	id S1754877Ab3GTUEQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 16:04:16 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:62997 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754831Ab3GTUEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 15:38:57 -0400
+	Sat, 20 Jul 2013 16:04:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <1373628643-11360-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1373628643-11360-1-git-send-email-peter.ujfalusi@ti.com>
-Date: Sat, 20 Jul 2013 21:38:57 +0200
-Message-ID: <CACRpkdYJ2ugJHO512cu14uZ5Om4wKL7tq=yz_fb9sTiZne-+OQ@mail.gmail.com>
-Subject: Re: [PATCH] GPIO: gpio-twl6040: Remove support for legacy (pdata) mode
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E815BC@DQHE06.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F82E815BC@DQHE06.ent.ti.com>
+Date: Sat, 20 Jul 2013 22:04:13 +0200
+Message-ID: <CACRpkdaJGwPLzzUuHFZye0N5iAwH2Vn8vbdwz6qv9v4F9bmGbg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] LP3943 MFD driver for a GPIO expander and a PWM generator
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-gpio@vger.kernel.org,
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 1:30 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+On Tue, Jul 16, 2013 at 4:38 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
 
-> TWL6040 is used only with OMAP4/5 SoCs and they can only boot in in DT mode.
-> The support for pdata/legacy boot can be removed.
->
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> LP3943 is an integrated device capable of driving 16 output channels.
+> It supports a GPIO expander and a PWM generator.
 
-OK patch applied.
+But actually the data sheet describes it as a LED driver with PWM
+chip.
+
+Do you have use cases not using it for LEDs but other thing or why
+do you want to model the 16 LED lines as GPIO lines?
+Why can't you just have a drivers/leds/* as for any other LED
+chip?
+
+Atleast some good explanation of this needs to be found in the
+patch text and also as comments in Kconfig and the code I think.
+
+I'm just fearing that this is some way to satisfy a userspace that
+wants to use the sysfs interface to GPIO to control LEDs and these
+are much better off using the LED sysfs ABI.
 
 Yours,
 Linus Walleij
