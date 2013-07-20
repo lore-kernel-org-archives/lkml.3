@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab3GTA33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 20:29:29 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39378 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab3GTA32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 20:29:28 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] more ext4 bug fixes
-cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 19 Jul 2013 20:29:24 -0400
-Message-ID: <nsxy592axaz.fsf@lambda.thunk.org>
+	id S1753071Ab3GTAca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 20:32:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4083 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab3GTAc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 20:32:29 -0400
+Date: Fri, 19 Jul 2013 20:32:12 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        kosaki.motohiro@gmail.com, walken@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org
+Subject: Re: mlockall triggred rcu_preempt stall.
+Message-ID: <20130720003212.GA31308@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	kosaki.motohiro@gmail.com, walken@google.com,
+	akpm@linux-foundation.org, torvalds@linux-foundation.org
+References: <20130719145323.GA1903@redhat.com>
+ <20130719221538.GH21367@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@mit.edu
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Disposition: inline
+In-Reply-To: <20130719221538.GH21367@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 19, 2013 at 03:15:39PM -0700, Paul E. McKenney wrote:
+ > On Fri, Jul 19, 2013 at 10:53:23AM -0400, Dave Jones wrote:
+ > > My fuzz tester keeps hitting this. Every instance shows the non-irq stack
+ > > came in from mlockall.  I'm only seeing this on one box, but that has more
+ > > ram (8gb) than my other machines, which might explain it.
+ > 
+ > Are you building CONFIG_PREEMPT=n?  I don't see any preemption points in
+ > do_mlockall(), so a range containing enough vmas might well stall the
+ > CPU in that case.  
 
-The following changes since commit e7676a704ee0a1ef71a6b23760b5a8f6896cb1a1:
+That was with full preempt.
 
-  ext4: don't allow ext4_free_blocks() to fail due to ENOMEM (2013-07-13 00:40:35 -0400)
+ > Does the patch below help?  If so, we probably need others, but let's
+ > first see if this one helps.  ;-)
 
-are available in the git repository at:
+I'll try it on Monday.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+	Dave
 
-for you to fetch changes up to 63b999685cb372e24eb73f255cd73547026370fd:
-
-  ext4: call ext4_es_lru_add() after handling cache miss (2013-07-16 10:28:47 -0400)
-
-----------------------------------------------------------------
-Fixes for 3.11-rc2, sent at 5pm, in the professoinal style.  :-)
-
-----------------------------------------------------------------
-Theodore Ts'o (5):
-      ext4: fix error handling in ext4_ext_truncate()
-      ext4: simplify calculation of blocks to free on error
-      ext4: make the extent_status code more robust against ENOMEM failures
-      ext4: yield during large unlinks
-      ext4: call ext4_es_lru_add() after handling cache miss
-
- fs/ext4/extents.c        | 23 +++++++++++++++++++----
- fs/ext4/extents_status.c | 51 +++++++++++++++++++++++++++++++++++++++------------
- fs/ext4/inode.c          |  7 ++-----
- 3 files changed, 60 insertions(+), 21 deletions(-)
