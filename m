@@ -1,135 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab3GTQes (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 12:34:48 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:65320 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab3GTQep convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 12:34:45 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-17-51eabc238caf
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [ 00/38] 3.9.11-stable review
-Thread-topic: [ 00/38] 3.9.11-stable review
-Thread-index: AQHOhJVmEYdPFGTrWEWBmR0E5HnPIQ==
-Date: Sat, 20 Jul 2013 16:34:41 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E61746DA5@sisaex01sj>
-References: <20130719052047.858393825@linuxfoundation.org>
- <B8EFE96D1287C24090BAD9D858E15E6174192D@sisaex01sj>
- <20130719192524.GB2428@kroah.com> <20130719234723.GA11456@kroah.com>
- <B8EFE96D1287C24090BAD9D858E15E61746BA3@sisaex01sj>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+wn67KnleBBg2PmCzmrF/DZtG8eD2b
-	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4MpY/c+04IpURe/9m6wNjC9Fuxg5OSQETCTuPbrPAmGLSVy4t54NxBYSWMYo0fwrpYuR
-	C8juZZKYduI1M4Qzn1Fi55N1YFVsAuoSn1/vYAexRQSMJfrPzmIHKWIWOMYk0fl8IiNIQlhA
-	S+Ly3nMsEEXaEv8/vGeDsPUk7s25xQpiswioSrS9Wwc2iFfAXuLZo69sENveMkr8aH8BNogR
-	6L7vp9YwgdjMAuISza03oe4WkFiy5zwzhC0q8fLxP6ChHEC2osT21VYQ5XoSH//cZoSwtSWe
-	vLvACrFLUOLH5HssExjFZiGZOgtJyywkLbOQtCxgZFnFKFZanFxQnJSeWmGkV5yYW1yal66X
-	nJ+7iRESe9U7GO9+tTnEKMDBqMTDe2HFy0Ah1sSy4srcQ4wSHMxKIrwH+14FCvGmJFZWpRbl
-	xxeV5qQWH2Jk4uCUamCs40/cwXH2yZ3E4Jg9i6dNnp4y6bSLUFxdtMqG1eUsv3I4NKzyZGtY
-	tzknJc2UWBcczSEgPyF8l8rfHLEJXe3XtjbJJicLzGtY2XAl7P0DrqhNrs2Od0sfrs11ltPP
-	zwjZJCrVmfh3yve/0m+O/mFnMbi75VIvV90Ktgs/TRo67yUUN7O9bVJiKc5INNRiLipOBADf
-	DsG+mwIAAA==
+	id S1754463Ab3GTQht (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 12:37:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28627 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754341Ab3GTQhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 12:37:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,709,1367996400"; 
+   d="scan'208";a="373449632"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH v5] x86, tboot: iomem fixes
+Date: Sun, 21 Jul 2013 00:26:52 +0800
+Message-Id: <1374337612-6899-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 06:10 PM, Shuah Khan wrote:
-> On 07/19/2013 05:50 PM, Greg Kroah-Hartman wrote:
->> On Fri, Jul 19, 2013 at 12:25:24PM -0700, Greg Kroah-Hartman wrote:
->>> On Fri, Jul 19, 2013 at 04:45:25PM +0000, Shuah Khan wrote:
->>>> On 07/19/2013 09:34 AM, Greg Kroah-Hartman wrote:
->>>>> ---------------
->>>>> Note, this is the LAST 3.9-stable kernel release that I will be doing.
->>>>> Please move to the 3.10-stable branch as soon as possible.
->>>>> ---------------
->>>>>
->>>>> This is the start of the stable review cycle for the 3.9.11 release.
->>>>> There are 38 patches in this series, all will be posted as a response
->>>>> to this one.  If anyone has any issues with these being applied, please
->>>>> let me know.
->>>>>
->>>>> Responses should be made by Sun Jul 21 05:20:01 UTC 2013.
->>>>> Anything received after that time might be too late.
->>>>>
->>>>> The whole patch series can be found in one patch at:
->>>>> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc1.gz
->>>>> and the diffstat can be found below.
->>>>>
->>>>> thanks,
->>>>>
->>>>> greg k-h
->>>>>
->>>>
->>>> Greg,
->>>>
->>>> Build failed with the following error:
->>>>
->>>>      LD      ipc/built-in.o
->>>>      CC [M]  fs/cifs/inode.o
->>>> fs/cifs/inode.c: In function ‘cifs_all_info_to_fattr’:
->>>> fs/cifs/inode.c:560:4: error: implicit declaration of function
->>>> ‘cifs_dbg’ [-Werror=implicit-function-declaration]
->>>> cc1: some warnings being treated as errors
->>>> make[2]: *** [fs/cifs/inode.o] Error 1
->>>> make[1]: *** [fs/cifs] Error 2
->>>> make: *** [fs] Error 2
->>>> make: *** Waiting for unfinished jobs....
->>>>      CC      security/selinux/hooks.o
->>>>
->>>> I have CONFIG_CIFS=m in my config and CONFIG_CIFS_DEBUG is disabled.
->>>> cifs_dbg() is not defined.
->>>
->>> Ugh, I thought I fixed that one...  I did it for the 3.4 and other
->>> trees, I'll go see what I did wrong...
->>
->> Ok, I've now fixed this, I don't know how it got through my tests, when
->> I tried it again, it failed.  Before it wasn't, odd...
->>
->> Anyway, there is a new -rc2 kernel patch at:
->>    	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc2.gz
->>
->> If you could test that out, I would appreciate it, to ensure I didn't do
->> anything stupid with this one too.
->>
->> Ick, handling 4 kernels at once really takes its toll on me, this was
->> not a good review cycle...
->>
->> thanks,
->>
->> greg k-h
->>
->
-> Greg,
->
-> rc2 compiled on x86-64. I will run cross-compile tests and boot tests
-> later on today or tomorrow morning and report the results.
->
-> -- Shuah
->
-> Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research
-> America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
->
+Current code doesn't use specific interface to access I/O space.
+So some potential bugs can be caused. We can fix this by using
+specific API.
 
-3.9.11-rc2 boot tests passed on my test systems and cross-compile tests 
-passed. No regressions in dmesgs.
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+---
+ arch/x86/kernel/tboot.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
--- Shuah
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index 3ff42d2..4e149c7 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -468,7 +468,8 @@ struct sinit_mle_data {
+ 
+ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
+ {
+-	void *heap_base, *heap_ptr, *config;
++	void __iomem *heap_base, *heap_ptr, *config;
++	u32 dmar_tbl_off;
+ 
+ 	if (!tboot_enabled())
+ 		return dmar_tbl;
+@@ -485,25 +486,26 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
+ 		return NULL;
+ 
+ 	/* now map TXT heap */
+-	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
+-			    *(u64 *)(config + TXTCR_HEAP_SIZE));
++	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
++			    readl(config + TXTCR_HEAP_SIZE));
+ 	iounmap(config);
+ 	if (!heap_base)
+ 		return NULL;
+ 
+ 	/* walk heap to SinitMleData */
+ 	/* skip BiosData */
+-	heap_ptr = heap_base + *(u64 *)heap_base;
++	heap_ptr = heap_base + readq(heap_base);
+ 	/* skip OsMleData */
+-	heap_ptr += *(u64 *)heap_ptr;
++	heap_ptr += readq(heap_ptr);
+ 	/* skip OsSinitData */
+-	heap_ptr += *(u64 *)heap_ptr;
++	heap_ptr += readq(heap_ptr);
+ 	/* now points to SinitMleDataSize; set to SinitMleData */
+ 	heap_ptr += sizeof(u64);
+ 	/* get addr of DMAR table */
++	dmar_tbl_off = readl(heap_ptr +
++			offsetof(struct sinit_mle_data, vtd_dmars_off));
+ 	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
+-		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
+-		   sizeof(u64));
++			dmar_tbl_off - sizeof(u64));
+ 
+ 	/* don't unmap heap because dmar.c needs access to this */
+ 
+-- 
+1.7.9.5
 
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
