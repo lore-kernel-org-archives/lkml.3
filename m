@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab3GTLPM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 07:15:12 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45303 "EHLO
+	id S1753966Ab3GTLQo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 07:16:44 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45326 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549Ab3GTLPJ (ORCPT
+	with ESMTP id S1753549Ab3GTLQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 07:15:09 -0400
-Message-ID: <51EA713A.50102@kernel.org>
-Date: Sat, 20 Jul 2013 12:15:06 +0100
+	Sat, 20 Jul 2013 07:16:43 -0400
+Message-ID: <51EA7199.708@kernel.org>
+Date: Sat, 20 Jul 2013 12:16:41 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
-Subject: Re: [PATCH 04/15] iio: mfd: input: ti_am335x_adc:Add support for
- continuous mode
-References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-5-git-send-email-zubair.lutfullah@gmail.com>
-In-Reply-To: <1374186086-5015-5-git-send-email-zubair.lutfullah@gmail.com>
+Subject: Re: [PATCH 05/15] MFD: ti_tscadc: ADC Clock check not required
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-6-git-send-email-zubair.lutfullah@gmail.com>
+In-Reply-To: <1374186086-5015-6-git-send-email-zubair.lutfullah@gmail.com>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -28,622 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 07/18/2013 11:21 PM, Zubair Lutfullah wrote:
 > From: "Patil, Rachna" <rachna@ti.com>
->
-> Current ADC driver supports only one shot mode.
-> Now ADC driver is enhanced to capture data continuously
-> from /dev/iio:deviceX interface.
->
-> ADC is now IRQ based, on interrupt ADC copies data onto
-> a software buffer, which is exposed to user.
->
+> 
+> ADC is ideally expected to work at a frequency of 3MHz.
+> The present code had a check, which returned error if the frequency
+> went below the threshold  value. But since AM335x supports various
+> working frequencies, this check is not required.
+> Now the code just uses the internal ADC clock divider to set the ADC
+> frequency w.r.t the sys clock.
+A I read this comment, this is a fairly stand alone patch and everything
+else in the series will work whether or not it is there?
+
+If so, should not really be part of this series and I'm certainly
+going to leave taking it up to the mfd maintainer.
+> 
 > Signed-off-by: Patil, Rachna <rachna@ti.com>
 > Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-
-Couple of bits inline.
-
-One reasonably big point though:
-
-What is the mode attribute for?  The buffer enabled should handle
-that fine within the standard abi.
-
 > ---
->  drivers/iio/adc/ti_am335x_adc.c           |  350 +++++++++++++++++++++++++----
->  drivers/input/touchscreen/ti_am335x_tsc.c |    9 +-
->  drivers/mfd/ti_am335x_tscadc.c            |   12 +-
->  include/linux/mfd/ti_am335x_tscadc.h      |   10 +
->  4 files changed, 322 insertions(+), 59 deletions(-)
->
-> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> index f73fee1..c1b051c 100644
-> --- a/drivers/iio/adc/ti_am335x_adc.c
-> +++ b/drivers/iio/adc/ti_am335x_adc.c
-> @@ -26,14 +26,24 @@
->  #include <linux/of_device.h>
->  #include <linux/iio/machine.h>
->  #include <linux/iio/driver.h>
-> -
->  #include <linux/mfd/ti_am335x_tscadc.h>
-> +#include <linux/stat.h>
-> +#include <linux/sched.h>
-> +#include <linux/iio/buffer.h>
-> +#include <linux/iio/trigger_consumer.h>
-> +#include <linux/iio/kfifo_buf.h>
-> +#include <linux/iio/sysfs.h>
->
->  struct tiadc_device {
->  	struct ti_tscadc_dev *mfd_tscadc;
->  	int channels;
->  	u8 channel_line[8];
->  	u8 channel_step[8];
-> +	struct work_struct	poll_work;
-> +	wait_queue_head_t	wq_data_avail;
-> +	int	irq;
-> +	bool	is_continuous_mode;
-> +	u16	*buffer;
->  };
->
->  static unsigned int tiadc_readl(struct tiadc_device *adc, unsigned int reg)
-> @@ -56,7 +66,7 @@ static u32 get_adc_step_mask(struct tiadc_device *adc_dev)
->  	return step_en;
->  }
->
-> -static void tiadc_step_config(struct tiadc_device *adc_dev)
-> +static void tiadc_step_config(struct tiadc_device *adc_dev, bool mode)
->  {
->  	unsigned int stepconfig;
->  	int i, steps;
-> @@ -72,7 +82,11 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
->  	 */
->
->  	steps = TOTAL_STEPS - adc_dev->channels;
-> -	stepconfig = STEPCONFIG_AVG_16 | STEPCONFIG_FIFO1;
-> +	if (mode == false)
-> +		stepconfig = STEPCONFIG_AVG_16 | STEPCONFIG_FIFO1;
-> +	else
-> +		stepconfig = STEPCONFIG_AVG_16 | STEPCONFIG_FIFO1
-> +				| STEPCONFIG_MODE_SWCNT;
->
->  	for (i = 0; i < adc_dev->channels; i++) {
->  		int chan;
-> @@ -88,6 +102,213 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
->
->  }
->
-> +static ssize_t tiadc_show_mode(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct tiadc_device *adc_dev = iio_priv(indio_dev);
-> +	unsigned int tmp;
-> +
-> +	tmp = tiadc_readl(adc_dev, REG_STEPCONFIG(TOTAL_STEPS));
-> +	tmp &= STEPCONFIG_MODE(1);
-> +
-> +	if (tmp == 0x00)
-> +		return sprintf(buf, "oneshot\n");
-> +	else if (tmp == 0x01)
-> +		return sprintf(buf, "continuous\n");
-> +	else
-> +		return sprintf(buf, "Operation mode unknown\n");
-> +}
-> +
-> +static ssize_t tiadc_set_mode(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct tiadc_device *adc_dev = iio_priv(indio_dev);
-> +	unsigned config;
-> +
-> +	config = tiadc_readl(adc_dev, REG_CTRL);
-> +	config &= ~(CNTRLREG_TSCSSENB);
-> +	tiadc_writel(adc_dev, REG_CTRL, config);
-> +
-> +	if (!strncmp(buf, "oneshot", 7))
-> +		adc_dev->is_continuous_mode = false;
-> +	else if (!strncmp(buf, "continuous", 10))
-> +		adc_dev->is_continuous_mode = true;
-> +	else {
-> +		dev_err(dev, "Operational mode unknown\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	tiadc_step_config(adc_dev, adc_dev->is_continuous_mode);
-> +
-> +	config = tiadc_readl(adc_dev, REG_CTRL);
-> +	tiadc_writel(adc_dev, REG_CTRL,
-> +			(config | CNTRLREG_TSCSSENB));
-> +	return count;
-> +}
-> +
-This should be controlled by whether the buffer is enabled or not.
-If it is not, then we are in oneshot mode, if it is then we are
-in continuous mode.  No additional control is needed.
-
-> +static IIO_DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, tiadc_show_mode,
-> +		tiadc_set_mode, 0);
-> +
-> +static struct attribute *tiadc_attributes[] = {
-> +	&iio_dev_attr_mode.dev_attr.attr,
-> +	NULL,
-> +};
-> +
-> +static const struct attribute_group tiadc_attribute_group = {
-> +	.attrs = tiadc_attributes,
-> +};
-> +
-> +static irqreturn_t tiadc_irq(int irq, void *private)
-> +{
-> +	struct iio_dev *idev = private;
-> +	struct tiadc_device *adc_dev = iio_priv(idev);
-> +	unsigned int status, config;
-> +
-> +	status = tiadc_readl(adc_dev, REG_IRQSTATUS);
-Some brief comments in here might be of use to people
-like me reading this without enough coffee..
-What are the various interrupts and what are you doing in
-response to them?
-
-> +	if (status & IRQENB_FIFO1THRES) {
-> +		tiadc_writel(adc_dev, REG_IRQCLR,
-> +				IRQENB_FIFO1THRES);
-> +
-> +		if (iio_buffer_enabled(idev)) {
-> +			if (!work_pending(&adc_dev->poll_work))
-> +				schedule_work(&adc_dev->poll_work);
-> +		} else {
-> +			wake_up_interruptible(&adc_dev->wq_data_avail);
-> +		}
-> +		tiadc_writel(adc_dev, REG_IRQSTATUS,
-> +				(status | IRQENB_FIFO1THRES));
-> +		return IRQ_HANDLED;
-> +	} else if ((status &  IRQENB_FIFO1OVRRUN) ||
-> +			(status &  IRQENB_FIFO1UNDRFLW)) {
-> +		config = tiadc_readl(adc_dev,  REG_CTRL);
-> +		config &= ~(CNTRLREG_TSCSSENB);
-> +		tiadc_writel(adc_dev,  REG_CTRL, config);
-> +
-> +		if (status &  IRQENB_FIFO1UNDRFLW)
-> +			tiadc_writel(adc_dev,  REG_IRQSTATUS,
-> +			(status |  IRQENB_FIFO1UNDRFLW));
-> +		else
-> +			tiadc_writel(adc_dev,  REG_IRQSTATUS,
-> +				(status |  IRQENB_FIFO1OVRRUN));
-> +
-> +		tiadc_writel(adc_dev,  REG_CTRL,
-> +			(config |  CNTRLREG_TSCSSENB));
-> +		return IRQ_HANDLED;
-> +	} else {
-> +		return IRQ_NONE;
-> +	}
-> +}
-> +
-> +static void tiadc_poll_handler(struct work_struct *work_s)
-> +{
-> +	struct tiadc_device *adc_dev =
-> +		container_of(work_s, struct tiadc_device, poll_work);
-> +	struct iio_dev *idev = iio_priv_to_dev(adc_dev);
-> +	struct iio_buffer *buffer = idev->buffer;
-> +	unsigned int fifo1count, readx1, status;
-> +	int i;
-> +	u32 *inputbuffer;
-> +
-> +	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
-> +	inputbuffer = kmalloc((fifo1count + 1) * sizeof(u32), GFP_KERNEL);
-Worth keeping a buffer of sufficient size around to avoid the allocation
-here?
-> +	if (inputbuffer == NULL)
-> +		return;
-> +
-> +	for (i = 0; i < fifo1count; i++) {
-> +		readx1 = tiadc_readl(adc_dev, REG_FIFO1);
-> +		readx1 &= FIFOREAD_DATA_MASK;
-> +		inputbuffer[i] = readx1;
-> +	}
-> +
-I'm slightly confused... Can the fifo contain more than one
-'scan' of readings?  If so you are only pushing the first into the buffer
-here.
-> +	buffer->access->store_to(buffer, (u8 *) inputbuffer);
-> +	status = tiadc_readl(adc_dev, REG_IRQENABLE);
-> +	tiadc_writel(adc_dev, REG_IRQENABLE,
-> +			(status | IRQENB_FIFO1THRES));
-> +
-> +	kfree(inputbuffer);
-> +}
-> +
-> +static int tiadc_buffer_preenable(struct iio_dev *idev)
-> +{
-> +	struct iio_buffer *buffer = idev->buffer;
-> +
-> +	buffer->access->set_bytes_per_datum(buffer, 16);
-blank line here
-> +	return 0;
-> +}
-> +
-> +static int tiadc_buffer_postenable(struct iio_dev *idev)
-> +{
-> +	struct tiadc_device *adc_dev = iio_priv(idev);
-> +	struct iio_buffer *buffer = idev->buffer;
-> +	unsigned int enb, status, fifo1count;
-> +	int stepnum, i;
-> +	u8 bit;
-> +
-> +	if (!adc_dev->is_continuous_mode) {
-> +		pr_info("Data cannot be read continuously in one shot mode\n");
-This is probably a hint that you are doing it wrong.
-The buffer enable should be the thing that switches to continuous mode.
-
-> +		return -EINVAL;
-> +	} else {
-> +		status = tiadc_readl(adc_dev, REG_IRQENABLE);
-> +		tiadc_writel(adc_dev, REG_IRQENABLE,
-> +				(status | IRQENB_FIFO1THRES)|
-> +				 IRQENB_FIFO1OVRRUN |
-> +				 IRQENB_FIFO1UNDRFLW);
-> +
-> +		fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
-> +		for (i = 0; i < fifo1count; i++)
-> +			tiadc_readl(adc_dev, REG_FIFO1);
-> +
-> +		tiadc_writel(adc_dev, REG_SE, 0x00);
-> +		for_each_set_bit(bit, buffer->scan_mask,
-> +				adc_dev->channels) {
-> +			struct iio_chan_spec const *chan = idev->channels + bit;
-> +			/*
-> +			 * There are a total of 16 steps available
-> +			 * that are shared between ADC and touchscreen.
-> +			 * We start configuring from step 16 to 0 incase of
-> +			 * ADC. Hence the relation between input channel
-> +			 * and step for ADC would be as below.
-> +			 */
-> +			stepnum = chan->channel + 9;
-> +			enb = tiadc_readl(adc_dev, REG_SE);
-> +			enb |= (1 << stepnum);
-> +			tiadc_writel(adc_dev, REG_SE, enb);
-> +		}
-> +		return 0;
-> +	}
-> +}
-> +
-
-For symmetry I'd expect to see this in predisable. Otherwise,
-you might get such an interrupt after the buffer has been ripped
-down and fun might ensue.
-
-> +static int tiadc_buffer_postdisable(struct iio_dev *idev)
-> +{
-> +	struct tiadc_device *adc_dev = iio_priv(idev);
-> +
-> +	tiadc_writel(adc_dev, REG_IRQCLR, (IRQENB_FIFO1THRES |
-> +				IRQENB_FIFO1OVRRUN |
-> +				IRQENB_FIFO1UNDRFLW));
-> +	tiadc_writel(adc_dev, REG_SE, STPENB_STEPENB_TC);
-
-blank line here.
-> +	return 0;
-> +}
-> +
-> +static const struct iio_buffer_setup_ops tiadc_buffer_setup_ops = {
-> +	.preenable = &tiadc_buffer_preenable,
-> +	.postenable = &tiadc_buffer_postenable,
-> +	.postdisable = &tiadc_buffer_postdisable,
-> +};
-> +
-> +static int tiadc_config_buffer(struct iio_dev *idev)
-> +{
-> +	struct tiadc_device *adc_dev = iio_priv(idev);
-nitpick time ;) Blank line here.
-> +	idev->buffer = iio_kfifo_allocate(idev);
-> +	if (!idev->buffer)
-> +		return -ENOMEM;
-> +	idev->setup_ops = &tiadc_buffer_setup_ops;
-> +	INIT_WORK(&adc_dev->poll_work, &tiadc_poll_handler);
-> +	idev->modes |= INDIO_BUFFER_HARDWARE;
-and here.
-> +	return 0;
-> +}
-> +
->  static const char * const chan_name_ain[] = {
->  	"AIN0",
->  	"AIN1",
-> @@ -120,6 +341,7 @@ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
->  		chan->channel = adc_dev->channel_line[i];
->  		chan->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
->  		chan->datasheet_name = chan_name_ain[chan->channel];
-> +		chan->scan_index = i;
->  		chan->scan_type.sign = 'u';
->  		chan->scan_type.realbits = 12;
->  		chan->scan_type.storagebits = 32;
-> @@ -147,56 +369,62 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
->  	u32 step_en;
->  	unsigned long timeout = jiffies + usecs_to_jiffies
->  				(IDLE_TIMEOUT * adc_dev->channels);
-> -	step_en = get_adc_step_mask(adc_dev);
-> -	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
->
-> -	/* Wait for ADC sequencer to complete sampling */
-> -	while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
-> -		if (time_after(jiffies, timeout))
-> -			return -EAGAIN;
-> -		}
-> -	map_val = chan->channel + TOTAL_CHANNELS;
-> -
-> -	/*
-> -	 * When the sub-system is first enabled,
-> -	 * the sequencer will always start with the
-> -	 * lowest step (1) and continue until step (16).
-> -	 * For ex: If we have enabled 4 ADC channels and
-> -	 * currently use only 1 out of them, the
-> -	 * sequencer still configures all the 4 steps,
-> -	 * leading to 3 unwanted data.
-> -	 * Hence we need to flush out this data.
-> -	 */
-> -
-> -	for (i = 0; i < ARRAY_SIZE(adc_dev->channel_step); i++) {
-> -		if (chan->channel == adc_dev->channel_line[i]) {
-> -			step = adc_dev->channel_step[i];
-> -			break;
-> -		}
-> -	}
-> -	if (WARN_ON_ONCE(step == UINT_MAX))
-> +	if (adc_dev->is_continuous_mode) {
-> +		pr_info("One shot mode not enabled\n");
->  		return -EINVAL;
--EBUSY probably makes more sense.
-> -
-> -	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
-> -	for (i = 0; i < fifo1count; i++) {
-> -		read = tiadc_readl(adc_dev, REG_FIFO1);
-> -		stepid = read & FIFOREAD_CHNLID_MASK;
-> -		stepid = stepid >> 0x10;
-> -
-> -		if (stepid == map_val) {
-> -			read = read & FIFOREAD_DATA_MASK;
-> -			found = true;
-> -			*val = read;
-> +	} else {
-> +		step_en = get_adc_step_mask(adc_dev);
-> +		am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
-> +
-> +		/* Wait for ADC sequencer to complete sampling */
-> +		while (tiadc_readl(adc_dev, REG_ADCFSM) & SEQ_STATUS) {
-> +			if (time_after(jiffies, timeout))
-> +				return -EAGAIN;
-> +			}
-> +		map_val = chan->channel + TOTAL_CHANNELS;
-> +
-> +		/*
-> +		 * When the sub-system is first enabled,
-> +		 * the sequencer will always start with the
-> +		 * lowest step (1) and continue until step (16).
-> +		 * For ex: If we have enabled 4 ADC channels and
-> +		 * currently use only 1 out of them, the
-> +		 * sequencer still configures all the 4 steps,
-> +		 * leading to 3 unwanted data.
-> +		 * Hence we need to flush out this data.
-> +		 */
-> +
-> +		for (i = 0; i < ARRAY_SIZE(adc_dev->channel_step); i++) {
-> +			if (chan->channel == adc_dev->channel_line[i]) {
-> +				step = adc_dev->channel_step[i];
-> +				break;
-> +			}
->  		}
-> +		if (WARN_ON_ONCE(step == UINT_MAX))
-> +			return -EINVAL;
-> +
-> +		fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
-> +		for (i = 0; i < fifo1count; i++) {
-> +			read = tiadc_readl(adc_dev, REG_FIFO1);
-> +			stepid = read & FIFOREAD_CHNLID_MASK;
-> +			stepid = stepid >> 0x10;
-> +
-> +			if (stepid == map_val) {
-> +				read = read & FIFOREAD_DATA_MASK;
-> +				found = true;
-> +				*val = read;
-> +			}
-> +		}
-> +		if (found == false)
-> +			return -EBUSY;
-> +		return IIO_VAL_INT;
->  	}
-> -
-> -	if (found == false)
-> -		return -EBUSY;
-> -	return IIO_VAL_INT;
->  }
->
->  static const struct iio_info tiadc_info = {
->  	.read_raw = &tiadc_read_raw,
-> +	.attrs = &tiadc_attribute_group,
->  };
->
->  static int tiadc_probe(struct platform_device *pdev)
-> @@ -230,18 +458,38 @@ static int tiadc_probe(struct platform_device *pdev)
->  		channels++;
->  	}
->  	adc_dev->channels = channels;
-> +	adc_dev->irq = adc_dev->mfd_tscadc->irq;
->
->  	indio_dev->dev.parent = &pdev->dev;
->  	indio_dev->name = dev_name(&pdev->dev);
->  	indio_dev->modes = INDIO_DIRECT_MODE;
->  	indio_dev->info = &tiadc_info;
->
-> -	tiadc_step_config(adc_dev);
-> +	/* by default driver comes up with oneshot mode */
-> +	tiadc_step_config(adc_dev, adc_dev->is_continuous_mode);
-> +	/* program FIFO threshold to value minus 1 */
-> +	tiadc_writel(adc_dev, REG_FIFO1THR, FIFO1_THRESHOLD);
->
->  	err = tiadc_channel_init(indio_dev, adc_dev->channels);
->  	if (err < 0)
->  		goto err_free_device;
->
-> +	init_waitqueue_head(&adc_dev->wq_data_avail);
-> +
-> +	err = request_irq(adc_dev->irq, tiadc_irq, IRQF_SHARED,
-> +		indio_dev->name, indio_dev);
-> +	if (err)
-> +		goto err_free_irq;
-> +
-> +	err = tiadc_config_buffer(indio_dev);
-> +	if (err < 0)
-> +		goto err_unregister;
-> +
-> +	err = iio_buffer_register(indio_dev,
-> +		indio_dev->channels, indio_dev->num_channels);
-> +	if (err < 0)
-> +		goto err_unregister;
-> +
->  	err = iio_device_register(indio_dev);
->  	if (err)
->  		goto err_free_channels;
-> @@ -250,6 +498,10 @@ static int tiadc_probe(struct platform_device *pdev)
->
->  	return 0;
->
-> +err_unregister:
-> +	iio_buffer_unregister(indio_dev);
-> +err_free_irq:
-> +	free_irq(adc_dev->irq, indio_dev);
->  err_free_channels:
->  	tiadc_channels_remove(indio_dev);
->  err_free_device:
-> @@ -264,7 +516,9 @@ static int tiadc_remove(struct platform_device *pdev)
->  	struct tiadc_device *adc_dev = iio_priv(indio_dev);
->  	u32 step_en;
->
-> +	free_irq(adc_dev->irq, indio_dev);
->  	iio_device_unregister(indio_dev);
-> +	iio_buffer_unregister(indio_dev);
->  	tiadc_channels_remove(indio_dev);
->
->  	step_en = get_adc_step_mask(adc_dev);
-> @@ -300,13 +554,13 @@ static int tiadc_resume(struct device *dev)
->  	struct tiadc_device *adc_dev = iio_priv(indio_dev);
->  	unsigned int restore;
->
-> +	tiadc_writel(adc_dev, REG_FIFO1THR, FIFO1_THRESHOLD);
-> +	tiadc_step_config(adc_dev, adc_dev->is_continuous_mode);
->  	/* Make sure ADC is powered up */
->  	restore = tiadc_readl(adc_dev, REG_CTRL);
->  	restore &= ~(CNTRLREG_POWERDOWN);
->  	tiadc_writel(adc_dev, REG_CTRL, restore);
->
-> -	tiadc_step_config(adc_dev);
-> -
->  	return 0;
->  }
->
-> diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-> index edc3d03..ba7abfe 100644
-> --- a/drivers/input/touchscreen/ti_am335x_tsc.c
-> +++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-> @@ -263,11 +263,14 @@ static irqreturn_t titsc_irq(int irq, void *dev)
->
->  	/*
->  	* ADC and touchscreen share the IRQ line.
-> -	* FIFO1 threshold interrupt is used by ADC,
-> +	* FIFO1 threshold, FIFO1 Overrun and FIFO1 underflow
-> +	* interrupts are used by ADC,
->  	* hence return from touchscreen IRQ handler if FIFO1
-> -	* threshold interrupt occurred.
-> +	* related interrupts occurred.
->  	*/
-> -	if (status & IRQENB_FIFO1THRES)
-> +	if ((status & IRQENB_FIFO1THRES) ||
-> +			(status & IRQENB_FIFO1OVRRUN) ||
-> +			(status & IRQENB_FIFO1UNDRFLW))
->  		return IRQ_NONE;
-Can this not be safely merged into the previous patch touching this
-bit of input?
-
->  	else if (status & IRQENB_FIFO0THRES) {
->  		titsc_read_coordinates(ts_dev, &x, &y, &z1, &z2);
+>  drivers/mfd/ti_am335x_tscadc.c       |    6 +-----
+>  include/linux/mfd/ti_am335x_tscadc.h |    1 -
+>  2 files changed, 1 insertion(+), 6 deletions(-)
+> 
 > diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-> index d72001c..9f5c326 100644
+> index 9f5c326..b8d7dfb 100644
 > --- a/drivers/mfd/ti_am335x_tscadc.c
 > +++ b/drivers/mfd/ti_am335x_tscadc.c
-> @@ -282,6 +282,8 @@ static int tscadc_suspend(struct device *dev)
->  	struct ti_tscadc_dev	*tscadc_dev = dev_get_drvdata(dev);
->
->  	tscadc_writel(tscadc_dev, REG_SE, 0x00);
-> +	tscadc_dev->irqstat = tscadc_readl(tscadc_dev, REG_IRQENABLE);
-> +	tscadc_dev->ctrl = tscadc_readl(tscadc_dev, REG_CTRL);
->  	pm_runtime_put_sync(dev);
->
->  	return 0;
-> @@ -290,22 +292,16 @@ static int tscadc_suspend(struct device *dev)
->  static int tscadc_resume(struct device *dev)
->  {
->  	struct ti_tscadc_dev	*tscadc_dev = dev_get_drvdata(dev);
-> -	unsigned int restore, ctrl;
->
->  	pm_runtime_get_sync(dev);
->
->  	/* context restore */
-> -	ctrl = CNTRLREG_STEPCONFIGWRT |	CNTRLREG_STEPID;
-> -	if (tscadc_dev->tsc_cell != -1)
-> -		ctrl |= CNTRLREG_TSCENB | CNTRLREG_4WIRE;
-> -	tscadc_writel(tscadc_dev, REG_CTRL, ctrl);
-> +	tscadc_writel(tscadc_dev, REG_IRQENABLE, tscadc_dev->irqstat);
->
->  	if (tscadc_dev->tsc_cell != -1)
->  		tscadc_idle_config(tscadc_dev);
->  	am335x_tsc_se_update(tscadc_dev);
-> -	restore = tscadc_readl(tscadc_dev, REG_CTRL);
-> -	tscadc_writel(tscadc_dev, REG_CTRL,
-> -			(restore | CNTRLREG_TSCSSENB));
-> +	tscadc_writel(tscadc_dev, REG_CTRL, tscadc_dev->ctrl);
->
->  	return 0;
->  }
+> @@ -197,11 +197,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+>  	clock_rate = clk_get_rate(clk);
+>  	clk_put(clk);
+>  	clk_value = clock_rate / ADC_CLK;
+> -	if (clk_value < MAX_CLK_DIV) {
+> -		dev_err(&pdev->dev, "clock input less than min clock requirement\n");
+> -		err = -EINVAL;
+> -		goto err_disable_clk;
+> -	}
+> +
+>  	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
+>  	clk_value = clk_value - 1;
+>  	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
 > diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-> index db1791b..3058aef 100644
+> index 3058aef..136463b 100644
 > --- a/include/linux/mfd/ti_am335x_tscadc.h
 > +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> @@ -46,17 +46,23 @@
->  /* Step Enable */
->  #define STEPENB_MASK		(0x1FFFF << 0)
->  #define STEPENB(val)		((val) << 0)
-> +#define ENB(val)			(1 << (val))
-> +#define STPENB_STEPENB		STEPENB(0x1FFFF)
-> +#define STPENB_STEPENB_TC	STEPENB(0x1FFF)
->
->  /* IRQ enable */
->  #define IRQENB_HW_PEN		BIT(0)
->  #define IRQENB_FIFO0THRES	BIT(2)
->  #define IRQENB_FIFO1THRES	BIT(5)
->  #define IRQENB_PENUP		BIT(9)
-> +#define IRQENB_FIFO1OVRRUN	BIT(6)
-> +#define IRQENB_FIFO1UNDRFLW	BIT(7)
->
->  /* Step Configuration */
->  #define STEPCONFIG_MODE_MASK	(3 << 0)
->  #define STEPCONFIG_MODE(val)	((val) << 0)
->  #define STEPCONFIG_MODE_HWSYNC	STEPCONFIG_MODE(2)
-> +#define STEPCONFIG_MODE_SWCNT	STEPCONFIG_MODE(1)
->  #define STEPCONFIG_AVG_MASK	(7 << 2)
->  #define STEPCONFIG_AVG(val)	((val) << 2)
->  #define STEPCONFIG_AVG_16	STEPCONFIG_AVG(4)
-> @@ -124,6 +130,7 @@
->  #define	MAX_CLK_DIV		7
+> @@ -127,7 +127,6 @@
+>  #define SEQ_STATUS BIT(5)
+>  
+>  #define ADC_CLK			3000000
+> -#define	MAX_CLK_DIV		7
 >  #define TOTAL_STEPS		16
 >  #define TOTAL_CHANNELS		8
-> +#define FIFO1_THRESHOLD		19
->
->  /*
->  * ADC runs at 3MHz, and it takes
-> @@ -153,6 +160,9 @@ struct ti_tscadc_dev {
->
->  	/* adc device */
->  	struct adc_device *adc;
-> +	/* Context save */
-> +	unsigned int irqstat;
-> +	unsigned int ctrl;
->  };
->
->  static inline struct ti_tscadc_dev *ti_tscadc_dev_get(struct platform_device *p)
->
+>  #define FIFO1_THRESHOLD		19
+> 
