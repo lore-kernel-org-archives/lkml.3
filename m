@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab3GTUvM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 16:51:12 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:51871 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100Ab3GTUvK (ORCPT
+	id S1755119Ab3GTUyo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 16:54:44 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:59232 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973Ab3GTUym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 16:51:10 -0400
+	Sat, 20 Jul 2013 16:54:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
-Date: Sat, 20 Jul 2013 22:51:09 +0200
-Message-ID: <CACRpkdauSuk9xDSzUFN=OO0yVWZXSMTUuYTVDZb2_zYb=YMW_A@mail.gmail.com>
-Subject: Re: [PATCH v4 00/17] 64-bit friendly generic sched_clock()
+In-Reply-To: <1374178035-19943-1-git-send-email-davidb@codeaurora.org>
+References: <1374178035-19943-1-git-send-email-davidb@codeaurora.org>
+Date: Sat, 20 Jul 2013 22:54:42 +0200
+Message-ID: <CACRpkdbOO8fFEx+PxsdJ9F1dqD6V4_RPZThvTufo9+XhhyuHOg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] MSM gpio fixes
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: John Stultz <john.stultz@linaro.org>,
+To: David Brown <davidb@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Barry Song <Baohua.Song@csr.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jingchang Lu <b35083@freescale.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>
+        linux-gpio@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 1:21 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+On Thu, Jul 18, 2013 at 10:07 PM, David Brown <davidb@codeaurora.org> wrote:
 
-> This patchset adds support for 64 bit counters in the generic
-> sched_clock code and converts drivers over to use it. Based
-> on v3.11-rc1.
+> Rohit sent these three fixes out on June 18.  I still need a
+> devicetree ack for the first patch, and would like these to get pulled
+> in for v3.11
 >
-> Changes since v3:
+> Rohit Vaswani (3):
+>   ARM: msm: dts: Fix the gpio register address for msm8960
+>   drivers: gpio: msm: Fix the error condition for reading ngpio
 
->   ocksource: dbx500-prcmu: Switch to sched_clock_register()
+OK for these two...
 
-Fix subject.
+>   ARM: msm: Consolidate gpiomux for older architectures
 
->   clocksource: nomadik: Switch to sched_clock_register()
-
-Apart from that Acked-by: Linus Walleij <linus.walleij@linaro.org>
-for these two drivers.
-
-BTW: why are you not patching arch/arm/mach-u300/timer.c?
-Please make sure to grep for all setup_sched_clock() if you're
-going to do this.
+This does not look like a fix? Surely this can wait for v3.12?
 
 Yours,
 Linus Walleij
