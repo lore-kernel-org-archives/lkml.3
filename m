@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab3GTRsD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 13:48:03 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47499 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab3GTRsA (ORCPT
+	id S1754722Ab3GTRub (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 13:50:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58773 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab3GTRua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 13:48:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1373471889-18107-6-git-send-email-wsa@the-dreams.de>
-References: <1373471889-18107-1-git-send-email-wsa@the-dreams.de>
-	<1373471889-18107-6-git-send-email-wsa@the-dreams.de>
-Date: Sat, 20 Jul 2013 19:48:00 +0200
-Message-ID: <CACRpkdbBYuPE6ZaiuWgEze0JuuqvhDFS7VLhVTJBopiLMBNJpw@mail.gmail.com>
-Subject: Re: [PATCH 06/12] drivers/mtd/nand/gpmi-nand: don't use
+	Sat, 20 Jul 2013 13:50:30 -0400
+Date: Sat, 20 Jul 2013 10:50:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <wsa@the-dreams.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/12] drivers/misc: don't use
  devm_pinctrl_get_select_default() in probe
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Huang Shijie <b32955@freescale.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <20130720175039.GA5697@kroah.com>
+References: <1373471889-18107-1-git-send-email-wsa@the-dreams.de>
+ <1373471889-18107-3-git-send-email-wsa@the-dreams.de>
+ <201307110113.58681.arnd@arndb.de>
+ <CACRpkdbeFGsvGENOEqAOVSP_GH4cAni+zYXA8eF3CKj1OudesQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbeFGsvGENOEqAOVSP_GH4cAni+zYXA8eF3CKj1OudesQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 5:57 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+On Sat, Jul 20, 2013 at 07:45:42PM +0200, Linus Walleij wrote:
+> On Thu, Jul 11, 2013 at 1:13 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Wednesday 10 July 2013, Wolfram Sang wrote:
+> >> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+> >> we can rely on device core for setting the default pins. Compile tested only.
+> >>
+> >> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
+> >> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> >
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> I think that the idea is to merge this through respective subsystem.
+> Greg, can you take this into your misc-char tree?
 
-> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
-> we can rely on device core for setting the default pins. Compile tested only.
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Sure, will do.
 
-Artem  if you're OK with this please carry it in the MTD tree.
-
-Yours,
-Linus Walleij
+greg k-h
