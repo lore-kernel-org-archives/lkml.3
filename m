@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503Ab3GTEq7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 00:46:59 -0400
-Received: from mx2.corp.phx1.mozilla.com ([63.245.216.70]:61411 "EHLO
-	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab3GTEq6 (ORCPT
+	id S1751916Ab3GTEuj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 00:50:39 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:55731 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab3GTEuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 00:46:58 -0400
-Date: Fri, 19 Jul 2013 21:46:55 -0700
-From: Jed Davis <jld@mozilla.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Robert Richter <rric@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>
-Subject: Re: [PATCH] ARM: Fix r7/r11 confusion when CONFIG_THUMB2_KERNEL=y
-Message-ID: <20130720044655.GC9433@mozilla.com>
-References: <1373685501-1620-1-git-send-email-jld@mozilla.com>
- <20130715135420.GG10000@mudshark.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130715135420.GG10000@mudshark.cambridge.arm.com>
-X-User-Agent-Host: Linux nimbostratus 3.2.0-4-amd64 x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 20 Jul 2013 00:50:37 -0400
+Message-ID: <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
+        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Fri, 19 Jul 2013 21:56:02 -0700
+In-Reply-To: <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+	 <51E83E32.9050306@cs.wisc.edu>
+	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+	 <20130719003034.GG28005@kernel.dk>
+	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+	 <1374248000.2266.20.camel@dabdike>
+	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 15, 2013 at 02:54:20PM +0100, Will Deacon wrote:
-> On Sat, Jul 13, 2013 at 04:18:20AM +0100, Jed Davis wrote:
-[...]
-> > Effects of this are probably limited to failure of EHABI unwinding when
-> > starting from a function that uses r7 to restore its stack pointer, but
-> > the possibility for further breakage (which would be invisible on
-> > non-Thumb kernels) is worrying.
-[...]
-> I'm struggling to understand exactly the problem that this patch is trying
-> to address. If it's just a code consistency issue, I don't think it's worth
-> it (I actually find it less confusing the way we currently have things) but
-> if there is a real bug, perhaps you could provide a testcase?
+On Fri, 2013-07-19 at 14:01 -0700, Nicholas A. Bellinger wrote:
+> On Fri, 2013-07-19 at 08:33 -0700, James Bottomley wrote:
+> > On Thu, 2013-07-18 at 23:34 -0700, Nicholas A. Bellinger wrote:
+> > > diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> > > index 0101af5..191bc15 100644
+> > > --- a/drivers/ata/libata-scsi.c
+> > > +++ b/drivers/ata/libata-scsi.c
+> > > @@ -1144,7 +1144,11 @@ static int ata_scsi_dev_config(struct scsi_device *sdev,
+> > >                         "sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
+> > >                         sdev->sector_size);
+> > >  
+> > > -       blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
+> > > +       if (!q->mq_ops) {
+> > > +               blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
+> > > +       } else {
+> > > +               printk("Skipping dma_alignment for libata w/ scsi-mq\n");
+> > > +       }
+> > 
+> > Amazingly enough there is a reason for the dma alignment, and it wasn't
+> > just to annoy you, so you can't blindly do this.
+> > 
+> > The email thread is probably lost in the mists of time, but if I
+> > remember correctly the problem is that some ahci DMA controllers barf if
+> > the sector they're doing DMA on crosses a page boundary.  Some are
+> > annoying enough to actually cause silent data corruption.  You won't
+> > find every ahci DMA controller doing this, so the change will work for
+> > some, but it will be hard to identify those it won't work for until
+> > people start losing data.
+> 
+> Thanks for the extra background.
+> 
+> So at least from what I gather thus far this shouldn't be an issue for
+> initial testing with scsi-mq <-> libata w/ ata_piix.
+> 
+> > 
+> > The correct fix, obviously, is to do the bio copy on the kernel path for
+> > unaligned data.  It is OK to assume that REQ_TYPE_FS data is correctly
+> > aligned (because of the block to page alignment).
+> > 
+> 
+> Indeed.  Looking into the bio_copy_kern() breakage next..
+> 
 
-There is a real bug here, but my commit message wasn't very clear.  This
-was breaking PERF_COUNT_SW_CONTEXT_SWITCHES with CONFIG_THUMB2_KERNEL=y
-(with my other recently posted patch applied), because kernel/sched.c is
-built with -fno-omit-frame-pointer (which is wrong, but that's a problem
-for another patch) and so __schedule's EHABI entry uses 0x97 (mov sp, r7),
-and somewhere along the line the unwinder gets the r11 value instead.
-This would also apply to any function with a variable-length array, but
-__schedule happens to have the perf hook I was trying to use.
+OK, after further investigation the root cause is a actually a missing
+bio->bio_end_io() -> bio_copy_kern_endio() -> bio_put() from the
+blk_end_sync_rq() callback path that scsi-mq REQ_TYPE_BLOCK_PC is
+currently using.
 
-I should add that this bug doesn't affect me directly at the moment,
-because we're not currently using CONFIG_THUMB2_KERNEL on Firefox OS,
-because our kernels are assorted older versions with hardware vendors'
-changes and there are some issues with it.  But I felt it was worth
-tracking this down before trying to send changes upstream.
+Including the following patch into the scsi-mq working branch now, and
+reverting the libata dma_alignment=0x03 hack.
 
-The "right" thing to do here might be to just include all the registers,
-or at least {r4-pc}, in struct stackframe.  The parts that aren't {fp,
-sp, lr, pc} could be ifdef'ed if we're concerned enough about the
-overhead in kernels using APCS frame pointer unwinding.
+Alexander, care to give this a try..?
 
-I agree that a test case would be good -- I'm more than a little worried
-of regressions without one -- but I could use some advice on how best to
-do that.
+--nab
 
---Jed
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index 0761c89..70303d2 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -25,7 +25,10 @@ static void blk_end_sync_rq(struct request *rq, int error)
+        struct completion *waiting = rq->end_io_data;
+ 
+        rq->end_io_data = NULL;
+-       if (!rq->q->mq_ops) {
++       if (rq->q->mq_ops) {
++               if (rq->bio)
++                       bio_endio(rq->bio, error);
++       } else {
+                __blk_put_request(rq->q, rq);
+        }
 
