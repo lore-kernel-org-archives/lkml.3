@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab3GTIkv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 04:40:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44638 "EHLO
+	id S1753529Ab3GTIla (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 04:41:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44639 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3GTIkl (ORCPT
+	with ESMTP id S1751609Ab3GTIkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 04:40:41 -0400
+	Sat, 20 Jul 2013 04:40:47 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 11/12] apparmor: add an optional profile attachment string for profiles
-Date: Sat, 20 Jul 2013 01:38:46 -0700
-Message-Id: <1374309527-7082-12-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 12/12] apparmor: Add the profile introspection file to interface
+Date: Sat, 20 Jul 2013 01:38:47 -0700
+Message-Id: <1374309527-7082-13-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374309527-7082-1-git-send-email-john.johansen@canonical.com>
 References: <1374309527-7082-1-git-send-email-john.johansen@canonical.com>
@@ -20,117 +20,276 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the ability to take in and report a human readable profile attachment
-string for profiles so that attachment specifications can be easily
-inspected.
+Add the dynamic namespace relative profiles file to the interace, to allow
+introspection of loaded profiles and their modes.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
-Acked-by: Seth Arnold <seth.arnold@canonical.com>
+Acked-by: Kees Cook <kees@ubuntu.com>
 ---
- security/apparmor/apparmorfs.c         | 34 ++++++++++++++++++++++++++++++++++
- security/apparmor/include/apparmorfs.h |  1 +
- security/apparmor/include/policy.h     |  2 ++
- security/apparmor/policy_unpack.c      |  3 +++
- 4 files changed, 40 insertions(+)
+ security/apparmor/apparmorfs.c | 236 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 236 insertions(+)
 
 diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
-index 0fdd08c..d6329aa 100644
+index d6329aa..7a26608 100644
 --- a/security/apparmor/apparmorfs.c
 +++ b/security/apparmor/apparmorfs.c
-@@ -290,6 +290,34 @@ static const struct file_operations aa_fs_profmode_fops = {
- 	.release	= aa_fs_seq_profile_release,
- };
+@@ -20,6 +20,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/namei.h>
+ #include <linux/capability.h>
++#include <linux/rcupdate.h>
  
-+static int aa_fs_seq_profattach_show(struct seq_file *seq, void *v)
+ #include "include/apparmor.h"
+ #include "include/apparmorfs.h"
+@@ -512,6 +513,240 @@ fail2:
+ }
+ 
+ 
++#define list_entry_next(pos, member) \
++	list_entry(pos->member.next, typeof(*pos), member)
++#define list_entry_is_head(pos, head, member) (&pos->member == (head))
++
++/**
++ * __next_namespace - find the next namespace to list
++ * @root: root namespace to stop search at (NOT NULL)
++ * @ns: current ns position (NOT NULL)
++ *
++ * Find the next namespace from @ns under @root and handle all locking needed
++ * while switching current namespace.
++ *
++ * Returns: next namespace or NULL if at last namespace under @root
++ * Requires: ns->parent->lock to be held
++ * NOTE: will not unlock root->lock
++ */
++static struct aa_namespace *__next_namespace(struct aa_namespace *root,
++					     struct aa_namespace *ns)
 +{
-+	struct aa_replacedby *r = seq->private;
-+	struct aa_profile *profile = aa_get_profile_rcu(&r->profile);
-+	if (profile->attach)
-+		seq_printf(seq, "%s\n", profile->attach);
-+	else if (profile->xmatch)
-+		seq_puts(seq, "<unknown>\n");
-+	else
-+		seq_printf(seq, "%s\n", profile->base.name);
-+	aa_put_profile(profile);
++	struct aa_namespace *parent, *next;
++
++	/* is next namespace a child */
++	if (!list_empty(&ns->sub_ns)) {
++		next = list_first_entry(&ns->sub_ns, typeof(*ns), base.list);
++		mutex_lock(&next->lock);
++		return next;
++	}
++
++	/* check if the next ns is a sibling, parent, gp, .. */
++	parent = ns->parent;
++	while (parent) {
++		mutex_unlock(&ns->lock);
++		next = list_entry_next(ns, base.list);
++		if (!list_entry_is_head(next, &parent->sub_ns, base.list)) {
++			mutex_lock(&next->lock);
++			return next;
++		}
++		if (parent == root)
++			return NULL;
++		ns = parent;
++		parent = parent->parent;
++	}
++
++	return NULL;
++}
++
++/**
++ * __first_profile - find the first profile in a namespace
++ * @root: namespace that is root of profiles being displayed (NOT NULL)
++ * @ns: namespace to start in   (NOT NULL)
++ *
++ * Returns: unrefcounted profile or NULL if no profile
++ * Requires: profile->ns.lock to be held
++ */
++static struct aa_profile *__first_profile(struct aa_namespace *root,
++					  struct aa_namespace *ns)
++{
++	for (; ns; ns = __next_namespace(root, ns)) {
++		if (!list_empty(&ns->base.profiles))
++			return list_first_entry(&ns->base.profiles,
++						struct aa_profile, base.list);
++	}
++	return NULL;
++}
++
++/**
++ * __next_profile - step to the next profile in a profile tree
++ * @profile: current profile in tree (NOT NULL)
++ *
++ * Perform a depth first traversal on the profile tree in a namespace
++ *
++ * Returns: next profile or NULL if done
++ * Requires: profile->ns.lock to be held
++ */
++static struct aa_profile *__next_profile(struct aa_profile *p)
++{
++	struct aa_profile *parent;
++	struct aa_namespace *ns = p->ns;
++
++	/* is next profile a child */
++	if (!list_empty(&p->base.profiles))
++		return list_first_entry(&p->base.profiles, typeof(*p),
++					base.list);
++
++	/* is next profile a sibling, parent sibling, gp, sibling, .. */
++	parent = rcu_dereference_protected(p->parent,
++					   mutex_is_locked(&p->ns->lock));
++	while (parent) {
++		p = list_entry_next(p, base.list);
++		if (!list_entry_is_head(p, &parent->base.profiles, base.list))
++			return p;
++		p = parent;
++		parent = rcu_dereference_protected(parent->parent,
++					    mutex_is_locked(&parent->ns->lock));
++	}
++
++	/* is next another profile in the namespace */
++	p = list_entry_next(p, base.list);
++	if (!list_entry_is_head(p, &ns->base.profiles, base.list))
++		return p;
++
++	return NULL;
++}
++
++/**
++ * next_profile - step to the next profile in where ever it may be
++ * @root: root namespace  (NOT NULL)
++ * @profile: current profile  (NOT NULL)
++ *
++ * Returns: next profile or NULL if there isn't one
++ */
++static struct aa_profile *next_profile(struct aa_namespace *root,
++				       struct aa_profile *profile)
++{
++	struct aa_profile *next = __next_profile(profile);
++	if (next)
++		return next;
++
++	/* finished all profiles in namespace move to next namespace */
++	return __first_profile(root, __next_namespace(root, profile->ns));
++}
++
++/**
++ * p_start - start a depth first traversal of profile tree
++ * @f: seq_file to fill
++ * @pos: current position
++ *
++ * Returns: first profile under current namespace or NULL if none found
++ *
++ * acquires first ns->lock
++ */
++static void *p_start(struct seq_file *f, loff_t *pos)
++{
++	struct aa_profile *profile = NULL;
++	struct aa_namespace *root = aa_current_profile()->ns;
++	loff_t l = *pos;
++	f->private = aa_get_namespace(root);
++
++
++	/* find the first profile */
++	mutex_lock(&root->lock);
++	profile = __first_profile(root, root);
++
++	/* skip to position */
++	for (; profile && l > 0; l--)
++		profile = next_profile(root, profile);
++
++	return profile;
++}
++
++/**
++ * p_next - read the next profile entry
++ * @f: seq_file to fill
++ * @p: profile previously returned
++ * @pos: current position
++ *
++ * Returns: next profile after @p or NULL if none
++ *
++ * may acquire/release locks in namespace tree as necessary
++ */
++static void *p_next(struct seq_file *f, void *p, loff_t *pos)
++{
++	struct aa_profile *profile = p;
++	struct aa_namespace *ns = f->private;
++	(*pos)++;
++
++	return next_profile(ns, profile);
++}
++
++/**
++ * p_stop - stop depth first traversal
++ * @f: seq_file we are filling
++ * @p: the last profile writen
++ *
++ * Release all locking done by p_start/p_next on namespace tree
++ */
++static void p_stop(struct seq_file *f, void *p)
++{
++	struct aa_profile *profile = p;
++	struct aa_namespace *root = f->private, *ns;
++
++	if (profile) {
++		for (ns = profile->ns; ns && ns != root; ns = ns->parent)
++			mutex_unlock(&ns->lock);
++	}
++	mutex_unlock(&root->lock);
++	aa_put_namespace(root);
++}
++
++/**
++ * seq_show_profile - show a profile entry
++ * @f: seq_file to file
++ * @p: current position (profile)    (NOT NULL)
++ *
++ * Returns: error on failure
++ */
++static int seq_show_profile(struct seq_file *f, void *p)
++{
++	struct aa_profile *profile = (struct aa_profile *)p;
++	struct aa_namespace *root = f->private;
++
++	if (profile->ns != root)
++		seq_printf(f, ":%s://", aa_ns_name(root, profile->ns));
++	seq_printf(f, "%s (%s)\n", profile->base.hname,
++		   aa_profile_mode_names[profile->mode]);
 +
 +	return 0;
 +}
 +
-+static int aa_fs_seq_profattach_open(struct inode *inode, struct file *file)
-+{
-+	return aa_fs_seq_profile_open(inode, file, aa_fs_seq_profattach_show);
-+}
-+
-+static const struct file_operations aa_fs_profattach_fops = {
-+	.owner		= THIS_MODULE,
-+	.open		= aa_fs_seq_profattach_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= aa_fs_seq_profile_release,
++static const struct seq_operations aa_fs_profiles_op = {
++	.start = p_start,
++	.next = p_next,
++	.stop = p_stop,
++	.show = seq_show_profile,
 +};
 +
- /** fns to setup dynamic per profile/namespace files **/
- void __aa_fs_profile_rmdir(struct aa_profile *profile)
- {
-@@ -385,6 +413,12 @@ int __aa_fs_profile_mkdir(struct aa_profile *profile, struct dentry *parent)
- 		goto fail;
- 	profile->dents[AAFS_PROF_MODE] = dent;
- 
-+	dent = create_profile_file(dir, "attach", profile,
-+				   &aa_fs_profattach_fops);
-+	if (IS_ERR(dent))
-+		goto fail;
-+	profile->dents[AAFS_PROF_ATTACH] = dent;
++static int profiles_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &aa_fs_profiles_op);
++}
 +
- 	list_for_each_entry(child, &profile->base.profiles, base.list) {
- 		error = __aa_fs_profile_mkdir(child, prof_child_dir(profile));
- 		if (error)
-diff --git a/security/apparmor/include/apparmorfs.h b/security/apparmor/include/apparmorfs.h
-index 2494e11..f91712c 100644
---- a/security/apparmor/include/apparmorfs.h
-+++ b/security/apparmor/include/apparmorfs.h
-@@ -81,6 +81,7 @@ enum aafs_prof_type {
- 	AAFS_PROF_PROFS,
- 	AAFS_PROF_NAME,
- 	AAFS_PROF_MODE,
-+	AAFS_PROF_ATTACH,
- 	AAFS_PROF_SIZEOF,
++static int profiles_release(struct inode *inode, struct file *file)
++{
++	return seq_release(inode, file);
++}
++
++static const struct file_operations aa_fs_profiles_fops = {
++	.open = profiles_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = profiles_release,
++};
++
++
+ /** Base file system setup **/
+ static struct aa_fs_entry aa_fs_entry_file[] = {
+ 	AA_FS_FILE_STRING("mask", "create read write exec append mmap_exec " \
+@@ -545,6 +780,7 @@ static struct aa_fs_entry aa_fs_entry_apparmor[] = {
+ 	AA_FS_FILE_FOPS(".load", 0640, &aa_fs_profile_load),
+ 	AA_FS_FILE_FOPS(".replace", 0640, &aa_fs_profile_replace),
+ 	AA_FS_FILE_FOPS(".remove", 0640, &aa_fs_profile_remove),
++	AA_FS_FILE_FOPS("profiles", 0640, &aa_fs_profiles_fops),
+ 	AA_FS_DIR("features", aa_fs_entry_features),
+ 	{ }
  };
- 
-diff --git a/security/apparmor/include/policy.h b/security/apparmor/include/policy.h
-index 5c72231..59b3637 100644
---- a/security/apparmor/include/policy.h
-+++ b/security/apparmor/include/policy.h
-@@ -165,6 +165,7 @@ struct aa_replacedby {
-  * @ns: namespace the profile is in
-  * @replacedby: is set to the profile that replaced this profile
-  * @rename: optional profile name that this profile renamed
-+ * @attach: human readable attachment string
-  * @xmatch: optional extended matching for unconfined executables names
-  * @xmatch_len: xmatch prefix len, used to determine xmatch priority
-  * @audit: the auditing mode of the profile
-@@ -204,6 +205,7 @@ struct aa_profile {
- 	struct aa_replacedby *replacedby;
- 	const char *rename;
- 
-+	const char *attach;
- 	struct aa_dfa *xmatch;
- 	int xmatch_len;
- 	enum audit_mode audit;
-diff --git a/security/apparmor/policy_unpack.c b/security/apparmor/policy_unpack.c
-index 46546f3..80050b3 100644
---- a/security/apparmor/policy_unpack.c
-+++ b/security/apparmor/policy_unpack.c
-@@ -491,6 +491,9 @@ static struct aa_profile *unpack_profile(struct aa_ext *e)
- 	/* profile renaming is optional */
- 	(void) unpack_str(e, &profile->rename, "rename");
- 
-+	/* attachment string is optional */
-+	(void) unpack_str(e, &profile->attach, "attach");
-+
- 	/* xmatch is optional and may be NULL */
- 	profile->xmatch = unpack_dfa(e);
- 	if (IS_ERR(profile->xmatch)) {
 -- 
 1.8.1.2
 
