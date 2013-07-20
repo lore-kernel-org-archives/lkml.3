@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab3GTHfF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 03:35:05 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:53952 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab3GTHfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 03:35:04 -0400
-Date: Sat, 20 Jul 2013 09:34:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
-Subject: Re: [PATCH] x86, tboot: iomem fixes
-Message-ID: <20130720073459.GA5555@gmail.com>
-References: <1374282787-30327-1-git-send-email-qiaowei.ren@intel.com>
+	id S1751602Ab3GTHiQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 03:38:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36623 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751060Ab3GTHiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 03:38:14 -0400
+Message-ID: <1374305890.8385.53.camel@cumari.coelho.fi>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
+ ethernet
+From: Luciano Coelho <coelho@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Arend van Spriel <arend@broadcom.com>, <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Date: Sat, 20 Jul 2013 10:38:10 +0300
+In-Reply-To: <20130718085951.GT7656@atomide.com>
+References: <51E7AA24.6080600@broadcom.com>
+	 <20130718085951.GT7656@atomide.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374282787-30327-1-git-send-email-qiaowei.ren@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-07-18 at 01:59 -0700, Tony Lindgren wrote:
+> * Arend van Spriel <arend@broadcom.com> [130718 01:47]:
+> Then for the SDIO with device tree, take a look at the following
+> patches:
+> 
+> [PATCH 0/3] WLAN support for omap4 when booted with devicetree
+> http://comments.gmane.org/gmane.linux.ports.arm.omap/97522#
+> 
+> The wl12xx .dts changes for pandaboard are still missing too.
 
-* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
+Just for the record, I already have the DTS patches for wl12xx on Panda
+(and a few other boards).
 
-> +#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
+I held them back because I wanted the bindings to be properly defined
+first.  I'll continue this work pretty soon, when I come back from my
+summer vacations (in a week).
 
->  	/* get addr of DMAR table */
-> +	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
->  	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
-> -		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
-> -		   sizeof(u64));
-> +			dmar_tbl_off - sizeof(u64));
+--
+Cheers,
+Luca.
 
-So the offset of ->vtd_dmars_off within struct sinit_mle_data is 140?
-
-The new code is less readable: what's wrong with getting the offset 
-automatically via C, instead of hardcoding it manually? You can use 
-offsetof() primitive for increased readability.
-
-Thanks,
-
-	Ingo
