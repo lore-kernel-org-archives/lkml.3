@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab3GTH2R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 03:28:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44276 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab3GTH2P convert rfc822-to-8bit (ORCPT
+	id S1751413Ab3GTHfF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 03:35:05 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:53952 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab3GTHfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 03:28:15 -0400
-From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: RE: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if UP
- system
-Thread-Topic: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if
- UP system
-Thread-Index: AQHOedkohMh8X6U+iEOl11iYZdcEeZltOz1g
-Date: Sat, 20 Jul 2013 07:27:25 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D121433EEB180B@DBDE04.ent.ti.com>
-References: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 20 Jul 2013 03:35:04 -0400
+Date: Sat, 20 Jul 2013 09:34:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH] x86, tboot: iomem fixes
+Message-ID: <20130720073459.GA5555@gmail.com>
+References: <1374282787-30327-1-git-send-email-qiaowei.ren@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374282787-30327-1-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Sat, Jul 06, 2013 at 05:09:33, Stephen Boyd wrote:
-> In a uniprocessor implementation the interrupt processor targets
-> registers are read-as-zero/write-ignored (RAZ/WI). Unfortunately
-> gic_get_cpumask() will print a critical message saying
-> 
->  GIC CPU mask not found - kernel will fail to boot.
-> 
-> if these registers all read as zero, but there won't actually be
-> a problem on uniprocessor systems and the kernel will boot just
-> fine. Skip this check if we're running a UP kernel or if we
-> detect that the hardware only supports a single processor.
-> 
-> Cc: Nicolas Pitre <nico@linaro.org>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> 
-> Maybe we should just drop the check entirely? It looks like it may
-> just be debug code that won't ever trigger in practice, even on the
-> 11MPCore that caused this code to be introduced.
-> 
+* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
 
-Apologies if I missed v2 of this patch if there was one. I could not
-locate it in my inbox or the list archives.
+> +#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
 
-We have a yet to be released single-core A9 MPCore system (AM437x) which
-needs to co-exist in omap2plus_defconfig wherein NR_CPUS is set to 2. 
-This currently leads to the "GIC CPU mask not found..." being printed
-twice during bootup. If the check is really some debug code, can it be
-completely dropped?
+>  	/* get addr of DMAR table */
+> +	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
+>  	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
+> -		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
+> -		   sizeof(u64));
+> +			dmar_tbl_off - sizeof(u64));
 
-Regards,
-Vaibhav B.
+So the offset of ->vtd_dmars_off within struct sinit_mle_data is 140?
 
+The new code is less readable: what's wrong with getting the offset 
+automatically via C, instead of hardcoding it manually? You can use 
+offsetof() primitive for increased readability.
+
+Thanks,
+
+	Ingo
