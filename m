@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3GTDQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Jul 2013 23:16:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36558 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab3GTDQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Jul 2013 23:16:20 -0400
-Message-ID: <51EA00D1.7080402@ti.com>
-Date: Sat, 20 Jul 2013 08:45:29 +0530
+	id S1753670Ab3GTDUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Jul 2013 23:20:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55687 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab3GTDU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Jul 2013 23:20:28 -0400
+Message-ID: <51EA01C4.2010006@ti.com>
+Date: Sat, 20 Jul 2013 08:49:32 +0530
 From: Kishon Vijay Abraham I <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Greg KH <gregkh@linuxfoundation.org>, <linux-fbdev@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>,
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <kyungmin.park@samsung.com>, <balbi@ti.com>, <jg1.han@samsung.com>,
         <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
-        <swarren@nvidia.com>, <jg1.han@samsung.com>, <grant.likely@linaro.org>,
-        <linux-media@vger.kernel.org>, <george.cherian@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>,
+        <grant.likely@linaro.org>, <tony@atomide.com>, <arnd@arndb.de>,
+        <swarren@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
         <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balajitk@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <kyungmin.park@samsung.com>,
-        <akpm@linux-foundation.org>
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
 Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <1374129984-765-1-git-send-email-kishon@ti.com> <1374129984-765-2-git-send-email-kishon@ti.com> <20130718072004.GA16720@kroah.com> <51E7AE88.3050007@ti.com> <20130718154954.GA31961@kroah.com> <51E8D086.809@ti.com> <20130719054311.GA14638@kroah.com> <51E8D4E0.8060200@ti.com> <20130719062941.GA23611@kroah.com> <51E8DE51.1060404@ti.com> <51E96135.9090108@wwwdotorg.org>
-In-Reply-To: <51E96135.9090108@wwwdotorg.org>
+References: <1374129984-765-1-git-send-email-kishon@ti.com> <1374129984-765-2-git-send-email-kishon@ti.com> <20130718072004.GA16720@kroah.com> <51E7AE88.3050007@ti.com> <20130718154954.GA31961@kroah.com> <51E8D086.809@ti.com> <20130719054311.GA14638@kroah.com> <51E8D4E0.8060200@ti.com> <20130719062941.GA23611@kroah.com> <51E8DE51.1060404@ti.com> <20130719235055.GB11498@kroah.com>
+In-Reply-To: <20130719235055.GB11498@kroah.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,8 +34,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Friday 19 July 2013 09:24 PM, Stephen Warren wrote:
-> On 07/19/2013 12:36 AM, Kishon Vijay Abraham I wrote:
+On Saturday 20 July 2013 05:20 AM, Greg KH wrote:
+> On Fri, Jul 19, 2013 at 12:06:01PM +0530, Kishon Vijay Abraham I wrote:
 >> Hi,
 >>
 >> On Friday 19 July 2013 11:59 AM, Greg KH wrote:
@@ -89,22 +89,12 @@ On Friday 19 July 2013 09:24 PM, Stephen Warren wrote:
 >>
 >> That should be passed using platform data.
 >
-> I don't think that's right. That's just like passing clock names in
-> platform data, which I believe is frowned upon.
->
-> Instead, why not take the approach that e.g. regulators have taken? Each
-> driver defines the names of the objects that it requires. There is a
-> table (registered by a board file) that has lookup key (device name,
+> Ick, don't pass strings around, pass pointers.  If you have platform
+> data you can get to, then put the pointer there, don't use a "name".
 
-We were using a similar approach with USB PHY layer but things started 
-breaking after the device names are created using PLATFORM_DEVID_AUTO. 
-Now theres no way to reliably know the device names in advance.
-Btw I had such device name binding in my v3 of this patch series [1] and 
-had some discussion with Grant during that time [2].
-
-[1] -> 
-http://archive.arm.linux.org.uk/lurker/message/20130320.091200.721a6fb5.hu.html
-[2] -> https://lkml.org/lkml/2013/4/22/26
+I don't think I understood you here :-s We wont have phy pointer when we 
+create the device for the controller no?(it'll be done in board file). 
+Probably I'm missing something.
 
 Thanks
 Kishon
