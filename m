@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3GTNZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 09:25:57 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37087 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab3GTNZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 09:25:56 -0400
-Date: Sat, 20 Jul 2013 15:25:48 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: George Spelvin <linux@horizon.com>
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] x86 fixes for 3.11-rc2
-Message-ID: <20130720132548.GA13759@pd.tnic>
-References: <20130720122504.25856.qmail@science.horizon.com>
+	id S1754028Ab3GTMrk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 08:47:40 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:62984 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3GTMri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 08:47:38 -0400
+Date: Sat, 20 Jul 2013 13:47:33 +0100
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
+Subject: Re: [PATCH 00/15] iio: ti_am335x_adc: Add continuous mode take 2
+Message-ID: <20130720124731.GA10834@gmail.com>
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com>
+ <51EA73BC.8050901@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130720122504.25856.qmail@science.horizon.com>
+In-Reply-To: <51EA73BC.8050901@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 08:25:04AM -0400, George Spelvin wrote:
-> It's marginal with only two call sites, but would it be worth factoring
-> out the write-back function?  Something like this (untested) patch.
-> It definitely makes the generated assembly cleaner.
+On Sat, Jul 20, 2013 at 12:25:48PM +0100, Jonathan Cameron wrote:
+> I am a little irritated by the mess we have here.  Russ has clearly done
+> a lot of fine work cleaning up the earlier patches.  As a result
+> we have a series of initial buggy patches and then a series of patches
+> fixing them again.
 
-I don't think that matters because this is called only once on suspend.
-Unless the cleaner assembly translates into a palpable speedup, which I
-doubt.
+Indeed.
 
--- 
-Regards/Gruss,
-    Boris.
+I had already merged a lot of minor bug fixes from Rachil into the main
+patch that adds continuous mode.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+But I kept Russ's ones separate because of authorship and history.
+ 
+
+> Part 1.  Any fixes that are unconnected to the rest of the series.  These will
+>   then get sent upstream within this cycle.
+
+Understood. I'll send a small series that is disjoint and contains fixes for the existing driver.
+
+> Part 2. Feature add patch. Here that is basically a single patch adding the
+>   continous mode support.
+>
+> It is nice to maintain history and all but I would much rather have something
+> that is easy to review, with appropriate comments or if people will give
+> them, sign offs to reflect the various contributions.
+> 
+> Jonathan
+
+And then one patch for continuous mode with appropriate comments/sign-offs.
+
+Thank-you
+Zubair Lutfullah
