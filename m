@@ -1,118 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab3GTWAJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 18:00:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59979 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab3GTWAH (ORCPT
+	id S1754325Ab3GTWJD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 18:09:03 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45221 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753597Ab3GTWJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 18:00:07 -0400
-Date: Sat, 20 Jul 2013 15:00:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: kyungmin.park@samsung.com, balbi@ti.com, jg1.han@samsung.com,
-        s.nawrocki@samsung.com, kgene.kim@samsung.com, grant.likely@linaro.org,
-        tony@atomide.com, arnd@arndb.de, swarren@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Message-ID: <20130720220006.GA7977@kroah.com>
-References: <20130718072004.GA16720@kroah.com>
- <51E7AE88.3050007@ti.com>
- <20130718154954.GA31961@kroah.com>
- <51E8D086.809@ti.com>
- <20130719054311.GA14638@kroah.com>
- <51E8D4E0.8060200@ti.com>
- <20130719062941.GA23611@kroah.com>
- <51E8DE51.1060404@ti.com>
- <20130719235055.GB11498@kroah.com>
- <51EA01C4.2010006@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EA01C4.2010006@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 20 Jul 2013 18:09:00 -0400
+Message-ID: <1374358463.7397.1124.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mike Christie <mchristie@fusionio.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Gordeev <agordeev@redhat.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Sat, 20 Jul 2013 15:14:23 -0700
+In-Reply-To: <51EAA33C.9010405@fusionio.com>
+References: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+	 <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
+	 <20130712074559.GA8727@dhcp-26-207.brq.redhat.com>
+	 <1373692812.7397.625.camel@haakon3.risingtidesystems.com>
+	 <20130716183207.GA6402@dhcp-26-207.brq.redhat.com>
+	 <1374010683.7397.880.camel@haakon3.risingtidesystems.com>
+	 <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+	 <51E83E32.9050306@cs.wisc.edu>
+	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+	 <20130719003034.GG28005@kernel.dk>
+	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+	 <1374248000.2266.20.camel@dabdike>
+	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+	 <51EAA33C.9010405@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 08:49:32AM +0530, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Saturday 20 July 2013 05:20 AM, Greg KH wrote:
-> >On Fri, Jul 19, 2013 at 12:06:01PM +0530, Kishon Vijay Abraham I wrote:
-> >>Hi,
+On Sat, 2013-07-20 at 09:48 -0500, Mike Christie wrote:
+> On 07/19/2013 11:56 PM, Nicholas A. Bellinger wrote:
+> > On Fri, 2013-07-19 at 14:01 -0700, Nicholas A. Bellinger wrote:
+> >> On Fri, 2013-07-19 at 08:33 -0700, James Bottomley wrote:
+
+<SNIP>
+
 > >>
-> >>On Friday 19 July 2013 11:59 AM, Greg KH wrote:
-> >>>On Fri, Jul 19, 2013 at 11:25:44AM +0530, Kishon Vijay Abraham I wrote:
-> >>>>Hi,
-> >>>>
-> >>>>On Friday 19 July 2013 11:13 AM, Greg KH wrote:
-> >>>>>On Fri, Jul 19, 2013 at 11:07:10AM +0530, Kishon Vijay Abraham I wrote:
-> >>>>>>>>>>+	ret = dev_set_name(&phy->dev, "%s.%d", dev_name(dev), id);
-> >>>>>>>>>
-> >>>>>>>>>Your naming is odd, no "phy" anywhere in it?  You rely on the sender to
-> >>>>>>>>>never send a duplicate name.id pair?  Why not create your own ids based
-> >>>>>>>>>on the number of phys in the system, like almost all other classes and
-> >>>>>>>>>subsystems do?
-> >>>>>>>>
-> >>>>>>>>hmm.. some PHY drivers use the id they provide to perform some of their
-> >>>>>>>>internal operation as in [1] (This is used only if a single PHY provider
-> >>>>>>>>implements multiple PHYS). Probably I'll add an option like PLATFORM_DEVID_AUTO
-> >>>>>>>>to give the PHY drivers an option to use auto id.
-> >>>>>>>>
-> >>>>>>>>[1] ->
-> >>>>>>>>http://archive.arm.linux.org.uk/lurker/message/20130628.134308.4a8f7668.ca.html
-> >>>>>>>
-> >>>>>>>No, who cares about the id?  No one outside of the phy core ever should,
-> >>>>>>>because you pass back the only pointer that they really do care about,
-> >>>>>>>if they need to do anything with the device.  Use that, and then you can
-> >>>>>>
-> >>>>>>hmm.. ok.
-> >>>>>>
-> >>>>>>>rip out all of the "search for a phy by a string" logic, as that's not
-> >>>>>>
-> >>>>>>Actually this is needed for non-dt boot case. In the case of dt boot, we use a
-> >>>>>>phandle by which the controller can get a reference to the phy. But in the case
-> >>>>>>of non-dt boot, the controller can get a reference to the phy only by label.
-> >>>>>
-> >>>>>I don't understand.  They registered the phy, and got back a pointer to
-> >>>>>it.  Why can't they save it in their local structure to use it again
-> >>>>>later if needed?  They should never have to "ask" for the device, as the
-> >>>>
-> >>>>One is a *PHY provider* driver which is a driver for some PHY device. This will
-> >>>>use phy_create to create the phy.
-> >>>>The other is a *PHY consumer* driver which might be any controller driver (can
-> >>>>be USB/SATA/PCIE). The PHY consumer will use phy_get to get a reference to the
-> >>>>phy (by *phandle* in the case of dt boot and *label* in the case of non-dt boot).
-> >>>>>device id might be unknown if there are multiple devices in the system.
-> >>>>
-> >>>>I agree with you on the device id part. That need not be known to the PHY driver.
-> >>>
-> >>>How does a consumer know which "label" to use in a non-dt system if
-> >>>there are multiple PHYs in the system?
+> >> Indeed.  Looking into the bio_copy_kern() breakage next..
 > >>
-> >>That should be passed using platform data.
-> >
-> >Ick, don't pass strings around, pass pointers.  If you have platform
-> >data you can get to, then put the pointer there, don't use a "name".
+> > 
+> > OK, after further investigation the root cause is a actually a missing
+> > bio->bio_end_io() -> bio_copy_kern_endio() -> bio_put() from the
+> > blk_end_sync_rq() callback path that scsi-mq REQ_TYPE_BLOCK_PC is
+> > currently using.
+> > 
+> > Including the following patch into the scsi-mq working branch now, and
+> > reverting the libata dma_alignment=0x03 hack.
+> > 
+> > Alexander, care to give this a try..?
+> > 
+> > --nab
+> > 
+> > diff --git a/block/blk-exec.c b/block/blk-exec.c
+> > index 0761c89..70303d2 100644
+> > --- a/block/blk-exec.c
+> > +++ b/block/blk-exec.c
+> > @@ -25,7 +25,10 @@ static void blk_end_sync_rq(struct request *rq, int error)
+> >         struct completion *waiting = rq->end_io_data;
+> >  
+> >         rq->end_io_data = NULL;
+> > -       if (!rq->q->mq_ops) {
+> > +       if (rq->q->mq_ops) {
+> > +               if (rq->bio)
+> > +                       bio_endio(rq->bio, error);
+> > +       } else {
+> >                 __blk_put_request(rq->q, rq);
+> >         }
+> > 
 > 
-> I don't think I understood you here :-s We wont have phy pointer
-> when we create the device for the controller no?(it'll be done in
-> board file). Probably I'm missing something.
+> 
+> This does not handle requests with multiple bios, and for the mq stye
+> passthrough insertion completions you actually want to call
+> blk_mq_finish_request in scsi_execute. Same for all the other
+> passthrough code in your scsi mq tree. That is your root bug. Instead of
+> doing that though I think we want to have the block layer free the bios
+> like before.
+> 
+> For the non mq calls, blk_end_request type of calls will complete the
+> bios when blk_finish_request is called from that path. It will then call
+> the rq end_io callback.
+> 
+> I think the blk mq code assumes if the end_io callack is set that the
+> end_io function will do the bio cleanup. See __blk_mq_end_io. Also see
+> how blk_mq_execute_rq calls blk_mq_finish_request for an example of how
+> rq passthrough execution and cleanup is being done in the mq paths.
+> 
+> Now with the scsi mq changes, when blk_execute_rq_nowait calls
+> blk_mq_insert_request it calls it with a old non mq style of end io
+> function that does not complete the bios.
+> 
+> What about the attached only compile tested patch. The patch has the mq
+> block code work like the non mq code for bio cleanups.
+> 
+> 
 
-Why will you not have that pointer?  You can't rely on the "name" as the
-device id will not match up, so you should be able to rely on the
-pointer being in the structure that the board sets up, right?
+OK, so with your blk-mq patch in place to always call
+blk_mq_finish_request() in blk_mq_complete_request() regardless of
+rq->end_io, the preceding scsi_mq_end_request() can now simply call
+blk_mq_end_io() for both BLOCK_RQ and FS request types.
 
-Don't use names, especially as ids can, and will, change, that is going
-to cause big problems.  Use pointers, this is C, we are supposed to be
-doing that :)
+diff --git a/drivers/scsi/scsi-mq.c b/drivers/scsi/scsi-mq.c
+index 81b2633..f1d4789 100644
+--- a/drivers/scsi/scsi-mq.c
++++ b/drivers/scsi/scsi-mq.c
+@@ -93,19 +93,7 @@ struct scsi_cmnd *scsi_mq_end_request(struct scsi_cmnd *sc, int error,
+ #endif
+ 
+ //FIXME: Add proper blk_mq_end_io residual bytes + requeue
+-       if (rq->end_io) {
+-#if 0
+-               printk("scsi_mq_end_request: Calling rq->end_io BLOCK_PC for"
+-                       " CDB: 0x%02x\n", sc->cmnd[0]);
+-#endif
+-               rq->end_io(rq, error);
+-       } else {
+-#if 0
+-               printk("scsi_mq_end_request: Calling blk_mq_end_io for CDB: 0x%02x\n",
+-                               sc->cmnd[0]);
+-#endif
+-               blk_mq_end_io(rq, error);
+-       }
++       blk_mq_end_io(rq, error);
+ //FIXME: Need to do equiv of scsi_next_command to kick hctx..?
+ 
+        return NULL;
 
-thanks,
+Thanks for fixing up that bit of ugliness.  ;)
 
-greg k-h
+Jens, care to review+include Mike's change into your working branch..?
+
+--nab
+
