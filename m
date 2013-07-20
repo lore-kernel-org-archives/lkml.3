@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3GTV3u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 17:29:50 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:50083 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab3GTV3s (ORCPT
+	id S1755154Ab3GTVee (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 17:34:34 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:37161 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab3GTVed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 17:29:48 -0400
-Message-ID: <51EAF997.2090300@gmail.com>
-Date: Sat, 20 Jul 2013 22:56:55 +0200
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Sat, 20 Jul 2013 17:34:33 -0400
+Message-ID: <51EB0265.2030508@linaro.org>
+Date: Sat, 20 Jul 2013 23:34:29 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Peter Schiffer <pschiffe@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-man <linux-man@vger.kernel.org>, benjamin@python.org
-Subject: Re: [PATCH] open(2): document O_PATH
-References: <CAKgNAkgWiANFA1Z7o2EQmKmsMzzpa1ga2ggLeX3Bo58QmjDx6g@mail.gmail.com> <20130720114017.GA2118@ZenIV.linux.org.uk>
-In-Reply-To: <20130720114017.GA2118@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Jonas Jensen <jonas.jensen@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v9] ARM: clocksource: add support for MOXA ART SoCs
+References: <1373985880-23469-1-git-send-email-jonas.jensen@gmail.com> <1374048297-4321-1-git-send-email-jonas.jensen@gmail.com> <CACRpkdYktthfRsn9=9GjphXUbOEAswdCZCM48KFK2WRgBdj-Qw@mail.gmail.com>
+In-Reply-To: <CACRpkdYktthfRsn9=9GjphXUbOEAswdCZCM48KFK2WRgBdj-Qw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/13 13:40, Al Viro wrote:
-> On Thu, Mar 14, 2013 at 10:35:59AM +0100, Michael Kerrisk (man-pages) wrote:
->> Hello Al et al,
->>
->> Documenting O_PATH fell by the wayside last year
->> (http://thread.gmane.org/gmane.linux.man/2790) as I got distracted
->> with other tasks. A recent prod or two have reminded me restart this.
->> I have the following patch queued to document O_PATH.
->>
->> Could you please review. I've provided the O_PATH doc both as
->> formatted text, for ease of reviewing, and as a patch and entire file
->> (attached).
+On 07/20/2013 10:45 PM, Linus Walleij wrote:
+> On Wed, Jul 17, 2013 at 10:04 AM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
 > 
-> Seems to be mostly correct; the only thing missing is that F_GETFL is also
-> allowed (and return value will contain O_PATH for such descriptors).  Had
-> been there since the very beginning...
+>> +#include <linux/clk.h>
+>> +#include <linux/clockchips.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/irqreturn.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/of_irq.h>
+>> +#include <linux/io.h>
+>> +#include <linux/clocksource.h>
+> 
+> #include <linux/bitops.h>
+> 
+>> +#define TIMEREG_CR_1_ENABLE    BIT(0)
+> 
+> Because BIT() comes from there. And we shall not rely on
+> implicit #inclusion.
 
-Thanks, Al. I have added that piece.
+Hi Jonas,
 
-Cheers,
+as the patchset is already merged could you fix it with a separate patch ?
 
-Michael
+Thanks
+  -- Daniel
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
