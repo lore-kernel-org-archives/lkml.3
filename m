@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3GTNRB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 09:17:01 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:47512 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab3GTNQ7 (ORCPT
+	id S1754137Ab3GTOAh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 10:00:37 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:44134 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab3GTOAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 09:16:59 -0400
+	Sat, 20 Jul 2013 10:00:35 -0400
+Date: Sat, 20 Jul 2013 07:00:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, kosaki.motohiro@gmail.com, walken@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org
+Subject: Re: mlockall triggred rcu_preempt stall.
+Message-ID: <20130720140015.GA5860@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130719145323.GA1903@redhat.com>
+ <20130719221538.GH21367@linux.vnet.ibm.com>
+ <20130720003212.GA31308@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1448863.3slS729B6b@vostro.rjw.lan>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-	<1448863.3slS729B6b@vostro.rjw.lan>
-Date: Sat, 20 Jul 2013 08:16:56 -0500
-Message-ID: <CAMP44s2fT8C=wfF-uadxTOSzqLLfjFTJMQ767qy6teJZh_SS6w@mail.gmail.com>
-Subject: Re: [Update][PATCH 0/3] Fix backlight issues on some Windows 8 systems
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        seth.forshee@canonical.com, joeyli.kernel@gmail.com,
-        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130720003212.GA31308@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072014-5406-0000-0000-00000AA4D3D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 7:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday, June 09, 2013 07:01:36 PM Matthew Garrett wrote:
->> Windows 8 introduced new policy for backlight control by pushing it out to
->> graphics drivers. This appears to have coincided with a range of vendors
->> adding Windows 8 checks to their backlight control code which trigger either
->> awkward behaviour (Lenovo) or complete brokenness (some Dells). The simplest
->> thing to do would be to just disable ACPI backlight control entirely if the
->> firmware indicates Windows 8 support, but it's entirely possible that
->> individual graphics drivers might still make use of the ACPI functionality in
->> preference to native control.
->>
->> The first two patches in this series are picked from other patchesets aimed at
->> solving similar problems. The last simply unregisters ACPI backlight control
->> on Windows 8 systems when using an Intel GPU. Similar code could be added to
->> other drivers, but I'm reluctant to do so without further investigation as
->> to the behaviour of the vendor drivers under Windows.
->
-> Well, after some more time spent on that, we now have a series of 3 patches
-> (different from the $subject one) that we think may be used to address this
-> issue.  As far as I can say, it has been tested by multiple people whose
-> systems have those problems and they generally saw improvement.
->
-> It is not my ideal approach, but it seems to be the least intrusive and/or
-> with the least amount of possible side effects that we can do right now
-> as a general measure (alternatively, we could create a possibly long
-> blacklist table of affected systems with different workarounds for them,
-> but let's just say that is not overwhelmingly attractive).
->
-> [1/3] Make ACPICA export things that we need for checking OSI(Win8).
->
-> [2/3] Make acpi_video_device_find_cap() call acpi_video_init_brightness() even
->       if it is not going to register the backlight interface (needed for
->       Thinkpads).
->
-> [3/3] Avoid using ACPI backlight if i915 is in use and the firmware believes
->       we are Windows 8.
->
-> Many thanks to everyone involved!
+On Fri, Jul 19, 2013 at 08:32:12PM -0400, Dave Jones wrote:
+> On Fri, Jul 19, 2013 at 03:15:39PM -0700, Paul E. McKenney wrote:
+>  > On Fri, Jul 19, 2013 at 10:53:23AM -0400, Dave Jones wrote:
+>  > > My fuzz tester keeps hitting this. Every instance shows the non-irq stack
+>  > > came in from mlockall.  I'm only seeing this on one box, but that has more
+>  > > ram (8gb) than my other machines, which might explain it.
+>  > 
+>  > Are you building CONFIG_PREEMPT=n?  I don't see any preemption points in
+>  > do_mlockall(), so a range containing enough vmas might well stall the
+>  > CPU in that case.  
+> 
+> That was with full preempt.
+> 
+>  > Does the patch below help?  If so, we probably need others, but let's
+>  > first see if this one helps.  ;-)
+> 
+> I'll try it on Monday.
 
-I tried this patch series and it's as I expected, it's the same as
-acpi_backlight=vendor, and the intel backlight driver doesn't work
-correctly in this machine. If you are actually serious about the
-mantra of "no user-space regressions", then for this machine at least,
-you need to use the ACPI backlight with Windows8 OSI disabled, until
-the intel backlight driver is fixed. My patch does that:
+Given full preempt, I wouldn't think that my patch would have any effect,
+but look forward to hearing what happens.
 
-http://article.gmane.org/gmane.linux.acpi.devel/60969
+Hmmm....  Were you running mlockall() concurrently from a bunch of
+different processes sharing lots of memory via mmap() or some such?
 
--- 
-Felipe Contreras
+							Thanx, Paul
+
