@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab3GTSCG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 14:02:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37663 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753901Ab3GTSCE (ORCPT
+	id S1754775Ab3GTSFJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 14:05:09 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:56906 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753901Ab3GTSFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 14:02:04 -0400
-X-Sasl-enc: 7FJBIwiMLtzx0aF0cZJcP+DNZkj/nUs1Be+hQ3yGfNVF 1374343321
-Date: Sat, 20 Jul 2013 11:02:10 -0700
-From: Greg KH <greg@kroah.com>
-To: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: compile error on 3.10.1
-Message-ID: <20130720180210.GA6190@kroah.com>
-References: <36183925.Z4AeQk3t4j@balsa>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	Sat, 20 Jul 2013 14:05:08 -0400
+Message-ID: <1374343505.15242.12.camel@x61.thuisdomein>
+Subject: [PATCH v2] ioatdma: silence GCC warnings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, linux-kernel@vger.kernel.org
+Date: Sat, 20 Jul 2013 20:05:05 +0200
+In-Reply-To: <1374147757.26384.49.camel@x61.thuisdomein>
+References: <1371465315.26299.17.camel@x61.thuisdomein>
+	 <CAA9_cmc9XWCvU=d2qu6rMaV+_sxBeMgrreZWU5ofzAd3dANT9w@mail.gmail.com>
+	 <1374147757.26384.49.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <36183925.Z4AeQk3t4j@balsa>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 20 Jul 2013 18:05:05.0890 (UTC) FILETIME=[A9EC6C20:01CE8573]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 09:59:57AM -0600, Thomas Fjellstrom wrote:
-> Hi, just trying to compile a vanilla kernel and building using
-> allmodconfig and using oldconfig with the debian 3.10.1 config as a base.
-> 
-> With the later config, I get the following:
+Building dma_v3.o triggers a GCC warning:
+    drivers/dma/ioat/dma_v3.c: In function â€˜__ioat3_prep_pq16_lockâ€™:
+    drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
+    drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
 
-Is this new to 3.10.1 and works fine for 3.10.0? 
+This warning is caused by pq16_set_src(). It uses "int idx" as an index
+to an eight element array. Changing "idx" to "unsigned" silences this
+warning. Apparently GCC can then determine that "idx" will never be
+negative.
 
->   CC [M]  drivers/net/wireless/ath/wil6210/debugfs.o
-> drivers/net/wireless/ath/wil6210/debugfs.c: In function âwil_print_ringâ:
-> drivers/net/wireless/ath/wil6210/debugfs.c:163:11: error: pointer targets in 
-> passing argument 5 of âhex_dump_to_bufferâ differ in signedness [-
-> Werror=pointer-sign]
->            false);
->            ^
-> In file included from include/linux/kernel.h:13:0,
->                  from include/linux/cache.h:4,
->                  from include/linux/time.h:4,
->                  from include/linux/stat.h:18,
->                  from include/linux/module.h:10,
->                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-> include/linux/printk.h:361:13: note: expected âchar *â but argument is of type 
-> âunsigned char *â
->  extern void hex_dump_to_buffer(const void *buf, size_t len,
->              ^
-> drivers/net/wireless/ath/wil6210/debugfs.c: In function 
-> âwil_txdesc_debugfs_showâ:
-> drivers/net/wireless/ath/wil6210/debugfs.c:429:10: error: pointer targets in 
-> passing argument 5 of âhex_dump_to_bufferâ differ in signedness [-
-> Werror=pointer-sign]
->           sizeof(printbuf), false);
->           ^
-> In file included from include/linux/kernel.h:13:0,
->                  from include/linux/cache.h:4,
->                  from include/linux/time.h:4,
->                  from include/linux/stat.h:18,
->                  from include/linux/module.h:10,
->                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-> include/linux/printk.h:361:13: note: expected âchar *â but argument is of type 
-> âunsigned char *â
->  extern void hex_dump_to_buffer(const void *buf, size_t len,
->              ^
-> cc1: all warnings being treated as errors
-> make[5]: *** [drivers/net/wireless/ath/wil6210/debugfs.o] Error 1
-> make[4]: *** [drivers/net/wireless/ath/wil6210] Error 2
-> make[3]: *** [drivers/net/wireless/ath] Error 2
-> make[2]: *** [drivers/net/wireless] Error 2
-> make[1]: *** [drivers/net] Error 2
-> make: *** [drivers] Error 2
-> 
-> There are also a bunch of warnings, most of the ones I could catch are
-> signedness related.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) v2: cut back to a one hunk change, as Dan suggested.
 
-Care to send this to the atheros wireless developers?  I'm sure they
-would like to know about it.
+1) Still just compile tested.
 
-greg k-h
+ drivers/dma/ioat/dma_v3.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index b642e03..2bb4601 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -251,7 +251,7 @@ static bool is_bwd_noraid(struct pci_dev *pdev)
+ }
+ 
+ static void pq16_set_src(struct ioat_raw_descriptor *desc[3],
+-			dma_addr_t addr, u32 offset, u8 coef, int idx)
++			dma_addr_t addr, u32 offset, u8 coef, unsigned idx)
+ {
+ 	struct ioat_pq_descriptor *pq = (struct ioat_pq_descriptor *)desc[0];
+ 	struct ioat_pq16a_descriptor *pq16 =
+-- 
+1.8.1.4
+
