@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab3GTLQo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 07:16:44 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45326 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549Ab3GTLQn (ORCPT
+	id S1753985Ab3GTLRH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 07:17:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43517 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab3GTLRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 07:16:43 -0400
-Message-ID: <51EA7199.708@kernel.org>
-Date: Sat, 20 Jul 2013 12:16:41 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Sat, 20 Jul 2013 07:17:06 -0400
+Date: Sat, 20 Jul 2013 13:16:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mutex: Fix mutex_can_spin_on_owner
+Message-ID: <20130720111648.GQ27075@twins.programming.kicks-ass.net>
+References: <20130719183101.GA20909@twins.programming.kicks-ass.net>
+ <51E98EB4.3080307@hp.com>
 MIME-Version: 1.0
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
-Subject: Re: [PATCH 05/15] MFD: ti_tscadc: ADC Clock check not required
-References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-6-git-send-email-zubair.lutfullah@gmail.com>
-In-Reply-To: <1374186086-5015-6-git-send-email-zubair.lutfullah@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E98EB4.3080307@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 11:21 PM, Zubair Lutfullah wrote:
-> From: "Patil, Rachna" <rachna@ti.com>
+On Fri, Jul 19, 2013 at 03:08:36PM -0400, Waiman Long wrote:
+> On 07/19/2013 02:31 PM, Peter Zijlstra wrote:
+> >mutex_can_spin_on_owner() is broken in that it would allow the compiler
+> >to load lock->owner twice, seeing a pointer first time and a MULL
+> >pointer the second time.
+> >
+> >Signed-off-by: Peter Zijlstra<peterz@infradead.org>
+> >---
+> >  kernel/mutex.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> >diff --git a/kernel/mutex.c b/kernel/mutex.c
+> >index ff05f4b..7ff48c5 100644
+> >--- a/kernel/mutex.c
+> >+++ b/kernel/mutex.c
+> >@@ -209,11 +209,13 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+> >   */
+> >  static inline int mutex_can_spin_on_owner(struct mutex *lock)
+> >  {
+> >+	struct task_struct *owner;
+> >  	int retval = 1;
+> >
+> >  	rcu_read_lock();
+> >-	if (lock->owner)
+> >-		retval = lock->owner->on_cpu;
+> >+	owner = ACCESS_ONCE(lock->owner);
+> >+	if (owner)
+> >+		retval = owner->on_cpu;
+> >  	rcu_read_unlock();
+> >  	/*
+> >  	 * if lock->owner is not set, the mutex owner may have just acquired
 > 
-> ADC is ideally expected to work at a frequency of 3MHz.
-> The present code had a check, which returned error if the frequency
-> went below the threshold  value. But since AM335x supports various
-> working frequencies, this check is not required.
-> Now the code just uses the internal ADC clock divider to set the ADC
-> frequency w.r.t the sys clock.
-A I read this comment, this is a fairly stand alone patch and everything
-else in the series will work whether or not it is there?
+> I am fine with this change. However, the compiler is smart enough to not do
+> two memory accesses to the same memory location. So this will not change the
+> generated code. Below is the relevant x86 code for that section of code:
 
-If so, should not really be part of this series and I'm certainly
-going to leave taking it up to the mfd maintainer.
-> 
-> Signed-off-by: Patil, Rachna <rachna@ti.com>
-> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-> ---
->  drivers/mfd/ti_am335x_tscadc.c       |    6 +-----
->  include/linux/mfd/ti_am335x_tscadc.h |    1 -
->  2 files changed, 1 insertion(+), 6 deletions(-)
-> 
-> diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-> index 9f5c326..b8d7dfb 100644
-> --- a/drivers/mfd/ti_am335x_tscadc.c
-> +++ b/drivers/mfd/ti_am335x_tscadc.c
-> @@ -197,11 +197,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
->  	clock_rate = clk_get_rate(clk);
->  	clk_put(clk);
->  	clk_value = clock_rate / ADC_CLK;
-> -	if (clk_value < MAX_CLK_DIV) {
-> -		dev_err(&pdev->dev, "clock input less than min clock requirement\n");
-> -		err = -EINVAL;
-> -		goto err_disable_clk;
-> -	}
-> +
->  	/* TSCADC_CLKDIV needs to be configured to the value minus 1 */
->  	clk_value = clk_value - 1;
->  	tscadc_writel(tscadc, REG_CLKDIV, clk_value);
-> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-> index 3058aef..136463b 100644
-> --- a/include/linux/mfd/ti_am335x_tscadc.h
-> +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> @@ -127,7 +127,6 @@
->  #define SEQ_STATUS BIT(5)
->  
->  #define ADC_CLK			3000000
-> -#define	MAX_CLK_DIV		7
->  #define TOTAL_STEPS		16
->  #define TOTAL_CHANNELS		8
->  #define FIFO1_THRESHOLD		19
-> 
+Yes I know, but the compiler would be allowed to do so; not so after the
+change.
+
+Also, GCC can be surprisingly stupid at times, depending on the options
+given, never rely/trust on anything you don't have to.
+
+
