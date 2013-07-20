@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3GTSHw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 14:07:52 -0400
-Received: from mail.tomasu.net ([64.85.170.232]:47482 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901Ab3GTSHv convert rfc822-to-8bit (ORCPT
+	id S1754759Ab3GTSZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 14:25:27 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42051 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab3GTSZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 14:07:51 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: compile error on 3.10.1
-Date: Sat, 20 Jul 2013 12:07:03 -0600
-Message-ID: <2288831.DxHLOohu6v@balsa>
-User-Agent: KMail/4.10.5 (Linux/3.9-1-amd64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130720180210.GA6190@kroah.com>
-References: <36183925.Z4AeQk3t4j@balsa> <20130720180210.GA6190@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	Sat, 20 Jul 2013 14:25:25 -0400
+Message-ID: <1374344603.1192.12.camel@laptop>
+Subject: [PATCH] dvb-usb: add another product id for "Elgato EyeTV SAT"
+From: Manuel =?ISO-8859-1?Q?Sch=F6nlaub?= <manuel.schoenlaub@gmail.com>
+Reply-To: manuel.schoenlaub@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-media@vger.kernel.org, mchehab@redhat.com
+Date: Sat, 20 Jul 2013 20:23:23 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 20 July 2013 11:02:10 you wrote:
-> On Sat, Jul 20, 2013 at 09:59:57AM -0600, Thomas Fjellstrom wrote:
-> > Hi, just trying to compile a vanilla kernel and building using
-> > allmodconfig and using oldconfig with the debian 3.10.1 config as a base.
-> > 
-> > With the later config, I get the following:
-> 
-> Is this new to 3.10.1 and works fine for 3.10.0? 
+From: Manuel Sch√∂nlaub <manuel.schoenlaub@gmail.com>
 
-I'll check.
+There is another revision of "Elgato EyeTV SAT" working with this driver
+but using a previously unknown product id.
 
-All I've tested so far is debian's 2.6.32, 3.9.8, 3.10.1, and a vanilla 3.10.1 
-(with allmodconfig and oldconfig+debian config).
+Signed-off-by: Manuel Sch√∂nlaub <manuel.schoenlaub@gmail.com>
+---
+drivers/media/dvb-core/dvb-usb-ids.h |    1 +
+drivers/media/usb/dvb-usb/az6027.c   |    7 ++++++-
+2 files changed, 7 insertions(+), 1 deletion(-)
 
-> >   CC [M]  drivers/net/wireless/ath/wil6210/debugfs.o
-> > drivers/net/wireless/ath/wil6210/debugfs.c: In function ‚wil_print_ring‚:
-> > drivers/net/wireless/ath/wil6210/debugfs.c:163:11: error: pointer targets 
-in 
-> > passing argument 5 of ‚hex_dump_to_buffer‚ differ in signedness [-
-> > Werror=pointer-sign]
-> >            false);
-> >            ^
-> > In file included from include/linux/kernel.h:13:0,
-> >                  from include/linux/cache.h:4,
-> >                  from include/linux/time.h:4,
-> >                  from include/linux/stat.h:18,
-> >                  from include/linux/module.h:10,
-> >                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-> > include/linux/printk.h:361:13: note: expected ‚char *‚ but argument is of 
-type 
-> > ‚unsigned char *‚
-> >  extern void hex_dump_to_buffer(const void *buf, size_t len,
-> >              ^
-> > drivers/net/wireless/ath/wil6210/debugfs.c: In function 
-> > ‚wil_txdesc_debugfs_show‚:
-> > drivers/net/wireless/ath/wil6210/debugfs.c:429:10: error: pointer targets 
-in 
-> > passing argument 5 of ‚hex_dump_to_buffer‚ differ in signedness [-
-> > Werror=pointer-sign]
-> >           sizeof(printbuf), false);
-> >           ^
-> > In file included from include/linux/kernel.h:13:0,
-> >                  from include/linux/cache.h:4,
-> >                  from include/linux/time.h:4,
-> >                  from include/linux/stat.h:18,
-> >                  from include/linux/module.h:10,
-> >                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-> > include/linux/printk.h:361:13: note: expected ‚char *‚ but argument is of 
-type 
-> > ‚unsigned char *‚
-> >  extern void hex_dump_to_buffer(const void *buf, size_t len,
-> >              ^
-> > cc1: all warnings being treated as errors
-> > make[5]: *** [drivers/net/wireless/ath/wil6210/debugfs.o] Error 1
-> > make[4]: *** [drivers/net/wireless/ath/wil6210] Error 2
-> > make[3]: *** [drivers/net/wireless/ath] Error 2
-> > make[2]: *** [drivers/net/wireless] Error 2
-> > make[1]: *** [drivers/net] Error 2
-> > make: *** [drivers] Error 2
-> > 
-> > There are also a bunch of warnings, most of the ones I could catch are
-> > signedness related.
-> 
-> Care to send this to the atheros wireless developers?  I'm sure they
-> would like to know about it.
+diff -upNr linux-3.10/drivers/media/dvb-core/dvb-usb-ids.h
+linux-3.10-patched/drivers/media/dvb-core/dvb-usb-ids.h
+--- linux-3.10/drivers/media/dvb-core/dvb-usb-ids.h	2013-07-01
+00:13:29.000000000 +0200
++++ linux-3.10-patched/drivers/media/dvb-core/dvb-usb-ids.h	2013-07-20
+18:01:23.573035824 +0200
+@@ -353,6 +353,7 @@
+ #define USB_PID_ELGATO_EYETV_DTT_2			0x003f
+ #define USB_PID_ELGATO_EYETV_DTT_Dlx			0x0020
+ #define USB_PID_ELGATO_EYETV_SAT			0x002a
++#define USB_PID_ELGATO_EYETV_SAT_CI			0x0025
+ #define USB_PID_DVB_T_USB_STICK_HIGH_SPEED_COLD		0x5000
+ #define USB_PID_DVB_T_USB_STICK_HIGH_SPEED_WARM		0x5001
+ #define USB_PID_FRIIO_WHITE				0x0001
+diff -upNr linux-3.10/drivers/media/usb/dvb-usb/az6027.c
+linux-3.10-patched/drivers/media/usb/dvb-usb/az6027.c
+--- linux-3.10/drivers/media/usb/dvb-usb/az6027.c	2013-07-01
+00:13:29.000000000 +0200
++++ linux-3.10-patched/drivers/media/usb/dvb-usb/az6027.c	2013-07-20
+18:31:47.622924602 +0200
+@@ -1088,6 +1088,7 @@ static struct usb_device_id az6027_usb_t
+ 	{ USB_DEVICE(USB_VID_TECHNISAT, USB_PID_TECHNISAT_USB2_HDCI_V1) },
+ 	{ USB_DEVICE(USB_VID_TECHNISAT, USB_PID_TECHNISAT_USB2_HDCI_V2) },
+ 	{ USB_DEVICE(USB_VID_ELGATO, USB_PID_ELGATO_EYETV_SAT) },
++	{ USB_DEVICE(USB_VID_ELGATO, USB_PID_ELGATO_EYETV_SAT_CI) },
+ 	{ },
+ };
+ 
+@@ -1136,7 +1137,7 @@ static struct dvb_usb_device_properties
+ 
+ 	.i2c_algo         = &az6027_i2c_algo,
+ 
+-	.num_device_descs = 6,
++	.num_device_descs = 7,
+ 	.devices = {
+ 		{
+ 			.name = "AZUREWAVE DVB-S/S2 USB2.0 (AZ6027)",
+@@ -1162,6 +1163,10 @@ static struct dvb_usb_device_properties
+ 			.name = "Elgato EyeTV Sat",
+ 			.cold_ids = { &az6027_usb_table[5], NULL },
+ 			.warm_ids = { NULL },
++		}, {
++			.name = "Elgato EyeTV Sat",
++			.cold_ids = { &az6027_usb_table[6], NULL },
++			.warm_ids = { NULL },
+ 		},
+ 		{ NULL },
+ 	}
 
-Can do.
-
-> greg k-h
--- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
