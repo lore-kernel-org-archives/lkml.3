@@ -1,134 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab3GTSk1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 14:40:27 -0400
-Received: from mail.tomasu.net ([64.85.170.232]:36304 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754723Ab3GTSk0 convert rfc822-to-8bit (ORCPT
+	id S1754821Ab3GTTAO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 15:00:14 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:49581 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3GTTAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 14:40:26 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: compile error on 3.10.1
-Date: Sat, 20 Jul 2013 12:39:34 -0600
-Message-ID: <4042881.r0jf4IMbXO@balsa>
-User-Agent: KMail/4.10.5 (Linux/3.9-1-amd64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2288831.DxHLOohu6v@balsa>
-References: <36183925.Z4AeQk3t4j@balsa> <20130720180210.GA6190@kroah.com> <2288831.DxHLOohu6v@balsa>
+	Sat, 20 Jul 2013 15:00:12 -0400
+X-Auth-Info: qkJXN8W34Aegi1TLeGB/pWmzCtt8A1AFt/b+iTxLevw=
+From: Marek Vasut <marex@denx.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH v2 5/5] iio: mxs-lradc: add write_raw function to modify scale
+Date: Sat, 20 Jul 2013 21:00:09 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Hector Palacios <hector.palacios@digi.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <51E967D8.8020001@digi.com> <51E9A029.3000008@kernel.org>
+In-Reply-To: <51E9A029.3000008@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307202100.09749.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 20 July 2013 12:07:03 Thomas Fjellstrom wrote:
-> On Sat 20 July 2013 11:02:10 you wrote:
-> > On Sat, Jul 20, 2013 at 09:59:57AM -0600, Thomas Fjellstrom wrote:
-> > > Hi, just trying to compile a vanilla kernel and building using
-> > > allmodconfig and using oldconfig with the debian 3.10.1 config as a
-> > > base.
+Dear Jonathan Cameron,
+
+> On 07/19/2013 05:22 PM, Hector Palacios wrote:
+> > Dear Marek,
 > > 
-> > > With the later config, I get the following:
-> > Is this new to 3.10.1 and works fine for 3.10.0?
-> 
-> I'll check.
-> 
-> All I've tested so far is debian's 2.6.32, 3.9.8, 3.10.1, and a vanilla
-> 3.10.1 (with allmodconfig and oldconfig+debian config).
-
-I meant to say I only tried 3.10.1... I'm getting this and my last email 
-confused a little.
-
-Just tested the v3.10 tag from the stable repo and it exhibits the same 
-problem.
-
-> > >   CC [M]  drivers/net/wireless/ath/wil6210/debugfs.o
-> > > 
-> > > drivers/net/wireless/ath/wil6210/debugfs.c: In function
-> > > âwil_print_ringâ:
-> > > drivers/net/wireless/ath/wil6210/debugfs.c:163:11: error: pointer
-> > > targets
-> 
-> in
-> 
-> > > passing argument 5 of âhex_dump_to_bufferâ differ in signedness [-
-> > > Werror=pointer-sign]
-> > > 
-> > >            false);
-> > >            ^
-> > > 
-> > > In file included from include/linux/kernel.h:13:0,
-> > > 
-> > >                  from include/linux/cache.h:4,
-> > >                  from include/linux/time.h:4,
-> > >                  from include/linux/stat.h:18,
-> > >                  from include/linux/module.h:10,
-> > > 
-> > >                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-> > > include/linux/printk.h:361:13: note: expected âchar *â but argument is
-> > > of
-> 
-> type
-> 
-> > > âunsigned char *â
-> > > 
-> > >  extern void hex_dump_to_buffer(const void *buf, size_t len,
-> > >  
-> > >              ^
-> > > 
-> > > drivers/net/wireless/ath/wil6210/debugfs.c: In function
-> > > âwil_txdesc_debugfs_showâ:
-> > > drivers/net/wireless/ath/wil6210/debugfs.c:429:10: error: pointer
-> > > targets
-> 
-> in
-> 
-> > > passing argument 5 of âhex_dump_to_bufferâ differ in signedness [-
-> > > Werror=pointer-sign]
-> > > 
-> > >           sizeof(printbuf), false);
-> > >           ^
-> > > 
-> > > In file included from include/linux/kernel.h:13:0,
-> > > 
-> > >                  from include/linux/cache.h:4,
-> > >                  from include/linux/time.h:4,
-> > >                  from include/linux/stat.h:18,
-> > >                  from include/linux/module.h:10,
-> > > 
-> > >                  from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-> > > include/linux/printk.h:361:13: note: expected âchar *â but argument is
-> > > of
-> 
-> type
-> 
-> > > âunsigned char *â
-> > > 
-> > >  extern void hex_dump_to_buffer(const void *buf, size_t len,
-> > >  
-> > >              ^
-> > > 
-> > > cc1: all warnings being treated as errors
-> > > make[5]: *** [drivers/net/wireless/ath/wil6210/debugfs.o] Error 1
-> > > make[4]: *** [drivers/net/wireless/ath/wil6210] Error 2
-> > > make[3]: *** [drivers/net/wireless/ath] Error 2
-> > > make[2]: *** [drivers/net/wireless] Error 2
-> > > make[1]: *** [drivers/net] Error 2
-> > > make: *** [drivers] Error 2
-> > > 
-> > > There are also a bunch of warnings, most of the ones I could catch are
-> > > signedness related.
+> > On 07/19/2013 06:17 PM, Marek Vasut wrote:
+> >>> Here you have three entries per channel:
+> >>> in_voltageX_raw        -> the sample raw value
+> >>> in_voltageX_scale    -> the scale to multiply the raw value to get the
+> >> 
+> >> voltage
+> >> 
+> >>> in mV in_voltageX_scale_available -> lists the available scales of the
+> >>> channel
+> >>> 
+> >>> For example for channel 0:
+> >>> 
+> >>> # cat in_voltage0_scale_available
+> >>> 0.451660156 0.903320312    (two scales available, first with divider by
+> >>> two disabled, second with divider by two enabled)
+> >>> 
+> >>> # cat in_voltage0_scale
+> >>> 0.451660156            (divider by two is currently disabled)
+> >>> 
+> >>> # cat in_voltage0_raw        (shows measured value)
+> >>> 1000
+> >>> 
+> >>> If you multiply the value by the scale you get: 1000 * 0.451660156 =
+> >>> 451.6 mV
+> >>> 
+> >>> # echo 0.903320312 > in_voltage0_scale    (enables the divider by two)
+> >> 
+> >> Ok, so I have to remember this value : '0.903320312' in case I want to
+> >> enable divide-by-two functionality?
 > > 
-> > Care to send this to the atheros wireless developers?  I'm sure they
-> > would like to know about it.
+> > No you don't. That's why there is a 'in_voltage_scale_available' that
+> > lists the available values.
+> > 
+> >> Hmmmm ... why would this interface not work:
+> >> echo 2 > in_voltage0_scale
+> >> 
+> >> or
+> >> 
+> >> echo 1 > in_voltage0_scale
+> > 
+> > An easy thing like that is what I first submitted, but it was rejected
+> > and I was told to use the scale_available descriptor instead, which is
+> > the common interface the rest of drivers use.
 > 
-> Can do.
+> This comes down to allowing us to have one generic predictable interface
+> (which sometimes ends up looking uggly!).  The key thing is that if you
+> are outputing using the _raw sysfs interfaces, the aim is to avoid doing
+> nasty maths in kernel to get to 'standard' units such as mV.
 
-Done.
+OK, understood.
 
-> > greg k-h
--- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
+> Hence that scale attribute tells you what to apply to the value.  If you
+> just wanted it to be 1 or 2 then the in_voltage0_raw value would have to
+> be a long and nasty decimal.  Now we do have the option of
+> in_voltage0_calibscale which would be applied internally to the value but
+> it really isn't for this purpose (it's for devices with a 'trim' control)
+> and you'd still have scale set to 0.903320312 or similar. Although they
+> have meaning obviously, in this case 1 and 2 are little more than 'magic'
+> numbers.
+> 
+> Note that when things are quite, I'm at least in theory working on a
+> cleaner interface for these 'available' attributes that would also provide
+> in kernel access for IIO consumers. Basically this will be another
+> callback to get either the 'range' of pseudo continuous variables or the
+> 'available' set for parameters like this.
+
+Thanks for the explanation!
+
+> Being lazy I'm happy to let someone else clean this corner up if they like?
+> *looks hopeful*
+
+Please don't look at me, I already am fully loaded with fixing my mess all 
+around ;-/
+
+Best regards,
+Marek Vasut
