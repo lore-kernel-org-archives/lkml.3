@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3GTWYe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 18:24:34 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:62261 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab3GTWYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 18:24:33 -0400
+	id S1755189Ab3GTW7W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 18:59:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33728 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754733Ab3GTW7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 18:59:21 -0400
+Date: Sun, 21 Jul 2013 00:59:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Jacob Shin <jacob.shin@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacob Shin <jacob.w.shin@gmail.com>
+Subject: Re: early microcode on amd is broken when no initramfs provided
+Message-ID: <20130720225911.GC13731@pd.tnic>
+References: <20130709183601.5d567a83@fem.tu-ilmenau.de>
+ <20130710073049.GA15525@pd.tnic>
+ <20130711230525.40bc6491@fem.tu-ilmenau.de>
+ <20130716170055.GG4402@pd.tnic>
+ <CAPVoSvQuzUQUgRgk6fhsxEhjWS8oPreo00u_urntaCzmERpOtg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130719041952.GA29001@dev.danweeks.net>
-References: <20130719041952.GA29001@dev.danweeks.net>
-Date: Sun, 21 Jul 2013 00:24:32 +0200
-Message-ID: <CACRpkdaGThdLU_1yN7NEBVtA=os8_nJaQ2n66HdY7t=CrrOjJA@mail.gmail.com>
-Subject: Re: [PATCH] gpio-mcp23s08: i2c: auto-select base if no DT match or
- platform data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Daniel M. Weeks" <dan@danweeks.net>, Peter Korsgaard <jacmet@sunsite.dk>,
-        Lars Poeschel <poeschel@lemonage.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAPVoSvQuzUQUgRgk6fhsxEhjWS8oPreo00u_urntaCzmERpOtg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 6:19 AM, Daniel M. Weeks <dan@danweeks.net> wrote:
+On Sat, Jul 20, 2013 at 09:01:33PM +0200, Torsten Kaiser wrote:
+> On Tue, Jul 16, 2013 at 7:00 PM, Borislav Petkov <bp@alien8.de> wrote:
+> > On Thu, Jul 11, 2013 at 11:05:25PM +0200, Johannes Hirte wrote:
+> >> config is attached
+> >
+> > Ok, I can reproduce the hang with your config but even with:
+> >
+> > $ grep MICROCODE .config
+> > # CONFIG_MICROCODE is not set
+> > # CONFIG_MICROCODE_INTEL_EARLY is not set
+> > # CONFIG_MICROCODE_AMD_EARLY is not set
+> >
+> > which means, it cannot be microcode-related.
+> >
+> > And I'd bet if you wait a minute (yep, it should be exactly 60 seconds)
+> > the boot would probably continue. And if so, this is that 60 sec delay
+> > where the kernel tries to find firmware.
+> >
+> > Hmm...
+> 
+> I have the same problem: Booting 3.11-rc1 hangs after the line:
+> ACPI: Executed 3 blocks of module-level executable AML code
+> 
+> I bisected it down to the early microcode changes:
+> 757885e94a22bcc82beb9b1445c95218cb20ceab (the new early loading
+> implementation) and 6b3389ac21b5e557b957f1497d0ff22bf733e8c3 (small
+> fixup) completely fail to boot (No output beyond "Booting kernel") ,
+> from 275bbe2e299f1820ec8faa443d689469a9e6ecc5 ("Make
+> find_ucode_in_initrd() __init") I'm seeing this hang.
+> 
+> Just turning CONFIG_MICROCODE_EARLY off solves the problem: The system
+> now sucessfully boots 3.11-rc1.
 
-> The call to gpiochip_add made by this driver is capable of auto-selecting a
-> base if one is not provided. However, it was not called unless there was
-> already a DT entry or platform data. This patch calls it even if the base is
-> not already known so that gpiochip_add can attempt to find a usable base.
->
-> Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
+Ok, I need to be able to reproduce that first - I wasn't that successful
+with Johannes' setup.
 
-Peter, Lars: you also contribute to this driver so can you folks have
-a look at each others patches, e.g it'd be nice to have an ACK on this.
+So, can you please send .config and how you're loading your microcode?
+Is it in the initrd or are you doing that later, how? Grub entry please.
 
-Yours,
-Linus Walleij
+Also, is it just plain v3.11-rc1 or with patches ontop?
+
+Also, /proc/cpuinfo please.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
