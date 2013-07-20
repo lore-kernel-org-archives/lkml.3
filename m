@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab3GTLTq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 07:19:46 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45366 "EHLO
+	id S1753995Ab3GTLVS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 07:21:18 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45388 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688Ab3GTLTo (ORCPT
+	with ESMTP id S1753688Ab3GTLVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 07:19:44 -0400
-Message-ID: <51EA724F.2060805@kernel.org>
-Date: Sat, 20 Jul 2013 12:19:43 +0100
+	Sat, 20 Jul 2013 07:21:16 -0400
+Message-ID: <51EA72AB.9060308@kernel.org>
+Date: Sat, 20 Jul 2013 12:21:15 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 CC: jic23@cam.ac.uk, gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org, koen@dominion.thruhere.net
-Subject: Re: [PATCH 06/15] iio: ti_am335x_adc: Handle set to clear IRQENABLE
-References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-7-git-send-email-zubair.lutfullah@gmail.com>
-In-Reply-To: <1374186086-5015-7-git-send-email-zubair.lutfullah@gmail.com>
+Subject: Re: [PATCH 08/15] iio: ti_am335x_adc: Handle overrun before threshold
+ event
+References: <1374186086-5015-1-git-send-email-zubair.lutfullah@gmail.com> <1374186086-5015-9-git-send-email-zubair.lutfullah@gmail.com>
+In-Reply-To: <1374186086-5015-9-git-send-email-zubair.lutfullah@gmail.com>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -28,80 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 07/18/2013 11:21 PM, Zubair Lutfullah wrote:
 > From: Russ Dill <Russ.Dill@ti.com>
 > 
-> The driver is currently mishandling the IRQENABLE register. The driver
-> should write a 1 for bits it wishes to set, and a zero for bits it does not
-> wish to change. The read of the current register contents is not
-> necessary.
-> 
-> Write 0 = No action.
-> Read 0 = Interrupt disabled (masked).
-> Read 1 = Interrupt enabled.
-> Write 1 = Enable interrupt.
-> 
-> The current read/update/write method is currently not causing any
-> problems, but could cause confusion in the future.
+> If an overrun occurs, the threshold event is meaningless, handle
+> the overrun event first.
 > 
 > Signed-off-by: Russ Dill <Russ.Dill@ti.com>
 > Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
 
-I guess this makes sense as a separate patch to maintain history, but
-I'd personally have preferred it rolled into the write places and
-appropriate credit given as comments.
+This is getting a little silly.  Would Russ mind if these get
+rolled up into the original patches?  Perhaps with his sign-off to
+reflect his various contributions?
 
-I don't like the fact that the code will be broken in a known fashion
-at somepoints in this series...
-
-Jonathan
 > ---
->  drivers/iio/adc/ti_am335x_adc.c |   14 ++++++--------
->  1 file changed, 6 insertions(+), 8 deletions(-)
+>  drivers/iio/adc/ti_am335x_adc.c |   24 ++++++++++--------------
+>  1 file changed, 10 insertions(+), 14 deletions(-)
 > 
 > diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> index c1b051c..b566e6a 100644
+> index 1c47818..7ac28a9 100644
 > --- a/drivers/iio/adc/ti_am335x_adc.c
 > +++ b/drivers/iio/adc/ti_am335x_adc.c
-> @@ -207,7 +207,7 @@ static void tiadc_poll_handler(struct work_struct *work_s)
->  		container_of(work_s, struct tiadc_device, poll_work);
->  	struct iio_dev *idev = iio_priv_to_dev(adc_dev);
->  	struct iio_buffer *buffer = idev->buffer;
-> -	unsigned int fifo1count, readx1, status;
-> +	unsigned int fifo1count, readx1;
->  	int i;
->  	u32 *inputbuffer;
+> @@ -167,7 +167,16 @@ static irqreturn_t tiadc_irq(int irq, void *private)
+>  	unsigned int status, config;
 >  
-> @@ -223,9 +223,8 @@ static void tiadc_poll_handler(struct work_struct *work_s)
->  	}
+>  	status = tiadc_readl(adc_dev, REG_IRQSTATUS);
+> -	if (status & IRQENB_FIFO1THRES) {
+> +	if (status & IRQENB_FIFO1OVRRUN) {
+> +		config = tiadc_readl(adc_dev, REG_CTRL);
+> +		config &= ~(CNTRLREG_TSCSSENB);
+> +		tiadc_writel(adc_dev, REG_CTRL, config);
+> +		tiadc_writel(adc_dev, REG_IRQSTATUS,
+> +				IRQENB_FIFO1OVRRUN | IRQENB_FIFO1UNDRFLW);
+> +		tiadc_writel(adc_dev, REG_CTRL,
+> +				(config | CNTRLREG_TSCSSENB));
+> +		return IRQ_HANDLED;
+> +	} else if (status & IRQENB_FIFO1THRES) {
+>  		tiadc_writel(adc_dev, REG_IRQCLR,
+>  				IRQENB_FIFO1THRES);
 >  
->  	buffer->access->store_to(buffer, (u8 *) inputbuffer);
-> -	status = tiadc_readl(adc_dev, REG_IRQENABLE);
->  	tiadc_writel(adc_dev, REG_IRQENABLE,
-> -			(status | IRQENB_FIFO1THRES));
-> +			IRQENB_FIFO1THRES);
->  
->  	kfree(inputbuffer);
->  }
-> @@ -242,7 +241,7 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
->  {
->  	struct tiadc_device *adc_dev = iio_priv(idev);
->  	struct iio_buffer *buffer = idev->buffer;
-> -	unsigned int enb, status, fifo1count;
-> +	unsigned int enb, fifo1count;
->  	int stepnum, i;
->  	u8 bit;
->  
-> @@ -250,11 +249,10 @@ static int tiadc_buffer_postenable(struct iio_dev *idev)
->  		pr_info("Data cannot be read continuously in one shot mode\n");
->  		return -EINVAL;
+> @@ -180,19 +189,6 @@ static irqreturn_t tiadc_irq(int irq, void *private)
+>  		tiadc_writel(adc_dev, REG_IRQSTATUS,
+>  					IRQENB_FIFO1THRES);
+>  		return IRQ_HANDLED;
+> -	} else if ((status &  IRQENB_FIFO1OVRRUN) ||
+> -			(status &  IRQENB_FIFO1UNDRFLW)) {
+> -		config = tiadc_readl(adc_dev,  REG_CTRL);
+> -		config &= ~(CNTRLREG_TSCSSENB);
+> -		tiadc_writel(adc_dev,  REG_CTRL, config);
+> -
+> -		tiadc_writel(adc_dev, REG_IRQSTATUS,
+> -				IRQENB_FIFO1OVRRUN |
+> -				IRQENB_FIFO1UNDRFLW);
+> -
+> -		tiadc_writel(adc_dev,  REG_CTRL,
+> -			(config |  CNTRLREG_TSCSSENB));
+> -		return IRQ_HANDLED;
 >  	} else {
-> -		status = tiadc_readl(adc_dev, REG_IRQENABLE);
->  		tiadc_writel(adc_dev, REG_IRQENABLE,
-> -				(status | IRQENB_FIFO1THRES)|
-> -				 IRQENB_FIFO1OVRRUN |
-> -				 IRQENB_FIFO1UNDRFLW);
-> +				(IRQENB_FIFO1THRES |
-> +				IRQENB_FIFO1OVRRUN |
-> +				IRQENB_FIFO1UNDRFLW));
->  
->  		fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
->  		for (i = 0; i < fifo1count; i++)
+>  		return IRQ_NONE;
+>  	}
 > 
