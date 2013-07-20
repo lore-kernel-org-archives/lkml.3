@@ -1,79 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab3GTQ2K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 12:28:10 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:56265 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3GTQ1o (ORCPT
+	id S1754478Ab3GTQes (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 12:34:48 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:65320 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341Ab3GTQep convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 12:27:44 -0400
-From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, koen@dominion.thruhere.net
-Subject: [PATCH 2/4] MFD: ti_tscadc: disable TSC config registers in adc mode
-Date: Sat, 20 Jul 2013 17:27:34 +0100
-Message-Id: <1374337656-6393-3-git-send-email-zubair.lutfullah@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374337656-6393-1-git-send-email-zubair.lutfullah@gmail.com>
-References: <1374337656-6393-1-git-send-email-zubair.lutfullah@gmail.com>
+	Sat, 20 Jul 2013 12:34:45 -0400
+X-AuditID: cbfec37b-b7f306d0000047de-17-51eabc238caf
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [ 00/38] 3.9.11-stable review
+Thread-topic: [ 00/38] 3.9.11-stable review
+Thread-index: AQHOhJVmEYdPFGTrWEWBmR0E5HnPIQ==
+Date: Sat, 20 Jul 2013 16:34:41 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61746DA5@sisaex01sj>
+References: <20130719052047.858393825@linuxfoundation.org>
+ <B8EFE96D1287C24090BAD9D858E15E6174192D@sisaex01sj>
+ <20130719192524.GB2428@kroah.com> <20130719234723.GA11456@kroah.com>
+ <B8EFE96D1287C24090BAD9D858E15E61746BA3@sisaex01sj>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+wn67KnleBBg2PmCzmrF/DZtG8eD2b
+	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4MpY/c+04IpURe/9m6wNjC9Fuxg5OSQETCTuPbrPAmGLSVy4t54NxBYSWMYo0fwrpYuR
+	C8juZZKYduI1M4Qzn1Fi55N1YFVsAuoSn1/vYAexRQSMJfrPzmIHKWIWOMYk0fl8IiNIQlhA
+	S+Ly3nMsEEXaEv8/vGeDsPUk7s25xQpiswioSrS9Wwc2iFfAXuLZo69sENveMkr8aH8BNogR
+	6L7vp9YwgdjMAuISza03oe4WkFiy5zwzhC0q8fLxP6ChHEC2osT21VYQ5XoSH//cZoSwtSWe
+	vLvACrFLUOLH5HssExjFZiGZOgtJyywkLbOQtCxgZFnFKFZanFxQnJSeWmGkV5yYW1yal66X
+	nJ+7iRESe9U7GO9+tTnEKMDBqMTDe2HFy0Ah1sSy4srcQ4wSHMxKIrwH+14FCvGmJFZWpRbl
+	xxeV5qQWH2Jk4uCUamCs40/cwXH2yZ3E4Jg9i6dNnp4y6bSLUFxdtMqG1eUsv3I4NKzyZGtY
+	tzknJc2UWBcczSEgPyF8l8rfHLEJXe3XtjbJJicLzGtY2XAl7P0DrqhNrs2Od0sfrs11ltPP
+	zwjZJCrVmfh3yve/0m+O/mFnMbi75VIvV90Ktgs/TRo67yUUN7O9bVJiKc5INNRiLipOBADf
+	DsG+mwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Patil, Rachna" <rachna@ti.com>
+On 07/19/2013 06:10 PM, Shuah Khan wrote:
+> On 07/19/2013 05:50 PM, Greg Kroah-Hartman wrote:
+>> On Fri, Jul 19, 2013 at 12:25:24PM -0700, Greg Kroah-Hartman wrote:
+>>> On Fri, Jul 19, 2013 at 04:45:25PM +0000, Shuah Khan wrote:
+>>>> On 07/19/2013 09:34 AM, Greg Kroah-Hartman wrote:
+>>>>> ---------------
+>>>>> Note, this is the LAST 3.9-stable kernel release that I will be doing.
+>>>>> Please move to the 3.10-stable branch as soon as possible.
+>>>>> ---------------
+>>>>>
+>>>>> This is the start of the stable review cycle for the 3.9.11 release.
+>>>>> There are 38 patches in this series, all will be posted as a response
+>>>>> to this one.  If anyone has any issues with these being applied, please
+>>>>> let me know.
+>>>>>
+>>>>> Responses should be made by Sun Jul 21 05:20:01 UTC 2013.
+>>>>> Anything received after that time might be too late.
+>>>>>
+>>>>> The whole patch series can be found in one patch at:
+>>>>> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc1.gz
+>>>>> and the diffstat can be found below.
+>>>>>
+>>>>> thanks,
+>>>>>
+>>>>> greg k-h
+>>>>>
+>>>>
+>>>> Greg,
+>>>>
+>>>> Build failed with the following error:
+>>>>
+>>>>      LD      ipc/built-in.o
+>>>>      CC [M]  fs/cifs/inode.o
+>>>> fs/cifs/inode.c: In function ‘cifs_all_info_to_fattr’:
+>>>> fs/cifs/inode.c:560:4: error: implicit declaration of function
+>>>> ‘cifs_dbg’ [-Werror=implicit-function-declaration]
+>>>> cc1: some warnings being treated as errors
+>>>> make[2]: *** [fs/cifs/inode.o] Error 1
+>>>> make[1]: *** [fs/cifs] Error 2
+>>>> make: *** [fs] Error 2
+>>>> make: *** Waiting for unfinished jobs....
+>>>>      CC      security/selinux/hooks.o
+>>>>
+>>>> I have CONFIG_CIFS=m in my config and CONFIG_CIFS_DEBUG is disabled.
+>>>> cifs_dbg() is not defined.
+>>>
+>>> Ugh, I thought I fixed that one...  I did it for the 3.4 and other
+>>> trees, I'll go see what I did wrong...
+>>
+>> Ok, I've now fixed this, I don't know how it got through my tests, when
+>> I tried it again, it failed.  Before it wasn't, odd...
+>>
+>> Anyway, there is a new -rc2 kernel patch at:
+>>    	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.11-rc2.gz
+>>
+>> If you could test that out, I would appreciate it, to ensure I didn't do
+>> anything stupid with this one too.
+>>
+>> Ick, handling 4 kernels at once really takes its toll on me, this was
+>> not a good review cycle...
+>>
+>> thanks,
+>>
+>> greg k-h
+>>
+>
+> Greg,
+>
+> rc2 compiled on x86-64. I will run cross-compile tests and boot tests
+> later on today or tomorrow morning and report the results.
+>
+> -- Shuah
+>
+> Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research
+> America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+>
 
-AFE Pen Ctrl and TouchScreen transistors enabling is not
-required when only ADC mode is being used, so check for availability of
-TSC driver before accessing control register.
+3.9.11-rc2 boot tests passed on my test systems and cross-compile tests 
+passed. No regressions in dmesgs.
 
-Signed-off-by: Patil, Rachna <rachna@ti.com>
-Acked-by: Vaibhav Hiremath <hvaibhav@ti.com>
-Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
----
- drivers/mfd/ti_am335x_tscadc.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+-- Shuah
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index b003a16..d72001c 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -208,13 +208,14 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 
- 	/* Set the control register bits */
- 	ctrl = CNTRLREG_STEPCONFIGWRT |
--			CNTRLREG_TSCENB |
--			CNTRLREG_STEPID |
--			CNTRLREG_4WIRE;
-+			CNTRLREG_STEPID;
-+	if (tsc_wires > 0)
-+		ctrl |= CNTRLREG_4WIRE | CNTRLREG_TSCENB;
- 	tscadc_writel(tscadc, REG_CTRL, ctrl);
- 
- 	/* Set register bits for Idle Config Mode */
--	tscadc_idle_config(tscadc);
-+	if (tsc_wires > 0)
-+		tscadc_idle_config(tscadc);
- 
- 	/* Enable the TSC module enable bit */
- 	ctrl = tscadc_readl(tscadc, REG_CTRL);
-@@ -294,10 +295,13 @@ static int tscadc_resume(struct device *dev)
- 	pm_runtime_get_sync(dev);
- 
- 	/* context restore */
--	ctrl = CNTRLREG_STEPCONFIGWRT | CNTRLREG_TSCENB |
--			CNTRLREG_STEPID | CNTRLREG_4WIRE;
-+	ctrl = CNTRLREG_STEPCONFIGWRT |	CNTRLREG_STEPID;
-+	if (tscadc_dev->tsc_cell != -1)
-+		ctrl |= CNTRLREG_TSCENB | CNTRLREG_4WIRE;
- 	tscadc_writel(tscadc_dev, REG_CTRL, ctrl);
--	tscadc_idle_config(tscadc_dev);
-+
-+	if (tscadc_dev->tsc_cell != -1)
-+		tscadc_idle_config(tscadc_dev);
- 	am335x_tsc_se_update(tscadc_dev);
- 	restore = tscadc_readl(tscadc_dev, REG_CTRL);
- 	tscadc_writel(tscadc_dev, REG_CTRL,
--- 
-1.7.9.5
-
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
