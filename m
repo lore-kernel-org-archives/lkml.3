@@ -1,109 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3GUQtn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 12:49:43 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:59395 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab3GUQtl (ORCPT
+	id S1755929Ab3GUQzH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 12:55:07 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57796 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab3GUQzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 12:49:41 -0400
+	Sun, 21 Jul 2013 12:55:03 -0400
+Message-ID: <51EC125F.5020808@kernel.org>
+Date: Sun, 21 Jul 2013 17:54:55 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51E83A4F.5080904@ti.com>
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com>
-	<1374165830-6367-2-git-send-email-r.sricharan@ti.com>
-	<51E83A4F.5080904@ti.com>
-Date: Sun, 21 Jul 2013 18:49:40 +0200
-Message-ID: <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Sricharan R <r.sricharan@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Oleksandr Kravchenko <x0199363@ti.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        jic23@cam.ac.uk, pmeerw@pmeerw.net, holler@ahsoftware.de,
+        srinivas.pandruvada@intel.com, devicetree-discuss@lists.ozlabs.org,
+        grygorii.strashko@ti.com,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: Re: [PATCH 1/3] iio: core: implement devm_iio_device_alloc/devm_iio_device_free
+References: <1374142766-29736-1-git-send-email-x0199363@ti.com> <51EA8B06.3080005@metafoo.de>
+In-Reply-To: <51EA8B06.3080005@metafoo.de>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 8:56 PM, Nishanth Menon <nm@ti.com> wrote:
+On 07/20/2013 02:05 PM, Lars-Peter Clausen wrote:
+> On 07/18/2013 12:19 PM, Oleksandr Kravchenko wrote:
+>> From: Grygorii Strashko <grygorii.strashko@ti.com>
+>>
+>> Add a resource managed devm_iio_device_alloc()/devm_iio_device_free()
+>> to automatically clean up any allocations made by IIO drivers,
+>> thus leading to simplified IIO drivers code.
+>>
+>> In addition, this will allow IIO drivers to use other devm_*() API
+>> (like devm_request_irq) and don't care about the race between
+>> iio_device_free() and the release of resources by Device core
+>> during driver removing.
+>>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> [o.v.kravchenko@globallogic.com: fix return value ib devm_iio_device_alloc
+>> in case if devres_alloc failed, remove unused variable "rc"]
+>> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+>> Tested-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+> 
+> Very nice, thanks for taking care of this.
+> 
+> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
 
-> I carry forward my TI internal objection to this approach:
+Indeed.  Thanks for this,
 
-It is actually a very good sign of FOSS-maturity that you as a company
-take unresolved architectural issues to the community. Kudos!
+I did drop the [] bit in the sign off as you had a perfect right
+to sign off on it anyway and that really cluttered it up with
+stuff that isn't in a standard form for that block as far as I know.
 
-> Lets see what happens as a result of this:
->
-> https://patchwork.kernel.org/patch/2825148/ (introducing DTS for DRA7)
-> uart1 to uart6 is defined. while in fact 10 uarts exist on IP block.
-> uart1: serial@4806a000 {
-> <snip>
-> +                       interrupts = <0 72 0x4>;
-> Assumes that GIC interrupt by default mapping used.
+Applied to the togreg branch of iio.git.  I suspect we may get a
+reasonable flood of patches using this over the next month or two.
 
-So introducing this inbetween the GIC lines and its actual device IRQ
-lines inevitably means that the GIC three-cell concept is completely
-ill-devised to handle this.
+Thanks,
 
-For routing IRQs, I think the proper solution would be to use a
-cascaded struct irqchip, which in turn contains an irqdomain
-translation to remux the signal onto the GIC inputs.
-
-I.e. the interrupt-controller given to that serial would be the
-crossbar irqchip, and that in turn will hog and allocate apropriate
-lines from the gic to it would probably itself list *all* the IRQs
-of the GIC as "its" IRQs.
-
-We already have plenty of cascading irqchips such as GPIO
-controller providing IRQs, just that they only multiplex on a
-single GIC line instead of the whole lot.
-
-Mock example:
-
-                intc: interrupt-controller@0 {
-                        compatible = "arm,cortex-a9-gic";
-                        #interrupt-cells = <3>;
-                        #address-cells = <1>;
-                        interrupt-controller;
-                        reg = ...;
-                };
-
-                crossbar: crossbar@0 {
-                        compatible = "...";
-                        interrupt-controller;
-                        #interrupt-cells = <1>;
-                        interrupt-parent = <&intc>;
-                        interrupts = <0 0 IRQ_TYPE_LEVEL_HIGH>,
-                                          <0 1 IRQ_TYPE_LEVEL_HIGH>,
-                                          <0 2 IRQ_TYPE_LEVEL_HIGH>,
-                                          ....
-                                          <0 n IRQ_TYPE_LEVEL_HIGH>;
-                };
-
-                uart0: serial@0 {
-                        compatible = "...";
-                        interrupt-parent = <&crossbar>;
-                        interrupts = <1234>;
-                 };
-
-Maybe the interrupts provided from crossbar cannot even be
-specified by a number, maybe a line name need to be used
-or so. I don't know the particulars.
-
-Whether this as a whole is a good idea, I don't know,
-but you would have to go about it something like this.
-
-What happens if there is no line to mux in a certain IRQ?
-
-Yours,
-Linus Walleij
+Jonathan
+> 
+> 
+>> ---
+>>   drivers/iio/industrialio-core.c |   47 +++++++++++++++++++++++++++++++++++++++
+>>   include/linux/iio/iio.h         |   25 +++++++++++++++++++++
+>>   2 files changed, 72 insertions(+)
+>>
+>> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+>> index e145931..d56d122 100644
+>> --- a/drivers/iio/industrialio-core.c
+>> +++ b/drivers/iio/industrialio-core.c
+>> @@ -912,6 +912,53 @@ void iio_device_free(struct iio_dev *dev)
+>>   }
+>>   EXPORT_SYMBOL(iio_device_free);
+>>
+>> +static void devm_iio_device_release(struct device *dev, void *res)
+>> +{
+>> +    iio_device_free(*(struct iio_dev **)res);
+>> +}
+>> +
+>> +static int devm_iio_device_match(struct device *dev, void *res, void *data)
+>> +{
+>> +    struct iio_dev **r = res;
+>> +    if (!r || !*r) {
+>> +        WARN_ON(!r || !*r);
+>> +        return 0;
+>> +    }
+>> +    return *r == data;
+>> +}
+>> +
+>> +struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv)
+>> +{
+>> +    struct iio_dev **ptr, *iio_dev;
+>> +
+>> +    ptr = devres_alloc(devm_iio_device_release, sizeof(*ptr),
+>> +               GFP_KERNEL);
+>> +    if (!ptr)
+>> +        return NULL;
+>> +
+>> +    /* use raw alloc_dr for kmalloc caller tracing */
+>> +    iio_dev = iio_device_alloc(sizeof_priv);
+>> +    if (iio_dev) {
+>> +        *ptr = iio_dev;
+>> +        devres_add(dev, ptr);
+>> +    } else {
+>> +        devres_free(ptr);
+>> +    }
+>> +
+>> +    return iio_dev;
+>> +}
+>> +EXPORT_SYMBOL_GPL(devm_iio_device_alloc);
+>> +
+>> +void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev)
+>> +{
+>> +    int rc;
+>> +
+>> +    rc = devres_release(dev, devm_iio_device_release,
+>> +                devm_iio_device_match, iio_dev);
+>> +    WARN_ON(rc);
+>> +}
+>> +EXPORT_SYMBOL_GPL(devm_iio_device_free);
+>> +
+>>   /**
+>>    * iio_chrdev_open() - chrdev file open for buffer access and ioctls
+>>    **/
+>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+>> index 8d171f4..f1d99f6 100644
+>> --- a/include/linux/iio/iio.h
+>> +++ b/include/linux/iio/iio.h
+>> @@ -532,6 +532,31 @@ static inline struct iio_dev *iio_priv_to_dev(void *priv)
+>>   void iio_device_free(struct iio_dev *indio_dev);
+>>
+>>   /**
+>> + * devm_iio_device_alloc - Resource-managed iio_device_alloc()
+>> + * @dev:         Device to allocate iio_dev for
+>> + * @sizeof_priv:     Space to allocate for private structure.
+>> + *
+>> + * Managed iio_device_alloc.  iio_dev allocated with this function is
+>> + * automatically freed on driver detach.
+>> + *
+>> + * If an iio_dev allocated with this function needs to be freed separately,
+>> + * devm_iio_device_free() must be used.
+>> + *
+>> + * RETURNS:
+>> + * Pointer to allocated iio_dev on success, NULL on failure.
+>> + */
+>> +struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv);
+>> +
+>> +/**
+>> + * devm_iio_device_free - Resource-managed iio_device_free()
+>> + * @dev:        Device this iio_dev belongs to
+>> + * @indio_dev:         the iio_dev associated with the device
+>> + *
+>> + * Free indio_dev allocated with devm_iio_device_alloc().
+>> + */
+>> +void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev);
+>> +
+>> +/**
+>>    * iio_buffer_enabled() - helper function to test if the buffer is enabled
+>>    * @indio_dev:        IIO device structure for device
+>>    **/
+>>
+> 
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
