@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab3GUG70 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 02:59:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39747 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336Ab3GUG7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 02:59:22 -0400
+	id S1754113Ab3GUG7O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 02:59:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40096 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab3GUG7K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 02:59:10 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -26,9 +27,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [RFC 5/5] DMA: EDMA: Leave linked to Null slot instead of DUMMY slot
-Date: Sun, 21 Jul 2013 01:58:45 -0500
-Message-ID: <1374389925-32667-1-git-send-email-joelf@ti.com>
+Subject: [RFC 4/5] dma: edma: Find missed events and issue them
+Date: Sun, 21 Jul 2013 01:58:35 -0500
+Message-ID: <1374389915-32630-1-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -36,39 +37,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dummy slot has been used as a way for missed-events not to be
-reported as missing. This has been particularly troublesome for cases
-where we might want to temporarily pause all incoming events.
+In an effort to move to using Scatter gather lists of any size with
+EDMA as discussed at [1] instead of placing limitations on the driver,
+we work through the limitations of the EDMAC hardware to find missed
+events and issue them.
 
-For EDMA DMAC, there is no way to do any such pausing of events as
-the occurence of the "next" event is not software controlled.
-Using "edma_pause" in IRQ handlers doesn't help as by then the event
-in concern from the slave is already missed.
+The sequence of events that require this are:
 
-Linking a dummy slot, is seen to absorb these events which we didn't
-want to miss. So we don't link to dummy, but instead leave it linked
-to NULL set, allow an error condition and detect the channel that
-missed it.
+For the scenario where MAX slots for an EDMA channel is 3:
+
+SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> Null
+
+The above SG list will have to be DMA'd in 2 sets:
+
+(1) SG1 -> SG2 -> SG3 -> Null
+(2) SG4 -> SG5 -> SG6 -> Null
+
+After (1) is succesfully transferred, the events from the MMC controller
+donot stop coming and are missed by the time we have setup the transfer
+for (2). So here, we catch the events missed as an error condition and
+issue them manually.
+
+[1] http://marc.info/?l=linux-omap&m=137416733628831&w=2
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/dma/edma.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index b0b5bcd..e9f1f27 100644
+index 0e7ed79..b0b5bcd 100644
 --- a/drivers/dma/edma.c
 +++ b/drivers/dma/edma.c
-@@ -160,9 +160,6 @@ static void edma_execute(struct edma_chan *echan)
- 		/* Link to the previous slot if not the last set */
- 		if (i != (total_process - 1))
- 			edma_link(echan->slot[i], echan->slot[i+1]);
--		/* Final pset links to the dummy pset */
--		else
--			edma_link(echan->slot[i], echan->ecc->dummy_slot);
- 	}
+@@ -414,7 +414,15 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
  
- 	edesc->total_processed += total_process;
+ 		break;
+ 	case DMA_CC_ERROR:
+-		dev_dbg(dev, "transfer error on channel %d\n", ch_num);
++		if (echan->edesc) {
++			dev_dbg(dev, "Missed event on %d, retrying\n",
++				ch_num);
++			edma_clean_channel(echan->ch_num);
++			edma_stop(echan->ch_num);
++			edma_start(echan->ch_num);
++			edma_manual_trigger(echan->ch_num);
++		}
++		dev_dbg(dev, "handled error on channel %d\n", ch_num);
+ 		break;
+ 	default:
+ 		break;
 -- 
 1.7.9.5
 
