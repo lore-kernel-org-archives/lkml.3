@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab3GUOpt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 10:45:49 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:50606 "EHLO inx.pm.waw.pl"
+	id S1755593Ab3GUOy2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 10:54:28 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:26110 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755519Ab3GUOps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 10:45:48 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Jonas Gorski <jogo@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <linux@arm.linux.org.uk>, Imre Kaloz <kaloz@openwrt.org>
-Subject: Re: [PATCH 1/2] arm: ixp4xx: set cohorent_dma_mask for ethernet platform devices
-References: <1374315339-31469-1-git-send-email-jogo@openwrt.org>
-	<1374315339-31469-2-git-send-email-jogo@openwrt.org>
-Date: Sun, 21 Jul 2013 16:45:45 +0200
-In-Reply-To: <1374315339-31469-2-git-send-email-jogo@openwrt.org> (Jonas
-	Gorski's message of "Sat, 20 Jul 2013 12:15:38 +0200")
-Message-ID: <m3ip04ezty.fsf@intrepid.localdomain>
+	id S1755542Ab3GUOy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 10:54:27 -0400
+X-IronPort-AV: E=Sophos;i="4.89,713,1367971200"; 
+   d="scan'208";a="38301975"
+Date: Sun, 21 Jul 2013 15:54:24 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Julien Grall <julien.grall@linaro.org>
+CC: <stefano.stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
+        <ian.campbell@citrix.com>, <patches@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v2] xen/arm: enable PV control for ARM
+In-Reply-To: <1374239399-2498-1-git-send-email-julien.grall@linaro.org>
+Message-ID: <alpine.DEB.2.02.1307211535210.4893@kaball.uk.xensource.com>
+References: <1374239399-2498-1-git-send-email-julien.grall@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonas Gorski <jogo@openwrt.org> writes:
+On Fri, 19 Jul 2013, Julien Grall wrote:
+> Enable power management from the toolstack for ARM guest.
+> 
+> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+> 
+> ---
+>     Changes in v2:
+>         - Don't compile xen/cpu_hotplug.o with ARM64
+> ---
+>  drivers/xen/Makefile |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> index 2bf461a..b550a94 100644
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@ -1,9 +1,8 @@
+> -ifneq ($(CONFIG_ARM),y)
+> -obj-y	+= manage.o
+> +ifneq ($(filter y, ($CONFIG_ARM) $(CONFIG_ARM64)),y
 
-> ARM requires the cohorent_dma_mask set, so set it for the platform
-> devices so that the ethernet driver has access to it.
+This is wrong: ifneq is checking for the opposite condition of what we want, and
+beside you have the $ in the wrong place for CONFIG_ARM.
 
-I recognize the need to fix this issue and I appreciate your efforts,
-but... I think this patch tries to make the driver functional again at
-all costs and this a very bad idea. The IXP4xx Ethernet MACs are not
-normal platform devices, they are in fact built-in CPU resources. The
-platform device structs are only used to set parameters. What the patch
-does is unneeded and IMHO harmful code duplication. It makes completely
-no sense to set DMA masks in code for individual platforms as it's not
-something platforms can decide, or *even should know of*. It's simply
-a CPU attribute, a value that is shared by all IXP4xx CPUs and thus all
-platforms and systems using it.
+Please test you patches before sending them.
 
-This is against the "line of code" count rules (or "rules").
 
-Also the dev->dev.parent is IMHO a bad idea. The queue numbers and MAC
-addresses are in no way "parents" of Ethernet controllers, and even if
-they somehow were, I find it rather hard to believe they can have DMA
-masks.
-
-I think the previous patch (which sets the masks in one place, in
-Ethernet driver code) was better, though not perfect.
-
-My fault is I haven't fixed it yet. Will try to invent something.
--- 
-Krzysztof Halasa
+>  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+>  endif
+>  obj-$(CONFIG_X86)			+= fallback.o
+> -obj-y	+= grant-table.o features.o events.o balloon.o time.o
+> +obj-y	+= grant-table.o features.o events.o balloon.o time.o manage.o
+>  obj-y	+= xenbus/
+>  
+>  nostackp := $(call cc-option, -fno-stack-protector)
+> -- 
+> 1.7.10.4
+> 
