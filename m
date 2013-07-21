@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab3GUARI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 20:17:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33240 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab3GUARH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 20:17:07 -0400
+	id S1755272Ab3GUAYC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 20:24:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57949 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754336Ab3GUAYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 20:24:00 -0400
+Message-ID: <51EB29FD.60508@zytor.com>
+Date: Sat, 20 Jul 2013 17:23:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1374290388-19308-3-git-send-email-grant.likely@linaro.org>
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
-	<1374290388-19308-3-git-send-email-grant.likely@linaro.org>
-Date: Sat, 20 Jul 2013 17:17:05 -0700
-Message-ID: <CAOesGMhaAy93J=Q1STZUHHA-SbH+WXCVuUn0ef14_18du2dk6w@mail.gmail.com>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-From: Olof Johansson <olof@lixom.net>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        devicetree@vger.kernel.org
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [x86] Kernel panic - not syncing: Fatal exception in interrupt
+References: <20130720131226.GA13893@localhost>
+In-Reply-To: <20130720131226.GA13893@localhost>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 8:19 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> Device tree bindings require a lot more attention than they used to.
-> We've got a group of volunteers willing to take over maintaining
-> bindings. This patch adds them to the MAINTAINERS file.
->
-> This group still needs to work out a process for maintainership and how
-> they are going to work together. I recommend that they set up a shared
-> tree on git.kernel.org that they each have commit access to similar to
-> the tip tree or the arm-soc tree, but it is up to them.
->
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: devicetree@vger.kernel.org
-> ---
->  MAINTAINERS | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index bc286e4..12c95d5 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6050,13 +6050,24 @@ L:      devicetree@vger.kernel.org
->  W:     http://fdt.secretlab.ca
->  T:     git git://git.secretlab.ca/git/linux-2.6.git
->  S:     Maintained
-> -F:     Documentation/devicetree
->  F:     drivers/of
->  F:     include/linux/of*.h
->  F:     scripts/dtc
->  K:     of_get_property
->  K:     of_match_table
->
-> +OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
-> +M:     Pawel Moll <pawel.moll@arm.com>
-> +M:     Mark Rutland <mark.rutland@arm.com>
-> +M:     Stephen Warren <swarren@wwwdotorg.org>
-> +M:     Ian Campbell <ian.campbell@citrix.com>
-> +L:     devicetree@vger.kernel.org
-> +S:     Maintained
-> +F:     Documentation/devicetree
-> +F:     arch/*/boot/dts
-> +F:     arch/*/
+On 07/20/2013 06:12 AM, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
+> 
+> commit 51b2c07b22261f19188d9a9071943d60a067481c
+> Author: Jiri Kosina <jkosina@suse.cz>
+> Date:   Fri Jul 12 11:22:09 2013 +0200
+> 
+>     x86: Make jump_label use int3-based patching
+>     
+>     Make jump labels use text_poke_bp() for text patching instead of
+>     text_poke_smp(), avoiding the need for stop_machine().
+>     
+>     Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+>     Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>     Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>     Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1307121120250.29788@pobox.suse.cz
+>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> 
+> 
+> Parent commit not clean. Look out for wrong bisect!
+> 
+> BUG: kernel boot crashed
+> 
+> /kernel/x86_64-randconfig-c05-0718/fd4363fff3d96795d3feb1b3fb48ce590f186bdd/dmesg-kvm-xbm-7912-20130720142415-3.11.0-rc1-00166-g1faabf2-146
+> 
+> [    0.212429] devtmpfs: initialized
+> [    0.236027] int3: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [    0.237157] Modules linked in:
+> [    0.237765] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.11.0-rc1-01429-g04bf576 #8
+> [    0.239129] task: ffff88000da1b040 ti: ffff88000da1c000 task.ti: ffff88000da1c000
+> [    0.240000] RIP: 0010:[<ffffffff811098cc>]  [<ffffffff811098cc>] ttwu_do_wakeup+0x28/0x225
+> [    0.240000] RSP: 0000:ffff88000dd03f10  EFLAGS: 00000006
+> [    0.240000] RAX: 0000000000000000 RBX: ffff88000dd12940 RCX: ffffffff81769c40
+> [    0.240000] RDX: 0000000000000002 RSI: 0000000000000000 RDI: 0000000000000001
+> [    0.240000] RBP: ffff88000dd03f28 R08: ffffffff8176a8c0 R09: 0000000000000002
+> [    0.240000] R10: ffffffff810ff484 R11: ffff88000dd129e8 R12: ffff88000dbc90c0
+> [    0.240000] R13: ffff88000dbc90c0 R14: ffff88000da1dfd8 R15: ffff88000da1dfd8
+> [    0.240000] FS:  0000000000000000(0000) GS:ffff88000dd00000(0000) knlGS:0000000000000000
+> [    0.240000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    0.240000] CR2: 00000000ffffffff CR3: 0000000001c88000 CR4: 00000000000006e0
+> [    0.240000] Stack:
+> [    0.240000]  ffff88000dd12940 ffff88000dbc90c0 ffff88000da1dfd8 ffff88000dd03f48
+> [    0.240000]  ffffffff81109e2b ffff88000dd12940 0000000000000000 ffff88000dd03f68
+> [    0.240000]  ffffffff81109e9e 0000000000000000 0000000000012940 ffff88000dd03f98
+> [    0.240000] Call Trace:
+> [    0.240000]  <IRQ> 
+> [    0.240000]  [<ffffffff81109e2b>] ttwu_do_activate.constprop.56+0x6d/0x79
+> [    0.240000]  [<ffffffff81109e9e>] sched_ttwu_pending+0x67/0x84
+> [    0.240000]  [<ffffffff8110c845>] scheduler_ipi+0x15a/0x2b0
+> [    0.240000]  [<ffffffff8104dfb4>] smp_reschedule_interrupt+0x38/0x41
+> [    0.240000]  [<ffffffff8173bf5d>] reschedule_interrupt+0x6d/0x80
+> [    0.240000]  <EOI> 
+> [    0.240000]  [<ffffffff810ff484>] ? __atomic_notifier_call_chain+0x5/0xc1
+> [    0.240000]  [<ffffffff8105cc30>] ? native_safe_halt+0xd/0x16
 
-This seems a bit broad. Someone is going to get a whole lot of email
-if this goes in, and it might confuse contributors on who is
-maintainer of what under arch.
+Well, it is definitely easy to see what happened here.
+
+We took a breakpoint fault that the kernel didn't expect.  This
+shouldn't happen... the breakpoint handler should have said "oh, this is
+an instruction being patched" and resumed, but that didn't happen.
+
+Jiri, I'm wondering if by any chance we have more than one CPU inside
+text_poke_bp() at the same time.  The global variables in text_poke_bp()
+don't seem to be protected against reentrancy at all.
+
+	-hpa
+
+P.S. the sync_core() in do_sync_core() should be unnecessary, as IRET is
+a synchronizing instruction.
 
 
--Olof
+
+
