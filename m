@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab3GURic (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 13:38:32 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:35509 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab3GURib (ORCPT
+	id S1755985Ab3GURlv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 13:41:51 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:63848 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646Ab3GURlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 13:38:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1372841090-14750-1-git-send-email-ian.campbell@citrix.com>
-References: <1372841090-14750-1-git-send-email-ian.campbell@citrix.com>
-Date: Sun, 21 Jul 2013 19:38:30 +0200
-Message-ID: <CACRpkdZ5xEZ-axTBjpj6sRV+ATy8PXkkUqc-CP4N+=utA2QPzw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: am33xx dt binding: correct include path
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 21 Jul 2013 13:41:50 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: herbert@gondor.hengli.com.au
+Cc: s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] hw_random: mxc-rnga: Check the return value from clk_prepare_enable()
+Date: Sun, 21 Jul 2013 14:41:38 -0300
+Message-Id: <1374428498-14222-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 10:44 AM, Ian Campbell <ian.campbell@citrix.com> wrote:
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-> Using #include <include/...> is a bit odd. It happens to work because the DTC
-> flags include -Iarch/FOO/boot/dts as well as arch/FOO/boot/dts/include and
-> arch/FOO/boot/dts/include/dt-bindings is a symlink to include/dt-bindings.
->
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: linux-kernel@vger.kernel.org
+clk_prepare_enable() may fail, so let's check its return value and propagate it
+in the case of error.
 
-Patch applied for pinctrl fixes, thanks.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/char/hw_random/mxc-rnga.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
+index 19a12ac..6a86b6f 100644
+--- a/drivers/char/hw_random/mxc-rnga.c
++++ b/drivers/char/hw_random/mxc-rnga.c
+@@ -164,7 +164,9 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
+-	clk_prepare_enable(mxc_rng->clk);
++	err = clk_prepare_enable(mxc_rng->clk);
++	if (err)
++		goto out;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	mxc_rng->mem = devm_ioremap_resource(&pdev->dev, res);
+-- 
+1.8.1.2
+
