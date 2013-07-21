@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab3GURlv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 13:41:51 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:63848 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646Ab3GURlu (ORCPT
+	id S1755989Ab3GURrx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 13:47:53 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:42573 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755915Ab3GURrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 13:41:50 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: herbert@gondor.hengli.com.au
-Cc: s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] hw_random: mxc-rnga: Check the return value from clk_prepare_enable()
-Date: Sun, 21 Jul 2013 14:41:38 -0300
-Message-Id: <1374428498-14222-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 21 Jul 2013 13:47:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <51CCB611.6010709@wwwdotorg.org>
+References: <1372326887-6497-1-git-send-email-linus.walleij@stericsson.com>
+	<51CCB611.6010709@wwwdotorg.org>
+Date: Sun, 21 Jul 2013 19:47:51 +0200
+Message-ID: <CACRpkdbdpXd0+OeNmCfFFJX7S2OWJ_k-FZBxMu6UG3mzQZXoEg@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: elaborate a bit on arrangements in doc
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Landley <rob@landley.net>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On Fri, Jun 28, 2013 at 12:00 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-clk_prepare_enable() may fail, so let's check its return value and propagate it
-in the case of error.
+> Otherwise, this patch seems good. Reading this version, it's much more
+> obvious to me what the intent of the patch is, for some reason:-)
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/char/hw_random/mxc-rnga.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I left this off the pull request and I have now incorporated all your
+comments to a final version.
 
-diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
-index 19a12ac..6a86b6f 100644
---- a/drivers/char/hw_random/mxc-rnga.c
-+++ b/drivers/char/hw_random/mxc-rnga.c
-@@ -164,7 +164,9 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
- 		goto out;
- 	}
- 
--	clk_prepare_enable(mxc_rng->clk);
-+	err = clk_prepare_enable(mxc_rng->clk);
-+	if (err)
-+		goto out;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	mxc_rng->mem = devm_ioremap_resource(&pdev->dev, res);
--- 
-1.8.1.2
+Sorry for the delay!
 
+Yours,
+Linus Walleij
