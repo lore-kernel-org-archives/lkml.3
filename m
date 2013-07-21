@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab3GUP2R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 11:28:17 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:63580 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646Ab3GUP2O (ORCPT
+	id S1755802Ab3GUPe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 11:34:28 -0400
+Received: from mail-gg0-f173.google.com ([209.85.161.173]:52160 "EHLO
+	mail-gg0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581Ab3GUPe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 11:28:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1373030792-28518-1-git-send-email-ldewangan@nvidia.com>
-References: <1373030792-28518-1-git-send-email-ldewangan@nvidia.com>
-Date: Sun, 21 Jul 2013 17:28:14 +0200
-Message-ID: <CACRpkdby9yMPdJZ2oDcc3ju5gufED5R4mKmLXNNPfAhyvqT-6Q@mail.gmail.com>
-Subject: Re: [PATCH V3] gpio: palmas: add dt support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        kishon@ti.com, j-keerthy@ti.com, Graeme Gregory <gg@slimlogic.co.uk>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 21 Jul 2013 11:34:27 -0400
+From: David Graham White <dgwhite11@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, David Graham White <dgwhite11@gmail.com>
+Subject: [PATCH] drivers: base: core: Removed superfluous calls to put_device in device_destroy and to kobject deletion functions in device_del.
+Date: Sun, 21 Jul 2013 11:34:59 -0400
+Message-Id: <1374420899-2525-1-git-send-email-dgwhite11@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 5, 2013 at 3:26 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+When device_destroy is called and the device's embedded kobject may be removed,
+this would occur with the call to put_device in device_unregister. Further,
+put_device should take care of cleaning up the kobject without the need to
+call kobject_del indepenedently in device_del.
 
-> Add of_device_id table for Palma GPIO to be enable the
-> driver from DT file.
->
-> The driver can be registered from DT file as:
->         palmas: tps65913@58 {
->                 :::::::::::
->                 palmas_gpio: palmas_gpio {
->                         compatible = "ti,palmas-gpio";
->                         gpio-controller;
->                         #gpio-cells = <2>;
->                 };
->         };
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: David Graham White <dgwhite11@gmail.com>
+---
+ drivers/base/core.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-Looks alright to me, but please resend this and include
-devicetree@vger.kernel.org on the repost, this is where
-DT bindings gets reviewed nowadays.
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 8856d74..d6494ee 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1292,9 +1292,7 @@ void device_del(struct device *dev)
+ 	 */
+ 	if (platform_notify_remove)
+ 		platform_notify_remove(dev);
+-	kobject_uevent(&dev->kobj, KOBJ_REMOVE);
+ 	cleanup_device_parent(dev);
+-	kobject_del(&dev->kobj);
+ 	put_device(parent);
+ }
+ 
+@@ -1849,10 +1847,8 @@ void device_destroy(struct class *class, dev_t devt)
+ 	struct device *dev;
+ 
+ 	dev = class_find_device(class, NULL, &devt, __match_devt);
+-	if (dev) {
+-		put_device(dev);
++	if (dev)
+ 		device_unregister(dev);
+-	}
+ }
+ EXPORT_SYMBOL_GPL(device_destroy);
+ 
+-- 
+1.8.3.2
 
-Yours,
-Linus Walleij
