@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab3GUP0T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 11:26:19 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:49493 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab3GUP0R (ORCPT
+	id S1755807Ab3GUP2R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 11:28:17 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:63580 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646Ab3GUP2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 11:26:17 -0400
+	Sun, 21 Jul 2013 11:28:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130703041432.7351.45970.sendpatchset@w520>
-References: <20130703041432.7351.45970.sendpatchset@w520>
-Date: Sun, 21 Jul 2013 17:26:17 +0200
-Message-ID: <CACRpkdYVFVBQmrHUQowOA=KJEM9vwoh_4LxUibBZOrfg8eyXgg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: em: Add pinctrl support
+In-Reply-To: <1373030792-28518-1-git-send-email-ldewangan@nvidia.com>
+References: <1373030792-28518-1-git-send-email-ldewangan@nvidia.com>
+Date: Sun, 21 Jul 2013 17:28:14 +0200
+Message-ID: <CACRpkdby9yMPdJZ2oDcc3ju5gufED5R4mKmLXNNPfAhyvqT-6Q@mail.gmail.com>
+Subject: Re: [PATCH V3] gpio: palmas: add dt support
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+To: Laxman Dewangan <ldewangan@nvidia.com>, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        kishon@ti.com, j-keerthy@ti.com, Graeme Gregory <gg@slimlogic.co.uk>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@linaro.org>
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 6:14 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+On Fri, Jul 5, 2013 at 3:26 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
 
-> From: Magnus Damm <damm@opensource.se>
+> Add of_device_id table for Palma GPIO to be enable the
+> driver from DT file.
 >
-> Register the GPIO pin range, and request and free GPIO pins using the
-> pinctrl API. The pctl_name platform data member should be used by
-> platform devices to point out which pinctrl device to use.
+> The driver can be registered from DT file as:
+>         palmas: tps65913@58 {
+>                 :::::::::::
+>                 palmas_gpio: palmas_gpio {
+>                         compatible = "ti,palmas-gpio";
+>                         gpio-controller;
+>                         #gpio-cells = <2>;
+>                 };
+>         };
 >
-> Follows same style as "dc3465a gpio-rcar: Add pinctrl support",
-> by Laurent Pinchart, thanks to him.
->
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-Patch applied.
-
-As mentioned, Simon anyway will have a ton of deps on the
-pinctrl tree so we'll need to stabilize it there and then base
-subsequent work on shmobile on it.
-
-(Allow some time before I say that anything on devel is
-stable though.)
+Looks alright to me, but please resend this and include
+devicetree@vger.kernel.org on the repost, this is where
+DT bindings gets reviewed nowadays.
 
 Yours,
 Linus Walleij
