@@ -1,100 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3GUKly (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 06:41:54 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60825 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab3GUKlw (ORCPT
+	id S1755097Ab3GULIB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 07:08:01 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44062 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab3GULH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 06:41:52 -0400
-Message-ID: <51EBBA17.1070308@linux.vnet.ibm.com>
-Date: Sun, 21 Jul 2013 16:08:15 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Sun, 21 Jul 2013 07:07:59 -0400
+Date: Sun, 21 Jul 2013 04:08:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, wni@nvidia.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, l.stach@pengutronix.de
+Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
+ zone build
+Message-ID: <20130721110807.GC24303@roeck-us.net>
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
+ <20130717220942.GB990@roeck-us.net>
+ <51E7F341.8020508@ti.com>
+ <51E8234D.1020607@wwwdotorg.org>
+ <20130718212108.GC4110@roeck-us.net>
+ <51E98A07.4050402@wwwdotorg.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, viresh.kumar@linaro.org,
-        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
-        lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
-        stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <51DF307B.7060307@linux.vnet.ibm.com> <51E56382.3020609@gmx.de> <2829832.mz5UcF7ZkY@vostro.rjw.lan> <51E6B7F7.6020901@gmx.de> <51E6BD0E.1020101@linux.vnet.ibm.com> <51EB9F3E.70608@linux.vnet.ibm.com> <51EBAC79.5090606@gmx.de>
-In-Reply-To: <51EBAC79.5090606@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072110-3864-0000-0000-0000092E5D78
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E98A07.4050402@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2013 03:10 PM, Toralf Förster wrote:
-> On 07/21/2013 10:43 AM, Srivatsa S. Bhat wrote:
->> On 07/17/2013 09:19 PM, Srivatsa S. Bhat wrote:
->>> On 07/17/2013 08:57 PM, Toralf Förster wrote:
->>>> On 07/16/2013 11:32 PM, Rafael J. Wysocki wrote:
->>>>> On Tuesday, July 16, 2013 05:15:14 PM Toralf Förster wrote:
->> [...]
->>>>>> sry - here again with full quote of the email :
->>>>>>
->>>>>> I applied patch [1/8] on top of v3.11-rc1-8-g47188d3 passes two s2ram/wakeup
->>>>>> cycles fine and crashed the system at the 3rd attempt / one times just at
->>>>>> the 4th (blinking power led, no sysrq, ...).
->>>>>>
->>>>>> Applying patch 1-8 on top of that tree differs in that way that it
->>>>>> crashes now the system even at the 1st attempt or at least at the 2nd
->>>>>>
->>>>>> My hardware is a ThinkPad T420 with latest BIOS and a 32 bit stable
->>>>>> Gentoo Linux - FWIW .config attached.
->>>>>
->>>>> I think you'll need the fixes first, basically [1/8] from this series and
->>>>> this: https://patchwork.kernel.org/patch/2827512/ .
->>>>>
->>>>> Please try to run with these two things applied only and see how that goes.
->>>>>
->>>>> Thanks,
->>>>> Rafael
->>>>>
->>>>>
->>>> That was it.
->>>>
->>>> Applying https://patchwork.kernel.org/patch/2827512/ and then patch
->>>> [1/8] on top of v3.11-rc1-8-g47188d3 works fine and solved the reported
->>>> issue.
->>>>
->>>> Furthermore applying patches 2-8 works too - suspend/wakeup works fine
->>>> and frequencies are scaled right after wakeup at the T420.
->>>>
->>>
->>> Phew! Finally :-)
->>>
->>> Thank you for all your testing efforts!
->>>
->>
->> Rafael, Viresh, any thoughts on picking up patches 2-8 from this series
->> for 3.12?
+On Fri, Jul 19, 2013 at 12:48:39PM -0600, Stephen Warren wrote:
+> On 07/18/2013 03:21 PM, Guenter Roeck wrote:
+> > On Thu, Jul 18, 2013 at 11:18:05AM -0600, Stephen Warren wrote:
+> >> On 07/18/2013 07:53 AM, Eduardo Valentin wrote:
+> >>> Hello Guenter,
+> >>>
+> >>> On 17-07-2013 18:09, Guenter Roeck wrote:
+> >>>> On Wed, Jul 17, 2013 at 11:17:19AM -0400, Eduardo Valentin
+> >>>> wrote:
+> >>>>> Hello all,
+> >>>>>
+> >>>>> As you noticed, I am working in a way to represent thermal
+> >>>>> data using device tree [1]. Essentially, this should be a way
+> >>>>> to say what to do with a sensor and how to associate (cooling)
+> >>>>> actions with it.
+> >>>>>
+> >>>> Seems to me that goes way beyond the supposed scope of devicetree
+> >>>> data. Devicetree data is supposed to describe hardware, not its
+> >>>> configuration or use. This is clearly a use case.
+> >>>
+> >>> Thanks for rising your voice here. It is important to know what
+> >>> hwmon ppl think about this.
+> >>
+> >> I meant to find time to read Guenter's original email where he
+> >> initially objected to putting data into DT, and determine exactly what
+> >> was being objected to. I still haven't:-( However, the arguments that
+> >> Eduardo stated in his email do make sense to me; I agree that
+> >> temperature limits really are a description of HW. Details of which
+> >> cooling methods to invoke when certain temperature limits are reached
+> >> is also part of the HW/system design, and hence I would tend to agree
+> >> that they're appropriate to include in DT. Anyway, that's just my 2
+> >> cents on the matter:-)
+> > 
+> > Many systems have multiple profiles for various use cases (high performance,
+> > low power etc), and limits are different based on the use case. If that means
+> > you are going to have multiple devicetree variants based on the profile,
+> > I would argue that you crossed the line.
 > 
-> What's about the additional patch Rafael adviced me in this thread:
-> https://patchwork.kernel.org/patch/2827512/
-> ?
+> Yes, I can see that argument. However, a counter-point:
 > 
-> On my ThinkPad T420 I do have to apply this on top of 3.10.1 otherwise I
-> do suffer from the hang during s2ram.
+> * I believe we do need a DT binding to describe the absolute thermal
+> limits of a system, for safety/correctness of system operation.
+> 
+> * We need to define a syntax/schema to represent that.
+> 
+> * If we then want to implement additional profiles with stricter limits,
+> do we really want to invent a different syntax/schema to represent
+> those? Representing them in the same way seems like good use of the
+> design, mind-share, etc.
+> 
+> * Perhaps that doesn't mean that the additional profiles have to be in
+> DT though; just that we somehow make any other representation of those
+> profiles as close to the DT representation in syntax/structure as we
+> can, to get maximum re-use.
+> 
+> > With thermal profiles it gets even more
+> > complicated, as those parameters may be played around with and changed
+> > multiple times to find the best settings to achieve optimal cooling.
+> 
+> To me, that sounds more like fixing a bug in the initial data, rather
+> than something which fundamentally affects how the data should be
+> represented.
 > 
 
-Rafael already picked it up and in fact its now in the mainline kernel
-as commit:
+For me, a bug in devicetree data would be if a wrong gpio pin is assigned ... if
+a wrong clock frequency is specified, or a wrong clock input. I would not expect
+a clock rate or pin assignment to be played around with to find the optimal
+setting. Either it works or it doesn't.
 
-commit e8d05276f236ee6435e78411f62be9714e0b9377
-Author: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Date:   Tue Jul 16 22:46:48 2013 +0200
+Note that we don't really talk about pure thermal limits here. We are talking
+about association between thermal sensors and cooling devices, which is much
+more abstract and not as well defined as clock pin assignments. In many case,
+more than one cooling device exists, and there is no well defined means to cool
+the system. It may be cooled with a fan, or by reducing the CPU clock speed.
+There may be multiple fans interacting with each other, and not all may be
+present at all times. There may be secondary cooling options if primary cooling
+fails (eg reduce CPU speed or increase speed of a secondary fan if a primary fan
+fails).
 
-    cpufreq: Revert commit 2f7021a8 to fix CPU hotplug regression
-    
+Yes, I understand you need a means to describe thermal profiles. Putting one of
+those into DT and declaring it to be the "absolute thermal limit", however, is
+really just asking for putting other thermal profiles into DT as well ..
+if you want a different thermal profile, just load a different devicetree, and
+possibly make it configurable in BIOS/ROMMON. Of course you can declare that not
+to be "intentional", but what do you think would happen in the real world ?
+Do you really think anyone would bother putting one profile into DT and others
+into some other database ? Not really, especially if the kernel would not even
+support reading that other database. And if it would, you would not need the
+DT data in the first place.
 
-Thanks for following up on that fix, Toralf!
-Regards,
-Srivatsa S. Bhat
+This is completely different to the intended use of devicetree information.
+An instance of devicetree data should be tied to a specific piece of hardware.
+Changing it may enable or disable pieces of that hardware, but change its
+operation, as in "optimize for performance" or "optimize for low power
+consumption" ? Yes, again, I understand you are saying that this is not the
+_intent_, but that is what it enables.
 
+Other but related subject .. from a thermal / hwmon driver's perspective, if
+such a driver supports thermal subsystem, it should just register itself as
+thermal sensor device, because that is what it is. If and how it is tied to
+cooling devices should be part of the thermal subsystem and be decided there.
+I don't think it is necessary for a thermal sensor to read devicetree data
+in order to determine if it is supposed to register as thermal device or not.
+That _is_ configuration and does not describe hardware - the mere fact that
+a thermal sensor exists in the system already identifies it as thermal sensor
+device, not anything in devicetree data. This would be similar to, say, a clock
+device. A clock is a clock, and registers itself with the clock subsystem even
+if there is no consumer. Sure, its interconnection with clock consumers would
+be determined by devicetree data, but that is a different subject. So, even if
+devicetree maintainers accept your definition of thermal profiles as hardware,
+I think your approach is still wrong, and a thermal sensor device should
+register itself as thermal device independently of its association with
+cooling devices.
+
+Thanks,
+Guenter
