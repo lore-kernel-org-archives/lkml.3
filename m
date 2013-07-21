@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3GUOdz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 10:33:55 -0400
-Received: from jdl.com ([208.123.74.7]:44758 "EHLO jdl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755519Ab3GUOdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 10:33:54 -0400
-X-Greylist: delayed 2844 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Jul 2013 10:33:54 EDT
-Message-Id: <E1V0txk-0007v7-0J@jdl.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+	id S1755560Ab3GUOfk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 10:35:40 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:34004 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab3GUOfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 10:35:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130701162849.GF10726@kw.sim.vm.gnt>
+References: <1372247816-5590-1-git-send-email-simon.guinot@sequanux.org>
+	<CACRpkda=BBo+yUcUorYQQasKaF68neSz8cVmq3PcwLGPY_FjtA@mail.gmail.com>
+	<20130701162849.GF10726@kw.sim.vm.gnt>
+Date: Sun, 21 Jul 2013 16:35:38 +0200
+Message-ID: <CACRpkdbsogzeGjK_f45Kr-V1R0ZCo=-2tp+geLqt4+VFnpdrdA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: add GPIO support for F71882FG and F71889F
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Simon Guinot <simon.guinot@sequanux.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-In-reply-to: <CACRpkdb2bPQOD2CBzbF0K33mZZwKwGSCO6B4djesVd5DR-Z1tA@mail.gmail.com>
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org> <1374290388-19308-3-git-send-email-grant.likely@linaro.org> <CACRpkdb2bPQOD2CBzbF0K33mZZwKwGSCO6B4djesVd5DR-Z1tA@mail.gmail.com>
-Comments: In-reply-to Linus Walleij <linus.walleij@linaro.org>
-   message dated "Sat, 20 Jul 2013 18:20:50 +0200."
-Date: Sun, 21 Jul 2013 08:46:11 -0500
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: -0.0
+        Vincent Donnefort <vdonnefort@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, Jul 20, 2013 at 5:19 AM, Grant Likely <grant.likely@linaro.org> wrote
-> :
-> 
-> > Device tree bindings require a lot more attention than they used to.
-> > We've got a group of volunteers willing to take over maintaining
-> > bindings. This patch adds them to the MAINTAINERS file.
-> >
-> > This group still needs to work out a process for maintainership and how
-> > they are going to work together. I recommend that they set up a shared
-> > tree on git.kernel.org that they each have commit access to similar to
-> > the tip tree or the arm-soc tree, but it is up to them.
-> >
-> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> > Cc: Pawel Moll <pawel.moll@arm.com>
-> > Cc: Mark Rutland <mark.rutland@arm.com>
-> > Cc: Stephen Warren <swarren@wwwdotorg.org>
-> > Cc: Ian Campbell <ian.campbell@citrix.com>
-> > Cc: Rob Herring <rob.herring@calxeda.com>
-> > Cc: Olof Johansson <olof@lixom.net>
-> > Cc: devicetree-discuss@lists.ozlabs.org
-> > Cc: devicetree@vger.kernel.org
-> 
-> Excellent move.
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+On Mon, Jul 1, 2013 at 6:28 PM, Simon Guinot <simon.guinot@sequanux.org> wrote:
+> On Sun, Jun 30, 2013 at 01:35:00AM +0200, Linus Walleij wrote:
 
-Perhaps it is time to also place the official repo
-of the Device Tree Compiler on git,kernel.org as well?
+>> > +static struct platform_driver f7188x_gpio_driver = {
+>> > +       .driver = {
+>> > +               .owner  = THIS_MODULE,
+>> > +               .name   = DRVNAME,
+>> > +       },
+>> > +       .probe          = f7188x_gpio_probe,
+>> > +       .remove         = f7188x_gpio_remove,
+>> > +};
+>> > +
+>> > +static int __init f7188x_gpio_init(void)
+>> > +{
+>> > +       int err;
+>> > +       struct f7188x_sio sio;
+>> > +
+>> > +       if (f7188x_find(0x2e, &sio) &&
+>> > +           f7188x_find(0x4e, &sio))
+>> > +               return -ENODEV;
+>>
+>> This looks like the life on the ISA-bus. Is that not dangerous?
+>
+> I guess this looks like the ISA bus because this super-I/O uses the LPC
+> bus which is ISA-compatible. At my knowledge, reading this I/O ports
+> and trying to match the vendor and device IDs is the only way to
+> identify the super-I/O chip. For example, have a look at the drivers
+> f71882fg (hwmon) and f71808e_wdt (watchdog). Both are using the same
+> identification mechanism.
 
-Other opinions?
+As said yesterday, this is OK, I guess.
 
-jdl
+Auto-detection is always to be preferred.
+
+I was just worrying if it could somehow be hazardous if this
+module is loaded on systems without this hardware.
+
+It also goes against the trend of describing hardware using
+things like devicetree or ACPI tables, but that is a broader
+discussion and something we cannot always influence.
+
+Yours,
+Linus Walleij
