@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab3GUU7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 16:59:54 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:61707 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab3GUU7x (ORCPT
+	id S1756152Ab3GUVOA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 17:14:00 -0400
+Received: from mout2.fh-giessen.de ([212.201.18.46]:60263 "EHLO
+	mout2.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab3GUVN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 16:59:53 -0400
+	Sun, 21 Jul 2013 17:13:59 -0400
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Jul 2013 17:13:59 EDT
+Message-ID: <51EC4D77.2010502@mni.thm.de>
+Date: Sun, 21 Jul 2013 23:07:03 +0200
+From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Thunderbird/25.0a1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1307211535210.4893@kaball.uk.xensource.com>
-References: <1374239399-2498-1-git-send-email-julien.grall@linaro.org> <alpine.DEB.2.02.1307211535210.4893@kaball.uk.xensource.com>
-From: Julien Grall <julien.grall@linaro.org>
-Date: Sun, 21 Jul 2013 21:59:22 +0100
-Message-ID: <CAPnVf8yG4VecBkk8py_cyOiFkFMqiLYydicKcM2PgYYm+gKd8w@mail.gmail.com>
-Subject: Re: [PATCH v2] xen/arm: enable PV control for ARM
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Patch Tracking <patches@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.11-rc2
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+In-Reply-To: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 July 2013 15:54, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
-> On Fri, 19 Jul 2013, Julien Grall wrote:
->> Enable power management from the toolstack for ARM guest.
->>
->> Signed-off-by: Julien Grall <julien.grall@linaro.org>
->>
->> ---
->>     Changes in v2:
->>         - Don't compile xen/cpu_hotplug.o with ARM64
->> ---
->>  drivers/xen/Makefile |    5 ++---
->>  1 file changed, 2 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
->> index 2bf461a..b550a94 100644
->> --- a/drivers/xen/Makefile
->> +++ b/drivers/xen/Makefile
->> @@ -1,9 +1,8 @@
->> -ifneq ($(CONFIG_ARM),y)
->> -obj-y        += manage.o
->> +ifneq ($(filter y, ($CONFIG_ARM) $(CONFIG_ARM64)),y
+On 21.07.2013 21:53, Linus Torvalds wrote:
+> So it's been another week, and -rc2 is out there.
+...
 >
-> This is wrong: ifneq is checking for the opposite condition of what we want, and
-> beside you have the $ in the wrong place for CONFIG_ARM.
+>   (b) we had a late change to how ACPI backlight handling is done on
+> certain machines, and while this kind of thing really shouldn't be
+> done outside the merge window, I ended up pulling it anyway. But I'd
+> *really* like to have people test this thing particularly on laptops
+> with intel-based graphics. It should only matter (and hopefully
+> improve things) for the newer ones with BIOSes designed for Windows 8,
+> but hey, the more testing, the better. Backlight handling has been
+> painful before, so I'm mentioning this explicitly.
 >
-> Please test you patches before sending them.
 
-My apologies, I tried without any issue on ARM (certainly, because of
-the $ in wrong place).
+This pach finally fixes my backlight control!
 
-I will send a new patch.
-
---
-Julien Grall
+Thanks!
+Tobias Klausmann
