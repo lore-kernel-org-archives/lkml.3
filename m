@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab3GUCc3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Jul 2013 22:32:29 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:48846 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754885Ab3GUCc1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Jul 2013 22:32:27 -0400
-Date: Sat, 20 Jul 2013 22:32:26 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: Kishon Vijay Abraham I <kishon@ti.com>, <kyungmin.park@samsung.com>,
-        <balbi@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
-        <arnd@arndb.de>, <swarren@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-In-Reply-To: <20130720220006.GA7977@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1307202223430.8250-100000@netrider.rowland.org>
+	id S1755395Ab3GUCpT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Jul 2013 22:45:19 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39627 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754220Ab3GUCpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Jul 2013 22:45:18 -0400
+Date: Sat, 20 Jul 2013 22:45:11 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: [GIT PULL] Re: [PATCH] ext4: fix a bug when we try to open a file
+ with O_TMPFILE flag
+Message-ID: <20130721024511.GC21484@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Al Viro <viro@ZenIV.linux.org.uk>, Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <20130717161944.GA19405@redhat.com>
+ <20130719121405.GA3856@gmail.com>
+ <20130719233613.GH4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130719233613.GH4165@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Jul 2013, Greg KH wrote:
-
-> > >>That should be passed using platform data.
-> > >
-> > >Ick, don't pass strings around, pass pointers.  If you have platform
-> > >data you can get to, then put the pointer there, don't use a "name".
-> > 
-> > I don't think I understood you here :-s We wont have phy pointer
-> > when we create the device for the controller no?(it'll be done in
-> > board file). Probably I'm missing something.
+On Sat, Jul 20, 2013 at 12:36:13AM +0100, Al Viro wrote:
 > 
-> Why will you not have that pointer?  You can't rely on the "name" as the
-> device id will not match up, so you should be able to rely on the
-> pointer being in the structure that the board sets up, right?
-> 
-> Don't use names, especially as ids can, and will, change, that is going
-> to cause big problems.  Use pointers, this is C, we are supposed to be
-> doing that :)
+> Nice catch, and you have my ACK.  Which tree do you prefer that to go
+> through?  vfs and ext4 are the obvious candidates...
 
-Kishon, I think what Greg means is this:  The name you are using must
-be stored somewhere in a data structure constructed by the board file,
-right?  Or at least, associated with some data structure somehow.  
-Otherwise the platform code wouldn't know which PHY hardware
-corresponded to a particular name.
+On second thought, to avoid an "After you, Alphonse" moment, and
+because it would be really good to make sure these patches make it to
+Linus before -rc2, I thought get these patches set up for a pull
+request.  Al, if you'd prefer that they go through the vfs tree, feel
+free to NACK this, and I'll happily drop these from the ext4 tree.
 
-Greg's suggestion is that you store the address of that data structure 
-in the platform data instead of storing the name string.  Have the 
-consumer pass the data structure's address when it calls phy_create, 
-instead of passing the name.  Then you don't have to worry about two 
-PHYs accidentally ending up with the same name or any other similar 
-problems.
+Cheers,
 
-Alan Stern
+						- Ted
+
+
+The following changes since commit 36231d255b8df9cb4698e9a3902c16067d5c1398:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs (2013-07-20 10:50:01 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+
+for you to fetch changes up to dda5690defe4af62ee120f055e98e40d97e4c760:
+
+  ext3: fix a BUG when opening a file with O_TMPFILE flag (2013-07-20 22:03:20 -0400)
+
+----------------------------------------------------------------
+Fix regression caused by commit af51a2ac36d1f which added ->tmpfile()
+support (along with a similar fix for ext3)
+
+----------------------------------------------------------------
+Zheng Liu (2):
+      ext4: fix a BUG when opening a file with O_TMPFILE flag
+      ext3: fix a BUG when opening a file with O_TMPFILE flag
+
+ fs/ext3/namei.c | 2 +-
+ fs/ext4/namei.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
