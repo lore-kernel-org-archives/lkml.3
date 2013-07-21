@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3GUOza (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 10:55:30 -0400
-Received: from shelob.oktetlabs.ru ([195.131.132.186]:45319 "EHLO
-	shelob.oktetlabs.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755542Ab3GUOz2 (ORCPT
+	id S1755660Ab3GUPGf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 11:06:35 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:61643 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755630Ab3GUPGd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 10:55:28 -0400
-X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Jul 2013 10:55:28 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.2 shelob.oktetlabs.ru A372E7F4E6
-Date: Sun, 21 Jul 2013 18:48:20 +0400
-From: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
-To: Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: lockdep warning in edac_create_sysfs_mci_device
-Message-ID: <20130721144819.GJ24717@sanechka.spb.ru>
+	Sun, 21 Jul 2013 11:06:33 -0400
+Date: Sat, 20 Jul 2013 23:15:51 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [ 00/19] 3.10.1-stable review
+To: Joe Perches <joe@perches.com>
+Cc: NeilBrown <neilb@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
+References: <20130715155202.GC29526@xanatos>
+	<CA+55aFw-FSnVM1xpHs2HVooutz1ystAWYhsWLUqFiGU+owSTZw@mail.gmail.com>
+	<20130715174659.GC15531@xanatos>
+	<CA+55aFx4VoYZCEQ97jaAKDWViG1yfu9AikJ4R+dKru-qPVSY-A@mail.gmail.com>
+	<20130715180403.GD15531@xanatos>
+	<CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com>
+	<20130715190505.GA3336@fieldses.org>
+	<1373915984.17876.176.camel@gandalf.local.home>
+	<20130716094241.43dbabb0@notabene.brown>
+	<1373932252.2062.55.camel@joe-AO722>
+	<20130716115405.0d5a7da6@notabene.brown>
+	<1373940116.2062.59.camel@joe-AO722>
+In-Reply-To: <1373940116.2062.59.camel@joe-AO722> (from joe@perches.com on
+	Mon Jul 15 21:01:56 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1374380151.3719.26@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 07/15/2013 09:01:56 PM, Joe Perches wrote:
+> On Tue, 2013-07-16 at 11:54 +1000, NeilBrown wrote:
+> > On Mon, 15 Jul 2013 16:50:52 -0700 Joe Perches <joe@perches.com>  
+> wrote:
+> >
+> > > On Tue, 2013-07-16 at 09:42 +1000, NeilBrown wrote:
+> > > > Being "polite" without being "nice" is quite possible.
+> > > > It even has a name:  Diplomacy.
+> > >
+> > > And we all know how circular/indirect/implied/useless
+> > > some of those diplomatic conversations can be.
+> > >
+> > > Just remember to bring a 'Big Stick' and don't be shy
+> > > when it's necessary to display it.
+> >
+> > The behaviour you appear to be advocating is what is generally  
+> called
+> > "bullying".
+> 
+> Nope.  It's called not being a pushover and being
+> direct, clear and not just being unnecessarily forceful.
 
-I am running Linux-3.10.0 with lockdep and see following warning
-in edac_create_sysfs_mci_device:
+Linux-kernel is an _epicially_ self-selected group.
 
-[   21.596585] BUG: key ffff8801a80ae470 not in .data!
-[   21.596586] ------------[ cut here ]------------
-[   21.596592] WARNING: at kernel/lockdep.c:2987 lockdep_init_map+0xfe/0x151()
-[   21.596593] DEBUG_LOCKS_WARN_ON(1)
-[   21.596608] Modules linked in: snd(+) mdio(+) lrw(+) iTCO_wdt(+) psmouse(+) soundcore sb_edac(+) gf128mul glue_helper iTCO_vendor_support processor(+) mtd edac_core serio_raw pcspkr joydev ioatdma(+) evdev i2c_i801 wmi lpc_ich mfd_core thermal_sys button ext4 crc16 jbd2 mbcache hid_generic sg usbhid hid sd_mod crc_t10dif isci ahci libsas libahci microcode igb libata i2c_algo_bit ehci_pci i2c_core ehci_hcd scsi_transport_sas dca usbcore ptp usb_common scsi_mod pps_core
-[   21.596610] CPU: 1 PID: 727 Comm: modprobe Tainted: G        W    3.10.0-1-debug-amd64 #2
-[   21.596611] Hardware name: Supermicro X9SRE/X9SRE-3F/X9SRi/X9SRi-3F/X9SRE/X9SRE-3F/X9SRi/X9SRi-3F, BIOS 2.0a 04/19/2013
-[   21.596614]  0000000000000000 ffff88026c3e3958 ffffffff813fa22f ffff88026c3e3990
-[   21.596615]  ffffffff81041287 ffff88026c3e39a0 ffff880184bccd10 ffff8801a80ae470
-[   21.596617]  0000000000000000 ffff880184bccc48 ffff88026c3e39f0 ffffffff8104133e
-[   21.596618] Call Trace:
-[   21.596622]  [<ffffffff813fa22f>] dump_stack+0x19/0x1b
-[   21.596625]  [<ffffffff81041287>] warn_slowpath_common+0x60/0x78
-[   21.596627]  [<ffffffff8104133e>] warn_slowpath_fmt+0x47/0x49
-[   21.596629]  [<ffffffff8108c284>] lockdep_init_map+0xfe/0x151
-[   21.596630]  [<ffffffff8108af49>] debug_mutex_init+0x2e/0x39
-[   21.596633]  [<ffffffff81064998>] __mutex_init+0x51/0x58
-[   21.596637]  [<ffffffff812c2b03>] bus_register+0x13b/0x29f
-[   21.596642]  [<ffffffffa0302b8d>] edac_create_sysfs_mci_device+0x4c/0x44c [edac_core]
-[   21.596645]  [<ffffffffa0300ef2>] edac_mc_add_mc+0x9a/0x1c3 [edac_core]
-[   21.596648]  [<ffffffffa0319b0a>] sbridge_probe+0x94e/0xb3a [sb_edac]
-[   21.596650]  [<ffffffff8108eabb>] ? trace_hardirqs_on_caller+0x145/0x1a1
-[   21.596653]  [<ffffffff81223bad>] local_pci_probe+0x39/0x61
-[   21.596654]  [<ffffffff812c3f89>] ? driver_probe_device+0x1b4/0x1b4
-[   21.596656]  [<ffffffff81223d43>] pci_device_probe+0xbb/0xe1
-[   21.596657]  [<ffffffff812c3e6d>] driver_probe_device+0x98/0x1b4
-[   21.596659]  [<ffffffff812c3fd7>] __driver_attach+0x4e/0x6f
-[   21.596660]  [<ffffffff812c25bf>] bus_for_each_dev+0x57/0x8a
-[   21.596663]  [<ffffffff812c3984>] driver_attach+0x19/0x1b
-[   21.596664]  [<ffffffff812c362b>] bus_add_driver+0xde/0x201
-[   21.596666]  [<ffffffff812c453f>] driver_register+0x8c/0x110
-[   21.596668]  [<ffffffff81223211>] __pci_register_driver+0x5b/0x5e
-[   21.596669]  [<ffffffffa02f7000>] ? 0xffffffffa02f6fff
-[   21.596672]  [<ffffffffa02f7032>] sbridge_init+0x32/0x1000 [sb_edac]
-[   21.596673]  [<ffffffffa02f7000>] ? 0xffffffffa02f6fff
-[   21.596676]  [<ffffffff810020b5>] do_one_initcall+0x7b/0x116
-[   21.596677]  [<ffffffffa02f7000>] ? 0xffffffffa02f6fff
-[   21.596680]  [<ffffffff8109948a>] load_module+0x1cd2/0x2004
-[   21.596681]  [<ffffffff81095a03>] ? __unlink_module+0x1e/0x1e
-[   21.596684]  [<ffffffff8109985e>] SyS_init_module+0xa2/0xb1
-[   21.596687]  [<ffffffff81404769>] system_call_fastpath+0x16/0x1b
-[   21.596688] ---[ end trace 4a6dd3f6f9dd0a92 ]---
+I expect the vast majority of people would be on Neil's side of this  
+argument, not Joe's. But they've already walked away, and are not  
+coming back.
 
-Feel free to ask for full dmesg if you need it; I can also try a patch.
-
--- 
-Alexandra N. Kossovsky
-OKTET Labs (http://www.oktetlabs.ru/)
-e-mail: sasha@oktetlabs.ru
+Rob
