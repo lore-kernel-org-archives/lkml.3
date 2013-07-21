@@ -1,174 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3GUQzH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 12:55:07 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57796 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab3GUQzD (ORCPT
+	id S1755957Ab3GURPF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 13:15:05 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:51904 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755871Ab3GURPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 12:55:03 -0400
-Message-ID: <51EC125F.5020808@kernel.org>
-Date: Sun, 21 Jul 2013 17:54:55 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Sun, 21 Jul 2013 13:15:02 -0400
+Message-ID: <51EC170E.3080201@gmail.com>
+Date: Sun, 21 Jul 2013 19:14:54 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Oleksandr Kravchenko <x0199363@ti.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        jic23@cam.ac.uk, pmeerw@pmeerw.net, holler@ahsoftware.de,
-        srinivas.pandruvada@intel.com, devicetree-discuss@lists.ozlabs.org,
-        grygorii.strashko@ti.com,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Subject: Re: [PATCH 1/3] iio: core: implement devm_iio_device_alloc/devm_iio_device_free
-References: <1374142766-29736-1-git-send-email-x0199363@ti.com> <51EA8B06.3080005@metafoo.de>
-In-Reply-To: <51EA8B06.3080005@metafoo.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Sascha Hauer <s.hauer@pengutronix.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>, kyungmin.park@samsung.com,
+        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
+        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
+        arnd@arndb.de, swarren@nvidia.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+References: <20130720220006.GA7977@kroah.com> <Pine.LNX.4.44L0.1307202223430.8250-100000@netrider.rowland.org> <20130721025910.GA23043@kroah.com> <20130721102248.GE29785@pengutronix.de> <20130721154808.GH16598@kroah.com>
+In-Reply-To: <20130721154808.GH16598@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2013 02:05 PM, Lars-Peter Clausen wrote:
-> On 07/18/2013 12:19 PM, Oleksandr Kravchenko wrote:
->> From: Grygorii Strashko <grygorii.strashko@ti.com>
+On 07/21/2013 05:48 PM, Greg KH wrote:
+> On Sun, Jul 21, 2013 at 12:22:48PM +0200, Sascha Hauer wrote:
+>> On Sat, Jul 20, 2013 at 07:59:10PM -0700, Greg KH wrote:
+>>> On Sat, Jul 20, 2013 at 10:32:26PM -0400, Alan Stern wrote:
+>>>> On Sat, 20 Jul 2013, Greg KH wrote:
+>>>>
+>>>>>>>> That should be passed using platform data.
+>>>>>>>
+>>>>>>> Ick, don't pass strings around, pass pointers.  If you have platform
+>>>>>>> data you can get to, then put the pointer there, don't use a "name".
+>>>>>>
+>>>>>> I don't think I understood you here :-s We wont have phy pointer
+>>>>>> when we create the device for the controller no?(it'll be done in
+>>>>>> board file). Probably I'm missing something.
+>>>>>
+>>>>> Why will you not have that pointer?  You can't rely on the "name" as the
+>>>>> device id will not match up, so you should be able to rely on the
+>>>>> pointer being in the structure that the board sets up, right?
+>>>>>
+>>>>> Don't use names, especially as ids can, and will, change, that is going
+>>>>> to cause big problems.  Use pointers, this is C, we are supposed to be
+>>>>> doing that :)
+>>>>
+>>>> Kishon, I think what Greg means is this:  The name you are using must
+>>>> be stored somewhere in a data structure constructed by the board file,
+>>>> right?  Or at least, associated with some data structure somehow.
+>>>> Otherwise the platform code wouldn't know which PHY hardware
+>>>> corresponded to a particular name.
+>>>>
+>>>> Greg's suggestion is that you store the address of that data structure
+>>>> in the platform data instead of storing the name string.  Have the
+>>>> consumer pass the data structure's address when it calls phy_create,
+>>>> instead of passing the name.  Then you don't have to worry about two
+>>>> PHYs accidentally ending up with the same name or any other similar
+>>>> problems.
+>>>
+>>> Close, but the issue is that whatever returns from phy_create() should
+>>> then be used, no need to call any "find" functions, as you can just use
+>>> the pointer that phy_create() returns.  Much like all other class api
+>>> functions in the kernel work.
 >>
->> Add a resource managed devm_iio_device_alloc()/devm_iio_device_free()
->> to automatically clean up any allocations made by IIO drivers,
->> thus leading to simplified IIO drivers code.
->>
->> In addition, this will allow IIO drivers to use other devm_*() API
->> (like devm_request_irq) and don't care about the race between
->> iio_device_free() and the release of resources by Device core
->> during driver removing.
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> [o.v.kravchenko@globallogic.com: fix return value ib devm_iio_device_alloc
->> in case if devres_alloc failed, remove unused variable "rc"]
->> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
->> Tested-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-> 
-> Very nice, thanks for taking care of this.
-> 
-> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+>> I think the problem here is to connect two from the bus structure
+>> completely independent devices. Several frameworks (ASoC, soc-camera)
+>> had this problem and this wasn't solved until the advent of devicetrees
+>> and their phandles.
+>> phy_create might be called from the probe function of some i2c device
+>> (the phy device) and the resulting pointer is then needed in some other
+>> platform devices (the user of the phy) probe function.
+>> The best solution we have right now is implemented in the clk framework
+>> which uses a string matching of the device names in clk_get() (at least
+>> in the non-dt case).
+>
+> I would argue that clocks are wrong here as well, as others have already
+> pointed out.
+>
+> What's wrong with the platform_data structure, why can't that be used
+> for this?
 
-Indeed.  Thanks for this,
+At the point the platform data of some driver is initialized, e.g. in
+board setup code the PHY pointer is not known, since the PHY supplier
+driver has not initialized yet.  Even though we wanted to pass pointer
+to a PHY through some notifier call, it would have been not clear
+which PHY user driver should match on such notifier.  A single PHY
+supplier driver can create M PHY objects and this needs to be mapped
+to N PHY user drivers.  This mapping needs to be defined somewhere by
+the system integrator.  It works well with device tree, but except that
+there seems to be no other reliable infrastructure in the kernel to
+define links/dependencies between devices, since device identifiers are
+not known in advance in all cases.
 
-I did drop the [] bit in the sign off as you had a perfect right
-to sign off on it anyway and that really cluttered it up with
-stuff that isn't in a standard form for that block as far as I know.
+What Tomasz proposed seems currently most reasonable to me for non-dt.
 
-Applied to the togreg branch of iio.git.  I suspect we may get a
-reasonable flood of patches using this over the next month or two.
+> Or, if not, we can always add pointers to the platform device structure,
+> or even the main 'struct device' as well, that's what it is there for.
 
-Thanks,
+Still we would need to solve a problem which platform device structure
+gets which PHY pointer.
 
-Jonathan
-> 
-> 
->> ---
->>   drivers/iio/industrialio-core.c |   47 +++++++++++++++++++++++++++++++++++++++
->>   include/linux/iio/iio.h         |   25 +++++++++++++++++++++
->>   2 files changed, 72 insertions(+)
->>
->> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
->> index e145931..d56d122 100644
->> --- a/drivers/iio/industrialio-core.c
->> +++ b/drivers/iio/industrialio-core.c
->> @@ -912,6 +912,53 @@ void iio_device_free(struct iio_dev *dev)
->>   }
->>   EXPORT_SYMBOL(iio_device_free);
->>
->> +static void devm_iio_device_release(struct device *dev, void *res)
->> +{
->> +    iio_device_free(*(struct iio_dev **)res);
->> +}
->> +
->> +static int devm_iio_device_match(struct device *dev, void *res, void *data)
->> +{
->> +    struct iio_dev **r = res;
->> +    if (!r || !*r) {
->> +        WARN_ON(!r || !*r);
->> +        return 0;
->> +    }
->> +    return *r == data;
->> +}
->> +
->> +struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv)
->> +{
->> +    struct iio_dev **ptr, *iio_dev;
->> +
->> +    ptr = devres_alloc(devm_iio_device_release, sizeof(*ptr),
->> +               GFP_KERNEL);
->> +    if (!ptr)
->> +        return NULL;
->> +
->> +    /* use raw alloc_dr for kmalloc caller tracing */
->> +    iio_dev = iio_device_alloc(sizeof_priv);
->> +    if (iio_dev) {
->> +        *ptr = iio_dev;
->> +        devres_add(dev, ptr);
->> +    } else {
->> +        devres_free(ptr);
->> +    }
->> +
->> +    return iio_dev;
->> +}
->> +EXPORT_SYMBOL_GPL(devm_iio_device_alloc);
->> +
->> +void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev)
->> +{
->> +    int rc;
->> +
->> +    rc = devres_release(dev, devm_iio_device_release,
->> +                devm_iio_device_match, iio_dev);
->> +    WARN_ON(rc);
->> +}
->> +EXPORT_SYMBOL_GPL(devm_iio_device_free);
->> +
->>   /**
->>    * iio_chrdev_open() - chrdev file open for buffer access and ioctls
->>    **/
->> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
->> index 8d171f4..f1d99f6 100644
->> --- a/include/linux/iio/iio.h
->> +++ b/include/linux/iio/iio.h
->> @@ -532,6 +532,31 @@ static inline struct iio_dev *iio_priv_to_dev(void *priv)
->>   void iio_device_free(struct iio_dev *indio_dev);
->>
->>   /**
->> + * devm_iio_device_alloc - Resource-managed iio_device_alloc()
->> + * @dev:         Device to allocate iio_dev for
->> + * @sizeof_priv:     Space to allocate for private structure.
->> + *
->> + * Managed iio_device_alloc.  iio_dev allocated with this function is
->> + * automatically freed on driver detach.
->> + *
->> + * If an iio_dev allocated with this function needs to be freed separately,
->> + * devm_iio_device_free() must be used.
->> + *
->> + * RETURNS:
->> + * Pointer to allocated iio_dev on success, NULL on failure.
->> + */
->> +struct iio_dev *devm_iio_device_alloc(struct device *dev, int sizeof_priv);
->> +
->> +/**
->> + * devm_iio_device_free - Resource-managed iio_device_free()
->> + * @dev:        Device this iio_dev belongs to
->> + * @indio_dev:         the iio_dev associated with the device
->> + *
->> + * Free indio_dev allocated with devm_iio_device_alloc().
->> + */
->> +void devm_iio_device_free(struct device *dev, struct iio_dev *iio_dev);
->> +
->> +/**
->>    * iio_buffer_enabled() - helper function to test if the buffer is enabled
->>    * @indio_dev:        IIO device structure for device
->>    **/
->>
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--
+Regards,
+Sylwester
