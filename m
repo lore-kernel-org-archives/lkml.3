@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab3GUVdm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 17:33:42 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:55647 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab3GUVdl (ORCPT
+	id S1752430Ab3GUVjB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 17:39:01 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36115 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751413Ab3GUVi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 17:33:41 -0400
-Message-ID: <51EC52DC.4020304@linux.vnet.ibm.com>
-Date: Mon, 22 Jul 2013 03:00:04 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: netdev@vger.kernel.org,
+	Sun, 21 Jul 2013 17:38:59 -0400
+Date: Sun, 21 Jul 2013 22:37:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jed Davis <jld@mozilla.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Robert Richter <rric@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        hannes@stressinduktion.org
-Subject: Re: [BUG] ipv6, rawv6_close(): BUG: unable to handle kernel paging
- request
-References: <51EC283D.5010208@linux.vnet.ibm.com> <20130721205352.GB15442@order.stressinduktion.org> <51EC4E4B.6040505@linux.vnet.ibm.com> <20130721212713.GA6538@order.stressinduktion.org>
-In-Reply-To: <20130721212713.GA6538@order.stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072121-8256-0000-0000-00000870196E
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>
+Subject: Re: [PATCH] ARM: Fix r7/r11 confusion when CONFIG_THUMB2_KERNEL=y
+Message-ID: <20130721213753.GA29879@mudshark.cambridge.arm.com>
+References: <1373685501-1620-1-git-send-email-jld@mozilla.com>
+ <20130715135420.GG10000@mudshark.cambridge.arm.com>
+ <20130720044655.GC9433@mozilla.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130720044655.GC9433@mozilla.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2013 02:57 AM, Hannes Frederic Sowa wrote:
-> On Mon, Jul 22, 2013 at 02:40:35AM +0530, Srivatsa S. Bhat wrote:
->> On 07/22/2013 02:23 AM, Hannes Frederic Sowa wrote:
->>> On Sun, Jul 21, 2013 at 11:58:13PM +0530, Srivatsa S. Bhat wrote:
->>>> I'm seeing this on every boot.
->>>>
->>>> Version: Latest mainline (commit ea45ea70b)
->>>
->>> Thanks for the report! Could you try the following patch?
->>>
->>
->> That didn't seem to help :-(
->>
->> Below is the new trace (not much different than the old one).
+Hello Jed,
+
+Thanks for the reply.
+
+On Sat, Jul 20, 2013 at 05:46:55AM +0100, Jed Davis wrote:
+> On Mon, Jul 15, 2013 at 02:54:20PM +0100, Will Deacon wrote:
+> > On Sat, Jul 13, 2013 at 04:18:20AM +0100, Jed Davis wrote:
+> [...]
+> > > Effects of this are probably limited to failure of EHABI unwinding when
+> > > starting from a function that uses r7 to restore its stack pointer, but
+> > > the possibility for further breakage (which would be invisible on
+> > > non-Thumb kernels) is worrying.
+> [...]
+> > I'm struggling to understand exactly the problem that this patch is trying
+> > to address. If it's just a code consistency issue, I don't think it's worth
+> > it (I actually find it less confusing the way we currently have things) but
+> > if there is a real bug, perhaps you could provide a testcase?
 > 
-> Ok, thanks. Do you have CONFIG_IPV6_MROUTE_MULTIPLE_TABLES enabled?
-> 
+> There is a real bug here, but my commit message wasn't very clear.  This
+> was breaking PERF_COUNT_SW_CONTEXT_SWITCHES with CONFIG_THUMB2_KERNEL=y
+> (with my other recently posted patch applied), because kernel/sched.c is
+> built with -fno-omit-frame-pointer (which is wrong, but that's a problem
+> for another patch) and so __schedule's EHABI entry uses 0x97 (mov sp, r7),
+> and somewhere along the line the unwinder gets the r11 value instead.
+> This would also apply to any function with a variable-length array, but
+> __schedule happens to have the perf hook I was trying to use.
 
-No.
+Ok, I think I'm with you now. I also think that a better solution would be
+to try and limit the r7/fp confusion to one place, perhaps behind something
+like:
 
-Here are the relevant config options from my .config:
+void arm_get_current_stackframe(struct pt_regs *regs, struct stackframe *frame);
 
-CONFIG_IPV6=m
-CONFIG_IPV6_PRIVACY=y
-CONFIG_IPV6_ROUTER_PREF=y
-CONFIG_IPV6_ROUTE_INFO=y
-CONFIG_IPV6_OPTIMISTIC_DAD=y
-# CONFIG_INET6_AH is not set
-# CONFIG_INET6_ESP is not set
-# CONFIG_INET6_IPCOMP is not set
-# CONFIG_IPV6_MIP6 is not set
-# CONFIG_INET6_XFRM_TUNNEL is not set
-# CONFIG_INET6_TUNNEL is not set
-# CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
-# CONFIG_INET6_XFRM_MODE_TUNNEL is not set
-# CONFIG_INET6_XFRM_MODE_BEET is not set
-# CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION is not set
-# CONFIG_IPV6_SIT is not set
-# CONFIG_IPV6_TUNNEL is not set
-# CONFIG_IPV6_GRE is not set
-CONFIG_IPV6_MULTIPLE_TABLES=y
-# CONFIG_IPV6_SUBTREES is not set
-CONFIG_IPV6_MROUTE=y
-# CONFIG_IPV6_MROUTE_MULTIPLE_TABLES is not set
-CONFIG_IPV6_PIMSM_V2=y
-CONFIG_NETLABEL=y
-CONFIG_NETWORK_SECMARK=y
-# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
-CONFIG_NETFILTER=y
-# CONFIG_NETFILTER_DEBUG is not set
-CONFIG_NETFILTER_ADVANCED=y
-CONFIG_BRIDGE_NETFILTER=y
+then that function can act as the bridge between pt_regs (where we leave
+everything as it is) and stackframe (where we assign either r7 or fp into
+the fp member). Then we just fix up the call sites to pass the regs they're
+interested in to our new function.
 
+What do you think?
 
-Regards,
-Srivatsa S. Bhat
-
+Will
