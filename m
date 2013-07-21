@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab3GUXfG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 19:35:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52118 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab3GUXfD (ORCPT
+	id S1753131Ab3GUXgj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 19:36:39 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:38579 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3GUXgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 19:35:03 -0400
-Date: Mon, 22 Jul 2013 00:34:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130721233439.GY9858@sirena.org.uk>
-References: <1372842992-18712-1-git-send-email-broonie@kernel.org>
- <CACRpkdY4MEJyY4w42yEStYUg+yMeP3uekVVi31nSd-90fOo1HA@mail.gmail.com>
+	Sun, 21 Jul 2013 19:36:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7tPHY7RFL01rOa8z"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdY4MEJyY4w42yEStYUg+yMeP3uekVVi31nSd-90fOo1HA@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ab8500: Provide map_voltage() functions
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <51EC4859.5000007@gmail.com>
+References: <1373013818-11365-1-git-send-email-b32955@freescale.com>
+ <20130709070541.GQ516@pengutronix.de> <51DBBFDA.70302@freescale.com>
+ <20130709075124.GR516@pengutronix.de> <51DBC58D.90002@freescale.com>
+ <20130720054439.308B33E13F0@localhost> <51EC4859.5000007@gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Mon, 22 Jul 2013 00:36:17 +0100
+X-Google-Sender-Auth: fn066vAYlLQBaxvGSqxDyQE90b0
+Message-ID: <CACxGe6s2UjFkZBOUKVP5=4kW9a=vKT3kQA8YrtitPgC4PLj6jw@mail.gmail.com>
+Subject: Re: [PATCH] of: match the compatible in the order set by the dts file
+To: Rob Herring <robherring2@gmail.com>
+Cc: Huang Shijie <b32955@freescale.com>, Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 21, 2013 at 9:45 PM, Rob Herring <robherring2@gmail.com> wrote:
+> We can debate whether the driver order matters or not, but either way
+> I'm not sure this patch does the right thing. It doesn't really look
+> correct to me, but I haven't dug into it.
+>
+> We've already tried to fix matching and reverted the fix once before
+> (commit below). So this patch needs careful review and thought about
+> cases where the name and/or type is used to match.
 
---7tPHY7RFL01rOa8z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The rules have always been well established. This patch /shouldn't/
+cause any regression that cannot be narrowed down to a fixable driver
+bug.
 
-On Sun, Jul 21, 2013 at 04:45:23PM +0200, Linus Walleij wrote:
+A harder problem to solve however is dealing with the case when
+multiple drivers will potentially bind against the same device. Making
+that work requires getting all of the match tables into the kernel
+early so that the kernel can select the correct driver of many. Can't
+be that big a problem though since we've never actually tried to solve
+it.  :-)
 
-> Hm. Have you looked closer at this one voltage table in this driver:
+[...]
+>     Rob Herring explains:
+>      "The problem is match combinations of compatible plus name and/or type
+>       fail to match correctly.  I have a fix for this, but given how late it
+>       is for 3.5 I think it is best to revert this for now.  There could be
+>       other cases that rely on the current although wrong behavior.  I will
+>       post an updated version for 3.6."
 
-> static const unsigned int ldo_vaux56_voltages[] = {
->     1800000,
->     1050000,
+I don't believe the fix ever got posted. Do you still have it? Or can
+you describe what needs to be done?
 
-Meh, that's annoying - 8 looks too close to zero and it's the first time
-I've ever seen non-ascending hardware :/
-
---7tPHY7RFL01rOa8z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR7HAMAAoJELSic+t+oim9fPIP/3X2j8sHwLinGfWJVqu/Gv4B
-f5M9pWysRnCFJ4tKIBP2kGQbj8CHHPdRJ0B5oJtZb80JCUA4ItpQUypTNTolAFTZ
-s/G5iCBsbsyt6A0lL0c1WFhOuB1CtB5pJJbYmGPr3x2wjZzvSUQAOHgrwM4kYsUy
-NCA7xZfc4M4cLSe6qWKI8avahL7cK8M/TWdN6WYaay+Gm2q6m6rZcLVP3DdbyG+7
-b3YW1RQf5sKBhrclyvwDtr8vPJiB2lhS12stiAUzzGgP+qfBSVA6Y+2OW2BH2ukT
-JIEQqPgkcuW/alSjoez3dU4wIAFdMTtYXpf8cisFv2Q5YoNrBVUOzl4rAPz458LK
-g3UjO8gV0wCOFbF64yqLJk37m0QRbe1FcWDHiYDoXa6b4daTDG6KSg2xrxGIi1Kj
-36GQfee2ZTyOb0yORy+tBIo1fr4IA/M3isXOT+axBg4u7q1ouP4vN+pEvl9s6tNg
-H3Tmmov4FM22bCJ09zv2jM8mFPfxzIwPoma9QuDcCThQXDqv3E5NnFrHJeHxtiNm
-IFdJVvru5RJokif9T5JpbV70ujAG03nZ+qYUnKEGzMQRf8ZrM0os6k3K2wpoqBVZ
-rBC2hjHKxTrw7LCNRzTdcmGLz7FWx6NCil/jP2o7H6AHBLomOMvISbCLQF/UNlsL
-P3p6ggwSweA/OBx6S49C
-=OVj8
------END PGP SIGNATURE-----
-
---7tPHY7RFL01rOa8z--
+g.
