@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3GUMeb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 08:34:31 -0400
-Received: from ozlabs.org ([203.10.76.45]:56128 "EHLO ozlabs.org"
+	id S1755476Ab3GUMtc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 08:49:32 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58496 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932Ab3GUMea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 08:34:30 -0400
-Date: Sun, 21 Jul 2013 20:49:40 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>, devicetree@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: The future of DT binding maintainership
-Message-ID: <20130721104940.GC22475@voom.fritz.box>
-References: <CACxGe6vtJPbbqwpH8Th5S36Hx50f39j1P4OpLb-Um9xQie6Lng@mail.gmail.com>
- <20130720034647.2B7B43E14BF@localhost>
+	id S1754945Ab3GUMta convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 08:49:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: viresh.kumar@linaro.org,
+        Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com,
+        stern@rowland.harvard.edu, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
+Date: Sun, 21 Jul 2013 14:59:26 +0200
+Message-ID: <1534467.dElB1LkqvC@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51EB9F3E.70608@linux.vnet.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com> <51E6BD0E.1020101@linux.vnet.ibm.com> <51EB9F3E.70608@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wxDdMuZNg1r63Hyj"
-Content-Disposition: inline
-In-Reply-To: <20130720034647.2B7B43E14BF@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday, July 21, 2013 02:13:42 PM Srivatsa S. Bhat wrote:
+> On 07/17/2013 09:19 PM, Srivatsa S. Bhat wrote:
+> > On 07/17/2013 08:57 PM, Toralf Förster wrote:
+> >> On 07/16/2013 11:32 PM, Rafael J. Wysocki wrote:
+> >>> On Tuesday, July 16, 2013 05:15:14 PM Toralf Förster wrote:
+> [...]
+> >>>> sry - here again with full quote of the email :
+> >>>>
+> >>>> I applied patch [1/8] on top of v3.11-rc1-8-g47188d3 passes two s2ram/wakeup
+> >>>> cycles fine and crashed the system at the 3rd attempt / one times just at
+> >>>> the 4th (blinking power led, no sysrq, ...).
+> >>>>
+> >>>> Applying patch 1-8 on top of that tree differs in that way that it
+> >>>> crashes now the system even at the 1st attempt or at least at the 2nd
+> >>>>
+> >>>> My hardware is a ThinkPad T420 with latest BIOS and a 32 bit stable
+> >>>> Gentoo Linux - FWIW .config attached.
+> >>>
+> >>> I think you'll need the fixes first, basically [1/8] from this series and
+> >>> this: https://patchwork.kernel.org/patch/2827512/ .
+> >>>
+> >>> Please try to run with these two things applied only and see how that goes.
+> >>>
+> >>> Thanks,
+> >>> Rafael
+> >>>
+> >>>
+> >> That was it.
+> >>
+> >> Applying https://patchwork.kernel.org/patch/2827512/ and then patch
+> >> [1/8] on top of v3.11-rc1-8-g47188d3 works fine and solved the reported
+> >> issue.
+> >>
+> >> Furthermore applying patches 2-8 works too - suspend/wakeup works fine
+> >> and frequencies are scaled right after wakeup at the T420.
+> >>
+> > 
+> > Phew! Finally :-)
+> > 
+> > Thank you for all your testing efforts!
+> > 
+> 
+> Rafael, Viresh, any thoughts on picking up patches 2-8 from this series
+> for 3.12?
+> 
+> From the discussions on this thread so far, there are no pending issues:
+> Toralf verified that these patches work fine on his system, as he mentioned
+> above, and Tianyu Lan independently tested this patchset and found no
+> issues with them. Also, Viresh analyzed the refcounting used in the patches
+> and we came to the conclusion that there is no problem with them either.
 
---wxDdMuZNg1r63Hyj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, I'm going to queue up that series for 3.12.
 
-On Sat, Jul 20, 2013 at 04:46:47AM +0100, Grant Likely wrote:
-> A number of us had a face-to-face meeting in Dublin last week to talk
-> about DT maintainership and the fact that it simply isn't working right
-> now. Neither Rob nor I can keep up with the load and there are a lot of
-> poorly designed bindings appearing in the tree.
->=20
-> Device tree binding maintainership needs to be split off to a separate
-> group, and we've started with a few people willing to help, Pawel Moll,
-> Mark Rutland, Stephen Warren and Ian Campbell.
->=20
-> (BTW, even though I've already sent a patch adding that group
-> MAINTAINERS, this is not set in stone. Anyone else wanting to help
-> maintain should volunteer)
+Thanks,
+Rafael
 
-Sounds good.
 
-> Another thing discussed is that we need to start validating DT schema
-> with an extension to dtc. Tomasz Figa has volunteered to do this work
-> and has support from his employer to spend time on it. What I'm hoping
-> to have is that the DT schema will get checked as part of the dts build
-> process so that any DT file that doesn't match the documented schema
-> will get flagged, and that the schema files will be human readable and
-> will double as documentation.
-
-Tomasz, please keep me in the loop on this.  This sounds like exactly
-what the "checks" infrastructure in dtc was designed for, but I never
-had time to implement very much there.  I'd definitely like to follow
-progress here, though.
-
-> There is not yet any process for binding maintainership. We talked about
-> a few ideas, but they really need to be hashed out here on the mailing
-> list. A couple of the questions:
->=20
-> - How are bindings allowed to be merged? Through subsystem trees, or
->   only through the bindings tree?
->   - Through the bindings tree is more work but it will provide more
->     control.
->   - Through subsystem trees means drivers and bindings get merged
->     together.
->   - If we have a schema tool that reports errors on missing or
->     unapproved schema, then spliting the driver from the binding won't
->     matter that much.
-> - Do we need to differentiate between 'staging' and 'stable' bindings?
-> - What is the schedule for splitting the bindings and .dts files out of
->   the kernel?
->   - Ian Campbell is maintaining a DT bindings and .dts mirror tree which
->     should eventually become the 'master' for merging DT bindings.
-
-It seems to me that the kernel tree has become the informal repository
-for board dts files is in itself a problem.  It encourages people to
-think the two are closely linked and that all that matters is that a
-specific dts works with its corresponding kernel and vice versa,
-rather than fdts being the general description they're supposed to be.
-
-Not that I have much in the way of better ideas.
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---wxDdMuZNg1r63Hyj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iEYEARECAAYFAlHrvMQACgkQaILKxv3ab8aEyQCgkNeBr0+qw2lclYuW0/47WTve
-njwAn0uW3W5JVTqFeSHLm76TTwWglbGk
-=8U6w
------END PGP SIGNATURE-----
-
---wxDdMuZNg1r63Hyj--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
