@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3GUXmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 19:42:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56678 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab3GUXmN (ORCPT
+	id S1753311Ab3GUXot (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 19:44:49 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:51112 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3GUXor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 19:42:13 -0400
-Date: Mon, 22 Jul 2013 00:41:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders <danders@circuitco.com>,
-        "vishal.l.verma" <vishal.l.verma@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-Message-ID: <20130721234134.GA9858@sirena.org.uk>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
- <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
- <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
- <1372398218.9243.29.camel@envy.home>
- <20130704162641.GG27646@sirena.org.uk>
- <CACRpkdbKGti==FTfHm81EkwD++iRfixnXt3kWgBj7CxjM+2znA@mail.gmail.com>
+	Sun, 21 Jul 2013 19:44:47 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+9kyDs7IugQ0lHaC"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbKGti==FTfHm81EkwD++iRfixnXt3kWgBj7CxjM+2znA@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the
- MinnowBoard
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <51EC4908.4040504@gmail.com>
+References: <1374257691-31981-1-git-send-email-bigeasy@linutronix.de>
+ <51EBF33A.4050207@gmail.com> <51EC4908.4040504@gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Mon, 22 Jul 2013 00:44:27 +0100
+X-Google-Sender-Auth: wHMX5qrlqTz4OHvdmF2IoFEqq34
+Message-ID: <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com>
+Subject: Re: [PATCH] of: provide of_platform_unpopulate()
+To: Rob Herring <robherring2@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        George Cherian <george.cherian@ti.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Roger Quadros <rogerq@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 21, 2013 at 9:48 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 07/21/2013 09:42 AM, Rob Herring wrote:
+>> On 07/19/2013 01:14 PM, Sebastian Andrzej Siewior wrote:
+>>> So I called of_platform_populate() on a device to get each child device
+>>> probed and on rmmod and I need to reverse its doing. After a quick grep
+>>> I did what others did as well and rmmod ended in:
+>>>
+>>> | Unable to handle kernel NULL pointer dereference at virtual address 00000018
+>>> | PC is at release_resource+0x18/0x80
+>>> | Process rmmod (pid: 2005, stack limit = 0xedc30238)
+>>> | [<c003add0>] (release_resource+0x18/0x80) from [<c0300e08>] (platform_device_del+0x78/0xac)
+>>> | [<c0300e08>] (platform_device_del+0x78/0xac) from [<c0301358>] (platform_device_unregister+0xc/0x18)
+>>>
+>>> The problem is that platform_device_del() "releases" each ressource in its
+>>> tree. This does not work on platform_devices created by OF becuase they
+>>> were never added via insert_resource(). As a consequence old->parent in
+>>> __release_resource() is NULL and we explode while accessing ->child.
+>>> So I either I do something completly wrong _or_ nobody here tested the
+>>> rmmod path of their driver.
+>>
+>> Wouldn't the correct fix be to call insert_resource somehow? The problem
+>> I have is that while of_platform_populate is all about parsing the DT
+>> and creating devices, the removal side has nothing to do with DT. So
+>> this should not be in the DT code. I think the core device code should
+>> be able to handle removal if the device creation side is done correctly.
+>>
+>> It looks to me like of_device_add either needs to call
+>> platform_device_add rather than device_add. I think the device name
+>> setting in platform_device_add should be a nop. If not, a check that the
+>> name is already set could be added.
+>>
+>
+> BTW, it looks like Grant has attempted this already:
 
---+9kyDs7IugQ0lHaC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yup, things broke badly. Unfortunately the of_platform_device and
+platform_device history doesn't treat resources in the same way. I
+would like to merge the code, but I haven't been able to figure out a
+clean way to do it. Looks like we do need the unpopulate function.
 
-On Sat, Jul 20, 2013 at 07:37:54PM +0200, Linus Walleij wrote:
-> On Thu, Jul 4, 2013 at 6:26 PM, Mark Brown <broonie@kernel.org> wrote:
-
-> > We should really have a subsystem for this too - the general idea idea
-> > of identifying boards, fit options and so on by looking at things like
-> > GPIOs or numbers in flash is really common.
-
-> Would it then be a bus following the pattern we chiseled out for
-> the soc bus? (Greg, Lee & Arnd architectured this.)
-
-I'd expect it to be a bus, yes.
-
-> There we needed a struct device * on an overarching level to
-> tie in the sysfs entries reading out the SoC properties. But
-> it would be the same thing with in-kernel accessors for these
-> properties.
-
-I'd expect us to end up with devices for the modules doing the mapping.
-I'm not sure what the accessors you're thinking about would be, this
-should hopefully be transparent to devices sitting on the boards
-otherwise it seems like there's not that much point really.
-
-> So it would be the same pattern above with a board bus, in
-> DT syntax:
-
-> board {
->      soc {
->      };
-> };
-
-I'm not 100% sure what this means, sorry?  If you're saying it'd be
-something that sits within the master board for the system (whatever
-that happens to be) then yes.
-
---+9kyDs7IugQ0lHaC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR7HGrAAoJELSic+t+oim9hQIP/Rv9nb8MhAOuKfIMJwrtK37c
-A4J5XRhfAjN3GKrrivpMHA9FqkLzGhwvAxXa/qMZDT2Ssk5F7MwrtmFcW2taBDnq
-GHiYRfwl3iMdIPEPE1t3YqVcFNCdCNxmsuv05uLL0pYuK3pMKOqE+JjMaErv1jPR
-dVarY7S+2Ls47H7tP+AtfswHdsMblG5txmaGerHUUpeMga22/xjS+nu4B7G9GPpm
-M6gwf6xhjKBXLIIVQbupHvf0Ajb7jNxgcftAIB+fGP0l7IIPC8AWj2JWlj0drLv9
-e9Gdd599TpmNGGVQQFeEtxxMnERxUTrvhO+Qdn7+MHFWD7g06v1LiH8MWEj1/FiO
-cjbbjf70SOkMPv0c5atetL8IYFCcbjmvzAn5dF+TzUbQ9irVPfpeHypX6ITbBkfC
-/x/KcVsE4Zz4WT464LT+NK27hpr7JVCVtcE9vHt2o0ygXd6QIGUmFmPfapvXg0i9
-7UrF4rppDWk07oltv6OpMm1chAMnWZidVxwc2Sd2uz++byBJMKb21iD9oTuzQMYy
-rOPxcDIZoYk/BhY5mwvv507ZWTf9mo98l2t9c6l5NEXr2kDnq4v0zNl6w8Vy6d+L
-yvVKQWzem3qnFRfvoG9t/kNr/zE+1jXkmooJIxFIiMj1iYrsFDMunXT21KWIKDOX
-pZpQ9Syi3b3Bu7lw6Qc0
-=agOk
------END PGP SIGNATURE-----
-
---+9kyDs7IugQ0lHaC--
+g.
