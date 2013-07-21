@@ -1,689 +1,741 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab3GUEBU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 00:01:20 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:55220 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab3GUEBP (ORCPT
+	id S1752558Ab3GUFNR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 01:13:17 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:60711 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600Ab3GUFNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 00:01:15 -0400
+	Sun, 21 Jul 2013 01:13:14 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Rob Landley <rob@landley.net>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] Documentation/Changes: phase out Changes file that hasn't changed
+Date: Sun, 21 Jul 2013 01:12:55 -0400
+Message-ID: <1374383575-31493-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-In-Reply-To: <20130720225911.GC13731@pd.tnic>
-References: <20130709183601.5d567a83@fem.tu-ilmenau.de>
-	<20130710073049.GA15525@pd.tnic>
-	<20130711230525.40bc6491@fem.tu-ilmenau.de>
-	<20130716170055.GG4402@pd.tnic>
-	<CAPVoSvQuzUQUgRgk6fhsxEhjWS8oPreo00u_urntaCzmERpOtg@mail.gmail.com>
-	<20130720225911.GC13731@pd.tnic>
-Date: Sun, 21 Jul 2013 06:01:14 +0200
-Message-ID: <CAPVoSvT_sSN2++q229G6xDDyRyvm7hVwpHS1NGKhECAhYZfcUA@mail.gmail.com>
-Subject: Re: early microcode on amd is broken when no initramfs provided
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Jacob Shin <jacob.shin@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.w.shin@gmail.com>
-Content-Type: multipart/mixed; boundary=001a11c2e9b86fc2dc04e1fd9c85
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c2e9b86fc2dc04e1fd9c85
-Content-Type: text/plain; charset=ISO-8859-1
+It has been over two years since this file has been touched, and
+even that prior change was just to delete some ancient text.
 
-On Sun, Jul 21, 2013 at 12:59 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sat, Jul 20, 2013 at 09:01:33PM +0200, Torsten Kaiser wrote:
->> On Tue, Jul 16, 2013 at 7:00 PM, Borislav Petkov <bp@alien8.de> wrote:
->> > On Thu, Jul 11, 2013 at 11:05:25PM +0200, Johannes Hirte wrote:
->> >> config is attached
->> >
->> > Ok, I can reproduce the hang with your config but even with:
->> >
->> > $ grep MICROCODE .config
->> > # CONFIG_MICROCODE is not set
->> > # CONFIG_MICROCODE_INTEL_EARLY is not set
->> > # CONFIG_MICROCODE_AMD_EARLY is not set
->> >
->> > which means, it cannot be microcode-related.
->> >
->> > And I'd bet if you wait a minute (yep, it should be exactly 60 seconds)
->> > the boot would probably continue. And if so, this is that 60 sec delay
->> > where the kernel tries to find firmware.
->> >
->> > Hmm...
->>
->> I have the same problem: Booting 3.11-rc1 hangs after the line:
->> ACPI: Executed 3 blocks of module-level executable AML code
->>
->> I bisected it down to the early microcode changes:
->> 757885e94a22bcc82beb9b1445c95218cb20ceab (the new early loading
->> implementation) and 6b3389ac21b5e557b957f1497d0ff22bf733e8c3 (small
->> fixup) completely fail to boot (No output beyond "Booting kernel") ,
->> from 275bbe2e299f1820ec8faa443d689469a9e6ecc5 ("Make
->> find_ucode_in_initrd() __init") I'm seeing this hang.
->>
->> Just turning CONFIG_MICROCODE_EARLY off solves the problem: The system
->> now sucessfully boots 3.11-rc1.
->
-> Ok, I need to be able to reproduce that first - I wasn't that successful
-> with Johannes' setup.
->
-> So, can you please send .config and how you're loading your microcode?
-> Is it in the initrd or are you doing that later, how? Grub entry please.
->
-> Also, is it just plain v3.11-rc1 or with patches ontop?
->
-> Also, /proc/cpuinfo please.
+Looking at the bigger picture, the need for this file has simply
+passed.  It was trying to detail required versions of userspace
+packages, in order to cater to hand-crafted systems.  But now the
+majority of users get their userspace all at once from some kind
+of distro, and we are probably a lot more serious about avoiding
+breaking userspace than we were a dozen years ago.
 
-.config and cpuinfo attached.
-Microcode seems not to be loaded at all, for MICROCODE_EARLY I did not
-attach the needed file / cpio and the normal update mechanism seems to
-not have a newer microcode that what the BIOS is providing.
-I'm using a custom initrd, but that can't be used for MICROCODE_EARLY
-because its compressed and does not contain a AuthenticAMD.bin. Its
-also not containing microcode_amd.bin, because I'm suppling that via
-CONFIG_EXTRA_FIRMWARE.
-Grub entry:
-title 3.11.0-rc1-crypt
-root (hd0,0)
-kernel (hd0,0)/boot/kernel-3.11.0-rc1 fastboot crypt_root=/dev/md6
-video=1280x1024 radeon.dpm=1
-initrd (hd0,0)/boot/ramfs-2011.gz
-savedefault
+The remaining data in the file, like (probably stale) links to
+old package versions, etc. is also no longer of any real value
+today, so let us just remove the file and all references to it.
 
-I was using plain 3.11-rc1 except the changes I made to debug this.
+For a couple references, where it was obvious the surrounding
+text was also super ancient (e.g. 1.2.x kernels or similar),
+the whole paragraph with the reference was removed.
 
-What I think you need: A system that is fatally affected by AMD
-Erratum 400 and an 64bit kernel.
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ Documentation/00-INDEX              |   2 -
+ Documentation/Changes               | 415 ------------------------------------
+ Documentation/HOWTO                 |   5 -
+ Documentation/filesystems/locks.txt |   4 -
+ Documentation/isdn/README           |   3 +-
+ Documentation/ja_JP/HOWTO           |   5 -
+ Documentation/ko_KR/HOWTO           |   4 -
+ Documentation/networking/PLIP.txt   |   3 +-
+ Documentation/zh_CN/HOWTO           |   3 -
+ README                              |  16 +-
+ drivers/net/ppp/Kconfig             |   5 +-
+ drivers/pcmcia/Kconfig              |   3 +-
+ fs/Kconfig.binfmt                   |   6 -
+ fs/fuse/Kconfig                     |   1 -
+ net/Kconfig                         |   7 +-
+ scripts/ver_linux                   |   1 -
+ 16 files changed, 8 insertions(+), 475 deletions(-)
+ delete mode 100644 Documentation/Changes
 
->From my debugging I found the following sequence of events occurs on my system:
-The BSP will call load_ucode_ap().
-That will call collect_cpu_info_amd_early(), which will fill the
-cpuinfo_x86.x86 and cpuinfo_x86.microcode fields of the
-cpu_info-per-cpu-structure that has not yet been setup. Because this
-code will only be used with MICROCODE_EARLY disabling this options
-make my system boot. OTOH this function is called regardless if
-AuthenticAMD.bin is available or not, thats why I'm hitting it even
-without the special cpio.
-Then the BSP will call init_amd() to apply the errata fixes. That uses
-cpu_has_amd_erratum(), but that function is not using the cpuinfo_x86
-that was supplied to init_amd() (And used for the following
-set_cpu_bug() is the erratum was found!), but instead is guessing
-itself if it should use the per-cpu data or boot_cpu_data. And it uses
-the not yet initialized per-cpu data for that guess. Which normally
-works fine, because that will all be zeroed out, but
-collect_cpu_info_amd_early() has filled ->x86 and so
-cpu_has_amd_erratum() wil use the partly filled per-cpu data instead
-of the correct boot_cpu_data. But because collect_cpu_info_amd_early()
-did not fill ->x86_vendor that field is still 0 == X86_VENDOR_INTEL
-and cpu_has_amd_erratum() will lie that no erratum is present.
-So the C1E work around is not applied and as soon as ACPI enables this
-the boot hangs.
-
-Something like the following (whitespace mangled by Gmail, if it looks
-OK for you, I will send it as a clean patch) fixes
-cpu_has_amd_erratum() for me, but I did not look how the early
-microcode loading should work if AuthenticAMD.bin is available to
-offer a fix the premature accesses to per-cpu cpu_info.
-
---- 3.11-rc1/arch/x86/kernel/cpu/amd.c.orig     2013-07-21
-05:42:42.130346496 +0200
-+++ 3.11-rc1/arch/x86/kernel/cpu/amd.c  2013-07-21 05:45:09.420345843 +0200
-@@ -512,7 +512,7 @@
-
- static const int amd_erratum_383[];
- static const int amd_erratum_400[];
--static bool cpu_has_amd_erratum(const int *erratum);
-+static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum);
-
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- {
-@@ -729,11 +729,11 @@
-                value &= ~(1ULL << 24);
-                wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
-
--               if (cpu_has_amd_erratum(amd_erratum_383))
-+               if (cpu_has_amd_erratum(c, amd_erratum_383))
-                        set_cpu_bug(c, X86_BUG_AMD_TLB_MMATCH);
-        }
-
--       if (cpu_has_amd_erratum(amd_erratum_400))
-+       if (cpu_has_amd_erratum(c, amd_erratum_400))
-                set_cpu_bug(c, X86_BUG_AMD_APIC_C1E);
-
-        rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
-@@ -879,22 +879,14 @@
- static const int amd_erratum_383[] =
-        AMD_OSVW_ERRATUM(3, AMD_MODEL_RANGE(0x10, 0, 0, 0xff, 0xf));
-
--static bool cpu_has_amd_erratum(const int *erratum)
-+static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
- {
--       struct cpuinfo_x86 *cpu = __this_cpu_ptr(&cpu_info);
-        int osvw_id = *erratum++;
-        u32 range;
-        u32 ms;
-
--       /*
--        * If called early enough that current_cpu_data hasn't been initialized
--        * yet, fall back to boot_cpu_data.
--        */
--       if (cpu->x86 == 0)
--               cpu = &boot_cpu_data;
+diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+index 0c4cc68..ec40988 100644
+--- a/Documentation/00-INDEX
++++ b/Documentation/00-INDEX
+@@ -17,8 +17,6 @@ ABI/
+ 
+ BUG-HUNTING
+ 	- brute force method of doing binary search of patches to find bug.
+-Changes
+-	- list of changes that break older software packages.
+ CodingStyle
+ 	- how the maintainers expect the C code in the kernel to look.
+ DMA-API.txt
+diff --git a/Documentation/Changes b/Documentation/Changes
+deleted file mode 100644
+index b175808..0000000
+--- a/Documentation/Changes
++++ /dev/null
+@@ -1,415 +0,0 @@
+-Intro
+-=====
 -
--       if (cpu->x86_vendor != X86_VENDOR_AMD)
--               return false;
-+       /* Should never be called on Non-AMD-CPUs */
-+       BUG_ON(cpu->x86_vendor != X86_VENDOR_AMD);
+-This document is designed to provide a list of the minimum levels of
+-software necessary to run the 3.0 kernels.
+-
+-This document is originally based on my "Changes" file for 2.0.x kernels
+-and therefore owes credit to the same people as that file (Jared Mauch,
+-Axel Boldt, Alessandro Sigala, and countless other users all over the
+-'net).
+-
+-Current Minimal Requirements
+-============================
+-
+-Upgrade to at *least* these software revisions before thinking you've
+-encountered a bug!  If you're unsure what version you're currently
+-running, the suggested command should tell you.
+-
+-Again, keep in mind that this list assumes you are already functionally
+-running a Linux kernel.  Also, not all tools are necessary on all
+-systems; obviously, if you don't have any ISDN hardware, for example,
+-you probably needn't concern yourself with isdn4k-utils.
+-
+-o  Gnu C                  3.2                     # gcc --version
+-o  Gnu make               3.80                    # make --version
+-o  binutils               2.12                    # ld -v
+-o  util-linux             2.10o                   # fdformat --version
+-o  module-init-tools      0.9.10                  # depmod -V
+-o  e2fsprogs              1.41.4                  # e2fsck -V
+-o  jfsutils               1.1.3                   # fsck.jfs -V
+-o  reiserfsprogs          3.6.3                   # reiserfsck -V
+-o  xfsprogs               2.6.0                   # xfs_db -V
+-o  squashfs-tools         4.0                     # mksquashfs -version
+-o  btrfs-progs            0.18                    # btrfsck
+-o  pcmciautils            004                     # pccardctl -V
+-o  quota-tools            3.09                    # quota -V
+-o  PPP                    2.4.0                   # pppd --version
+-o  isdn4k-utils           3.1pre1                 # isdnctrl 2>&1|grep version
+-o  nfs-utils              1.0.5                   # showmount --version
+-o  procps                 3.2.0                   # ps --version
+-o  oprofile               0.9                     # oprofiled --version
+-o  udev                   081                     # udevd --version
+-o  grub                   0.93                    # grub --version || grub-install --version
+-o  mcelog                 0.6                     # mcelog --version
+-o  iptables               1.4.2                   # iptables -V
+-
+-
+-Kernel compilation
+-==================
+-
+-GCC
+----
+-
+-The gcc version requirements may vary depending on the type of CPU in your
+-computer.
+-
+-Make
+-----
+-
+-You will need Gnu make 3.80 or later to build the kernel.
+-
+-Binutils
+---------
+-
+-Linux on IA-32 has recently switched from using as86 to using gas for
+-assembling the 16-bit boot code, removing the need for as86 to compile
+-your kernel.  This change does, however, mean that you need a recent
+-release of binutils.
+-
+-Perl
+-----
+-
+-You will need perl 5 and the following modules: Getopt::Long, Getopt::Std,
+-File::Basename, and File::Find to build the kernel.
+-
+-
+-System utilities
+-================
+-
+-Architectural changes
+----------------------
+-
+-DevFS has been obsoleted in favour of udev
+-(http://www.kernel.org/pub/linux/utils/kernel/hotplug/)
+-
+-32-bit UID support is now in place.  Have fun!
+-
+-Linux documentation for functions is transitioning to inline
+-documentation via specially-formatted comments near their
+-definitions in the source.  These comments can be combined with the
+-SGML templates in the Documentation/DocBook directory to make DocBook
+-files, which can then be converted by DocBook stylesheets to PostScript,
+-HTML, PDF files, and several other formats.  In order to convert from
+-DocBook format to a format of your choice, you'll need to install Jade as
+-well as the desired DocBook stylesheets.
+-
+-Util-linux
+-----------
+-
+-New versions of util-linux provide *fdisk support for larger disks,
+-support new options to mount, recognize more supported partition
+-types, have a fdformat which works with 2.4 kernels, and similar goodies.
+-You'll probably want to upgrade.
+-
+-Ksymoops
+---------
+-
+-If the unthinkable happens and your kernel oopses, you may need the
+-ksymoops tool to decode it, but in most cases you don't.
+-It is generally preferred to build the kernel with CONFIG_KALLSYMS so
+-that it produces readable dumps that can be used as-is (this also
+-produces better output than ksymoops).  If for some reason your kernel
+-is not build with CONFIG_KALLSYMS and you have no way to rebuild and
+-reproduce the Oops with that option, then you can still decode that Oops
+-with ksymoops.
+-
+-Module-Init-Tools
+------------------
+-
+-A new module loader is now in the kernel that requires module-init-tools
+-to use.  It is backward compatible with the 2.4.x series kernels.
+-
+-Mkinitrd
+---------
+-
+-These changes to the /lib/modules file tree layout also require that
+-mkinitrd be upgraded.
+-
+-E2fsprogs
+----------
+-
+-The latest version of e2fsprogs fixes several bugs in fsck and
+-debugfs.  Obviously, it's a good idea to upgrade.
+-
+-JFSutils
+---------
+-
+-The jfsutils package contains the utilities for the file system.
+-The following utilities are available:
+-o fsck.jfs - initiate replay of the transaction log, and check
+-  and repair a JFS formatted partition.
+-o mkfs.jfs - create a JFS formatted partition.
+-o other file system utilities are also available in this package.
+-
+-Reiserfsprogs
+--------------
+-
+-The reiserfsprogs package should be used for reiserfs-3.6.x
+-(Linux kernels 2.4.x). It is a combined package and contains working
+-versions of mkreiserfs, resize_reiserfs, debugreiserfs and
+-reiserfsck. These utils work on both i386 and alpha platforms.
+-
+-Xfsprogs
+---------
+-
+-The latest version of xfsprogs contains mkfs.xfs, xfs_db, and the
+-xfs_repair utilities, among others, for the XFS filesystem.  It is
+-architecture independent and any version from 2.0.0 onward should
+-work correctly with this version of the XFS kernel code (2.6.0 or
+-later is recommended, due to some significant improvements).
+-
+-PCMCIAutils
+------------
+-
+-PCMCIAutils replaces pcmcia-cs (see below). It properly sets up
+-PCMCIA sockets at system startup and loads the appropriate modules
+-for 16-bit PCMCIA devices if the kernel is modularized and the hotplug
+-subsystem is used.
+-
+-Pcmcia-cs
+----------
+-
+-PCMCIA (PC Card) support is now partially implemented in the main
+-kernel source. The "pcmciautils" package (see above) replaces pcmcia-cs
+-for newest kernels.
+-
+-Quota-tools
+------------
+-
+-Support for 32 bit uid's and gid's is required if you want to use
+-the newer version 2 quota format.  Quota-tools version 3.07 and
+-newer has this support.  Use the recommended version or newer
+-from the table above.
+-
+-Intel IA32 microcode
+---------------------
+-
+-A driver has been added to allow updating of Intel IA32 microcode,
+-accessible as a normal (misc) character device.  If you are not using
+-udev you may need to:
+-
+-mkdir /dev/cpu
+-mknod /dev/cpu/microcode c 10 184
+-chmod 0644 /dev/cpu/microcode
+-
+-as root before you can use this.  You'll probably also want to
+-get the user-space microcode_ctl utility to use with this.
+-
+-Powertweak
+-----------
+-
+-If you are running v0.1.17 or earlier, you should upgrade to
+-version v0.99.0 or higher. Running old versions may cause problems
+-with programs using shared memory.
+-
+-udev
+-----
+-udev is a userspace application for populating /dev dynamically with
+-only entries for devices actually present.  udev replaces the basic
+-functionality of devfs, while allowing persistent device naming for
+-devices.
+-
+-FUSE
+-----
+-
+-Needs libfuse 2.4.0 or later.  Absolute minimum is 2.3.0 but mount
+-options 'direct_io' and 'kernel_cache' won't work.
+-
+-Networking
+-==========
+-
+-General changes
+----------------
+-
+-If you have advanced network configuration needs, you should probably
+-consider using the network tools from ip-route2.
+-
+-Packet Filter / NAT
+--------------------
+-The packet filtering and NAT code uses the same tools like the previous 2.4.x
+-kernel series (iptables).  It still includes backwards-compatibility modules
+-for 2.2.x-style ipchains and 2.0.x-style ipfwadm.
+-
+-PPP
+----
+-
+-The PPP driver has been restructured to support multilink and to
+-enable it to operate over diverse media layers.  If you use PPP,
+-upgrade pppd to at least 2.4.0.
+-
+-If you are not using udev, you must have the device file /dev/ppp
+-which can be made by:
+-
+-mknod /dev/ppp c 108 0
+-
+-as root.
+-
+-Isdn4k-utils
+-------------
+-
+-Due to changes in the length of the phone number field, isdn4k-utils
+-needs to be recompiled or (preferably) upgraded.
+-
+-NFS-utils
+----------
+-
+-In ancient (2.4 and earlier) kernels, the nfs server needed to know
+-about any client that expected to be able to access files via NFS.  This
+-information would be given to the kernel by "mountd" when the client
+-mounted the filesystem, or by "exportfs" at system startup.  exportfs
+-would take information about active clients from /var/lib/nfs/rmtab.
+-
+-This approach is quite fragile as it depends on rmtab being correct
+-which is not always easy, particularly when trying to implement
+-fail-over.  Even when the system is working well, rmtab suffers from
+-getting lots of old entries that never get removed.
+-
+-With modern kernels we have the option of having the kernel tell mountd
+-when it gets a request from an unknown host, and mountd can give
+-appropriate export information to the kernel.  This removes the
+-dependency on rmtab and means that the kernel only needs to know about
+-currently active clients.
+-
+-To enable this new functionality, you need to:
+-
+-  mount -t nfsd nfsd /proc/fs/nfsd
+-
+-before running exportfs or mountd.  It is recommended that all NFS
+-services be protected from the internet-at-large by a firewall where
+-that is possible.
+-
+-mcelog
+-------
+-
+-In Linux 2.6.31+ the i386 kernel needs to run the mcelog utility
+-as a regular cronjob similar to the x86-64 kernel to process and log
+-machine check events when CONFIG_X86_NEW_MCE is enabled. Machine check
+-events are errors reported by the CPU. Processing them is strongly encouraged.
+-All x86-64 kernels since 2.6.4 require the mcelog utility to
+-process machine checks.
+-
+-Getting updated software
+-========================
+-
+-Kernel compilation
+-******************
+-
+-gcc
+----
+-o  <ftp://ftp.gnu.org/gnu/gcc/>
+-
+-Make
+-----
+-o  <ftp://ftp.gnu.org/gnu/make/>
+-
+-Binutils
+---------
+-o  <ftp://ftp.kernel.org/pub/linux/devel/binutils/>
+-
+-System utilities
+-****************
+-
+-Util-linux
+-----------
+-o  <ftp://ftp.kernel.org/pub/linux/utils/util-linux/>
+-
+-Ksymoops
+---------
+-o  <ftp://ftp.kernel.org/pub/linux/utils/kernel/ksymoops/v2.4/>
+-
+-Module-Init-Tools
+------------------
+-o  <ftp://ftp.kernel.org/pub/linux/kernel/people/rusty/modules/>
+-
+-Mkinitrd
+---------
+-o  <https://code.launchpad.net/initrd-tools/main>
+-
+-E2fsprogs
+----------
+-o  <http://prdownloads.sourceforge.net/e2fsprogs/e2fsprogs-1.29.tar.gz>
+-
+-JFSutils
+---------
+-o  <http://jfs.sourceforge.net/>
+-
+-Reiserfsprogs
+--------------
+-o  <http://www.kernel.org/pub/linux/utils/fs/reiserfs/>
+-
+-Xfsprogs
+---------
+-o  <ftp://oss.sgi.com/projects/xfs/>
+-
+-Pcmciautils
+------------
+-o  <ftp://ftp.kernel.org/pub/linux/utils/kernel/pcmcia/>
+-
+-Pcmcia-cs
+----------
+-o  <http://pcmcia-cs.sourceforge.net/>
+-
+-Quota-tools
+-----------
+-o  <http://sourceforge.net/projects/linuxquota/>
+-
+-DocBook Stylesheets
+--------------------
+-o  <http://nwalsh.com/docbook/dsssl/>
+-
+-XMLTO XSLT Frontend
+--------------------
+-o  <http://cyberelk.net/tim/xmlto/>
+-
+-Intel P6 microcode
+-------------------
+-o  <http://www.urbanmyth.org/microcode/>
+-
+-Powertweak
+-----------
+-o  <http://powertweak.sourceforge.net/>
+-
+-udev
+-----
+-o <http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html>
+-
+-FUSE
+-----
+-o <http://sourceforge.net/projects/fuse>
+-
+-mcelog
+-------
+-o <ftp://ftp.kernel.org/pub/linux/utils/cpu/mce/>
+-
+-Networking
+-**********
+-
+-PPP
+----
+-o  <ftp://ftp.samba.org/pub/ppp/>
+-
+-Isdn4k-utils
+-------------
+-o  <ftp://ftp.isdn4linux.de/pub/isdn4linux/utils/>
+-
+-NFS-utils
+----------
+-o  <http://sourceforge.net/project/showfiles.php?group_id=14>
+-
+-Iptables
+---------
+-o  <http://www.iptables.org/downloads.html>
+-
+-Ip-route2
+----------
+-o  <ftp://ftp.tux.org/pub/net/ip-routing/iproute2-2.2.4-now-ss991023.tar.gz>
+-
+-OProfile
+---------
+-o  <http://oprofile.sf.net/download/>
+-
+-NFS-Utils
+----------
+-o  <http://nfs.sourceforge.net/>
+-
+diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+index 27faae3..506c77e 100644
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -87,11 +87,6 @@ required reading:
+     what is necessary to do to configure and build the kernel.  People
+     who are new to the kernel should start here.
+ 
+-  Documentation/Changes
+-    This file gives a list of the minimum levels of various software
+-    packages that are necessary to build and run the kernel
+-    successfully.
+-
+   Documentation/CodingStyle
+     This describes the Linux kernel coding style, and some of the
+     rationale behind it. All new code is expected to follow the
+diff --git a/Documentation/filesystems/locks.txt b/Documentation/filesystems/locks.txt
+index 2cf8108..42861db 100644
+--- a/Documentation/filesystems/locks.txt
++++ b/Documentation/filesystems/locks.txt
+@@ -17,10 +17,6 @@ release of the 2.1.x kernel series, support for the old emulation has
+ been totally removed, so that we don't need to carry this baggage
+ forever.
+ 
+-This should not cause problems for anybody, since everybody using a
+-2.1.x kernel should have updated their C library to a suitable version
+-anyway (see the file "Documentation/Changes".)
+-
+ 1.2 Allow Mixed Locks Again
+ ---------------------------
+ 
+diff --git a/Documentation/isdn/README b/Documentation/isdn/README
+index cfb1884..6dcdd52 100644
+--- a/Documentation/isdn/README
++++ b/Documentation/isdn/README
+@@ -320,8 +320,7 @@ README for the ISDN-subsystem
+ 
+   ATTENTION!
+ 
+-  Always use the latest module utilities. The current version is
+-  named in Documentation/Changes. Some old versions of insmod
++  Always use the latest module utilities.  Some old versions of insmod
+   are not capable of setting the driver-Ids correctly.
+ 
+ 3. Lowlevel-driver configuration.
+diff --git a/Documentation/ja_JP/HOWTO b/Documentation/ja_JP/HOWTO
+index 050d37f..eb58b1c 100644
+--- a/Documentation/ja_JP/HOWTO
++++ b/Documentation/ja_JP/HOWTO
+@@ -122,11 +122,6 @@ linux-api@ver.kernel.org に送ることを勧めます。
+     ています。カーネルに関して初めての人はここからスタートすると良いで
+     しょう。
+ 
+-  Documentation/Changes
+-     このファイルはカーネルをうまく生成(訳注 build )し、走らせるのに最
+-     小限のレベルで必要な数々のソフトウェアパッケージの一覧を示してい
+-     ます。
+-
+   Documentation/CodingStyle
+     これは Linux カーネルのコーディングスタイルと背景にある理由を記述
+     しています。全ての新しいコードはこのドキュメントにあるガイドライン
+diff --git a/Documentation/ko_KR/HOWTO b/Documentation/ko_KR/HOWTO
+index 2f48f20..5d41e1a 100644
+--- a/Documentation/ko_KR/HOWTO
++++ b/Documentation/ko_KR/HOWTO
+@@ -98,10 +98,6 @@ mtk.manpages@gmail.com의 메인테이너에게 보낼 것을 권장한다.
+     빌드하기 위해 필요한 것을 설명한다. 커널에 입문하는 사람들은 여기서
+     시작해야 한다.
+ 
+-  Documentation/Changes
+-    이 파일은 커널을 성공적으로 빌드하고 실행시키기 위해 필요한 다양한
+-    소프트웨어 패키지들의 최소 버젼을 나열한다.
+-
+   Documentation/CodingStyle
+     이 문서는 리눅스 커널 코딩 스타일과 그렇게 한 몇몇 이유를 설명한다.
+     모든 새로운 코드는 이 문서에 가이드라인들을 따라야 한다. 대부분의
+diff --git a/Documentation/networking/PLIP.txt b/Documentation/networking/PLIP.txt
+index ad7e3f7..3cb3c60 100644
+--- a/Documentation/networking/PLIP.txt
++++ b/Documentation/networking/PLIP.txt
+@@ -101,8 +101,7 @@ in which case a long timeout would stall the machine when, for whatever
+ reason, bits are dropped.
+ 
+ A utility that can perform this change in Linux is plipconfig, which is part
+-of the net-tools package (its location can be found in the
+-Documentation/Changes file). An example command would be
++of the net-tools package.  An example command would be
+ 'plipconfig plipX trigger 10000', where plipX is the appropriate
+ PLIP device.
+ 
+diff --git a/Documentation/zh_CN/HOWTO b/Documentation/zh_CN/HOWTO
+index 7fba5aa..4f1e735 100644
+--- a/Documentation/zh_CN/HOWTO
++++ b/Documentation/zh_CN/HOWTO
+@@ -93,9 +93,6 @@ Linux内核代码中包含有大量的文档。这些文档对于学习如何与
+     文件简要介绍了Linux内核的背景，并且描述了如何配置和编译内核。内核的
+     新用户应该从这里开始。
+ 
+-  Documentation/Changes
+-    文件给出了用来编译和使用内核所需要的最小软件包列表。
+-
+   Documentation/CodingStyle
+     描述Linux内核的代码风格和理由。所有新代码需要遵守这篇文档中定义的规
+     范。大多数维护者只会接收符合规定的补丁，很多人也只会帮忙检查符合风格
+diff --git a/README b/README
+index a24ec89..44b1a50 100644
+--- a/README
++++ b/README
+@@ -46,9 +46,7 @@ DOCUMENTATION:
+  - There are various README files in the Documentation/ subdirectory:
+    these typically contain kernel-specific installation notes for some 
+    drivers for example. See Documentation/00-INDEX for a list of what
+-   is contained in each file.  Please read the Changes file, as it
+-   contains information about the problems, which may result by upgrading
+-   your kernel.
++   is contained in each file.
+ 
+  - The Documentation/DocBook/ subdirectory contains several guides for
+    kernel developers and users.  These guides can be rendered in a
+@@ -118,17 +116,6 @@ INSTALLING the kernel source:
+ 
+    You should now have the sources correctly installed.
+ 
+-SOFTWARE REQUIREMENTS
+-
+-   Compiling and running the 3.x kernels requires up-to-date
+-   versions of various software packages.  Consult
+-   Documentation/Changes for the minimum version numbers required
+-   and how to get updates for these packages.  Beware that using
+-   excessively old versions of these packages can cause indirect
+-   errors that are very difficult to track down, so don't assume that
+-   you can just update packages when obvious problems arise during
+-   build or operation.
+-
+ BUILD directory for the kernel:
+ 
+    When compiling the kernel, all output files will per default be
+@@ -257,7 +244,6 @@ CONFIGURING the kernel:
+ COMPILING the kernel:
+ 
+  - Make sure you have at least gcc 3.2 available.
+-   For more information, refer to Documentation/Changes.
+ 
+    Please note that you can still run a.out user programs with this kernel.
+ 
+diff --git a/drivers/net/ppp/Kconfig b/drivers/net/ppp/Kconfig
+index 1373c6d..75db6f5 100644
+--- a/drivers/net/ppp/Kconfig
++++ b/drivers/net/ppp/Kconfig
+@@ -14,9 +14,8 @@ config PPP
+ 
+ 	  To use PPP, you need an additional program called pppd as described
+ 	  in the PPP-HOWTO, available at
+-	  <http://www.tldp.org/docs.html#howto>.  Make sure that you have
+-	  the version of pppd recommended in <file:Documentation/Changes>.
+-	  The PPP option enlarges your kernel by about 16 KB.
++	  <http://www.tldp.org/docs.html#howto>.  The PPP option enlarges your
++	  kernel by about 16 KB.
+ 
+ 	  There are actually two versions of PPP: the traditional PPP for
+ 	  asynchronous lines, such as regular analog phone lines, and
+diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
+index 0c657d6..95d6cb7 100644
+--- a/drivers/pcmcia/Kconfig
++++ b/drivers/pcmcia/Kconfig
+@@ -26,8 +26,7 @@ config PCMCIA
+ 	   only using 32-bit CardBus cards, say Y or M here.
+ 
+ 	   To use 16-bit PCMCIA cards, you will need supporting software in
+-	   most cases. (see the file <file:Documentation/Changes> for
+-	   location and details).
++	   most cases.
+ 
+ 	   To compile this driver as modules, choose M here: the
+ 	   module will be called pcmcia.
+diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
+index 370b24c..5fa78a0 100644
+--- a/fs/Kconfig.binfmt
++++ b/fs/Kconfig.binfmt
+@@ -17,12 +17,6 @@ config BINFMT_ELF
+ 	  Information about ELF is contained in the ELF HOWTO available from
+ 	  <http://www.tldp.org/docs.html#howto>.
+ 
+-	  If you find that after upgrading from Linux kernel 1.2 and saying Y
+-	  here, you still can't run any ELF binaries (they just crash), then
+-	  you'll have to install the newest ELF runtime libraries, including
+-	  ld.so (check the file <file:Documentation/Changes> for location and
+-	  latest version).
+-
+ config COMPAT_BINFMT_ELF
+ 	bool
+ 	depends on COMPAT && BINFMT_ELF
+diff --git a/fs/fuse/Kconfig b/fs/fuse/Kconfig
+index 1b2f6c2..f2212c9 100644
+--- a/fs/fuse/Kconfig
++++ b/fs/fuse/Kconfig
+@@ -11,7 +11,6 @@ config FUSE_FS
+ 	  installed if you've installed the "fuse" package itself.
+ 
+ 	  See <file:Documentation/filesystems/fuse.txt> for more information.
+-	  See <file:Documentation/Changes> for needed library/utility version.
+ 
+ 	  If you want to develop a userspace FS, or if you want to use
+ 	  a filesystem based on FUSE, answer Y or M.
+diff --git a/net/Kconfig b/net/Kconfig
+index 3770249..045efe1 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -15,8 +15,7 @@ menuconfig NET
+ 	  If you are upgrading from an older kernel, you
+ 	  should consider updating your networking tools too because changes
+ 	  in the kernel and the tools often go hand in hand. The tools are
+-	  contained in the package net-tools, the location and version number
+-	  of which are given in <file:Documentation/Changes>.
++	  contained in the package net-tools.
+ 
+ 	  For a general introduction to Linux networking, it is highly
+ 	  recommended to read the NET-HOWTO, available from
+@@ -147,9 +146,7 @@ menuconfig NETFILTER
+ 
+ 	  Various modules exist for netfilter which replace the previous
+ 	  masquerading (ipmasqadm), packet filtering (ipchains), transparent
+-	  proxying, and portforwarding mechanisms. Please see
+-	  <file:Documentation/Changes> under "iptables" for the location of
+-	  these packages.
++	  proxying, and portforwarding mechanisms.
+ 
+ if NETFILTER
+ 
+diff --git a/scripts/ver_linux b/scripts/ver_linux
+index 7de36df..de9e097 100755
+--- a/scripts/ver_linux
++++ b/scripts/ver_linux
+@@ -5,7 +5,6 @@
+ # differ on your system.
+ #
+ echo 'If some fields are empty or look unusual you may have an old version.'
+-echo 'Compare to the current minimal requirements in Documentation/Changes.'
+ echo ' '
+ 
+ uname -a
+-- 
+1.8.1.2
 
-        if (osvw_id >= 0 && osvw_id < 65536 &&
-            cpu_has(cpu, X86_FEATURE_OSVW)) {
-
---001a11c2e9b86fc2dc04e1fd9c85
-Content-Type: text/plain; name="config.txt"
-Content-Disposition: attachment; filename="config.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hjdnt5nz0
-
-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
---001a11c2e9b86fc2dc04e1fd9c85
-Content-Type: text/plain; charset=US-ASCII; name="cpuinfo.txt"
-Content-Disposition: attachment; filename="cpuinfo.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hjdntb9h1
-
-cHJvY2Vzc29yCTogMAp2ZW5kb3JfaWQJOiBBdXRoZW50aWNBTUQKY3B1IGZhbWlseQk6IDE2Cm1v
-ZGVsCQk6IDEwCm1vZGVsIG5hbWUJOiBBTUQgUGhlbm9tKHRtKSBJSSBYNiAxMDkwVCBQcm9jZXNz
-b3IKc3RlcHBpbmcJOiAwCm1pY3JvY29kZQk6IDB4MTAwMDBiZgpjcHUgTUh6CQk6IDgwMC4wMDAK
-Y2FjaGUgc2l6ZQk6IDUxMiBLQgpwaHlzaWNhbCBpZAk6IDAKc2libGluZ3MJOiA2CmNvcmUgaWQJ
-CTogMApjcHUgY29yZXMJOiA2CmFwaWNpZAkJOiAwCmluaXRpYWwgYXBpY2lkCTogMApmcHUJCTog
-eWVzCmZwdV9leGNlcHRpb24JOiB5ZXMKY3B1aWQgbGV2ZWwJOiA2CndwCQk6IHllcwpmbGFncwkJ
-OiBmcHUgdm1lIGRlIHBzZSB0c2MgbXNyIHBhZSBtY2UgY3g4IGFwaWMgc2VwIG10cnIgcGdlIG1j
-YSBjbW92IHBhdCBwc2UzNiBjbGZsdXNoIG1teCBmeHNyIHNzZSBzc2UyIGh0IHN5c2NhbGwgbngg
-bW14ZXh0IGZ4c3Jfb3B0IHBkcGUxZ2IgcmR0c2NwIGxtIDNkbm93ZXh0IDNkbm93IGNvbnN0YW50
-X3RzYyByZXBfZ29vZCBub3BsIG5vbnN0b3BfdHNjIGV4dGRfYXBpY2lkIGFwZXJmbXBlcmYgcG5p
-IG1vbml0b3IgY3gxNiBwb3BjbnQgbGFoZl9sbSBjbXBfbGVnYWN5IHN2bSBleHRhcGljIGNyOF9s
-ZWdhY3kgYWJtIHNzZTRhIG1pc2FsaWduc3NlIDNkbm93cHJlZmV0Y2ggb3N2dyBpYnMgc2tpbml0
-IHdkdCBjcGIgaHdfcHN0YXRlIG5wdCBsYnJ2IHN2bV9sb2NrIG5yaXBfc2F2ZSBwYXVzZWZpbHRl
-cgpib2dvbWlwcwk6IDY0MDAuNTYKVExCIHNpemUJOiAxMDI0IDRLIHBhZ2VzCmNsZmx1c2ggc2l6
-ZQk6IDY0CmNhY2hlX2FsaWdubWVudAk6IDY0CmFkZHJlc3Mgc2l6ZXMJOiA0OCBiaXRzIHBoeXNp
-Y2FsLCA0OCBiaXRzIHZpcnR1YWwKcG93ZXIgbWFuYWdlbWVudDogdHMgdHRwIHRtIHN0YyAxMDBt
-aHpzdGVwcyBod3BzdGF0ZSBjcGIKCnByb2Nlc3Nvcgk6IDEKdmVuZG9yX2lkCTogQXV0aGVudGlj
-QU1ECmNwdSBmYW1pbHkJOiAxNgptb2RlbAkJOiAxMAptb2RlbCBuYW1lCTogQU1EIFBoZW5vbSh0
-bSkgSUkgWDYgMTA5MFQgUHJvY2Vzc29yCnN0ZXBwaW5nCTogMAptaWNyb2NvZGUJOiAweDEwMDAw
-YmYKY3B1IE1IegkJOiA4MDAuMDAwCmNhY2hlIHNpemUJOiA1MTIgS0IKcGh5c2ljYWwgaWQJOiAw
-CnNpYmxpbmdzCTogNgpjb3JlIGlkCQk6IDEKY3B1IGNvcmVzCTogNgphcGljaWQJCTogMQppbml0
-aWFsIGFwaWNpZAk6IDEKZnB1CQk6IHllcwpmcHVfZXhjZXB0aW9uCTogeWVzCmNwdWlkIGxldmVs
-CTogNgp3cAkJOiB5ZXMKZmxhZ3MJCTogZnB1IHZtZSBkZSBwc2UgdHNjIG1zciBwYWUgbWNlIGN4
-OCBhcGljIHNlcCBtdHJyIHBnZSBtY2EgY21vdiBwYXQgcHNlMzYgY2xmbHVzaCBtbXggZnhzciBz
-c2Ugc3NlMiBodCBzeXNjYWxsIG54IG1teGV4dCBmeHNyX29wdCBwZHBlMWdiIHJkdHNjcCBsbSAz
-ZG5vd2V4dCAzZG5vdyBjb25zdGFudF90c2MgcmVwX2dvb2Qgbm9wbCBub25zdG9wX3RzYyBleHRk
-X2FwaWNpZCBhcGVyZm1wZXJmIHBuaSBtb25pdG9yIGN4MTYgcG9wY250IGxhaGZfbG0gY21wX2xl
-Z2FjeSBzdm0gZXh0YXBpYyBjcjhfbGVnYWN5IGFibSBzc2U0YSBtaXNhbGlnbnNzZSAzZG5vd3By
-ZWZldGNoIG9zdncgaWJzIHNraW5pdCB3ZHQgY3BiIGh3X3BzdGF0ZSBucHQgbGJydiBzdm1fbG9j
-ayBucmlwX3NhdmUgcGF1c2VmaWx0ZXIKYm9nb21pcHMJOiA2NDAwLjU2ClRMQiBzaXplCTogMTAy
-NCA0SyBwYWdlcwpjbGZsdXNoIHNpemUJOiA2NApjYWNoZV9hbGlnbm1lbnQJOiA2NAphZGRyZXNz
-IHNpemVzCTogNDggYml0cyBwaHlzaWNhbCwgNDggYml0cyB2aXJ0dWFsCnBvd2VyIG1hbmFnZW1l
-bnQ6IHRzIHR0cCB0bSBzdGMgMTAwbWh6c3RlcHMgaHdwc3RhdGUgY3BiCgpwcm9jZXNzb3IJOiAy
-CnZlbmRvcl9pZAk6IEF1dGhlbnRpY0FNRApjcHUgZmFtaWx5CTogMTYKbW9kZWwJCTogMTAKbW9k
-ZWwgbmFtZQk6IEFNRCBQaGVub20odG0pIElJIFg2IDEwOTBUIFByb2Nlc3NvcgpzdGVwcGluZwk6
-IDAKbWljcm9jb2RlCTogMHgxMDAwMGJmCmNwdSBNSHoJCTogODAwLjAwMApjYWNoZSBzaXplCTog
-NTEyIEtCCnBoeXNpY2FsIGlkCTogMApzaWJsaW5ncwk6IDYKY29yZSBpZAkJOiAyCmNwdSBjb3Jl
-cwk6IDYKYXBpY2lkCQk6IDIKaW5pdGlhbCBhcGljaWQJOiAyCmZwdQkJOiB5ZXMKZnB1X2V4Y2Vw
-dGlvbgk6IHllcwpjcHVpZCBsZXZlbAk6IDYKd3AJCTogeWVzCmZsYWdzCQk6IGZwdSB2bWUgZGUg
-cHNlIHRzYyBtc3IgcGFlIG1jZSBjeDggYXBpYyBzZXAgbXRyciBwZ2UgbWNhIGNtb3YgcGF0IHBz
-ZTM2IGNsZmx1c2ggbW14IGZ4c3Igc3NlIHNzZTIgaHQgc3lzY2FsbCBueCBtbXhleHQgZnhzcl9v
-cHQgcGRwZTFnYiByZHRzY3AgbG0gM2Rub3dleHQgM2Rub3cgY29uc3RhbnRfdHNjIHJlcF9nb29k
-IG5vcGwgbm9uc3RvcF90c2MgZXh0ZF9hcGljaWQgYXBlcmZtcGVyZiBwbmkgbW9uaXRvciBjeDE2
-IHBvcGNudCBsYWhmX2xtIGNtcF9sZWdhY3kgc3ZtIGV4dGFwaWMgY3I4X2xlZ2FjeSBhYm0gc3Nl
-NGEgbWlzYWxpZ25zc2UgM2Rub3dwcmVmZXRjaCBvc3Z3IGlicyBza2luaXQgd2R0IGNwYiBod19w
-c3RhdGUgbnB0IGxicnYgc3ZtX2xvY2sgbnJpcF9zYXZlIHBhdXNlZmlsdGVyCmJvZ29taXBzCTog
-NjQwMC41NgpUTEIgc2l6ZQk6IDEwMjQgNEsgcGFnZXMKY2xmbHVzaCBzaXplCTogNjQKY2FjaGVf
-YWxpZ25tZW50CTogNjQKYWRkcmVzcyBzaXplcwk6IDQ4IGJpdHMgcGh5c2ljYWwsIDQ4IGJpdHMg
-dmlydHVhbApwb3dlciBtYW5hZ2VtZW50OiB0cyB0dHAgdG0gc3RjIDEwMG1oenN0ZXBzIGh3cHN0
-YXRlIGNwYgoKcHJvY2Vzc29yCTogMwp2ZW5kb3JfaWQJOiBBdXRoZW50aWNBTUQKY3B1IGZhbWls
-eQk6IDE2Cm1vZGVsCQk6IDEwCm1vZGVsIG5hbWUJOiBBTUQgUGhlbm9tKHRtKSBJSSBYNiAxMDkw
-VCBQcm9jZXNzb3IKc3RlcHBpbmcJOiAwCm1pY3JvY29kZQk6IDB4MTAwMDBiZgpjcHUgTUh6CQk6
-IDgwMC4wMDAKY2FjaGUgc2l6ZQk6IDUxMiBLQgpwaHlzaWNhbCBpZAk6IDAKc2libGluZ3MJOiA2
-CmNvcmUgaWQJCTogMwpjcHUgY29yZXMJOiA2CmFwaWNpZAkJOiAzCmluaXRpYWwgYXBpY2lkCTog
-MwpmcHUJCTogeWVzCmZwdV9leGNlcHRpb24JOiB5ZXMKY3B1aWQgbGV2ZWwJOiA2CndwCQk6IHll
-cwpmbGFncwkJOiBmcHUgdm1lIGRlIHBzZSB0c2MgbXNyIHBhZSBtY2UgY3g4IGFwaWMgc2VwIG10
-cnIgcGdlIG1jYSBjbW92IHBhdCBwc2UzNiBjbGZsdXNoIG1teCBmeHNyIHNzZSBzc2UyIGh0IHN5
-c2NhbGwgbnggbW14ZXh0IGZ4c3Jfb3B0IHBkcGUxZ2IgcmR0c2NwIGxtIDNkbm93ZXh0IDNkbm93
-IGNvbnN0YW50X3RzYyByZXBfZ29vZCBub3BsIG5vbnN0b3BfdHNjIGV4dGRfYXBpY2lkIGFwZXJm
-bXBlcmYgcG5pIG1vbml0b3IgY3gxNiBwb3BjbnQgbGFoZl9sbSBjbXBfbGVnYWN5IHN2bSBleHRh
-cGljIGNyOF9sZWdhY3kgYWJtIHNzZTRhIG1pc2FsaWduc3NlIDNkbm93cHJlZmV0Y2ggb3N2dyBp
-YnMgc2tpbml0IHdkdCBjcGIgaHdfcHN0YXRlIG5wdCBsYnJ2IHN2bV9sb2NrIG5yaXBfc2F2ZSBw
-YXVzZWZpbHRlcgpib2dvbWlwcwk6IDY0MDAuNTYKVExCIHNpemUJOiAxMDI0IDRLIHBhZ2VzCmNs
-Zmx1c2ggc2l6ZQk6IDY0CmNhY2hlX2FsaWdubWVudAk6IDY0CmFkZHJlc3Mgc2l6ZXMJOiA0OCBi
-aXRzIHBoeXNpY2FsLCA0OCBiaXRzIHZpcnR1YWwKcG93ZXIgbWFuYWdlbWVudDogdHMgdHRwIHRt
-IHN0YyAxMDBtaHpzdGVwcyBod3BzdGF0ZSBjcGIKCnByb2Nlc3Nvcgk6IDQKdmVuZG9yX2lkCTog
-QXV0aGVudGljQU1ECmNwdSBmYW1pbHkJOiAxNgptb2RlbAkJOiAxMAptb2RlbCBuYW1lCTogQU1E
-IFBoZW5vbSh0bSkgSUkgWDYgMTA5MFQgUHJvY2Vzc29yCnN0ZXBwaW5nCTogMAptaWNyb2NvZGUJ
-OiAweDEwMDAwYmYKY3B1IE1IegkJOiA4MDAuMDAwCmNhY2hlIHNpemUJOiA1MTIgS0IKcGh5c2lj
-YWwgaWQJOiAwCnNpYmxpbmdzCTogNgpjb3JlIGlkCQk6IDQKY3B1IGNvcmVzCTogNgphcGljaWQJ
-CTogNAppbml0aWFsIGFwaWNpZAk6IDQKZnB1CQk6IHllcwpmcHVfZXhjZXB0aW9uCTogeWVzCmNw
-dWlkIGxldmVsCTogNgp3cAkJOiB5ZXMKZmxhZ3MJCTogZnB1IHZtZSBkZSBwc2UgdHNjIG1zciBw
-YWUgbWNlIGN4OCBhcGljIHNlcCBtdHJyIHBnZSBtY2EgY21vdiBwYXQgcHNlMzYgY2xmbHVzaCBt
-bXggZnhzciBzc2Ugc3NlMiBodCBzeXNjYWxsIG54IG1teGV4dCBmeHNyX29wdCBwZHBlMWdiIHJk
-dHNjcCBsbSAzZG5vd2V4dCAzZG5vdyBjb25zdGFudF90c2MgcmVwX2dvb2Qgbm9wbCBub25zdG9w
-X3RzYyBleHRkX2FwaWNpZCBhcGVyZm1wZXJmIHBuaSBtb25pdG9yIGN4MTYgcG9wY250IGxhaGZf
-bG0gY21wX2xlZ2FjeSBzdm0gZXh0YXBpYyBjcjhfbGVnYWN5IGFibSBzc2U0YSBtaXNhbGlnbnNz
-ZSAzZG5vd3ByZWZldGNoIG9zdncgaWJzIHNraW5pdCB3ZHQgY3BiIGh3X3BzdGF0ZSBucHQgbGJy
-diBzdm1fbG9jayBucmlwX3NhdmUgcGF1c2VmaWx0ZXIKYm9nb21pcHMJOiA2NDAwLjU2ClRMQiBz
-aXplCTogMTAyNCA0SyBwYWdlcwpjbGZsdXNoIHNpemUJOiA2NApjYWNoZV9hbGlnbm1lbnQJOiA2
-NAphZGRyZXNzIHNpemVzCTogNDggYml0cyBwaHlzaWNhbCwgNDggYml0cyB2aXJ0dWFsCnBvd2Vy
-IG1hbmFnZW1lbnQ6IHRzIHR0cCB0bSBzdGMgMTAwbWh6c3RlcHMgaHdwc3RhdGUgY3BiCgpwcm9j
-ZXNzb3IJOiA1CnZlbmRvcl9pZAk6IEF1dGhlbnRpY0FNRApjcHUgZmFtaWx5CTogMTYKbW9kZWwJ
-CTogMTAKbW9kZWwgbmFtZQk6IEFNRCBQaGVub20odG0pIElJIFg2IDEwOTBUIFByb2Nlc3Nvcgpz
-dGVwcGluZwk6IDAKbWljcm9jb2RlCTogMHgxMDAwMGJmCmNwdSBNSHoJCTogODAwLjAwMApjYWNo
-ZSBzaXplCTogNTEyIEtCCnBoeXNpY2FsIGlkCTogMApzaWJsaW5ncwk6IDYKY29yZSBpZAkJOiA1
-CmNwdSBjb3Jlcwk6IDYKYXBpY2lkCQk6IDUKaW5pdGlhbCBhcGljaWQJOiA1CmZwdQkJOiB5ZXMK
-ZnB1X2V4Y2VwdGlvbgk6IHllcwpjcHVpZCBsZXZlbAk6IDYKd3AJCTogeWVzCmZsYWdzCQk6IGZw
-dSB2bWUgZGUgcHNlIHRzYyBtc3IgcGFlIG1jZSBjeDggYXBpYyBzZXAgbXRyciBwZ2UgbWNhIGNt
-b3YgcGF0IHBzZTM2IGNsZmx1c2ggbW14IGZ4c3Igc3NlIHNzZTIgaHQgc3lzY2FsbCBueCBtbXhl
-eHQgZnhzcl9vcHQgcGRwZTFnYiByZHRzY3AgbG0gM2Rub3dleHQgM2Rub3cgY29uc3RhbnRfdHNj
-IHJlcF9nb29kIG5vcGwgbm9uc3RvcF90c2MgZXh0ZF9hcGljaWQgYXBlcmZtcGVyZiBwbmkgbW9u
-aXRvciBjeDE2IHBvcGNudCBsYWhmX2xtIGNtcF9sZWdhY3kgc3ZtIGV4dGFwaWMgY3I4X2xlZ2Fj
-eSBhYm0gc3NlNGEgbWlzYWxpZ25zc2UgM2Rub3dwcmVmZXRjaCBvc3Z3IGlicyBza2luaXQgd2R0
-IGNwYiBod19wc3RhdGUgbnB0IGxicnYgc3ZtX2xvY2sgbnJpcF9zYXZlIHBhdXNlZmlsdGVyCmJv
-Z29taXBzCTogNjQwMC41NgpUTEIgc2l6ZQk6IDEwMjQgNEsgcGFnZXMKY2xmbHVzaCBzaXplCTog
-NjQKY2FjaGVfYWxpZ25tZW50CTogNjQKYWRkcmVzcyBzaXplcwk6IDQ4IGJpdHMgcGh5c2ljYWws
-IDQ4IGJpdHMgdmlydHVhbApwb3dlciBtYW5hZ2VtZW50OiB0cyB0dHAgdG0gc3RjIDEwMG1oenN0
-ZXBzIGh3cHN0YXRlIGNwYgoK
---001a11c2e9b86fc2dc04e1fd9c85--
