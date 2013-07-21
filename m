@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125Ab3GUUxz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 16:53:55 -0400
-Received: from s15338416.onlinehome-server.info ([87.106.68.36]:59102 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab3GUUxy (ORCPT
+	id S1756138Ab3GUU7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 16:59:54 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:61707 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab3GUU7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 16:53:54 -0400
-Date: Sun, 21 Jul 2013 22:53:52 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] ipv6, rawv6_close(): BUG: unable to handle kernel paging request
-Message-ID: <20130721205352.GB15442@order.stressinduktion.org>
-Mail-Followup-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	netdev@vger.kernel.org,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <51EC283D.5010208@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51EC283D.5010208@linux.vnet.ibm.com>
+	Sun, 21 Jul 2013 16:59:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1307211535210.4893@kaball.uk.xensource.com>
+References: <1374239399-2498-1-git-send-email-julien.grall@linaro.org> <alpine.DEB.2.02.1307211535210.4893@kaball.uk.xensource.com>
+From: Julien Grall <julien.grall@linaro.org>
+Date: Sun, 21 Jul 2013 21:59:22 +0100
+Message-ID: <CAPnVf8yG4VecBkk8py_cyOiFkFMqiLYydicKcM2PgYYm+gKd8w@mail.gmail.com>
+Subject: Re: [PATCH v2] xen/arm: enable PV control for ARM
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Patch Tracking <patches@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 21, 2013 at 11:58:13PM +0530, Srivatsa S. Bhat wrote:
-> I'm seeing this on every boot.
-> 
-> Version: Latest mainline (commit ea45ea70b)
+On 21 July 2013 15:54, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+> On Fri, 19 Jul 2013, Julien Grall wrote:
+>> Enable power management from the toolstack for ARM guest.
+>>
+>> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+>>
+>> ---
+>>     Changes in v2:
+>>         - Don't compile xen/cpu_hotplug.o with ARM64
+>> ---
+>>  drivers/xen/Makefile |    5 ++---
+>>  1 file changed, 2 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+>> index 2bf461a..b550a94 100644
+>> --- a/drivers/xen/Makefile
+>> +++ b/drivers/xen/Makefile
+>> @@ -1,9 +1,8 @@
+>> -ifneq ($(CONFIG_ARM),y)
+>> -obj-y        += manage.o
+>> +ifneq ($(filter y, ($CONFIG_ARM) $(CONFIG_ARM64)),y
+>
+> This is wrong: ifneq is checking for the opposite condition of what we want, and
+> beside you have the $ in the wrong place for CONFIG_ARM.
+>
+> Please test you patches before sending them.
 
-Thanks for the report! Could you try the following patch?
+My apologies, I tried without any issue on ARM (certainly, because of
+the $ in wrong place).
 
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index 583e8d4..373906c 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -1601,9 +1601,9 @@ int ip6mr_sk_done(struct sock *sk)
- 	struct mr6_table *mrt;
- 
- 	rtnl_lock();
-+	write_lock_bh(&mrt_lock);
- 	ip6mr_for_each_table(mrt, net) {
- 		if (sk == mrt->mroute6_sk) {
--			write_lock_bh(&mrt_lock);
- 			mrt->mroute6_sk = NULL;
- 			net->ipv6.devconf_all->mc_forwarding--;
- 			inet6_netconf_notify_devconf(net,
-@@ -1611,14 +1611,14 @@ int ip6mr_sk_done(struct sock *sk)
- 						     NETCONFA_IFINDEX_ALL,
- 						     net->ipv6.devconf_all);
- 			write_unlock_bh(&mrt_lock);
--
- 			mroute_clean_tables(mrt);
- 			err = 0;
--			break;
-+			goto out;
- 		}
- 	}
-+	write_unlock_bh(&mrt_lock);
-+out:
- 	rtnl_unlock();
--
- 	return err;
- }
- 
+I will send a new patch.
+
+--
+Julien Grall
