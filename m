@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab3GVIKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:10:05 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:40904
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751880Ab3GVIJ7 (ORCPT
+	id S1756728Ab3GVIKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:10:36 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54303 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756685Ab3GVIKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:09:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 22 Jul 2013 16:10:27 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: John Stultz <john.stultz@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>
-Subject: Re: [PATCH v4 10/17] clocksource: mxs_timer: Switch to
- sched_clock_register()
-Message-ID: <20130722081025.GE20271@S2101-09.ap.freescale.net>
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
- <1374189690-10810-11-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1374189690-10810-11-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Mon, 22 Jul 2013 04:10:34 -0400
+Message-ID: <1374480595.4355.5.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH] imx-drm: imx-tve: Remove unneeded check for
+ platform_get_resource()
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: gregkh@linuxfoundation.org, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Date: Mon, 22 Jul 2013 10:09:55 +0200
+In-Reply-To: <1374455982-18055-1-git-send-email-festevam@gmail.com>
+References: <1374455982-18055-1-git-send-email-festevam@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 04:21:23PM -0700, Stephen Boyd wrote:
-> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
-> the 64 bit function to allow us to remove the 32 bit registration
-> interface.
+Am Sonntag, den 21.07.2013, 22:19 -0300 schrieb Fabio Estevam:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
 > 
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-
-BTW, will the series break setup_sched_clock() users that are not
-converted, like arch/arm/mach-imx/time.c?  I can understand that's the
-consequence of not moving things into drivers/ folder :)
-
-Shawn
-
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> As devm_ioremap_resource() is used on probe, there is no need to explicitly 
+> check the return value from platform_get_resource(), as this is something that
+> devm_ioremap_resource() takes care by itself.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 > ---
->  drivers/clocksource/mxs_timer.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/staging/imx-drm/imx-tve.c | 5 -----
+>  1 file changed, 5 deletions(-)
 > 
-> diff --git a/drivers/clocksource/mxs_timer.c b/drivers/clocksource/mxs_timer.c
-> index 0f5e65f..445b68a 100644
-> --- a/drivers/clocksource/mxs_timer.c
-> +++ b/drivers/clocksource/mxs_timer.c
-> @@ -222,7 +222,7 @@ static struct clocksource clocksource_mxs = {
->  	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
->  };
->  
-> -static u32 notrace mxs_read_sched_clock_v2(void)
-> +static u64 notrace mxs_read_sched_clock_v2(void)
->  {
->  	return ~readl_relaxed(mxs_timrot_base + HW_TIMROT_RUNNING_COUNTn(1));
->  }
-> @@ -236,7 +236,7 @@ static int __init mxs_clocksource_init(struct clk *timer_clk)
->  	else {
->  		clocksource_mmio_init(mxs_timrot_base + HW_TIMROT_RUNNING_COUNTn(1),
->  			"mxs_timer", c, 200, 32, clocksource_mmio_readl_down);
-> -		setup_sched_clock(mxs_read_sched_clock_v2, 32, c);
-> +		sched_clock_register(mxs_read_sched_clock_v2, 32, c);
+> diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
+> index a56797d..8232cea 100644
+> --- a/drivers/staging/imx-drm/imx-tve.c
+> +++ b/drivers/staging/imx-drm/imx-tve.c
+> @@ -623,11 +623,6 @@ static int imx_tve_probe(struct platform_device *pdev)
 >  	}
 >  
->  	return 0;
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		dev_err(&pdev->dev, "failed to get memory region\n");
+> -		return -ENOENT;
+> -	}
+> -
+>  	base = devm_ioremap_resource(&pdev->dev, res);
+>  	if (IS_ERR(base))
+>  		return PTR_ERR(base);
+
+Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+
+regards
+Philipp
 
