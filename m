@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098Ab3GVIrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:47:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756848Ab3GVIrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:47:21 -0400
-Message-ID: <51ECF166.4080007@redhat.com>
-Date: Mon, 22 Jul 2013 10:46:30 +0200
-From: Peter Schiffer <pschiffe@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1756876Ab3GVIuo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:50:44 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:33747 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756758Ab3GVIun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 04:50:43 -0400
+Date: Mon, 22 Jul 2013 10:50:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH v5] x86, tboot: iomem fixes
+Message-ID: <20130722085038.GD25976@gmail.com>
+References: <1374337612-6899-1-git-send-email-qiaowei.ren@intel.com>
 MIME-Version: 1.0
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-man <linux-man@vger.kernel.org>, benjamin@python.org
-Subject: Re: [PATCH] open(2): document O_PATH
-References: <CAKgNAkgWiANFA1Z7o2EQmKmsMzzpa1ga2ggLeX3Bo58QmjDx6g@mail.gmail.com> <20130720114017.GA2118@ZenIV.linux.org.uk> <51EAF997.2090300@gmail.com>
-In-Reply-To: <51EAF997.2090300@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374337612-6899-1-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2013 10:56 PM, Michael Kerrisk wrote:
-> On 07/20/13 13:40, Al Viro wrote:
->> On Thu, Mar 14, 2013 at 10:35:59AM +0100, Michael Kerrisk (man-pages) wrote:
->>> Hello Al et al,
->>>
->>> Documenting O_PATH fell by the wayside last year
->>> (http://thread.gmane.org/gmane.linux.man/2790) as I got distracted
->>> with other tasks. A recent prod or two have reminded me restart this.
->>> I have the following patch queued to document O_PATH.
->>>
->>> Could you please review. I've provided the O_PATH doc both as
->>> formatted text, for ease of reviewing, and as a patch and entire file
->>> (attached).
->>
->> Seems to be mostly correct; the only thing missing is that F_GETFL is also
->> allowed (and return value will contain O_PATH for such descriptors).  Had
->> been there since the very beginning...
->
-> Thanks, Al. I have added that piece.
->
 
-Michael,
+* Qiaowei Ren <qiaowei.ren@intel.com> wrote:
 
-there is a typo within added piece:
+> Current code doesn't use specific interface to access I/O space.
+> So some potential bugs can be caused. We can fix this by using
+> specific API.
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
+>  arch/x86/kernel/tboot.c |   18 ++++++++++--------
+>  1 file changed, 10 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+> index 3ff42d2..4e149c7 100644
+> --- a/arch/x86/kernel/tboot.c
+> +++ b/arch/x86/kernel/tboot.c
+> @@ -468,7 +468,8 @@ struct sinit_mle_data {
+>  
+>  struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
+>  {
+> -	void *heap_base, *heap_ptr, *config;
+> +	void __iomem *heap_base, *heap_ptr, *config;
+> +	u32 dmar_tbl_off;
+>  
+>  	if (!tboot_enabled())
+>  		return dmar_tbl;
+> @@ -485,25 +486,26 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
+>  		return NULL;
+>  
+>  	/* now map TXT heap */
+> -	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
+> -			    *(u64 *)(config + TXTCR_HEAP_SIZE));
+> +	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
+> +			    readl(config + TXTCR_HEAP_SIZE));
+>  	iounmap(config);
+>  	if (!heap_base)
+>  		return NULL;
+>  
+>  	/* walk heap to SinitMleData */
+>  	/* skip BiosData */
+> -	heap_ptr = heap_base + *(u64 *)heap_base;
+> +	heap_ptr = heap_base + readq(heap_base);
+>  	/* skip OsMleData */
+> -	heap_ptr += *(u64 *)heap_ptr;
+> +	heap_ptr += readq(heap_ptr);
 
-diff --git a/man2/open.2 b/man2/open.2
-index c61ea7f..ef0f664 100644
---- a/man2/open.2
-+++ b/man2/open.2
-@@ -489,7 +489,7 @@ and
-  .IP *
-  Retrieving open file status flags using the
-  .BR fcntl (2)
--.BR F_GETFD
-+.BR F_GETFL
-  operation: the returned flags will include the bit
-  .BR O_PATH .
+tboot.c is build on 32-bit kernel as well, but readq() is only available 
+on 64-bit systems.
 
+Thanks,
 
+	Ingo
