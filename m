@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027Ab3GVOV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:21:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8691 "EHLO
+	id S1757127Ab3GVOWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:22:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21587 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245Ab3GVOV2 (ORCPT
+	with ESMTP id S1756285Ab3GVOVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:21:28 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=i5BtvxdH67QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_bdgbfKlE5EA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=6PPhqtZAo-UIe905SewA:9 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 22 Jul 2013 10:21:31 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=_6rxJR3IGMsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=VFja___v-e8A:10 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=40MIqcmNAAAA:8 a=7Ev89W78az0QUTzO2gEA:9 a=jeBq3FmKZ4MA:10 a=dGJ0OcVc7YAA:10 a=-tENaG0q7zQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130722142125.585351307@goodmis.org>
+Message-Id: <20130722142125.895359522@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 22 Jul 2013 10:19:55 -0400
+Date: Mon, 22 Jul 2013 10:19:57 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, <stable@vger.kernel.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>,
-        Alexander Z Lam <azl@google.com>
-Subject: [PATCH 08/14] tracing: Fix error handling to ensure instances can always be
- removed
+        Oleg Nesterov <oleg@redhat.com>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        Chen Gang <gang.chen@asianux.com>
+Subject: [PATCH 10/14] tracing: Add ref_data to function and fgraph tracer structs
 References: <20130722141947.972915744@goodmis.org>
-Content-Disposition: inline; filename=0008-tracing-Fix-error-handling-to-ensure-instances-can-a.patch
+Content-Disposition: inline; filename=0010-tracing-Add-ref_data-to-function-and-fgraph-tracer-s.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Z Lam <azl@google.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Remove debugfs directories for tracing instances during creation if an error
-occurs causing the trace_array for that instance to not be added to
-ftrace_trace_arrays. If the directory continues to exist after the error, it
-cannot be removed because the respective trace_array is not in
-ftrace_trace_arrays.
+The selftest for function and function graph tracers are defined as
+__init, as they are only executed at boot up. The "tracer" structs
+that are associated to those tracers are not setup as __init as they
+are used after boot. To stop mismatch warnings, those structures
+need to be annotated with __ref_data.
 
-Link: http://lkml.kernel.org/r/1373502874-1706-2-git-send-email-azl@google.com
+Currently, the tracer structures are defined to __read_mostly, as they
+do not really change. But in the future they should be converted to
+consts, but that will take a little work because they have a "next"
+pointer that gets updated when they are registered. That will have to
+wait till the next major release.
 
-Cc: stable@vger.kernel.org # 3.10
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Cc: Alexander Z Lam <lambchop468@gmail.com>
-Signed-off-by: Alexander Z Lam <azl@google.com>
+Link: http://lkml.kernel.org/r/1373596735.17876.84.camel@gandalf.local.home
+
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Reported-by: Chen Gang <gang.chen@asianux.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/trace/trace.h                 |    9 +++++++++
+ kernel/trace/trace_functions.c       |    2 +-
+ kernel/trace/trace_functions_graph.c |    2 +-
+ 3 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 25b91af..7c3da7b 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5973,8 +5973,10 @@ static int new_instance_create(const char *name)
- 		goto out_free_tr;
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4a4f6e1..57b7bb0 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -680,6 +680,15 @@ extern int trace_selftest_startup_sched_switch(struct tracer *trace,
+ 					       struct trace_array *tr);
+ extern int trace_selftest_startup_branch(struct tracer *trace,
+ 					 struct trace_array *tr);
++/*
++ * Tracer data references selftest functions that only occur
++ * on boot up. These can be __init functions. Thus, when selftests
++ * are enabled, then the tracers need to reference __init functions.
++ */
++#define __tracer_data		__refdata
++#else
++/* Tracers are seldom changed. Optimize when selftests are disabled. */
++#define __tracer_data		__read_mostly
+ #endif /* CONFIG_FTRACE_STARTUP_TEST */
  
- 	ret = event_trace_add_tracer(tr->dir, tr);
--	if (ret)
-+	if (ret) {
-+		debugfs_remove_recursive(tr->dir);
- 		goto out_free_tr;
-+	}
+ extern void *head_page(struct trace_array_cpu *data);
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index b863f93..38fe148 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -199,7 +199,7 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
+ 	return 0;
+ }
  
- 	init_tracer_debugfs(tr, tr->dir);
+-static struct tracer function_trace __read_mostly =
++static struct tracer function_trace __tracer_data =
+ {
+ 	.name		= "function",
+ 	.init		= function_trace_init,
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index d56ae9b..b5c0924 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -1448,7 +1448,7 @@ static struct trace_event graph_trace_ret_event = {
+ 	.funcs		= &graph_functions
+ };
  
+-static struct tracer graph_trace __read_mostly = {
++static struct tracer graph_trace __tracer_data = {
+ 	.name		= "function_graph",
+ 	.open		= graph_trace_open,
+ 	.pipe_open	= graph_trace_open,
 -- 
 1.7.10.4
 
