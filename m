@@ -1,332 +1,448 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab3GVWG2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 18:06:28 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:48423 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3GVWG0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 18:06:26 -0400
+	id S1751659Ab3GVWHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 18:07:51 -0400
+Received: from fn.samba.org ([216.83.154.106]:60957 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751158Ab3GVWHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 18:07:49 -0400
+X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Jul 2013 18:07:48 EDT
+Date: Mon, 22 Jul 2013 14:57:38 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Steve French <smfrench@gmail.com>, Jeff Layton <jlayton@samba.org>,
+        linux-cifs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Cc: jra@samba.org
+Subject: Recvfile patch used for Samba.
+Message-ID: <20130722215738.GB20647@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4vbfctQwGzexEuLoGMh33oU1oJOM8bkuq4uk7EtkE0xw@mail.gmail.com>
-References: <51E55B7D.2040209@linux.vnet.ibm.com>
-	<51E66CCC.9010600@cn.fujitsu.com>
-	<51E84EDC.5090502@linux.vnet.ibm.com>
-	<51E89ABB.20808@cn.fujitsu.com>
-	<51E8FF76.5030706@linux.vnet.ibm.com>
-	<51ED1D02.80205@cn.fujitsu.com>
-	<51ED51A2.6050909@linux.vnet.ibm.com>
-	<CAErSpo4vbfctQwGzexEuLoGMh33oU1oJOM8bkuq4uk7EtkE0xw@mail.gmail.com>
-Date: Mon, 22 Jul 2013 15:06:25 -0700
-X-Google-Sender-Auth: PD-wlVJvstbSPDCiNSZQcb5FC-Y
-Message-ID: <CAE9FiQWS7Q0Snv=ZOs8UpYv_re_AW6zRYbcMU08UQBKZogMjFQ@mail.gmail.com>
-Subject: Re: workqueue, pci: INFO: possible recursive locking detected
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=90e6ba6e901c34c33504e220e34e
+Content-Type: multipart/mixed; boundary="Dxnq1zWXvFF0Q93v"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba6e901c34c33504e220e34e
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Mon, Jul 22, 2013 at 2:38 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc Alex, Yinghai, linux-pci]
+--Dxnq1zWXvFF0Q93v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> Isn't this for the same issue Alex and others have been working on?
+Hi Steve and Jeff (and others).
 
-yes.
+Here is a patch that Samba vendors have been using
+to implement recvfile (copy directly from socket
+to file). It can improve write performance on boxes
+by a significant amount (10% or more).
 
->
-> It doesn't feel like we have consensus on how this should be fixed.
-> You're proposing a change to work_on_cpu(), Alex proposed a change to
-> pci_call_probe() [1], Yinghai proposed some changes to the PCI core
-> SR-IOV code and several drivers [2].
->
-> [1] https://lkml.kernel.org/r/20130624195942.40795.27292.stgit@ahduyck-cp1.jf.intel.com
-> [2] https://lkml.kernel.org/r/1368498506-25857-7-git-send-email-yinghai@kernel.org
+I'm not qualified to evaluate this code, can someone
+who is (hi there Steve and Jeff :-) take a look at
+this and see if it's work shepherding into the kernel ?
 
-Actually i used Alex's patch and attached -v2 of sriov_attatch in my
-local testing for a while. -v2: remove the device_schedule_callback
-hacking.
+Cheers,
 
-Also, someone comment that numa_node_id() in alex's should not be
-used, as it could
-be preempted.
+	Jeremy.
 
-Thanks
+--Dxnq1zWXvFF0Q93v
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="splice-from-socket-to-file-2.6.37.patch"
 
-Yinghai
+diff -urp linux-2.6.37-rc5.orig/fs/splice.c linux-2.6.37-rc5/fs/splice.c
+--- linux-2.6.37-rc5.orig/fs/splice.c	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/fs/splice.c	2010-12-07 16:16:48.000000000 -0800
+@@ -31,6 +31,7 @@
+ #include <linux/uio.h>
+ #include <linux/security.h>
+ #include <linux/gfp.h>
++#include <net/sock.h>
+ 
+ /*
+  * Attempt to steal a page from a pipe buffer. This should perhaps go into
+@@ -1387,6 +1388,141 @@ static long do_splice(struct file *in, l
+ 	return -EINVAL;
+ }
+ 
++static ssize_t do_splice_from_socket(struct file *file, struct socket *sock,
++				     loff_t __user *ppos, size_t count)
++{		
++	struct address_space *mapping = file->f_mapping;
++	struct inode	*inode = mapping->host;
++	loff_t pos;
++	int count_tmp;
++	int err = 0;
++	int cPagePtr = 0;		
++	int cPagesAllocated = 0;
++	struct recvfile_ctl_blk rv_cb[MAX_PAGES_PER_RECVFILE];
++	struct kvec iov[MAX_PAGES_PER_RECVFILE];
++	struct msghdr msg;
++	long rcvtimeo;
++	int ret;
++
++	if(copy_from_user(&pos, ppos, sizeof(loff_t)))
++		return -EFAULT;
++
++	if(count > MAX_PAGES_PER_RECVFILE * PAGE_SIZE) {
++		printk("%s: count(%u) exceeds maxinum\n", __func__, count);
++		return -EINVAL;
++	}    
++	mutex_lock(&inode->i_mutex);
++
++	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
++
++	/* We can write back this queue in page reclaim */
++	current->backing_dev_info = mapping->backing_dev_info;
++
++	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
++	if (err != 0 || count == 0)
++		goto done;
++
++	file_remove_suid(file);
++	file_update_time(file);	
++
++	count_tmp = count;
++	do {
++		unsigned long bytes;	/* Bytes to write to page */
++		unsigned long offset;	/* Offset into pagecache page */
++		struct page *pageP;
++		void *fsdata;
++
++		offset = (pos & (PAGE_CACHE_SIZE - 1));
++		bytes = PAGE_CACHE_SIZE - offset;
++		if (bytes > count_tmp)
++			bytes = count_tmp;
++		ret = mapping->a_ops->write_begin(file, mapping, pos, bytes,
++						  AOP_FLAG_UNINTERRUPTIBLE,
++						  &pageP, &fsdata);
++
++		if (unlikely(ret)) {
++			err = ret;
++			for(cPagePtr = 0; cPagePtr < cPagesAllocated; cPagePtr++) {
++				kunmap(rv_cb[cPagePtr].rv_page);
++				ret = mapping->a_ops->write_end(file, mapping,
++								rv_cb[cPagePtr].rv_pos,
++								rv_cb[cPagePtr].rv_count,
++								rv_cb[cPagePtr].rv_count,
++								rv_cb[cPagePtr].rv_page,
++								rv_cb[cPagePtr].rv_fsdata);
++			}
++			goto done;
++		}
++		rv_cb[cPagesAllocated].rv_page = pageP;
++		rv_cb[cPagesAllocated].rv_pos = pos;
++		rv_cb[cPagesAllocated].rv_count = bytes;
++		rv_cb[cPagesAllocated].rv_fsdata = fsdata;
++		iov[cPagesAllocated].iov_base = kmap(pageP) + offset;
++		iov[cPagesAllocated].iov_len = bytes;
++		cPagesAllocated++;
++		count_tmp -= bytes;
++		pos += bytes;
++	} while (count_tmp);
++
++	/* IOV is ready, receive the date from socket now */
++	msg.msg_name = NULL;
++	msg.msg_namelen = 0;
++	msg.msg_iov = (struct iovec *)&iov[0];
++	msg.msg_iovlen = cPagesAllocated ;
++	msg.msg_control = NULL;
++	msg.msg_controllen = 0;
++	msg.msg_flags = MSG_KERNSPACE;
++	rcvtimeo = sock->sk->sk_rcvtimeo;    
++	sock->sk->sk_rcvtimeo = 8 * HZ;
++
++	ret = kernel_recvmsg(sock, &msg, &iov[0], cPagesAllocated, count,
++			     MSG_WAITALL | MSG_NOCATCHSIG);
++
++	sock->sk->sk_rcvtimeo = rcvtimeo;
++	if(ret != count)
++		err = -EPIPE;
++	else
++		err = 0;
++
++	if (unlikely(err < 0)) {
++		for(cPagePtr = 0; cPagePtr < cPagesAllocated; cPagePtr++) {
++			kunmap(rv_cb[cPagePtr].rv_page);
++			ret = mapping->a_ops->write_end(file, mapping,
++							rv_cb[cPagePtr].rv_pos,
++							rv_cb[cPagePtr].rv_count,
++							rv_cb[cPagePtr].rv_count,
++							rv_cb[cPagePtr].rv_page,
++							rv_cb[cPagePtr].rv_fsdata);
++		}
++		goto done;
++	}
++
++	for(cPagePtr=0,count=0;cPagePtr < cPagesAllocated;cPagePtr++) {
++		//flush_dcache_page(pageP);
++		kunmap(rv_cb[cPagePtr].rv_page);
++		ret = mapping->a_ops->write_end(file, mapping,
++						rv_cb[cPagePtr].rv_pos,
++						rv_cb[cPagePtr].rv_count,
++						rv_cb[cPagePtr].rv_count,
++						rv_cb[cPagePtr].rv_page,
++						rv_cb[cPagePtr].rv_fsdata);
++		if (unlikely(ret < 0))
++			printk("%s: write_end fail,ret = %d\n", __func__, ret);
++		count += rv_cb[cPagePtr].rv_count;
++		//cond_resched();
++	}
++	balance_dirty_pages_ratelimited_nr(mapping, cPagesAllocated);
++	copy_to_user(ppos,&pos,sizeof(loff_t));
++    
++done:
++	current->backing_dev_info = NULL;    
++	mutex_unlock(&inode->i_mutex);
++	if(err)
++		return err;
++	else 
++		return count;
++}
++
+ /*
+  * Map an iov into an array of pages and offset/length tupples. With the
+  * partial_page structure, we can map several non-contiguous ranges into
+@@ -1698,11 +1834,33 @@ SYSCALL_DEFINE6(splice, int, fd_in, loff
+ 	long error;
+ 	struct file *in, *out;
+ 	int fput_in, fput_out;
++	struct socket *sock = NULL;
+ 
+ 	if (unlikely(!len))
+ 		return 0;
+ 
+ 	error = -EBADF;
++
++	/* check if fd_in is a socket */
++	sock = sockfd_lookup(fd_in, &error);
++	if (sock) {
++		out = NULL;
++		if (!sock->sk)
++			goto done;
++		out = fget_light(fd_out, &fput_out);
++        
++		if (out) {
++			if (!(out->f_mode & FMODE_WRITE))
++				goto done;
++			error = do_splice_from_socket(out, sock, off_out, len);
++		}       
++done:
++		if(out)
++			fput_light(out, fput_out);      
++		fput(sock->file);
++		return error;
++	}
++
+ 	in = fget_light(fd_in, &fput_in);
+ 	if (in) {
+ 		if (in->f_mode & FMODE_READ) {
+diff -urp linux-2.6.37-rc5.orig/include/linux/fs.h linux-2.6.37-rc5/include/linux/fs.h
+--- linux-2.6.37-rc5.orig/include/linux/fs.h	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/include/linux/fs.h	2010-12-07 15:58:26.000000000 -0800
+@@ -372,6 +372,8 @@ struct inodes_stat_t {
+ #define SYNC_FILE_RANGE_WRITE		2
+ #define SYNC_FILE_RANGE_WAIT_AFTER	4
+ 
++#define MAX_PAGES_PER_RECVFILE		32
++
+ #ifdef __KERNEL__
+ 
+ #include <linux/linkage.h>
+diff -urp linux-2.6.37-rc5.orig/include/linux/skbuff.h linux-2.6.37-rc5/include/linux/skbuff.h
+--- linux-2.6.37-rc5.orig/include/linux/skbuff.h	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/include/linux/skbuff.h	2010-12-07 15:31:43.000000000 -0800
+@@ -1817,6 +1817,9 @@ extern unsigned int    datagram_poll(str
+ extern int	       skb_copy_datagram_iovec(const struct sk_buff *from,
+ 					       int offset, struct iovec *to,
+ 					       int size);
++extern int	       skb_copy_datagram_to_kernel_iovec(const struct sk_buff *from,
++					       int offset, struct iovec *to,
++					       int size);
+ extern int	       skb_copy_and_csum_datagram_iovec(struct sk_buff *skb,
+ 							int hlen,
+ 							struct iovec *iov);
+diff -urp linux-2.6.37-rc5.orig/include/linux/socket.h linux-2.6.37-rc5/include/linux/socket.h
+--- linux-2.6.37-rc5.orig/include/linux/socket.h	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/include/linux/socket.h	2010-12-07 15:33:52.000000000 -0800
+@@ -261,6 +261,8 @@ struct ucred {
+ #define MSG_NOSIGNAL	0x4000	/* Do not generate SIGPIPE */
+ #define MSG_MORE	0x8000	/* Sender will send more */
+ #define MSG_WAITFORONE	0x10000	/* recvmmsg(): block until 1+ packets avail */
++#define MSG_KERNSPACE	0x20000
++#define MSG_NOCATCHSIG	0x40000
+ 
+ #define MSG_EOF         MSG_FIN
+ 
+@@ -326,6 +328,7 @@ extern int verify_iovec(struct msghdr *m
+ extern int memcpy_toiovec(struct iovec *v, unsigned char *kdata, int len);
+ extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
+ 			     int offset, int len);
++extern void memcpy_tokerneliovec(struct iovec *iov, unsigned char *kdata, int len);
+ extern int move_addr_to_kernel(void __user *uaddr, int ulen, struct sockaddr *kaddr);
+ extern int put_cmsg(struct msghdr*, int level, int type, int len, void *data);
+ 
+diff -urp linux-2.6.37-rc5.orig/include/linux/splice.h linux-2.6.37-rc5/include/linux/splice.h
+--- linux-2.6.37-rc5.orig/include/linux/splice.h	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/include/linux/splice.h	2010-12-07 15:46:44.000000000 -0800
+@@ -57,6 +57,14 @@ struct splice_pipe_desc {
+ 	void (*spd_release)(struct splice_pipe_desc *, unsigned int);
+ };
+ 
++struct recvfile_ctl_blk
++{
++	struct page *rv_page;
++	loff_t rv_pos;
++	size_t rv_count;
++	void *rv_fsdata;
++};
++
+ typedef int (splice_actor)(struct pipe_inode_info *, struct pipe_buffer *,
+ 			   struct splice_desc *);
+ typedef int (splice_direct_actor)(struct pipe_inode_info *,
+diff -urp linux-2.6.37-rc5.orig/net/core/datagram.c linux-2.6.37-rc5/net/core/datagram.c
+--- linux-2.6.37-rc5.orig/net/core/datagram.c	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/net/core/datagram.c	2010-12-07 16:01:36.000000000 -0800
+@@ -128,6 +128,65 @@ out_noerr:
+ 	goto out;
+ }
+ 
++/*
++ *	skb_copy_datagram_to_kernel_iovec - Copy a datagram to a kernel iovec structure.
++ *	@skb: buffer to copy
++ *	@offset: offset in the buffer to start copying from
++ *	@to: io vector to copy to
++ *	@len: amount of data to copy from buffer to iovec
++ *
++ *	Note: the iovec is modified during the copy.
++ */
++int skb_copy_datagram_to_kernel_iovec(const struct sk_buff *skb, int offset,
++				      struct iovec *to, int len)
++{
++	int i, fraglen, end = 0;
++	struct sk_buff *next = skb_shinfo(skb)->frag_list;
++
++	if (!len)
++		return 0;
++
++next_skb:
++	fraglen = skb_headlen(skb);
++	i = -1;
++
++	while (1) {
++		int start = end;
++
++		if ((end += fraglen) > offset) {
++			int copy = end - offset;
++			int o = offset - start;
++
++			if (copy > len)
++				copy = len;
++			if (i == -1)
++				memcpy_tokerneliovec(to, skb->data + o, copy);
++			else {
++				skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
++				struct page *page = frag->page;
++				void *p = kmap(page) + frag->page_offset + o;
++				memcpy_tokerneliovec(to, p, copy);
++				kunmap(page);
++			}
++
++			if (!(len -= copy))
++				return 0;
++			offset += copy;
++		}
++		if (++i >= skb_shinfo(skb)->nr_frags)
++			break;
++		fraglen = skb_shinfo(skb)->frags[i].size;
++	}
++	if (next) {
++		skb = next;
++		BUG_ON(skb_shinfo(skb)->frag_list);
++		next = skb->next;
++		goto next_skb;
++	}
++
++	return -EFAULT;
++}
++
+ /**
+  *	__skb_recv_datagram - Receive a datagram skbuff
+  *	@sk: socket
+diff -urp linux-2.6.37-rc5.orig/net/core/iovec.c linux-2.6.37-rc5/net/core/iovec.c
+--- linux-2.6.37-rc5.orig/net/core/iovec.c	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/net/core/iovec.c	2010-12-07 16:03:46.000000000 -0800
+@@ -124,6 +124,30 @@ int memcpy_toiovecend(const struct iovec
+ }
+ EXPORT_SYMBOL(memcpy_toiovecend);
+ 
++/* This was removed in 2.6. Re-add it for splice from socket to file. */
++/*
++ *	In kernel copy to iovec. Returns -EFAULT on error.
++ *
++ *	Note: this modifies the original iovec.
++ */
++ 
++void memcpy_tokerneliovec(struct iovec *iov, unsigned char *kdata, int len)
++{
++	while(len>0)
++	{
++		if(iov->iov_len)
++		{
++			int copy = min_t(unsigned int, iov->iov_len, len);
++			memcpy(iov->iov_base, kdata, copy);
++			len -= copy;
++			kdata += copy;
++			iov->iov_base += copy;
++			iov->iov_len -= copy;
++		}
++		iov++;
++	}
++}
++
+ /*
+  *	Copy iovec to kernel. Returns -EFAULT on error.
+  *
+diff -urp linux-2.6.37-rc5.orig/net/ipv4/tcp.c linux-2.6.37-rc5/net/ipv4/tcp.c
+--- linux-2.6.37-rc5.orig/net/ipv4/tcp.c	2010-12-06 20:09:04.000000000 -0800
++++ linux-2.6.37-rc5/net/ipv4/tcp.c	2010-12-07 15:49:35.000000000 -0800
+@@ -1460,8 +1460,23 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 	do {
+ 		u32 offset;
+ 
++		if (flags & MSG_NOCATCHSIG) {
++			if (signal_pending(current)) {
++				if (sigismember(&current->pending.signal, SIGQUIT) || 
++				    sigismember(&current->pending.signal, SIGABRT) ||
++				    sigismember(&current->pending.signal, SIGKILL) ||
++				    sigismember(&current->pending.signal, SIGTERM) ||
++				    sigismember(&current->pending.signal, SIGSTOP)) {
++
++					if (copied)
++						break;
++					copied = timeo ? sock_intr_errno(timeo) : -EAGAIN;
++					break;
++				}
++			}
++		}
+ 		/* Are we at urgent data? Stop if we have read anything or have SIGURG pending. */
+-		if (tp->urg_data && tp->urg_seq == *seq) {
++		else if (tp->urg_data && tp->urg_seq == *seq) {
+ 			if (copied)
+ 				break;
+ 			if (signal_pending(current)) {
+@@ -1690,8 +1705,12 @@ do_prequeue:
+ 			} else
+ #endif
+ 			{
+-				err = skb_copy_datagram_iovec(skb, offset,
+-						msg->msg_iov, used);
++				if(msg->msg_flags & MSG_KERNSPACE)
++					err = skb_copy_datagram_to_kernel_iovec(skb,
++							offset, msg->msg_iov, used);
++				else
++					err = skb_copy_datagram_iovec(skb, offset,
++							msg->msg_iov, used);
+ 				if (err) {
+ 					/* Exception. Bailout! */
+ 					if (!copied)
 
---90e6ba6e901c34c33504e220e34e
-Content-Type: application/octet-stream; name="fix_racing_removing_6_6.patch"
-Content-Disposition: attachment; filename="fix_racing_removing_6_6.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hjg7yix90
-
-U3ViamVjdDogW1BBVENIIHYyIDYvN10gUENJOiBNYWtlIHN1cmUgVkYncyBkcml2ZXIgZ2V0IGF0
-dGFjaGVkIGFmdGVyIFBGJ3MKRnJvbTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoK
-Rm91bmQga2VybmVsIHRyeSB0byBsb2FkIG1seDQgZHJpdmVycyBmb3IgVkZzIGJlZm9yZQpQRidz
-IGlzIGxvYWRlZCB3aGVuIHRoZSBkcml2ZXJzIGFyZSBidWlsdC1pbiwgYW5kIGtlcm5lbApjb21t
-YW5kIGxpbmUgaW5jbHVkZSBwcm9iZV92ZnM9NjMsIG51bV92ZnM9NjMuCgpbICAxNjkuNTgxNjgy
-XSBjYWxsaW5nICBtbHg0X2luaXQrMHgwLzB4MTE5IEAgMQpbICAxNjkuNTk1NjgxXSBtbHg0X2Nv
-cmU6IE1lbGxhbm94IENvbm5lY3RYIGNvcmUgZHJpdmVyIHYxLjEgKERlYywgMjAxMSkKWyAgMTY5
-LjYwMDE5NF0gbWx4NF9jb3JlOiBJbml0aWFsaXppbmcgMDAwMDowMjowMC4wClsgIDE2OS42MTYz
-MjJdIG1seDRfY29yZSAwMDAwOjAyOjAwLjA6IEVuYWJsaW5nIFNSLUlPViB3aXRoIDYzIFZGcwpb
-ICAxNjkuNzI0MDg0XSBwY2kgMDAwMDowMjowMC4xOiBbMTViMzoxMDAyXSB0eXBlIDAwIGNsYXNz
-IDB4MGMwNjAwClsgIDE2OS43MzI0NDJdIG1seDRfY29yZTogSW5pdGlhbGl6aW5nIDAwMDA6MDI6
-MDAuMQpbICAxNjkuNzM0MzQ1XSBtbHg0X2NvcmUgMDAwMDowMjowMC4xOiBlbmFibGluZyBkZXZp
-Y2UgKDAwMDAgLT4gMDAwMikKWyAgMTY5Ljc0NzA2MF0gbWx4NF9jb3JlIDAwMDA6MDI6MDAuMTog
-ZW5hYmxpbmcgYnVzIG1hc3RlcmluZwpbICAxNjkuNzY0MjgzXSBtbHg0X2NvcmUgMDAwMDowMjow
-MC4xOiBEZXRlY3RlZCB2aXJ0dWFsIGZ1bmN0aW9uIC0gcnVubmluZyBpbiBzbGF2ZSBtb2RlClsg
-IDE2OS43Njc0MDldIG1seDRfY29yZSAwMDAwOjAyOjAwLjE6IHdpdGggaW9tbXUgMyA6IGRvbWFp
-biAxMQpbICAxNjkuNzg1NTg5XSBtbHg0X2NvcmUgMDAwMDowMjowMC4xOiBTZW5kaW5nIHJlc2V0
-ClsgIDE3OS43OTAxMzFdIG1seDRfY29yZSAwMDAwOjAyOjAwLjE6IEdvdCBzbGF2ZSBGTFJlZCBm
-cm9tIENvbW11bmljYXRpb24gY2hhbm5lbCAocmV0OjB4MSkKWyAgMTgxLjc5ODY2MV0gbWx4NF9j
-b3JlIDAwMDA6MDI6MDAuMTogc2xhdmUgaXMgY3VycmVudGx5IGluIHRoZW1pZGRsZSBvZiBGTFIu
-IHJldHJ5aW5nLi4uKHRyeSBudW06MSkKWyAgMTgxLjgwMzMzNl0gbWx4NF9jb3JlIDAwMDA6MDI6
-MDAuMTogQ29tbXVuaWNhdGlvbiBjaGFubmVsIGlzIG5vdCBpZGxlLm15IHRvZ2dsZSBpcyAxIChj
-bWQ6MHgwKQouLi4KWyAgMTgyLjA3ODcxMF0gbWx4NF9jb3JlIDAwMDA6MDI6MDAuMTogc2xhdmUg
-aXMgY3VycmVudGx5IGluIHRoZW1pZGRsZSBvZiBGTFIuIHJldHJ5aW5nLi4uKHRyeSBudW06MTAp
-ClsgIDE4Mi4wOTY2NTddIG1seDRfY29yZSAwMDAwOjAyOjAwLjE6IENvbW11bmljYXRpb24gY2hh
-bm5lbCBpcyBub3QgaWRsZS5teSB0b2dnbGUgaXMgMSAoY21kOjB4MCkKWyAgMTgyLjEwNDkzNV0g
-bWx4NF9jb3JlIDAwMDA6MDI6MDAuMTogc2xhdmUgZHJpdmVyIHZlcnNpb24gaXMgbm90IHN1cHBv
-cnRlZCBieSB0aGUgbWFzdGVyClsgIDE4Mi4xMTg1NzBdIG1seDRfY29yZSAwMDAwOjAyOjAwLjE6
-IENvbW11bmljYXRpb24gY2hhbm5lbCBpcyBub3QgaWRsZS5teSB0b2dnbGUgaXMgMSAoY21kOjB4
-MCkKWyAgMTgyLjEzODE5MF0gbWx4NF9jb3JlIDAwMDA6MDI6MDAuMTogRmFpbGVkIHRvIGluaXRp
-YWxpemUgc2xhdmUKWyAgMTgyLjE0MTcyOF0gbWx4NF9jb3JlOiBwcm9iZSBvZiAwMDAwOjAyOjAw
-LjEgZmFpbGVkIHdpdGggZXJyb3IgLTUKCkl0IHR1cm5zIHRoYXQgdGhpcyBhbHNvIGhhcHBlbiBm
-b3IgaG90YWRkIHBhdGggZXZlbiBkcml2ZXJzIGFyZQpjb21waWxlZCBhcyBtb2R1bGVzIGFuZCBp
-ZiB0aGV5IGFyZSBsb2FkZWQuIEVzcCBzb21lIFZGIHNoYXJlIHRoZQpzYW1lIGRyaXZlciB3aXRo
-IFBGLgoKY2FsbGluZyBwYXRoOgoJZGV2aWNlIGRyaXZlciBwcm9iZQoJCT09PiBwY2lfZW5hYmxl
-X3NyaW92CgkJCT09PiB2aXJ0Zm5fYWRkCgkJCQk9PT4gcGNpX2Rldl9hZGQKCQkJCT09PiBwY2lf
-YnVzX2RldmljZV9hZGQKd2hlbiBwY2lfYnVzX2RldmljZV9hZGQgaXMgY2FsbGVkLCB0aGUgVkYn
-cyBkcml2ZXIgd2lsbCBiZSBhdHRhY2hlZC4KYW5kIGF0IHRoYXQgdGltZSBQRidzIGRyaXZlciBk
-b2VzIG5vdCBmaW5pc2ggeWV0LgoKTmVlZCB0byBtb3ZlIG91dCBwY2lfYnVzX2RldmljZV9hZGQg
-ZnJvbSB2aXJ0Zm5fYWRkIGFuZCBjYWxsIGl0CmxhdGVyLgoKYm54MnggYW5kIHFsY25pYyBhcmUg
-b2ssIGJlY2F1c2UgaXQgZG9lcyBub3QgbW9kdWxlcyBjb21tYW5kIGxpbmUKdG8gZW5hYmxlIHNy
-aW92LiBUaGV5IG11c3QgdXNlIHN5c2ZzIHRvIGVuYWJsZSBpdC4KCmJlMm5ldCBpcyBvaywgYWNj
-b3JkaW5nIHRvIFNhdGh5YSBQZXJsYSwKaGUgZml4ZWQgdGhpcyBpc3N1ZSBpbiBiZTJuZXQgd2l0
-aCB0aGUgZm9sbG93aW5nIHBhdGNoIChjb21taXQgYjRjMWRmOTMpCiAgaHR0cDovL21hcmMuaW5m
-by8/bD1saW51eC1uZXRkZXYmbT0xMzY4MDE0NTk4MDg3NjUmdz0yCgpGb3IgaWdiIGFuZCBpeGdi
-ZSBpcyBvaywgYXMgQWxleCBEdXljayBzYWlkOgp8IFRoZSBWRiBkcml2ZXIgc2hvdWxkIGJlIGFi
-bGUgdG8gYmUgbG9hZGVkIHdoZW4gdGhlIFBGIGRyaXZlciBpcyBub3QKfCBwcmVzZW50LiAgV2Ug
-aGFuZGxlIGl0IGluIGlnYiBhbmQgaXhnYmUgbGFzdCBJIGNoZWNrZWQsIGFuZCBJIGRvbid0IHNl
-ZQp8IGFueSByZWFzb24gd2h5IGl0IGNhbm5vdCBiZSBoYW5kbGVkIGluIGFsbCBvdGhlciBWRiBk
-cml2ZXJzLiAgSSdtIG5vdAp8IHNheWluZyB0aGUgVkYgaGFzIHRvIGJlIGFibGUgdG8gZnVsbHkg
-ZnVuY3Rpb25hbCwgYnV0IGl0IHNob3VsZCBiZSBhYmxlCnwgdG8gZGV0ZWN0IHRoZSBQRiBiZWNv
-bWluZyBlbmFibGVkIGFuZCB0aGVuIGJyaW5nIGl0c2VsZiB0byBhIGZ1bGx5CnwgZnVuY3Rpb25h
-bCBzdGF0ZS4gIFRvIG5vdCBoYW5kbGUgdGhhdCBjYXNlIGlzIGEgYnVnLgoKTG9va3MgbGlrZSB0
-aGUgcGF0Y2ggd2lsbCBoZWxwIGVuaWMsIG1seDQsIGVmeCwgdnhnZSBhbmQgbHBmYyBub3cuCgot
-djI6IGRvbid0IHVzZSBzY2hlZHVsZV9jYWxsYmFjaywgYW5kIGluaXRjYWxsIGFmdGVyIEFsZXgn
-cyBwYXRjaC4KCXBjaTogQXZvaWQgcmVlbnRyYW50IGNhbGxzIHRvIHdvcmtfb25fY3B1CgpTaWdu
-ZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CkNjOiBBbGV4YW5kZXIg
-RHV5Y2sgPGFsZXhhbmRlci5oLmR1eWNrQGludGVsLmNvbT4KQ2M6IFlhbiBCdXJtYW4gPHlhbmJA
-bWVsbGFub3guY29tPgpDYzogU2F0aHlhIFBlcmxhIDxTYXRoeWEuUGVybGFARW11bGV4LkNvbT4K
-Q2M6IG5ldGRldkB2Z2VyLmtlcm5lbC5vcmcKCi0tLQogZHJpdmVycy9uZXQvZXRoZXJuZXQvYnJv
-YWRjb20vYm54MngvYm54Mnhfc3Jpb3YuYyAgICB8ICAgIDcgKysKIGRyaXZlcnMvbmV0L2V0aGVy
-bmV0L2NoZWxzaW8vY3hnYjQvY3hnYjRfbWFpbi5jICAgICAgfCAgICA0ICsKIGRyaXZlcnMvbmV0
-L2V0aGVybmV0L2Npc2NvL2VuaWMvZW5pY19tYWluLmMgICAgICAgICAgfCAgICAyIAogZHJpdmVy
-cy9uZXQvZXRoZXJuZXQvZW11bGV4L2JlbmV0L2JlX21haW4uYyAgICAgICAgICB8ICAgIDQgKwog
-ZHJpdmVycy9uZXQvZXRoZXJuZXQvaW50ZWwvaWdiL2lnYl9tYWluLmMgICAgICAgICAgICB8ICAg
-MTEgKysrLQogZHJpdmVycy9uZXQvZXRoZXJuZXQvaW50ZWwvaXhnYmUvaXhnYmVfbWFpbi5jICAg
-ICAgICB8ICAgIDIgCiBkcml2ZXJzL25ldC9ldGhlcm5ldC9pbnRlbC9peGdiZS9peGdiZV9zcmlv
-di5jICAgICAgIHwgICAgOSArKy0KIGRyaXZlcnMvbmV0L2V0aGVybmV0L21lbGxhbm94L21seDQv
-bWFpbi5jICAgICAgICAgICAgfCAgICAzICsKIGRyaXZlcnMvbmV0L2V0aGVybmV0L25ldGVyaW9u
-L3Z4Z2UvdnhnZS1tYWluLmMgICAgICAgfCAgICAzICsKIGRyaXZlcnMvbmV0L2V0aGVybmV0L3Fs
-b2dpYy9xbGNuaWMvcWxjbmljX3NyaW92X3BmLmMgfCAgICA1ICstCiBkcml2ZXJzL25ldC9ldGhl
-cm5ldC9zZmMvZWZ4LmMgICAgICAgICAgICAgICAgICAgICAgIHwgICAgMSAKIGRyaXZlcnMvcGNp
-L2lvdi5jICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfCAgIDQ3ICsrKysrKysr
-KysrKysrKystLS0KIGRyaXZlcnMvc2NzaS9scGZjL2xwZmNfaW5pdC5jICAgICAgICAgICAgICAg
-ICAgICAgICAgfCAgICAyIAogaW5jbHVkZS9saW51eC9wY2kuaCAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICB8ICAgIDQgKwogMTQgZmlsZXMgY2hhbmdlZCwgOTAgaW5zZXJ0aW9ucygr
-KSwgMTQgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvbmV0L2V0aGVybmV0
-L21lbGxhbm94L21seDQvbWFpbi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZl
-cnMvbmV0L2V0aGVybmV0L21lbGxhbm94L21seDQvbWFpbi5jCisrKyBsaW51eC0yLjYvZHJpdmVy
-cy9uZXQvZXRoZXJuZXQvbWVsbGFub3gvbWx4NC9tYWluLmMKQEAgLTIzMDgsNiArMjMwOCw5IEBA
-IHNsYXZlX3N0YXJ0OgogCXByaXYtPnBjaV9kZXZfZGF0YSA9IHBjaV9kZXZfZGF0YTsKIAlwY2lf
-c2V0X2RydmRhdGEocGRldiwgZGV2KTsKIAorCWlmIChkZXYtPmZsYWdzICYgTUxYNF9GTEFHX1NS
-SU9WKQorCQlwY2lfYnVzX2FkZF9kZXZpY2VfdmZzKHBkZXYpOworCiAJcmV0dXJuIDA7CiAKIGVy
-cl9wb3J0OgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL2lvdi5jCj09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0t
-IGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL2lvdi5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9w
-Y2kvaW92LmMKQEAgLTY2LDcgKzY2LDggQEAgc3RhdGljIHZvaWQgdmlydGZuX3JlbW92ZV9idXMo
-c3RydWN0IHBjaQogCQlwY2lfcmVtb3ZlX2J1cyhjaGlsZCk7CiB9CiAKLXN0YXRpYyBpbnQgdmly
-dGZuX2FkZChzdHJ1Y3QgcGNpX2RldiAqZGV2LCBpbnQgaWQsIGludCByZXNldCkKK3N0YXRpYyBp
-bnQgdmlydGZuX2FkZChzdHJ1Y3QgcGNpX2RldiAqZGV2LCBpbnQgaWQsIGludCByZXNldCwKKwkJ
-CXN0cnVjdCBwY2lfZGV2ICoqcmV0KQogewogCWludCBpOwogCWludCByYzsKQEAgLTExNiw3ICsx
-MTcsNiBAQCBzdGF0aWMgaW50IHZpcnRmbl9hZGQoc3RydWN0IHBjaV9kZXYgKmRlCiAJcGNpX2Rl
-dmljZV9hZGQodmlydGZuLCB2aXJ0Zm4tPmJ1cyk7CiAJbXV0ZXhfdW5sb2NrKCZpb3YtPmRldi0+
-c3Jpb3YtPmxvY2spOwogCi0JcmMgPSBwY2lfYnVzX2FkZF9kZXZpY2UodmlydGZuKTsKIAlzcHJp
-bnRmKGJ1ZiwgInZpcnRmbiV1IiwgaWQpOwogCXJjID0gc3lzZnNfY3JlYXRlX2xpbmsoJmRldi0+
-ZGV2LmtvYmosICZ2aXJ0Zm4tPmRldi5rb2JqLCBidWYpOwogCWlmIChyYykKQEAgLTEyNyw2ICsx
-MjcsOCBAQCBzdGF0aWMgaW50IHZpcnRmbl9hZGQoc3RydWN0IHBjaV9kZXYgKmRlCiAKIAlrb2Jq
-ZWN0X3VldmVudCgmdmlydGZuLT5kZXYua29iaiwgS09CSl9DSEFOR0UpOwogCisJaWYgKHJldCkK
-KwkJKnJldCA9IHZpcnRmbjsKIAlyZXR1cm4gMDsKIAogZmFpbGVkMjoKQEAgLTE0MSw2ICsxNDMs
-MjYgQEAgZmFpbGVkMToKIAlyZXR1cm4gcmM7CiB9CiAKK3ZvaWQgcGNpX2J1c19hZGRfZGV2aWNl
-X3ZmcyhzdHJ1Y3QgcGNpX2RldiAqcGRldikKK3sKKwlpbnQgcmM7CisJc3RydWN0IHBjaV9kZXYg
-KmRldjsKKworICAgICAgIC8qIG9ubHkgc2VhcmNoIGlmIGl0IGlzIGEgUEYgKi8KKwlpZiAoIXBk
-ZXYtPmlzX3BoeXNmbikKKwkJcmV0dXJuOworCisJLyogbG9vcCB0aHJvdWdoIGFsbCB0aGUgVkZz
-IHRvIHNlZSBpZiB3ZSBvd24gYW5kIGlzIG5vdCBhZGRlZCB5ZXQqLworCWRldiA9IHBjaV9nZXRf
-ZGV2aWNlKHBkZXYtPnZlbmRvciwgUENJX0FOWV9JRCwgTlVMTCk7CisJd2hpbGUgKGRldikgewor
-CQlpZiAoZGV2LT5pc192aXJ0Zm4gJiYgZGV2LT5waHlzZm4gPT0gcGRldiAmJiAhZGV2LT5pc19h
-ZGRlZCkKKwkJCXJjID0gcGNpX2J1c19hZGRfZGV2aWNlKGRldik7CisKKwkJZGV2ID0gcGNpX2dl
-dF9kZXZpY2UocGRldi0+dmVuZG9yLCBQQ0lfQU5ZX0lELCBkZXYpOworCX0KK30KK0VYUE9SVF9T
-WU1CT0xfR1BMKHBjaV9idXNfYWRkX2RldmljZV92ZnMpOworCiBzdGF0aWMgdm9pZCB2aXJ0Zm5f
-cmVtb3ZlKHN0cnVjdCBwY2lfZGV2ICpkZXYsIGludCBpZCwgaW50IHJlc2V0KQogewogCWNoYXIg
-YnVmW1ZJUlRGTl9JRF9MRU5dOwpAQCAtMjA0LDYgKzIyNiw3IEBAIHN0YXRpYyBpbnQgc3Jpb3Zf
-bWlncmF0aW9uKHN0cnVjdCBwY2lfZGUKIHN0YXRpYyB2b2lkIHNyaW92X21pZ3JhdGlvbl90YXNr
-KHN0cnVjdCB3b3JrX3N0cnVjdCAqd29yaykKIHsKIAlpbnQgaTsKKwlpbnQgcmM7CiAJdTggc3Rh
-dGU7CiAJdTE2IHN0YXR1czsKIAlzdHJ1Y3QgcGNpX3NyaW92ICppb3YgPSBjb250YWluZXJfb2Yo
-d29yaywgc3RydWN0IHBjaV9zcmlvdiwgbXRhc2spOwpAQCAtMjEzLDE0ICsyMzYsMjQgQEAgc3Rh
-dGljIHZvaWQgc3Jpb3ZfbWlncmF0aW9uX3Rhc2soc3RydWN0CiAJCWlmIChzdGF0ZSA9PSBQQ0lf
-U1JJT1ZfVkZNX01JKSB7CiAJCQl3cml0ZWIoUENJX1NSSU9WX1ZGTV9BViwgaW92LT5tc3RhdGUg
-KyBpKTsKIAkJCXN0YXRlID0gcmVhZGIoaW92LT5tc3RhdGUgKyBpKTsKLQkJCWlmIChzdGF0ZSA9
-PSBQQ0lfU1JJT1ZfVkZNX0FWKQotCQkJCXZpcnRmbl9hZGQoaW92LT5zZWxmLCBpLCAxKTsKKwkJ
-CWlmIChzdGF0ZSA9PSBQQ0lfU1JJT1ZfVkZNX0FWKSB7CisJCQkJc3RydWN0IHBjaV9kZXYgKnZp
-cnRmbiA9IE5VTEw7CisKKwkJCQl2aXJ0Zm5fYWRkKGlvdi0+c2VsZiwgaSwgMSwgJnZpcnRmbik7
-CisJCQkJaWYgKHZpcnRmbikKKwkJCQkJcmMgPSBwY2lfYnVzX2FkZF9kZXZpY2UodmlydGZuKTsK
-KwkJCX0KIAkJfSBlbHNlIGlmIChzdGF0ZSA9PSBQQ0lfU1JJT1ZfVkZNX01PKSB7CiAJCQl2aXJ0
-Zm5fcmVtb3ZlKGlvdi0+c2VsZiwgaSwgMSk7CiAJCQl3cml0ZWIoUENJX1NSSU9WX1ZGTV9VQSwg
-aW92LT5tc3RhdGUgKyBpKTsKIAkJCXN0YXRlID0gcmVhZGIoaW92LT5tc3RhdGUgKyBpKTsKLQkJ
-CWlmIChzdGF0ZSA9PSBQQ0lfU1JJT1ZfVkZNX0FWKQotCQkJCXZpcnRmbl9hZGQoaW92LT5zZWxm
-LCBpLCAwKTsKKwkJCWlmIChzdGF0ZSA9PSBQQ0lfU1JJT1ZfVkZNX0FWKSB7CisJCQkJc3RydWN0
-IHBjaV9kZXYgKnZpcnRmbiA9IE5VTEw7CisKKwkJCQl2aXJ0Zm5fYWRkKGlvdi0+c2VsZiwgaSwg
-MCwgJnZpcnRmbik7CisJCQkJaWYgKHZpcnRmbikKKwkJCQkJcmMgPSBwY2lfYnVzX2FkZF9kZXZp
-Y2UodmlydGZuKTsKKwkJCX0KIAkJfQogCX0KIApAQCAtMzU2LDcgKzM4OSw3IEBAIHN0YXRpYyBp
-bnQgc3Jpb3ZfZW5hYmxlKHN0cnVjdCBwY2lfZGV2ICoKIAkJaW5pdGlhbCA9IG5yX3ZpcnRmbjsK
-IAogCWZvciAoaSA9IDA7IGkgPCBpbml0aWFsOyBpKyspIHsKLQkJcmMgPSB2aXJ0Zm5fYWRkKGRl
-diwgaSwgMCk7CisJCXJjID0gdmlydGZuX2FkZChkZXYsIGksIDAsIE5VTEwpOwogCQlpZiAocmMp
-CiAJCQlnb3RvIGZhaWxlZDsKIAl9CkluZGV4OiBsaW51eC0yLjYvaW5jbHVkZS9saW51eC9wY2ku
-aAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4L3BjaS5oCisrKyBs
-aW51eC0yLjYvaW5jbHVkZS9saW51eC9wY2kuaApAQCAtMTY1OSw2ICsxNjU5LDcgQEAgdm9pZCBf
-X2lvbWVtICpwY2lfaW9yZW1hcF9iYXIoc3RydWN0IHBjaQogCiAjaWZkZWYgQ09ORklHX1BDSV9J
-T1YKIGludCBwY2lfZW5hYmxlX3NyaW92KHN0cnVjdCBwY2lfZGV2ICpkZXYsIGludCBucl92aXJ0
-Zm4pOwordm9pZCBwY2lfYnVzX2FkZF9kZXZpY2VfdmZzKHN0cnVjdCBwY2lfZGV2ICpkZXYpOwog
-dm9pZCBwY2lfZGlzYWJsZV9zcmlvdihzdHJ1Y3QgcGNpX2RldiAqZGV2KTsKIGlycXJldHVybl90
-IHBjaV9zcmlvdl9taWdyYXRpb24oc3RydWN0IHBjaV9kZXYgKmRldik7CiBpbnQgcGNpX251bV92
-ZihzdHJ1Y3QgcGNpX2RldiAqZGV2KTsKQEAgLTE2NzAsNiArMTY3MSw5IEBAIHN0YXRpYyBpbmxp
-bmUgaW50IHBjaV9lbmFibGVfc3Jpb3Yoc3RydWMKIHsKIAlyZXR1cm4gLUVOT0RFVjsKIH0KK3N0
-YXRpYyBpbmxpbmUgdm9pZCBwY2lfYnVzX2FkZF9kZXZpY2VfdmZzKHN0cnVjdCBwY2lfZGV2ICpk
-ZXYpCit7Cit9CiBzdGF0aWMgaW5saW5lIHZvaWQgcGNpX2Rpc2FibGVfc3Jpb3Yoc3RydWN0IHBj
-aV9kZXYgKmRldikKIHsKIH0KSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9p
-bnRlbC9pZ2IvaWdiX21haW4uYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJz
-L25ldC9ldGhlcm5ldC9pbnRlbC9pZ2IvaWdiX21haW4uYworKysgbGludXgtMi42L2RyaXZlcnMv
-bmV0L2V0aGVybmV0L2ludGVsL2lnYi9pZ2JfbWFpbi5jCkBAIC0yMzY2LDYgKzIzNjYsOSBAQCBz
-dGF0aWMgaW50IGlnYl9wcm9iZShzdHJ1Y3QgcGNpX2RldiAqcGRlCiAJfQogCiAJcG1fcnVudGlt
-ZV9wdXRfbm9pZGxlKCZwZGV2LT5kZXYpOworCisJcGNpX2J1c19hZGRfZGV2aWNlX3ZmcyhwZGV2
-KTsKKwogCXJldHVybiAwOwogCiBlcnJfcmVnaXN0ZXI6CkBAIC03Mjc4LDggKzcyODEsMTIgQEAg
-c3RhdGljIGludCBpZ2JfcGNpX3NyaW92X2NvbmZpZ3VyZShzdHJ1YwogI2lmZGVmIENPTkZJR19Q
-Q0lfSU9WCiAJaWYgKG51bV92ZnMgPT0gMCkKIAkJcmV0dXJuIGlnYl9wY2lfZGlzYWJsZV9zcmlv
-dihkZXYpOwotCWVsc2UKLQkJcmV0dXJuIGlnYl9wY2lfZW5hYmxlX3NyaW92KGRldiwgbnVtX3Zm
-cyk7CisJZWxzZSB7CisJCWludCByZXQgPSBpZ2JfcGNpX2VuYWJsZV9zcmlvdihkZXYsIG51bV92
-ZnMpOworCQlpZiAocmV0ID4gMCkKKwkJCXBjaV9idXNfYWRkX2RldmljZV92ZnMoZGV2KTsKKwkJ
-cmV0dXJuIHJldDsKKwl9CiAjZW5kaWYKIAlyZXR1cm4gMDsKIH0KSW5kZXg6IGxpbnV4LTIuNi9k
-cml2ZXJzL25ldC9ldGhlcm5ldC9pbnRlbC9peGdiZS9peGdiZV9zcmlvdi5jCj09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
-LS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvbmV0L2V0aGVybmV0L2ludGVsL2l4Z2JlL2l4Z2Jl
-X3NyaW92LmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9pbnRlbC9peGdiZS9p
-eGdiZV9zcmlvdi5jCkBAIC0zNDYsOCArMzQ2LDEzIEBAIGludCBpeGdiZV9wY2lfc3Jpb3ZfY29u
-ZmlndXJlKHN0cnVjdCBwY2kKIHsKIAlpZiAobnVtX3ZmcyA9PSAwKQogCQlyZXR1cm4gaXhnYmVf
-cGNpX3NyaW92X2Rpc2FibGUoZGV2KTsKLQllbHNlCi0JCXJldHVybiBpeGdiZV9wY2lfc3Jpb3Zf
-ZW5hYmxlKGRldiwgbnVtX3Zmcyk7CisJZWxzZSB7CisJCWludCByZXQgPSBpeGdiZV9wY2lfc3Jp
-b3ZfZW5hYmxlKGRldiwgbnVtX3Zmcyk7CisKKwkJaWYgKHJldCA+IDApCisJCQlwY2lfYnVzX2Fk
-ZF9kZXZpY2VfdmZzKGRldik7CisJCXJldHVybiByZXQ7CisJfQogfQogCiBzdGF0aWMgaW50IGl4
-Z2JlX3NldF92Zl9tdWx0aWNhc3RzKHN0cnVjdCBpeGdiZV9hZGFwdGVyICphZGFwdGVyLApJbmRl
-eDogbGludXgtMi42L2RyaXZlcnMvbmV0L2V0aGVybmV0L2ludGVsL2l4Z2JlL2l4Z2JlX21haW4u
-Ywo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL25ldC9ldGhlcm5ldC9pbnRl
-bC9peGdiZS9peGdiZV9tYWluLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9p
-bnRlbC9peGdiZS9peGdiZV9tYWluLmMKQEAgLTc2NTgsNiArNzY1OCw4IEBAIHNraXBfc3Jpb3Y6
-CiAJCQlJWEdCRV9MSU5LX1NQRUVEXzEwR0JfRlVMTCB8IElYR0JFX0xJTktfU1BFRURfMUdCX0ZV
-TEwsCiAJCQl0cnVlKTsKIAorCXBjaV9idXNfYWRkX2RldmljZV92ZnMocGRldik7CisKIAlyZXR1
-cm4gMDsKIAogZXJyX3JlZ2lzdGVyOgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvc2NzaS9scGZj
-L2xwZmNfaW5pdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvc2NzaS9s
-cGZjL2xwZmNfaW5pdC5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9zY3NpL2xwZmMvbHBmY19pbml0
-LmMKQEAgLTEwNTgyLDYgKzEwNTgyLDggQEAgbHBmY19wY2lfcHJvYmVfb25lKHN0cnVjdCBwY2lf
-ZGV2ICpwZGV2LAogCWVsc2UKIAkJcmMgPSBscGZjX3BjaV9wcm9iZV9vbmVfczMocGRldiwgcGlk
-KTsKIAorCXBjaV9idXNfYWRkX2RldmljZV92ZnMocGRldik7CisKIAlyZXR1cm4gcmM7CiB9CiAK
-SW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9lbXVsZXgvYmVuZXQvYmVfbWFp
-bi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvbmV0L2V0aGVybmV0L2Vt
-dWxleC9iZW5ldC9iZV9tYWluLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9l
-bXVsZXgvYmVuZXQvYmVfbWFpbi5jCkBAIC00MTExLDYgKzQxMTEsNyBAQCBzdGF0aWMgaW50IGxh
-bmNlcl9yZWNvdmVyX2Z1bmMoc3RydWN0IGJlCiAJaWYgKHN0YXR1cykKIAkJZ290byBlcnI7CiAK
-KwlwY2lfYnVzX2FkZF9kZXZpY2VfdmZzKGFkYXB0ZXItPnBkZXYpOwogCWlmIChuZXRpZl9ydW5u
-aW5nKGFkYXB0ZXItPm5ldGRldikpIHsKIAkJc3RhdHVzID0gYmVfb3BlbihhZGFwdGVyLT5uZXRk
-ZXYpOwogCQlpZiAoc3RhdHVzKQpAQCAtNDMyNyw2ICs0MzI4LDggQEAgc3RhdGljIGludCBiZV9w
-cm9iZShzdHJ1Y3QgcGNpX2RldiAqcGRldgogCWRldl9pbmZvKCZwZGV2LT5kZXYsICIlczogJXMg
-JXMgcG9ydCAlY1xuIiwgbmljX25hbWUocGRldiksCiAJCSBmdW5jX25hbWUoYWRhcHRlciksIG1j
-X25hbWUoYWRhcHRlciksIHBvcnRfbmFtZSk7CiAKKwlwY2lfYnVzX2FkZF9kZXZpY2VfdmZzKHBk
-ZXYpOworCiAJcmV0dXJuIDA7CiAKIHVuc2V0dXA6CkBAIC00Mzk4LDYgKzQ0MDEsNyBAQCBzdGF0
-aWMgaW50IGJlX3Jlc3VtZShzdHJ1Y3QgcGNpX2RldiAqcGRlCiAJCXJ0bmxfdW5sb2NrKCk7CiAJ
-fQogCisJcGNpX2J1c19hZGRfZGV2aWNlX3ZmcyhhZGFwdGVyLT5wZGV2KTsKIAlzY2hlZHVsZV9k
-ZWxheWVkX3dvcmsoJmFkYXB0ZXItPmZ1bmNfcmVjb3Zlcnlfd29yaywKIAkJCSAgICAgIG1zZWNz
-X3RvX2ppZmZpZXMoMTAwMCkpOwogCW5ldGlmX2RldmljZV9hdHRhY2gobmV0ZGV2KTsKSW5kZXg6
-IGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9xbG9naWMvcWxjbmljL3FsY25pY19zcmlv
-dl9wZi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvbmV0L2V0aGVybmV0
-L3Fsb2dpYy9xbGNuaWMvcWxjbmljX3NyaW92X3BmLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL25l
-dC9ldGhlcm5ldC9xbG9naWMvcWxjbmljL3FsY25pY19zcmlvdl9wZi5jCkBAIC01NjgsOCArNTY4
-LDExIEBAIGludCBxbGNuaWNfcGNpX3NyaW92X2NvbmZpZ3VyZShzdHJ1Y3QgcGMKIAogCWlmIChu
-dW1fdmZzID09IDApCiAJCWVyciA9IHFsY25pY19wY2lfc3Jpb3ZfZGlzYWJsZShhZGFwdGVyKTsK
-LQllbHNlCisJZWxzZSB7CiAJCWVyciA9IHFsY25pY19wY2lfc3Jpb3ZfZW5hYmxlKGFkYXB0ZXIs
-IG51bV92ZnMpOworCQlpZiAoZXJyID4gMCkKKwkJCXBjaV9idXNfYWRkX2RldmljZV92ZnMoZGV2
-KTsKKwl9CiAKIAljbGVhcl9iaXQoX19RTENOSUNfUkVTRVRUSU5HLCAmYWRhcHRlci0+c3RhdGUp
-OwogCXJldHVybiBlcnI7CkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9uZXQvZXRoZXJuZXQvYnJv
-YWRjb20vYm54MngvYm54Mnhfc3Jpb3YuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9k
-cml2ZXJzL25ldC9ldGhlcm5ldC9icm9hZGNvbS9ibngyeC9ibngyeF9zcmlvdi5jCisrKyBsaW51
-eC0yLjYvZHJpdmVycy9uZXQvZXRoZXJuZXQvYnJvYWRjb20vYm54MngvYm54Mnhfc3Jpb3YuYwpA
-QCAtMzA0OCw3ICszMDQ4LDEyIEBAIGludCBibngyeF9zcmlvdl9jb25maWd1cmUoc3RydWN0IHBj
-aV9kZXYKIAkJcGNpX2Rpc2FibGVfc3Jpb3YoZGV2KTsKIAkJcmV0dXJuIDA7CiAJfSBlbHNlIHsK
-LQkJcmV0dXJuIGJueDJ4X2VuYWJsZV9zcmlvdihicCk7CisJCWludCByZXQgPSBibngyeF9lbmFi
-bGVfc3Jpb3YoYnApOworCisJCWlmIChyZXQgPiAwKQorCQkJcGNpX2J1c19hZGRfZGV2aWNlX3Zm
-cyhkZXYpOworCisJCXJldHVybiAwOwogCX0KIH0KIApJbmRleDogbGludXgtMi42L2RyaXZlcnMv
-bmV0L2V0aGVybmV0L2NoZWxzaW8vY3hnYjQvY3hnYjRfbWFpbi5jCj09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxp
-bnV4LTIuNi5vcmlnL2RyaXZlcnMvbmV0L2V0aGVybmV0L2NoZWxzaW8vY3hnYjQvY3hnYjRfbWFp
-bi5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9uZXQvZXRoZXJuZXQvY2hlbHNpby9jeGdiNC9jeGdi
-NF9tYWluLmMKQEAgLTU3NDksMTAgKzU3NDksMTIgQEAgc3RhdGljIGludCBpbml0X29uZShzdHJ1
-Y3QgcGNpX2RldiAqcGRldgogc3Jpb3Y6CiAjaWZkZWYgQ09ORklHX1BDSV9JT1YKIAlpZiAoZnVu
-YyA8IEFSUkFZX1NJWkUobnVtX3ZmKSAmJiBudW1fdmZbZnVuY10gPiAwKQotCQlpZiAocGNpX2Vu
-YWJsZV9zcmlvdihwZGV2LCBudW1fdmZbZnVuY10pID09IDApCisJCWlmIChwY2lfZW5hYmxlX3Ny
-aW92KHBkZXYsIG51bV92ZltmdW5jXSkgPT0gMCkgewogCQkJZGV2X2luZm8oJnBkZXYtPmRldiwK
-IAkJCQkgImluc3RhbnRpYXRlZCAldSB2aXJ0dWFsIGZ1bmN0aW9uc1xuIiwKIAkJCQkgbnVtX3Zm
-W2Z1bmNdKTsKKwkJCXBjaV9idXNfYWRkX2RldmljZV92ZnMocGRldik7CisJCX0KICNlbmRpZgog
-CXJldHVybiAwOwogCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9uZXQvZXRoZXJuZXQvY2lzY28v
-ZW5pYy9lbmljX21haW4uYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL25l
-dC9ldGhlcm5ldC9jaXNjby9lbmljL2VuaWNfbWFpbi5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9u
-ZXQvZXRoZXJuZXQvY2lzY28vZW5pYy9lbmljX21haW4uYwpAQCAtMjUyNCw2ICsyNTI0LDggQEAg
-c3RhdGljIGludCBlbmljX3Byb2JlKHN0cnVjdCBwY2lfZGV2ICpwZAogCQlnb3RvIGVycl9vdXRf
-ZGV2X2RlaW5pdDsKIAl9CiAKKwlwY2lfYnVzX2FkZF9kZXZpY2VfdmZzKHBkZXYpOworCiAJcmV0
-dXJuIDA7CiAKIGVycl9vdXRfZGV2X2RlaW5pdDoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL25l
-dC9ldGhlcm5ldC9uZXRlcmlvbi92eGdlL3Z4Z2UtbWFpbi5jCj09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4
-LTIuNi5vcmlnL2RyaXZlcnMvbmV0L2V0aGVybmV0L25ldGVyaW9uL3Z4Z2UvdnhnZS1tYWluLmMK
-KysrIGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9uZXRlcmlvbi92eGdlL3Z4Z2UtbWFp
-bi5jCkBAIC00NzMxLDYgKzQ3MzEsOSBAQCB2eGdlX3Byb2JlKHN0cnVjdCBwY2lfZGV2ICpwZGV2
-LCBjb25zdCBzCiAJCXZ4Z2VfaHdfZGV2aWNlX3RyYWNlX2xldmVsX2dldChobGRldikpOwogCiAJ
-a2ZyZWUobGxfY29uZmlnKTsKKworCXBjaV9idXNfYWRkX2RldmljZV92ZnMocGRldik7CisKIAly
-ZXR1cm4gMDsKIAogX2V4aXQ2OgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvbmV0L2V0aGVybmV0
-L3NmYy9lZnguYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL25ldC9ldGhl
-cm5ldC9zZmMvZWZ4LmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL25ldC9ldGhlcm5ldC9zZmMvZWZ4
-LmMKQEAgLTI4MjQsNiArMjgyNCw3IEBAIHN0YXRpYyBpbnQgZWZ4X3BjaV9wcm9iZShzdHJ1Y3Qg
-cGNpX2RldgogCQluZXRpZl93YXJuKGVmeCwgcHJvYmUsIGVmeC0+bmV0X2RldiwKIAkJCSAgICJw
-Y2lfZW5hYmxlX3BjaWVfZXJyb3JfcmVwb3J0aW5nIGZhaWxlZCAoJWQpXG4iLCByYyk7CiAKKwlw
-Y2lfYnVzX2FkZF9kZXZpY2VfdmZzKHBjaV9kZXYpOwogCXJldHVybiAwOwogCiAgZmFpbDQ6Cg==
---90e6ba6e901c34c33504e220e34e--
+--Dxnq1zWXvFF0Q93v--
