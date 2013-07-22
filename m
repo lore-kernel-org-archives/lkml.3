@@ -1,108 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab3GVQ35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:29:57 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54208 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932101Ab3GVQ34 (ORCPT
+	id S932608Ab3GVQa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:30:59 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:61615 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab3GVQa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:29:56 -0400
-Message-ID: <1374510594.29650.1.camel@x61.thuisdomein>
-Subject: Re: [PATCH 11/48] staging/lustre/ptlrpc: Translate between host and
- network errnos
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Li Wei <wei.g.li@intel.com>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Date: Mon, 22 Jul 2013 18:29:54 +0200
-In-Reply-To: <1374509230-3324-12-git-send-email-bergwolf@gmail.com>
-References: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
-	 <1374509230-3324-12-git-send-email-bergwolf@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Jul 2013 16:29:54.0581 (UTC) FILETIME=[B28B5450:01CE86F8]
-X-RcptDomain: vger.kernel.org
+	Mon, 22 Jul 2013 12:30:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAB=otbR-n7f=O3+YTPnfO6wRWz2aEcUnbjHoD746GsNgFW3tzQ@mail.gmail.com>
+References: <1374235814-17834-1-git-send-email-ruslan.bilovol@ti.com>
+	<51E948F0.4070307@ti.com>
+	<CAB=otbR-n7f=O3+YTPnfO6wRWz2aEcUnbjHoD746GsNgFW3tzQ@mail.gmail.com>
+Date: Mon, 22 Jul 2013 19:30:55 +0300
+X-Google-Sender-Auth: ZuHxoyqG3ZoXr-NVbBe14xOCaEo
+Message-ID: <CAB=otbSCzM8U=tJBseeA0MXcmrnp7v_9mj7=hq0=nRUGhYm2mA@mail.gmail.com>
+Subject: Re: [PATCH] arm: dts: twl6030: typical connection to omap4 as a
+ separate dtsi file
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: benoit.cousson@linaro.org, tony@atomide.com, devicetree@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        uri.y@variscite.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 00:06 +0800, Peng Tao wrote:
-> From: Li Wei <wei.g.li@intel.com>
-> 
-> Lustre puts system errors (e.g., ENOTCONN) on wire as numbers
-> essentially specific to senders' architectures.  While this is fine
-> for x86-only sites, where receivers share the same error number
-> definition with senders, problems will arise, however, for sites
-> involving multiple architectures with different error number
-> definitions.  For instance, an ENOTCONN reply from a sparc server will
-> be put on wire as -57, which, for an x86 client, means EBADSLT
-> instead.
-> 
-> To solve the problem, this patch defines a set of network errors for
-> on-wire or on-disk uses.  These errors correspond to a subset of the
-> x86 system errors and share the same number definition, maintaining
-> compatibility with existing x86 clients and servers.
-> 
-> Then, either error numbers could be translated at run time, or all
-> host errors going on wire could be replaced with network errors in the
-> code.  This patch does the former by introducing both generic and
-> field-specific translation routines and calling them at proper places,
-> so that translations for existing fields are transparent.
-> (Personally, I tend to think the latter way might be worthwhile, as it
-> is more straightforward conceptually.  Do we really need so many
-> different errors?  Should errors returned by kernel routines really be
-> passed up and eventually put on wire?  There could even be security
-> implications in that.)
-> 
-> Thank Fujitsu for the original idea and their contributions that make
-> this available upstream.
-> 
-> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2743
-> Lustre-change: http://review.whamcloud.com/5577
-> Signed-off-by: Li Wei <wei.g.li@intel.com>
-> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-> Reviewed-by: Hiroya Nozaki <nozaki.hiroya@jp.fujitsu.com>
-> Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-> Signed-off-by: Peng Tao <tao.peng@emc.com>
-> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
-> ---
->  drivers/staging/lustre/lustre/Kconfig              |    5 +
->  .../lustre/lustre/include/lustre/lustre_errno.h    |  215 +++++++++++
->  .../lustre/lustre/include/lustre/lustre_idl.h      |    2 +
->  drivers/staging/lustre/lustre/include/lustre_net.h |   32 ++
->  drivers/staging/lustre/lustre/ldlm/ldlm_lock.c     |    3 +-
->  drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c    |    2 +
->  drivers/staging/lustre/lustre/ldlm/ldlm_request.c  |    6 +-
->  drivers/staging/lustre/lustre/mdc/mdc_locks.c      |   10 +
->  drivers/staging/lustre/lustre/mdc/mdc_request.c    |    1 +
->  drivers/staging/lustre/lustre/osc/osc_request.c    |    2 +
->  drivers/staging/lustre/lustre/ptlrpc/Makefile      |    1 +
->  drivers/staging/lustre/lustre/ptlrpc/errno.c       |  382 ++++++++++++++++++++
->  drivers/staging/lustre/lustre/ptlrpc/niobuf.c      |    3 +-
->  .../staging/lustre/lustre/ptlrpc/pack_generic.c    |    3 +
->  14 files changed, 662 insertions(+), 5 deletions(-)
->  create mode 100644 drivers/staging/lustre/lustre/include/lustre/lustre_errno.h
->  create mode 100644 drivers/staging/lustre/lustre/ptlrpc/errno.c
-> 
-> diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
-> index 0a8eb1ad..19a1c33 100644
-> --- a/drivers/staging/lustre/lustre/Kconfig
-> +++ b/drivers/staging/lustre/lustre/Kconfig
-> @@ -59,3 +59,8 @@ config LUSTRE_DEBUG_EXPENSIVE_CHECK
->  	  expensive checks that may have a performance impact.
->  
->  	  Use with caution. If unsure, say N.
-> +
-> +config LUSTRE_TRANSLATE_ERRNOS
-> +	bool
-> +	depends on LUSTRE_FS && !X86
-> +	default true
+Also CCing correct devicetree list that was changed recently
 
-Did you mean "default y"?
-
-
-Paul Bolle
-
+On Mon, Jul 22, 2013 at 7:24 PM, Ruslan Bilovol <ruslan.bilovol@ti.com> wrote:
+> Hi Nishanth,
+>
+> On Fri, Jul 19, 2013 at 5:10 PM, Nishanth Menon <nm@ti.com> wrote:
+>>
+>> On 07/19/2013 07:10 AM, Ruslan Bilovol wrote:
+>>>
+>>> The OMAP4 SoC family uses specially-designed
+>>> PMIC (power management IC) companion chip for power
+>>> management needs: TWL6030/TWL6032.
+>>> Therefore there is a typical connection of PMIC to OMAP4
+>>> so we can figure it out into separate .dtsi file
+>>> and do not duplicate over board-specific files.
+>>>
+>>> Tested on OMAP4 SDP board and compile-tested for Panda board
+>>>
+>>> Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+>>> ---
+>>>   arch/arm/boot/dts/omap4-panda-common.dtsi |   21 +---------------
+>>>   arch/arm/boot/dts/omap4-sdp.dts           |   21 +---------------
+>>>   arch/arm/boot/dts/twl6030_omap4.dtsi      |   38
+>>> +++++++++++++++++++++++++++++
+>>
+>> arch/arm/boot/dts/omap4-var-som.dts ?
+>
+> There is no muxing for TWL6030 in that file at all, so I didn't add it.
+> Moreover, that file seems to be not maintained since added (just
+> generic fixes or framework changes that came to all other files)
+> Second thing - I do not have schematics and HW for verification.
+> But if somebody from Variscite can confirm that omap4 is typically
+> connected to PMIC, I'm happy to add it as separate patch.
+> So I CCed Uri Yosef who is original author of the omap4-var-som.dts
+>
+> Regards,
+> Ruslan
+>
+>>
+>>>   3 files changed, 40 insertions(+), 40 deletions(-)
+>>>   create mode 100644 arch/arm/boot/dts/twl6030_omap4.dtsi
+>>>
+>>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>> b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>> index faa95b5..d796302 100644
+>>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>>> @@ -109,23 +109,9 @@
+>>>         };
+>>>   };
+>>>
+>>> -&omap4_pmx_wkup {
+>>> -       pinctrl-names = "default";
+>>> -       pinctrl-0 = <
+>>> -                       &twl6030_wkup_pins
+>>> -       >;
+>>> -
+>>> -       twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
+>>> -               pinctrl-single,pins = <
+>>> -                       0x14 (PIN_OUTPUT | MUX_MODE2)           /*
+>>> fref_clk0_out.sys_drm_msecure */
+>>> -               >;
+>>> -       };
+>>> -};
+>>> -
+>>>   &omap4_pmx_core {
+>>>         pinctrl-names = "default";
+>>>         pinctrl-0 = <
+>>> -                       &twl6030_pins
+>>>                         &twl6040_pins
+>>>                         &mcpdm_pins
+>>>                         &mcbsp1_pins
+>>> @@ -134,12 +120,6 @@
+>>>                         &hsusbb1_pins
+>>>         >;
+>>>
+>>> -       twl6030_pins: pinmux_twl6030_pins {
+>>> -               pinctrl-single,pins = <
+>>> -                       0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
+>>> /* sys_nirq1.sys_nirq1 */
+>>> -               >;
+>>> -       };
+>>> -
+>>>         twl6040_pins: pinmux_twl6040_pins {
+>>>                 pinctrl-single,pins = <
+>>>                         0xe0 (PIN_OUTPUT | MUX_MODE3)   /*
+>>> hdq_sio.gpio_127 */
+>>> @@ -265,6 +245,7 @@
+>>>   };
+>>>
+>>>   #include "twl6030.dtsi"
+>>> +#include "twl6030_omap4.dtsi"
+>>>
+>>>   &i2c2 {
+>>>         pinctrl-names = "default";
+>>> diff --git a/arch/arm/boot/dts/omap4-sdp.dts
+>>> b/arch/arm/boot/dts/omap4-sdp.dts
+>>> index 7951b4e..91030c3 100644
+>>> --- a/arch/arm/boot/dts/omap4-sdp.dts
+>>> +++ b/arch/arm/boot/dts/omap4-sdp.dts
+>>> @@ -142,23 +142,9 @@
+>>>         };
+>>>   };
+>>>
+>>> -&omap4_pmx_wkup {
+>>> -       pinctrl-names = "default";
+>>> -       pinctrl-0 = <
+>>> -                       &twl6030_wkup_pins
+>>> -       >;
+>>> -
+>>> -       twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
+>>> -               pinctrl-single,pins = <
+>>> -                       0x14 (PIN_OUTPUT | MUX_MODE2)           /*
+>>> fref_clk0_out.sys_drm_msecure */
+>>> -               >;
+>>> -       };
+>>> -};
+>>> -
+>>>   &omap4_pmx_core {
+>>>         pinctrl-names = "default";
+>>>         pinctrl-0 = <
+>>> -                       &twl6030_pins
+>>>                         &twl6040_pins
+>>>                         &mcpdm_pins
+>>>                         &dmic_pins
+>>> @@ -193,12 +179,6 @@
+>>>                 >;
+>>>         };
+>>>
+>>> -       twl6030_pins: pinmux_twl6030_pins {
+>>> -               pinctrl-single,pins = <
+>>> -                       0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
+>>> /* sys_nirq1.sys_nirq1 */
+>>> -               >;
+>>> -       };
+>>> -
+>>>         twl6040_pins: pinmux_twl6040_pins {
+>>>                 pinctrl-single,pins = <
+>>>                         0xe0 (PIN_OUTPUT | MUX_MODE3)           /*
+>>> hdq_sio.gpio_127 */
+>>> @@ -337,6 +317,7 @@
+>>>   };
+>>>
+>>>   #include "twl6030.dtsi"
+>>> +#include "twl6030_omap4.dtsi"
+>>>
+>>>   &i2c2 {
+>>>         pinctrl-names = "default";
+>>> diff --git a/arch/arm/boot/dts/twl6030_omap4.dtsi
+>>> b/arch/arm/boot/dts/twl6030_omap4.dtsi
+>>> new file mode 100644
+>>> index 0000000..a4fa570
+>>> --- /dev/null
+>>> +++ b/arch/arm/boot/dts/twl6030_omap4.dtsi
+>>> @@ -0,0 +1,38 @@
+>>> +/*
+>>> + * Copyright (C) 2013 Texas Instruments Incorporated -
+>>> http://www.ti.com/
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License version 2 as
+>>> + * published by the Free Software Foundation.
+>>> + */
+>>> +
+>>> +&twl {
+>>> +       /*
+>>> +        * On most OMAP4 platforms, the twl6030 IRQ line is connected
+>>> +        * to the SYS_NIRQ1 line on OMAP and the twl6030 MSECURE line is
+>>> +        * connected to the fref_clk0_out.sys_drm_msecure line.
+>>> +        * Therefore, configure the defaults for the SYS_NIRQ1 and
+>>> +        * fref_clk0_out.sys_drm_msecure pins here.
+>>> +        */
+>>> +       pinctrl-names = "default";
+>>> +       pinctrl-0 = <
+>>> +               &twl6030_pins
+>>> +               &twl6030_wkup_pins
+>>> +       >;
+>>> +};
+>>> +
+>>> +&omap4_pmx_wkup {
+>>> +       twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
+>>> +               pinctrl-single,pins = <
+>>> +                       0x14 (PIN_OUTPUT | MUX_MODE2)           /*
+>>> fref_clk0_out.sys_drm_msecure */
+>>> +               >;
+>>> +       };
+>>> +};
+>>> +
+>>> +&omap4_pmx_core {
+>>> +       twl6030_pins: pinmux_twl6030_pins {
+>>> +               pinctrl-single,pins = <
+>>> +                       0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
+>>> /* sys_nirq1.sys_nirq1 */
+>>> +               >;
+>>> +       };
+>>> +};
+>>>
+>>
+>>
+>> --
+>> Regards,
+>> Nishanth Menon
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
