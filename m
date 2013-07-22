@@ -1,128 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3GVFPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 01:15:44 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12358 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047Ab3GVFPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 01:15:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 21 Jul 2013 22:14:37 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <linus.walleij@linaro.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
-        <kishon@ti.com>, <j-keerthy@ti.com>, <gg@slimlogic.co.uk>,
-        <swarren@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3] gpio: palmas: add dt support
-Date: Mon, 22 Jul 2013 10:42:57 +0530
-Message-ID: <1374469977-8805-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756329Ab3GVFP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 01:15:56 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49967 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756299Ab3GVFPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 01:15:54 -0400
+Message-ID: <1374470152.2061.28.camel@joe-AO722>
+Subject: Re: [PATCH 03/18] MAINTAINERS: OMAP POWERDOMAIN, update patterns
+From: Joe Perches <joe@perches.com>
+To: Paul Walmsley <paul@pwsan.com>, Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        cesarb@cesarb.net
+Date: Sun, 21 Jul 2013 22:15:52 -0700
+In-Reply-To: <alpine.DEB.2.02.1307220501390.4804@utopia.booyaka.com>
+References: <cover.1374451988.git.joe@perches.com>
+	 <8c1406e78f8536ff46ad9000b5634487243d5854.1374451988.git.joe@perches.com>
+	 <alpine.DEB.2.02.1307220501390.4804@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_device_id table for Palma GPIO to be enable the
-driver from DT file.
+On Mon, 2013-07-22 at 05:03 +0000, Paul Walmsley wrote:
+> On Sun, 21 Jul 2013, Joe Perches wrote:
+> 
+> > commit 498153995b9 ("ARM: OMAP2+: powerdomain/PRM: move the
+> > low-level powerdomain") renamed the files, update the patterns.
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > cc: Paul Walmsley <paul@pwsan.com>
+> > cc: Rajendra Nayak <rnayak@ti.com>
+> > cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> 
+> I don't object to the content of this patch, but Cesar 
+> Eduardo Barros posted a patch for this already (and cc'ed you) back 
+> in March:
+> 
+> http://lkml.indiana.edu/hypermail/linux/kernel/1303.0/00904.html
+> 
+> The regex used in his pattern is also more accurate.  Please take his 
+> patch instead, or credit him in your patch and use the cm*.[ch]/prm*.[ch] 
+> notation from his patch.
 
-The driver can be registered from DT file as:
-	palmas: tps65913@58 {
-		:::::::::::
-		palmas_gpio: palmas_gpio {
-			compatible = "ti,palmas-gpio";
-			gpio-controller;
-			#gpio-cells = <2>;
-		};
-	};
+(cc'ing Cesar)
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Long back, I sent the similar patch but it was paused due to the DT binding.
-http://lkml.indiana.edu/hypermail/linux/kernel/1304.2/00261.html
+Hi Paul.
 
-Now, PMIC DT binding is already finalised and as per mfd binding, we can
-go ahead with similar approach for gpios. pmic and other palams sub devices
-are already following the same approach.
+I'm not the MAINTAINERS maintainer and I don't
+pick up patches.
 
-Sending 3rd version of the change which is same as per code is related but
-adding devicetree binding document for gpio also at this time.
+I certainly don't object at all if Andrew picks
+up the patches you mentioned and drops these 2.
 
-Reposting to include devicetree@vger.kernel.org.
+Andrew, here are links to Cesar's original patches
+https://patchwork.kernel.org/project/LKML/list/?submitter=3513
+https://lkml.org/lkml/2013/3/2/185
 
+It seems a few are similar/duplicated to these 18.
 
- .../devicetree/bindings/gpio/gpio-palmas.txt       |   25 ++++++++++++++++++++
- drivers/gpio/gpio-palmas.c                         |   12 ++++++++-
- 2 files changed, 36 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-palmas.txt
+Cesar, maybe you should resend yours.  I thought
+they were applied and forgot all about them.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-palmas.txt b/Documentation/devicetree/bindings/gpio/gpio-palmas.txt
-new file mode 100644
-index 0000000..207eb29
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-palmas.txt
-@@ -0,0 +1,25 @@
-+Palmas GPIO controller bindings
-+
-+Required properties:
-+- compatible:
-+  - "ti,palams-gpio" for palma series of the GPIO controller
-+  - "ti,tps80036-gpio" for Palma series device TPS80036.
-+  - "ti,tps65913-gpio" for palma series device TPS65913.
-+  - "ti,tps65914-gpio" for palma series device TPS65914.
-+- #gpio-cells : Should be two.
-+  - first cell is the gpio pin number
-+  - second cell is used to specify optional parameters (unused)
-+- gpio-controller : Marks the device node as a GPIO controller.
-+
-+Note: This gpio node will be sub node of palmas node.
-+
-+Example:
-+	palmas: tps65913@58 {
-+		:::::::::::
-+		palmas_gpio: palmas_gpio {
-+			compatible = "ti,palmas-gpio";
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+		};
-+		:::::::::::
-+	};
-diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
-index e3a4e56..09360c4 100644
---- a/drivers/gpio/gpio-palmas.c
-+++ b/drivers/gpio/gpio-palmas.c
-@@ -134,7 +134,7 @@ static int palmas_gpio_probe(struct platform_device *pdev)
- 	palmas_gpio->gpio_chip.get	= palmas_gpio_get;
- 	palmas_gpio->gpio_chip.dev = &pdev->dev;
- #ifdef CONFIG_OF_GPIO
--	palmas_gpio->gpio_chip.of_node = palmas->dev->of_node;
-+	palmas_gpio->gpio_chip.of_node = pdev->dev.of_node;
- #endif
- 	palmas_pdata = dev_get_platdata(palmas->dev);
- 	if (palmas_pdata && palmas_pdata->gpio_base)
-@@ -159,9 +159,19 @@ static int palmas_gpio_remove(struct platform_device *pdev)
- 	return gpiochip_remove(&palmas_gpio->gpio_chip);
- }
- 
-+static struct of_device_id of_palmas_gpio_match[] = {
-+	{ .compatible = "ti,palmas-gpio"},
-+	{ .compatible = "ti,tps65913-gpio"},
-+	{ .compatible = "ti,tps65914-gpio"},
-+	{ .compatible = "ti,tps80036-gpio"},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
-+
- static struct platform_driver palmas_gpio_driver = {
- 	.driver.name	= "palmas-gpio",
- 	.driver.owner	= THIS_MODULE,
-+	.driver.of_match_table = of_palmas_gpio_match,
- 	.probe		= palmas_gpio_probe,
- 	.remove		= palmas_gpio_remove,
- };
--- 
-1.7.1.1
+cheers, Joe
 
