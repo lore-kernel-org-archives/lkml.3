@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751205Ab3GVWDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 18:03:34 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:54562 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab3GVWDc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 18:03:32 -0400
-Message-ID: <51EDAC31.8090306@linaro.org>
-Date: Mon, 22 Jul 2013 15:03:29 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1751403Ab3GVWDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 18:03:46 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3719 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241Ab3GVWDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 18:03:45 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <51EDAC37.80305@broadcom.com>
+Date: Mon, 22 Jul 2013 15:03:35 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH -v2] RTC: Add an alarm disable quirk
-References: <1374162294-29726-1-git-send-email-bp@alien8.de> <51E8194E.1030704@linaro.org> <20130718225349.GD15992@pd.tnic> <20130719142628.GC19581@pd.tnic> <20130719151321.GD19581@pd.tnic> <20130719213458.GF19581@pd.tnic> <20130720170023.GB13731@pd.tnic> <51ED9D7A.1050201@linaro.org> <20130722211927.GD4613@pd.tnic>
-In-Reply-To: <20130722211927.GD4613@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Lee Jones" <lee.jones@linaro.org>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 05/22] ARM: dts: bcm281xx: Remove '0x's from
+ BCM11351 BRT DTS file
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-5-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1374490361-25769-5-git-send-email-lee.jones@linaro.org>
+X-WSS-ID: 7DF375471R046851205-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2013 02:19 PM, Borislav Petkov wrote:
-> On Mon, Jul 22, 2013 at 02:00:42PM -0700, John Stultz wrote:
->> Also, just to clarify, on the affected machines, with this patch,
->> wake-up alarm's will in effect be disabled, right?
-> See below.
+On 13-07-22 03:52 AM, Lee Jones wrote:
+> Cc: Christian Daudt <csd@broadcom.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   arch/arm/boot/dts/bcm11351-brt.dts | 6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
 >
->>> @@ -385,6 +418,9 @@ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
->>>   	if (!is_valid_irq(cmos->irq))
->>>   		return -EINVAL;
->>> +	if (!disable_alarm)
->>> +		return 0;
->>> +
->> Did you want this in cmos_alarm_irq_enable? Or cmos_irq_disable?
-> You're right - the first version did call it only in rtc_alarm_disable()
-> so I should move it to cmos_alarm_disable(). Will fix.
->
-> Btw, I did some more runs on the weekend. It seems, the setting of the
-> alarm interrupt bit in RTC_CONTROL doesn't matter. I dumped its contents
-> on shutdown and I had cases where it was 0x22 (bit 5 set) and 0x2.
+> diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
+> index 67ec524..fdace5d 100644
+> --- a/arch/arm/boot/dts/bcm11351-brt.dts
+> +++ b/arch/arm/boot/dts/bcm11351-brt.dts
+> @@ -27,18 +27,18 @@
+>   		status = "okay";
+>   	};
+>   
+> -	sdio0: sdio@0x3f180000 {
+> +	sdio0: sdio@3f180000 {
+>   		max-frequency = <48000000>;
+>   		status = "okay";
+>   	};
+>   
+> -	sdio1: sdio@0x3f190000 {
+> +	sdio1: sdio@3f190000 {
+>   		non-removable;
+>   		max-frequency = <48000000>;
+>   		status = "okay";
+>   	};
+>   
+> -	sdio3: sdio@0x3f1b0000 {
+> +	sdio3: sdio@3f1b0000 {
+>   		max-frequency = <48000000>;
+>   		status = "okay";
+>   	};
+Acked-by: Christian Daudt <csd@broadcom.com>
 
-It doesn't matter in what way?  I get you're saying you had cases where 
-the alarm irq was set and non-set on shutdown, but I'm confused as to 
-what the result was. Did it boot up immediately on shutdown in both cases?
+  Thanks,
+    csd
 
-> So my hunch currently is us *not* disabling the alarm, doesn't make it
-> reboot the box.
-Just to avoid the double negatives, you're saying:
-* Disabling the alarm seems to cause it power on immediately on shutdown.
-* Leaving the alarm alone (even if its set?) doesn't seem to cause the 
-immediate power-on
-
-Does leaving it alone, cause eventual power-on if the wakeup alarm was 
-set for some time (say 5 mins) in the future?
-
-thanks
--john
 
