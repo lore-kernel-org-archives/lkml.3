@@ -1,145 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab3GVAkv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 20:40:51 -0400
-Received: from mail-gg0-f169.google.com ([209.85.161.169]:40897 "EHLO
-	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab3GVAkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 20:40:49 -0400
-From: David Graham White <dgwhite11@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, David Graham White <dgwhite11@gmail.com>
-Subject: [PATCH] drivers:base:core: Moved sym export macros to respective functions
-Date: Sun, 21 Jul 2013 20:41:14 -0400
-Message-Id: <1374453674-6832-1-git-send-email-dgwhite11@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754113Ab3GVAny (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 20:43:54 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44902 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753860Ab3GVAnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 20:43:53 -0400
+Message-ID: <1374453831.2061.10.camel@joe-AO722>
+Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
+From: Joe Perches <joe@perches.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Date: Sun, 21 Jul 2013 17:43:51 -0700
+In-Reply-To: <CACxGe6tJedLnM6FmvuQWTpGNFsefTn14cbnBMoWnr1gfA0seoQ@mail.gmail.com>
+References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
+	 <1374290388-19308-3-git-send-email-grant.likely@linaro.org>
+	 <CAOesGMhaAy93J=Q1STZUHHA-SbH+WXCVuUn0ef14_18du2dk6w@mail.gmail.com>
+	 <1374366577.1940.10.camel@joe-AO722>
+	 <CACxGe6tqisx19LP=5gPyF1iuBKedTLp0yK+WgmqG5Cf+a95Taw@mail.gmail.com>
+	 <CACxGe6tJedLnM6FmvuQWTpGNFsefTn14cbnBMoWnr1gfA0seoQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved 11 calls to the EXPORT_SYMBOL_GPL beneath their respective functions per
-checkpatch.pl warnings.
+On Mon, 2013-07-22 at 01:36 +0100, Grant Likely wrote:
+> On Sun, Jul 21, 2013 at 10:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> > On Sun, Jul 21, 2013 at 1:29 AM, Joe Perches <joe@perches.com> wrote:
+> >> On Sat, 2013-07-20 at 17:17 -0700, Olof Johansson wrote:
+> >>> On Fri, Jul 19, 2013 at 8:19 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> >>> > Device tree bindings require a lot more attention than they used to.
+> >>> > We've got a group of volunteers willing to take over maintaining
+> >>> > bindings. This patch adds them to the MAINTAINERS file.
+> >> []
+> >>> > diff --git a/MAINTAINERS b/MAINTAINERS
+> >> []
+> >>> > +OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
+> >> []
+> >>> > +F:     arch/*/
+> >> []
+> >>> This seems a bit broad.
+> >>
+> >> Yep, that's every file anywhere under arch.
+> >
+> > yeah, that was a c/p mistake. I'll drop that line before committing.
+> 
+> In fact, if things go well with the schema tool, it would be possible
+> to leave out the .dts files entirely as far as binding review goes.
+> The binding would be the important part and the .dts files would be
+> checked against that. That's something for the future though.
 
-Signed-off-by: David Graham White <dgwhite11@gmail.com>
----
- drivers/base/core.c | 26 +++++++++++---------------
- 1 file changed, 11 insertions(+), 15 deletions(-)
+btw: please add a terminating slash to
+     the file pattern directories
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 8856d74..4b9b0d7 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -626,6 +626,7 @@ int device_create_file(struct device *dev,
- 
- 	return error;
- }
-+EXPORT_SYMBOL_GPL(device_create_file);
- 
- /**
-  * device_remove_file - remove sysfs attribute file.
-@@ -638,6 +639,7 @@ void device_remove_file(struct device *dev,
- 	if (dev)
- 		sysfs_remove_file(&dev->kobj, &attr->attr);
- }
-+EXPORT_SYMBOL_GPL(device_remove_file);
- 
- /**
-  * device_create_bin_file - create sysfs binary attribute file for device.
-@@ -748,6 +750,7 @@ void device_initialize(struct device *dev)
- 	device_pm_init(dev);
- 	set_dev_node(dev, -1);
- }
-+EXPORT_SYMBOL_GPL(device_initialize);
- 
- struct kobject *virtual_device_parent(struct device *dev)
- {
-@@ -1187,6 +1190,7 @@ name_error:
- 	dev->p = NULL;
- 	goto done;
- }
-+EXPORT_SYMBOL_GPL(device_add);
- 
- /**
-  * device_register - register a device with the system.
-@@ -1211,6 +1215,7 @@ int device_register(struct device *dev)
- 	device_initialize(dev);
- 	return device_add(dev);
- }
-+EXPORT_SYMBOL_GPL(device_register);
- 
- /**
-  * get_device - increment reference count for device.
-@@ -1224,6 +1229,7 @@ struct device *get_device(struct device *dev)
- {
- 	return dev ? kobj_to_dev(kobject_get(&dev->kobj)) : NULL;
- }
-+EXPORT_SYMBOL_GPL(get_device);
- 
- /**
-  * put_device - decrement reference count.
-@@ -1235,6 +1241,7 @@ void put_device(struct device *dev)
- 	if (dev)
- 		kobject_put(&dev->kobj);
- }
-+EXPORT_SYMBOL_GPL(put_device);
- 
- /**
-  * device_del - delete device from system.
-@@ -1297,6 +1304,7 @@ void device_del(struct device *dev)
- 	kobject_del(&dev->kobj);
- 	put_device(parent);
- }
-+EXPORT_SYMBOL_GPL(device_del);
- 
- /**
-  * device_unregister - unregister device from system.
-@@ -1315,6 +1323,7 @@ void device_unregister(struct device *dev)
- 	device_del(dev);
- 	put_device(dev);
- }
-+EXPORT_SYMBOL_GPL(device_unregister);
- 
- static struct device *next_device(struct klist_iter *i)
- {
-@@ -1403,6 +1412,7 @@ int device_for_each_child(struct device *parent, void *data,
- 	klist_iter_exit(&i);
- 	return error;
- }
-+EXPORT_SYMBOL_GPL(device_for_each_child);
- 
- /**
-  * device_find_child - device iterator for locating a particular device.
-@@ -1437,6 +1447,7 @@ struct device *device_find_child(struct device *parent, void *data,
- 	klist_iter_exit(&i);
- 	return child;
- }
-+EXPORT_SYMBOL_GPL(device_find_child);
- 
- int __init devices_init(void)
- {
-@@ -1464,21 +1475,6 @@ int __init devices_init(void)
- 	return -ENOMEM;
- }
- 
--EXPORT_SYMBOL_GPL(device_for_each_child);
--EXPORT_SYMBOL_GPL(device_find_child);
--
--EXPORT_SYMBOL_GPL(device_initialize);
--EXPORT_SYMBOL_GPL(device_add);
--EXPORT_SYMBOL_GPL(device_register);
--
--EXPORT_SYMBOL_GPL(device_del);
--EXPORT_SYMBOL_GPL(device_unregister);
--EXPORT_SYMBOL_GPL(get_device);
--EXPORT_SYMBOL_GPL(put_device);
--
--EXPORT_SYMBOL_GPL(device_create_file);
--EXPORT_SYMBOL_GPL(device_remove_file);
--
- static DEFINE_MUTEX(device_hotplug_lock);
- 
- void lock_device_hotplug(void)
--- 
-1.8.3.2
++F:     Documentation/devicetree/
++F:     arch/*/boot/dts/
++F:     include/dt-bindings/
+
 
