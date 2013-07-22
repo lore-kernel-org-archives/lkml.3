@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab3GVQM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:12:29 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:56006 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830Ab3GVQMX (ORCPT
+	id S932952Ab3GVQMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:12:36 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:60202 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932830Ab3GVQMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:12:23 -0400
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 31/48] staging/lustre/ldlm: Fix flock deadlock detection race
-Date: Tue, 23 Jul 2013 00:06:52 +0800
-Message-Id: <1374509230-3324-32-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
-References: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
+	Mon, 22 Jul 2013 12:12:31 -0400
+Message-ID: <1374509549.15242.31.camel@x61.thuisdomein>
+Subject: Re: 3.10.1 cpufreq suspend/resume regression still present in 3.10.2
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kiko Piris <kernel@pirispons.net>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Date: Mon, 22 Jul 2013 18:12:29 +0200
+In-Reply-To: <51ED56FF.9030508@linux.vnet.ibm.com>
+References: <20130722151653.GA7213@sacarino.pirispons.net>
+	 <1374507247.15242.26.camel@x61.thuisdomein>
+	 <20130722155456.GA7836@sacarino.pirispons.net>
+	 <51ED56FF.9030508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 22 Jul 2013 16:12:29.0786 (UTC) FILETIME=[43CC43A0:01CE86F6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+Kiko,
 
-Deadlock isn't detected if 2 threads are trying to
-grant 2 locks which deadlock on each other.
-They call ldlm_flock_deadlock() simultaneously
-and deadlock ins't detected.
+On Mon, 2013-07-22 at 21:29 +0530, Srivatsa S. Bhat wrote:
+> On 07/22/2013 09:24 PM, Kiko Piris wrote: 
+> > I saw your message and was going to apply it, but I didn’t fully
+> > understand that thread and wasn’t sure exactly what patch I was supposed
+> > to try and above what version should I apply it (my “kernel skills” are
+> > very very limited).
 
-The soulition is to add lock to blocking list before
-calling ldlm_flock_deadlock()
+Perhaps my message was unclear, too terse, whatever. I wouldn't have
+minded to clarify my message (ie, "apply path x on top of release y). 
 
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-1602
-Lustre-change: http://review.whamcloud.com/3277
-Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
-Reviewed-by: Vitaly Fertman <vitaly_fertman@xyratex.com>
-Reviewed-by: Bruce Korb <bruce_korb@xyratex.com>
-Reviewed-by: Keith Mannthey <keith.mannthey@intel.com>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
----
- drivers/staging/lustre/lustre/ldlm/ldlm_flock.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+> > If you want me to test any patch, I would be more than happy to do so; I
+> > would be grafeful if you told me exactly what patch to apply and above
+> > which kernel version. 
+> 
+> Try applying the two mainline commits that I mentioned in my previous
+> mail, on top of 3.10.2 and check if it fixes your problem.
 
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-index aca1073..39973cb 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-@@ -198,6 +198,7 @@ ldlm_flock_deadlock(struct ldlm_lock *req, struct ldlm_lock *bl_lock)
- 		if (lock == NULL)
- 			break;
- 
-+		LASSERT(req != lock);
- 		flock = &lock->l_policy_data.l_flock;
- 		LASSERT(flock->owner == bl_owner);
- 		bl_owner = flock->blocking_owner;
-@@ -329,18 +330,21 @@ reprocess:
- 				RETURN(LDLM_ITER_STOP);
- 			}
- 
--			if (ldlm_flock_deadlock(req, lock)) {
--				ldlm_flock_destroy(req, mode, *flags);
--				*err = -EDEADLK;
--				RETURN(LDLM_ITER_STOP);
--			}
--
-+			/* add lock to blocking list before deadlock
-+			 * check to prevent race */
- 			rc = ldlm_flock_blocking_link(req, lock);
- 			if (rc) {
- 				ldlm_flock_destroy(req, mode, *flags);
- 				*err = rc;
- 				RETURN(LDLM_ITER_STOP);
- 			}
-+			if (ldlm_flock_deadlock(req, lock)) {
-+				ldlm_flock_blocking_unlink(req);
-+				ldlm_flock_destroy(req, mode, *flags);
-+				*err = -EDEADLK;
-+				RETURN(LDLM_ITER_STOP);
-+			}
-+
- 			ldlm_resource_add_lock(res, &res->lr_waiting, req);
- 			*flags |= LDLM_FL_BLOCK_GRANTED;
- 			RETURN(LDLM_ITER_STOP);
--- 
-1.7.9.5
+Please try what Srivatsa suggested, as Srivatsa understands this issue
+much better than I do!
+
+
+Paul Bolle
 
