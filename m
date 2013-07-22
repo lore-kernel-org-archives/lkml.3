@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab3GVGNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 02:13:46 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:32809 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756314Ab3GVGNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 02:13:43 -0400
-Date: Mon, 22 Jul 2013 01:13:39 -0500
-From: Robin Holt <holt@sgi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Sam Ben <sam.bennn@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-Message-ID: <20130722061339.GC3421@sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
- <51E628F8.6030303@gmail.com>
- <20130717093051.GK3421@sgi.com>
- <CAE9FiQUnsENuMGAXgxmJq+u-NnXW4fEXR-JKww8LY_8jOfoeBA@mail.gmail.com>
+	id S1756368Ab3GVGWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 02:22:38 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53807 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754495Ab3GVGWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 02:22:37 -0400
+Date: Mon, 22 Jul 2013 07:22:32 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: drmichaelschuster@web.de
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: PATCH - RADEON patch update for 3.10.1 urgency low
+In-Reply-To: <trinity-67fedd9d-eb7a-45b7-9151-59de752382c0-1374435040638@3capp-webde-bs05>
+Message-ID: <alpine.DEB.2.00.1307220721420.2131@skynet.skynet.ie>
+References: <trinity-67fedd9d-eb7a-45b7-9151-59de752382c0-1374435040638@3capp-webde-bs05>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUnsENuMGAXgxmJq+u-NnXW4fEXR-JKww8LY_8jOfoeBA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1045233769-1374474152=:2131"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 04:51:49PM -0700, Yinghai Lu wrote:
-> On Wed, Jul 17, 2013 at 2:30 AM, Robin Holt <holt@sgi.com> wrote:
-> > On Wed, Jul 17, 2013 at 01:17:44PM +0800, Sam Ben wrote:
-> >> >With this patch, we did boot a 16TiB machine.  Without the patches,
-> >> >the v3.10 kernel with the same configuration took 407 seconds for
-> >> >free_all_bootmem.  With the patches and operating on 2MiB pages instead
-> >> >of 1GiB, it took 26 seconds so performance was improved.  I have no feel
-> >> >for how the 1GiB chunk size will perform.
-> >>
-> >> How to test how much time spend on free_all_bootmem?
-> >
-> > We had put a pr_emerg at the beginning and end of free_all_bootmem and
-> > then used a modified version of script which record the time in uSecs
-> > at the beginning of each line of output.
-> 
-> used two patches, found 3TiB system will take 100s before slub is ready.
-> 
-> about three portions:
-> 1. sparse vmemap buf allocation, it is with bootmem wrapper, so clear those
-> struct page area take about 30s.
-> 2. memmap_init_zone: take about 25s
-> 3. mem_init/free_all_bootmem about 30s.
-> 
-> so still wonder why 16TiB will need hours.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I don't know where you got the figure of hours for memory initialization.
-That is likely for a 32TiB boot and includes the entire boot, not just
-getting the memory allocator initialized.
+--29444707-1045233769-1374474152=:2131
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-For a 16 TiB boot:
-1) 344
-2) 1151
-3) 407
 
-I hope that illustrates why we chose to address the memmap_init_zone first
-which had the nice side effect of also impacting the free_all_bootmem
-slowdown.
+> did some re-design of the patch for detecting power modes in PowerPlayTable,
+> I
+> hope this version looks a little bit smarter. Quality check with my muxless
+> HD 6490M
+> succesful, integrity/sanity checks for other asics like si/r600 which use
+> the
+> radeon_atombios_parse_power_table_4_5 are to be done.
+>  
+> Best wishes and regards,
+>  
+> Michael Schuster
 
-With these patches, those numbers are currently:
-1) 344
-2) 49
-3) 26
+Hi,
 
-> also your patches looks like only address 2 and 3.
+I've cc'ed the lists, and Alex the radeon maintainer.
 
-Right, but I thought that was the normal way to do things.  Address
-one thing at a time and work toward a better kernel.  I don't see a
-relationship between the work we are doing here and the sparse vmemmap
-buffer allocation.  Have I missed something?
 
-Did you happen to time a boot with these patches applied to see how
-long it took and how much impact they had on a smaller config?
+Dave.
 
-Robin
+--29444707-1045233769-1374474152=:2131--
