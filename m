@@ -1,45 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab3GVJMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 05:12:36 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:40355 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab3GVJMe (ORCPT
+	id S1757182Ab3GVJWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 05:22:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46202 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756848Ab3GVJWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 05:12:34 -0400
-Date: Mon, 22 Jul 2013 10:12:27 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andrea Adami <andrea.adami@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] mfd: mcp: add missing linux/device.h header
-Message-ID: <20130722091227.GI4681@laptop>
-References: <1374361662-3094-1-git-send-email-andrea.adami@gmail.com>
+	Mon, 22 Jul 2013 05:22:08 -0400
+Date: Mon, 22 Jul 2013 10:21:38 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>
+Subject: Re: [PATCH v5] clk: add MOXA ART SoCs clock driver
+Message-ID: <20130722092138.GB18731@e106331-lin.cambridge.arm.com>
+References: <1374221278-18204-1-git-send-email-jonas.jensen@gmail.com>
+ <1374221837-23773-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374361662-3094-1-git-send-email-andrea.adami@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374221837-23773-1-git-send-email-jonas.jensen@gmail.com>
+Thread-Topic: [PATCH v5] clk: add MOXA ART SoCs clock driver
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 21 Jul 2013, Andrea Adami wrote:
-
-> Fix
-> linux/include/linux/mfd/mcp.h:22:16: error: field 'attached_device' has incomplete type
-> linux/include/linux/mfd/mcp.h:48:23: error: field 'drv' has incomplete type
+On Fri, Jul 19, 2013 at 09:17:17AM +0100, Jonas Jensen wrote:
+> This patch adds MOXA ART SoCs clock driver support.
 > 
-> Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 > ---
->  include/linux/mfd/mcp.h | 2 ++
->  1 file changed, 2 insertions(+)
+> 
+> Notes:
+>     Changes since v4:
+>     
+>     1. remove unnecessary header includes
+>     
+>     Applies to next-20130716
+> 
+>  .../bindings/clock/moxa,moxart-core-clock.txt      | 23 ++++++++
+>  drivers/clk/Makefile                               |  1 +
+>  drivers/clk/clk-moxart.c                           | 69 ++++++++++++++++++++++
+>  3 files changed, 93 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+>  create mode 100644 drivers/clk/clk-moxart.c
+> 
+> diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+> new file mode 100644
+> index 0000000..528c8b0
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+> @@ -0,0 +1,23 @@
+> +Device Tree Clock bindings for arch-moxart
+> +
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +MOXA ART SoCs allow to determine core clock frequencies by reading
+> +a register.
+> +
+> +Required properties:
+> +- compatible : Should be "moxa,moxart-core-clock"
+> +- #clock-cells : Should be 0
+> +- reg : Should contain registers location and length
+> +- clock-output-names : Should be "coreclk"
+> +
+> +For example:
+> +
+> +	coreclk: core-clock@98100000 {
+> +		compatible = "moxa,moxart-core-clock";
+> +		#clock-cells = <0>;
+> +		reg = <0x98100000 0x34>;
+> +		clock-output-names = "coreclk";
+> +	};
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index 4038c2b..933622f 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -11,6 +11,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+>  
+>  # SoCs specific
+>  obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+> +obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+>  obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+>  obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
+>  obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
+> diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
+> new file mode 100644
+> index 0000000..5559371
+> --- /dev/null
+> +++ b/drivers/clk/clk-moxart.c
+> @@ -0,0 +1,69 @@
+> +/*
+> + * MOXA ART SoCs clock driver.
+> + *
+> + * Copyright (C) 2013 Jonas Jensen
+> + *
+> + * Jonas Jensen <jonas.jensen@gmail.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/io.h>
+> +#include <linux/of_address.h>
+> +#include <linux/clkdev.h>
+> +
+> +void __init moxart_of_clk_init(struct device_node *node)
+> +{
+> +	static void __iomem *base;
+> +	struct clk *clk;
+> +	unsigned long rate;
+> +	unsigned int mul, val, div;
+> +	const char *name;
+> +
+> +	base = of_iomap(node, 0);
+> +	if (IS_ERR(base))
+> +		panic("%s: of_iomap failed\n", node->full_name);
 
-I'm going to fix the commit message a little, but patch applied.
+As far as I'm aware, of_iomap returns NULL, not an ERR_PTR value.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Also, is it necessary to panic() ? In v1 of the patch you used pr_err...
+
+Thanks,
+Mark.
+
+> +
+> +	mul = (readl(base + 0x30) >> 3) & 0x1ff;
+> +	val = (readl(base + 0x0c) >> 4) & 0x7;
+> +
+> +	switch (val) {
+> +	case 1:
+> +		div = 3;
+> +		break;
+> +	case 2:
+> +		div = 4;
+> +		break;
+> +	case 3:
+> +		div = 6;
+> +		break;
+> +	case 4:
+> +		div = 8;
+> +		break;
+> +	default:
+> +		div = 2;
+> +		break;
+> +	}
+> +
+> +	/*
+> +	 * the rate calculation below is only tested and proven
+> +	 * to be true for UC-7112-LX
+> +	 *
+> +	 * UC-7112-LX: mul=80 val=0
+> +	 *
+> +	 * to support other moxart SoC hardware, this may need
+> +	 * a change, though it's possible it works there too
+> +	 */
+> +	rate = (mul * 1200000 / div);
+> +
+> +	of_property_read_string(node, "clock-output-names", &name);
+> +	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
+> +	clk_register_clkdev(clk, NULL, name);
+> +	of_clk_add_provider(node, of_clk_src_simple_get, clk);
+> +
+> +	iounmap(base);
+> +}
+> +CLK_OF_DECLARE(moxart_core_clock, "moxa,moxart-core-clock", moxart_of_clk_init);
+> -- 
+> 1.8.2.1
+> 
+> 
