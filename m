@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab3GVUWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:22:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52072 "EHLO
+	id S933471Ab3GVUZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:25:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52086 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933339Ab3GVUWt (ORCPT
+	with ESMTP id S932230Ab3GVUWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:22:49 -0400
+	Mon, 22 Jul 2013 16:22:51 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Hitoshi Mitake <h.mitake@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/11] perf bench: Fix memcpy benchmark for large sizes
-Date: Mon, 22 Jul 2013 17:22:31 -0300
-Message-Id: <1374524559-9839-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/11] perf tools: Fix build with perl 5.18
+Date: Mon, 22 Jul 2013 17:22:33 -0300
+Message-Id: <1374524559-9839-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374524559-9839-1-git-send-email-acme@infradead.org>
 References: <1374524559-9839-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-The glibc calloc() function has an optimization to not explicitely
-memset() very large calloc allocations that just came from mmap(),
-because they are known to be zero.
+perl.h from new Perl release doesn't like -Wundef and -Wswitch-default:
 
-This could result in the perf memcpy benchmark reading only from
-the zero page, which gives unrealistic results.
+/usr/lib/perl5/core_perl/CORE/perl.h:548:5: error: "SILENT_NO_TAINT_SUPPORT" is not defined [-Werror=undef]
+ #if SILENT_NO_TAINT_SUPPORT && !defined(NO_TAINT_SUPPORT)
+     ^
+/usr/lib/perl5/core_perl/CORE/perl.h:556:5: error: "NO_TAINT_SUPPORT" is not defined [-Werror=undef]
+ #if NO_TAINT_SUPPORT
+     ^
+In file included from /usr/lib/perl5/core_perl/CORE/perl.h:3471:0,
+                 from util/scripting-engines/trace-event-perl.c:30:
+/usr/lib/perl5/core_perl/CORE/sv.h:1455:5: error: "NO_TAINT_SUPPORT" is not defined [-Werror=undef]
+ #if NO_TAINT_SUPPORT
+     ^
+In file included from /usr/lib/perl5/core_perl/CORE/perl.h:3472:0,
+                 from util/scripting-engines/trace-event-perl.c:30:
+/usr/lib/perl5/core_perl/CORE/regexp.h:436:5: error: "NO_TAINT_SUPPORT" is not defined [-Werror=undef]
+ #if NO_TAINT_SUPPORT
+     ^
+In file included from /usr/lib/perl5/core_perl/CORE/hv.h:592:0,
+                 from /usr/lib/perl5/core_perl/CORE/perl.h:3480,
+                 from util/scripting-engines/trace-event-perl.c:30:
+/usr/lib/perl5/core_perl/CORE/hv_func.h: In function ‘S_perl_hash_siphash_2_4’:
+/usr/lib/perl5/core_perl/CORE/hv_func.h:222:3: error: switch missing default case [-Werror=switch-default]
+   switch( left )
+   ^
+/usr/lib/perl5/core_perl/CORE/hv_func.h: In function ‘S_perl_hash_superfast’:
+/usr/lib/perl5/core_perl/CORE/hv_func.h:274:5: error: switch missing default case [-Werror=switch-default]
+     switch (rem) { \
+     ^
+/usr/lib/perl5/core_perl/CORE/hv_func.h: In function ‘S_perl_hash_murmur3’:
+/usr/lib/perl5/core_perl/CORE/hv_func.h:398:5: error: switch missing default case [-Werror=switch-default]
+     switch(bytes_in_carry) { /* how many bytes in carry */
+     ^
 
-Always call memset explicitly on the source area to avoid this problem.
+Let's disable the warnings for code which uses perl.h.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Hitoshi Mitake <h.mitake@gmail.com>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-pzz2qrdq9eymxda0y8yxdn33@git.kernel.org
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1372063394-20126-1-git-send-email-kirill@shutemov.name
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/mem-memcpy.c | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 25fd3f1..8cdca43 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -117,6 +117,8 @@ static void alloc_mem(void **dst, void **src, size_t length)
- 	*src = zalloc(length);
- 	if (!*src)
- 		die("memory allocation failed - maybe length is too large?\n");
-+	/* Make sure to always replace the zero pages even if MMAP_THRESH is crossed */
-+	memset(*src, 0, length);
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2a69026..024680b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -631,10 +631,10 @@ $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-redundant-decls $<
  
- static u64 do_memcpy_cycle(memcpy_t fn, size_t len, bool prefault)
+ $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
++	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default $<
+ 
+ $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
++	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default $<
+ 
+ $(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/trace-event-python.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
 -- 
 1.8.1.4
 
