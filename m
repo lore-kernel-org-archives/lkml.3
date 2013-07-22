@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3GVOqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:46:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55937 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756343Ab3GVOqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:46:34 -0400
-Date: Mon, 22 Jul 2013 16:46:32 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 2/9] mm, hugetlb: trivial commenting fix
-Message-ID: <20130722144632.GE24400@dhcp22.suse.cz>
-References: <1373881967-16153-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1373881967-16153-3-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1756809Ab3GVOqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:46:40 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:61591 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab3GVOqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 10:46:38 -0400
+X-IronPort-AV: E=Sophos;i="4.89,719,1367971200"; 
+   d="scan'208";a="36592929"
+Date: Mon, 22 Jul 2013 15:46:34 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Julien Grall <julien.grall@linaro.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH v3] xen/arm: enable PV control for ARM
+In-Reply-To: <20130722143920.GC32221@e106331-lin.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.02.1307221545030.4893@kaball.uk.xensource.com>
+References: <1374490654-13373-1-git-send-email-julien.grall@linaro.org> <20130722134934.GB32221@e106331-lin.cambridge.arm.com> <alpine.DEB.2.02.1307221459200.4893@kaball.uk.xensource.com> <20130722143920.GC32221@e106331-lin.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373881967-16153-3-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 15-07-13 18:52:40, Joonsoo Kim wrote:
-> The name of the mutex written in comment is wrong.
-> Fix it.
+On Mon, 22 Jul 2013, Mark Rutland wrote:
+> On Mon, Jul 22, 2013 at 03:09:35PM +0100, Stefano Stabellini wrote:
+> > On Mon, 22 Jul 2013, Mark Rutland wrote:
+> > > Hi,
+> > > 
+> > > [Adding Catalin to Cc]
+> > > 
+> > > On Mon, Jul 22, 2013 at 11:57:34AM +0100, Julien Grall wrote:
+> > > > Enable power management from the toolstack for ARM guest.
+> > > > 
+> > > > Signed-off-by: Julien Grall <julien.grall@linaro.org>
+> > > > 
+> > > > ---
+> > > >     Changes in v3:
+> > > >         - Fix condition to compile cpu_hotplug.o
+> > > >     Changes in v2:
+> > > >         - Don't compile xen/cpu_hotplug.o with ARM64
+> > > 
+> > > My arm64 cpu hotplug series is going to be dependent on not compiling
+> > > xen/cpu_hotplug.o. Currently I'm not able to compile an arm64 kernel
+> > > with my patches and Xen support.
+> > > 
+> > > How do you intend to push this? I'd like to ensure my cpu hotplug series
+> > > is able to go in for the next merge window.
+> > 
+> > This patch does exactly that: it makes sure cpu_hotplug is not compiled
+> > on ARM64.
 > 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
+> Sorry, what I meant was that my series is going to be entirely dependent
+> on this patch or it'll break bisection. That'll make merging things a
+> little painful as I'll need a stable branch with this patch to base my
+> series upon.
 > 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index d87f70b..d21a33a 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -135,9 +135,9 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
->   *                    across the pages in a mapping.
->   *
->   * The region data structures are protected by a combination of the mmap_sem
-> - * and the hugetlb_instantion_mutex.  To access or modify a region the caller
-> + * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
->   * must either hold the mmap_sem for write, or the mmap_sem for read and
-> - * the hugetlb_instantiation mutex:
-> + * the hugetlb_instantiation_mutex:
->   *
->   *	down_write(&mm->mmap_sem);
->   * or
-> -- 
-> 1.7.9.5
+> Another option would be to split this patch into two parts, one enabling
+> power management and one fixing things up for HOTPLUG_CPU on arm64. That
+> way I could take the arm64 HOTPLUG_CPU fix in my series adding arm64
+> HOTPLUG_CPU support.
 > 
+> Would that be acceptable? Have I missed something?
 
--- 
-Michal Hocko
-SUSE Labs
+As I am very sensitive to painful merging situations, I think we could
+split the patch in two and send upstream the fix (not compiling
+cpu_hotplug.o on ARM64) in 3.11-rc2 or rc3.  Konrad, what do you think?
