@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab3GVLVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 07:21:34 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42518 "EHLO
+	id S932606Ab3GVLV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 07:21:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42526 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370Ab3GVLVc (ORCPT
+	with ESMTP id S932380Ab3GVLVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Jul 2013 07:21:32 -0400
 From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
@@ -14,53 +14,129 @@ Cc: Sudeep.KarkadaNagesha@arm.com, Mark Rutland <mark.rutland@arm.com>,
         Russell King <linux@arm.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v2 0/3] ARM/ARM64 architected timer updates
-Date: Mon, 22 Jul 2013 12:21:19 +0100
-Message-Id: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+Subject: [PATCH v2 1/3] drivers: clocksource: configure event stream for ARM arch timer
+Date: Mon, 22 Jul 2013 12:21:20 +0100
+Message-Id: <1374492082-13686-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+In-Reply-To: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 22 Jul 2013 11:21:27.0981 (UTC) FILETIME=[9BC045D0:01CE86CD]
-X-MC-Unique: 113072212212906901
+ <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 22 Jul 2013 11:21:28.0481 (UTC) FILETIME=[9C0C9110:01CE86CD]
+X-MC-Unique: 113072212213002701
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6MBLoep009570
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6MBM4QX009574
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+From: Will Deacon <will.deacon@arm.com>
 
-This patch series adds support to configure the rate and enable the event
-stream for architected timer. Since the timer control register is reset to
-zero on warm boot, CPU PM notifier is added to re-initialse it.
+The ARM architected timer can generate events (used for waking up
+CPUs executing the wfe instruction) at a frequency represented as a
+power-of-2 divisor of the clock rate.
 
-Changes v1->v2:
-1. Saved event stream divider value on cold reset path and re-used it
-   in CPU PM notifier instead of calculating every time.
-2. Rebased on v3.11-rc2(to avoid conflicts with __cpuinit* deletion)
-3. Dropped "ARM/ARM64: arch_timer: remove __cpuinit attribute for
-   arch_counter_set_user_access"(already done as part of __cpuinit*
-   deletion)
+This patch configures the event stream, aiming for a period of 100us
+between events. This can be used to implement wfe-based timeouts for
+userspace locking implementations.
 
-Regards,
-Sudeep
+Cc: Mathieu Poirier <mathieu.poirier@linaro.org>
+Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/include/asm/arch_timer.h    | 5 +++--
+ arch/arm64/include/asm/arch_timer.h  | 6 +++---
+ drivers/clocksource/arm_arch_timer.c | 9 ++++++++-
+ include/clocksource/arm_arch_timer.h | 2 ++
+ 4 files changed, 16 insertions(+), 6 deletions(-)
 
-
-Sudeep KarkadaNagesha (2):
-  ARM: arch_timer: add macros for bits in control register
-  drivers: clocksource: add CPU PM notifier for ARM architected timer
-
-Will Deacon (1):
-  drivers: clocksource: configure event stream for ARM arch timer
-
- arch/arm/include/asm/arch_timer.h    | 10 ++++++--
- arch/arm64/include/asm/arch_timer.h  | 12 +++++++---
- drivers/clocksource/arm_arch_timer.c | 45 +++++++++++++++++++++++++++++++++++-
- include/clocksource/arm_arch_timer.h | 10 ++++++++
- 4 files changed, 71 insertions(+), 6 deletions(-)
-
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index e406d57..c3d9ef7 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -89,14 +89,15 @@ static inline u64 arch_counter_get_cntvct(void)
+ 	return cval;
+ }
+ 
+-static inline void arch_counter_set_user_access(void)
++static inline void arch_counter_set_user_access(int divider)
+ {
+ 	u32 cntkctl;
+ 
+ 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+ 
+ 	/* disable user access to everything */
+-	cntkctl &= ~((3 << 8) | (7 << 0));
++	cntkctl &= ~((3 << 8) | (0xf << 4) | (3 << 0));
++	cntkctl |= (divider << 4) | (1 << 2);
+ 
+ 	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+ }
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 98abd47..8c1e42f 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -97,16 +97,16 @@ static inline u32 arch_timer_get_cntfrq(void)
+ 	return val;
+ }
+ 
+-static inline void arch_counter_set_user_access(void)
++static inline void arch_counter_set_user_access(int divider)
+ {
+ 	u32 cntkctl;
+ 
+ 	/* Disable user access to the timers and the physical counter. */
+ 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+-	cntkctl &= ~((3 << 8) | (1 << 0));
++	cntkctl &= ~((3 << 8) | (0xf << 4) | (1 << 0));
+ 
+ 	/* Enable user access to the virtual counter and frequency. */
+-	cntkctl |= (1 << 1);
++	cntkctl |= (divider << 4) | (1 << 2) | (1 << 1);
+ 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+ }
+ 
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index ffadd83..6301ee5 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -125,6 +125,8 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
+ 
+ static int arch_timer_setup(struct clock_event_device *clk)
+ {
++	int evt_stream_div, pos;
++
+ 	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
+ 	clk->name = "arch_sys_timer";
+ 	clk->rating = 450;
+@@ -153,7 +155,12 @@ static int arch_timer_setup(struct clock_event_device *clk)
+ 			enable_percpu_irq(arch_timer_ppi[PHYS_NONSECURE_PPI], 0);
+ 	}
+ 
+-	arch_counter_set_user_access();
++	/* Find the closest power of two to the divisor */
++	evt_stream_div = arch_timer_rate / ARCH_TIMER_EVT_STREAM_FREQ;
++	pos = fls(evt_stream_div);
++	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
++		pos--;
++	arch_counter_set_user_access(min(pos, 15));
+ 
+ 	return 0;
+ }
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index c463ce9..24dc140 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -29,6 +29,8 @@
+ #define ARCH_TIMER_PHYS_ACCESS		0
+ #define ARCH_TIMER_VIRT_ACCESS		1
+ 
++#define ARCH_TIMER_EVT_STREAM_FREQ	10000	/* 100us */
++
+ #ifdef CONFIG_ARM_ARCH_TIMER
+ 
+ extern u32 arch_timer_get_rate(void);
 -- 
 1.8.1.2
 
