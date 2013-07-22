@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab3GVXBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 19:01:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:46741 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3GVXBL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 19:01:11 -0400
-Message-ID: <51EDB9B3.4010909@linaro.org>
-Date: Mon, 22 Jul 2013 16:01:07 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86, clocksource, fix !CONFIG_CLOCKSOURCE_WATCHDOG compile
-References: <1361563736-28241-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1361563736-28241-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752503Ab3GVXEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 19:04:48 -0400
+Received: from stator.leun.net ([85.214.203.199]:38822 "EHLO stator.leun.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387Ab3GVXEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 19:04:47 -0400
+Date: Tue, 23 Jul 2013 01:02:50 +0200
+From: Michael Leun <lkml20130126@newton.leun.net>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
+ v3 13/16] futex: use freezable blocking call)
+Message-ID: <20130723010250.5a3465ec@xenia.leun.net>
+In-Reply-To: <1367884221-20462-14-git-send-email-ccross@android.com>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	<1367884221-20462-14-git-send-email-ccross@android.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 12:08 PM, Prarit Bhargava wrote:
-> If I explicitly disable the clocksource watchdog in the x86 Kconfig,
-> the x86 kernel will not compile unless this is properly defined.
+On Mon,  6 May 2013 16:50:18 -0700
+Colin Cross <ccross@android.com> wrote:
 
-Going through my backlog, I noticed I never picked this up. Queued for 3.12.
+> Avoid waking up every thread sleeping in a futex_wait call during
+[...]
 
-thanks
--john
+With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
+displaying 0% of saving image to disk.
+
+echo "1" >/sys/power/state still works.
+
+Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4, reverting
+that from 3.11-rc2 makes s2disk working again.
+
+-- 
+MfG,
+
+Michael Leun
 
