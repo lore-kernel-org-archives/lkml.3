@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab3GVCZp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 22:25:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12508 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027Ab3GVCZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 22:25:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,715,1367996400"; 
-   d="scan'208";a="349369251"
-Message-ID: <1374459939.2057.44.camel@rzhang1-mobl4>
-Subject: [GIT PULL] Thermal  management fixes for v3.11-rc3
-From: Zhang Rui <rui.zhang@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Date: Mon, 22 Jul 2013 10:25:39 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755278Ab3GVC0y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 22:26:54 -0400
+Received: from mail51.corpease.net ([61.145.121.41]:26616 "EHLO
+	mail51.corpease.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754041Ab3GVC0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 22:26:53 -0400
+X-Greylist: delayed 753 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Jul 2013 22:26:53 EDT
+Date: Mon, 22 Jul 2013 10:14:59 +0800
+From: "Hidka" <sjzmj@chinamiaoji.com>
+Reply-To: swt@swtindustry.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: paper supplier
+Message-ID: <201307221014593590596@chinamiaoji.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
+X-CM-TRANSID: KQGowJCb76Z5lexRlt8ZAA--.16153S4
+X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
+	VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUoc7k042IEc7kJM7k0a2IF6F4UM7kC6x80
+	4xWl14x267AKxVWUJVW8JwAFc2x0x2IEx4CE42xK8VAvwI8IcIk0rVWrJVCq3wAFIxvE14
+	AKwVWUJVWUGwA2ocxC64kIII0Yj41l84x0c7CEw4AK67xGY2AK021l84ACjcxK6xIIjxv2
+	0xvE14v26r1I6r4UM28EF7xvwVC0I7IYx2IY6xkF7I0E14v26r1j6r4UM28EF7xvwVC2z2
+	80aVAFwI0_Gr1j6F4UJwA2z4x0Y4vEx4A2jsIEc7CjxVAFwI0_Gr1j6F4UJwAS0I0E0xvY
+	zxvE52x082IY62kv0487Mc804VCqF7xvr2I5Mc02F40EFcxC0VAKzVAqx4xG6I80ewAv7V
+	C0I7IYx2IY67AKxVWUAVWUtwAv7VC2z280aVAFwI0_Cr0_Gr1UMcvjeVCFs4IE7xkEbVWU
+	JVW8JwACjcxG0xvY0x0EwIxGrwACY4xI67k04243AVAKzVAKj4xxM4xvF2IEb7IF0Fy26I
+	8I3I1lc2xSY4AK67AK6r4UMxAIw28IcxkI7VAKI48JMxAqzxv262kKe7AKxVW8ZVWrXwCF
+	54CYxVCY1x0262kKe7AKxVW8ZVWrXwCFx2IqxVCFs4IE7xkEbVWUJVW8JwCFI7km07C267
+	AKxVWUtVW8ZwCFI7vE0wC20s026c02F40E14v26r1j6r18MI8I3I0E7480Y4vE14v26r10
+	6r1rMI8E67AF67kF1VAFwI0_Jr0_JrylIxkGc2Ij64vIr41lIxAIcVC0I7IYx2IY67AKxV
+	WUJVWUCwCI42IY6xIIjxv20xvEc7CjxVAFwI0_Jr0_Gr1lIxAIcVCF04k26cxKx2IYs7xG
+	6Fyj6rWUJwCI42IY6I8E87Iv67AKxVW8JVWxJwCI42IY6I8E87Iv6xkF7I0E14v26r4j6r
+	4UJwCE64xvF2IEb7IF0Fy7YxBIdaVFxhVjvjDU0xZFpf9x07j1E_iUUUUU=
+X-CM-SenderInfo: pvm2zyo6fkx05dplt01mlou0bp/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6M2QxSM006825
 
-Hi, Linus,
+Dear Purchasing manager:
+Nice time to you
 
-Please pull from the git repository at
+It is my big pleasure to hear you need A4 paper
+If you still need that pls tell me
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next
+Then i can send you our best price
+Best wishes
+Ida
 
-to receive Thermal management fixes for v3.11-rc3 with
-top-most commit ace120dcf23b3bbba00d797a898481997381052f:
+Ida Chen
 
-  Thermal: Fix lockup of cpu_down()
+SALES MANAGER
 
-on top of commit 47188d39b5deeebf41f87a02af1b3935866364cf:
+East Siweite industry Co., Ltd
+www.dfswtpaper.com
 
-  Merge tag 'ext4_for_linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4
+SKYPE: siweite
 
-These are fixes collected over the last week, they fixes several
-problems caused by the x86_pkg_temp_thermal introduced in 3.11-rc1.
-
-Specifics:
-
-- the x86_pkg_temp_thermal driver causes crash on systems with no
-  package MSR support as there is a bug in the logic to check presence
-  of DTHERM and PTS feature together. Added a change so that when there
-  is no PTS support, module doesn't get loaded.
-
-- fix krealloc() misuse in pkg_temp_thermal_device_add().
-  If krealloc() returns NULL, it doesn't free the original. Thus if we
-  want to exit because of the krealloc() failure, we must make sure the
-  original one is freed.
- 
-- The error code path of the x86 package temperature thermal driver's
-  initialization routine makes an unbalanced call to get_online_cpus(),
-  which causes subsequent CPU offline operations, and consequently
-  system suspend, to permanently block in cpu_hotplug_begin() on systems
-  where get_core_online() returns an error code.
-  Remove the extra get_online_cpus() to fix the problem.
-
-Thanks!
-
-----------------------------------------------------------------
-Srinivas Pandruvada (2):
-      Thermal: x86 package temp thermal crash
-      Thermal: x86_pkg_temp: Limit number of pkg temp zones
-
-Steven Rostedt (1):
-      Thermal: Fix lockup of cpu_down()
-
-Wei Yongjun (1):
-      Thermal: x86_pkg_temp: fix krealloc() misuse in in
-pkg_temp_thermal_device_add()
-
- drivers/thermal/x86_pkg_temp_thermal.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
-
-
+Email:swt@swtindustry.comˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
