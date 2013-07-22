@@ -1,296 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3GVNCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:02:48 -0400
-Received: from m59-178.qiye.163.com ([123.58.178.59]:48080 "EHLO
-	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab3GVNCq (ORCPT
+	id S1755259Ab3GVND2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:03:28 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:42701 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754697Ab3GVND0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:02:46 -0400
-From: Li Wang <liwang@ubuntukylin.com>
-To: ceph-devel@vger.kernel.org
-Cc: Sage Weil <sage@inktank.com>, linux-kernel@vger.kernel.org,
-        Li Wang <liwang@ubuntukylin.com>,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Subject: [PATCH v3] Ceph: Punch hole support for kernel client
-Date: Mon, 22 Jul 2013 21:02:30 +0800
-Message-Id: <1374498150-6480-1-git-send-email-liwang@ubuntukylin.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371761798.2776.134@driftwood>
-References: <1371761798.2776.134@driftwood>
-X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpOVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQVkoKz0kKzooKCQyNSQz
-	Pjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz46Pz4pQUtVS0A4NC41
-	LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41OjVBS1VLQD8iNTo2MjgkMisk
-	NTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*PilBSklVS0A2LjcvMiQpOCsv
-	JD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0FLVUtAMiskSiQzNC4p
-	JDg1LyRLJEpLS0FLVUtAMiskSiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEhLJDYyNS4vPiQ4NS8k
-	SyROS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQCguOSQ#QUpVTk5APTUkKC45JD41LDQp
-	PygkMzcxJEpLS0lLSkFLVUlDWQY+
-X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSExPT0JDSk1KQk5LVTMWGhIX
-	VRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHgY+
+	Mon, 22 Jul 2013 09:03:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130722124047.GL4165@ZenIV.linux.org.uk>
+References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
+ <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
+ <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com> <20130722124047.GL4165@ZenIV.linux.org.uk>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Mon, 22 Jul 2013 18:32:46 +0530
+Message-ID: <CALkWK0=bAwDxbLEtHOThjY58BmWCrFYgZm9GaLfEnF5vpu1VJw@mail.gmail.com>
+Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Richard Weinberger <richard@nod.at>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements fallocate and punch hole support for Ceph kernel client.
+Al Viro wrote:
+> On Mon, Jul 22, 2013 at 03:15:14PM +0530, Ramkumar Ramachandra wrote:
+>> Ramkumar Ramachandra wrote:
+>> > [1]: http://lists.freedesktop.org/archives/systemd-devel/2013-July/012152.html
+>>
+>> ... and the patches were rejected.  Lennart says that UML providing
+>> /dev/tty* is wrong, and that UML should call them /dev/hvc* (or
+>> something).  Can we do something about the situation?  Can we remove
+>> /dev/tty*, and provide /dev/hvc*?  Will we be breaking existing users?
+>
+> Yes, you would be breaking existing users.  Starting with anybody with static
+> /dev.  Or a debian userland, for that matter.  Any systemd-free setup,
+> actually.
 
-Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
----
-Passed the fsx test from xfstests.
----
- fs/ceph/file.c        |  191 +++++++++++++++++++++++++++++++++++++++++++++++++
- net/ceph/osd_client.c |    8 ++-
- 2 files changed, 197 insertions(+), 2 deletions(-)
+Systemd does not support a static /dev, so we're talking about
+non-systemd systems.  Ofcourse I reject anything that breaks existing
+users.
 
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index 656e169..6e56824 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -8,6 +8,7 @@
- #include <linux/namei.h>
- #include <linux/writeback.h>
- #include <linux/aio.h>
-+#include <linux/falloc.h>
- 
- #include "super.h"
- #include "mds_client.h"
-@@ -882,6 +883,195 @@ out:
- 	return offset;
- }
- 
-+static inline void ceph_zero_partial_page(
-+	struct inode *inode, loff_t offset, unsigned size)
-+{
-+	struct page *page;
-+	pgoff_t index = offset >> PAGE_CACHE_SHIFT;
-+
-+	page = find_lock_page(inode->i_mapping, index);
-+	if (page) {
-+		wait_on_page_writeback(page);
-+		zero_user(page, offset & (PAGE_CACHE_SIZE - 1), size);
-+		unlock_page(page);
-+		page_cache_release(page);
-+	}
-+}
-+
-+static void ceph_zero_pagecache_range(struct inode *inode, loff_t offset,
-+				      loff_t length)
-+{
-+	loff_t nearly = round_up(offset, PAGE_CACHE_SIZE);
-+	if (offset < nearly) {
-+		loff_t size = nearly - offset;
-+		if (length < size)
-+			size = length;
-+		ceph_zero_partial_page(inode, offset, size);
-+		offset += size;
-+		length -= size;
-+	}
-+	if (length >= PAGE_CACHE_SIZE) {
-+		loff_t size = round_down(length, PAGE_CACHE_SIZE);
-+		truncate_pagecache_range(inode, offset, offset + size - 1);
-+		offset += size;
-+		length -= size;
-+	}
-+	if (length)
-+		ceph_zero_partial_page(inode, offset, length);
-+}
-+
-+static int ceph_zero_partial_object(struct inode *inode,
-+				    loff_t offset, loff_t *length)
-+{
-+	struct ceph_inode_info *ci = ceph_inode(inode);
-+	struct ceph_fs_client *fsc = ceph_inode_to_client(inode);
-+	struct ceph_osd_request *req;
-+	int ret = 0;
-+	loff_t zero = 0;
-+	int op = CEPH_OSD_OP_ZERO;
-+
-+	if (!length) {
-+		op = CEPH_OSD_OP_DELETE;
-+		length = &zero;
-+	}
-+
-+	req = ceph_osdc_new_request(&fsc->client->osdc, &ci->i_layout,
-+					ceph_vino(inode),
-+					offset, length,
-+					1, op,
-+					CEPH_OSD_FLAG_WRITE |
-+					CEPH_OSD_FLAG_ONDISK,
-+					NULL, 0, 0, false);
-+	if (IS_ERR(req)) {
-+		ret = PTR_ERR(req);
-+		goto out;
-+	}
-+
-+	ceph_osdc_build_request(req, offset, NULL, ceph_vino(inode).snap,
-+				&inode->i_mtime);
-+
-+	ret = ceph_osdc_start_request(&fsc->client->osdc, req, false);
-+	if (!ret)
-+		ret = ceph_osdc_wait_request(&fsc->client->osdc, req);
-+	ceph_osdc_put_request(req);
-+
-+out:
-+	return ret;
-+}
-+
-+static int ceph_zero_objects(struct inode *inode, loff_t offset, loff_t length)
-+{
-+	int ret = 0;
-+	struct ceph_inode_info *ci = ceph_inode(inode);
-+	__s32 stripe_unit = ceph_file_layout_su(ci->i_layout);
-+	__s32 stripe_count = ceph_file_layout_stripe_count(ci->i_layout);
-+	__s32 object_size = ceph_file_layout_object_size(ci->i_layout);
-+	loff_t object_set_size = (loff_t)object_size * stripe_count;
-+
-+	loff_t nearly = (offset + object_set_size - 1)
-+			/ object_set_size * object_set_size;
-+	while (length && offset < nearly) {
-+		loff_t size = length;
-+		ret = ceph_zero_partial_object(inode, offset, &size);
-+		if (ret < 0)
-+			return ret;
-+		offset += size;
-+		length -= size;
-+	}
-+	while (length >= object_set_size) {
-+		int i;
-+		loff_t pos = offset;
-+		for (i = 0; i < stripe_count; ++i) {
-+			ret = ceph_zero_partial_object(inode, pos, NULL);
-+			if (ret < 0)
-+				return ret;
-+			pos += stripe_unit;
-+		}
-+		offset += object_set_size;
-+		length -= object_set_size;
-+	}
-+	while (length) {
-+		loff_t size = length;
-+		ret = ceph_zero_partial_object(inode, offset, &size);
-+		if (ret < 0)
-+			return ret;
-+		offset += size;
-+		length -= size;
-+	}
-+	return ret;
-+}
-+
-+static long ceph_fallocate(struct file *file, int mode,
-+				loff_t offset, loff_t length)
-+{
-+	struct ceph_file_info *fi = file->private_data;
-+	struct inode *inode = file->f_dentry->d_inode;
-+	struct ceph_inode_info *ci = ceph_inode(inode);
-+	struct ceph_osd_client *osdc =
-+		&ceph_inode_to_client(inode)->client->osdc;
-+	int want, got = 0;
-+	int dirty;
-+	int ret = 0;
-+	loff_t endoff = 0;
-+	loff_t size;
-+
-+	if (!S_ISREG(inode->i_mode))
-+		return -EOPNOTSUPP;
-+
-+	if (IS_SWAPFILE(inode))
-+		return -ETXTBSY;
-+
-+	mutex_lock(&inode->i_mutex);
-+
-+	if (ceph_snap(inode) != CEPH_NOSNAP) {
-+		ret = -EROFS;
-+		goto unlock;
-+	}
-+
-+	if (ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL) &&
-+		!(mode & FALLOC_FL_PUNCH_HOLE)) {
-+		ret = -ENOSPC;
-+		goto unlock;
-+	}
-+
-+	size = i_size_read(inode);
-+	if (!(mode & FALLOC_FL_KEEP_SIZE))
-+		endoff = offset + length;
-+
-+	if (fi->fmode & CEPH_FILE_MODE_LAZY)
-+		want = CEPH_CAP_FILE_BUFFER | CEPH_CAP_FILE_LAZYIO;
-+	else
-+		want = CEPH_CAP_FILE_BUFFER;
-+
-+	ret = ceph_get_caps(ci, CEPH_CAP_FILE_WR, want, &got, endoff);
-+	if (ret < 0)
-+		goto unlock;
-+
-+	if (mode & FALLOC_FL_PUNCH_HOLE) {
-+		if (offset < size)
-+			ceph_zero_pagecache_range(inode, offset, length);
-+		ret = ceph_zero_objects(inode, offset, length);
-+	} else if (endoff > size) {
-+		truncate_pagecache_range(inode, size, -1);
-+		if (ceph_inode_set_size(inode, endoff))
-+			ceph_check_caps(ceph_inode(inode),
-+				CHECK_CAPS_AUTHONLY, NULL);
-+	}
-+
-+	if (!ret) {
-+		spin_lock(&ci->i_ceph_lock);
-+		dirty = __ceph_mark_dirty_caps(ci, CEPH_CAP_FILE_WR);
-+		spin_unlock(&ci->i_ceph_lock);
-+		if (dirty)
-+			__mark_inode_dirty(inode, dirty);
-+	}
-+
-+	ceph_put_cap_refs(ci, got);
-+unlock:
-+	mutex_unlock(&inode->i_mutex);
-+	return ret;
-+}
-+
- const struct file_operations ceph_file_fops = {
- 	.open = ceph_open,
- 	.release = ceph_release,
-@@ -898,5 +1088,6 @@ const struct file_operations ceph_file_fops = {
- 	.splice_write = generic_file_splice_write,
- 	.unlocked_ioctl = ceph_ioctl,
- 	.compat_ioctl	= ceph_ioctl,
-+	.fallocate	= ceph_fallocate,
- };
- 
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index 3a246a6..6cb076f 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -503,7 +503,8 @@ void osd_req_op_extent_init(struct ceph_osd_request *osd_req,
- 	struct ceph_osd_req_op *op = _osd_req_op_init(osd_req, which, opcode);
- 	size_t payload_len = 0;
- 
--	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
-+	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
-+	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO);
- 
- 	op->extent.offset = offset;
- 	op->extent.length = length;
-@@ -631,6 +632,8 @@ static u64 osd_req_encode_op(struct ceph_osd_request *req,
- 		break;
- 	case CEPH_OSD_OP_READ:
- 	case CEPH_OSD_OP_WRITE:
-+	case CEPH_OSD_OP_ZERO:
-+	case CEPH_OSD_OP_DELETE:
- 		if (src->op == CEPH_OSD_OP_WRITE)
- 			request_data_len = src->extent.length;
- 		dst->extent.offset = cpu_to_le64(src->extent.offset);
-@@ -715,7 +718,8 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
- 	u64 object_base;
- 	int r;
- 
--	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
-+	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
-+	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO);
- 
- 	req = ceph_osdc_alloc_request(osdc, snapc, num_ops, use_mempool,
- 					GFP_NOFS);
--- 
-1.7.9.5
+> Changing device number assignments is not to be done lightly, whether
+> they should've been set that way back then or not.
 
+I never proposed something as ridiculous as changing device number
+assignments.  I'm trying to add a HVC_DRIVER to um Linux: I enabled it
+in the Kconfig; any idea how to get devtmpfs to populate /dev with
+hvc* device nodes now?
+
+> As for Lennart's opinion...  *shrug*  He's free to do whatever he wants
+> in systemd.  It does not translate into having any kind of control over
+> the kernel.
+
+If you care about users, you will stop worrying about different
+people's "opinions", "control", and work towards a solution.  I want
+great user-experience, period.  You can continue to argue endlessly
+about the sanity of Lennart/systemd for all I care, but you cannot
+deny the fact that systemd has _users_.  Users that you must support.
+
+So, what should we do?
