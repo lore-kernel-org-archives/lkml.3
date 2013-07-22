@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173Ab3GVVci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:32:38 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61478 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388Ab3GVVch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:32:37 -0400
-Date: Mon, 22 Jul 2013 17:32:31 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	id S933340Ab3GVVfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 17:35:00 -0400
+Received: from jdl.com ([208.123.74.7]:44962 "EHLO jdl.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932388Ab3GVVe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 17:34:58 -0400
+Message-Id: <E1V1Nkn-00072x-Df@jdl.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+cc: "Chaiken, Alison" <Alison_Chaiken@mentor.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, bhelgaas@google.com
-Subject: Re: workqueue, pci: INFO: possible recursive locking detected
-Message-ID: <20130722213231.GC16776@mtj.dyndns.org>
-References: <51E55B7D.2040209@linux.vnet.ibm.com>
- <51E66CCC.9010600@cn.fujitsu.com>
- <51E84EDC.5090502@linux.vnet.ibm.com>
- <51E89ABB.20808@cn.fujitsu.com>
- <51E8FF76.5030706@linux.vnet.ibm.com>
- <51ED1D02.80205@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51ED1D02.80205@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: The future of DT binding maintainership
+In-reply-to: <1925583.R0td2pS6as@flatron>
+References: <CACxGe6vtJPbbqwpH8Th5S36Hx50f39j1P4OpLb-Um9xQie6Lng@mail.gmail.com> <2962401.WRRoYlXkRr@flatron> <60BA5429A0E1584BA3633194F6F993B502B21362@NA-MBX-03.mgc.mentorg.com> <1925583.R0td2pS6as@flatron>
+Comments: In-reply-to Tomasz Figa <tomasz.figa@gmail.com>
+   message dated "Mon, 22 Jul 2013 22:09:09 +0200."
+Date: Mon, 22 Jul 2013 16:34:49 -0500
+From: Jon Loeliger <jdl@jdl.com>
+X-Spam-Score: -0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 07:52:34PM +0800, Lai Jiangshan wrote:
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index f02c4a4..b021a45 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4731,6 +4731,7 @@ struct work_for_cpu {
->  	long (*fn)(void *);
->  	void *arg;
->  	long ret;
-> +	struct completion done;
->  };
->  
->  static void work_for_cpu_fn(struct work_struct *work)
-> @@ -4738,6 +4739,7 @@ static void work_for_cpu_fn(struct work_struct *work)
->  	struct work_for_cpu *wfc = container_of(work, struct work_for_cpu, work);
->  
->  	wfc->ret = wfc->fn(wfc->arg);
-> +	complete(&wfc->done);
->  }
->  
->  /**
-> @@ -4755,8 +4757,9 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
->  	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
->  
->  	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
-> +	init_completion(&wfc.done);
->  	schedule_work_on(cpu, &wfc.work);
-> -	flush_work(&wfc.work);
-> +	wait_for_completion(&wfc.done);
 
-Hmmm... it's kinda nasty.  Given how infrequently work_on_cpu() users
-nest, I think it'd be cleaner to have work_on_cpu_nested() which takes
-@subclass.  It requires extra work on the caller's part but I think
-that actually is useful as nested work_on_cpu()s are pretty weird
-things.
+> > Is there a schema out there in the wild that exemplifies what you mean?
+> 
+> Not really. The format of schemas is currently in design stage. I'm 
+> currently rethinking some details of what I have in my mind. Give me some 
+> more time and I will post an RFC to the ML with all that written down.
 
-Thanks.
+...and...
 
--- 
-tejun
+> > The schema-check idea reminds me of the W3C HTML validators:
+> > 
+> >       http://validator.w3.org/
+> > 
+> > Since device-tree source looks a bit like XML (or maybe more like JSON),
+> > will be the schemas be similar in spirit to DTDs, and is it helpful to
+> > think of the validator in this spirit?   Or will the checker be more
+> > like "gcc -Wall", since it will be invoked by a compiler?
+> 
+> My idea is to implement compile time verification in dtc, so I guess it 
+> will be more like the latter. Since dts is what dtc can already parse, my 
+> plan is to keep the schemas in spirit to dts, just modifying/extending it 
+> to allow specifying bindings with them, rather than static values.
+> 
+> Best regards,
+> Tomasz
+
+It is possible to add some-damn XML DTD parsing and
+rule glomming even in DTC if that is what is wanted.
+I think it will be more an issue of expressability.
+That is, how can the desired style of rules be most
+eloquently expressed, internalized and applied?
+
+That will be the current challenge first.
+
+jdl
