@@ -1,261 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab3GVIj3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:39:29 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56098 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab3GVIgk (ORCPT
+	id S932091Ab3GVIju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:39:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:23730 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756844Ab3GVIjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:36:40 -0400
-X-AuditID: 9c93016f-b7b50ae0000021a9-d1-51ecef15f2de
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+	Mon, 22 Jul 2013 04:39:48 -0400
+X-AuditID: cbfee68e-b7f276d000002279-3f-51ecefd11530
+From: Jingoo Han <jg1.han@samsung.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 05/10] mm, hugetlb: fix and clean-up node iteration code to alloc or free
-Date: Mon, 22 Jul 2013 17:36:26 +0900
-Message-Id: <1374482191-3500-6-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH] kernel: replace strict_strto*() with kstrto*()
+Date: Mon, 22 Jul 2013 17:39:44 +0900
+Message-id: <000401ce86b7$0463f580$0d2be080$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6GtuOAETPVpLFfRUSj4NMI28hViw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zA92L798EGmxZJm0xZ/0aNovLCy+x
+	WlzeNYfNgdnjxIzfLB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVcbHRtOCwUMXmaQ+ZGhhv
+	8ncxcnJICJhIPL4xixXCFpO4cG89WxcjF4eQwDJGiUcdm5lgir5+ngKVWMQosXfrLWaQhJDA
+	L0aJ2a8SQGw2ATWJL18Os4PYIgK6Eque7wKrYRZwkvi5ZSYLiC0sYC/x8+BDMJtFQFViwcx+
+	MJtXwFJi1/mJjBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhniIAWJHWdfM0Ls0pOY3PkdapeI
+	xL4X7xhBDpUQmMcuceXDTiaIZQIS3yYfAhrKAZSQldh0AGqOpMTBFTdYJjCKzUKyehaS1bOQ
+	rJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCER1beD8eYB60OMyUDrJzJLiSbn
+	AyMyryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M
+	CZtL5j5jL8xY/dYqZMnsb36f7aO+xOx/GJcWl/VxRn3b+Z8LmCLX/Hc73PA4Y0H98vVrpi2o
+	ORR2u2SqyM6j515dX7VAZN/KtaejSr3020963L3rNflksebPO0/fNN/dnDftlvkq5XV73pTf
+	b/xn5j7f7a7RrAKNXu3r3qu+Sfy9IZlaMKX7ywwlluKMREMt5qLiRAD2VHyFvgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xgO7F928CDbaeEbeYs34Nm8XlhZdY
+	LS7vmsPmwOxxYsZvFo++LasYPT5vkgtgjmpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw
+	1DW0tDBXUshLzE21VXLxCdB1y8wB2qSkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7H
+	yAANJKxjzLjYaFpwWKhi87SHTA2MN/m7GDk5JARMJL5+nsIGYYtJXLi3Hsjm4hASWMQosXfr
+	LWaQhJDAL0aJ2a8SQGw2ATWJL18Os4PYIgK6Eque7wKrYRZwkvi5ZSYLiC0sYC/x8+BDMJtF
+	QFViwcx+MJtXwFJi1/mJjBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhniIAWJHWdfM0Ls0pOY
+	3PkdapeIxL4X7xgnMArMQjJqFpJRs5CMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT8
+	3E2M4Hh9Jr2DcVWDxSFGAQ5GJR7ehoA3gUKsiWXFlbmHGCU4mJVEeD1XAYV4UxIrq1KL8uOL
+	SnNSiw8xJgN9OpFZSjQ5H5hK8kriDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQ
+	WgSzhYmDU6qBUTbLzfV/4lm9ZQaL/mtX/n9Zb+W4/5vsL9kJTW1PZjyKM75YU/Yrfl2exns/
+	55MO0Spnrm4Ps5e862DwdP/SLX01jzRCXDKMHmorTk4u872dOclW8qXnstZ/IdlZn321323s
+	vSdpZqdzzmG77UK3FWfU3TvM/opGbdyy3/L0N4ct01tPBWtcUWIpzkg01GIuKk4EAJLdZBwb	AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current node iteration code have a minor problem which do one more
-node rotation if we can't succeed to allocate. For example,
-if we start to allocate at node 0, we stop to iterate at node 0.
-Then we start to allocate at node 1 for next allocation.
+The usage of strict_strto*() is not preferred, because
+strict_strto*() is obsolete. Thus, kstrto*() should be
+used.
 
-I introduce new macros "for_each_node_mask_to_[alloc|free]" and
-fix and clean-up node iteration code to alloc or free.
-This makes code more understandable.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ kernel/gcov/fs.c |    2 +-
+ kernel/ksysfs.c  |    2 +-
+ kernel/params.c  |   14 +++++++-------
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 83edd17..3ac0a6f 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -752,33 +752,6 @@ static int hstate_next_node_to_alloc(struct hstate *h,
- 	return nid;
- }
- 
--static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
--{
--	struct page *page;
--	int start_nid;
--	int next_nid;
--	int ret = 0;
--
--	start_nid = hstate_next_node_to_alloc(h, nodes_allowed);
--	next_nid = start_nid;
--
--	do {
--		page = alloc_fresh_huge_page_node(h, next_nid);
--		if (page) {
--			ret = 1;
--			break;
--		}
--		next_nid = hstate_next_node_to_alloc(h, nodes_allowed);
--	} while (next_nid != start_nid);
--
--	if (ret)
--		count_vm_event(HTLB_BUDDY_PGALLOC);
--	else
--		count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
--
--	return ret;
--}
--
- /*
-  * helper for free_pool_huge_page() - return the previously saved
-  * node ["this node"] from which to free a huge page.  Advance the
-@@ -797,6 +770,40 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
- 	return nid;
- }
- 
-+#define for_each_node_mask_to_alloc(hs, nr_nodes, node, mask)		\
-+	for (nr_nodes = nodes_weight(*mask);				\
-+		nr_nodes > 0 &&						\
-+		((node = hstate_next_node_to_alloc(hs, mask)) || 1);	\
-+		nr_nodes--)
-+
-+#define for_each_node_mask_to_free(hs, nr_nodes, node, mask)		\
-+	for (nr_nodes = nodes_weight(*mask);				\
-+		nr_nodes > 0 &&						\
-+		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
-+		nr_nodes--)
-+
-+static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
-+{
-+	struct page *page;
-+	int nr_nodes, node;
-+	int ret = 0;
-+
-+	for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
-+		page = alloc_fresh_huge_page_node(h, node);
-+		if (page) {
-+			ret = 1;
-+			break;
-+		}
-+	}
-+
-+	if (ret)
-+		count_vm_event(HTLB_BUDDY_PGALLOC);
-+	else
-+		count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
-+
-+	return ret;
-+}
-+
- /*
-  * Free huge page from pool from next node to free.
-  * Attempt to keep persistent huge pages more or less
-@@ -806,36 +813,31 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
- static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
- 							 bool acct_surplus)
+diff --git a/kernel/gcov/fs.c b/kernel/gcov/fs.c
+index 9bd0934..7a7d2ee 100644
+--- a/kernel/gcov/fs.c
++++ b/kernel/gcov/fs.c
+@@ -74,7 +74,7 @@ static int __init gcov_persist_setup(char *str)
  {
--	int start_nid;
--	int next_nid;
-+	int nr_nodes, node;
- 	int ret = 0;
+ 	unsigned long val;
  
--	start_nid = hstate_next_node_to_free(h, nodes_allowed);
--	next_nid = start_nid;
--
--	do {
-+	for_each_node_mask_to_free(h, nr_nodes, node, nodes_allowed) {
- 		/*
- 		 * If we're returning unused surplus pages, only examine
- 		 * nodes with surplus pages.
- 		 */
--		if ((!acct_surplus || h->surplus_huge_pages_node[next_nid]) &&
--		    !list_empty(&h->hugepage_freelists[next_nid])) {
-+		if ((!acct_surplus || h->surplus_huge_pages_node[node]) &&
-+		    !list_empty(&h->hugepage_freelists[node])) {
- 			struct page *page =
--				list_entry(h->hugepage_freelists[next_nid].next,
-+				list_entry(h->hugepage_freelists[node].next,
- 					  struct page, lru);
- 			list_del(&page->lru);
- 			h->free_huge_pages--;
--			h->free_huge_pages_node[next_nid]--;
-+			h->free_huge_pages_node[node]--;
- 			if (acct_surplus) {
- 				h->surplus_huge_pages--;
--				h->surplus_huge_pages_node[next_nid]--;
-+				h->surplus_huge_pages_node[node]--;
- 			}
- 			update_and_free_page(h, page);
- 			ret = 1;
- 			break;
- 		}
--		next_nid = hstate_next_node_to_free(h, nodes_allowed);
--	} while (next_nid != start_nid);
-+	}
- 
- 	return ret;
- }
-@@ -1172,14 +1174,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- int __weak alloc_bootmem_huge_page(struct hstate *h)
- {
- 	struct huge_bootmem_page *m;
--	int nr_nodes = nodes_weight(node_states[N_MEMORY]);
-+	int nr_nodes, node;
- 
--	while (nr_nodes) {
-+	for_each_node_mask_to_alloc(h, nr_nodes, node, &node_states[N_MEMORY]) {
- 		void *addr;
- 
--		addr = __alloc_bootmem_node_nopanic(
--				NODE_DATA(hstate_next_node_to_alloc(h,
--						&node_states[N_MEMORY])),
-+		addr = __alloc_bootmem_node_nopanic(NODE_DATA(node),
- 				huge_page_size(h), huge_page_size(h), 0);
- 
- 		if (addr) {
-@@ -1191,7 +1191,6 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
- 			m = addr;
- 			goto found;
- 		}
--		nr_nodes--;
+-	if (strict_strtoul(str, 0, &val)) {
++	if (kstrtoul(str, 0, &val)) {
+ 		pr_warning("invalid gcov_persist parameter '%s'\n", str);
+ 		return 0;
  	}
- 	return 0;
+diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+index 6ada93c..9659d38 100644
+--- a/kernel/ksysfs.c
++++ b/kernel/ksysfs.c
+@@ -113,7 +113,7 @@ static ssize_t kexec_crash_size_store(struct kobject *kobj,
+ 	unsigned long cnt;
+ 	int ret;
  
-@@ -1330,48 +1329,28 @@ static inline void try_to_free_low(struct hstate *h, unsigned long count,
- static int adjust_pool_surplus(struct hstate *h, nodemask_t *nodes_allowed,
- 				int delta)
+-	if (strict_strtoul(buf, 0, &cnt))
++	if (kstrtoul(buf, 0, &cnt))
+ 		return -EINVAL;
+ 
+ 	ret = crash_shrink_memory(cnt);
+diff --git a/kernel/params.c b/kernel/params.c
+index 440e65d..1f228a3 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -252,13 +252,13 @@ int parse_args(const char *doing,
+ 	EXPORT_SYMBOL(param_ops_##name)
+ 
+ 
+-STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, strict_strtoul);
+-STANDARD_PARAM_DEF(short, short, "%hi", long, strict_strtol);
+-STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, strict_strtoul);
+-STANDARD_PARAM_DEF(int, int, "%i", long, strict_strtol);
+-STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, strict_strtoul);
+-STANDARD_PARAM_DEF(long, long, "%li", long, strict_strtol);
+-STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, strict_strtoul);
++STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, kstrtoul);
++STANDARD_PARAM_DEF(short, short, "%hi", long, kstrtol);
++STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, kstrtoul);
++STANDARD_PARAM_DEF(int, int, "%i", long, kstrtol);
++STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, kstrtoul);
++STANDARD_PARAM_DEF(long, long, "%li", long, kstrtol);
++STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, kstrtoul);
+ 
+ int param_set_charp(const char *val, const struct kernel_param *kp)
  {
--	int start_nid, next_nid;
--	int ret = 0;
-+	int nr_nodes, node;
- 
- 	VM_BUG_ON(delta != -1 && delta != 1);
- 
--	if (delta < 0)
--		start_nid = hstate_next_node_to_alloc(h, nodes_allowed);
--	else
--		start_nid = hstate_next_node_to_free(h, nodes_allowed);
--	next_nid = start_nid;
--
--	do {
--		int nid = next_nid;
--		if (delta < 0)  {
--			/*
--			 * To shrink on this node, there must be a surplus page
--			 */
--			if (!h->surplus_huge_pages_node[nid]) {
--				next_nid = hstate_next_node_to_alloc(h,
--								nodes_allowed);
--				continue;
--			}
-+	if (delta < 0) {
-+		for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
-+			if (h->surplus_huge_pages_node[node])
-+				goto found;
- 		}
--		if (delta > 0) {
--			/*
--			 * Surplus cannot exceed the total number of pages
--			 */
--			if (h->surplus_huge_pages_node[nid] >=
--						h->nr_huge_pages_node[nid]) {
--				next_nid = hstate_next_node_to_free(h,
--								nodes_allowed);
--				continue;
--			}
-+	} else {
-+		for_each_node_mask_to_free(h, nr_nodes, node, nodes_allowed) {
-+			if (h->surplus_huge_pages_node[node] <
-+					h->nr_huge_pages_node[node])
-+				goto found;
- 		}
-+	}
-+	return 0;
- 
--		h->surplus_huge_pages += delta;
--		h->surplus_huge_pages_node[nid] += delta;
--		ret = 1;
--		break;
--	} while (next_nid != start_nid);
--
--	return ret;
-+found:
-+	h->surplus_huge_pages += delta;
-+	h->surplus_huge_pages_node[node] += delta;
-+	return 1;
- }
- 
- #define persistent_huge_pages(h) (h->nr_huge_pages - h->surplus_huge_pages)
 -- 
-1.7.9.5
+1.7.10.4
+
 
