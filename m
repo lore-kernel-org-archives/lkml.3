@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab3GVNL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:11:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38988 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab3GVNLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:11:54 -0400
-From: Oleksandr Kravchenko <x0199363@ti.com>
-To: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <jic23@cam.ac.uk>, <pmeerw@pmeerw.net>, <holler@ahsoftware.de>,
-        <srinivas.pandruvada@intel.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <grygorii.strashko@ti.com>,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Subject: [PATCH v3 1/2] of: Add Avago Technologies vendor prefix
-Date: Mon, 22 Jul 2013 16:11:27 +0300
-Message-ID: <1374498688-24701-1-git-send-email-x0199363@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755266Ab3GVNPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:15:46 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:41779 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab3GVNPo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 09:15:44 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: James Hogan <james@albanarts.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Steven Newbury <steve@snewbury.org.uk>
+Subject: Re: Linux 3.11-rc2
+Date: Mon, 22 Jul 2013 15:15:38 +0200
+Message-ID: <3298830.Snx2ykMFY6@merkaba>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc2-tp520; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5728692.GlhGgHY92H@vostro.rjw.lan>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <CAAG0J9-OgVe3Y0uo0bKr2TTcn3YUna1C_5NixBSsft3+cbKKWw@mail.gmail.com> <5728692.GlhGgHY92H@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Am Montag, 22. Juli 2013, 15:02:22 schrieb Rafael J. Wysocki:
+> On Monday, July 22, 2013 12:08:40 AM James Hogan wrote:
+> > On 21 July 2013 20:53, Linus Torvalds <torvalds@linux-foundation.org> 
+wrote:
+> > >  (b) we had a late change to how ACPI backlight handling is done on
+> > > 
+> > > certain machines, and while this kind of thing really shouldn't be
+> > > done outside the merge window, I ended up pulling it anyway. But I'd
+> > > *really* like to have people test this thing particularly on laptops
+> > > with intel-based graphics. It should only matter (and hopefully
+> > > improve things) for the newer ones with BIOSes designed for Windows 8,
+> > > but hey, the more testing, the better. Backlight handling has beenin
+> > > painful before, so I'm mentioning this explicitly.
+> > 
+> > 8c5bd7a "ACPI / video / i915: No ACPI backlight if firmware expects
+> > Windows 8" breaks backlight control for me because
+> > /sys/class/backlight/acpi_video0 disappears, and
+> > /sys/class/backlight/intel_backlight doesn't seem to have any effect.
+> > 
+> > Note that acpi_video0 only worked because I was applying "[PATCH]
+> > drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight" [1], so
+> > strictly speaking mainline already didn't work.
+> 
+> James, sorry for breaking things for you.  The patch you're mentioning is
+> going to hit the mainline at one point anyway I suppose.
 
-This commit adds a device tree vendor prefix for Avago Technologies.
+Dunno whether thats related, but after locking screen today and screen blanker 
+kicking in (just a blank screen), I was not able to reactivate the display 
+again by typing a key or so unless I closed the laptop display lid, let the 
+machine suspend (to ram) and opened it again.
 
-Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
----
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 file changed, 1 insertion(+)
+Plain 3.11-rc2 on ThinkPad T520:
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index d5a79ca..8aab9c6 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -11,6 +11,7 @@ amcc	Applied Micro Circuits Corporation (APM, formally AMCC)
- apm	Applied Micro Circuits Corporation (APM)
- arm	ARM Ltd.
- atmel	Atmel Corporation
-+avago	Avago Technologies
- bosch	Bosch Sensortec GmbH
- brcm	Broadcom Corporation
- cavium	Cavium, Inc.
+martin@merkaba:~> phoronix-test-suite system-info
+
+Phoronix Test Suite v4.6.0
+System Information
+
+Hardware:
+Processor: Intel Core i5-2520M @ 3.20GHz (4 Cores), Motherboard: LENOVO 
+42433WG, Chipset: Intel 2nd Generation Core Family DRAM, Memory: 8192MB, Disk: 
+300GB INTEL SSDSA2CW30 + 30GB INTEL SSDMCEAC03, Graphics: Intel 2nd Generation 
+Core Family IGP, Audio: Conexant CX20590, Network: Intel 82579LM Gigabit 
+Connection + Intel Centrino Advanced-N 6205
+
+Software:
+OS: Debian unstable, Kernel: 3.11.0-rc2-tp520 (x86_64), Desktop: KDE 4.10.5, 
+Display Server: X Server 1.12.4, Display Driver: intel 2.20.14, OpenGL: 3.0 
+Mesa 9.1.4, Compiler: GCC 4.8, File-System: btrfs, Screen Resolution: 
+1920x1080
+
+Thanks,
 -- 
-1.7.9.5
-
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
