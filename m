@@ -1,138 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab3GVH0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 03:26:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42614 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754611Ab3GVH0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 03:26:32 -0400
-Message-ID: <51ECDE5E.3050104@ti.com>
-Date: Mon, 22 Jul 2013 12:55:18 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
+	id S1756624Ab3GVH1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 03:27:16 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.108]:29136 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755441Ab3GVH1P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 03:27:15 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-13.tower-200.messagelabs.com!1374478030!6923031!6
+X-Originating-IP: [66.77.174.13]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <51ECDEC2.3030706@digi.com>
+Date: Mon, 22 Jul 2013 09:26:58 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, <kyungmin.park@samsung.com>,
-        <balbi@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
-        <arnd@arndb.de>, <swarren@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <Pine.LNX.4.44L0.1307211453450.19133-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1307211453450.19133-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "marex@denx.de" <marex@denx.de>, "jic23@kernel.org" <jic23@kernel.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v2 3/5] iio: mxs-lradc: add scale attribute to channels
+References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <1374225208-28940-4-git-send-email-hector.palacios@digi.com> <51E97201.4010508@free-electrons.com>
+In-Reply-To: <51E97201.4010508@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Alexandre,
 
-On Monday 22 July 2013 12:52 AM, Alan Stern wrote:
-> On Sun, 21 Jul 2013, Sylwester Nawrocki wrote:
-> 
->>> What's wrong with the platform_data structure, why can't that be used
->>> for this?
+On 07/19/2013 07:06 PM, Alexandre Belloni wrote:
+> Hi Hector,
+>
+> On 19/07/2013 11:13, Hector Palacios wrote:
+>> Some LRADC channels have fixed pre-dividers and all have an optional
+>> divider by two which allows a maximum input voltage of VDDIO - 50mV.
 >>
->> At the point the platform data of some driver is initialized, e.g. in
->> board setup code the PHY pointer is not known, since the PHY supplier
->> driver has not initialized yet.  Even though we wanted to pass pointer
->> to a PHY through some notifier call, it would have been not clear
->> which PHY user driver should match on such notifier.  A single PHY
->> supplier driver can create M PHY objects and this needs to be mapped
->> to N PHY user drivers.  This mapping needs to be defined somewhere by
->> the system integrator.  It works well with device tree, but except that
->> there seems to be no other reliable infrastructure in the kernel to
->> define links/dependencies between devices, since device identifiers are
->> not known in advance in all cases.
+>> This patch
+>>   - adds the scaling info flag to all channels
+>>   - grabs the max reference voltage per channel from DT
+>>     (where the fixed pre-dividers apply)
+>>   - allows to read the scaling attribute (computed from the Vref)
 >>
->> What Tomasz proposed seems currently most reasonable to me for non-dt.
+>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>.
+>> ---
+>>   drivers/staging/iio/adc/mxs-lradc.c | 81 ++++++++++++++++++++++++-------------
+>>   1 file changed, 52 insertions(+), 29 deletions(-)
 >>
->>> Or, if not, we can always add pointers to the platform device structure,
->>> or even the main 'struct device' as well, that's what it is there for.
+>> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
+>> index 91282dc..99e5790 100644
+>> --- a/drivers/staging/iio/adc/mxs-lradc.c
+>> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+>> @@ -141,6 +141,8 @@ struct mxs_lradc {
 >>
->> Still we would need to solve a problem which platform device structure
->> gets which PHY pointer.
-> 
-> Can you explain the issues in more detail?  I don't fully understand 
-> the situation.
-> 
-> Here's what I think I know:
-> 
-> 	The PHY and the controller it is attached to are both physical
-> 	devices.
-> 
-> 	The connection between them is hardwired by the system
-> 	manufacturer and cannot be changed by software.
-> 
-> 	PHYs are generally described by fixed system-specific board
-> 	files or by Device Tree information.  Are they ever discovered
-> 	dynamically?
+>>   	struct completion	completion;
+>>
+>> +	uint32_t		vref_mv[LRADC_MAX_TOTAL_CHANS];
+>> +
+>>   	/*
+>>   	 * Touchscreen LRADC channels receives a private slot in the CTRL4
+>>   	 * register, the slot #7. Therefore only 7 slots instead of 8 in the
+>> @@ -228,39 +230,12 @@ struct mxs_lradc {
+>>   #define LRADC_RESOLUTION			12
+>>   #define LRADC_SINGLE_SAMPLE_MASK		((1 << LRADC_RESOLUTION) - 1)
+>>
+>> -/*
+>> - * Raw I/O operations
+>> - */
+>> -static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+>> +static int mxs_lradc_read_single(struct iio_dev *iio_dev,
+>>   			const struct iio_chan_spec *chan,
+>>   			int *val, int *val2, long m)
+> You don't need val2 and m in that function, I woud suggest no passing
+> those. Also, in my patch, I was passing channel->chan as an int but I
+> don't see any drawbacks of passing a pointer to the struct iio_chan_spec.
 
-No. They are created just like any other platform devices are created.
-> 
-> 	Is the same true for the controllers attached to the PHYs?
-> 	If not -- if both a PHY and a controller are discovered 
-> 	dynamically -- how does the kernel know whether they are 
-> 	connected to each other?
+Ok, I'll remove val2 and m and keep the pointer.
 
-No differences here. Both PHY and controller will have dt information or hwmod
-data using which platform devices will be created.
-> 
-> 	The kernel needs to know which controller is attached to which
-> 	PHY.  Currently this information is represented by name or ID
-> 	strings embedded in platform data.
+> As a note, I'm waiting for your patch to get included so that we won't
+> get any conflicts.
 
-right. It's embedded in the platform data of the controller.
-> 
-> 	The PHY's driver (the supplier) uses the platform data to 
-> 	construct a platform_device structure that represents the PHY.  
+I know, thank you for that.
 
-Currently the driver assigns static labels (corresponding to the label used in
-the platform data of the controller).
-> 	Until this is done, the controller's driver (the client) cannot 
-> 	use the PHY.
-
-right.
-> 
-> 	Since there is no parent-child relation between the PHY and the 
-> 	controller, there is no guarantee that the PHY's driver will be
-> 	ready when the controller's driver wants to use it.  A deferred
-> 	probe may be needed.
-
-right.
-> 
-> 	The issue (or one of the issues) in this discussion is that 
-> 	Greg does not like the idea of using names or IDs to associate
-> 	PHYs with controllers, because they are too prone to
-> 	duplications or other errors.  Pointers are more reliable.
-> 
-> 	But pointers to what?  Since the only data known to be 
-> 	available to both the PHY driver and controller driver is the
-> 	platform data, the obvious answer is a pointer to platform data
-> 	(either for the PHY or for the controller, or maybe both).
-
-hmm.. it's not going to be simple though as the platform device for the PHY and
-controller can be created in entirely different places. e.g., in some cases the
-PHY device is a child of some mfd core device (the device will be created in
-drivers/mfd) and the controller driver (usually) is created in board file. I
-guess then we have to come up with something to share a pointer in two
-different files.
-> 
-> Probably some of the details above are wrong; please indicate where I
-> have gone astray.  Also, I'm not clear about the role played by various 
-> APIs.  For example, where does phy_create() fit into this picture?
-
-phy_create is the API by which the PHY's driver (the supplier) hook into the
-PHY framework. It's like the controller driver will always interact with the
-PHY driver through the PHY framework.
-
-Thanks
-Kishon
+Best regards,
+--
+Hector Palacios
