@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab3GVRKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:10:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757501Ab3GVRKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:10:08 -0400
-Date: Mon, 22 Jul 2013 19:04:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH V2] tracing: Check f_dentry before accessing
-	event_file/call in inode->i_private
-Message-ID: <20130722170442.GA27002@redhat.com>
-References: <20130705003223.GA4981@redhat.com> <20130709075519.2583.96462.stgit@mhiramat-M0-7522> <20130715181659.GA18505@redhat.com> <51E5FD33.4040604@hitachi.com> <20130717145148.GB7358@redhat.com> <51E750F4.5070200@hitachi.com> <20130718145137.GA6014@redhat.com> <51E8CCC0.7030404@hitachi.com> <20130719133327.GA21278@redhat.com> <51ED0227.6020204@hitachi.com>
+	id S932376Ab3GVRLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 13:11:21 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:10437 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757398Ab3GVRLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 13:11:19 -0400
+Message-ID: <1374513075.1635.14.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <freddy@asix.com.tw>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <grundler@google.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <louis@asix.com.tw>,
+        <allan@asix.com.tw>
+Date: Mon, 22 Jul 2013 18:11:15 +0100
+In-Reply-To: <1374512879.4990.19.camel@edumazet-glaptop>
+References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+	 <1374512879.4990.19.camel@edumazet-glaptop>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51ED0227.6020204@hitachi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20030.005
+X-TM-AS-Result: No--18.210300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22, Masami Hiramatsu wrote:
->
-> (2013/07/19 22:33), Oleg Nesterov wrote:
-> > My only point, imho this is more complex than necessary.
->
-> I see, so I'd like to see the fix. However, I'm not sure
-> we have enough time to fix that cleanly.
+On Mon, 2013-07-22 at 10:07 -0700, Eric Dumazet wrote:
+> On Sat, 2013-07-20 at 17:16 +0800, freddy@asix.com.tw wrote:
+> > From: Freddy Xin <freddy@asix.com.tw>
+> > 
+> > Disable TSO and SG network features in reset() and bind() functions,
+> > and check the return value of skb_linearize() in tx_fixup() to prevent
+> > TX throttling.
+> > 
+> > Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+> > ---
+> >  drivers/net/usb/ax88179_178a.c | 8 +++++---
+> >  1 file changed, 5 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+> > index 1e3c302..eb71331 100644
+> > --- a/drivers/net/usb/ax88179_178a.c
+> > +++ b/drivers/net/usb/ax88179_178a.c
+> > @@ -1029,7 +1029,7 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
+> >  	dev->mii.supports_gmii = 1;
+> >  
+> >  	dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+> > -			      NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
+> > +			      NETIF_F_RXCSUM;
+> >  
+> >  	dev->net->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+> >  				 NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
+> > @@ -1173,7 +1173,9 @@ ax88179_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
+> >  	if (((skb->len + 8) % frame_size) == 0)
+> >  		tx_hdr2 |= 0x80008000;	/* Enable padding */
+> >  
+> > -	skb_linearize(skb);
+> > +	if (skb_linearize(skb))
+> > +		return NULL;
+> > +
+> >  	
+> 
+> I guess that if a driver does not advertise NETIF_F_SG, this
+> skb_linearize() call is not needed : All frames reaching your xmit
+> function should already be linear
 
-I promise, tomorrow I'll re-send the RFC patches, so if you don't
-like them we can switch back to refcounting.
+Look at the hw_features initialisation...
 
-Sorry for delay. Today I was busy with other bugs I "found" in
-subsystem_open/etc code, but when I tried to fix them I realized
-that I have misread this code.
+Ben.
 
-> Note that except
-> for the timing bug, we still leave a kernel bug which can
-> easily be reproduced as Jovi reported.
-
-Could you please remind ?
-
-> >> OK, let me confirm that, would you mean we still need 2/4 - 4/4?
-> >
-> > Yes, yes.
->
-> And those are depends on 1/4...
-
-Not at all or I missed something (quite possible). Just 2/4 should
-not check ->flags, of course. 3/4 looks "obviously fine", 4/4 was
-already merged.
-
-Oleg.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
