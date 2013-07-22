@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3GUXot (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 19:44:49 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:51112 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab3GUXor (ORCPT
+	id S1753230Ab3GVACX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 20:02:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37410 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab3GVACW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 19:44:47 -0400
+	Sun, 21 Jul 2013 20:02:22 -0400
+Date: Mon, 22 Jul 2013 01:01:58 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Felipe F. Tonello" <eu@felipetonello.com>
+Cc: alsa-devel@alsa-project.org, LiamGirdwoodlgirdwood@gmail.com,
+        JaroslavKyselaperex@perex.cz, TakashiIwaitiwai@suse.de,
+        linux-kernel@vger.kernel.org,
+        "Felipe F. Tonello" <ftonello@cercacor.com>
+Message-ID: <20130722000157.GI9858@sirena.org.uk>
+References: <1374281962-3786-1-git-send-email-eu@felipetonello.com>
 MIME-Version: 1.0
-In-Reply-To: <51EC4908.4040504@gmail.com>
-References: <1374257691-31981-1-git-send-email-bigeasy@linutronix.de>
- <51EBF33A.4050207@gmail.com> <51EC4908.4040504@gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Mon, 22 Jul 2013 00:44:27 +0100
-X-Google-Sender-Auth: wHMX5qrlqTz4OHvdmF2IoFEqq34
-Message-ID: <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com>
-Subject: Re: [PATCH] of: provide of_platform_unpopulate()
-To: Rob Herring <robherring2@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        George Cherian <george.cherian@ti.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Roger Quadros <rogerq@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/T+UM55GOh1Yge7W"
+Content-Disposition: inline
+In-Reply-To: <1374281962-3786-1-git-send-email-eu@felipetonello.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ALSA: SoC: Added jack detection kcontrol support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 21, 2013 at 9:48 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On 07/21/2013 09:42 AM, Rob Herring wrote:
->> On 07/19/2013 01:14 PM, Sebastian Andrzej Siewior wrote:
->>> So I called of_platform_populate() on a device to get each child device
->>> probed and on rmmod and I need to reverse its doing. After a quick grep
->>> I did what others did as well and rmmod ended in:
->>>
->>> | Unable to handle kernel NULL pointer dereference at virtual address 00000018
->>> | PC is at release_resource+0x18/0x80
->>> | Process rmmod (pid: 2005, stack limit = 0xedc30238)
->>> | [<c003add0>] (release_resource+0x18/0x80) from [<c0300e08>] (platform_device_del+0x78/0xac)
->>> | [<c0300e08>] (platform_device_del+0x78/0xac) from [<c0301358>] (platform_device_unregister+0xc/0x18)
->>>
->>> The problem is that platform_device_del() "releases" each ressource in its
->>> tree. This does not work on platform_devices created by OF becuase they
->>> were never added via insert_resource(). As a consequence old->parent in
->>> __release_resource() is NULL and we explode while accessing ->child.
->>> So I either I do something completly wrong _or_ nobody here tested the
->>> rmmod path of their driver.
->>
->> Wouldn't the correct fix be to call insert_resource somehow? The problem
->> I have is that while of_platform_populate is all about parsing the DT
->> and creating devices, the removal side has nothing to do with DT. So
->> this should not be in the DT code. I think the core device code should
->> be able to handle removal if the device creation side is done correctly.
->>
->> It looks to me like of_device_add either needs to call
->> platform_device_add rather than device_add. I think the device name
->> setting in platform_device_add should be a nop. If not, a check that the
->> name is already set could be added.
->>
->
-> BTW, it looks like Grant has attempted this already:
 
-Yup, things broke badly. Unfortunately the of_platform_device and
-platform_device history doesn't treat resources in the same way. I
-would like to merge the code, but I haven't been able to figure out a
-clean way to do it. Looks like we do need the unpopulate function.
+--/T+UM55GOh1Yge7W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-g.
+On Fri, Jul 19, 2013 at 05:59:22PM -0700, Felipe F. Tonello wrote:
+> From: "Felipe F. Tonello" <ftonello@cercacor.com>
+>=20
+> It adds soc jack support for alsa kcontrol.
+>=20
+> This support is necessary since the new kcontrol is used by user-space
+> daemons, such as PulseAudio(>=3D2.0), to do jack detection.
+>=20
+> Signed-off-by: Felipe F. Tonello <ftonello@cercacor.com>
+> ---
+>  include/sound/soc.h  |  1 +
+>  sound/soc/Kconfig    |  1 +
+>  sound/soc/soc-jack.c | 22 ++++++++++++++++++++++
+>  3 files changed, 24 insertions(+)
+
+No, this makes no sense at all as an ASoC specific feature - it should
+be a standard feature of ALSA jacks.  The whole point of having ALSA
+core infrastructure for jacks is to avoid having to go round doing make
+work stuff like this.
+
+The fact that the kcontrols were introduced as a HDA-specific feature at
+all is of course a problem here...
+
+--/T+UM55GOh1Yge7W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7HZyAAoJELSic+t+oim9p64QAIk6TzGC5VjswvUl4yH1c7DT
+XmJlJ4xAIyDBNcQp528rnVv8tYKwGNbJRg7JVhEsx1FRBmosHj/UU0be/geLHLj9
+RROiBu9AhPw8blQAXfh6UKfu3HA+74uk/rdNxX33FMsGQvHdbtcbAt0C5fa7fY9I
+FCSAAzUEEr3+cBWmuHYIkM6dCHMC3Sgj1U57kUkDTTMiI+cDfrWazm6e4fgu+Cto
+CxIVAgpRMKwKZHIfilMDts4MlfNBdUNyKNiJb1hJbVFvWl4a3YqB5xuWdlMPiKvy
+zOfkiQZv4WXxEyIly6JU+GJFxH3IZIkPG8kKM74wWfuBvyfOdCLEFbqQEQCuiK/0
+YGhZ/drhcOSUKX+6HgMVY/cYC14lyqyDDtUoPUtTIFoYG10PNSvkSwkKdki++G/F
+mXBiLVd9DIOPkiniD1be7UVyw9BAZngMIqKgioUBqyK3aNLDyLjJh3cr/KYMQuU4
+H3qlKpJ7fLUpsOjPWhpcMK0Fwb5Q4bQ4nHH8SJwqgmzwZSq6CsWIMm3K6eu+HJR9
+wwqor5KqNSoXvxH6UMTgMLBj1Ebz8/06FPt0hrHira0FfQLwhhCiITsykchISYae
+ncHppJpPsunEEeVB+2SihS5EbeLncnB6gKd7eCtiD1tm6HnTVLlXLl3m0Lc0WYHH
+HrqcLVJuimsRvdmCrfjy
+=4ZRK
+-----END PGP SIGNATURE-----
+
+--/T+UM55GOh1Yge7W--
