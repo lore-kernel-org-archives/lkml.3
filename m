@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab3GVIER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:04:17 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:43590 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab3GVIEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:04:15 -0400
-Message-ID: <51ECE77A.50504@hitachi.com>
-Date: Mon, 22 Jul 2013 17:04:10 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756709Ab3GVIGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:06:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752315Ab3GVIGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 04:06:23 -0400
+Date: Mon, 22 Jul 2013 11:07:41 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, asias@redhat.com
+Subject: Re: [PULL] vhost: cleanups and fixes
+Message-ID: <20130722080741.GA25087@redhat.com>
+References: <20130715183149.GA8215@redhat.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
-Subject: Re: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and
- text_poke_smp_batch
-References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522> <20130718114753.26675.18714.stgit@mhiramat-M0-7522> <20130722074339.GA25976@gmail.com>
-In-Reply-To: <20130722074339.GA25976@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130715183149.GA8215@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/22 16:43), Ingo Molnar wrote:
-> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
-> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
-> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
-> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
+On Mon, Jul 15, 2013 at 09:31:49PM +0300, Michael S. Tsirkin wrote:
+> The following changes since commit 09a34c8404c1d4c5782de319c02e1d742c57875c:
+> 
+>   vhost/test: update test after vhost cleanups (2013-07-07 18:02:25 +0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
+> 
+> for you to fetch changes up to 22fa90c7fb479694d6affebc049d21f06b714be6:
+> 
+>   vhost: Remove custom vhost rcu usage (2013-07-11 15:38:40 +0300)
+> 
+> ----------------------------------------------------------------
+> vhost: more fixes for 3.11
+> 
+> This includes some fixes for vhost net and scsi drivers.
+> The test module has already been reworked to avoid rcu
+> usage, but the necessary core changes are missing,
+> we fixed this.
+> Unlikely to affect any real-world users, but it's
+> early in the cycle so, let's merge them.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Asias He (3):
+>       vhost-net: Always access vq->private_data under vq mutex
+>       vhost-scsi: Always access vq->private_data under vq mutex
+>       vhost: Remove custom vhost rcu usage
 
-Hmm, setup_optimized_kprobes is already removed by 2/3 (this is actually
-a series of tightly coupled patches). Could you check your working tree?
 
-Thank you,
+Hi Linus,
+Just checking that all's well with this PULL request.
+If it's not merged, we'll have to revert the relevant change
+in the test module.
+Either way, need to keep them in sync.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Pls let me know,
+Thanks
 
-
+>  drivers/vhost/net.c   | 37 ++++++++++++++++---------------------
+>  drivers/vhost/scsi.c  | 17 ++++++-----------
+>  drivers/vhost/test.c  |  6 ++----
+>  drivers/vhost/vhost.h | 10 ++--------
+>  4 files changed, 26 insertions(+), 44 deletions(-)
