@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab3GVBV4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 21:21:56 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:18764 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab3GVBVy (ORCPT
+	id S1754690Ab3GVBWj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 21:22:39 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:15993 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160Ab3GVBVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 21:21:54 -0400
+	Sun, 21 Jul 2013 21:21:55 -0400
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: [PATCH 2/4] ipc: drop ipc_lock_by_ptr
-Date: Sun, 21 Jul 2013 18:21:41 -0700
-Message-Id: <1374456103-25353-3-git-send-email-davidlohr.bueso@hp.com>
+Subject: [PATCH 3/4] ipc, shm: drop shm_lock_check
+Date: Sun, 21 Jul 2013 18:21:42 -0700
+Message-Id: <1374456103-25353-4-git-send-email-davidlohr.bueso@hp.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1374456103-25353-1-git-send-email-davidlohr.bueso@hp.com>
 References: <1374456103-25353-1-git-send-email-davidlohr.bueso@hp.com>
@@ -20,72 +20,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After previous cleanups and optimizations, this function is no longer
-heavily used and we don't have a good reason to keep it. Update the
-few remaining callers and get rid of it.
+This function was replaced by a the lockless shm_obtain_object_check(),
+and no longer has any users.
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- ipc/namespace.c | 3 ++-
- ipc/util.c      | 6 ++++--
- ipc/util.h      | 6 ------
- 3 files changed, 6 insertions(+), 9 deletions(-)
+ ipc/shm.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index 67dc744..aba9a58 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -89,7 +89,8 @@ void free_ipcs(struct ipc_namespace *ns, struct ipc_ids *ids,
- 		perm = idr_find(&ids->ipcs_idr, next_id);
- 		if (perm == NULL)
- 			continue;
--		ipc_lock_by_ptr(perm);
-+		rcu_read_lock();
-+		ipc_lock_object(perm);
- 		free(ns, perm);
- 		total++;
- 	}
-diff --git a/ipc/util.c b/ipc/util.c
-index 1ddadcf..9f6aa30 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -205,7 +205,8 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
- 			continue;
- 		}
- 
--		ipc_lock_by_ptr(ipc);
-+		rcu_read_lock();
-+		ipc_lock_object(ipc);
- 		return ipc;
- 	}
- 
-@@ -838,7 +839,8 @@ static struct kern_ipc_perm *sysvipc_find_ipc(struct ipc_ids *ids, loff_t pos,
- 		ipc = idr_find(&ids->ipcs_idr, pos);
- 		if (ipc != NULL) {
- 			*new_pos = pos + 1;
--			ipc_lock_by_ptr(ipc);
-+			rcu_read_lock();
-+			ipc_lock_object(ipc);
- 			return ipc;
- 		}
- 	}
-diff --git a/ipc/util.h b/ipc/util.h
-index 0a362ff..14b0a2a 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -171,12 +171,6 @@ static inline void ipc_assert_locked_object(struct kern_ipc_perm *perm)
- 	assert_spin_locked(&perm->lock);
+diff --git a/ipc/shm.c b/ipc/shm.c
+index c7ee2f6..9ffc563 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -167,17 +167,6 @@ static inline void shm_lock_by_ptr(struct shmid_kernel *ipcp)
+ 	ipc_lock_object(&ipcp->shm_perm);
  }
  
--static inline void ipc_lock_by_ptr(struct kern_ipc_perm *perm)
+-static inline struct shmid_kernel *shm_lock_check(struct ipc_namespace *ns,
+-						int id)
 -{
--	rcu_read_lock();
--	ipc_lock_object(perm);
+-	struct kern_ipc_perm *ipcp = ipc_lock_check(&shm_ids(ns), id);
+-
+-	if (IS_ERR(ipcp))
+-		return (struct shmid_kernel *)ipcp;
+-
+-	return container_of(ipcp, struct shmid_kernel, shm_perm);
 -}
 -
- static inline void ipc_unlock(struct kern_ipc_perm *perm)
+ static inline void shm_rmid(struct ipc_namespace *ns, struct shmid_kernel *s)
  {
- 	ipc_unlock_object(perm);
+ 	ipc_rmid(&shm_ids(ns), &s->shm_perm);
 -- 
 1.7.11.7
 
