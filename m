@@ -1,127 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab3GVHXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 03:23:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38509 "EHLO bear.ext.ti.com"
+	id S1756582Ab3GVH0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 03:26:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42614 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755752Ab3GVHXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 03:23:21 -0400
-Message-ID: <51ECDDE3.1040209@ti.com>
-Date: Mon, 22 Jul 2013 12:53:15 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754611Ab3GVH0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 03:26:32 -0400
+Message-ID: <51ECDE5E.3050104@ti.com>
+Date: Mon, 22 Jul 2013 12:55:18 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Shuduo Sang <sangshuduo@gmail.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, <linux-usb@vger.kernel.org>,
-        <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for
- all controllers with xhci 1.0
-References: <1372656552-18824-1-git-send-email-george.cherian@ti.com> <20130702032712.GD6262@xanatos> <CANqatMA869UoTFDvSAO1P4OKsiVf+qyXbCrpHDOhm4+TMZ2cGA@mail.gmail.com>
-In-Reply-To: <CANqatMA869UoTFDvSAO1P4OKsiVf+qyXbCrpHDOhm4+TMZ2cGA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, <kyungmin.park@samsung.com>,
+        <balbi@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
+        <kgene.kim@samsung.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
+        <arnd@arndb.de>, <swarren@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+References: <Pine.LNX.4.44L0.1307211453450.19133-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1307211453450.19133-100000@netrider.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Hi Shuduo,
-
-On 7/22/2013 12:35 PM, Shuduo Sang wrote:
-> Hi Sarah and George,
->
-> I met this issue at my side too. Per lspci output and HCIVERSION, I
-> see the host is Lynx
-> Point xhci 1.0 host.
->
-> I notice George's patch has not been merged in kernel 3.11-rc1.
-
-Just to make sure, without the patch are you getting the following error.
-
-"ERROR Transfer event TRB DMA ptr not part of current TD"
-
-
-> Then I manually applied George's patch against 3.10.0 but the issue
-> still happen when I use
-> camera to capture picture.
-
-Can you explain what is the exact issue you face after applying the patch?
-Are you still getting
-
-"ERROR Transfer event TRB DMA ptr not part of current TD"
-
-> So I doubt some corner test has not been
-> covered by patch.
-> Pls let me know what I can do if you need more information.
->
-> Thanks,
-> Shuduo
->
-> On Tue, Jul 2, 2013 at 11:27 AM, Sarah Sharp
-> <sarah.a.sharp@linux.intel.com> wrote:
->> Thanks George, this looks fine.  I will munge the description a bit when
->> I commit it, and mark it for stable as well.
+On Monday 22 July 2013 12:52 AM, Alan Stern wrote:
+> On Sun, 21 Jul 2013, Sylwester Nawrocki wrote:
+> 
+>>> What's wrong with the platform_data structure, why can't that be used
+>>> for this?
 >>
->> Unfortunately, due to the timing of the merge window, this patch will
->> have to wait for 2-3 weeks until 3.11-rc1 is out.
+>> At the point the platform data of some driver is initialized, e.g. in
+>> board setup code the PHY pointer is not known, since the PHY supplier
+>> driver has not initialized yet.  Even though we wanted to pass pointer
+>> to a PHY through some notifier call, it would have been not clear
+>> which PHY user driver should match on such notifier.  A single PHY
+>> supplier driver can create M PHY objects and this needs to be mapped
+>> to N PHY user drivers.  This mapping needs to be defined somewhere by
+>> the system integrator.  It works well with device tree, but except that
+>> there seems to be no other reliable infrastructure in the kernel to
+>> define links/dependencies between devices, since device identifiers are
+>> not known in advance in all cases.
 >>
->> Sarah Sharp
+>> What Tomasz proposed seems currently most reasonable to me for non-dt.
 >>
->> On Mon, Jul 01, 2013 at 10:59:12AM +0530, George Cherian wrote:
->>> Xhci controllers with hci_version > 0.96 gives spurious success
->>> events on short packet completion. During webcam capture the
->>> "ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
->>> The same application works fine with synopsis controllers hci_version 0.96.
->>> The same Issue is seen with Intel Pantherpoint xhci controller. So enabling
->>> this quirk in xhci_gen_setup if controller verion is greater than 0.96.
->>> For xhci-pci move the quirk to much generic place xhci_gen_setup.
->>>
->>> Signed-off-by: George Cherian <george.cherian@ti.com>
->>> ---
->>>   drivers/usb/host/xhci-pci.c | 1 -
->>>   drivers/usb/host/xhci.c     | 7 +++++++
->>>   2 files changed, 7 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
->>> index cc24e39..f00cb20 100644
->>> --- a/drivers/usb/host/xhci-pci.c
->>> +++ b/drivers/usb/host/xhci-pci.c
->>> @@ -93,7 +93,6 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
->>>        }
->>>        if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
->>>                        pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
->>> -             xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
->>>                xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
->>>                xhci->limit_active_eps = 64;
->>>                xhci->quirks |= XHCI_SW_BW_CHECKING;
->>> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
->>> index d8f640b..0f7be59 100644
->>> --- a/drivers/usb/host/xhci.c
->>> +++ b/drivers/usb/host/xhci.c
->>> @@ -4697,6 +4697,13 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
->>>
->>>        get_quirks(dev, xhci);
->>>
->>> +     /* In xhci controllers which follow xhci 1.0 spec gives a spurious
->>> +      * success event after a short transfer. This quirk will ignore such
->>> +      * spurious event.
->>> +      */
->>> +     if (xhci->hci_version > 0x96)
->>> +             xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
->>> +
->>>        /* Make sure the HC is halted. */
->>>        retval = xhci_halt(xhci);
->>>        if (retval)
->>> --
->>> 1.8.1.4
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>>> Or, if not, we can always add pointers to the platform device structure,
+>>> or even the main 'struct device' as well, that's what it is there for.
+>>
+>> Still we would need to solve a problem which platform device structure
+>> gets which PHY pointer.
+> 
+> Can you explain the issues in more detail?  I don't fully understand 
+> the situation.
+> 
+> Here's what I think I know:
+> 
+> 	The PHY and the controller it is attached to are both physical
+> 	devices.
+> 
+> 	The connection between them is hardwired by the system
+> 	manufacturer and cannot be changed by software.
+> 
+> 	PHYs are generally described by fixed system-specific board
+> 	files or by Device Tree information.  Are they ever discovered
+> 	dynamically?
 
--- 
--George
+No. They are created just like any other platform devices are created.
+> 
+> 	Is the same true for the controllers attached to the PHYs?
+> 	If not -- if both a PHY and a controller are discovered 
+> 	dynamically -- how does the kernel know whether they are 
+> 	connected to each other?
 
+No differences here. Both PHY and controller will have dt information or hwmod
+data using which platform devices will be created.
+> 
+> 	The kernel needs to know which controller is attached to which
+> 	PHY.  Currently this information is represented by name or ID
+> 	strings embedded in platform data.
+
+right. It's embedded in the platform data of the controller.
+> 
+> 	The PHY's driver (the supplier) uses the platform data to 
+> 	construct a platform_device structure that represents the PHY.  
+
+Currently the driver assigns static labels (corresponding to the label used in
+the platform data of the controller).
+> 	Until this is done, the controller's driver (the client) cannot 
+> 	use the PHY.
+
+right.
+> 
+> 	Since there is no parent-child relation between the PHY and the 
+> 	controller, there is no guarantee that the PHY's driver will be
+> 	ready when the controller's driver wants to use it.  A deferred
+> 	probe may be needed.
+
+right.
+> 
+> 	The issue (or one of the issues) in this discussion is that 
+> 	Greg does not like the idea of using names or IDs to associate
+> 	PHYs with controllers, because they are too prone to
+> 	duplications or other errors.  Pointers are more reliable.
+> 
+> 	But pointers to what?  Since the only data known to be 
+> 	available to both the PHY driver and controller driver is the
+> 	platform data, the obvious answer is a pointer to platform data
+> 	(either for the PHY or for the controller, or maybe both).
+
+hmm.. it's not going to be simple though as the platform device for the PHY and
+controller can be created in entirely different places. e.g., in some cases the
+PHY device is a child of some mfd core device (the device will be created in
+drivers/mfd) and the controller driver (usually) is created in board file. I
+guess then we have to come up with something to share a pointer in two
+different files.
+> 
+> Probably some of the details above are wrong; please indicate where I
+> have gone astray.  Also, I'm not clear about the role played by various 
+> APIs.  For example, where does phy_create() fit into this picture?
+
+phy_create is the API by which the PHY's driver (the supplier) hook into the
+PHY framework. It's like the controller driver will always interact with the
+PHY driver through the PHY framework.
+
+Thanks
+Kishon
