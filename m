@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab3GVE0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 00:26:47 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:43648 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab3GVE0p (ORCPT
+	id S1754840Ab3GVE1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 00:27:37 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:59546 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab3GVE1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 00:26:45 -0400
+	Mon, 22 Jul 2013 00:27:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <f7c9193e244c95122ceb47d65cd52993c040c7a4.1374451988.git.joe@perches.com>
-References: <cover.1374451988.git.joe@perches.com>
-	<f7c9193e244c95122ceb47d65cd52993c040c7a4.1374451988.git.joe@perches.com>
-Date: Mon, 22 Jul 2013 09:56:45 +0530
-Message-ID: <CAKohponxfLpf66QgF=K0c0EGhQyXVazqQk-2Ecw1YeRAY5VY2w@mail.gmail.com>
-Subject: Re: [PATCH 05/18] MAINTAINERS: ARM: spear: Consolidate sections
+In-Reply-To: <1374256055-26894-1-git-send-email-broonie@kernel.org>
+References: <1374256055-26894-1-git-send-email-broonie@kernel.org>
+Date: Mon, 22 Jul 2013 09:57:35 +0530
+Message-ID: <CAKohpo=4NFNB6XVqjiqw2vMAWgiOLZv=OWKYtcC7JBw1eNX6Sg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] extcon: gpio: Use power efficient workqueue for debounce
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 July 2013 05:45, Joe Perches <joe@perches.com> wrote:
-> commit a7ed099ffc8 ("ARM: spear: move all files to mach-spear")
-> moved all the files into a single directory, delete the now
-> unnecessary duplicate sections and update the pattern.
+On 19 July 2013 23:17, Mark Brown <broonie@kernel.org> wrote:
+> From: Mark Brown <broonie@linaro.org>
 >
-> Signed-off-by: Joe Perches <joe@perches.com>
-> cc: Arnd Bergmann <arnd@arndb.de>
-> cc: Viresh Kumar <viresh.kumar@linaro.org>
+> The debounce timeout is generally quite long and the work not performance
+> critical so allow the scheduler to run the work anywhere rather than in
+> the normal per-CPU workqueue.
+>
+> Signed-off-by: Mark Brown <broonie@linaro.org>
 > ---
->  MAINTAINERS | 30 +-----------------------------
->  1 file changed, 1 insertion(+), 29 deletions(-)
+>  drivers/extcon/extcon-gpio.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
 Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
