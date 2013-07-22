@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab3GVJp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 05:45:57 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:56348 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab3GVJpz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 05:45:55 -0400
+	id S1756839Ab3GVJsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 05:48:13 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:19680 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756025Ab3GVJsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 05:48:12 -0400
+X-IronPort-AV: E=Sophos;i="4.89,718,1367971200"; 
+   d="scan'208";a="38382769"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        <catalin.marinas@arm.com>, <stefano.stabellini@eu.citrix.com>,
+        <sergei.shtylyov@cogentembedded.com>
+Subject: [PATCH v2] xen/arm and xen/arm64: update xen_restart after ff701306cd49
+Date: Mon, 22 Jul 2013 10:47:44 +0100
+Message-ID: <1374486464-25243-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
-References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
- <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Mon, 22 Jul 2013 15:15:14 +0530
-Message-ID: <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com>
-Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Richard Weinberger <richard@nod.at>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramkumar Ramachandra wrote:
-> [1]: http://lists.freedesktop.org/archives/systemd-devel/2013-July/012152.html
+Commit ff701306cd49 (arm64: use common reboot infrastructure) changes
+the prototype of arm_pm_restart.  Update xen_restart accordingly.
 
-... and the patches were rejected.  Lennart says that UML providing
-/dev/tty* is wrong, and that UML should call them /dev/hvc* (or
-something).  Can we do something about the situation?  Can we remove
-/dev/tty*, and provide /dev/hvc*?  Will we be breaking existing users?
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/arm/xen/enlighten.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks.
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index f71c37e..c9770ba 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -172,7 +172,7 @@ static void __init xen_percpu_init(void *unused)
+ 	enable_percpu_irq(xen_events_irq, 0);
+ }
+ 
+-static void xen_restart(char str, const char *cmd)
++static void xen_restart(enum reboot_mode reboot_mode, const char *cmd)
+ {
+ 	struct sched_shutdown r = { .reason = SHUTDOWN_reboot };
+ 	int rc;
+-- 
+1.7.2.5
 
-Lennart Poettering wrote:
-> UML shouldn't be penalized for not implementing some terminal emulation,
-> but it should be penalized for doing so under the label of "VT support",
-> which it simply is not providing.
->
-> They can call their ttys any way they want. If the call them
-> /dev/tty[1..64] however, then they need to implement the VC
-> interfaces. All of them.
->
-> Also note that some hypervisors implement /dev/hvc0, /dev/xvc0,
-> /dev/hvsi0 and suchlike. Theser are also ttys, which are used for
-> interfacing in a VT-like way the virtual machines. But they do not claim
-> to ve the real VT, they hence picked different tty names.
->
-> UML should follow the same route: pick some name you like, or even
-> better, pick one of the existing hypervisor tty names if the interface
-> and usecase is the same, but do not use /dev/tty[1..64], because that is
-> the VT subsystem.
->
-> systemd handles the hvc0, xvc0, hvsi0 automatically already. We'd be
-> happy if UML could make use of the same logic.
