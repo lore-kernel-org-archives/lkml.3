@@ -1,54 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668Ab3GVUbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:31:23 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:36743 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757135Ab3GVUbV (ORCPT
+	id S933358Ab3GVUdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:33:18 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57292 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933184Ab3GVUdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:31:21 -0400
-Message-ID: <51ED9694.9060303@gmail.com>
-Date: Mon, 22 Jul 2013 15:31:16 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 22 Jul 2013 16:33:17 -0400
+Date: Mon, 22 Jul 2013 22:33:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 04/11] perf tools: Support callchain sorting based on
+ addresses
+Message-ID: <20130722203310.GC21711@somewhere>
+References: <1374524559-9839-1-git-send-email-acme@infradead.org>
+ <1374524559-9839-5-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org> <1374290388-19308-3-git-send-email-grant.likely@linaro.org> <51EC2EC7.6010001@gmail.com> <CACxGe6sGdkMuLFs3K_ERKot+ryTArs6qTiwpXNe+LyoAQ8HGDw@mail.gmail.com>
-In-Reply-To: <CACxGe6sGdkMuLFs3K_ERKot+ryTArs6qTiwpXNe+LyoAQ8HGDw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374524559-9839-5-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2013 07:35 PM, Grant Likely wrote:
-> On Sun, Jul 21, 2013 at 7:56 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On 07/19/2013 10:19 PM, Grant Likely wrote:
->>> +OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
->>> +M:   Pawel Moll <pawel.moll@arm.com>
->>> +M:   Mark Rutland <mark.rutland@arm.com>
->>> +M:   Stephen Warren <swarren@wwwdotorg.org>
->>> +M:   Ian Campbell <ian.campbell@citrix.com>
->>
->> You can add me. I was not intending to step down.
+On Mon, Jul 22, 2013 at 05:22:32PM -0300, Arnaldo Carvalho de Melo wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Done.
+> With programs with very large functions it can be useful to distinguish
+> the callgraph nodes on more than just function names. So for example if
+> you have multiple calls to the same function, it ends up being separate
+> nodes in the chain.
 > 
->> What about creating an email alias for the group instead?
+> This patch adds a new key field to the callgraph options, that allows
+> comparing nodes on functions (as today, default) and addresses.
+
+Looks useful but you probably don't want the leaf node (inner most callee)
+to be the precise ip/adress rather instead of the function. Otherwise you'll
+have way too much branch per hist entry.
+
+Also how do you display callchains in this mode? It seems that it uses
+the usual function names. How do you dinstinguish the various branches
+in this case?
+
+It would be probably nice to display the nodes as func+offset in this mode?
+
 > 
-> Would that be any different from the mailing list address?
-
-My own selfish desire is to easily separate emails for DT bindings and
-DT core code. I suppose I could do that with a suffix on my email address.
-
-It seems to work well for arm-soc where you have a group of maintainers
-and don't necessarily know who is actively maintaining things. Not sure
-if we want to timeshare like that, but it would give us the flexibility.
-
-Rob
-
+> Longer term it would be nice to also handle src lines, but that would
+> need more changes and address is a reasonable proxy for it today.
+> 
+> I right now reference the global params, as there was no simple way to
+> register a params pointer.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Link: http://lkml.kernel.org/n/tip-0uskktybf0e7wrnoi5e9b9it@git.kernel.org
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/Documentation/perf-report.txt |  8 ++++++--
+>  tools/perf/builtin-report.c              | 19 +++++++++++++++----
+>  tools/perf/util/callchain.c              |  7 +++++--
+>  tools/perf/util/callchain.h              |  6 ++++++
+>  tools/perf/util/hist.c                   |  3 ++-
+>  5 files changed, 34 insertions(+), 9 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+> index 747ff50..2b8097e 100644
+> --- a/tools/perf/Documentation/perf-report.txt
+> +++ b/tools/perf/Documentation/perf-report.txt
+> @@ -115,7 +115,7 @@ OPTIONS
+>  --dump-raw-trace::
+>          Dump raw trace in ASCII.
+>  
+> --g [type,min[,limit],order]::
+> +-g [type,min[,limit],order[,key]]::
+>  --call-graph::
+>          Display call chains using type, min percent threshold, optional print
+>  	limit and order.
+> @@ -129,7 +129,11 @@ OPTIONS
+>  	- callee: callee based call graph.
+>  	- caller: inverted caller based call graph.
+>  
+> -	Default: fractal,0.5,callee.
+> +	key can be:
+> +	- function: compare on functions
+> +	- address: compare on individual code addresses
+> +
+> +	Default: fractal,0.5,callee,function.
+>  
+>  -G::
+>  --inverted::
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index a34c587..d785d89 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -667,12 +667,23 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+>  	}
+>  
+>  	/* get the call chain order */
+> -	if (!strcmp(tok2, "caller"))
+> +	if (!strncmp(tok2, "caller", strlen("caller")))
+>  		callchain_param.order = ORDER_CALLER;
+> -	else if (!strcmp(tok2, "callee"))
+> +	else if (!strncmp(tok2, "callee", strlen("callee")))
+>  		callchain_param.order = ORDER_CALLEE;
+>  	else
+>  		return -1;
+> +
+> +	/* Get the sort key */
+> +	tok2 = strtok(NULL, ",");
+> +	if (!tok2)
+> +		goto setup;
+> +	if (!strncmp(tok2, "function", strlen("function")))
+> +		callchain_param.key = CCKEY_FUNCTION;
+> +	else if (!strncmp(tok2, "address", strlen("address")))
+> +		callchain_param.key = CCKEY_ADDRESS;
+> +	else
+> +		return -1;
+>  setup:
+>  	if (callchain_register_param(&callchain_param) < 0) {
+>  		fprintf(stderr, "Can't register callchain params\n");
+> @@ -784,8 +795,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
+>  		    "Only display entries with parent-match"),
+>  	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+> -		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit and callchain order. "
+> -		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
+> +		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+> +		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
+>  	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
+>  		    "alias for inverted call graph"),
+>  	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
+> diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+> index 42b6a63..4fee33b 100644
+> --- a/tools/perf/util/callchain.c
+> +++ b/tools/perf/util/callchain.c
+> @@ -15,6 +15,7 @@
+>  #include <errno.h>
+>  #include <math.h>
+>  
+> +#include "hist.h"
+>  #include "util.h"
+>  #include "callchain.h"
+>  
+> @@ -327,7 +328,8 @@ append_chain(struct callchain_node *root,
+>  	/*
+>  	 * Lookup in the current node
+>  	 * If we have a symbol, then compare the start to match
+> -	 * anywhere inside a function.
+> +	 * anywhere inside a function, unless function
+> +	 * mode is disabled.
+>  	 */
+>  	list_for_each_entry(cnode, &root->val, list) {
+>  		struct callchain_cursor_node *node;
+> @@ -339,7 +341,8 @@ append_chain(struct callchain_node *root,
+>  
+>  		sym = node->sym;
+>  
+> -		if (cnode->ms.sym && sym) {
+> +		if (cnode->ms.sym && sym &&
+> +		    callchain_param.key == CCKEY_FUNCTION) {
+>  			if (cnode->ms.sym->start != sym->start)
+>  				break;
+>  		} else if (cnode->ip != node->ip)
+> diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+> index 3ee9f67..812d5a0 100644
+> --- a/tools/perf/util/callchain.h
+> +++ b/tools/perf/util/callchain.h
+> @@ -41,12 +41,18 @@ struct callchain_param;
+>  typedef void (*sort_chain_func_t)(struct rb_root *, struct callchain_root *,
+>  				 u64, struct callchain_param *);
+>  
+> +enum chain_key {
+> +	CCKEY_FUNCTION,
+> +	CCKEY_ADDRESS
+> +};
+> +
+>  struct callchain_param {
+>  	enum chain_mode 	mode;
+>  	u32			print_limit;
+>  	double			min_percent;
+>  	sort_chain_func_t	sort;
+>  	enum chain_order	order;
+> +	enum chain_key		key;
+>  };
+>  
+>  struct callchain_list {
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index a9dd1b9..46a0d35 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -24,7 +24,8 @@ enum hist_filter {
+>  struct callchain_param	callchain_param = {
+>  	.mode	= CHAIN_GRAPH_REL,
+>  	.min_percent = 0.5,
+> -	.order  = ORDER_CALLEE
+> +	.order  = ORDER_CALLEE,
+> +	.key	= CCKEY_FUNCTION
+>  };
+>  
+>  u16 hists__col_len(struct hists *hists, enum hist_column col)
+> -- 
+> 1.8.1.4
+> 
