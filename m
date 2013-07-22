@@ -1,218 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3GVKT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:19:59 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:54284 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757104Ab3GVKT5 (ORCPT
+	id S1757359Ab3GVKVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:21:53 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:33404 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757002Ab3GVKVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:19:57 -0400
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        stern@rowland.harvard.edu, arnd@linaro.org,
-        manjunath.goudar@linaro.org, linaro-kernel@lists.linaro.org,
-        Greg KH <greg@kroah.com>, Wan ZongShun <mcuos.com@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2] USB: EHCI: make ehci-w90X900 a separate driver
-Date: Mon, 22 Jul 2013 15:49:40 +0530
-Message-Id: <1374488380-26428-1-git-send-email-manjunath.goudar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
-References: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
+	Mon, 22 Jul 2013 06:21:52 -0400
+Date: Mon, 22 Jul 2013 12:21:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
+Subject: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and
+ text_poke_smp_batch
+Message-ID: <20130722102148.GB1148@gmail.com>
+References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
+ <20130718114753.26675.18714.stgit@mhiramat-M0-7522>
+ <20130722074339.GA25976@gmail.com>
+ <20130722082104.GA26823@gmail.com>
+ <51ECEF8D.60109@hitachi.com>
+ <20130722100158.GB908@gmail.com>
+ <51ED053C.1070105@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51ED053C.1070105@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the W90X900(W90P910) on-chip host controller driver from
-ehci-hcd host code so that it can be built as a separate driver module.
-This work is part of enabling multi-platform kernels on ARM;
-however, note that other changes are still needed before W90X900(W90P910)
-can be booted with a multi-platform kernel
 
-and an ehci driver that only works on one of them.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-With the infrastructure added by Alan Stern in patch 3e0232039
-"USB: EHCI: prepare to make ehci-hcd a library module", we can
-avoid this problem by turning a bus glue into a separate
-module, as we do here for the w90X900 bus glue.
+> (2013/07/22 19:01), Ingo Molnar wrote:
+> > 
+> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >> (2013/07/22 17:21), Ingo Molnar wrote:
+> >>>
+> >>> * Ingo Molnar <mingo@kernel.org> wrote:
+> >>>
+> >>>>
+> >>>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> >>>>
+> >>>>> Since introducing the text_poke_bp for all text_poke_smp*
+> >>>>> callers, text_poke_smp* are now unused. This basically
+> >>>>> reverts 3d55cc8a, 7deb18dc and related commits.
+> >>>>>
+> >>>>> This also fixes a Kconfig dependency issue on STOP_MACHINE
+> >>>>> in the case of CONFIG_SMP && !CONFIG_MODULE_UNLOAD.
+> >>>>>
+> >>>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >>>>> ---
+> >>>>>  arch/x86/Kconfig                   |    5 --
+> >>>>>  arch/x86/include/asm/alternative.h |   11 ----
+> >>>>>  arch/x86/kernel/alternative.c      |   98 +-----------------------------------
+> >>>>>  3 files changed, 2 insertions(+), 112 deletions(-)
+> >>>>
+> >>>> Hm, it does not build with the attached config:
+> >>>>
+> >>>> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
+> >>>> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
+> >>>> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
+> >>>> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
+> >>>
+> >>> 32-bit appears to be the key pattern.
+> >>
+> >> Ingo, please make sure your x86/jumplabel tree picked all of my patches.
+> >> This 3/3 strongly depends on the previous 1/3 and 2/3.
+> >> Without it, kprobes/opt.c can not be build because it still uses the
+> >> text_poke_params data structure which 3/3 removes.
+> > 
+> > Yes I know, and it was on top of -tip which already had these included:
+> > 
+> >  51b2c07b2226 x86: Make jump_label use int3-based patching
+> >  fd4363fff3d9 x86: Introduce int3 (breakpoint)-based instruction patching
+> > 
+> > without these the third patch wouldn't even apply I think.
+> 
+> No, I meant below two patches:
+>  kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
+>  kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
+> 
+> Since the "setup_optimize_kprobe" in the error message is completely
+> *removed* by the second one, the above error should not happen.
 
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <greg@kroah.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Wan ZongShun <mcuos.com@gmail.com>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Oh, indeed - I correctly applied them but then messed up the 
+cherry-picking, that's all.
 
-V2:
- -Arranged  #include's in alphabetical order.
- -Replaced "w90p910" by "w90x900" because it is supports
-  all series of w90x900.
----
- drivers/usb/host/Kconfig        |    2 +-
- drivers/usb/host/Makefile       |    1 +
- drivers/usb/host/ehci-hcd.c     |    5 ---
- drivers/usb/host/ehci-w90x900.c |   85 ++++++++++++++++-----------------------
- 4 files changed, 37 insertions(+), 56 deletions(-)
+So never mind, it's all fine.
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index ba52912..7bc598b 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -244,7 +244,7 @@ config USB_EHCI_MV
- 	  SoCs, see USB_EHCI_HCD_ORION for those.
- 
- config USB_W90X900_EHCI
--	bool "W90X900(W90P910) EHCI support"
-+	tristate "W90X900(W90P910) EHCI support"
- 	depends on ARCH_W90X900
- 	---help---
- 		Enables support for the W90X900 USB controller
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 7664db8..28adb3f 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
- obj-$(CONFIG_USB_EHCI_MSM)	+= ehci-msm.o
- obj-$(CONFIG_USB_EHCI_TEGRA)	+= ehci-tegra.o
- obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
-+obj-$(CONFIG_USB_W90X900_EHCI)	+= ehci-w90x900.o
- 
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 5717dcd..4a5644e 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1249,11 +1249,6 @@ MODULE_LICENSE ("GPL");
- #define XILINX_OF_PLATFORM_DRIVER	ehci_hcd_xilinx_of_driver
- #endif
- 
--#ifdef CONFIG_USB_W90X900_EHCI
--#include "ehci-w90x900.c"
--#define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
--#endif
--
- #ifdef CONFIG_USB_OCTEON_EHCI
- #include "ehci-octeon.c"
- #define PLATFORM_DRIVER		ehci_octeon_driver
-diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
-index 59e0e24..4d6631d 100644
---- a/drivers/usb/host/ehci-w90x900.c
-+++ b/drivers/usb/host/ehci-w90x900.c
-@@ -11,13 +11,28 @@
-  *
-  */
- 
-+#include <linux/dma-mapping.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+
-+#include "ehci.h"
- 
- /* enable phy0 and phy1 for w90p910 */
- #define	ENPHY		(0x01<<8)
- #define PHY0_CTR	(0xA4)
- #define PHY1_CTR	(0xA8)
- 
-+#define DRIVER_DESC "EHCI w90x900 driver"
-+
-+static const char hcd_name[] = "ehci-w90x900 ";
-+
-+static struct hc_driver __read_mostly ehci_w90x900_hc_driver;
-+
- static int usb_w90x900_probe(const struct hc_driver *driver,
- 		      struct platform_device *pdev)
- {
-@@ -99,54 +114,6 @@ void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
- 	usb_put_hcd(hcd);
- }
- 
--static const struct hc_driver ehci_w90x900_hc_driver = {
--	.description = hcd_name,
--	.product_desc = "Nuvoton w90x900 EHCI Host Controller",
--	.hcd_priv_size = sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq = ehci_irq,
--	.flags = HCD_USB2|HCD_MEMORY,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset = ehci_setup,
--	.start = ehci_run,
--
--	.stop = ehci_stop,
--	.shutdown = ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue = ehci_urb_enqueue,
--	.urb_dequeue = ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset = ehci_endpoint_reset,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number = ehci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control = ehci_hub_control,
--#ifdef	CONFIG_PM
--	.bus_suspend = ehci_bus_suspend,
--	.bus_resume = ehci_bus_resume,
--#endif
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--};
--
- static int ehci_w90x900_probe(struct platform_device *pdev)
- {
- 	if (usb_disabled())
-@@ -173,7 +140,25 @@ static struct platform_driver ehci_hcd_w90x900_driver = {
- 	},
- };
- 
-+static int __init ehci_w90X900_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+
-+	ehci_init_driver(&ehci_w90x900_hc_driver, NULL);
-+	return platform_driver_register(&ehci_hcd_w90x900_driver);
-+}
-+module_init(ehci_w90X900_init);
-+
-+static void __exit ehci_w90X900_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_hcd_w90x900_driver);
-+}
-+module_exit(ehci_w90X900_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
--MODULE_DESCRIPTION("w90p910 usb ehci driver!");
--MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:w90p910-ehci");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+Thanks,
 
+	Ingo
