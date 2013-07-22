@@ -1,79 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3GVNBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:01:13 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47927 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab3GVNBL convert rfc822-to-8bit (ORCPT
+	id S1753995Ab3GVNCs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:02:48 -0400
+Received: from m59-178.qiye.163.com ([123.58.178.59]:48080 "EHLO
+	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab3GVNCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:01:11 -0400
-Message-ID: <51ED2D27.2030904@arm.com>
-Date: Mon, 22 Jul 2013 14:01:27 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        devicetree@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        mturquette@linaro.org
-Subject: Re: [PATCH 0/2] PM / OPP: updates to enable sharing OPPs info
-References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <519B45C3.8050700@arm.com> <20130720050943.5EB853E169C@localhost>
-In-Reply-To: <20130720050943.5EB853E169C@localhost>
-X-OriginalArrivalTime: 22 Jul 2013 13:01:06.0654 (UTC) FILETIME=[87515FE0:01CE86DB]
-X-MC-Unique: 113072214010903401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Jul 2013 09:02:46 -0400
+From: Li Wang <liwang@ubuntukylin.com>
+To: ceph-devel@vger.kernel.org
+Cc: Sage Weil <sage@inktank.com>, linux-kernel@vger.kernel.org,
+        Li Wang <liwang@ubuntukylin.com>,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Subject: [PATCH v3] Ceph: Punch hole support for kernel client
+Date: Mon, 22 Jul 2013 21:02:30 +0800
+Message-Id: <1374498150-6480-1-git-send-email-liwang@ubuntukylin.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1371761798.2776.134@driftwood>
+References: <1371761798.2776.134@driftwood>
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpOVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQVkoKz0kKzooKCQyNSQz
+	Pjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz46Pz4pQUtVS0A4NC41
+	LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41OjVBS1VLQD8iNTo2MjgkMisk
+	NTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*PilBSklVS0A2LjcvMiQpOCsv
+	JD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0FLVUtAMiskSiQzNC4p
+	JDg1LyRLJEpLS0FLVUtAMiskSiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEhLJDYyNS4vPiQ4NS8k
+	SyROS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQCguOSQ#QUpVTk5APTUkKC45JD41LDQp
+	PygkMzcxJEpLS0lLSkFLVUlDWQY+
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSExPT0JDSk1KQk5LVTMWGhIX
+	VRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHgY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry with new DT mailing list address this time)
-On 20/07/13 06:09, Grant Likely wrote:
-> On Tue, 21 May 2013 11:00:35 +0100, Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com> wrote:
->> Hi Rob, Grant,
->>
->> On 01/05/13 12:11, Sudeep KarkadaNagesha wrote:
->>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>>
->>> These are couple of updates to existing PM/OPP library to support
->>> sharing of OPPs between different device nodes.
->>>
->>> Currently all the cpu nodes are parsed until the OPPs are found. This
->>> is essential to support cpuhotplug without having to replicate OPP
->>> information in all the cpu nodes.
->>>
->>> However in systems with multiple cpu power domain, its better to have
->>> OPP entry for each cpu. To avoid replication, phandle can be specified
->>> to the node which contains the full OPP information.
->>>
->> Is proposed option of phandle for OPP acceptable to avoid replication ?
->> Any suggestions to proceed on this ? This is needed to support CPU
->> hotplug on big LITTLE system where current methods like parsing all the
->> nodes or just CPU0 node will not work.
-> 
-> Looks fine to me.
-> 
-Hi Grant,
+This patch implements fallocate and punch hole support for Ceph kernel client.
 
-Thanks for the response.
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+---
+Passed the fsx test from xfstests.
+---
+ fs/ceph/file.c        |  191 +++++++++++++++++++++++++++++++++++++++++++++++++
+ net/ceph/osd_client.c |    8 ++-
+ 2 files changed, 197 insertions(+), 2 deletions(-)
 
-However I had a thought after seeing recent patch series by Mike[1]
-Since the OPPs are usually associated with clocks, and multiple devices
-sharing clocks will point to same clock node in DT, clk node is more
-logical place to specify the OPPs. IMO this will be good alignment for
-the consolidation effort by Mike. One issue with this approach is
-backward compatibility(using old DT)
-
-Regards,
-Sudeep
-
-[1]
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/182231.html
-
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 656e169..6e56824 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -8,6 +8,7 @@
+ #include <linux/namei.h>
+ #include <linux/writeback.h>
+ #include <linux/aio.h>
++#include <linux/falloc.h>
+ 
+ #include "super.h"
+ #include "mds_client.h"
+@@ -882,6 +883,195 @@ out:
+ 	return offset;
+ }
+ 
++static inline void ceph_zero_partial_page(
++	struct inode *inode, loff_t offset, unsigned size)
++{
++	struct page *page;
++	pgoff_t index = offset >> PAGE_CACHE_SHIFT;
++
++	page = find_lock_page(inode->i_mapping, index);
++	if (page) {
++		wait_on_page_writeback(page);
++		zero_user(page, offset & (PAGE_CACHE_SIZE - 1), size);
++		unlock_page(page);
++		page_cache_release(page);
++	}
++}
++
++static void ceph_zero_pagecache_range(struct inode *inode, loff_t offset,
++				      loff_t length)
++{
++	loff_t nearly = round_up(offset, PAGE_CACHE_SIZE);
++	if (offset < nearly) {
++		loff_t size = nearly - offset;
++		if (length < size)
++			size = length;
++		ceph_zero_partial_page(inode, offset, size);
++		offset += size;
++		length -= size;
++	}
++	if (length >= PAGE_CACHE_SIZE) {
++		loff_t size = round_down(length, PAGE_CACHE_SIZE);
++		truncate_pagecache_range(inode, offset, offset + size - 1);
++		offset += size;
++		length -= size;
++	}
++	if (length)
++		ceph_zero_partial_page(inode, offset, length);
++}
++
++static int ceph_zero_partial_object(struct inode *inode,
++				    loff_t offset, loff_t *length)
++{
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	struct ceph_fs_client *fsc = ceph_inode_to_client(inode);
++	struct ceph_osd_request *req;
++	int ret = 0;
++	loff_t zero = 0;
++	int op = CEPH_OSD_OP_ZERO;
++
++	if (!length) {
++		op = CEPH_OSD_OP_DELETE;
++		length = &zero;
++	}
++
++	req = ceph_osdc_new_request(&fsc->client->osdc, &ci->i_layout,
++					ceph_vino(inode),
++					offset, length,
++					1, op,
++					CEPH_OSD_FLAG_WRITE |
++					CEPH_OSD_FLAG_ONDISK,
++					NULL, 0, 0, false);
++	if (IS_ERR(req)) {
++		ret = PTR_ERR(req);
++		goto out;
++	}
++
++	ceph_osdc_build_request(req, offset, NULL, ceph_vino(inode).snap,
++				&inode->i_mtime);
++
++	ret = ceph_osdc_start_request(&fsc->client->osdc, req, false);
++	if (!ret)
++		ret = ceph_osdc_wait_request(&fsc->client->osdc, req);
++	ceph_osdc_put_request(req);
++
++out:
++	return ret;
++}
++
++static int ceph_zero_objects(struct inode *inode, loff_t offset, loff_t length)
++{
++	int ret = 0;
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	__s32 stripe_unit = ceph_file_layout_su(ci->i_layout);
++	__s32 stripe_count = ceph_file_layout_stripe_count(ci->i_layout);
++	__s32 object_size = ceph_file_layout_object_size(ci->i_layout);
++	loff_t object_set_size = (loff_t)object_size * stripe_count;
++
++	loff_t nearly = (offset + object_set_size - 1)
++			/ object_set_size * object_set_size;
++	while (length && offset < nearly) {
++		loff_t size = length;
++		ret = ceph_zero_partial_object(inode, offset, &size);
++		if (ret < 0)
++			return ret;
++		offset += size;
++		length -= size;
++	}
++	while (length >= object_set_size) {
++		int i;
++		loff_t pos = offset;
++		for (i = 0; i < stripe_count; ++i) {
++			ret = ceph_zero_partial_object(inode, pos, NULL);
++			if (ret < 0)
++				return ret;
++			pos += stripe_unit;
++		}
++		offset += object_set_size;
++		length -= object_set_size;
++	}
++	while (length) {
++		loff_t size = length;
++		ret = ceph_zero_partial_object(inode, offset, &size);
++		if (ret < 0)
++			return ret;
++		offset += size;
++		length -= size;
++	}
++	return ret;
++}
++
++static long ceph_fallocate(struct file *file, int mode,
++				loff_t offset, loff_t length)
++{
++	struct ceph_file_info *fi = file->private_data;
++	struct inode *inode = file->f_dentry->d_inode;
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	struct ceph_osd_client *osdc =
++		&ceph_inode_to_client(inode)->client->osdc;
++	int want, got = 0;
++	int dirty;
++	int ret = 0;
++	loff_t endoff = 0;
++	loff_t size;
++
++	if (!S_ISREG(inode->i_mode))
++		return -EOPNOTSUPP;
++
++	if (IS_SWAPFILE(inode))
++		return -ETXTBSY;
++
++	mutex_lock(&inode->i_mutex);
++
++	if (ceph_snap(inode) != CEPH_NOSNAP) {
++		ret = -EROFS;
++		goto unlock;
++	}
++
++	if (ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL) &&
++		!(mode & FALLOC_FL_PUNCH_HOLE)) {
++		ret = -ENOSPC;
++		goto unlock;
++	}
++
++	size = i_size_read(inode);
++	if (!(mode & FALLOC_FL_KEEP_SIZE))
++		endoff = offset + length;
++
++	if (fi->fmode & CEPH_FILE_MODE_LAZY)
++		want = CEPH_CAP_FILE_BUFFER | CEPH_CAP_FILE_LAZYIO;
++	else
++		want = CEPH_CAP_FILE_BUFFER;
++
++	ret = ceph_get_caps(ci, CEPH_CAP_FILE_WR, want, &got, endoff);
++	if (ret < 0)
++		goto unlock;
++
++	if (mode & FALLOC_FL_PUNCH_HOLE) {
++		if (offset < size)
++			ceph_zero_pagecache_range(inode, offset, length);
++		ret = ceph_zero_objects(inode, offset, length);
++	} else if (endoff > size) {
++		truncate_pagecache_range(inode, size, -1);
++		if (ceph_inode_set_size(inode, endoff))
++			ceph_check_caps(ceph_inode(inode),
++				CHECK_CAPS_AUTHONLY, NULL);
++	}
++
++	if (!ret) {
++		spin_lock(&ci->i_ceph_lock);
++		dirty = __ceph_mark_dirty_caps(ci, CEPH_CAP_FILE_WR);
++		spin_unlock(&ci->i_ceph_lock);
++		if (dirty)
++			__mark_inode_dirty(inode, dirty);
++	}
++
++	ceph_put_cap_refs(ci, got);
++unlock:
++	mutex_unlock(&inode->i_mutex);
++	return ret;
++}
++
+ const struct file_operations ceph_file_fops = {
+ 	.open = ceph_open,
+ 	.release = ceph_release,
+@@ -898,5 +1088,6 @@ const struct file_operations ceph_file_fops = {
+ 	.splice_write = generic_file_splice_write,
+ 	.unlocked_ioctl = ceph_ioctl,
+ 	.compat_ioctl	= ceph_ioctl,
++	.fallocate	= ceph_fallocate,
+ };
+ 
+diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+index 3a246a6..6cb076f 100644
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -503,7 +503,8 @@ void osd_req_op_extent_init(struct ceph_osd_request *osd_req,
+ 	struct ceph_osd_req_op *op = _osd_req_op_init(osd_req, which, opcode);
+ 	size_t payload_len = 0;
+ 
+-	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
++	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
++	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO);
+ 
+ 	op->extent.offset = offset;
+ 	op->extent.length = length;
+@@ -631,6 +632,8 @@ static u64 osd_req_encode_op(struct ceph_osd_request *req,
+ 		break;
+ 	case CEPH_OSD_OP_READ:
+ 	case CEPH_OSD_OP_WRITE:
++	case CEPH_OSD_OP_ZERO:
++	case CEPH_OSD_OP_DELETE:
+ 		if (src->op == CEPH_OSD_OP_WRITE)
+ 			request_data_len = src->extent.length;
+ 		dst->extent.offset = cpu_to_le64(src->extent.offset);
+@@ -715,7 +718,8 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+ 	u64 object_base;
+ 	int r;
+ 
+-	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
++	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
++	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO);
+ 
+ 	req = ceph_osdc_alloc_request(osdc, snapc, num_ops, use_mempool,
+ 					GFP_NOFS);
+-- 
+1.7.9.5
 
