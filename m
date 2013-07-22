@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab3GVMku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 08:40:50 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34200 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3GVMkt (ORCPT
+	id S1753984Ab3GVMmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 08:42:31 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:63381 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab3GVMm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 08:40:49 -0400
-Date: Mon, 22 Jul 2013 13:40:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
-Message-ID: <20130722124047.GL4165@ZenIV.linux.org.uk>
-References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
- <51E988FF.9010201@nod.at>
- <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
- <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com>
+	Mon, 22 Jul 2013 08:42:29 -0400
+Message-ID: <51ED28AC.4080300@gmail.com>
+Date: Mon, 22 Jul 2013 20:42:20 +0800
+From: Paul Bolle <paul.bollee@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-07-18-16-40 uploaded
+References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com> <51E8B34B.1070200@gmail.com> <20130719180035.GI17812@cmpxchg.org>
+In-Reply-To: <20130719180035.GI17812@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 03:15:14PM +0530, Ramkumar Ramachandra wrote:
-> Ramkumar Ramachandra wrote:
-> > [1]: http://lists.freedesktop.org/archives/systemd-devel/2013-July/012152.html
-> 
-> ... and the patches were rejected.  Lennart says that UML providing
-> /dev/tty* is wrong, and that UML should call them /dev/hvc* (or
-> something).  Can we do something about the situation?  Can we remove
-> /dev/tty*, and provide /dev/hvc*?  Will we be breaking existing users?
+On 07/20/2013 02:00 AM, Johannes Weiner wrote:
+> On Thu, Jul 18, 2013 at 11:32:27PM -0400, Paul Bolle wrote:
+>> On 07/18/2013 07:41 PM, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2013-07-18-16-40 has been uploaded to
+>>>
+>>>     http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>>> mmotm-readme.txt says
+>>>
+>>> README for mm-of-the-moment:
+>>>
+>>> http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+>>> more than once a week.
+>>>
+>>> You will need quilt to apply these patches to the latest Linus release (3.x
+>>> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+>>> http://ozlabs.org/~akpm/mmotm/series
+>>>
+>>> The file broken-out.tar.gz contains two datestamp files: .DATE and
+>>> .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+>>> followed by the base kernel version against which this patch series is to
+>>> be applied.
+>>>
+>>> This tree is partially included in linux-next.  To see which patches are
+>>> included in linux-next, consult the `series' file.  Only the patches
+>>> within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+>>> linux-next.
+>>>
+>>> A git tree which contains the memory management portion of this tree is
+>>> maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+>>> by Michal Hocko.  It contains the patches which are between the
+>>> "#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+>>> file, http://www.ozlabs.org/~akpm/mmotm/series.
+>>>
+>>>
+>>> A full copy of the full kernel tree with the linux-next and mmotm patches
+>>> already applied is available through git within an hour of the mmotm
+>>> release.  Individual mmotm releases are tagged.  The master branch always
+>>> points to the latest release, so it's constantly rebasing.
+>>>
+>>> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+>>>
+>>> To develop on top of mmotm git:
+>>>
+>>>    $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+>>>    $ git remote update mmotm
+>>>    $ git checkout -b topic mmotm/master
+>>>    <make changes, commit>
+>>>    $ git send-email mmotm/master.. [...]
+>>>
+>>> To rebase a branch with older patches to a new mmotm release:
+>>>
+>>>    $ git remote update mmotm
+>>>    $ git rebase --onto mmotm/master <topic base> topic
+> Andrew, that workflow is actually meant for
+> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
+> (i.e. the git remote add mmotm <michal's tree> does not make much
+> sense).  Michal's tree is append-only, so all this precision-rebasing
+> is unnecessary.
+>
+>> The -mm tree is
+>> git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git or
+>> linux-next -mm branch?
+> It depends what you want for the base.  What's in linux-next is based
+> on linux-next, so the latest and greatest.
+>
+> Michal's -mm tree is based on the latest Linus release, and so more
+> stable.  Or at least the craziness is contained to mm stuff.
 
-Yes, you would be breaking existing users.  Starting with anybody with static
-/dev.  Or a debian userland, for that matter.  Any systemd-free setup,
-actually.
-
-Changing device number assignments is not to be done lightly, whether
-they should've been set that way back then or not.
-
-As for Lennart's opinion...  *shrug*  He's free to do whatever he wants
-in systemd.  It does not translate into having any kind of control over
-the kernel.
+-mm branch against linux-next is newer than master branch against 
+linux-next. Michal's -mm tree is newer than Linus's tree or older?
