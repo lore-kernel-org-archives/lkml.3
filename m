@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab3GVRiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:38:16 -0400
-Received: from jdl.com ([208.123.74.7]:44972 "EHLO jdl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727Ab3GVRiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:38:15 -0400
-Message-Id: <E1V1K3i-0006Sd-Ok@jdl.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-In-reply-to: <20130722012727.GA6806@voom.fritz.box>
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org> <1374290388-19308-3-git-send-email-grant.likely@linaro.org> <CACRpkdb2bPQOD2CBzbF0K33mZZwKwGSCO6B4djesVd5DR-Z1tA@mail.gmail.com> <E1V0txk-0007v7-0J@jdl.com> <20130722012727.GA6806@voom.fritz.box>
-Comments: In-reply-to David Gibson <david@gibson.dropbear.id.au>
-   message dated "Mon, 22 Jul 2013 11:27:27 +1000."
-Date: Mon, 22 Jul 2013 12:38:06 -0500
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: 0.8
+	id S1757571Ab3GVRma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 13:42:30 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:38095 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab3GVRm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 13:42:29 -0400
+Message-ID: <1374514943.7608.25.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
+From: Jason Low <jason.low2@hp.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Mon, 22 Jul 2013 10:42:23 -0700
+In-Reply-To: <51EC1B38.8000708@linux.vnet.ibm.com>
+References: <1374220211.5447.9.camel@j-VirtualBox>
+	 <51E921EC.5040501@linux.vnet.ibm.com>
+	 <1374262090.1830.16.camel@j-VirtualBox>
+	 <51EC1B38.8000708@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2013-07-21 at 23:02 +0530, Preeti U Murthy wrote:
+> Hi Json,
 > 
-> > Perhaps it is time to also place the official repo
-> > of the Device Tree Compiler on git,kernel.org as well?
+> With V2 of your patch here are the results for the ebizzy run on
+> 3.11-rc1 + patch on  a 1 socket, 16 core powerpc machine. Each ebizzy
+> run was for 30 seconds.
 > 
-> Sounds good to me.
+> Number_of_threads         %improvement_with_patch
+>     4                        8.63
+>     8                        1.29
+>     12                       9.98
+>     16                      20.46
 > 
-> Now that I'm no longer at IBM, and don't have the associated
-> complications with their Legal department, I'd rather like to resume
-> having direct commit access to the master dtc tree.  So if we could
-> get Jon and myself, at least, push access to a tree on git.kernel.org,
-> that would be nice.
+> Let me know if you want me to profile any of these runs for specific
+> statistics.
 
-Agreed.  Let's do that.
+Hi Preeti,
 
-jdl
+Other numbers that would be interesting to know are the % improvements
+when N = 20. That is when I'm getting the bigger performance boosts on
+some of the AIM7 workloads.
+
+Would you like to re-run ebizzy with v2 of my patch except replacing
+this line of code:
+	if (idle_duration / 10 < (sd->avg_idle_balance_cost + cost))
+with this line of code:
+	if (idle_duration / 20 < (sd->avg_idle_balance_cost + cost))
+
+Thanks a lot,
+Jason
+
