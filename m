@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab3GVVFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:05:07 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:52453 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212Ab3GVVFE (ORCPT
+	id S1757861Ab3GVVLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 17:11:46 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:55548 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757458Ab3GVVLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:05:04 -0400
-Message-ID: <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Mon, 22 Jul 2013 14:10:36 -0700
-In-Reply-To: <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
-References: <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
-	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
-	 <51E83E32.9050306@cs.wisc.edu>
-	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
-	 <20130719003034.GG28005@kernel.dk>
-	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
-	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
-	 <1374248000.2266.20.camel@dabdike>
-	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
-	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
-	 <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Jul 2013 17:11:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130722000157.GI9858@sirena.org.uk>
+References: <1374281962-3786-1-git-send-email-eu@felipetonello.com>
+	<20130722000157.GI9858@sirena.org.uk>
+Date: Mon, 22 Jul 2013 14:11:44 -0700
+Message-ID: <CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com>
+Subject: Re: [PATCH] ALSA: SoC: Added jack detection kcontrol support
+From: Felipe Tonello <eu@felipetonello.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, LiamGirdwoodlgirdwood@gmail.com,
+        JaroslavKyselaperex@perex.cz, TakashiIwaitiwai@suse.de,
+        linux-kernel@vger.kernel.org,
+        "Felipe F. Tonello" <ftonello@cercacor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 17:03 +0200, Alexander Gordeev wrote:
-> On Fri, Jul 19, 2013 at 09:56:02PM -0700, Nicholas A. Bellinger wrote:
-> > On Fri, 2013-07-19 at 14:01 -0700, Nicholas A. Bellinger wrote:
-> > OK, after further investigation the root cause is a actually a missing
-> > bio->bio_end_io() -> bio_copy_kern_endio() -> bio_put() from the
-> > blk_end_sync_rq() callback path that scsi-mq REQ_TYPE_BLOCK_PC is
-> > currently using.
-> 
-> Yes, missing bio_copy_kern_endio() callback is exactly the reason I
-> turned to blk_mq_execute_rq() initially. I should have been more
-> specific on this :|
-> 
-> I will try Mike's and your other change, hopefully soon (sorry,
-> constantly getting distracted).
-> 
+Hi Mark,
 
-Np.  FYI, you'll want to use the latest commit e7827b351 HEAD from
-target-pending/scsi-mq, which now has functioning scsi-generic support.
+On Sun, Jul 21, 2013 at 5:01 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Jul 19, 2013 at 05:59:22PM -0700, Felipe F. Tonello wrote:
+>> From: "Felipe F. Tonello" <ftonello@cercacor.com>
+>>
+>> It adds soc jack support for alsa kcontrol.
+>>
+>> This support is necessary since the new kcontrol is used by user-space
+>> daemons, such as PulseAudio(>=2.0), to do jack detection.
+>>
+>> Signed-off-by: Felipe F. Tonello <ftonello@cercacor.com>
+>> ---
+>>  include/sound/soc.h  |  1 +
+>>  sound/soc/Kconfig    |  1 +
+>>  sound/soc/soc-jack.c | 22 ++++++++++++++++++++++
+>>  3 files changed, 24 insertions(+)
+>
+> No, this makes no sense at all as an ASoC specific feature - it should
+> be a standard feature of ALSA jacks.  The whole point of having ALSA
+> core infrastructure for jacks is to avoid having to go round doing make
+> work stuff like this.
 
-Also, your scsi_times_out patch from earlier has not been included just
-yet, but that should be the only extra patch you need to apply in order
-to get scsi-mq enabled libata/ata_piix running.
+I agree. I added as a ASoC feature because I followed the example of
+HDA implementation.
 
---nab
+My question is: Why ALSA Jack support uses evdev input events to
+notify user-space? Is there any user-space relying on that? If no, I
+would like to change ALSA Jack implementation to only use KControl and
+remove specific implementations.
 
+At least the only daemon that I know that supports jack detection,
+which is PulseAudio, uses this new ALSA KControl for Jacks.
+
+Regards,
+Felipe Tonello
