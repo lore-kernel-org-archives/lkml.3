@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab3GVR4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:56:18 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:44468 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114Ab3GVR4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:56:16 -0400
-Message-ID: <51ED804E.1000701@kernel.org>
-Date: Mon, 22 Jul 2013 19:56:14 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932669Ab3GVSBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:01:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53472 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932114Ab3GVSBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 14:01:07 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Balaji TK <balajitk@ti.com>, Arnd Bergmann <arnd@arndb.de>
+CC: Jason Kridner <jkridner@beagleboard.org>,
+        Mark Jackson <mpfj-list@newflow.co.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH v2] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+Date: Mon, 22 Jul 2013 12:59:49 -0500
+Message-ID: <1374515989-7391-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Oleksandr Kravchenko <x0199363@ti.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, rob@landley.net, jic23@cam.ac.uk,
-        pmeerw@pmeerw.net, holler@ahsoftware.de, srinivas.pandruvada@intel.com,
-        devicetree-discuss@lists.ozlabs.org, grygorii.strashko@ti.com,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Subject: Re: [PATCH v3 1/2] of: Add Avago Technologies vendor prefix
-References: <1374498688-24701-1-git-send-email-x0199363@ti.com>
-In-Reply-To: <1374498688-24701-1-git-send-email-x0199363@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/13 14:11, Oleksandr Kravchenko wrote:
-> From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-> 
-> This commit adds a device tree vendor prefix for Avago Technologies.
-> 
-> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-applied to the togreg branch of iio.git
-Thanks
+HWMOD removal for MMC is breaking edma_start as the events are being manually
+triggered due to unused channel list not being clear, Thanks to Balaji TK for
+finding this issue.
 
-> ---
->  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index d5a79ca..8aab9c6 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -11,6 +11,7 @@ amcc	Applied Micro Circuits Corporation (APM, formally AMCC)
->  apm	Applied Micro Circuits Corporation (APM)
->  arm	ARM Ltd.
->  atmel	Atmel Corporation
-> +avago	Avago Technologies
->  bosch	Bosch Sensortec GmbH
->  brcm	Broadcom Corporation
->  cavium	Cavium, Inc.
-> 
+This patch fixes the issue, by reading the "dmas" property from the DT node if
+it exists and clearing the bits in the unused channel list.
+
+Cc: Balaji T K <balajitk@ti.com>
+Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+v2 changes: Fixed compiler warning
+
+ arch/arm/common/edma.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index a432e6c..765d578 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -561,14 +561,29 @@ static int reserve_contiguous_slots(int ctlr, unsigned int id,
+ static int prepare_unused_channel_list(struct device *dev, void *data)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	int i, ctlr;
+-
+-	for (i = 0; i < pdev->num_resources; i++) {
+-		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+-				(int)pdev->resource[i].start >= 0) {
+-			ctlr = EDMA_CTLR(pdev->resource[i].start);
+-			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+-					edma_cc[ctlr]->edma_unused);
++	int i = 0, ctlr;
++	u32 dma_chan;
++	const __be32 *dma_chan_p;
++	struct property *prop;
++
++	if (dev->of_node) {
++		of_property_for_each_u32(dev->of_node, "dmas", prop, \
++					 dma_chan_p, dma_chan) {
++			if (i++ & 1) {
++				ctlr = EDMA_CTLR(dma_chan);
++				clear_bit(EDMA_CHAN_SLOT(dma_chan),
++						edma_cc[ctlr]->edma_unused);
++			}
++		}
++	} else {
++		for (; i < pdev->num_resources; i++) {
++			if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
++			    (int)pdev->resource[i].start >= 0) {
++				ctlr = EDMA_CTLR(pdev->resource[i].start);
++				clear_bit(EDMA_CHAN_SLOT(
++					  pdev->resource[i].start),
++					  edma_cc[ctlr]->edma_unused);
++			}
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
+
