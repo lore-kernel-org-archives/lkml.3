@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3GVGNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 02:13:14 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:38737 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553Ab3GVGNL (ORCPT
+	id S1756631Ab3GVGNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 02:13:33 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50600 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3GVGNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 02:13:11 -0400
+	Mon, 22 Jul 2013 02:13:30 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
         <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
@@ -21,85 +21,72 @@ Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
         <linux-kernel@vger.kernel.org>, <riel@redhat.com>,
         <drjones@redhat.com>, <virtualization@lists.linux-foundation.org>,
         <srivatsa.vaddagiri@gmail.com>
-Date: Mon, 22 Jul 2013 11:50:27 +0530
-Message-Id: <20130722062027.24737.15135.sendpatchset@codeblue>
+Date: Mon, 22 Jul 2013 11:50:38 +0530
+Message-Id: <20130722062038.24737.35006.sendpatchset@codeblue>
 In-Reply-To: <20130722061631.24737.75508.sendpatchset@codeblue>
 References: <20130722061631.24737.75508.sendpatchset@codeblue>
-Subject: [PATCH RFC V11 16/18] kvm hypervisor : Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
+Subject: [PATCH RFC V11 17/18] Documentation/kvm : Add documentation on Hypercalls and features used for PV spinlock
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072206-8256-0000-0000-000008712152
+x-cbid: 13072206-2000-0000-0000-00000CFB2DD4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm hypervisor: Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
+Documentation/kvm : Add documentation on Hypercalls and features used for PV spinlock
 
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-Note that we are using APIC_DM_REMRD which has reserved usage.
-In future if APIC_DM_REMRD usage is standardized, then we should
-find some other way or go back to old method.
+KVM_HC_KICK_CPU  hypercall added to wakeup halted vcpu in paravirtual spinlock
+enabled guest.
 
-Suggested-by: Gleb Natapov <gleb@redhat.com>
+KVM_FEATURE_PV_UNHALT enables guest to check whether pv spinlock can be enabled
+in guest.
+
+Thanks Vatsa for rewriting KVM_HC_KICK_CPU
+
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/lapic.c |    5 ++++-
- arch/x86/kvm/x86.c   |   25 ++++++-------------------
- 2 files changed, 10 insertions(+), 20 deletions(-)
+ Documentation/virtual/kvm/cpuid.txt      |    4 ++++
+ Documentation/virtual/kvm/hypercalls.txt |   14 ++++++++++++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index afc1124..48c13c9 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -706,7 +706,10 @@ out:
- 		break;
- 
- 	case APIC_DM_REMRD:
--		apic_debug("Ignoring delivery mode 3\n");
-+		result = 1;
-+		vcpu->arch.pv.pv_unhalted = 1;
-+		kvm_make_request(KVM_REQ_EVENT, vcpu);
-+		kvm_vcpu_kick(vcpu);
- 		break;
- 
- 	case APIC_DM_SMI:
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 1e73dab..640d112 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5502,27 +5502,14 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
-  */
- static void kvm_pv_kick_cpu_op(struct kvm *kvm, unsigned long flags, int apicid)
- {
--	struct kvm_vcpu *vcpu = NULL;
--	int i;
-+	struct kvm_lapic_irq lapic_irq;
- 
--	kvm_for_each_vcpu(i, vcpu, kvm) {
--		if (!kvm_apic_present(vcpu))
--			continue;
-+	lapic_irq.shorthand = 0;
-+	lapic_irq.dest_mode = 0;
-+	lapic_irq.dest_id = apicid;
- 
--		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
--			break;
--	}
--	if (vcpu) {
--		/*
--		 * Setting unhalt flag here can result in spurious runnable
--		 * state when unhalt reset does not happen in vcpu_block.
--		 * But that is harmless since that should soon result in halt.
--		 */
--		vcpu->arch.pv.pv_unhalted = true;
--		/* We need everybody see unhalt before vcpu unblocks */
--		smp_wmb();
--		kvm_vcpu_kick(vcpu);
--	}
-+	lapic_irq.delivery_mode = APIC_DM_REMRD;
-+	kvm_irq_delivery_to_apic(kvm, 0, &lapic_irq, NULL);
- }
- 
- int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
+index 83afe65..654f43c 100644
+--- a/Documentation/virtual/kvm/cpuid.txt
++++ b/Documentation/virtual/kvm/cpuid.txt
+@@ -43,6 +43,10 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
+ KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
+                                    ||       || writing to msr 0x4b564d02
+ ------------------------------------------------------------------------------
++KVM_FEATURE_PV_UNHALT              ||     6 || guest checks this feature bit
++                                   ||       || before enabling paravirtualized
++                                   ||       || spinlock support.
++------------------------------------------------------------------------------
+ KVM_FEATURE_CLOCKSOURCE_STABLE_BIT ||    24 || host will warn if no guest-side
+                                    ||       || per-cpu warps are expected in
+                                    ||       || kvmclock.
+diff --git a/Documentation/virtual/kvm/hypercalls.txt b/Documentation/virtual/kvm/hypercalls.txt
+index ea113b5..022198e 100644
+--- a/Documentation/virtual/kvm/hypercalls.txt
++++ b/Documentation/virtual/kvm/hypercalls.txt
+@@ -64,3 +64,17 @@ Purpose: To enable communication between the hypervisor and guest there is a
+ shared page that contains parts of supervisor visible register state.
+ The guest can map this shared page to access its supervisor register through
+ memory using this hypercall.
++
++5. KVM_HC_KICK_CPU
++------------------------
++Architecture: x86
++Status: active
++Purpose: Hypercall used to wakeup a vcpu from HLT state
++Usage example : A vcpu of a paravirtualized guest that is busywaiting in guest
++kernel mode for an event to occur (ex: a spinlock to become available) can
++execute HLT instruction once it has busy-waited for more than a threshold
++time-interval. Execution of HLT instruction would cause the hypervisor to put
++the vcpu to sleep until occurence of an appropriate event. Another vcpu of the
++same guest can wakeup the sleeping vcpu by issuing KVM_HC_KICK_CPU hypercall,
++specifying APIC ID (a1) of the vcpu to be woken up. An additional argument (a0)
++is used in the hypercall for future use.
 
