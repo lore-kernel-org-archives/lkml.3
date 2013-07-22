@@ -1,561 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab3GVBnF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 21:43:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39418 "EHLO
+	id S1755007Ab3GVBoM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 21:44:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab3GVBnC (ORCPT
+	with ESMTP id S1754833Ab3GVBoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 21:43:02 -0400
-Date: Sun, 21 Jul 2013 18:43:10 -0700
+	Sun, 21 Jul 2013 21:44:10 -0400
+Date: Sun, 21 Jul 2013 18:44:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.54
-Message-ID: <20130722014310.GB10172@kroah.com>
-References: <20130722014258.GA10172@kroah.com>
+Subject: Linux 3.9.11
+Message-ID: <20130722014423.GA12972@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
 Content-Disposition: inline
-In-Reply-To: <20130722014258.GA10172@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index 104049d..6ca3657 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 53
-+SUBLEVEL = 54
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 85d6332..a99ed7a 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -824,6 +824,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 	struct frame_tail __user *tail;
- 
- 
-+	perf_callchain_store(entry, regs->ARM_pc);
- 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
- 
- 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 054cc01..d50a821 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
- /* snapshots of runstate info */
- static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
- 
--/* unused ns of stolen and blocked time */
-+/* unused ns of stolen time */
- static DEFINE_PER_CPU(u64, xen_residual_stolen);
--static DEFINE_PER_CPU(u64, xen_residual_blocked);
- 
- /* return an consistent snapshot of 64-bit time/counter value */
- static u64 get64(const u64 *p)
-@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
- {
- 	struct vcpu_runstate_info state;
- 	struct vcpu_runstate_info *snap;
--	s64 blocked, runnable, offline, stolen;
-+	s64 runnable, offline, stolen;
- 	cputime_t ticks;
- 
- 	get_runstate_snapshot(&state);
-@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
- 	snap = &__get_cpu_var(xen_runstate_snapshot);
- 
- 	/* work out how much time the VCPU has not been runn*ing*  */
--	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
- 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
- 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
- 
-@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
- 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
- 	__this_cpu_write(xen_residual_stolen, stolen);
- 	account_steal_ticks(ticks);
--
--	/* Add the appropriate number of ticks of blocked time,
--	   including any left-overs from last time. */
--	blocked += __this_cpu_read(xen_residual_blocked);
--
--	if (blocked < 0)
--		blocked = 0;
--
--	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
--	__this_cpu_write(xen_residual_blocked, blocked);
--	account_idle_ticks(ticks);
- }
- 
- /* Get the TSC speed from Xen */
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index f9914e5..3251d4b 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -974,6 +974,10 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	ec_enlarge_storm_threshold, "CLEVO hardware", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
- 	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
-+	{
-+	ec_skip_dsdt_scan, "HP Folio 13", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
- 	{},
- };
- 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 71a4d04..aeb8220 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -284,6 +284,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 
- 	/* AMD */
- 	{ PCI_VDEVICE(AMD, 0x7800), board_ahci }, /* AMD Hudson-2 */
-+	{ PCI_VDEVICE(AMD, 0x7900), board_ahci }, /* AMD CZ */
- 	/* AMD is using RAID class only for ahci controllers */
- 	{ PCI_VENDOR_ID_AMD, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_RAID << 8, 0xffffff, board_ahci },
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index f9eaa82..47a1fb8 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1543,8 +1543,7 @@ static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
- 		u32 fbs = readl(port_mmio + PORT_FBS);
- 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
- 
--		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
--		    ata_link_online(&ap->pmp_link[pmp])) {
-+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
- 			link = &ap->pmp_link[pmp];
- 			fbs_need_dec = true;
- 		}
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 758122f..15a6af8 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2469,10 +2469,10 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
- 	struct dma_pl330_chan *pch = to_pchan(chan);
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&pch->lock, flags);
--
- 	tasklet_kill(&pch->task);
- 
-+	spin_lock_irqsave(&pch->lock, flags);
-+
- 	pl330_release_channel(pch->pl330_chid);
- 	pch->pl330_chid = NULL;
- 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-index 506b9a0..4763426 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-@@ -104,7 +104,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(struct ieee80211_hw *hw,
- 			tx_agc[RF90_PATH_A] = 0x10101010;
- 			tx_agc[RF90_PATH_B] = 0x10101010;
- 		} else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
--			   TXHIGHPWRLEVEL_LEVEL1) {
-+			   TXHIGHPWRLEVEL_LEVEL2) {
- 			tx_agc[RF90_PATH_A] = 0x00000000;
- 			tx_agc[RF90_PATH_B] = 0x00000000;
- 		} else{
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index 8cf41bb..3f869c9 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -357,6 +357,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
- 	{RTL_USB_DEVICE(0x2001, 0x330a, rtl92cu_hal_cfg)}, /*D-Link-Alpha*/
- 	{RTL_USB_DEVICE(0x2019, 0xab2b, rtl92cu_hal_cfg)}, /*Planex -Abocom*/
- 	{RTL_USB_DEVICE(0x20f4, 0x624d, rtl92cu_hal_cfg)}, /*TRENDNet*/
-+	{RTL_USB_DEVICE(0x2357, 0x0100, rtl92cu_hal_cfg)}, /*TP-Link WN8200ND*/
- 	{RTL_USB_DEVICE(0x7392, 0x7822, rtl92cu_hal_cfg)}, /*Edimax -Edimax*/
- 	{}
- };
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 680dbfa..103c95e 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1062,6 +1062,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP700_SATA, quirk
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP700_SATA, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SATA_IDE, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD, 0x7900, quirk_amd_ide_mode);
- 
- /*
-  *	Serverworks CSB5 IDE does not fully support native mode
-diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-index 9694c1e..fc50168 100644
---- a/drivers/pcmcia/at91_cf.c
-+++ b/drivers/pcmcia/at91_cf.c
-@@ -100,9 +100,9 @@ static int at91_cf_get_status(struct pcmcia_socket *s, u_int *sp)
- 		int vcc	= gpio_is_valid(cf->board->vcc_pin);
- 
- 		*sp = SS_DETECT | SS_3VCARD;
--		if (!rdy || gpio_get_value(rdy))
-+		if (!rdy || gpio_get_value(cf->board->irq_pin))
- 			*sp |= SS_READY;
--		if (!vcc || gpio_get_value(vcc))
-+		if (!vcc || gpio_get_value(cf->board->vcc_pin))
- 			*sp |= SS_POWERON;
- 	} else
- 		*sp = 0;
-diff --git a/drivers/rtc/rtc-rv3029c2.c b/drivers/rtc/rtc-rv3029c2.c
-index 0fbe57b..21d63d1 100644
---- a/drivers/rtc/rtc-rv3029c2.c
-+++ b/drivers/rtc/rtc-rv3029c2.c
-@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(struct i2c_client *client,
- 		dev_dbg(&client->dev, "alarm IRQ armed\n");
- 	} else {
- 		/* disable AIE irq */
--		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
-+		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
- 		if (ret)
- 			return ret;
- 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index cb8c162..6de5760 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -511,6 +511,7 @@ static int fsg_set_halt(struct fsg_dev *fsg, struct usb_ep *ep)
- /* Caller must hold fsg->lock */
- static void wakeup_thread(struct fsg_common *common)
- {
-+	smp_wmb();	/* ensure the write of bh->state is complete */
- 	/* Tell the main thread that something has happened */
- 	common->thread_wakeup_needed = 1;
- 	if (common->thread_task)
-@@ -730,6 +731,7 @@ static int sleep_thread(struct fsg_common *common)
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	common->thread_wakeup_needed = 0;
-+	smp_rmb();	/* ensure the latest bh->state is visible */
- 	return rc;
- }
- 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 5080b1d..3347e9b 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -369,6 +369,10 @@ static struct xhci_container_ctx *xhci_alloc_container_ctx(struct xhci_hcd *xhci
- 		ctx->size += CTX_SIZE(xhci->hcc_params);
- 
- 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
-+	if (!ctx->bytes) {
-+		kfree(ctx);
-+		return NULL;
-+	}
- 	memset(ctx->bytes, 0, ctx->size);
- 	return ctx;
- }
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index df90fe5..93ad67e 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -179,6 +179,7 @@ static int xhci_plat_remove(struct platform_device *dev)
- 
- 	usb_remove_hcd(hcd);
- 	iounmap(hcd->regs);
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
- 	usb_put_hcd(hcd);
- 	kfree(xhci);
- 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 5b24260..33e20e4 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -159,8 +159,6 @@ static void option_instat_callback(struct urb *urb);
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_FULLSPEED	0x9000
- #define NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED	0x9001
- #define NOVATELWIRELESS_PRODUCT_E362		0x9010
--#define NOVATELWIRELESS_PRODUCT_G1		0xA001
--#define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
- #define NOVATELWIRELESS_PRODUCT_G2		0xA010
- #define NOVATELWIRELESS_PRODUCT_MC551		0xB001
- 
-@@ -744,8 +742,6 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC547) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_EVDO_EMBEDDED_HIGHSPEED) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_HSPA_EMBEDDED_HIGHSPEED) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1) },
--	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1_M) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
- 	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index d46277d..c7ccbc6 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -37,7 +37,13 @@ static const struct usb_device_id id_table[] = {
- 	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
- 	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
- 	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
--	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel/Verizon USB-1000 */
-+	{DEVICE_G1K(0x1410, 0xa002)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa003)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa004)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa005)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa006)},	/* Novatel Gobi Modem device */
-+	{DEVICE_G1K(0x1410, 0xa007)},	/* Novatel Gobi Modem device */
- 	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
- 	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
- 	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
-diff --git a/fs/cifs/cifs_unicode.h b/fs/cifs/cifs_unicode.h
-index a513a54..f2b2ffd 100644
---- a/fs/cifs/cifs_unicode.h
-+++ b/fs/cifs/cifs_unicode.h
-@@ -323,14 +323,14 @@ UniToupper(register wchar_t uc)
- /*
-  * UniStrupr:  Upper case a unicode string
-  */
--static inline wchar_t *
--UniStrupr(register wchar_t *upin)
-+static inline __le16 *
-+UniStrupr(register __le16 *upin)
- {
--	register wchar_t *up;
-+	register __le16 *up;
- 
- 	up = upin;
- 	while (*up) {		/* For all characters */
--		*up = UniToupper(*up);
-+		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
- 		up++;
- 	}
- 	return upin;		/* Return input pointer */
-diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
-index 63c460e..6d0c62a 100644
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -394,7 +394,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
- 	int rc = 0;
- 	int len;
- 	char nt_hash[CIFS_NTHASH_SIZE];
--	wchar_t *user;
-+	__le16 *user;
- 	wchar_t *domain;
- 	wchar_t *server;
- 
-@@ -419,7 +419,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
- 		return rc;
- 	}
- 
--	/* convert ses->user_name to unicode and uppercase */
-+	/* convert ses->user_name to unicode */
- 	len = ses->user_name ? strlen(ses->user_name) : 0;
- 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
- 	if (user == NULL) {
-@@ -429,7 +429,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
- 	}
- 
- 	if (len) {
--		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
-+		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
- 		UniStrupr(user);
- 	} else {
- 		memset(user, '\0', 2);
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 6fbfbdb..43944c6 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -549,6 +549,11 @@ cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
- 			fattr->cf_mode &= ~(S_IWUGO);
- 
- 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
-+		if (fattr->cf_nlink < 1) {
-+			cFYI(1, "replacing bogus file nlink value %u\n",
-+			     fattr->cf_nlink);
-+			fattr->cf_nlink = 1;
-+		}
- 	}
- 
- 	fattr->cf_uid = cifs_sb->mnt_uid;
-diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index d7940b2..fbb9b82 100644
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -573,11 +573,8 @@ static int htree_dirblock_to_tree(struct file *dir_file,
- 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
- 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
- 						+((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse (bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext3fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 0efff1e..b9a3726 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4713,7 +4713,7 @@ static int ext4_xattr_fiemap(struct inode *inode,
- 		error = ext4_get_inode_loc(inode, &iloc);
- 		if (error)
- 			return error;
--		physical = iloc.bh->b_blocknr << blockbits;
-+		physical = (__u64)iloc.bh->b_blocknr << blockbits;
- 		offset = EXT4_GOOD_OLD_INODE_SIZE +
- 				EXT4_I(inode)->i_extra_isize;
- 		physical += offset;
-@@ -4721,7 +4721,7 @@ static int ext4_xattr_fiemap(struct inode *inode,
- 		flags |= FIEMAP_EXTENT_DATA_INLINE;
- 		brelse(iloc.bh);
- 	} else { /* external block */
--		physical = EXT4_I(inode)->i_file_acl << blockbits;
-+		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
- 		length = inode->i_sb->s_blocksize;
- 	}
- 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 2857e5b..98bff01ee 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4221,7 +4221,7 @@ int ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 		 struct kstat *stat)
- {
- 	struct inode *inode;
--	unsigned long delalloc_blocks;
-+	unsigned long long delalloc_blocks;
- 
- 	inode = dentry->d_inode;
- 	generic_fillattr(inode, stat);
-@@ -4238,7 +4238,7 @@ int ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 	 */
- 	delalloc_blocks = EXT4_I(inode)->i_reserved_data_blocks;
- 
--	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
-+	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
- 	return 0;
- }
- 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 19e4518..8784842 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4639,11 +4639,16 @@ do_more:
- 		 * blocks being freed are metadata. these blocks shouldn't
- 		 * be used until this transaction is committed
- 		 */
-+	retry:
- 		new_entry = kmem_cache_alloc(ext4_free_data_cachep, GFP_NOFS);
- 		if (!new_entry) {
--			ext4_mb_unload_buddy(&e4b);
--			err = -ENOMEM;
--			goto error_return;
-+			/*
-+			 * We use a retry loop because
-+			 * ext4_free_blocks() is not allowed to fail.
-+			 */
-+			cond_resched();
-+			congestion_wait(BLK_RW_ASYNC, HZ/50);
-+			goto retry;
- 		}
- 		new_entry->efd_start_cluster = bit;
- 		new_entry->efd_group = block_group;
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index ac76939..9fb3fae 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct file *dir_file,
- 		if (ext4_check_dir_entry(dir, NULL, de, bh,
- 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
- 					 + ((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse(bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext4fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index 6075ac03..f567127 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -500,10 +500,10 @@ int jbd2__journal_restart(handle_t *handle, int nblocks, gfp_t gfp_mask)
- 		   &transaction->t_outstanding_credits);
- 	if (atomic_dec_and_test(&transaction->t_updates))
- 		wake_up(&journal->j_wait_updates);
-+	tid = transaction->t_tid;
- 	spin_unlock(&transaction->t_handle_lock);
- 
- 	jbd_debug(2, "restarting handle %p\n", handle);
--	tid = transaction->t_tid;
- 	need_to_start = !tid_geq(journal->j_commit_request, tid);
- 	read_unlock(&journal->j_state_lock);
- 	if (need_to_start)
-diff --git a/fs/ocfs2/xattr.c b/fs/ocfs2/xattr.c
-index 2e3ea30..5b8d944 100644
---- a/fs/ocfs2/xattr.c
-+++ b/fs/ocfs2/xattr.c
-@@ -6499,6 +6499,16 @@ static int ocfs2_reflink_xattr_inline(struct ocfs2_xattr_reflink *args)
- 	}
- 
- 	new_oi = OCFS2_I(args->new_inode);
-+	/*
-+	 * Adjust extent record count to reserve space for extended attribute.
-+	 * Inline data count had been adjusted in ocfs2_duplicate_inline_data().
-+	 */
-+	if (!(new_oi->ip_dyn_features & OCFS2_INLINE_DATA_FL) &&
-+	    !(ocfs2_inode_is_fast_symlink(args->new_inode))) {
-+		struct ocfs2_extent_list *el = &new_di->id2.i_list;
-+		le16_add_cpu(&el->l_count, -(inline_size /
-+					sizeof(struct ocfs2_extent_rec)));
-+	}
- 	spin_lock(&new_oi->ip_lock);
- 	new_oi->ip_dyn_features |= OCFS2_HAS_XATTR_FL | OCFS2_INLINE_XATTR_FL;
- 	new_di->i_dyn_features = cpu_to_le16(new_oi->ip_dyn_features);
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 7684920..86a500d 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -546,9 +546,9 @@ int can_request_irq(unsigned int irq, unsigned long irqflags)
- 		return 0;
- 
- 	if (irq_settings_can_request(desc)) {
--		if (desc->action)
--			if (irqflags & desc->action->flags & IRQF_SHARED)
--				canrequest =1;
-+		if (!desc->action ||
-+		    irqflags & desc->action->flags & IRQF_SHARED)
-+			canrequest = 1;
- 	}
- 	irq_put_desc_unlock(desc, flags);
- 	return canrequest;
-diff --git a/kernel/timer.c b/kernel/timer.c
-index dd93d90..7e0a770 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -145,9 +145,11 @@ static unsigned long round_jiffies_common(unsigned long j, int cpu,
- 	/* now that we have rounded, subtract the extra skew again */
- 	j -= cpu * 3;
- 
--	if (j <= jiffies) /* rounding ate our timeout entirely; */
--		return original;
--	return j;
-+	/*
-+	 * Make sure j is still in the future. Otherwise return the
-+	 * unmodified value.
-+	 */
-+	return time_is_after_jiffies(j) ? j : original;
- }
- 
- /**
+--a8Wt8u1KmwUX3Y2C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.9.11 kernel.
+
+Note, this is the LAST 3.9-stable kernel.  It is now dead, end-of-life,
+not to be touched by me again, please move to 3.10 now, you have been
+warned.
+
+All users of the 3.9 kernel series must upgrade.
+
+The updated 3.9.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.9.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                    |    2 -
+ arch/x86/xen/time.c                         |   17 +------------
+ drivers/acpi/acpica/hwxfsleep.c             |    8 ++++--
+ drivers/acpi/device_pm.c                    |   23 ++++++++++++++----
+ drivers/acpi/ec.c                           |    4 +++
+ drivers/ata/libahci.c                       |    3 --
+ drivers/block/nbd.c                         |    7 ++++-
+ drivers/dma/pl330.c                         |    4 +--
+ drivers/hv/ring_buffer.c                    |   10 ++++----
+ drivers/hv/vmbus_drv.c                      |    2 -
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |    2 -
+ drivers/net/wireless/rtlwifi/rtl8723ae/sw.c |    6 ++--
+ drivers/pci/iov.c                           |    5 +---
+ drivers/pci/probe.c                         |   14 ++++++-----
+ drivers/pci/xen-pcifront.c                  |    7 ++---
+ drivers/pcmcia/at91_cf.c                    |    4 +--
+ drivers/rtc/rtc-rv3029c2.c                  |    2 -
+ drivers/usb/gadget/f_mass_storage.c         |    2 +
+ drivers/usb/host/xhci-mem.c                 |    4 +++
+ drivers/usb/host/xhci-plat.c                |    1=20
+ fs/btrfs/ctree.c                            |    3 +-
+ fs/btrfs/send.c                             |   35 +++++++++++++++++++++++=
++++++
+ fs/cifs/cifs_unicode.h                      |    8 +++---
+ fs/cifs/cifsencrypt.c                       |    6 ++--
+ fs/cifs/file.c                              |    9 +++----
+ fs/cifs/inode.c                             |    5 ++++
+ fs/ext3/namei.c                             |    7 +----
+ fs/ext4/extents.c                           |    4 +--
+ fs/ext4/file.c                              |   14 +++++------
+ fs/ext4/inline.c                            |    2 -
+ fs/ext4/inode.c                             |    4 +--
+ fs/ext4/mballoc.c                           |   11 ++++++--
+ fs/ext4/namei.c                             |    7 +----
+ fs/ext4/resize.c                            |    4 ---
+ fs/jbd2/journal.c                           |    3 +-
+ fs/jbd2/transaction.c                       |    2 -
+ fs/ocfs2/xattr.c                            |   10 ++++++++
+ include/linux/nbd.h                         |    1=20
+ kernel/cgroup.c                             |   25 +++++++++++++++-----
+ kernel/irq/manage.c                         |    6 ++--
+ kernel/timer.c                              |    8 ++++--
+ mm/memcontrol.c                             |    8 ------
+ mm/page_alloc.c                             |    4 +++
+ 43 files changed, 195 insertions(+), 118 deletions(-)
+
+Al Viro (1):
+      ext3,ext4: don't mess with dir_file->f_pos in htree_dirblock_to_tree()
+
+Axel Lin (1):
+      drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
+
+Bart Van Assche (1):
+      timer: Fix jiffies wrap behavior of round_jiffies_common()
+
+Bartlomiej Zolnierkiewicz (1):
+      drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
+
+Ben Hutchings (1):
+      genirq: Fix can_request_irq() for IRQs without an action
+
+George Cherian (1):
+      usb: host: xhci-plat: release mem region while removing module
+
+Greg Kroah-Hartman (1):
+      Linux 3.9.11
+
+Jan Kara (4):
+      ext4: fix data offset overflow on 32-bit archs in ext4_inline_data_fi=
+emap()
+      ext4: fix overflows in SEEK_HOLE, SEEK_DATA implementations
+      ext4: fix data offset overflow in ext4_xattr_fiemap() on 32-bit archs
+      ext4: fix overflow when counting used blocks on 32-bit architectures
+
+Jason Wang (1):
+      drivers: hv: switch to use mb() instead of smp_mb()
+
+Jiang Liu (1):
+      PCI: Fix refcount issue in pci_create_root_bus() error recovery path
+
+Joachim Eastwood (1):
+      pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+
+Josef Bacik (2):
+      Btrfs: fix estale with btrfs send
+      Btrfs: only do the tree_mod_log_free_eb if this is our last ref
+
+Junxiao Bi (1):
+      ocfs2: xattr: fix inlined xattr reflink
+
+Konrad Rzeszutek Wilk (1):
+      xen/pcifront: Deal with toolstack missing 'XenbusStateClosing' state.
+
+Lan Tianyu (1):
+      ACPI / EC: Add HP Folio 13 to ec_dmi_table in order to skip DSDT scan
+
+Larry Finger (2):
+      rtlwifi: rtl8723ae: Fix typo in firmware names
+      rtlwifi: rtl8192cu: Fix duplicate if test
+
+Laszlo Ersek (1):
+      xen/time: remove blocked time accounting from xen "clockchip"
+
+Li Zefan (1):
+      cgroup: fix umount vs cgroup_event_remove() race
+
+Lv Zheng (1):
+      ACPICA: Do not use extended sleep registers unless HW-reduced bit is =
+set
+
+Maarten ter Huurne (1):
+      ext4: fix corruption when online resizing a fs with 1K block size
+
+Mathias Nyman (1):
+      xhci: check for failed dma pool allocation
+
+Michal Hocko (1):
+      memcg, kmem: fix reference count handling on the error path
+
+Paul Clements (1):
+      nbd: correct disconnect behavior
+
+Pavel Shilovsky (1):
+      CIFS: Fix a deadlock when a file is reopened
+
+Rafael J. Wysocki (1):
+      ACPI / PM: Fix corner case in acpi_bus_update_power()
+
+Shane Huang (1):
+      ahci: remove pmp link online check in FBS EH
+
+Steve French (2):
+      CIFS use sensible file nlink values if unprovided
+      Handle big endianness in NTLM (ntlmv2) authentication
+
+Theodore Ts'o (3):
+      jbd2: move superblock checksum calculation to jbd2_write_superblock()
+      jbd2: fix theoretical race in jbd2__journal_restart
+      ext4: don't allow ext4_free_blocks() to fail due to ENOMEM
+
+UCHINO Satoshi (1):
+      usb: gadget: f_mass_storage: add missing memory barrier for thread_wa=
+keup_needed
+
+Wanpeng Li (1):
+      mm/memory-hotplug: fix lowmem count overflow when offline pages
+
+Xudong Hao (1):
+      PCI: Finish SR-IOV VF setup before adding the device
+
+
+--a8Wt8u1KmwUX3Y2C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7I53AAoJEDjbvchgkmk+MNkP/0yt/3clQ5CKxbvLyeRu8Xbf
+W45akcFLOmB+mLlFCKCSXxFTbSRuauvZtnlj8isMv+8g1socZ1h4g/QZd+VbEVo/
+a9FpMvgHm6v+NwPATTiKiche3VgMoj7JVHhHjxRQiI4+jvuElBSklcG1Tk2E22Zb
+6Q8AVkoER5wt/tdAIDNrYpiKskk2cyIqa4gZMJQ1piVDI6QAtAYGBDs4XeyIMaB8
+CiCbcTeuCNJpXKUeJ9jjHoyea5YGl56CPgpU57tmNGjas5RHIJkZyje9orwun/9a
+NqRrPcliVrWqA6zVeBgWFbV4RajUVSHiHtSh7IlofYsN/o8OLy39FXB6BinjvN4P
+9931nCWkT/mj/OxpMkkj/uQNRDnLojMP25S33Ql2EndDrglL5WMMr8ntDVZJ3kbu
+T1CxUlkzzPVit+1z+kbeaTsnj1/nB6bx+YPThgushoBsli9oGNUhTCfE/ve+9zv4
+Zzl624RYSwooXNBva+hJmgIjlqpR+6xWdLsP8LStzwD6prlYo/2ekmuSlylTZdqj
+KHL0hJheZBQeynNxTRcjNQeivRti8nSvDBy2Q582CQk7Gd4e3QQkLOxicGzGWs06
+D2xuRNE78HZCRLFhIhFqMnjjEwyozOLOmGIkDdyjgQLduih1SYgYAqjueaVjqtcr
+QW6b+mN4CXOI+KCJs8Gh
+=/k69
+-----END PGP SIGNATURE-----
+
+--a8Wt8u1KmwUX3Y2C--
