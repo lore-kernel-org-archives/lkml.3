@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab3GVUBL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:01:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45672 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933184Ab3GVUBJ (ORCPT
+	id S933318Ab3GVUBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:01:51 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:64984 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933184Ab3GVUBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:01:09 -0400
-Date: Mon, 22 Jul 2013 16:00:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Julien Grall <julien.grall@linaro.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH v3] xen/arm: enable PV control for ARM
-Message-ID: <20130722200020.GT30300@phenom.dumpdata.com>
-References: <1374490654-13373-1-git-send-email-julien.grall@linaro.org>
- <20130722134934.GB32221@e106331-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1307221459200.4893@kaball.uk.xensource.com>
- <20130722143920.GC32221@e106331-lin.cambridge.arm.com>
- <alpine.DEB.2.02.1307221545030.4893@kaball.uk.xensource.com>
+	Mon, 22 Jul 2013 16:01:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307221545030.4893@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <51ED882F.9080801@nod.at>
+References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
+ <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
+ <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com>
+ <20130722124047.GL4165@ZenIV.linux.org.uk> <CALkWK0=bAwDxbLEtHOThjY58BmWCrFYgZm9GaLfEnF5vpu1VJw@mail.gmail.com>
+ <51ED31AF.8000309@nod.at> <CALkWK0ki0JN_uB3VNr=j0hAcEhiT_Xr+xd911-AGy5sjd95GFg@mail.gmail.com>
+ <51ED3CF5.7000609@nod.at> <CALkWK0kwBaNHfH6fjtnCTxseWcXfEvNFgFovZVkz5E0_fxiHWA@mail.gmail.com>
+ <51ED882F.9080801@nod.at>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Tue, 23 Jul 2013 01:31:09 +0530
+Message-ID: <CALkWK0mVX21Y7xH+uPjKVBGmHqo4HW1uFRGvpKxWHTQdhV8Ehw@mail.gmail.com>
+Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
+To: Richard Weinberger <richard@nod.at>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 03:46:34PM +0100, Stefano Stabellini wrote:
-> On Mon, 22 Jul 2013, Mark Rutland wrote:
-> > On Mon, Jul 22, 2013 at 03:09:35PM +0100, Stefano Stabellini wrote:
-> > > On Mon, 22 Jul 2013, Mark Rutland wrote:
-> > > > Hi,
-> > > > 
-> > > > [Adding Catalin to Cc]
-> > > > 
-> > > > On Mon, Jul 22, 2013 at 11:57:34AM +0100, Julien Grall wrote:
-> > > > > Enable power management from the toolstack for ARM guest.
-> > > > > 
-> > > > > Signed-off-by: Julien Grall <julien.grall@linaro.org>
-> > > > > 
-> > > > > ---
-> > > > >     Changes in v3:
-> > > > >         - Fix condition to compile cpu_hotplug.o
-> > > > >     Changes in v2:
-> > > > >         - Don't compile xen/cpu_hotplug.o with ARM64
-> > > > 
-> > > > My arm64 cpu hotplug series is going to be dependent on not compiling
-> > > > xen/cpu_hotplug.o. Currently I'm not able to compile an arm64 kernel
-> > > > with my patches and Xen support.
-> > > > 
-> > > > How do you intend to push this? I'd like to ensure my cpu hotplug series
-> > > > is able to go in for the next merge window.
-> > > 
-> > > This patch does exactly that: it makes sure cpu_hotplug is not compiled
-> > > on ARM64.
-> > 
-> > Sorry, what I meant was that my series is going to be entirely dependent
-> > on this patch or it'll break bisection. That'll make merging things a
-> > little painful as I'll need a stable branch with this patch to base my
-> > series upon.
-> > 
-> > Another option would be to split this patch into two parts, one enabling
-> > power management and one fixing things up for HOTPLUG_CPU on arm64. That
-> > way I could take the arm64 HOTPLUG_CPU fix in my series adding arm64
-> > HOTPLUG_CPU support.
-> > 
-> > Would that be acceptable? Have I missed something?
-> 
-> As I am very sensitive to painful merging situations, I think we could
-> split the patch in two and send upstream the fix (not compiling
-> cpu_hotplug.o on ARM64) in 3.11-rc2 or rc3.  Konrad, what do you think?
+Richard Weinberger wrote:
+> No, but we won't break existing applications, period.
 
-Sure, prep a patch and send it my way.
+We're on the same page: I'm absolutely against breaking existing users too.
+
+> If you offer me a solution that does not break any existing applications
+> and solves your systemd issue we can talk. :-)
+
+I think a hv console driver for um Linux will solve the problem, but I
+can't be sure.  I'm trying to write one, and I'll hopefully have
+something to show in a few more caffeinated hours.
+
+Let me know if you have any thoughts/ pointers.
