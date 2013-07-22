@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab3GVGMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 02:12:32 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:35419 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab3GVGM3 (ORCPT
+	id S1756593Ab3GVGMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 02:12:44 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:50811 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756427Ab3GVGMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 02:12:29 -0400
+	Mon, 22 Jul 2013 02:12:42 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
         <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
@@ -21,45 +21,47 @@ Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
         <linux-kernel@vger.kernel.org>, <riel@redhat.com>,
         <drjones@redhat.com>, <virtualization@lists.linux-foundation.org>,
         <srivatsa.vaddagiri@gmail.com>
-Date: Mon, 22 Jul 2013 11:49:49 +0530
-Message-Id: <20130722061949.24737.81055.sendpatchset@codeblue>
+Date: Mon, 22 Jul 2013 11:50:05 +0530
+Message-Id: <20130722062005.24737.9896.sendpatchset@codeblue>
 In-Reply-To: <20130722061631.24737.75508.sendpatchset@codeblue>
 References: <20130722061631.24737.75508.sendpatchset@codeblue>
-Subject: [PATCH RFC V11 13/18] kvm : Fold pv_unhalt flag into GET_MP_STATE ioctl to aid migration
+Subject: [PATCH RFC V11 14/18] kvm guest : Add configuration support to enable debug information for KVM Guests
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072205-9264-0000-0000-0000042B9E73
+x-cbid: 13072206-3864-0000-0000-00000930712C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm : Fold pv_unhalt flag into GET_MP_STATE ioctl to aid migration
+kvm guest : Add configuration support to enable debug information for KVM Guests
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 
-During migration, any vcpu that got kicked but did not become runnable
-(still in halted state) should be runnable after migration.
-
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/x86.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/Kconfig |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index dae4575..1e73dab 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6284,7 +6284,12 @@ int kvm_arch_vcpu_ioctl_get_mpstate(struct kvm_vcpu *vcpu,
- 				    struct kvm_mp_state *mp_state)
- {
- 	kvm_apic_accept_events(vcpu);
--	mp_state->mp_state = vcpu->arch.mp_state;
-+	if (vcpu->arch.mp_state == KVM_MP_STATE_HALTED &&
-+					vcpu->arch.pv.pv_unhalted)
-+		mp_state->mp_state = KVM_MP_STATE_RUNNABLE;
-+	else
-+		mp_state->mp_state = vcpu->arch.mp_state;
-+
- 	return 0;
- }
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 112e712..b1fb846 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -657,6 +657,15 @@ config KVM_GUEST
+ 	  underlying device model, the host provides the guest with
+ 	  timing infrastructure such as time of day, and system time
  
++config KVM_DEBUG_FS
++	bool "Enable debug information for KVM Guests in debugfs"
++	depends on KVM_GUEST && DEBUG_FS
++	default n
++	---help---
++	  This option enables collection of various statistics for KVM guest.
++	  Statistics are displayed in debugfs filesystem. Enabling this option
++	  may incur significant overhead.
++
+ source "arch/x86/lguest/Kconfig"
+ 
+ config PARAVIRT_TIME_ACCOUNTING
 
