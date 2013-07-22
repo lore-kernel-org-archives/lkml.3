@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757753Ab3GVRHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:07:18 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:59472 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122Ab3GVRHO (ORCPT
+	id S1757804Ab3GVRIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 13:08:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61837 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab3GVRIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:07:14 -0400
-Message-ID: <51ED66BE.8040006@linaro.org>
-Date: Mon, 22 Jul 2013 10:07:10 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Barry Song <Baohua.Song@csr.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jingchang Lu <b35083@freescale.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v4 00/17] 64-bit friendly generic sched_clock()
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 22 Jul 2013 13:08:02 -0400
+Message-ID: <1374512879.4990.19.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: freddy@asix.com.tw
+Cc: davem@davemloft.net, netdev@vger.kernel.org, grundler@google.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        louis@asix.com.tw, allan@asix.com.tw
+Date: Mon, 22 Jul 2013 10:07:59 -0700
+In-Reply-To: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 04:21 PM, Stephen Boyd wrote:
-> This patchset adds support for 64 bit counters in the generic
-> sched_clock code and converts drivers over to use it. Based
-> on v3.11-rc1.
->
-> Changes since v3:
->   * Move to use seqcount to fix issues with 64-bit cyc counters
->   * Move to hrtimer to fix underflow/overflow errors in wraparound
->     calculation
->   * Use of 1 hour in clocks_calc_mult_shift
->   * Converted over drivers in drivers/clocksource
->
-> Stephen Boyd (17):
->    clocksource: Extract max nsec calculation into separate function
->    sched_clock: Use seqcount instead of rolling our own
->    sched_clock: Use an hrtimer instead of timer
->    sched_clock: Add support for >32 bit sched_clock
->    arch_timer: Move to generic sched_clock framework
->    sched_clock: Remove sched_clock_func() hook
->    clocksource: bcm2835: Switch to sched_clock_register()
->    ocksource: dbx500-prcmu: Switch to sched_clock_register()
->    clocksource: dw_apb_timer_of: Switch to sched_clock_register()
->    clocksource: mxs_timer: Switch to sched_clock_register()
->    clocksource: nomadik: Switch to sched_clock_register()
->    clocksource: samsung_pwm_timer: Switch to sched_clock_register()
->    clocksource: tegra: Switch to sched_clock_register()
->    clocksource: time-armada-370-xp: Switch to sched_clock_register()
->    clocksource: sirf: Switch to sched_clock_register() and use 64 bits
->    clocksource: vf_pit_timer: Switch to sched_clock_register()
->    sched_clock: Deprecate setup_sched_clock()
+On Sat, 2013-07-20 at 17:16 +0800, freddy@asix.com.tw wrote:
+> From: Freddy Xin <freddy@asix.com.tw>
+> 
+> Disable TSO and SG network features in reset() and bind() functions,
+> and check the return value of skb_linearize() in tx_fixup() to prevent
+> TX throttling.
+> 
+> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+> ---
+>  drivers/net/usb/ax88179_178a.c | 8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+> index 1e3c302..eb71331 100644
+> --- a/drivers/net/usb/ax88179_178a.c
+> +++ b/drivers/net/usb/ax88179_178a.c
+> @@ -1029,7 +1029,7 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
+>  	dev->mii.supports_gmii = 1;
+>  
+>  	dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+> -			      NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
+> +			      NETIF_F_RXCSUM;
+>  
+>  	dev->net->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+>  				 NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
+> @@ -1173,7 +1173,9 @@ ax88179_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
+>  	if (((skb->len + 8) % frame_size) == 0)
+>  		tx_hdr2 |= 0x80008000;	/* Enable padding */
+>  
+> -	skb_linearize(skb);
+> +	if (skb_linearize(skb))
+> +		return NULL;
+> +
+>  	
 
-Ok, so if there's no major objections with this set, here's my plan:
+I guess that if a driver does not advertise NETIF_F_SG, this
+skb_linearize() call is not needed : All frames reaching your xmit
+function should already be linear
 
-1) I'm going to queue 1-4 in a fortglx/3.12/sched-clock64 branch, I'll 
-send git pull requests to both Thomas and Olof, so they can both merge 
-the common base for the conversion code in both drivers/clocksource and 
-arch/arm.
-
-2) If I can get Catalin's ack on 5/17, I'll queue it and 6/17 for 
-tip/timers/core.
-
-3) I'll also queue the rest and send to Thomas or Daniel for 
-tip/timers/core.
-
-That sound ok to everyone?
-
-thanks
--john
+Thanks
 
 
