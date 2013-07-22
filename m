@@ -1,36 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933402Ab3GVUxW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:53:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:30783 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316Ab3GVUxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:53:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,721,1367996400"; 
-   d="scan'208";a="271739756"
-Message-ID: <51ED9BC0.6020206@linux.intel.com>
-Date: Mon, 22 Jul 2013 13:53:20 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933394Ab3GVU5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:57:30 -0400
+Received: from mail-ye0-f178.google.com ([209.85.213.178]:51178 "EHLO
+	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab3GVU53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 16:57:29 -0400
+Message-ID: <51ED9CC2.8040604@gmail.com>
+Date: Mon, 22 Jul 2013 16:57:38 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, x86@kernel.org
-Subject: Re: [PATCH -tip/x86/jumplabel] x86: call out into int3 handler directly
- instead of using notifier
-References: <20130720131226.GA13893@localhost> <alpine.LNX.2.00.1307221307280.23128@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1307221307280.23128@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        dave@sr71.net, kosaki.motohiro@gmail.com,
+        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>  <20130722083721.GC25976@gmail.com> <1374513120.16322.21.camel@misato.fc.hp.com>
+In-Reply-To: <1374513120.16322.21.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+(7/22/13 1:12 PM), Toshi Kani wrote:
+> On Mon, 2013-07-22 at 10:37 +0200, Ingo Molnar wrote:
+>> * Toshi Kani <toshi.kani@hp.com> wrote:
+>>
+>>> CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
+>>> interface, which allows a given memory address to be hot-added as
+>>> follows. (See Documentation/memory-hotplug.txt for more detail.)
+>>>
+>>> # echo start_address_of_new_memory > /sys/devices/system/memory/probe
+>>>
+>>> This probe interface is required on powerpc. On x86, however, ACPI
+>>> notifies a memory hotplug event to the kernel, which performs its
+>>> hotplug operation as the result. Therefore, regular users do not need
+>>> this interface on x86. This probe interface is also error-prone and
+>>> misleading that the kernel blindly adds a given memory address without
+>>> checking if the memory is present on the system; no probing is done
+>>> despite of its name. The kernel crashes when a user requests to online
+>>> a memory block that is not present on the system. This interface is
+>>> currently used for testing as it can fake a hotplug event.
+>>>
+>>> This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86, adds
+>>> its Kconfig menu entry on x86, and clarifies its use in Documentation/
+>>> memory-hotplug.txt.
+>>
+>> Could we please also fix it to never crash the kernel, even if stupid
+>> ranges are provided?
+>
+> Yes, this probe interface can be enhanced to verify the firmware
+> information before adding a given memory address.  However, such change
+> would interfere its test use of "fake" hotplug, which is only the known
+> use-case of this interface on x86.
+>
+> In order to verify if a given memory address is enabled at run-time (as
+> opposed to boot-time), we need to check with ACPI memory device objects
+> on x86.  However, system vendors tend to not implement memory device
+> objects unless their systems support memory hotplug.  Dave Hansen is
+> using this interface for his testing as a way to fake a hotplug event on
+> a system that does not support memory hotplug.
 
- What is the baseline for this patch?
+One of possible option is to return EINVAL when system has real hotplug device.
+I mean this interface is only useful when system don't have proper hardware
+feature and doesn't work correctly hardware property and this interface command
+are not consistent.
 
-	-hpa
+Dave, What do you think?
 
