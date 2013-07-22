@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab3GVHqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 03:46:36 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.1]:54526 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755186Ab3GVHqf (ORCPT
+	id S1756689Ab3GVHsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 03:48:33 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:40388 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756513Ab3GVHsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 03:46:35 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-3.tower-29.messagelabs.com!1374479192!23614666!4
-X-Originating-IP: [66.77.174.13]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <51ECE34E.7050904@digi.com>
-Date: Mon, 22 Jul 2013 09:46:22 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+	Mon, 22 Jul 2013 03:48:31 -0400
+Date: Mon, 22 Jul 2013 08:48:24 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-Subject: Re: [PATCH v2 3/5] iio: mxs-lradc: add scale attribute to channels
-References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307191814.15491.marex@denx.de> <51ECDD9F.4080506@digi.com> <201307220942.08990.marex@denx.de>
-In-Reply-To: <201307220942.08990.marex@denx.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>
+Subject: Re: [PATCH 1/3] mfd: add LP3943 MFD driver
+Message-ID: <20130722074824.GD4681@laptop>
+References: <A874F61F95741C4A9BA573A70FE3998F82E815C3@DQHE06.ent.ti.com>
+ <20130717112033.GB3336@laptop>
+ <A874F61F95741C4A9BA573A70FE3998F82E83161@DQHE06.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E83161@DQHE06.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+> > > +int lp3943_read_byte(struct lp3943 *l, u8 reg, u8 *read)
+> > 
+> > Not sure I like 'l' as a variable name. The function is small enough
+> > to get away with it in this context, but it would probably be better
+> > if it were renamed to something more meaningful.
+> 
+> LP3943 consists of two devices - GPIO and PWM drivers.
+> So each private data was defined as 
+> 
+> struct lp3943 *l;			/* MFD device */
+> struct lp3943_gpio *lg;		/* GPIO driver */
+> struct lp3943_pwm *lp;		/* PWM driver */
+> 
+> As you pointed, the 'l' may look like a list of something.
+> I'll rename them as below.
+> 
+> struct lp3943 *lp3943;
+> struct lp3943_gpio *lp3943_gpio;
+> struct lp3943_pwm *lp3943_pwm;
 
-On 07/22/2013 09:42 AM, Marek Vasut wrote:
-> Dear Hector Palacios,
->
->> Hi Marek,
->>
->> On 07/19/2013 06:14 PM, Marek Vasut wrote:
->>> Dear Hector Palacios,
->>>
->>>> Dear Marek,
->>>>
->>>> On 07/19/2013 04:30 PM, Marek Vasut wrote:
->>>>>> @@ -228,39 +230,12 @@ struct mxs_lradc {
->>>>>>
->>>>>>     #define LRADC_RESOLUTION			12
->>>>>>     #define LRADC_SINGLE_SAMPLE_MASK		((1 << LRADC_RESOLUTION)
-> - 1)
->>>>>>
->>>>>> -/*
->>>>>> - * Raw I/O operations
->>>>>> - */
->>>>>> -static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->>>>>> +static int mxs_lradc_read_single(struct iio_dev *iio_dev,
->>>>>>
->>>>>>     			const struct iio_chan_spec *chan,
->>>>>>     			int *val, int *val2, long m)
->>>>>>
->>>>>>     {
->>>>>>
->>>>>>     	struct mxs_lradc *lradc = iio_priv(iio_dev);
->>>>>>     	int ret;
->>>>>>
->>>>>> -	unsigned long mask;
->>>>>> -
->>>>>> -	if (m != IIO_CHAN_INFO_RAW)
->>>>>> -		return -EINVAL;
->>>>>> -
->>>>>> -	/* Check for invalid channel */
->>>>>> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
->>>>>> -		return -EINVAL;
->>>>>
->>>>> This was already resolved, so this patch won't apply I'm afraid.
->>>>
->>>> You mean the 'unsigned long mask', right?  Yeah, I think I had resolved
->>>> that one before submitting, but looks like I didn't.
->>>> The other check is not resolved afaik. We agreed to remove it, but on a
->>>> different patch.
->>>
->>> I mean the other check, yeah. A patch removing that should be applied
->>> already.
->>
->> Where exactly? It's not fixed in Jonathan's fixes-togreg branch, at least.
->> Did you fixed it?
->
-> I use linux-next [1], should be it.
->
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-
-> next.git/log/drivers/staging/iio/adc/mxs-lradc.c
+Much better thanks.
 
-That is removing the unsigned long mask, but not the check for invalid channel.
-I'm taking care of the unsigned long mask but an additional patch is needed to remove 
-the check for invalid channel.
+> > > +static const struct i2c_device_id lp3943_ids[] = {
+> > > +	{"lp3943", 0},
+> > 
+> > Lack of consistency ...
+> 
+> I don't know exactly what it means. Do you mean the name of I2C device?
 
-Best regards,
---
-Hector Palacios
+No, I was referencing the spaces (or lack of) on the inside of the
+curly brackets.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
