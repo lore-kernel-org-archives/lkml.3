@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab3GVLgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 07:36:39 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36384 "EHLO
+	id S1757422Ab3GVLgh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 07:36:37 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36416 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757424Ab3GVLcn (ORCPT
+	with ESMTP id S1757429Ab3GVLcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Jul 2013 07:32:43 -0400
 From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
@@ -21,122 +21,85 @@ Cc: Sudeep.KarkadaNagesha@arm.com, Russell King <linux@arm.linux.org.uk>,
         Rob Herring <rob.herring@calxeda.com>,
         Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
         Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH v3 05/16] ARM: mvebu: remove device tree parsing for cpu nodes
-Date: Mon, 22 Jul 2013 12:32:16 +0100
-Message-Id: <1374492747-13879-6-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [PATCH v3 06/16] drivers/bus: arm-cci: avoid parsing DT for cpu device nodes
+Date: Mon, 22 Jul 2013 12:32:17 +0100
+Message-Id: <1374492747-13879-7-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
  <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 22 Jul 2013 11:32:38.0609 (UTC) FILETIME=[2B79FC10:01CE86CF]
-X-MC-Unique: 113072212324107201
+X-OriginalArrivalTime: 22 Jul 2013 11:32:39.0671 (UTC) FILETIME=[2C1C0870:01CE86CF]
+X-MC-Unique: 113072212324113201
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6MBah0f009693
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6MBav8Y009697
 
 From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Currently set_secondary_cpus_clock assume the CPU logical ordering
-and the MPDIR in DT are same, which is incorrect.
+Since the CPU device nodes can be retrieved using arch_of_get_cpu_node,
+we can use it to avoid parsing the cpus node searching the cpu nodes and
+mapping to logical index.
 
-Since the CPU device nodes can be retrieved in the logical ordering
-using the DT helper, we can remove the devices tree parsing.
+This patch removes parsing DT for cpu nodes by using of_get_cpu_node.
 
-This patch removes DT parsing by making use of of_get_cpu_node.
-
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 ---
- arch/arm/mach-mvebu/platsmp.c | 52 ++++++++++++++++++++-----------------------
- 1 file changed, 24 insertions(+), 28 deletions(-)
+ drivers/bus/arm-cci.c | 28 +++++++---------------------
+ 1 file changed, 7 insertions(+), 21 deletions(-)
 
-diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-index ce81d30..001dd42 100644
---- a/arch/arm/mach-mvebu/platsmp.c
-+++ b/arch/arm/mach-mvebu/platsmp.c
-@@ -23,51 +23,47 @@
- #include <linux/of.h>
- #include <linux/mbus.h>
- #include <asm/cacheflush.h>
-+#include <asm/prom.h>
- #include <asm/smp_plat.h>
- #include "common.h"
- #include "armada-370-xp.h"
- #include "pmsu.h"
- #include "coherency.h"
+diff --git a/drivers/bus/arm-cci.c b/drivers/bus/arm-cci.c
+index 7332889..7dd891c 100644
+--- a/drivers/bus/arm-cci.c
++++ b/drivers/bus/arm-cci.c
+@@ -122,17 +122,8 @@ EXPORT_SYMBOL_GPL(cci_ace_get_port);
  
-+static struct clk *__init get_cpu_clk(int cpu)
-+{
-+	struct clk *cpu_clk;
-+	struct device_node *np = of_get_cpu_node(cpu);
-+
-+	if (WARN(!np, "missing cpu node\n"))
-+		return NULL;
-+	cpu_clk = of_clk_get(np, 0);
-+	if (WARN_ON(IS_ERR(cpu_clk)))
-+		return NULL;
-+	return cpu_clk;
-+}
-+
- void __init set_secondary_cpus_clock(void)
+ static void __init cci_ace_init_ports(void)
  {
--	int thiscpu;
-+	int thiscpu, cpu;
- 	unsigned long rate;
--	struct clk *cpu_clk = NULL;
--	struct device_node *np = NULL;
-+	struct clk *cpu_clk;
+-	int port, ac, cpu;
+-	u64 hwid;
+-	const u32 *cell;
+-	struct device_node *cpun, *cpus;
+-
+-	cpus = of_find_node_by_path("/cpus");
+-	if (WARN(!cpus, "Missing cpus node, bailing out\n"))
+-		return;
+-
+-	if (WARN_ON(of_property_read_u32(cpus, "#address-cells", &ac)))
+-		ac = of_n_addr_cells(cpus);
++	int port, cpu;
++	struct device_node *cpun;
  
- 	thiscpu = smp_processor_id();
--	for_each_node_by_type(np, "cpu") {
--		int err;
--		int cpu;
+ 	/*
+ 	 * Port index look-up speeds up the function disabling ports by CPU,
+@@ -141,18 +132,13 @@ static void __init cci_ace_init_ports(void)
+ 	 * The stashed index array is initialized for all possible CPUs
+ 	 * at probe time.
+ 	 */
+-	for_each_child_of_node(cpus, cpun) {
+-		if (of_node_cmp(cpun->type, "cpu"))
+-			continue;
+-		cell = of_get_property(cpun, "reg", NULL);
+-		if (WARN(!cell, "%s: missing reg property\n", cpun->full_name))
+-			continue;
 -
--		err = of_property_read_u32(np, "reg", &cpu);
--		if (WARN_ON(err))
--			return;
--
--		if (cpu == thiscpu) {
--			cpu_clk = of_clk_get(np, 0);
--			break;
--		}
--	}
--	if (WARN_ON(IS_ERR(cpu_clk)))
-+	cpu_clk = get_cpu_clk(thiscpu);
-+	if (!cpu_clk)
- 		return;
- 	clk_prepare_enable(cpu_clk);
- 	rate = clk_get_rate(cpu_clk);
- 
- 	/* set all the other CPU clk to the same rate than the boot CPU */
--	for_each_node_by_type(np, "cpu") {
--		int err;
--		int cpu;
--
--		err = of_property_read_u32(np, "reg", &cpu);
--		if (WARN_ON(err))
+-		hwid = of_read_number(cell, ac);
+-		cpu = get_logical_index(hwid & MPIDR_HWID_BITMASK);
 +	for_each_possible_cpu(cpu) {
-+		if (cpu == thiscpu)
-+			continue;
-+		cpu_clk = get_cpu_clk(cpu);
-+		if (!cpu_clk)
- 			return;
--
--		if (cpu != thiscpu) {
--			cpu_clk = of_clk_get(np, 0);
--			clk_set_rate(cpu_clk, rate);
--		}
-+		clk_set_rate(cpu_clk, rate);
- 	}
- }
++		/* too early to use cpu->of_node */
++		cpun = of_get_cpu_node(cpu);
  
+-		if (cpu < 0 || !cpu_possible(cpu))
++		if (WARN(!cpun, "Missing cpu device node\n"))
+ 			continue;
++
+ 		port = __cci_ace_get_port(cpun, ACE_PORT);
+ 		if (port < 0)
+ 			continue;
 -- 
 1.8.1.2
 
