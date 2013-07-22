@@ -1,129 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3GVOVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:21:48 -0400
+	id S1757297Ab3GVOWE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:22:04 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31121 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233Ab3GVOV2 (ORCPT
+	with ESMTP id S1756268Ab3GVOVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:21:28 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ek7-A2r6p9oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=94ladqSjrEwA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=jh-iv98KKLfRA23Un2MA:9 a=hPjdaMEvmhQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 22 Jul 2013 10:21:30 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=-3LLRA3HSXoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=huuB6fd2cGcA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=-5kFnHe8gWvU2TnmosgA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130722142124.555532105@goodmis.org>
+Message-Id: <20130722142126.223065433@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 22 Jul 2013 10:19:50 -0400
+Date: Mon, 22 Jul 2013 10:19:59 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH 03/14] tracing: Typo fix on ring buffer comments
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 12/14] tracing: Do not (ab)use trace_seq in event_id_read()
 References: <20130722141947.972915744@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Typo-fix-on-ring-buffer-comments.patch
+Content-Disposition: inline; filename=0012-tracing-Do-not-ab-use-trace_seq-in-event_id_read.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-There have some mismatch between comments with
-real function name, update it.
+event_id_read() has no reason to kmalloc "struct trace_seq"
+(more than PAGE_SIZE!), it can use a small buffer instead.
 
-This patch also add some missed function arguments
-description.
+Note: "if (*ppos) return 0" looks strange and even wrong,
+simple_read_from_buffer() handles ppos != 0 case corrrectly.
 
-Link: http://lkml.kernel.org/r/51E3B3B2.4080307@huawei.com
+And it seems that almost every user of trace_seq in this file
+should be converted too. Unless you use seq_open(), trace_seq
+buys nothing compared to the raw buffer, but it needs a bit
+more memory and code.
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Link: http://lkml.kernel.org/r/20130718184712.GA4786@redhat.com
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ring_buffer.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ kernel/trace/trace_events.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index eef2e56..cc2f66f 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1066,7 +1066,7 @@ static int rb_check_list(struct ring_buffer_per_cpu *cpu_buffer,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 76defd9..898f868 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -947,23 +947,14 @@ static ssize_t
+ event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ {
+ 	struct ftrace_event_call *call = filp->private_data;
+-	struct trace_seq *s;
+-	int r;
++	char buf[32];
++	int len;
+ 
+ 	if (*ppos)
+ 		return 0;
+ 
+-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+-	if (!s)
+-		return -ENOMEM;
+-
+-	trace_seq_init(s);
+-	trace_seq_printf(s, "%d\n", call->event.type);
+-
+-	r = simple_read_from_buffer(ubuf, cnt, ppos,
+-				    s->buffer, s->len);
+-	kfree(s);
+-	return r;
++	len = sprintf(buf, "%d\n", call->event.type);
++	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
  }
  
- /**
-- * check_pages - integrity check of buffer pages
-+ * rb_check_pages - integrity check of buffer pages
-  * @cpu_buffer: CPU buffer with pages to test
-  *
-  * As a safety measure we check to make sure the data pages have not
-@@ -1258,7 +1258,7 @@ static int rb_cpu_notify(struct notifier_block *self,
- #endif
- 
- /**
-- * ring_buffer_alloc - allocate a new ring_buffer
-+ * __ring_buffer_alloc - allocate a new ring_buffer
-  * @size: the size in bytes per cpu that is needed.
-  * @flags: attributes to set for the ring buffer.
-  *
-@@ -1607,6 +1607,7 @@ static void update_pages_handler(struct work_struct *work)
-  * ring_buffer_resize - resize the ring buffer
-  * @buffer: the buffer to resize.
-  * @size: the new size.
-+ * @cpu_id: the cpu buffer to resize
-  *
-  * Minimum size is 2 * BUF_PAGE_SIZE.
-  *
-@@ -3956,11 +3957,11 @@ EXPORT_SYMBOL_GPL(ring_buffer_consume);
-  * expected.
-  *
-  * After a sequence of ring_buffer_read_prepare calls, the user is
-- * expected to make at least one call to ring_buffer_prepare_sync.
-+ * expected to make at least one call to ring_buffer_read_prepare_sync.
-  * Afterwards, ring_buffer_read_start is invoked to get things going
-  * for real.
-  *
-- * This overall must be paired with ring_buffer_finish.
-+ * This overall must be paired with ring_buffer_read_finish.
-  */
- struct ring_buffer_iter *
- ring_buffer_read_prepare(struct ring_buffer *buffer, int cpu)
-@@ -4009,7 +4010,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_read_prepare_sync);
-  * an intervening ring_buffer_read_prepare_sync must have been
-  * performed.
-  *
-- * Must be paired with ring_buffer_finish.
-+ * Must be paired with ring_buffer_read_finish.
-  */
- void
- ring_buffer_read_start(struct ring_buffer_iter *iter)
-@@ -4031,7 +4032,7 @@ ring_buffer_read_start(struct ring_buffer_iter *iter)
- EXPORT_SYMBOL_GPL(ring_buffer_read_start);
- 
- /**
-- * ring_buffer_finish - finish reading the iterator of the buffer
-+ * ring_buffer_read_finish - finish reading the iterator of the buffer
-  * @iter: The iterator retrieved by ring_buffer_start
-  *
-  * This re-enables the recording to the buffer, and frees the
-@@ -4346,6 +4347,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
- /**
-  * ring_buffer_alloc_read_page - allocate a page to read from buffer
-  * @buffer: the buffer to allocate for.
-+ * @cpu: the cpu buffer to allocate.
-  *
-  * This function is used in conjunction with ring_buffer_read_page.
-  * When reading a full page from the ring buffer, these functions
-@@ -4403,7 +4405,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_free_read_page);
-  * to swap with a page in the ring buffer.
-  *
-  * for example:
-- *	rpage = ring_buffer_alloc_read_page(buffer);
-+ *	rpage = ring_buffer_alloc_read_page(buffer, cpu);
-  *	if (!rpage)
-  *		return error;
-  *	ret = ring_buffer_read_page(buffer, &rpage, len, cpu, 0);
+ static ssize_t
 -- 
 1.7.10.4
 
