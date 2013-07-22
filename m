@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab3GVSLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:11:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41841 "EHLO
+	id S933004Ab3GVSLG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:11:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41846 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728Ab3GVSK7 (ORCPT
+	with ESMTP id S932728Ab3GVSLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 14:10:59 -0400
+	Mon, 22 Jul 2013 14:11:02 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: balbi@ti.com, george.cherian@ti.com,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back after removal
-Date: Mon, 22 Jul 2013 20:10:05 +0200
-Message-Id: <1374516607-2705-15-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 12/16] usb: musb: unmap reqs in musb_gadget_queue()'s error case
+Date: Mon, 22 Jul 2013 20:10:03 +0200
+Message-Id: <1374516607-2705-13-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
 References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
@@ -24,30 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the MUSB_DEVCTL_SESSION back after it has been removed.
-If it is missing then the host session is not recognized. This bit is
-added initially added in musb_start() and removed after the first device
-disconnect.
+If the descriptor is missing the reqeust is never unmapped. This patch
+changes this and renames the cleanup label to unlock since there is no
+cleanup done. The cleanup would revert the allocation of ressource (i.e.
+this dma mapping) but it does not, it simply unlocks and returns.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/usb/musb/musb_dsps.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/musb/musb_gadget.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 2e45723..1a2b163 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -186,6 +186,9 @@ static void otg_timer(unsigned long _musb)
- 		dsps_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 0414bc1..96632f9 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1266,7 +1266,8 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req,
+ 		dev_dbg(musb->controller, "req %p queued to %s while ep %s\n",
+ 				req, ep->name, "disabled");
+ 		status = -ESHUTDOWN;
+-		goto cleanup;
++		unmap_dma_buffer(request, musb);
++		goto unlock;
+ 	}
  
- 		devctl = dsps_readb(musb->mregs, MUSB_DEVCTL);
-+		devctl |= MUSB_DEVCTL_SESSION;
-+		dsps_writeb(musb->mregs, MUSB_DEVCTL, devctl);
-+
- 		if (devctl & MUSB_DEVCTL_BDEVICE) {
- 			musb->xceiv->state = OTG_STATE_B_IDLE;
- 			MUSB_DEV_MODE(musb);
+ 	/* add request to the list */
+@@ -1276,7 +1277,7 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req,
+ 	if (!musb_ep->busy && &request->list == musb_ep->req_list.next)
+ 		musb_ep_restart(musb, request);
+ 
+-cleanup:
++unlock:
+ 	spin_unlock_irqrestore(&musb->lock, lockflags);
+ 	return status;
+ }
 -- 
 1.8.3.2
 
