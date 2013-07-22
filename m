@@ -1,90 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3GVCqU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 22:46:20 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:39142 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab3GVCqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 22:46:19 -0400
-X-Spam-Score: -100.8
-Message-ID: <51EC9CC1.1040304@asianux.com>
-Date: Mon, 22 Jul 2013 10:45:21 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755166Ab3GVDBk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 23:01:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:33206 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752993Ab3GVDBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 23:01:39 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: monstr@monstr.eu, Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: scatterlist: sg_set_buf() argument must be in linear mapping (sha1: ac4e97abce9b80c020e7113325f49e58b7b15e3f)
+In-Reply-To: <51E64C6B.3080306@monstr.eu>
+References: <51E64C6B.3080306@monstr.eu>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 22 Jul 2013 11:17:40 +0930
+Message-ID: <87siz7xt4z.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATH v4] itimers: Remove bogus NULL pointer check in sys_getitimer()
-References: <51C2E6F9.80107@asianux.com> <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de> <51C3B4B4.90603@asianux.com> <alpine.DEB.2.02.1306242242480.4013@ionos.tec.linutronix.de> <51C8EB41.6060501@asianux.com> <51C8EF6F.4050803@asianux.com> <51D62147.3000900@asianux.com>
-In-Reply-To: <51D62147.3000900@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+Michal Simek <monstr@monstr.eu> writes:
+> Hi Rusty and Jens,
+>
+> I am getting problem with your patch which you have added to the kernel.
+> The problem is with my arm zynq remoteproc driver where
+> I use dma_declare_coherent_memory() to specify memory for remoteproc
+> which is ioremap to the vmalloc area.
+>
+> Based on that buf addr is not inside ram even this coherent memory is in ram.
+> That's why virt_addr_valid(buf) is failing.
 
-Please help check this patch, when you have time.
+But sg_set_buf() calls virt_to_page(buf).  So does that work?
 
-Thanks.
+I would think calling sg_set_page() directly would be what you want
+here...
 
-On 07/05/2013 09:28 AM, Chen Gang wrote:
-> Hello Maintainers:
-> 
-> Is this patch under the normal work flow (or I should need a little more
-> patience) ?
-> 
-> Thanks.
-> 
-> On 06/25/2013 09:16 AM, Chen Gang wrote:
->> People might be tricked into assuming that the return value for a
->> failed NULL pointer check should be -EINVAL instead of -EFAULT.
->>
->> Remove the misleading NULL pointer check to fix this nuisance.
->>
->> Aside of that this patch fixes the problem of NOMMU kernels, where
->> a NULL pointer dereference is a valid operation. This allows to
->> boot NOMMU kernels without working around the shortcomings of the
->> getitimer() system call, which have been ignored since this NULL
->> pointer check was introduced in Linux 0.96a.
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  kernel/itimer.c |   13 ++++++-------
->>  1 files changed, 6 insertions(+), 7 deletions(-)
->>
->> diff --git a/kernel/itimer.c b/kernel/itimer.c
->> index 8d262b4..3b12271 100644
->> --- a/kernel/itimer.c
->> +++ b/kernel/itimer.c
->> @@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
->>  
->>  SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
->>  {
->> -	int error = -EFAULT;
->> +	int error;
->>  	struct itimerval get_buffer;
->>  
->> -	if (value) {
->> -		error = do_getitimer(which, &get_buffer);
->> -		if (!error &&
->> -		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
->> -			error = -EFAULT;
->> -	}
->> +	error = do_getitimer(which, &get_buffer);
->> +	if (!error &&
->> +	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
->> +		error = -EFAULT;
->> +
->>  	return error;
->>  }
->>  
->>
-> 
-> 
-
-
--- 
-Chen Gang
+Cheers,
+Rusty.
