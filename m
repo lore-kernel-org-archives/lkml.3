@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897Ab3GVVE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:04:26 -0400
-Received: from www.sr71.net ([198.145.64.142]:36748 "EHLO blackbird.sr71.net"
+	id S1757934Ab3GVVEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 17:04:34 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50737 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757212Ab3GVVEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:04:12 -0400
-Message-ID: <51ED9E41.3070204@sr71.net>
-Date: Mon, 22 Jul 2013 14:04:01 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1757907Ab3GVVEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 17:04:32 -0400
+Date: Mon, 22 Jul 2013 17:04:23 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130722210423.GG715@cmpxchg.org>
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+ <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+ <51ED9433.60707@redhat.com>
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>  <20130722083721.GC25976@gmail.com> <1374513120.16322.21.camel@misato.fc.hp.com> <51ED9CC2.8040604@gmail.com>
-In-Reply-To: <51ED9CC2.8040604@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51ED9433.60707@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2013 01:57 PM, KOSAKI Motohiro wrote:
+On Mon, Jul 22, 2013 at 04:21:07PM -0400, Rik van Riel wrote:
+> On 07/19/2013 04:55 PM, Johannes Weiner wrote:
 > 
-> One of possible option is to return EINVAL when system has real hotplug
-> device.
-> I mean this interface is only useful when system don't have proper hardware
-> feature and doesn't work correctly hardware property and this interface
-> command
-> are not consistent.
+> >@@ -1984,7 +1992,8 @@ this_zone_full:
+> >  		goto zonelist_scan;
+> >  	}
+> >
+> >-	if (page)
+> >+	if (page) {
+> >+		atomic_sub(1U << order, &zone->alloc_batch);
+> >  		/*
+> >  		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+> >  		 * necessary to allocate the page. The expectation is
 > 
-> Dave, What do you think?
+> Could this be moved into the slow path in buffered_rmqueue and
+> rmqueue_bulk, or would the effect of ignoring the pcp buffers be
+> too detrimental to keeping the balance between zones?
 
-Sounds reasonable to me.
+What I'm worried about is not the inaccury that comes from the buffer
+size but the fact that there are no guaranteed buffer empty+refill
+cycles.  The reclaimer could end up feeding the pcp list that the
+allocator is using indefinitely, which brings us back to the original
+problem.  If you have >= NR_CPU jobs running, the kswapds are bound to
+share CPUs with the allocating tasks, so the scenario is not unlikely.
+
+> It would be kind of nice to not have this atomic operation on every
+> page allocation...
+
+No argument there ;)
+
+> I like the overall approach though. This is something Linux has needed
+> for a long time, and could be extremely useful to automatic NUMA
+> balancing as well...
+> 
+> -- 
+> All rights reversed
