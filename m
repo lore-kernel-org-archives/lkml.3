@@ -1,210 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab3GVO0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:26:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34587 "EHLO comal.ext.ti.com"
+	id S1756388Ab3GVOdH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:33:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54963 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755937Ab3GVO0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:26:45 -0400
-Message-ID: <51ED40E3.5020703@ti.com>
-Date: Mon, 22 Jul 2013 10:25:39 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Durgadoss R <durgadoss.r@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>, Wei Ni <wni@nvidia.com>
-CC: <eduardo.valentin@ti.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RFC: device thermal limits represented in device tree nodes
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2GMSSEWKGMJVHNNELKSIB"
+	id S1754301Ab3GVOdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 10:33:04 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [RFC -v3 2/2] watchdog: update watchdog_tresh properly
+Date: Mon, 22 Jul 2013 16:32:46 +0200
+Message-Id: <1374503566-2521-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374493502-31907-1-git-send-email-mhocko@suse.cz>
+References: <1374493502-31907-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2GMSSEWKGMJVHNNELKSIB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+watchdog_tresh controls how often nmi perf event counter checks per-cpu
+hrtimer_interrupts counter and blows up if the counter hasn't changed
+since the last check. The counter is updated by per-cpu watchdog_hrtimer
+hrtimer which is scheduled with 2/5 watchdog_thresh period which
+guarantees that hrtimer is scheduled 2 times per the main period. Both
+hrtimer and perf event are started together when the watchdog is
+enabled.
 
-Hello Grant and Rob,
+So far so good. But...
 
-(Resending, as I got a message saying:
-<devicetree-discuss@lists.ozlabs.org>: Recipient address rejected: User
-has moved to devicetree at vger.kernel.org)
+But what happens when watchdog_thresh is updated from sysctl handler?
 
-I am writing this email to you specifically to ask your technical
-assessment with respect to representing device thermal limits as device
-tree nodes. I am proposing to introduce device tree nodes to describe
-these limits as thermal zones, their composition and their relations
-with cooling devices and other thermal zones (thermal data).
+proc_dowatchdog will set a new sampling period and hrtimer callback
+(watchdog_timer_fn) will use the new value in the next round.
+The problem, however, is that nobody tells the perf event that the
+sampling period has changed so it is ticking with the period configured
+when it has been set up.
 
-As you should know, device thermal limits are part of hardware
-specification. Considering your board layout, mechanics, power
-dissipation and composition of ICs, etc, that will impose thermal
-requirements on your system, and infringing these limits can lead to
-device damage, device life time reduction or even end user harm. Thus,
-the thermal data help to describe the hardware limits and what needs to
-be done if those limits are crosses, as part of your board design and
-non-functional requirements. Obviously that is very dependent on your
-hardware, and not all of them will have these non-functional
-requirements. Besides, describing these limits has *nothing* to do with
-how you actually find these limits.
+This might result in an ear riping dissonance between perf and hrtimer
+parts if the watchdog_thresh is increased. And even worse it might lead
+to KABOOM if the watchdog is configured to panic on such a spurious
+lockup.
 
-In any case, there is a need to properly represent these requirements
-and I am proposing to have this representation in device tree. There
-were already couple of counter-arguments claiming this is actually about
-configuration and performance profile description. But I still stand
-against these two readings of this proposal and again state that if one
-interprets it as configuration or performance profile, that is a
-mis-understanding [0]. Let me state it clear (again [1]), my proposal is
-to describe hardware thermal limits, because these limits are part of a
-hardware specification; representing in device tree would not infringe
-the original purpose of this data structure  ("The Device Tree is a data
-structure for describing hardware."[2]).
+This patch fixes the issue by updating both nmi perf even counter and
+hrtimers if the threshold value has changed.
 
-Before I explain my proposal, I want to highlight also that these data
-is represented elsewhere already and it is reused across different OS's.
-Thermal data is described using ACPI [3] and operating systems
-ACPI-aware do support the interpretation of thermal data. Linux is one
-example of such systems (I believe I do not need to enlist here all
-systems supporting ACPI). On the other hand, not all systems have ACPI
-or are specified to use ACPI.  Thus, here is another reason to represent
-properly thermal data, so that we can scale across systems.
+The nmi one is disabled and then reinitialized from scratch. This
+has an unpleasant side effect that the allocation of the new event might
+fail theoretically so the hard lockup detector would be disabled for
+such cpus. On the other hand such a memory allocation failure is very
+unlikely because the original event is deallocated right before.
+It would be much nicer if we just changed perf event period but there
+doesn't seem to be any API to do that right now.
+It is also unfortunate that perf_event_alloc uses GFP_KERNEL allocation
+unconditionally so we cannot use on_each_cpu() and do the same thing
+from the per-cpu context. The update from the current CPU should be
+safe because perf_event_disable removes the event atomically before
+it clears the per-cpu watchdog_ev so it cannot change anything under
+running handler feet.
 
-In the specific case of Linux, the common thermal concepts between ACPI
-systems and non-ACPI systems have been represented in the thermal
-framework (CONFIG_THERMAL). Today, on ACPI systems, thermal data is
-fetched from bootloader with help from the common ACPI parser. For
-non-ACPI systems, the thermal data is actually coded as part of device
-drivers.
+The hrtimer is simply restarted (thanks to Don Zickus who has pointed
+this out) if it is queued because we cannot rely it will fire&adopt
+to the new sampling period before a new nmi event triggers (when the
+treshold is decreased).
 
-So, to the point, a brief explanation of my proposal goes as follows:
-i   - trip points: a node to describe a point in the temperature domain
-in which the system has to take an action. This node describes just the
-point, not the action. Properties here are temperature, hysteresis, and
-type (critical, hot, passive, active, etc).
-ii  - binding parameters: the bind_param node is a node to describe how
-actions (cooling devices) get assigned to trip points. Cooling devices
-are expected to be loaded in the target system. Properties here are:
-cooling device name, weight, trip_mask and limits.
-iii - thermal zones: the thermal_zone node is the node containing all
-the required info for describing a thermal zone with hardware thermal
-limitation, including its bindings with cooling devices. Properties here
-are:  type, passive_delay, polling_delay, governor. The thermal_zone
-node must contain, apart from its own properties, one node containing
-trip nodes and one node containing all the zone bind parameters.
+Changes since v1
+- restart hrtimer to ensure that hrtimer doesn't mess new nmi as pointed
+  out by Don Zickus
 
-Here is an example (on OMAP4430):
-thermal_zone {
-	type =3D "CPU";
-	mask =3D <0x03>; /* trips writability */
-	passive_delay =3D <250>; /* milliseconds */
-	polling_delay =3D <1000>; /* milliseconds */
-	governor =3D "step_wise";
-	trips {
-		alert@100000{
-			temperature =3D <100000>; /* milliCelsius
-			hysteresis =3D <2000>; /* milliCelsius */
-			type =3D <THERMAL_TRIP_PASSIVE>;
-		};
-		crit@125000{
-			temperature =3D <125000>; /* milliCelsius
-			hysteresis =3D <2000>; /* milliCelsius */
-			type =3D <THERMAL_TRIP_CRITICAL>;
-		};
-	};
-	bind_params {
-		action@0{
-			cooling_device =3D "thermal-cpufreq";
-			weight =3D <100>; /* percentage */
-			mask =3D <0x01>;
-			/* no limits, using defaults */
-		};
-	};
-};
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ kernel/watchdog.c | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 50 insertions(+), 3 deletions(-)
 
-In this current proposal, a 'thermal_zone' node would be embedded inside
-a temperature sensor node, for simplicity. But other possible builds
-could embedded them in the device with thermal limits (CPU nodes, for
-instance) or they could be not embedded in any specific node.
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 2d64c02..eb4ebb5 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -486,7 +486,52 @@ static struct smp_hotplug_thread watchdog_threads = {
+ 	.unpark			= watchdog_enable,
+ };
+ 
+-static int watchdog_enable_all_cpus(void)
++static void restart_watchdog_hrtimer(void *info)
++{
++	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	int ret;
++
++	/*
++	 * No need to cancel and restart hrtimer if it is currently executing
++	 * because it will reprogram itself with the new period now.
++	 * We should never see it unqueued here because we are running per-cpu
++	 * with interrupts disabled.
++	 */
++	ret = hrtimer_try_to_cancel(hrtimer);
++	if (ret == 1)
++		hrtimer_start(hrtimer, ns_to_ktime(sample_period),
++				HRTIMER_MODE_REL_PINNED);
++}
++
++static void update_timers(int cpu)
++{
++	struct call_single_data data = {.func = restart_watchdog_hrtimer};
++	/*
++	 * Make sure that perf event counter will adopt to a new
++	 * sampling period. Updating the sampling period directly would
++	 * be much nicer but we do not have an API for that now so
++	 * let's use a big hammer.
++	 * Hrtimer will adopt the new period on the next tick but this
++	 * might be late already so we have to restart the timer as well.
++	 */
++	watchdog_nmi_disable(cpu);
++	__smp_call_function_single(cpu, &data, 1);
++	watchdog_nmi_enable(cpu);
++}
++
++static void update_timers_all_cpus(void)
++{
++	int cpu;
++
++	get_online_cpus();
++	preempt_disable();
++	for_each_online_cpu(cpu)
++		update_timers(cpu);
++	preempt_enable();
++	put_online_cpus();
++}
++
++static int watchdog_enable_all_cpus(bool sample_period_changed)
+ {
+ 	int err = 0;
+ 
+@@ -496,6 +541,8 @@ static int watchdog_enable_all_cpus(void)
+ 			pr_err("Failed to create watchdog threads, disabled\n");
+ 		else
+ 			watchdog_running = 1;
++	} else if (sample_period_changed) {
++		update_timers_all_cpus();
+ 	}
+ 
+ 	return err;
+@@ -537,7 +584,7 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+ 	 * watchdog_*_all_cpus() function takes care of this.
+ 	 */
+ 	if (watchdog_user_enabled && watchdog_thresh)
+-		err = watchdog_enable_all_cpus();
++		err = watchdog_enable_all_cpus(old_thresh != watchdog_thresh);
+ 	else
+ 		watchdog_disable_all_cpus();
+ 
+@@ -565,5 +612,5 @@ void __init lockup_detector_init(void)
+ #endif
+ 
+ 	if (watchdog_user_enabled)
+-		watchdog_enable_all_cpus();
++		watchdog_enable_all_cpus(false);
+ }
+-- 
+1.8.3.2
 
-A full documented description can be found here [4]. Also a branch
-containing:
-(a) needed changes in order to have this DT parser;
-(b) the DT parser with documentation
-(c) examples on how drivers could be changes to use the parser
-can be found in my branch here [5]. I wrote the thermal DT parser to
-build thermal zones with the thermal framework API. However, if one does
-not want to do that, it can simple do not include a CONFIG_THERMAL_OF=3Dy=
-
-in her/his build, and the calls will be translated to nops, and the
-device tree thermal data can be parsed to somewhere else interested
-(other subsystem or even user land). A TODO on this implementation is
-that it still lacks the representation of thermal zones composed by
-several sensors. However, I believe it is better to take an incremental
-approach here.  This series can already be used to improve most of the
-existing platform thermal drivers (most are CPU thermal drivers) and to
-reuse the existing code of some hwmon sensors to build thermal zones for
-board thermal requirements.
-
-I have already posted a patch series with this proposal on [6], that
-contains a reference for the original RFC. But looks like my messages
-got moderated on device tree mailing list. Obviously, within PM forum,
-feedback was quite positive. However, we cannot proceed without proper
-assessment of other subsystems. lm-sensors  folks (Guenter) seam to be
-strongly against this series, as there is a fear that this may introduce
-a mis-usage of DT. I still believe this is needed for  hardware
-description, and thus not a infringement on DT purposes.
-
-Please let me know your thoughts on this topic and apologize me if my
-previous messages on this topic did not reach you (hope they reach now).
-
-All best,
-
-Eduardo Valentin
-
-[0] - https://lkml.org/lkml/2013/7/17/621
-[1] - https://lkml.org/lkml/2013/7/18/279
-[2] - www.devicetree.org
-[3] - http://www.acpi.info/
-[4] -
-https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux.git/diff/Docu=
-mentation/devicetree/bindings/thermal/thermal.txt?h=3Dthermal_work/therma=
-l_core/dt_parser&id=3D405bf0b51457ed055a082af2653d7ce757bc2e91
-[5] -
-https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux.git/log/?h=3D=
-thermal_work/thermal_core/dt_parser
-[6] - https://lkml.org/lkml/2013/7/17/923
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
-
-
-------enig2GMSSEWKGMJVHNNELKSIB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlHtQOQACgkQCXcVR3XQvP2MXQD+J+QCiegC3ZlsjubbV/pz2AYJ
-+x13MdKcHshyhdm8Rc4A/Ru+e0NG2kBIjSSS1a5qLj6O9fywxAhccc3IyS03LCFK
-=bDq5
------END PGP SIGNATURE-----
-
-------enig2GMSSEWKGMJVHNNELKSIB--
