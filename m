@@ -1,81 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab3GVLc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 07:32:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36746 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757535Ab3GVLcs (ORCPT
+	id S932639Ab3GVLc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 07:32:56 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30640 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757542Ab3GVLcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Jul 2013 07:32:48 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com, Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Deepak Sikri <deepak.sikri@st.com>
-Subject: [PATCH v3 11/16] cpufreq: spear-cpufreq: remove device tree parsing for cpu nodes
-Date: Mon, 22 Jul 2013 12:32:22 +0100
-Message-Id: <1374492747-13879-12-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 22 Jul 2013 11:32:44.0687 (UTC) FILETIME=[2F1969F0:01CE86CF]
-X-MC-Unique: 113072212324603001
-Content-Type: text/plain; charset=WINDOWS-1252
+X-AuditID: cbfee691-b7fef6d000002d62-d4-51ed185e2c63
+From: Pintu Kumar <pintu.k@samsung.com>
+To: akpm@linux-foundation.org, mgorman@suse.de, jiang.liu@huawei.com,
+        minchan@kernel.org, cody@linux.vnet.ibm.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: cpgs@samsung.com, pintu.k@samsung.com, pintu_agarwal@yahoo.com
+Subject: [PATCH 1/2] mm: page_alloc: fixed checkpatch errors and spell
+Date: Mon, 22 Jul 2013 17:01:19 +0530
+Message-id: <1374492679-17700-1-git-send-email-pintu.k@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkSjdO4m2gweQDfBZz1q9hs9h8vYfd
+	4uUhTYv73+eyWVzeNYfN4t6a/6wWk989Y7RY9vU9u0Xf98PsFt/e3mZ34PJoOfKW1WPTqk42
+	j02fJrF7nJjxm8XjwaHNLB59W1Yxemw+Xe3xeZOcx6xZh5kCOKO4bFJSczLLUov07RK4Mu6d
+	mcJW8Me44vPaggbGlZpdjJwcEgImEp37tjBB2GISF+6tZ+ti5OIQEljKKPF550xmmKLjt1cw
+	QSQWMUr0/u5ggXB6mCSuvJ8B1s4moC7x481vRpCEiMByRomF+58BtXNwMAs4SZzdnAJSIyzg
+	JjHn0nEWEJtFQFVi84/lYDavgLPEvo37wcolBBQk5kyyARkjIbCNXWL/7ilsEPUCEt8mH2KB
+	qJGV2HQA6jhJiYMrbrBMYBRcwMiwilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMw7E//ezZx
+	B+P9A9aHGJOBxk1klhJNzgfGTV5JvKGxmZGFqYmpsZG5pRlpwkrivOot1oFCAumJJanZqakF
+	qUXxRaU5qcWHGJk4OKUaGE/v9tXo5MnqK57MLGaobPzo+5/6EvbiKZuct3Osat5fa3GWQaJX
+	IMYzOubUtrclJqW5cbM7eGVWrNu2+9miH7N2Ke5mUjVf3G+q8i7r6BvGTMfuHdn1ShLTChk/
+	Zhs+2/fpW5/Wkl6trdl/0hcfaQou25D++qHb4uLHwWUZVV+ubef68dNutRJLcUaioRZzUXEi
+	AHKGlkORAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jAd04ibeBBkfuMFnMWb+GzWLz9R52
+	i5eHNC3uf5/LZnF51xw2i3tr/rNaTH73jNFi2df37BZ93w+zW3x7e5vdgcuj5chbVo9NqzrZ
+	PDZ9msTucWLGbxaPB4c2s3j0bVnF6LH5dLXH501yHrNmHWYK4IxqYLTJSE1MSS1SSM1Lzk/J
+	zEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMATpUSaEsMacUKBSQWFyspG+HaUJo
+	iJuuBUxjhK5vSBBcj5EBGkhYw5hx78wUtoI/xhWf1xY0MK7U7GLk5JAQMJE4fnsFE4QtJnHh
+	3nq2LkYuDiGBRYwSvb87WCCcHiaJK+9ngFWxCahL/HjzmxEkISKwnFFi4f5nzF2MHBzMAk4S
+	ZzengNQIC7hJzLl0nAXEZhFQldj8YzmYzSvgLLFv436wcgkBBYk5k2wmMHIvYGRYxSiaWpBc
+	UJyUnmuoV5yYW1yal66XnJ+7iREcVc+kdjCubLA4xCjAwajEw9sQ8CZQiDWxrLgy9xCjBAez
+	kgiv5yqgEG9KYmVValF+fFFpTmrxIcZkoOUTmaVEk/OBEZ9XEm9obGJuamxqaWJhYmZJmrCS
+	OO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYxJMmvVGaZNnHuuUzwz711gbkXPr6lmzl9cfsWz
+	NxWmTr72Jf8d97bEkoWuXhazrrDK+jpLOX6c5yoT+f/WLiaH7lgjroPL7+Y8MOLuvrhA+EKf
+	hbnwSQUJt4t8h1uz2t5LRc48fPKbzLHXy5UiXsas3lPHGXptO2P9lEanV5vbNVu5bGwneyix
+	FGckGmoxFxUnAgDwpfxh7gIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6MBXl1v009646
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+This patch set fixes all errors reported by checkpatch.
+It also fixes the very small spell mistakes.
 
-Now that the cpu device registration initialises the of_node(if available)
-appropriately for all the cpus, parsing here is redundant.
-
-This patch removes all DT parsing and uses cpu->of_node instead.
-
-Cc: Deepak Sikri <deepak.sikri@st.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Signed-off-by: Pintu Kumar <pintu.k@samsung.com>
 ---
- drivers/cpufreq/spear-cpufreq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |   45 ++++++++++++++++++++++++---------------------
+ 1 file changed, 24 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-index c3efa7f..19e364fa 100644
---- a/drivers/cpufreq/spear-cpufreq.c
-+++ b/drivers/cpufreq/spear-cpufreq.c
-@@ -18,7 +18,7 @@
- #include <linux/err.h>
- #include <linux/init.h>
- #include <linux/module.h>
--#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/slab.h>
- #include <linux/types.h>
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255..202ab58 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -721,7 +721,8 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+ 		return false;
  
-@@ -223,7 +223,7 @@ static int spear_cpufreq_driver_init(void)
- 	const __be32 *val;
- 	int cnt, i, ret;
+ 	if (!PageHighMem(page)) {
+-		debug_check_no_locks_freed(page_address(page),PAGE_SIZE<<order);
++		debug_check_no_locks_freed(page_address(page),
++					   PAGE_SIZE << order);
+ 		debug_check_no_obj_freed(page_address(page),
+ 					   PAGE_SIZE << order);
+ 	}
+@@ -885,7 +886,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+ 						int migratetype)
+ {
+ 	unsigned int current_order;
+-	struct free_area * area;
++	struct free_area *area;
+ 	struct page *page;
  
--	np = of_find_node_by_path("/cpus/cpu@0");
-+	np = of_cpu_device_node_get(0);
- 	if (!np) {
- 		pr_err("No cpu node found");
- 		return -ENODEV;
+ 	/* Find a page of the appropriate size in the preferred list */
+@@ -1011,7 +1012,7 @@ static void change_pageblock_range(struct page *pageblock_page,
+ static inline struct page *
+ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ {
+-	struct free_area * area;
++	struct free_area *area;
+ 	int current_order;
+ 	struct page *page;
+ 	int migratetype, i;
+@@ -3104,7 +3105,7 @@ void show_free_areas(unsigned int filter)
+ 	}
+ 
+ 	for_each_populated_zone(zone) {
+- 		unsigned long nr[MAX_ORDER], flags, order, total = 0;
++		unsigned long nr[MAX_ORDER], flags, order, total = 0;
+ 		unsigned char types[MAX_ORDER];
+ 
+ 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
+@@ -3416,11 +3417,11 @@ static void build_zonelists_in_zone_order(pg_data_t *pgdat, int nr_nodes)
+ static int default_zonelist_order(void)
+ {
+ 	int nid, zone_type;
+-	unsigned long low_kmem_size,total_size;
++	unsigned long low_kmem_size, total_size;
+ 	struct zone *z;
+ 	int average_size;
+ 	/*
+-         * ZONE_DMA and ZONE_DMA32 can be very small area in the system.
++	 * ZONE_DMA and ZONE_DMA32 can be very small area in the system.
+ 	 * If they are really small and used heavily, the system can fall
+ 	 * into OOM very easily.
+ 	 * This function detect ZONE_DMA/DMA32 size and configures zone order.
+@@ -3452,9 +3453,9 @@ static int default_zonelist_order(void)
+ 		return ZONELIST_ORDER_NODE;
+ 	/*
+ 	 * look into each node's config.
+-  	 * If there is a node whose DMA/DMA32 memory is very big area on
+- 	 * local memory, NODE_ORDER may be suitable.
+-         */
++	 * If there is a node whose DMA/DMA32 memory is very big area on
++	 * local memory, NODE_ORDER may be suitable.
++	 */
+ 	average_size = total_size /
+ 				(nodes_weight(node_states[N_MEMORY]) + 1);
+ 	for_each_online_node(nid) {
+@@ -4180,7 +4181,7 @@ int zone_wait_table_init(struct zone *zone, unsigned long zone_size_pages)
+ 	if (!zone->wait_table)
+ 		return -ENOMEM;
+ 
+-	for(i = 0; i < zone->wait_table_hash_nr_entries; ++i)
++	for (i = 0; i < zone->wait_table_hash_nr_entries; ++i)
+ 		init_waitqueue_head(zone->wait_table + i);
+ 
+ 	return 0;
+@@ -4930,7 +4931,7 @@ static unsigned long __init early_calculate_totalpages(void)
+ 		if (pages)
+ 			node_set_state(nid, N_MEMORY);
+ 	}
+-  	return totalpages;
++	return totalpages;
+ }
+ 
+ /*
+@@ -5047,7 +5048,7 @@ restart:
+ 			/*
+ 			 * Some kernelcore has been met, update counts and
+ 			 * break if the kernelcore for this node has been
+-			 * satisified
++			 * satisfied
+ 			 */
+ 			required_kernelcore -= min(required_kernelcore,
+ 								size_pages);
+@@ -5061,7 +5062,7 @@ restart:
+ 	 * If there is still required_kernelcore, we do another pass with one
+ 	 * less node in the count. This will push zone_movable_pfn[nid] further
+ 	 * along on the nodes that still have memory until kernelcore is
+-	 * satisified
++	 * satisfied
+ 	 */
+ 	usable_nodes--;
+ 	if (usable_nodes && required_kernelcore > usable_nodes)
+@@ -5286,8 +5287,10 @@ void __init mem_init_print_info(const char *str)
+ 	 * 3) .rodata.* may be embedded into .text or .data sections.
+ 	 */
+ #define adj_init_size(start, end, size, pos, adj) \
+-	if (start <= pos && pos < end && size > adj) \
+-		size -= adj;
++	do { \
++		if (start <= pos && pos < end && size > adj) \
++			size -= adj; \
++	} while (0)
+ 
+ 	adj_init_size(__init_begin, __init_end, init_data_size,
+ 		     _sinittext, init_code_size);
+@@ -5570,7 +5573,7 @@ static void __meminit setup_per_zone_inactive_ratio(void)
+  * we want it large (64MB max).  But it is not linear, because network
+  * bandwidth does not increase linearly with machine size.  We use
+  *
+- * 	min_free_kbytes = 4 * sqrt(lowmem_kbytes), for better accuracy:
++ *	min_free_kbytes = 4 * sqrt(lowmem_kbytes), for better accuracy:
+  *	min_free_kbytes = sqrt(lowmem_kbytes * 16)
+  *
+  * which yields
+@@ -5614,11 +5617,11 @@ int __meminit init_per_zone_wmark_min(void)
+ module_init(init_per_zone_wmark_min)
+ 
+ /*
+- * min_free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so 
++ * min_free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so
+  *	that we can call two helper functions whenever min_free_kbytes
+  *	changes.
+  */
+-int min_free_kbytes_sysctl_handler(ctl_table *table, int write, 
++int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	proc_dointvec(table, write, buffer, length, ppos);
+@@ -5682,8 +5685,8 @@ int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
+ 
+ /*
+  * percpu_pagelist_fraction - changes the pcp->high for each zone on each
+- * cpu.  It is the fraction of total pages in each zone that a hot per cpu pagelist
+- * can have before it gets flushed back to buddy allocator.
++ * cpu.  It is the fraction of total pages in each zone that a hot per cpu
++ * pagelist can have before it gets flushed back to buddy allocator.
+  */
+ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+@@ -5900,7 +5903,7 @@ void set_pageblock_flags_group(struct page *page, unsigned long flags,
+  * This function checks whether pageblock includes unmovable pages or not.
+  * If @count is not zero, it is okay to include less @count unmovable pages
+  *
+- * PageLRU check wihtout isolation or lru_lock could race so that
++ * PageLRU check without isolation or lru_lock could race so that
+  * MIGRATE_MOVABLE block might include unmovable pages. It means you can't
+  * expect this function should be exact.
+  */
 -- 
-1.8.1.2
-
+1.7.9.5
 
