@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab3GVD4y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 23:56:54 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:44246 "EHLO
+	id S1756236Ab3GVD5D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 23:57:03 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:44273 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab3GVD4w (ORCPT
+	with ESMTP id S1755771Ab3GVD46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 23:56:52 -0400
-X-AuditID: 85900ec0-d38c8b900000151e-0d-51ecad82c579
-Subject: [PATCH V3 0/2] [BUGFIX] virtio/console: Fix two bugs of splice_write
+	Sun, 21 Jul 2013 23:56:58 -0400
+X-AuditID: 85900ec0-d42c9b900000151e-11-51ecad87a9eb
+Subject: [PATCH V3 2/2] [BUGFIX] virtio/console: Add pipe_lock/unlock for
+ splice_write
 To: Amit Shah <amit.shah@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
@@ -18,8 +19,10 @@ Cc: Arnd Bergmann <arnd@arndb.de>, stable@vger.kernel.org,
         Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         yrl.pp-manager.tt@hitachi.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Mon, 22 Jul 2013 13:00:43 +0900
-Message-ID: <20130722040043.7531.78801.stgit@yunodevel>
+Date: Mon, 22 Jul 2013 13:00:49 +0900
+Message-ID: <20130722040049.7531.19884.stgit@yunodevel>
+In-Reply-To: <20130722040043.7531.78801.stgit@yunodevel>
+References: <20130722040043.7531.78801.stgit@yunodevel>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,39 +32,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add pipe_lock/unlock for splice_write to avoid oops by following competition:
 
-This patch set fixes two bugs of splice_write in the virtio-console driver.
+(1) An application gets fds of a trace buffer, virtio-serial, pipe.
+(2) The application does fork()
+(3) The processes execute splice_read(trace buffer) and
+    splice_write(virtio-serial) via same pipe.
 
-[BUG1] Although pipe->nrbufs is empty, the driver tries to do splice_write.
-       => This induces oops in sg_init_table().
+        <parent>                   <child>
+  get fds of a trace buffer,
+         virtio-serial, pipe
+          |
+        fork()----------create--------+
+          |                           |
+      splice(read)                    |           ---+
+      splice(write)                   |              +-- no competition
+          |                       splice(read)       |
+          |                       splice(write)   ---+
+          |                           |
+      splice(read)                    |
+      splice(write)               splice(read)    ------ competition
+          |                       splice(write)
 
-[BUG2] No lock for competition of splice_write.
-       => This induces oops in splice_from_pipe_feed() by bug of any user
-          application.
+Two processes share a pipe_inode_info structure. If the child execute
+splice(read) when the parent tries to execute splice(write), the
+structure can be broken. Existing virtio-serial driver does not get
+lock for the structure in splice_write, so this competition will induce
+oops.
 
-These reports are written in each patch.
+<oops messages>
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+ IP: [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+ PGD 7223e067 PUD 72391067 PMD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in: lockd bnep bluetooth rfkill sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr virtio_net virtio_balloon i2c_piix4 i2c_core microcode uinput floppy
+ CPU: 0 PID: 1072 Comm: compete-test Not tainted 3.10.0ws+ #55
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+ task: ffff880071b98000 ti: ffff88007b55e000 task.ti: ffff88007b55e000
+ RIP: 0010:[<ffffffff811a6b5f>]  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+ RSP: 0018:ffff88007b55fd78  EFLAGS: 00010287
+ RAX: 0000000000000000 RBX: ffff88007b55fe20 RCX: 0000000000000000
+ RDX: 0000000000001000 RSI: ffff88007a95ba30 RDI: ffff880036f9e6c0
+ RBP: ffff88007b55fda8 R08: 00000000000006ec R09: ffff880077626708
+ R10: 0000000000000003 R11: ffffffff8139ca59 R12: ffff88007a95ba30
+ R13: 0000000000000000 R14: ffffffff8139dd00 R15: ffff880036f9e6c0
+ FS:  00007f2e2e3a0740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000018 CR3: 0000000071bd1000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  ffffffff8139ca59 ffff88007b55fe20 ffff880036f9e6c0 ffffffff8139dd00
+  ffff8800776266c0 ffff880077626708 ffff88007b55fde8 ffffffff811a6e8e
+  ffff88007b55fde8 ffffffff8139ca59 ffff880036f9e6c0 ffff88007b55fe20
+ Call Trace:
+  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+  [<ffffffff8139dd00>] ? virtcons_restore+0x100/0x100
+  [<ffffffff811a6e8e>] __splice_from_pipe+0x7e/0x90
+  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+  [<ffffffff8139d739>] port_fops_splice_write+0xe9/0x140
+  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
+  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
+  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
+  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
+  [<ffffffff8161facf>] tracesys+0xdd/0xe2
+ Code: 49 8b 87 80 00 00 00 4c 8d 24 d0 8b 53 04 41 8b 44 24 0c 4d 8b 6c 24 10 39 d0 89 03 76 02 89 13 49 8b 44 24 10 4c 89 e6 4c 89 ff <ff> 50 18 85 c0 0f 85 aa 00 00 00 48 89 da 4c 89 e6 4c 89 ff 41
+ RIP  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+  RSP <ffff88007b55fd78>
+ CR2: 0000000000000018
+ ---[ end trace 24572beb7764de59 ]---
 
-Changes in V2:
-- Fix a locking problem for error
+V2: Fix a locking problem for error
+V3: Add Reviewed-by lines and stable@ line in sign-off area
 
-Changes in V3:
-- Add Reviewed-by lines and stable@ line in sign-off area
-
-Thanks!
-
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Reviewed-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: stable@vger.kernel.org
 ---
+ drivers/char/virtio_console.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-Yoshihiro YUNOMAE (2):
-      [BUGFIX] virtio/console: Quit from splice_write if pipe->nrbufs is 0
-      [BUGFIX] virtio/console: Add pipe_lock/unlock for splice_write
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 8722656..8a15af3 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -936,16 +936,21 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+ 	 * pipe->nrbufs == 0 means there are no data to transfer,
+ 	 * so this returns just 0 for no data.
+ 	 */
+-	if (!pipe->nrbufs)
+-		return 0;
++	pipe_lock(pipe);
++	if (!pipe->nrbufs) {
++		ret = 0;
++		goto error_out;
++	}
+ 
+ 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
+ 	if (ret < 0)
+-		return ret;
++		goto error_out;
+ 
+ 	buf = alloc_buf(port->out_vq, 0, pipe->nrbufs);
+-	if (!buf)
+-		return -ENOMEM;
++	if (!buf) {
++		ret = -ENOMEM;
++		goto error_out;
++	}
+ 
+ 	sgl.n = 0;
+ 	sgl.len = 0;
+@@ -953,12 +958,17 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+ 	sgl.sg = buf->sg;
+ 	sg_init_table(sgl.sg, sgl.size);
+ 	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
++	pipe_unlock(pipe);
+ 	if (likely(ret > 0))
+ 		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
+ 
+ 	if (unlikely(ret <= 0))
+ 		free_buf(buf, true);
+ 	return ret;
++
++error_out:
++	pipe_unlock(pipe);
++	return ret;
+ }
+ 
+ static unsigned int port_fops_poll(struct file *filp, poll_table *wait)
 
-
- drivers/char/virtio_console.c |   23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
-
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
