@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340Ab3GVVfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:35:00 -0400
-Received: from jdl.com ([208.123.74.7]:44962 "EHLO jdl.com"
+	id S933375Ab3GVVgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 17:36:04 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41753 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932388Ab3GVVe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:34:58 -0400
-Message-Id: <E1V1Nkn-00072x-Df@jdl.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-cc: "Chaiken, Alison" <Alison_Chaiken@mentor.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: The future of DT binding maintainership
-In-reply-to: <1925583.R0td2pS6as@flatron>
-References: <CACxGe6vtJPbbqwpH8Th5S36Hx50f39j1P4OpLb-Um9xQie6Lng@mail.gmail.com> <2962401.WRRoYlXkRr@flatron> <60BA5429A0E1584BA3633194F6F993B502B21362@NA-MBX-03.mgc.mentorg.com> <1925583.R0td2pS6as@flatron>
-Comments: In-reply-to Tomasz Figa <tomasz.figa@gmail.com>
-   message dated "Mon, 22 Jul 2013 22:09:09 +0200."
-Date: Mon, 22 Jul 2013 16:34:49 -0500
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: -0.0
+	id S932388Ab3GVVgC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 17:36:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,721,1367996400"; 
+   d="scan'208";a="335214105"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "Shuah Khan (shuah.kh@samsung.com)" <shuah.kh@samsung.com>,
+        "Konstantin Khlebnikov (khlebnikov@openvz.org)" 
+	<khlebnikov@openvz.org>
+CC: "'arnd@arndb.de'" <arnd@arndb.de>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
+Subject: RE: [char-misc 0/4 3.11] Fix mei suspend/resume failure
+Thread-Topic: [char-misc 0/4 3.11] Fix mei suspend/resume failure
+Thread-Index: AQHOgudK0Ej0F1tjp0OVOBJnDTbTCplpBFwQgAg8U/A=
+Date: Mon, 22 Jul 2013 21:35:40 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE65788@HASMSX106.ger.corp.intel.com>
+References: <1374063197-26855-1-git-send-email-tomas.winkler@intel.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B028EBE55@HASMSX106.ger.corp.intel.com>
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B028EBE55@HASMSX106.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > Is there a schema out there in the wild that exemplifies what you mean?
 > 
-> Not really. The format of schemas is currently in design stage. I'm 
-> currently rethinking some details of what I have in my mind. Give me some 
-> more time and I will post an RFC to the ML with all that written down.
-
-...and...
-
-> > The schema-check idea reminds me of the W3C HTML validators:
-> > 
-> >       http://validator.w3.org/
-> > 
-> > Since device-tree source looks a bit like XML (or maybe more like JSON),
-> > will be the schemas be similar in spirit to DTDs, and is it helpful to
-> > think of the validator in this spirit?   Or will the checker be more
-> > like "gcc -Wall", since it will be invoked by a compiler?
 > 
-> My idea is to implement compile time verification in dtc, so I guess it 
-> will be more like the latter. Since dts is what dtc can already parse, my 
-> plan is to keep the schemas in spirit to dts, just modifying/extending it 
-> to allow specifying bindings with them, rather than static values.
+> >
+> > This series should fix the long standing reset storm issue in mei
+> > suspend/resume failure
+> >
+
+Can you guys confirm these fixes the issue for you.
+Thanks
+Tomas
+
+> > The issue was reported in few places:
+> > https://lkml.org/lkml/2013/6/26/693
+> > https://lkml.org/lkml/2013/7/14/69
+> >
+> >
+> > Tomas Winkler (4):
+> >   mei: hbm: fix typo in error message
+> >   mei: me: fix reset state machine
+> >   mei: don't have to clean the state on power up
+> >   mei: me: fix waiting for hw ready
+> >
+> >  drivers/misc/mei/hbm.c   |  2 +-
+> >  drivers/misc/mei/hw-me.c | 14 ++++++++++----  drivers/misc/mei/init.c
+> > |  3
+> > ++-
+> >  3 files changed, 13 insertions(+), 6 deletions(-)
 > 
-> Best regards,
-> Tomasz
-
-It is possible to add some-damn XML DTD parsing and
-rule glomming even in DTC if that is what is wanted.
-I think it will be more an issue of expressability.
-That is, how can the desired style of rules be most
-eloquently expressed, internalized and applied?
-
-That will be the current challenge first.
-
-jdl
+> 
+> CC: Konstantin and Shuah
+> 
+> Tomas
