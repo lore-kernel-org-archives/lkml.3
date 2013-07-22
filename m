@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3GVEGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 00:06:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60733 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab3GVEGF (ORCPT
+	id S1754144Ab3GVE0r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 00:26:47 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:43648 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab3GVE0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 00:06:05 -0400
-Date: Mon, 22 Jul 2013 05:06:01 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.11-rc2
-Message-ID: <20130722040601.GK4165@ZenIV.linux.org.uk>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
- <20130722012517.GD11674@dastard>
+	Mon, 22 Jul 2013 00:26:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130722012517.GD11674@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <f7c9193e244c95122ceb47d65cd52993c040c7a4.1374451988.git.joe@perches.com>
+References: <cover.1374451988.git.joe@perches.com>
+	<f7c9193e244c95122ceb47d65cd52993c040c7a4.1374451988.git.joe@perches.com>
+Date: Mon, 22 Jul 2013 09:56:45 +0530
+Message-ID: <CAKohponxfLpf66QgF=K0c0EGhQyXVazqQk-2Ecw1YeRAY5VY2w@mail.gmail.com>
+Subject: Re: [PATCH 05/18] MAINTAINERS: ARM: spear: Consolidate sections
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 11:25:17AM +1000, Dave Chinner wrote:
+On 22 July 2013 05:45, Joe Perches <joe@perches.com> wrote:
+> commit a7ed099ffc8 ("ARM: spear: move all files to mach-spear")
+> moved all the files into a single directory, delete the now
+> unnecessary duplicate sections and update the pattern.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> cc: Arnd Bergmann <arnd@arndb.de>
+> cc: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  MAINTAINERS | 30 +-----------------------------
+>  1 file changed, 1 insertion(+), 29 deletions(-)
 
-> I'll just point out that it can make the whole thing worse, too.
-> For example, for ext3/4, the tmpfile being created has to be added
-> to the orphan inode list which is protected by a filesystem global
-> mutex. Hence scalability of O_TMPFILE is massively limited on
-> ext3/ext4 due to architectural issues within ext3/4. Other
-> filesystems will be more efficient, but because they have more
-> scalable/complex orphan inode handling it's going to take longer to
-> implement O_TMPFILE support for them....
-
-Um...  You do realize that the same architectural issues there will
-create exactly the same serialization when you are unlinking the
-sucker?  I.e. with the "pick the name, create and open, unlink" sequence
-ext[34] will insert that inode into the same orphan list, creating
-the same contention...
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
