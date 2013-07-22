@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205Ab3GVT34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 15:29:56 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932676Ab3GVT3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 15:29:55 -0400
-Message-ID: <51ED882F.9080801@nod.at>
-Date: Mon, 22 Jul 2013 21:29:51 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S933183Ab3GVTcc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 15:32:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31703 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932676Ab3GVTcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 15:32:31 -0400
+Date: Mon, 22 Jul 2013 15:32:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] irq: enable suspended EARLY_RESUME irqs forcefully if
+ not resumed
+Message-ID: <20130722193208.GA22334@phenom.dumpdata.com>
+References: <1373380343-10143-1-git-send-email-ldewangan@nvidia.com>
+ <alpine.DEB.2.02.1307191649080.4089@ionos.tec.linutronix.de>
+ <20130722154934.GD30300@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
-References: <1374258017-19606-1-git-send-email-artagnon@gmail.com> <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com> <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com> <20130722124047.GL4165@ZenIV.linux.org.uk> <CALkWK0=bAwDxbLEtHOThjY58BmWCrFYgZm9GaLfEnF5vpu1VJw@mail.gmail.com> <51ED31AF.8000309@nod.at> <CALkWK0ki0JN_uB3VNr=j0hAcEhiT_Xr+xd911-AGy5sjd95GFg@mail.gmail.com> <51ED3CF5.7000609@nod.at> <CALkWK0kwBaNHfH6fjtnCTxseWcXfEvNFgFovZVkz5E0_fxiHWA@mail.gmail.com>
-In-Reply-To: <CALkWK0kwBaNHfH6fjtnCTxseWcXfEvNFgFovZVkz5E0_fxiHWA@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130722154934.GD30300@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.07.2013 17:33, schrieb Ramkumar Ramachandra:
-> Richard Weinberger wrote:
->> Again what problem are you trying to solve?
->> If you want a getty on /dev/tty0, run:
+On Mon, Jul 22, 2013 at 11:49:34AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jul 19, 2013 at 05:29:16PM +0200, Thomas Gleixner wrote:
+> > On Tue, 9 Jul 2013, Laxman Dewangan wrote:
+> > > When system enters into suspend, it disable all irqs in single
+> > > function call. This disables EARLY_RESUME irqs also along with
+> > > normal irqs.
+> > > 
+> > > The EARLY_RESUME irqs get enabled in sys_core_ops->resume and
+> > > non-EARLY_RESUME irqs get enabled in normal system resume path.
+> > > 
+> > > When suspend_noirq failed or suspend is aborted for any reason,
+> > > the EARLY_RESUME irqs do not get enabled as sys_core_ops->resume()
+> > > call did not happen. It only enables the non-EARLY_RESUME irqs in normal
+> > > disable for remaining life of system.
+> > > 
+> > > Add checks on normal irq_resume() whether EARLY_RESUME irqs have been
+> > > enabled or not and if not then enable it forcefully.
+> >  
+> > >  
+> > > +static bool early_resume_irq_suspended;
+> > > +
+> > 
+> > Instead of doing that status dance, we could simply reenable all
+> > interrupts in irq_resume(). There's nothing wrong to unmask the few
+> > IRQF_EARLY_RESUME interrupts again.
+> > 
+> > Just the XEN ones might be upset. Konrad ?
 > 
-> To get systemd to do that for me automatically :)
+> It should not. I did test it and it ran just fine throught the
+> gauntlet test - but let me check it with me looking at the console.
+
+It is good. You can add an Acked-by-and-Tested-by from me if you would
+like. Thanks!
 > 
-> It automatically does the right thing when it detects xen, bochs,
-> qemu, vmware, microsoft, oracle, chroot, openvz, and lxc.  So, why not
-> uml?
-
-Ask systemd folks. UML exists much longer than systemd.
-
-> [1/2] is about getting it to active console-getty.service when uml is detected.
-> 
-> [2/2] is about getting it to disable vconsole-setup.service when uml
-> is detected (since it uml doesn't do VT emulation, and the service
-> will always fail).
-> 
-> Too minor a problem?
-
-No, but we won't break existing applications, period.
-If you offer me a solution that does not break any existing applications
-and solves your systemd issue we can talk. :-)
-
-Thanks,
-//richard
-
+> > 
+> > Thanks,
+> > 
+> > 	tglx
+> > 
+> > Index: linux-2.6/kernel/irq/pm.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/irq/pm.c
+> > +++ linux-2.6/kernel/irq/pm.c
+> > @@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+> >  		bool is_early = desc->action &&
+> >  			desc->action->flags & IRQF_EARLY_RESUME;
+> >  
+> > -		if (is_early != want_early)
+> > +		if (!is_early && want_early)
+> >  			continue;
+> >  
+> >  		raw_spin_lock_irqsave(&desc->lock, flags);
