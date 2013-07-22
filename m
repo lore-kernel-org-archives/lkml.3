@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab3GVNxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:53:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52675 "EHLO mx2.suse.de"
+	id S1755835Ab3GVNyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:54:08 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1142 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab3GVNxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:53:08 -0400
-Date: Mon, 22 Jul 2013 15:53:02 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
-Subject: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and
- text_poke_smp_batch
-In-Reply-To: <20130722102148.GB1148@gmail.com>
-Message-ID: <alpine.LNX.2.00.1307221545080.23128@pobox.suse.cz>
-References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522> <20130718114753.26675.18714.stgit@mhiramat-M0-7522> <20130722074339.GA25976@gmail.com> <20130722082104.GA26823@gmail.com> <51ECEF8D.60109@hitachi.com> <20130722100158.GB908@gmail.com>
- <51ED053C.1070105@hitachi.com> <20130722102148.GB1148@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754132Ab3GVNyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 09:54:05 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <51ED3971.905@broadcom.com>
+Date: Mon, 22 Jul 2013 15:53:53 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Lee Jones" <lee.jones@linaro.org>
+cc: "Christian Daudt" <csd@broadcom.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH 05/22] ARM: dts: bcm281xx: Remove '0x's from
+ BCM11351 BRT DTS file
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-5-git-send-email-lee.jones@linaro.org>
+ <51ED2D90.4020209@broadcom.com> <20130722133852.GA26801@laptop>
+In-Reply-To: <20130722133852.GA26801@laptop>
+X-WSS-ID: 7DF3E71A31W54498238-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Jul 2013, Ingo Molnar wrote:
+On 07/22/2013 03:38 PM, Lee Jones wrote:
+> On Mon, 22 Jul 2013, Christian Daudt wrote:
+>
+>> On 13-07-22 03:52 AM, Lee Jones wrote:
+>>> Cc: Christian Daudt <csd@broadcom.com>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>   arch/arm/boot/dts/bcm11351-brt.dts | 6 +++---
+>>>   1 file changed, 3 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
+>>> index 67ec524..fdace5d 100644
+>>> --- a/arch/arm/boot/dts/bcm11351-brt.dts
+>>> +++ b/arch/arm/boot/dts/bcm11351-brt.dts
+>>> @@ -27,18 +27,18 @@
+>>>   		status = "okay";
+>>>   	};
+>>> -	sdio0: sdio@0x3f180000 {
+>>> +	sdio0: sdio@3f180000 {
+>>>   		max-frequency = <48000000>;
+>>>   		status = "okay";
+>>>   	};
+>>> -	sdio1: sdio@0x3f190000 {
+>>> +	sdio1: sdio@3f190000 {
+>>>   		non-removable;
+>>>   		max-frequency = <48000000>;
+>>>   		status = "okay";
+>>>   	};
+>>> -	sdio3: sdio@0x3f1b0000 {
+>>> +	sdio3: sdio@3f1b0000 {
+>>>   		max-frequency = <48000000>;
+>>>   		status = "okay";
+>>>   	};
+>> Hi Lee,
+>>   Is this convention documented ? Someone called my attention to the
+>> fact that this dts files was inconsistent in its use of 0x in names,
+>> but I was not aware of a coding guideline for this.
+>
+> The best two places I can think of are:
+>
+> Documentation/devicetree/usage-model.txt
+> and
+> http://www.devicetree.org/Device_Tree_Usage
 
-> > >>>> Hm, it does not build with the attached config:
-> > >>>>
-> > >>>> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
-> > >>>> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
-> > >>>> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
-> > >>>> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
-> > >>>
-> > >>> 32-bit appears to be the key pattern.
-> > >>
-> > >> Ingo, please make sure your x86/jumplabel tree picked all of my patches.
-> > >> This 3/3 strongly depends on the previous 1/3 and 2/3.
-> > >> Without it, kprobes/opt.c can not be build because it still uses the
-> > >> text_poke_params data structure which 3/3 removes.
-> > > 
-> > > Yes I know, and it was on top of -tip which already had these included:
-> > > 
-> > >  51b2c07b2226 x86: Make jump_label use int3-based patching
-> > >  fd4363fff3d9 x86: Introduce int3 (breakpoint)-based instruction patching
-> > > 
-> > > without these the third patch wouldn't even apply I think.
-> > 
-> > No, I meant below two patches:
-> >  kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
-> >  kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
-> > 
-> > Since the "setup_optimize_kprobe" in the error message is completely
-> > *removed* by the second one, the above error should not happen.
-> 
-> Oh, indeed - I correctly applied them but then messed up the 
-> cherry-picking, that's all.
-> 
-> So never mind, it's all fine.
+And even those do not stick to a single convention, but that is what can 
+be expected of a twiki page :-p
 
-Hi Ingo,
+Regards,
+Arend
 
-x86/jumplabel branch still seems to contain only Masami's "kprobes/x86: 
-Remove unused text_poke_smp() and text_poke_smp_batch() functions", with 
-the the prerequisity patches missing, which effectively means it's broken 
-... are you planning to fix that up, please?
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
