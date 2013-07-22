@@ -1,56 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933575Ab3GVV6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:58:40 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37790 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388Ab3GVV6i (ORCPT
+	id S933450Ab3GVWCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 18:02:03 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:37698 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932388Ab3GVWB7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:58:38 -0400
-Message-ID: <51EDAB0A.8080601@nvidia.com>
-Date: Mon, 22 Jul 2013 14:58:34 -0700
-From: Stephen Warren <swarren@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 22 Jul 2013 18:01:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=pJMySu9NCi2FmBhcHyu
+	1/k599W4nn9Q5gtrFqxwqZbGzd3+FGcOSkzFEj6WV0eAed92pg+Kck1lFEx3TuuC
+	fc79rEQsLu/i/vmG5tgzEAVpXxuRLhWfuxEVO0Mhb/dKxjBJHNZv2BNs36B+dD+i
+	3fySmBGTYfKbocdSXDxm1lEU=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.3.4
+Date: Mon, 22 Jul 2013 15:01:57 -0700
+Message-ID: <7vwqoib6ei.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linus.walleij@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        rob@landley.net, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        kishon@ti.com, j-keerthy@ti.com, gg@slimlogic.co.uk
-Subject: Re: [PATCH V3] gpio: palmas: add dt support
-References: <1374469977-8805-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1374469977-8805-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 5469D12E-F31A-11E2-8064-E84251E3A03C-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2013 10:12 PM, Laxman Dewangan wrote:
-> Add of_device_id table for Palma GPIO to be enable the
-> driver from DT file.
-> 
-> The driver can be registered from DT file as:
-> 	palmas: tps65913@58 {
-> 		:::::::::::
-> 		palmas_gpio: palmas_gpio {
-> 			compatible = "ti,palmas-gpio";
-> 			gpio-controller;
-> 			#gpio-cells = <2>;
-> 		};
-> 	};
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+The latest maintenance release Git v1.8.3.4 is now available at
+the usual places.
 
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-palmas.txt b/Documentation/devicetree/bindings/gpio/gpio-palmas.txt
+The release tarballs are found at:
 
-> +- #gpio-cells : Should be two.
-> +  - first cell is the gpio pin number
-> +  - second cell is used to specify optional parameters (unused)
+    http://code.google.com/p/git-core/downloads/list
 
-Shouldn't the second cell contain the standard GPIO-related flags such
-as bit 0 == active-low?
+and their SHA-1 checksums are:
 
-Aside from that, this binding and indeed the rest of the patch looks
-fine to me.
+fe633d02f7d964842d7ea804278b75120fc60c11  git-1.8.3.4.tar.gz
+1f1200515e1e7042bcbd4176ef76c58021cd9a83  git-htmldocs-1.8.3.4.tar.gz
+04fe5a752234262d128220f09ea25c0faa447947  git-manpages-1.8.3.4.tar.gz
+
+The following public repositories all have a copy of the v1.8.3.4
+tag and the maint branch that the tag points at:
+
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
+release tarballs.
+
+Git v1.8.3.4 Release Notes
+==========================
+
+This update is mostly to propagate documentation fixes and test
+updates from the master front back to the maintenance track.
+
+Fixes since v1.8.3.3
+--------------------
+
+ * The bisect log listed incorrect commits when bisection ends with
+   only skipped ones.
+
+ * The test coverage framework was left broken for some time.
+
+ * The test suite for HTTP transport did not run with Apache 2.4.
+
+ * "git diff" used to fail when core.safecrlf is set and the working
+   tree contents had mixed CRLF/LF line endings. Committing such a
+   content must be prohibited, but "git diff" should help the user to
+   locate and fix such problems without failing.
+
+----------------------------------------------------------------
+
+Changes since v1.8.3.3 are as follows:
+
+Dennis Kaarsemaker (2):
+      tests: allow sha1's as part of the path
+      GIT-VERSION-GEN: support non-standard $GIT_DIR path
+
+Fraser Tweedale (2):
+      documentation: add git:// transport security notice
+      diff-options: document default similarity index
+
+Jeff King (5):
+      t/lib-httpd/apache.conf: do not use LockFile in apache >= 2.4
+      t/lib-httpd/apache.conf: load extra auth modules in apache 2.4
+      t/lib-httpd/apache.conf: load compat access module in apache 2.4
+      t/lib-httpd/apache.conf: configure an MPM module for apache 2.4
+      lib-httpd/apache.conf: check version only after mod_version loads
+
+Johannes Sixt (10):
+      test-chmtime: Fix exit code on Windows
+      t3010: modernize style
+      tests: introduce test_ln_s_add
+      tests: use test_ln_s_add to remove SYMLINKS prerequisite (trivial cases)
+      t0000: use test_ln_s_add to remove SYMLINKS prerequisite
+      t3030: use test_ln_s_add to remove SYMLINKS prerequisite
+      t3100: use test_ln_s_add to remove SYMLINKS prerequisite
+      t3509, t4023, t4114: use test_ln_s_add to remove SYMLINKS prerequisite
+      t6035: use test_ln_s_add to remove SYMLINKS prerequisite
+      t4011: remove SYMLINKS prerequisite
+
+Junio C Hamano (7):
+      fetch-options.txt: prevent a wildcard refspec from getting misformatted
+      diff: demote core.safecrlf=true to core.safecrlf=warn
+      t1512: correct leftover constants from earlier edition
+      get_short_sha1(): correctly disambiguate type-limited abbreviation
+      Start preparing for 1.8.3.4
+      Update draft release notes to 1.8.3.4
+      Git 1.8.3.4
+
+Kevin Bracey (1):
+      Documentation: Move "git diff <blob> <blob>"
+
+Matthieu Moy (2):
+      Documentation/git-push.txt: explain better cases where --force is dangerous
+      Documentation/git-merge.txt: weaken warning about uncommited changes
+
+Michael Haggerty (1):
+      lockfile: fix buffer overflow in path handling
+
+Namhyung Kim (1):
+      config: Add description of --local option
+
+Ondřej Bílka (1):
+      update URL to the marc.info mail archive
+
+Phil Hord (1):
+      fix "builtin-*" references to be "builtin/*"
+
+Ramkumar Ramachandra (2):
+      column doc: rewrite documentation for column.ui
+      name-rev doc: rewrite --stdin paragraph
+
+René Scharfe (9):
+      t5000: integrate export-subst tests into regular tests
+      t5000, t5003: create directories for extracted files lazily
+      t5000: factor out check_tar
+      t5000: use check_tar for prefix test
+      t5000: simplify tar-tree tests
+      t5000: test long filenames
+      read-cache: add simple performance test
+      read-cache: free cache in discard_index
+      use logical OR (||) instead of binary OR (|) in logical context
+
+Stefan Beller (4):
+      archive-zip:write_zip_entry: Remove second reset of size variable to zero.
+      Documentation: "git reset <tree-ish> <pathspec>" takes a tree-ish, not tree-sh
+      http-push.c::add_send_request(): do not initialize transfer_request
+      apply.c::find_name_traditional(): do not initialize len to the line's length
+
+Thomas Rast (7):
+      coverage: split build target into compile and test
+      coverage: do not delete .gcno files before building
+      coverage: set DEFAULT_TEST_TARGET to avoid using prove
+      coverage: build coverage-untested-functions by default
+      Test 'commit --only' after 'checkout --orphan'
+      t9902: fix 'test A == B' to use = operator
+      test-lint: detect 'export FOO=bar'
+
+Torstein Hegge (1):
+      bisect: Fix log output for multi-parent skip ranges
+
+Veres Lajos (1):
+      random typofixes (committed missing a 't', successful missing an 's')
+
+Vitor Antunes (1):
+      t9801: git-p4: check ignore files with client spec
+
+W. Trevor King (1):
+      user-manual: Update download size for Git and the kernel
+
+Yaakov Selkowitz (1):
+      web--browse: support /usr/bin/cygstart on Cygwin
+
