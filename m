@@ -1,59 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab3GVMeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 08:34:17 -0400
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:49321
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751105Ab3GVMeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 08:34:16 -0400
-Message-ID: <51ED26C6.6000004@newflow.co.uk>
-Date: Mon, 22 Jul 2013 13:34:14 +0100
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753700Ab3GVMhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 08:37:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49725 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752273Ab3GVMhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 08:37:19 -0400
+Date: Mon, 22 Jul 2013 14:37:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyuki@gmail.com, hannes@cmpxchg.org, yinghan@google.com,
+        jasowang@redhat.com, kay@vrfy.org
+Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+Message-ID: <20130722123716.GB24400@dhcp22.suse.cz>
+References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 01/22] ARM: ux500: Remove '0x's from HREF v60+ DTS file
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374261785-1615-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/07/13 11:52, Lee Jones wrote:
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Fri 19-07-13 12:23:05, K. Y. Srinivasan wrote:
+> The current machinery for hot-adding memory requires having udev
+> rules to bring the memory segments online. Export the necessary functionality
+> to to bring the memory segment online without involving user space code. 
+
+Why? Who is going to use it and for what purpose?
+If you need to do it from the kernel cannot you use usermod helper
+thread?
+
+Besides that this is far from being complete. memory_block_change_state
+seems to depend on device_hotplug_lock and find_memory_block is
+currently called with mem_sysfs_mutex held. None of them is exported
+AFAICS.
+
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 > ---
->  arch/arm/boot/dts/hrefv60plus.dts | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/base/memory.c  |    5 ++++-
+>  include/linux/memory.h |    4 ++++
+>  2 files changed, 8 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
-> index 3d580d6..46fd8af 100644
-> --- a/arch/arm/boot/dts/hrefv60plus.dts
-> +++ b/arch/arm/boot/dts/hrefv60plus.dts
-> @@ -26,7 +26,7 @@
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index 2b7813e..a8204ac 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -328,7 +328,7 @@ static int __memory_block_change_state_uevent(struct memory_block *mem,
+>  	return ret;
+>  }
 >  
->  	soc {
->  		i2c@80110000 {
-> -			bu21013_tp@0x5c {
-> +			bu21013_tp@5c {
-
-Just a query ... why this one .... ^^^ ...
-
->  				reset-gpio = <&gpio4 15 0x4>;
-
-... and not this one .................................. ^^^ ?
-
->  			};
->  		};
+> -static int memory_block_change_state(struct memory_block *mem,
+> +int memory_block_change_state(struct memory_block *mem,
+>  		unsigned long to_state, unsigned long from_state_req,
+>  		int online_type)
+>  {
+> @@ -341,6 +341,8 @@ static int memory_block_change_state(struct memory_block *mem,
+>  
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL(memory_block_change_state);
+> +
+>  static ssize_t
+>  store_mem_state(struct device *dev,
+>  		struct device_attribute *attr, const char *buf, size_t count)
+> @@ -540,6 +542,7 @@ struct memory_block *find_memory_block(struct mem_section *section)
+>  {
+>  	return find_memory_block_hinted(section, NULL);
+>  }
+> +EXPORT_SYMBOL(find_memory_block);
+>  
+>  static struct attribute *memory_memblk_attrs[] = {
+>  	&dev_attr_phys_index.attr,
+> diff --git a/include/linux/memory.h b/include/linux/memory.h
+> index 85c31a8..8e3ede5 100644
+> --- a/include/linux/memory.h
+> +++ b/include/linux/memory.h
+> @@ -115,6 +115,10 @@ extern void unregister_memory_notifier(struct notifier_block *nb);
+>  extern int register_memory_isolate_notifier(struct notifier_block *nb);
+>  extern void unregister_memory_isolate_notifier(struct notifier_block *nb);
+>  extern int register_new_memory(int, struct mem_section *);
+> +extern int memory_block_change_state(struct memory_block *mem,
+> +		unsigned long to_state, unsigned long from_state_req,
+> +		int online_type);
+> +
+>  #ifdef CONFIG_MEMORY_HOTREMOVE
+>  extern int unregister_memory_section(struct mem_section *);
+>  #endif
+> -- 
+> 1.7.4.1
 > 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-The same for all the other patches in this series.
-
-If this is by design, it might be worth mentioning why some are
-removed and not others.
-
-Mark J.
+-- 
+Michal Hocko
+SUSE Labs
