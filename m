@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab3GVQTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:19:23 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:36797 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932848Ab3GVQMC (ORCPT
+	id S932785Ab3GVQUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:20:46 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:64145 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932500Ab3GVQLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:12:02 -0400
+	Mon, 22 Jul 2013 12:11:25 -0400
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Hiroya Nozaki <nozaki.hiroya@jp.fujitsu.com>,
+Cc: linux-kernel@vger.kernel.org, jcl <jacques-charles.lafoucriere@cea.fr>,
         Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 27/48] staging/lustre/ptlrpc: Race between start and stop service threads
-Date: Tue, 23 Jul 2013 00:06:48 +0800
-Message-Id: <1374509230-3324-28-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 19/48] staging/lustre/mdt: add macros for fid string len
+Date: Tue, 23 Jul 2013 00:06:40 +0800
+Message-Id: <1374509230-3324-20-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
 References: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
@@ -21,62 +21,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroya Nozaki <nozaki.hiroya@jp.fujitsu.com>
+From: jcl <jacques-charles.lafoucriere@cea.fr>
 
-When ptlrpc_start_thread fails to create a new thread, it will
-finalize and free a struct ptlrpc_thread created and used here.
-Considering this, it can be a problem when ptlrpc_svcpt_stop_thread
-is driven and handles the struct ptlrpc_thread right after or right
-before failure of cfs_create_thread. Because this situation let
-the both of ptlrpc_start_thread and ptlrpc_svcpt_stop_threads
-access the freed ptlrpc_thread and cause OS panic. Or, it may
-happen that ptlrpc_svcpt_stop_threads waits forever holding an
-already-freed waitq.
+add 2 macros for the length of a fid string 0xSEQ:0xOID:0xVER
+and it's brace version (FID_NOBRACE_LEN, and FID_LEN)
 
-This patch adds an error handling into ptlrpc_start_thread to fix
-this problem.
-
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2889
-Lustre-change: http://review.whamcloud.com/5552
-Signed-off-by: Hiroya Nozaki <nozaki.hiroya@jp.fujitsu.com>
-Reviewed-by: Liang Zhen <liang.zhen@intel.com>
-Reviewed-by: Nikitas Angelinas <nikitas_angelinas@xyratex.com>
-Reviewed-by: Keith Mannthey <keith.mannthey@intel.com>
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2782
+Lustre-change: http://review.whamcloud.com/5299
+Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <tao.peng@emc.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/ptlrpc/service.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ .../lustre/lustre/include/lustre/lustre_user.h     |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/service.c b/drivers/staging/lustre/lustre/ptlrpc/service.c
-index 6871711..87bd638 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/service.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/service.c
-@@ -2765,11 +2765,19 @@ int ptlrpc_start_thread(struct ptlrpc_service_part *svcpt, int wait)
- 		CERROR("cannot start thread '%s': rc %d\n",
- 		       thread->t_name, rc);
- 		spin_lock(&svcpt->scp_lock);
--		list_del(&thread->t_link);
- 		--svcpt->scp_nthrs_starting;
--		spin_unlock(&svcpt->scp_lock);
--
--		OBD_FREE(thread, sizeof(*thread));
-+		if (thread_is_stopping(thread)) {
-+			/* this ptlrpc_thread is being hanled
-+			 * by ptlrpc_svcpt_stop_threads now
-+			 */
-+			thread_add_flags(thread, SVC_STOPPED);
-+			wake_up(&thread->t_ctl_waitq);
-+			spin_unlock(&svcpt->scp_lock);
-+		} else {
-+			list_del(&thread->t_link);
-+			spin_unlock(&svcpt->scp_lock);
-+			OBD_FREE_PTR(thread);
-+		}
- 		RETURN(rc);
- 	}
+diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
+index 7e9f575..f72b2e4 100644
+--- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
++++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
+@@ -462,6 +462,8 @@ static inline void obd_uuid2fsname(char *buf, char *uuid, int buflen)
  
+ /* printf display format
+    e.g. printf("file FID is "DFID"\n", PFID(fid)); */
++#define FID_NOBRACE_LEN 40
++#define FID_LEN (FID_NOBRACE_LEN + 2)
+ #define DFID_NOBRACE LPX64":0x%x:0x%x"
+ #define DFID "["DFID_NOBRACE"]"
+ #define PFID(fid)     \
 -- 
 1.7.9.5
 
