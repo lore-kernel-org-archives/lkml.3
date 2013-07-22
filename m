@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab3GVM6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 08:58:43 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:63736 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360Ab3GVM6k (ORCPT
+	id S1755324Ab3GVNBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:01:13 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47927 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab3GVNBL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 08:58:40 -0400
-Message-ID: <51ED2C74.7050502@monstr.eu>
-Date: Mon, 22 Jul 2013 14:58:28 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 22 Jul 2013 09:01:11 -0400
+Message-ID: <51ED2D27.2030904@arm.com>
+Date: Mon, 22 Jul 2013 14:01:27 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: scatterlist: sg_set_buf() argument must be in linear mapping
- (sha1: ac4e97abce9b80c020e7113325f49e58b7b15e3f)
-References: <51E64C6B.3080306@monstr.eu> <87siz7xt4z.fsf@rustcorp.com.au>
-In-Reply-To: <87siz7xt4z.fsf@rustcorp.com.au>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2HHXCTQVSIMWCKBISEJNA"
+To: Grant Likely <grant.likely@linaro.org>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        devicetree@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        mturquette@linaro.org
+Subject: Re: [PATCH 0/2] PM / OPP: updates to enable sharing OPPs info
+References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <519B45C3.8050700@arm.com> <20130720050943.5EB853E169C@localhost>
+In-Reply-To: <20130720050943.5EB853E169C@localhost>
+X-OriginalArrivalTime: 22 Jul 2013 13:01:06.0654 (UTC) FILETIME=[87515FE0:01CE86DB]
+X-MC-Unique: 113072214010903401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2HHXCTQVSIMWCKBISEJNA
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-+ Ohad
-
-On 07/22/2013 03:47 AM, Rusty Russell wrote:
-> Michal Simek <monstr@monstr.eu> writes:
->> Hi Rusty and Jens,
+(sorry with new DT mailing list address this time)
+On 20/07/13 06:09, Grant Likely wrote:
+> On Tue, 21 May 2013 11:00:35 +0100, Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com> wrote:
+>> Hi Rob, Grant,
 >>
->> I am getting problem with your patch which you have added to the kerne=
-l.
->> The problem is with my arm zynq remoteproc driver where
->> I use dma_declare_coherent_memory() to specify memory for remoteproc
->> which is ioremap to the vmalloc area.
->>
->> Based on that buf addr is not inside ram even this coherent memory is =
-in ram.
->> That's why virt_addr_valid(buf) is failing.
->=20
-> But sg_set_buf() calls virt_to_page(buf).  So does that work?
->=20
-> I would think calling sg_set_page() directly would be what you want
-> here...
+>> On 01/05/13 12:11, Sudeep KarkadaNagesha wrote:
+>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>>>
+>>> These are couple of updates to existing PM/OPP library to support
+>>> sharing of OPPs between different device nodes.
+>>>
+>>> Currently all the cpu nodes are parsed until the OPPs are found. This
+>>> is essential to support cpuhotplug without having to replicate OPP
+>>> information in all the cpu nodes.
+>>>
+>>> However in systems with multiple cpu power domain, its better to have
+>>> OPP entry for each cpu. To avoid replication, phandle can be specified
+>>> to the node which contains the full OPP information.
+>>>
+>> Is proposed option of phandle for OPP acceptable to avoid replication ?
+>> Any suggestions to proceed on this ? This is needed to support CPU
+>> hotplug on big LITTLE system where current methods like parsing all the
+>> nodes or just CPU0 node will not work.
+> 
+> Looks fine to me.
+> 
+Hi Grant,
 
-Let me take some code from virtio_rpmsg_bus.c to show that problematic pa=
-rt.
+Thanks for the response.
 
-bufs_va =3D dma_alloc_coherent(vdev->dev.parent->parent,
-				RPMSG_TOTAL_BUF_SPACE,
-				&vrp->bufs_dma, GFP_KERNEL);
-vrp->rbufs =3D bufs_va;
-for (i =3D 0; i < RPMSG_NUM_BUFS / 2; i++) {
-	struct scatterlist sg;
-	void *cpu_addr =3D vrp->rbufs + i * RPMSG_BUF_SIZE;
+However I had a thought after seeing recent patch series by Mike[1]
+Since the OPPs are usually associated with clocks, and multiple devices
+sharing clocks will point to same clock node in DT, clk node is more
+logical place to specify the OPPs. IMO this will be good alignment for
+the consolidation effort by Mike. One issue with this approach is
+backward compatibility(using old DT)
 
-	sg_init_one(&sg, cpu_addr, RPMSG_BUF_SIZE);
-}
+Regards,
+Sudeep
 
-
-dma_alloc_coherent returns ioremaped ram address and sg_init_one()
-is checking if addr is valid.
-
-It is no problem to call instead of sg_init_one()
-	sg_init_table(sg, 1);
-	sg_set_page(sg, virt_to_page(cpu_addr), RPMSG_BUF_SIZE, offset_in_page(c=
-pu_addr));
-
-
-But my question is if SG lists have to be used just for memory which is n=
-ot remapped.
-
-Ohad: Can you see similar problem with your remoteproc drivers when DEBUG=
-_SG is enabled?
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+[1]
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/182231.html
 
 
-
-------enig2HHXCTQVSIMWCKBISEJNA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHtLH0ACgkQykllyylKDCEWrQCeOhou5zxBuUSTbzcKd5oMsE7q
-AsAAn1SgWn43ypk0Lz1OzunIquMcrpMh
-=wCkN
------END PGP SIGNATURE-----
-
-------enig2HHXCTQVSIMWCKBISEJNA--
