@@ -1,164 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab3GVOdH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:33:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54963 "EHLO mx2.suse.de"
+	id S1756403Ab3GVOfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:35:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55135 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754301Ab3GVOdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:33:04 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [RFC -v3 2/2] watchdog: update watchdog_tresh properly
-Date: Mon, 22 Jul 2013 16:32:46 +0200
-Message-Id: <1374503566-2521-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374493502-31907-1-git-send-email-mhocko@suse.cz>
-References: <1374493502-31907-1-git-send-email-mhocko@suse.cz>
+	id S1755305Ab3GVOfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 10:35:30 -0400
+Date: Mon, 22 Jul 2013 16:35:25 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: benjamin.tissoires@gmail.com, adlr@chromium.org,
+        joseph.salisbury@canonical.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying
+ device issue""
+In-Reply-To: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+Message-ID: <alpine.LNX.2.00.1307221633010.23128@pobox.suse.cz>
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-watchdog_tresh controls how often nmi perf event counter checks per-cpu
-hrtimer_interrupts counter and blows up if the counter hasn't changed
-since the last check. The counter is updated by per-cpu watchdog_hrtimer
-hrtimer which is scheduled with 2/5 watchdog_thresh period which
-guarantees that hrtimer is scheduled 2 times per the main period. Both
-hrtimer and perf event are started together when the watchdog is
-enabled.
+On Thu, 18 Jul 2013, Nestor Lopez Casado wrote:
 
-So far so good. But...
+> This reverts commit 8af6c08830b1ae114d1a8b548b1f8b056e068887.
+> 
+> This patch re-adds the workaround introduced by 596264082f10dd4
+> which was reverted by 8af6c08830b1ae114.
+> 
+> The original patch 596264 was needed to overcome a situation where
+> the hid-core would drop incoming reports while probe() was being
+> executed.
+> 
+> This issue was solved by c849a6143bec520af which added
+> hid_device_io_start() and hid_device_io_stop() that enable a specific
+> hid driver to opt-in for input reports while its probe() is being
+> executed.
+> 
+> Commit a9dd22b730857347 modified hid-logitech-dj so as to use the
+> functionality added to hid-core. Having done that, workaround 596264
+> was no longer necessary and was reverted by 8af6c08.
+> 
+> We now encounter a different problem that ends up 'again' thwarting
+> the Unifying receiver enumeration. The problem is time and usb controller
+> dependent. Ocasionally the reports sent to the usb receiver to start
+> the paired devices enumeration fail with -EPIPE and the receiver never
+> gets to enumerate the paired devices.
+[ ... snip ... ]
 
-But what happens when watchdog_thresh is updated from sysctl handler?
+Ok, this is now in
 
-proc_dowatchdog will set a new sampling period and hrtimer callback
-(watchdog_timer_fn) will use the new value in the next round.
-The problem, however, is that nobody tells the perf event that the
-sampling period has changed so it is ticking with the period configured
-when it has been set up.
+	git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-3.11/logitech-enumeration-fix
 
-This might result in an ear riping dissonance between perf and hrtimer
-parts if the watchdog_thresh is increased. And even worse it might lead
-to KABOOM if the watchdog is configured to panic on such a spurious
-lockup.
+Linus added to CC.
 
-This patch fixes the issue by updating both nmi perf even counter and
-hrtimers if the threshold value has changed.
+Linus -- could you please by any chance test whether the two patches in 
+that branch make the problem you are observing any better? (and no, this 
+is not a pull request yet).
 
-The nmi one is disabled and then reinitialized from scratch. This
-has an unpleasant side effect that the allocation of the new event might
-fail theoretically so the hard lockup detector would be disabled for
-such cpus. On the other hand such a memory allocation failure is very
-unlikely because the original event is deallocated right before.
-It would be much nicer if we just changed perf event period but there
-doesn't seem to be any API to do that right now.
-It is also unfortunate that perf_event_alloc uses GFP_KERNEL allocation
-unconditionally so we cannot use on_each_cpu() and do the same thing
-from the per-cpu context. The update from the current CPU should be
-safe because perf_event_disable removes the event atomically before
-it clears the per-cpu watchdog_ev so it cannot change anything under
-running handler feet.
+It's still not clear whether we are chasing two different issues here, or 
+not.
 
-The hrtimer is simply restarted (thanks to Don Zickus who has pointed
-this out) if it is queued because we cannot rely it will fire&adopt
-to the new sampling period before a new nmi event triggers (when the
-treshold is decreased).
+Thanks,
 
-Changes since v1
-- restart hrtimer to ensure that hrtimer doesn't mess new nmi as pointed
-  out by Don Zickus
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- kernel/watchdog.c | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 50 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 2d64c02..eb4ebb5 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -486,7 +486,52 @@ static struct smp_hotplug_thread watchdog_threads = {
- 	.unpark			= watchdog_enable,
- };
- 
--static int watchdog_enable_all_cpus(void)
-+static void restart_watchdog_hrtimer(void *info)
-+{
-+	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
-+	int ret;
-+
-+	/*
-+	 * No need to cancel and restart hrtimer if it is currently executing
-+	 * because it will reprogram itself with the new period now.
-+	 * We should never see it unqueued here because we are running per-cpu
-+	 * with interrupts disabled.
-+	 */
-+	ret = hrtimer_try_to_cancel(hrtimer);
-+	if (ret == 1)
-+		hrtimer_start(hrtimer, ns_to_ktime(sample_period),
-+				HRTIMER_MODE_REL_PINNED);
-+}
-+
-+static void update_timers(int cpu)
-+{
-+	struct call_single_data data = {.func = restart_watchdog_hrtimer};
-+	/*
-+	 * Make sure that perf event counter will adopt to a new
-+	 * sampling period. Updating the sampling period directly would
-+	 * be much nicer but we do not have an API for that now so
-+	 * let's use a big hammer.
-+	 * Hrtimer will adopt the new period on the next tick but this
-+	 * might be late already so we have to restart the timer as well.
-+	 */
-+	watchdog_nmi_disable(cpu);
-+	__smp_call_function_single(cpu, &data, 1);
-+	watchdog_nmi_enable(cpu);
-+}
-+
-+static void update_timers_all_cpus(void)
-+{
-+	int cpu;
-+
-+	get_online_cpus();
-+	preempt_disable();
-+	for_each_online_cpu(cpu)
-+		update_timers(cpu);
-+	preempt_enable();
-+	put_online_cpus();
-+}
-+
-+static int watchdog_enable_all_cpus(bool sample_period_changed)
- {
- 	int err = 0;
- 
-@@ -496,6 +541,8 @@ static int watchdog_enable_all_cpus(void)
- 			pr_err("Failed to create watchdog threads, disabled\n");
- 		else
- 			watchdog_running = 1;
-+	} else if (sample_period_changed) {
-+		update_timers_all_cpus();
- 	}
- 
- 	return err;
-@@ -537,7 +584,7 @@ int proc_dowatchdog(struct ctl_table *table, int write,
- 	 * watchdog_*_all_cpus() function takes care of this.
- 	 */
- 	if (watchdog_user_enabled && watchdog_thresh)
--		err = watchdog_enable_all_cpus();
-+		err = watchdog_enable_all_cpus(old_thresh != watchdog_thresh);
- 	else
- 		watchdog_disable_all_cpus();
- 
-@@ -565,5 +612,5 @@ void __init lockup_detector_init(void)
- #endif
- 
- 	if (watchdog_user_enabled)
--		watchdog_enable_all_cpus();
-+		watchdog_enable_all_cpus(false);
- }
 -- 
-1.8.3.2
-
+Jiri Kosina
+SUSE Labs
