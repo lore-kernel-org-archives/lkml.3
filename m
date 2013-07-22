@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab3GVHW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 03:22:59 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.10]:16836 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752263Ab3GVHW5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 03:22:57 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-5.tower-29.messagelabs.com!1374477773!23622463!2
-X-Originating-IP: [66.77.174.13]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <51ECDD9F.4080506@digi.com>
-Date: Mon, 22 Jul 2013 09:22:07 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756585Ab3GVHXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 03:23:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38509 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755752Ab3GVHXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 03:23:21 -0400
+Message-ID: <51ECDDE3.1040209@ti.com>
+Date: Mon, 22 Jul 2013 12:53:15 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-Subject: Re: [PATCH v2 3/5] iio: mxs-lradc: add scale attribute to channels
-References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307191630.17149.marex@denx.de> <51E95EF1.4040503@digi.com> <201307191814.15491.marex@denx.de>
-In-Reply-To: <201307191814.15491.marex@denx.de>
+To: Shuduo Sang <sangshuduo@gmail.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, <linux-usb@vger.kernel.org>,
+        <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for
+ all controllers with xhci 1.0
+References: <1372656552-18824-1-git-send-email-george.cherian@ti.com> <20130702032712.GD6262@xanatos> <CANqatMA869UoTFDvSAO1P4OKsiVf+qyXbCrpHDOhm4+TMZ2cGA@mail.gmail.com>
+In-Reply-To: <CANqatMA869UoTFDvSAO1P4OKsiVf+qyXbCrpHDOhm4+TMZ2cGA@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
 
-On 07/19/2013 06:14 PM, Marek Vasut wrote:
-> Dear Hector Palacios,
+Hi Shuduo,
+
+On 7/22/2013 12:35 PM, Shuduo Sang wrote:
+> Hi Sarah and George,
 >
->> Dear Marek,
+> I met this issue at my side too. Per lspci output and HCIVERSION, I
+> see the host is Lynx
+> Point xhci 1.0 host.
+>
+> I notice George's patch has not been merged in kernel 3.11-rc1.
+
+Just to make sure, without the patch are you getting the following error.
+
+"ERROR Transfer event TRB DMA ptr not part of current TD"
+
+
+> Then I manually applied George's patch against 3.10.0 but the issue
+> still happen when I use
+> camera to capture picture.
+
+Can you explain what is the exact issue you face after applying the patch?
+Are you still getting
+
+"ERROR Transfer event TRB DMA ptr not part of current TD"
+
+> So I doubt some corner test has not been
+> covered by patch.
+> Pls let me know what I can do if you need more information.
+>
+> Thanks,
+> Shuduo
+>
+> On Tue, Jul 2, 2013 at 11:27 AM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+>> Thanks George, this looks fine.  I will munge the description a bit when
+>> I commit it, and mark it for stable as well.
 >>
->> On 07/19/2013 04:30 PM, Marek Vasut wrote:
->>>> @@ -228,39 +230,12 @@ struct mxs_lradc {
->>>>
->>>>    #define LRADC_RESOLUTION			12
->>>>    #define LRADC_SINGLE_SAMPLE_MASK		((1 << LRADC_RESOLUTION) - 1)
->>>>
->>>> -/*
->>>> - * Raw I/O operations
->>>> - */
->>>> -static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->>>> +static int mxs_lradc_read_single(struct iio_dev *iio_dev,
->>>>
->>>>    			const struct iio_chan_spec *chan,
->>>>    			int *val, int *val2, long m)
->>>>
->>>>    {
->>>>
->>>>    	struct mxs_lradc *lradc = iio_priv(iio_dev);
->>>>    	int ret;
->>>>
->>>> -	unsigned long mask;
->>>> -
->>>> -	if (m != IIO_CHAN_INFO_RAW)
->>>> -		return -EINVAL;
->>>> -
->>>> -	/* Check for invalid channel */
->>>> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
->>>> -		return -EINVAL;
+>> Unfortunately, due to the timing of the merge window, this patch will
+>> have to wait for 2-3 weeks until 3.11-rc1 is out.
+>>
+>> Sarah Sharp
+>>
+>> On Mon, Jul 01, 2013 at 10:59:12AM +0530, George Cherian wrote:
+>>> Xhci controllers with hci_version > 0.96 gives spurious success
+>>> events on short packet completion. During webcam capture the
+>>> "ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+>>> The same application works fine with synopsis controllers hci_version 0.96.
+>>> The same Issue is seen with Intel Pantherpoint xhci controller. So enabling
+>>> this quirk in xhci_gen_setup if controller verion is greater than 0.96.
+>>> For xhci-pci move the quirk to much generic place xhci_gen_setup.
 >>>
->>> This was already resolved, so this patch won't apply I'm afraid.
->>
->> You mean the 'unsigned long mask', right?  Yeah, I think I had resolved
->> that one before submitting, but looks like I didn't.
->> The other check is not resolved afaik. We agreed to remove it, but on a
->> different patch.
->
-> I mean the other check, yeah. A patch removing that should be applied already.
+>>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>>> ---
+>>>   drivers/usb/host/xhci-pci.c | 1 -
+>>>   drivers/usb/host/xhci.c     | 7 +++++++
+>>>   2 files changed, 7 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+>>> index cc24e39..f00cb20 100644
+>>> --- a/drivers/usb/host/xhci-pci.c
+>>> +++ b/drivers/usb/host/xhci-pci.c
+>>> @@ -93,7 +93,6 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+>>>        }
+>>>        if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+>>>                        pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+>>> -             xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+>>>                xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+>>>                xhci->limit_active_eps = 64;
+>>>                xhci->quirks |= XHCI_SW_BW_CHECKING;
+>>> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+>>> index d8f640b..0f7be59 100644
+>>> --- a/drivers/usb/host/xhci.c
+>>> +++ b/drivers/usb/host/xhci.c
+>>> @@ -4697,6 +4697,13 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+>>>
+>>>        get_quirks(dev, xhci);
+>>>
+>>> +     /* In xhci controllers which follow xhci 1.0 spec gives a spurious
+>>> +      * success event after a short transfer. This quirk will ignore such
+>>> +      * spurious event.
+>>> +      */
+>>> +     if (xhci->hci_version > 0x96)
+>>> +             xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+>>> +
+>>>        /* Make sure the HC is halted. */
+>>>        retval = xhci_halt(xhci);
+>>>        if (retval)
+>>> --
+>>> 1.8.1.4
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-Where exactly? It's not fixed in Jonathan's fixes-togreg branch, at least.
-Did you fixed it?
+-- 
+-George
 
-Best regards,
---
-Hector Palacios
