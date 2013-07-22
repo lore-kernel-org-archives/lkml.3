@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab3GVKJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:09:20 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55367 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756687Ab3GVKJT (ORCPT
+	id S932169Ab3GVKLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:11:12 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41688 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756121Ab3GVKLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:09:19 -0400
-Date: Mon, 22 Jul 2013 11:08:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20130722100856.GQ9858@sirena.org.uk>
-References: <1374485092-13211-1-git-send-email-p.zabel@pengutronix.de>
+	Mon, 22 Jul 2013 06:11:11 -0400
+Message-ID: <51ED053C.1070105@hitachi.com>
+Date: Mon, 22 Jul 2013 19:11:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SKuKPt3hQSBflurX"
-Content-Disposition: inline
-In-Reply-To: <1374485092-13211-1-git-send-email-p.zabel@pengutronix.de>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: irq: Acknowledge also interrupts that are masked
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
+Subject: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and text_poke_smp_batch
+References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522> <20130718114753.26675.18714.stgit@mhiramat-M0-7522> <20130722074339.GA25976@gmail.com> <20130722082104.GA26823@gmail.com> <51ECEF8D.60109@hitachi.com> <20130722100158.GB908@gmail.com>
+In-Reply-To: <20130722100158.GB908@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/07/22 19:01), Ingo Molnar wrote:
+> 
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> (2013/07/22 17:21), Ingo Molnar wrote:
+>>>
+>>> * Ingo Molnar <mingo@kernel.org> wrote:
+>>>
+>>>>
+>>>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>
+>>>>> Since introducing the text_poke_bp for all text_poke_smp*
+>>>>> callers, text_poke_smp* are now unused. This basically
+>>>>> reverts 3d55cc8a, 7deb18dc and related commits.
+>>>>>
+>>>>> This also fixes a Kconfig dependency issue on STOP_MACHINE
+>>>>> in the case of CONFIG_SMP && !CONFIG_MODULE_UNLOAD.
+>>>>>
+>>>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>>> ---
+>>>>>  arch/x86/Kconfig                   |    5 --
+>>>>>  arch/x86/include/asm/alternative.h |   11 ----
+>>>>>  arch/x86/kernel/alternative.c      |   98 +-----------------------------------
+>>>>>  3 files changed, 2 insertions(+), 112 deletions(-)
+>>>>
+>>>> Hm, it does not build with the attached config:
+>>>>
+>>>> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
+>>>> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
+>>>> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
+>>>> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
+>>>
+>>> 32-bit appears to be the key pattern.
+>>
+>> Ingo, please make sure your x86/jumplabel tree picked all of my patches.
+>> This 3/3 strongly depends on the previous 1/3 and 2/3.
+>> Without it, kprobes/opt.c can not be build because it still uses the
+>> text_poke_params data structure which 3/3 removes.
+> 
+> Yes I know, and it was on top of -tip which already had these included:
+> 
+>  51b2c07b2226 x86: Make jump_label use int3-based patching
+>  fd4363fff3d9 x86: Introduce int3 (breakpoint)-based instruction patching
+> 
+> without these the third patch wouldn't even apply I think.
 
---SKuKPt3hQSBflurX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No, I meant below two patches:
+ kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
+ kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
 
-On Mon, Jul 22, 2013 at 11:24:52AM +0200, Philipp Zabel wrote:
-> In case the hardware interrupt mask register does not prevent the chip level
-> irq from being asserted by the corresponding interrupt status bit, stray
-> masked interrupts should to be acknowledged, too.
+Since the "setup_optimize_kprobe" in the error message is completely
+*removed* by the second one, the above error should not happen.
 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
-> I have seen GPI interrupts trigger on DA9063 trigger after being masked during
-> initialization, and once the status bits are set, the interrupt handler routine
-> never clears them, which keeps the chip irq line asserted forever.
+Thank you,
 
-This can't be the standard behaviour since it breaks expectations as to
-what happens for masked interrupts.  Though based on your description of
-the problem it sounds like a quirk to ack interrupts immediately after
-masking them might do the trick instead of the full on always ack
-behaviour.
 
---SKuKPt3hQSBflurX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR7QS1AAoJELSic+t+oim9HWAQAILjJfljC1Q9ChcV3M5mYVG1
-um4VAXoP93HRXtcy8FNqYBGMjgWjnR86NuV6UyA8n215wk/qnmp6rrNGB0QNwes2
-6ZkVMckB/0QT8EWxKLx+hJirWpSQJWltGZ0FHteIf5JblXCztjV6itHsQ1tw8I4E
-Eizm5WCojpgeonMbVQrLlMGGz5AGFS2+/4qScpPcPOOpdiCsIHSJRUE7Dm+QQDtW
-hbYCXiVUY0TKyIbrAvEw2sjTlY2r6DZNvEjgL7s0+AuHKbJccguz8UPSi73n+vTh
-ooatVhr8RHVdLcjSIFMCLhn9+XUqG97oINymedHsAEQVnSmpH8obs47hBlnYcXRp
-KyNskt1ukCw1VQmQ1nBMhapPSbA2rEESlb23C5CWGYmBRorsqCfI00ihmUdNbDcp
-mchqE0GGoECuf3xbOC4ajOIX2EV8DdXCffOJGy05eMaYq7kOdf5vMfy1IJcaXQu1
-YScM/JhGfFgNpWTEw2ViFH21tiLG1qTf6gggAHP4ri0TAL0Mvz7VKYkspwyCbIge
-ZaIFAefA4sZ+Qutpvi4aJLasfXEa8rVnZX/Dj6/31j9mCZFS9IZWMGKK68Z9aGmI
-tznCs1Te9HqgnzSlMVFT2cR69ZEp52ymYrRAx4+sVbPWA1UFPPZzOLYKSb80BUx1
-dHCXYzETQT1akor+6zRi
-=GFmR
------END PGP SIGNATURE-----
-
---SKuKPt3hQSBflurX--
