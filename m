@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab3GVRU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:20:57 -0400
-Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:53603 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932101Ab3GVRU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:20:56 -0400
-X-Greylist: delayed 1047 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Jul 2013 13:20:56 EDT
-Date: Mon, 22 Jul 2013 19:03:44 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH v4 0/5] ARM: at91: prepare transition to common clk
- framework
-Message-ID: <20130722170344.GK16015@ns203013.ovh.net>
-References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
+	id S932617Ab3GVRVO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 13:21:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932172Ab3GVRVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 13:21:12 -0400
+Date: Mon, 22 Jul 2013 19:15:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] tracing: Introduce trace_create_cpu_file() and
+	tracing_get_cpu()
+Message-ID: <20130722171549.GB27080@redhat.com>
+References: <20130722134342.GA18355@redhat.com> <1374506617.3356.97.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 7357755891826797433
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <1374506617.3356.97.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:32 Thu 18 Jul     , Boris BREZILLON wrote:
-> Hello,
-> 
-> This patch series prepares the transition to common clk framework by
-> replacing all the clk_enable and clk_disable calls by clk_prepare_unable and
-> clk_disable_unprepare to avoid common clock framework warnings.
-on the whole serie
+On 07/22, Steven Rostedt wrote:
+>
+> Whitespace damage above. There's spaces in between the tabs.
+>
+> If no other changes are needed to this patchset (waiting on word from
+> Al), I'll fix this up.
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Thanks!
 
-> 
-> Best Regards,
-> Boris
-> 
-> Changes since v3:
->  - move usb clock config patches out of this series
->  - move clk_prepare/unprepare calls out of critical sections (ssc and
->    mci drivers)
->  - remove already applied spi clk_prepare patch 
-> 
-> Changes since v2:
->  - add configuraton of usb clock in ohci and udc drivers
->  - add clk_prepare patch for usba udc driver
->  - add clk_prepare patch for spi driver
->  - remove already applied udc clk_prepare patch
-> 
-> Changes since v1:
->  - remove unneeded clk_unprepare in mci driver
->  - remove already applied patches (ehci, ohci, dma and serial)
-> 
-> Changes since common clk patch series:
->  - add clk_prepare_enable return check
->  - fix a deadlock in atmel-mci (missing spin_unlock)
->  - remove already applied patches (atmel-ssc and pwm-atmel-tcb)
-> 
-> Boris BREZILLON (5):
->   ARM: at91/tc/clocksource: replace clk_enable/disable with
->     clk_prepare_enable/disable_unprepare.
->   mmc: atmel-mci: prepare clk before calling enable
->   at91/avr32/atmel_lcdfb: prepare clk before calling enable
->   USB: gadget: atmel_usba: prepare clk before calling enable
->   ASoC: atmel-ssc: remove clk_disable_unprepare call from critical
->     section
-> 
->  drivers/clocksource/tcb_clksrc.c    |   10 +++++-----
->  drivers/misc/atmel-ssc.c            |   11 ++++++++---
->  drivers/mmc/host/atmel-mci.c        |   34 +++++++++++++++++++++++++++-------
->  drivers/usb/gadget/atmel_usba_udc.c |   28 +++++++++++++++++++++-------
->  drivers/video/atmel_lcdfb.c         |    8 ++++----
->  5 files changed, 65 insertions(+), 26 deletions(-)
-> 
-> -- 
-> 1.7.9.5
-> 
+> Otherwise, you might want to fix them if you need
+> to send a follow up patch set.
+
+Yes, will do.
+
+Oleg.
+
