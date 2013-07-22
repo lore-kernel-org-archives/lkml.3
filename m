@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3GVOFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:05:01 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.111]:62398 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754451Ab3GVOE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:04:59 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-2.tower-200.messagelabs.com!1374501894!11361230!4
-X-Originating-IP: [66.77.174.13]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-From: Hector Palacios <hector.palacios@digi.com>
-To: <linux-iio@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <alexandre.belloni@free-electrons.com>, <jic23@kernel.org>,
-        <lars@metafoo.de>, <fabio.estevam@freescale.com>, <marex@denx.de>,
-        <hector.palacios@digi.com>
-Subject: [PATCH v3 0/5] iio: mxs-lradc: add support to optional divider_by_two
-Date: Mon, 22 Jul 2013 16:03:58 +0200
-Message-ID: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
-X-Mailer: git-send-email 1.8.3
+	id S1755920Ab3GVOI6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:08:58 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753767Ab3GVOI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 10:08:57 -0400
+Message-ID: <51ED3CF5.7000609@nod.at>
+Date: Mon, 22 Jul 2013 16:08:53 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
+References: <1374258017-19606-1-git-send-email-artagnon@gmail.com> <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com> <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com> <20130722124047.GL4165@ZenIV.linux.org.uk> <CALkWK0=bAwDxbLEtHOThjY58BmWCrFYgZm9GaLfEnF5vpu1VJw@mail.gmail.com> <51ED31AF.8000309@nod.at> <CALkWK0ki0JN_uB3VNr=j0hAcEhiT_Xr+xd911-AGy5sjd95GFg@mail.gmail.com>
+In-Reply-To: <CALkWK0ki0JN_uB3VNr=j0hAcEhiT_Xr+xd911-AGy5sjd95GFg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+Am 22.07.2013 15:42, schrieb Ramkumar Ramachandra:
+> Richard Weinberger wrote:
+>> "great user-experience" and other marketing buzzwords belong to Ubuntu land.
+> 
+> Ubuntu uses upstart; I have no idea why you brought it up.
+> 
+>> What technical problem are you facing?
+>> I'm using systemd distros all day on top of UML.
+> 
+> I started the thread with two patches [1][2].  Do the patches _not_
+> address problems?  Are the problems invalid in some way?  Are the
+> commit messages unclear?
+> 
+> [1]: http://lists.freedesktop.org/archives/systemd-devel/2013-July/012153.html
+> [2]: http://lists.freedesktop.org/archives/systemd-devel/2013-July/012154.html
 
-This is v3 of the patchset that adds support to the optional 
-divider_by_two of LRADC channels.
+Again what problem are you trying to solve?
+If you want a getty on /dev/tty0, run:
 
-Changes in v3:
-- Fix merge conflict with previous existing patch.
-- Fix ampersand in function callback assignment.
-- Removed unused parameters of function to read single sample.
-- Ennumeration for two-dimensional array of scale (with divider
-  by two disabled or enabled), for improved readability.
-- Created struct with integer and nano parts of the scale 
-  attribute, for improved readability.
+ln -s /usr/lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty0.service
 
-Changes in v2:
-- Fix the sample mask passed by the touchscreen driver to the input
-  subsytem, to be 12 bits.
-- Move the reference voltages to the Device Tree.
-- Rebased to avoid conflict with Marek Vasut's prior patch.
-- Use IIO_DEVICE_ATTR() macro for adding scale_available property to
-  all channels.
-- Make 'is_divided' unsigned int.
-
-Notes:
-- Other fixes were discussed in v1 but they were not part of this
-  patchset changes, and should be handled in a separate patch.
-- The 64bit math to calculate the integer and decimal parts of the
-  scaling attribute is a bit unreadable but used in other similar
-  drivers like ad7791, ad7793, and ad7192. If it is to be changed
-  it should be done in parallel with these, in a different patch.
-
-The first patch changes the realbits to 12. The 
-second adds the channels reference voltages to the DT.
-The following add the scale read operation, scale_available read 
-operation, and scale write operation.
-
-This was tested on a custom i.MX28 platform.
-Could someone please test on an i.MX23?
-
-
-Hector Palacios (5):
-  iio: mxs-lradc: change the realbits to 12
-  ARM: dts: add reference voltage property for MXS LRADC
-  iio: mxs-lradc: add scale attribute to channels
-  iio: mxs-lradc: add scale_available file to channels
-  iio: mxs-lradc: add write_raw function to modify scale
-
- .../bindings/staging/iio/adc/mxs-lradc.txt         |   9 +-
- arch/arm/boot/dts/imx23.dtsi                       |   4 +
- arch/arm/boot/dts/imx28.dtsi                       |   4 +
- drivers/staging/iio/adc/mxs-lradc.c                | 255 ++++++++++++++++++---
- 4 files changed, 242 insertions(+), 30 deletions(-)
-
+Thanks,
+//richard
