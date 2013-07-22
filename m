@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384Ab3GVUvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:51:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46291 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913Ab3GVUvm (ORCPT
+	id S933408Ab3GVUwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:52:11 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:49731 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932316Ab3GVUwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:51:42 -0400
+	Mon, 22 Jul 2013 16:52:09 -0400
+Date: Mon, 22 Jul 2013 22:52:03 +0200
+From: Kiko Piris <kernel@pirispons.net>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: 3.10.1 cpufreq suspend/resume regression still present in 3.10.2
+Message-ID: <20130722205203.GA8075@sacarino.pirispons.net>
+Mail-Followup-To: Kiko Piris <kernel@pirispons.net>,
+	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+	gregkh@linuxfoundation.org
+References: <20130722151653.GA7213@sacarino.pirispons.net>
+ <1374507247.15242.26.camel@x61.thuisdomein>
+ <20130722155456.GA7836@sacarino.pirispons.net>
+ <51ED56FF.9030508@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1373457340-16666-6-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1373457340-16666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1373457340-16666-6-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Mon, 22 Jul 2013 22:51:41 +0200
-Message-ID: <CACRpkdZowZtF45hPMhvBrVmurRnTO32znwjKpjDUY22hWhQDLw@mail.gmail.com>
-Subject: Re: [PATCH 5/5] pinctrl-baytrail: fix to avoid sparse warnings
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51ED56FF.9030508@linux.vnet.ibm.com>
+User-Agent: Mutt
+X-No-CC: Please respect my Mail-Followup-To header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 1:55 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
+On 22/07/2013 at 21:29 +0530, Srivatsa S. Bhat wrote:
 
-> There are couple of sparse warnings we could avoid if we use a bit verbose
-> version of the code in byt_gpio_direction_output().
->
-> drivers/pinctrl/pinctrl-baytrail.c:266:45: warning: dubious: x | !y
-> drivers/pinctrl/pinctrl-baytrail.c:267:36: warning: dubious: x | !y
->
-> Additionally simplify a bit the code in byt_gpio_direction_input().
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Try applying the two mainline commits that I mentioned in my previous
+> mail, on top of 3.10.2 and check if it fixes your problem.
 
-Patch applied.
+It does fix it.
 
-Yours,
-Linus Walleij
+Running 3.10.2 with your two patches, suspended and resumed a couple of
+times without a problem (previously it didn’t wake up 100% of the
+times).
+
+Thank you both for your help!
+
+Regards.
+
+-- 
+Kiko
