@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab3GVVYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:24:36 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:52097 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316Ab3GVVYe (ORCPT
+	id S933228Ab3GVVYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 17:24:53 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:33621 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933034Ab3GVVYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:24:34 -0400
+	Mon, 22 Jul 2013 17:24:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374419389.16533.86.camel@deadeye.wl.decadent.org.uk>
-References: <1374379903.3719.25@driftwood> <1374419389.16533.86.camel@deadeye.wl.decadent.org.uk>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Mon, 22 Jul 2013 17:24:12 -0400
-Message-ID: <CAHGf_=okjbBrFkmpXJrkQ1BZkta-7sYVEyuaDp4Mk8eQU=ijOg@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
- kernel, let's dump the cc: stable tag
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rob Landley <rob@landley.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+In-Reply-To: <1374526866-6813-1-git-send-email-bp@alien8.de>
+References: <1374526866-6813-1-git-send-email-bp@alien8.de>
+Date: Mon, 22 Jul 2013 14:24:51 -0700
+X-Google-Sender-Auth: bzpnmMZ-2P-iHreJ8XiKX-VPACs
+Message-ID: <CAGXu5j+M7ORqYLZXQLVn4-c9W3X0jW7Or0AW-SRHWds7OEydVg@mail.gmail.com>
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+From: Kees Cook <keescook@chromium.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I review what I can, but recently have often missed the 2 day review
-> period.
+On Mon, Jul 22, 2013 at 2:01 PM, Borislav Petkov <bp@alien8.de> wrote:
+> From: Borislav Petkov <bp@suse.de>
 >
-> Review from the authors and maintainers is probably more valuable than
-> that from generalists on the stable list.
+> [    5.525861] ERST: Can not request iomem region <0x        c7eff000-0x        c7f00000> for ERST.
+>
+> This needs to have leading zeroes. Make it so.
+>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> Cc: Anton Vorontsov <anton@enomsg.org>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 
->From point of subsystem developers view, the problem is there are too many
-stable branches. I can't memorize what is different each other.
-Currently www.kernel.org
-lists two stable and five longterm branches. Who know all of them?
-Eventually I only
-checked them when I have enough much spare time.
+Yes, please. :) Nice catch.
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-- 
+Kees Cook
+Chrome OS Security
