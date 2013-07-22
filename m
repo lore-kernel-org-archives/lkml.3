@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999Ab3GVSL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:11:57 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:35071 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328Ab3GVSLz (ORCPT
+	id S933043Ab3GVSMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:12:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41859 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328Ab3GVSMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 14:11:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <5728692.GlhGgHY92H@vostro.rjw.lan>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
-	<CAAG0J9-OgVe3Y0uo0bKr2TTcn3YUna1C_5NixBSsft3+cbKKWw@mail.gmail.com>
-	<5728692.GlhGgHY92H@vostro.rjw.lan>
-Date: Mon, 22 Jul 2013 11:11:54 -0700
-X-Google-Sender-Auth: MChNc5w9TgXwcj6i_txua1urxAo
-Message-ID: <CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
-Subject: Re: Linux 3.11-rc2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: James Hogan <james@albanarts.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Jul 2013 14:12:03 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: balbi@ti.com, george.cherian@ti.com,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 11/16] usb: musb: core: call dma_controller_destroy() in the err path
+Date: Mon, 22 Jul 2013 20:10:02 +0200
+Message-Id: <1374516607-2705-12-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> Linus, do you want me to send a pull request reverting 8c5bd7a and efaa14c?
+The cleanup in the error is missing the dma controller. The structure is
+allocated at runtime and ux500 allocates even a little more than just
+this struct. So cleanup!
 
-Yes, but let's wait a while. Not because I think we'll fix the problem
-(hey, miracles might happen), but because I think it would be useful
-to couple the reverts with information about the particular machines
-that broke (and the people who reported it). So that when we
-inevitably try again, we can perhaps get some testing effort with
-those machines/people.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/usb/musb/musb_core.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-It doesn't seem to be a show-stopped for a large number of people, so
-there's no huge hurry. I'd suggest doing the revert just in time for
-rc3, but waiting until then to gather info about people who see
-breakage.
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index b33bed5..9b774e7 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1933,6 +1933,8 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	musb_gadget_cleanup(musb);
+ 
+ fail3:
++	if (musb->dma_controller)
++		dma_controller_destroy(musb->dma_controller);
+ 	pm_runtime_put_sync(musb->controller);
+ 
+ fail2:
+-- 
+1.8.3.2
 
-Sound like a plan?
-
-                Linus
