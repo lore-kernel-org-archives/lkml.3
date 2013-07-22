@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab3GVP3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 11:29:07 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42414 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756484Ab3GVP3E (ORCPT
+	id S1757448Ab3GVPeK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 11:34:10 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:61807 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756670Ab3GVPeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 11:29:04 -0400
-Message-ID: <51ED4EE6.9050502@linux.vnet.ibm.com>
-Date: Mon, 22 Jul 2013 20:55:26 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Fan Du <fan.du@windriver.com>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Subject: Re: [BUG] ipv6, rawv6_close(): BUG: unable to handle kernel paging
- request
-References: <51EC283D.5010208@linux.vnet.ibm.com> <51ED09A6.1020605@windriver.com> <20130722121911.GB6538@order.stressinduktion.org>
-In-Reply-To: <20130722121911.GB6538@order.stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Jul 2013 11:34:09 -0400
+Message-ID: <1374507247.15242.26.camel@x61.thuisdomein>
+Subject: Re: 3.10.1 cpufreq suspend/resume regression still present in 3.10.2
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kiko Piris <kernel@pirispons.net>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 22 Jul 2013 17:34:07 +0200
+In-Reply-To: <20130722151653.GA7213@sacarino.pirispons.net>
+References: <20130722151653.GA7213@sacarino.pirispons.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072215-2000-0000-0000-00000CFD2E94
+X-OriginalArrivalTime: 22 Jul 2013 15:34:07.0606 (UTC) FILETIME=[E7977960:01CE86F0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2013 05:49 PM, Hannes Frederic Sowa wrote:
-> On Mon, Jul 22, 2013 at 06:29:58PM +0800, Fan Du wrote:
->> Hallo Srivatsa
->>
->>
->> On 2013年07月22日 02:28, Srivatsa S. Bhat wrote:
->>> Hi,
->>>
->>> I'm seeing this on every boot.
->>>
->>> Version: Latest mainline (commit ea45ea70b)
->>
->> I tested with this commit using your updated IPv6 config, this incident 
->> didn't show up after several times of reboot.
->> Could you please elaborate your testing details if possible?
->>
->> A wild guess, it dereference mrt->mroute6_sk, indicating mrt is invalid.
-> 
-> Yes, that seems to be the case.
-> 
-> Could you test the following patch if you have a bit of time?
-> 
-> rtnl_lock is for some functions down lower the call stack in ip6mr_free_table.
->
+On Mon, 2013-07-22 at 17:16 +0200, Kiko Piris wrote:
+> linux-3.10.1 introduced a regression in cpufreq breaking suspend/resume
+> cycle for some people [1].
 
-This patch fixed the issue I was facing. Thanks!
+The upstream commit that probably will fix the regression that Kiko ran
+into is aae760ed21cd690fe8a6db9f3a177ad55d7e12ab ("cpufreq: Revert
+commit a66b2e to fix suspend/resume regression"). It's only part of
+v3.11-rc2 and was committed with a
+    Cc: 3.10+ <stable@vger.kernel.org>
 
-Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+tag. So I'd guess that fix will be part of a future v3.10.y (stable)
+releases.
 
-Regards,
-Srivatsa S. Bhat
+> There were also some other threads about it in lkml.
+> 
+> I see 3.10.2-stable was released some days ago. I couldn’t see anything
+> about fixing this regression reported in the changelog.
+> 
+> And to be 110% certain, I compiled it and tried suspending/resuming;
+> it’s still broken.
+> 
+> Is this going to be fixed in 3.10 stable branch?
+> 
+> Thank you very much in advance.
 
-> diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-> index 583e8d4..03986d3 100644
-> --- a/net/ipv6/ip6mr.c
-> +++ b/net/ipv6/ip6mr.c
-> @@ -259,10 +259,12 @@ static void __net_exit ip6mr_rules_exit(struct net *net)
->  {
->  	struct mr6_table *mrt, *next;
+Note that I already suggested to Kiko to try that patch (see
+https://lkml.org/lkml/2013/7/14/35 ). I don't know whether Kiko tried
+it, as I never received a reply to my suggestion. So, for now, I can
+only say that that patch will probably fix the issue.
+
+> [1] first commit that bisect informed as introducing the regression:
 > 
-> +	rtnl_lock();
->  	list_for_each_entry_safe(mrt, next, &net->ipv6.mr6_tables, list) {
->  		list_del(&mrt->list);
->  		ip6mr_free_table(mrt);
->  	}
-> +	rtnl_unlock();
->  	fib_rules_unregister(net->ipv6.mr6_rules_ops);
->  }
->  #else
-> @@ -289,7 +291,10 @@ static int __net_init ip6mr_rules_init(struct net *net)
+> | commit c02527487f0c8feb578c0394ad481a97f26d3bd2
+> | Author: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> | Date:   Mon Jul 1 00:40:55 2013 +0200
+> |
+> |     cpufreq: Fix cpufreq regression after suspend/resume
+> |
+> |     commit f51e1eb63d9c28cec188337ee656a13be6980cfd upstream.
 > 
->  static void __net_exit ip6mr_rules_exit(struct net *net)
->  {
-> +	rtnl_lock();
->  	ip6mr_free_table(net->ipv6.mrt6);
-> +	net->ipv6.mrt6 = NULL;
-> +	rtnl_unlock();
->  }
->  #endif
-> 
-> 
+> https://groups.google.com/forum/#!topic/linux.kernel/LUi1pFCxbSI
+
+
+Paul Bolle
 
