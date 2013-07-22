@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab3GVGL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 02:11:59 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:47924 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756285Ab3GVGL4 (ORCPT
+	id S1756561Ab3GVGMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 02:12:17 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:42546 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756433Ab3GVGMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 02:11:56 -0400
+	Mon, 22 Jul 2013 02:12:14 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
         <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
@@ -21,122 +21,166 @@ Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
         <linux-kernel@vger.kernel.org>, <riel@redhat.com>,
         <drjones@redhat.com>, <virtualization@lists.linux-foundation.org>,
         <srivatsa.vaddagiri@gmail.com>
-Date: Mon, 22 Jul 2013 11:49:15 +0530
-Message-Id: <20130722061915.24737.73186.sendpatchset@codeblue>
+Date: Mon, 22 Jul 2013 11:49:32 +0530
+Message-Id: <20130722061932.24737.80098.sendpatchset@codeblue>
 In-Reply-To: <20130722061631.24737.75508.sendpatchset@codeblue>
 References: <20130722061631.24737.75508.sendpatchset@codeblue>
-Subject: [PATCH RFC V11 11/18]  xen/pvticketlock: Allow interrupts to be enabled while blocking
+Subject: [PATCH RFC V11 12/18] kvm hypervisor : Add a hypercall to KVM hypervisor to support pv-ticketlocks
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072217-3568-0000-0000-000003F6B4BE
+x-cbid: 13072206-1396-0000-0000-0000034B82FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xen/pvticketlock: Allow interrupts to be enabled while blocking
+kvm hypervisor : Add a hypercall to KVM hypervisor to support pv-ticketlocks
 
-From: Jeremy Fitzhardinge <jeremy@goop.org>
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
+kvm_hc_kick_cpu allows the calling vcpu to kick another vcpu out of halt state.
+the presence of these hypercalls is indicated to guest via
+kvm_feature_pv_unhalt.
 
-If we can enable interrupts while waiting for the lock to become
-available, and we take an interrupt before entering the poll,
-and the handler takes a spinlock which ends up going into
-the slow state (invalidating the per-cpu "lock" and "want" values),
-then when the interrupt handler returns the event channel will
-remain pending so the poll will return immediately, causing it to
-return out to the main spinlock loop.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
+[Raghu: Apic related changes, folding pvunhalted into vcpu_runnable
+ Added flags for future use (suggested by Gleb)]
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
- arch/x86/xen/spinlock.c |   46 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 40 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/kvm_host.h      |    5 +++++
+ arch/x86/include/uapi/asm/kvm_para.h |    1 +
+ arch/x86/kvm/cpuid.c                 |    3 ++-
+ arch/x86/kvm/x86.c                   |   37 ++++++++++++++++++++++++++++++++++
+ include/uapi/linux/kvm_para.h        |    1 +
+ 5 files changed, 46 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index dff5841..44d06f3 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -142,7 +142,20 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	 * partially setup state.
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index f87f7fc..1d1f711 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -511,6 +511,11 @@ struct kvm_vcpu_arch {
+ 	 * instruction.
  	 */
- 	local_irq_save(flags);
--
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
- 	smp_wmb();
- 	w->lock = lock;
-@@ -157,24 +170,43 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
+ 	bool write_fault_to_shadow_pgtable;
++
++	/* pv related host specific info */
++	struct {
++		bool pv_unhalted;
++	} pv;
+ };
  
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
+ struct kvm_lpage_info {
+diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+index 06fdbd9..94dc8ca 100644
+--- a/arch/x86/include/uapi/asm/kvm_para.h
++++ b/arch/x86/include/uapi/asm/kvm_para.h
+@@ -23,6 +23,7 @@
+ #define KVM_FEATURE_ASYNC_PF		4
+ #define KVM_FEATURE_STEAL_TIME		5
+ #define KVM_FEATURE_PV_EOI		6
++#define KVM_FEATURE_PV_UNHALT		7
  
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		add_stats(TAKEN_SLOW_PICKUP, 1);
- 		goto out;
- 	}
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
-+
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- out:
- 	cpumask_clear_cpu(cpu, &waiting_cpus);
- 	w->lock = NULL;
-+
- 	local_irq_restore(flags);
-+
- 	spin_time_accum_blocked(start);
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index a20ecb5..b110fe6 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -413,7 +413,8 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
+ 			     (1 << KVM_FEATURE_ASYNC_PF) |
+ 			     (1 << KVM_FEATURE_PV_EOI) |
+-			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
++			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
++			     (1 << KVM_FEATURE_PV_UNHALT);
+ 
+ 		if (sched_info_on())
+ 			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index d21bce5..dae4575 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5495,6 +5495,36 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+ 	return 1;
  }
- PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
-@@ -188,7 +220,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
  
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			add_stats(RELEASED_SLOW_KICKED, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
++/*
++ * kvm_pv_kick_cpu_op:  Kick a vcpu.
++ *
++ * @apicid - apicid of vcpu to be kicked.
++ */
++static void kvm_pv_kick_cpu_op(struct kvm *kvm, unsigned long flags, int apicid)
++{
++	struct kvm_vcpu *vcpu = NULL;
++	int i;
++
++	kvm_for_each_vcpu(i, vcpu, kvm) {
++		if (!kvm_apic_present(vcpu))
++			continue;
++
++		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
++			break;
++	}
++	if (vcpu) {
++		/*
++		 * Setting unhalt flag here can result in spurious runnable
++		 * state when unhalt reset does not happen in vcpu_block.
++		 * But that is harmless since that should soon result in halt.
++		 */
++		vcpu->arch.pv.pv_unhalted = true;
++		/* We need everybody see unhalt before vcpu unblocks */
++		smp_wmb();
++		kvm_vcpu_kick(vcpu);
++	}
++}
++
+ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ {
+ 	unsigned long nr, a0, a1, a2, a3, ret;
+@@ -5528,6 +5558,10 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ 	case KVM_HC_VAPIC_POLL_IRQ:
+ 		ret = 0;
+ 		break;
++	case KVM_HC_KICK_CPU:
++		kvm_pv_kick_cpu_op(vcpu->kvm, a0, a1);
++		ret = 0;
++		break;
+ 	default:
+ 		ret = -KVM_ENOSYS;
+ 		break;
+@@ -5950,6 +5984,7 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 				kvm_apic_accept_events(vcpu);
+ 				switch(vcpu->arch.mp_state) {
+ 				case KVM_MP_STATE_HALTED:
++					vcpu->arch.pv.pv_unhalted = false;
+ 					vcpu->arch.mp_state =
+ 						KVM_MP_STATE_RUNNABLE;
+ 				case KVM_MP_STATE_RUNNABLE:
+@@ -6770,6 +6805,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
+ 	BUG_ON(vcpu->kvm == NULL);
+ 	kvm = vcpu->kvm;
+ 
++	vcpu->arch.pv.pv_unhalted = false;
+ 	vcpu->arch.emulate_ctxt.ops = &emulate_ops;
+ 	if (!irqchip_in_kernel(kvm) || kvm_vcpu_is_bsp(vcpu))
+ 		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
+@@ -7103,6 +7139,7 @@ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
+ 		!vcpu->arch.apf.halted)
+ 		|| !list_empty_careful(&vcpu->async_pf.done)
+ 		|| kvm_apic_has_events(vcpu)
++		|| vcpu->arch.pv.pv_unhalted
+ 		|| atomic_read(&vcpu->arch.nmi_queued) ||
+ 		(kvm_arch_interrupt_allowed(vcpu) &&
+ 		 kvm_cpu_has_interrupt(vcpu));
+diff --git a/include/uapi/linux/kvm_para.h b/include/uapi/linux/kvm_para.h
+index cea2c5c..2841f86 100644
+--- a/include/uapi/linux/kvm_para.h
++++ b/include/uapi/linux/kvm_para.h
+@@ -19,6 +19,7 @@
+ #define KVM_HC_MMU_OP			2
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
++#define KVM_HC_KICK_CPU			5
+ 
+ /*
+  * hypercalls use architecture specific
 
