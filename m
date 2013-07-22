@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab3GVO7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:59:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27062 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754737Ab3GVO7r (ORCPT
+	id S1756620Ab3GVPCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 11:02:52 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:37091 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755648Ab3GVPCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:59:47 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=oMQIyPb59TQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=SW_-TF54Wd0A:10 a=kuJ69lDKSy01jrIDgS4A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374505184.3356.92.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/7] tracing: Kill the buggy trace_cpu
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 22 Jul 2013 10:59:44 -0400
-In-Reply-To: <20130722134313.GA18328@redhat.com>
-References: <20130722134313.GA18328@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Jul 2013 11:02:50 -0400
+Date: Mon, 22 Jul 2013 12:02:42 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Oliver Yang <yangoliver@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH] Fix build failures of python/perf.so.
+Message-ID: <20130722150242.GB2157@ghostprotocols.net>
+References: <1374493559-11139-1-git-send-email-yangoliver@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374493559-11139-1-git-send-email-yangoliver@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 15:43 +0200, Oleg Nesterov wrote:
-> Hello.
-> 
-> Only slightly tested so far. I'll try to test more and report
-> the results.
-> 
-> Meanwhile it would be nice if you can take a look and review.
-> 
-> 
-> This series kills tracing_open_generic_tc/trace_cpu/etc.
-> 
-> trace_array_get(inode->i_private) is mostly fine, we do not
-> dereference this pointer untill trace_array_get() succeeds.
-> But trace_array_get(tc->tr) is wrong by the same reason why
-> tracing_open_generic_file/etc are wrong, see 1/7.
-> 
-> And not only trace_cpu is buggy, we can simplify the code if
-> we kill this member.
-> 
+Em Mon, Jul 22, 2013 at 07:45:59PM +0800, Oliver Yang escreveu:
+> If gcc and python are not under the standard path, it could cause
+> the build failure of perf.so.
 
-Oleg,
+How can just adding the prefix to the compiler like that fix something?
 
-So far I like the patch set. I just want to get Al's OK before we do a
-hack with an inode structure item.
+Looking at the references to CROSS_COMPILE in tools/perf/Makefile:
 
-Thanks!
+-----------------------------------
 
--- Steve
+# Define CROSS_COMPILE as prefix name of compiler if you want
+# cross-builds.
 
+<SNIP>
 
+CC = $(CROSS_COMPILE)gcc
+AR = $(CROSS_COMPILE)ar
+
+-----------------------------------
+
+Can you provide the make command line you're using that makes it work
+for you with this patch?
+
+Thanks,
+
+- Arnaldo
+ 
+> Signed-off-by: Oliver Yang <yangoliver@gmail.com>
+> ---
+>  tools/perf/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 641fccd..9f88f6f 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -151,7 +151,7 @@ PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
+>  PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py $(LIBTRACEEVENT) $(LIBLK)
+>  
+>  $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+> -	$(QUIET_GEN)CFLAGS='$(CFLAGS)' $(PYTHON_WORD) util/setup.py \
+> +	$(QUIET_GEN)CFLAGS='$(CROSS_COMPILE)' '$(CFLAGS)' $(PYTHON_WORD) util/setup.py \
+>  	  --quiet build_ext; \
+>  	mkdir -p $(OUTPUT)python && \
+>  	cp $(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/
+> -- 
+> 1.8.1.2
