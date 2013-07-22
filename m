@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab3GVI62 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:58:28 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:24966 "EHLO multi.imgtec.com"
+	id S932147Ab3GVI66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:58:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18678 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756678Ab3GVI60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:58:26 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, <linux-metag@vger.kernel.org>
-Subject: [PATCH] MAINTAINERS: add linux-metag mailing list
-Date: Mon, 22 Jul 2013 09:57:40 +0100
-Message-ID: <1374483460-4236-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_07_22_09_58_23
+	id S932107Ab3GVI64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 04:58:56 -0400
+Date: Mon, 22 Jul 2013 17:58:52 +0900 (JST)
+Message-Id: <20130722.175852.1830570446481516308.yamato@redhat.com>
+To: fengguang.wu@intel.com
+Cc: eduardo.valentin@ti.com, rui.zhang@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [thermal_init] kernel BUG at net/netlink/genetlink.c:145!
+From: Masatake YAMATO <yamato@redhat.com>
+In-Reply-To: <20130722083145.GB19067@localhost>
+References: <20130722083145.GB19067@localhost>
+Organization: Red Hat Japan, Inc.
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new linux-metag@vger.kernel.org mailing list to METAG
-ARCHITECTURE entry in MAINTAINERS.
+> Hi Eduardo,
+> 
+> I got the below dmesg and the first bad commit says that
+> thermal_init() is trying to register a too long group name.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: linux-metag@vger.kernel.org
----
- MAINTAINERS | 1 +
- 1 file changed, 1 insertion(+)
+It may be related to my mistake.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index bf61e04..a195098 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5395,6 +5395,7 @@ F:	drivers/watchdog/mena21_wdt.c
- 
- METAG ARCHITECTURE
- M:	James Hogan <james.hogan@imgtec.com>
-+L:	linux-metag@vger.kernel.org
- S:	Supported
- F:	arch/metag/
- F:	Documentation/metag/
--- 
-1.8.1.2
+    http://lists.openwall.net/netdev/2013/03/20/133
+    http://lists.openwall.net/netdev/2013/03/21/79
 
-
+Masatake YAMATO
