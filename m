@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3GVNwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:52:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:65116 "EHLO mga03.intel.com"
+	id S1755749Ab3GVNxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:53:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52675 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab3GVNwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:52:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,719,1367996400"; 
-   d="scan'208";a="335012176"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, eranian@google.com
-Subject: [PATCH 2/2] perf, x86: Enable PEBS mode automatically for mem-{loads,stores} v4
-Date: Mon, 22 Jul 2013 06:52:18 -0700
-Message-Id: <1374501138-13496-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
+	id S1753208Ab3GVNxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 09:53:08 -0400
+Date: Mon, 22 Jul 2013 15:53:02 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
+Subject: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and
+ text_poke_smp_batch
+In-Reply-To: <20130722102148.GB1148@gmail.com>
+Message-ID: <alpine.LNX.2.00.1307221545080.23128@pobox.suse.cz>
+References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522> <20130718114753.26675.18714.stgit@mhiramat-M0-7522> <20130722074339.GA25976@gmail.com> <20130722082104.GA26823@gmail.com> <51ECEF8D.60109@hitachi.com> <20130722100158.GB908@gmail.com>
+ <51ED053C.1070105@hitachi.com> <20130722102148.GB1148@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Mon, 22 Jul 2013, Ingo Molnar wrote:
 
-With the earlier patches to automatically try cpu// and add
-a precise sys attribute, we can now enable PEBS for the mem-loads,
-mem-stores events everywhere.
+> > >>>> Hm, it does not build with the attached config:
+> > >>>>
+> > >>>> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
+> > >>>> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
+> > >>>> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
+> > >>>> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
+> > >>>
+> > >>> 32-bit appears to be the key pattern.
+> > >>
+> > >> Ingo, please make sure your x86/jumplabel tree picked all of my patches.
+> > >> This 3/3 strongly depends on the previous 1/3 and 2/3.
+> > >> Without it, kprobes/opt.c can not be build because it still uses the
+> > >> text_poke_params data structure which 3/3 removes.
+> > > 
+> > > Yes I know, and it was on top of -tip which already had these included:
+> > > 
+> > >  51b2c07b2226 x86: Make jump_label use int3-based patching
+> > >  fd4363fff3d9 x86: Introduce int3 (breakpoint)-based instruction patching
+> > > 
+> > > without these the third patch wouldn't even apply I think.
+> > 
+> > No, I meant below two patches:
+> >  kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
+> >  kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
+> > 
+> > Since the "setup_optimize_kprobe" in the error message is completely
+> > *removed* by the second one, the above error should not happen.
+> 
+> Oh, indeed - I correctly applied them but then messed up the 
+> cherry-picking, that's all.
+> 
+> So never mind, it's all fine.
 
-This allows to use
+Hi Ingo,
 
-perf record -e mem-loads ...
+x86/jumplabel branch still seems to contain only Masami's "kprobes/x86: 
+Remove unused text_poke_smp() and text_poke_smp_batch() functions", with 
+the the prerequisity patches missing, which effectively means it's broken 
+... are you planning to fix that up, please?
 
-instead of
+Thanks,
 
-perf record -e cpu/mem-loads/p ...
-
-Always use precise=2 even though it is costly pre-Haswell
-
-Cc: eranian@google.com
-v2: Different white space
-v3: Always use precise=2, as people seem to think overhead doesn't matter.
-v4: Longer lines
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index fbc9210..1871866 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -176,9 +176,9 @@ static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
- 	EVENT_EXTRA_END
- };
- 
--EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
--EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
--EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
-+EVENT_ATTR_STR(mem-loads,  mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3,precise=2");
-+EVENT_ATTR_STR(mem-loads,  mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3,precise=2");
-+EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2,precise=2");
- 
- struct attribute *nhm_events_attrs[] = {
- 	EVENT_PTR(mem_ld_nhm),
-@@ -2034,8 +2034,9 @@ static __init void intel_nehalem_quirk(void)
- 	}
- }
- 
--EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
--EVENT_ATTR_STR(mem-stores,     mem_st_hsw,     "event=0xd0,umask=0x82")
-+EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,
-+		"event=0xcd,umask=0x1,ldlat=3,precise=2");
-+EVENT_ATTR_STR(mem-stores,     mem_st_hsw,  "event=0xd0,umask=0x82,precise=2")
- 
- static struct attribute *hsw_events_attrs[] = {
- 	EVENT_PTR(mem_ld_hsw),
 -- 
-1.8.3.1
-
+Jiri Kosina
+SUSE Labs
