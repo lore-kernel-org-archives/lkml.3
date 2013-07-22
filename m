@@ -1,30 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab3GVURO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:17:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33883 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab3GVURN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:17:13 -0400
-Date: Mon, 22 Jul 2013 13:17:10 -0700 (PDT)
-Message-Id: <20130722.131710.1555341155426413256.davem@davemloft.net>
-To: william.manley@youview.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: IGMP Unsolicited Report Interval too long for IGMPv3?
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51ED0E61.30106@youview.com>
-References: <51ED0E61.30106@youview.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1757256Ab3GVUVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:21:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14930 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756932Ab3GVUVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 16:21:15 -0400
+Message-ID: <51ED9433.60707@redhat.com>
+Date: Mon, 22 Jul 2013 16:21:07 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org> <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 22 Jul 2013 13:17:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/19/2013 04:55 PM, Johannes Weiner wrote:
 
-Please use netdev@vger.kernel.org for networking issues.
+> @@ -1984,7 +1992,8 @@ this_zone_full:
+>   		goto zonelist_scan;
+>   	}
+>
+> -	if (page)
+> +	if (page) {
+> +		atomic_sub(1U << order, &zone->alloc_batch);
+>   		/*
+>   		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+>   		 * necessary to allocate the page. The expectation is
 
-Thank you.
+Could this be moved into the slow path in buffered_rmqueue and
+rmqueue_bulk, or would the effect of ignoring the pcp buffers be
+too detrimental to keeping the balance between zones?
+
+It would be kind of nice to not have this atomic operation on every
+page allocation...
+
+As a side benefit, higher-order buffered_rmqueue and rmqueue_bulk
+both happen under the zone->lock, so moving this accounting down
+to that layer might allow you to get rid of the atomics alltogether.
+
+I like the overall approach though. This is something Linux has needed
+for a long time, and could be extremely useful to automatic NUMA
+balancing as well...
+
+-- 
+All rights reversed
