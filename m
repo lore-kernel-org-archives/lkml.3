@@ -1,137 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757056Ab3GVIi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:38:27 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58574 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756936Ab3GVIhG (ORCPT
+	id S1757121Ab3GVIil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:38:41 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51380 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757068Ab3GVIij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:37:06 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-ec-51ecef2e924a
-Date: Mon, 22 Jul 2013 08:37:02 +0000 (GMT)
-From: NAVEEN KRISHNA CHATRADHI <ch.naveen@samsung.com>
-Subject: Re: Re: [PATCH] of: provide of_platform_unpopulate()
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Roger Quadros <rogerq@ti.com>,
-        George Cherian <george.cherian@ti.com>, Felipe Balbi <balbi@ti.com>
-Reply-to: ch.naveen@samsung.com
-MIME-version: 1.0
-X-MTR: 20130722083454010@ch.naveen
-Msgkey: 20130722083454010@ch.naveen
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130722083454010@ch.naveen
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <23795036.212591374482218972.JavaMail.weblogic@epml23>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSrav3/k2gwfLlQhaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj+JEzzAVHhCvmvb/N0sDYINzFyMkhJKAi8XfHdFYQW0LAROLp
-	jG9sELaYxIV764FsLqCapYwSzUu62GGKDi2ZxA6RmM8osXPGIbBuFgFViasvF4MVsQmYS7w7
-	8QMsLixgK3H3wA0WEFsEKD5j6iRmkGZmgY2sEn8b25kgzpCXmDGxE6yIV0BQ4uTMJ0A2B9A2
-	JYmeO4YQYWWJy/e3MUIcISexZOplJgibV2JG+1MWmPi0r2uYIWxpifOzNjDCfLP4+2OoOL/E
-	sds7mCDG80o8uR8MM2b35i9QzwtITD1zkBGiRF1idaMgRJhPYs3CtywwU3adWs4M03p/y1yw
-	a5gFFCWmdD9kh7ANJI4smsOK7ileASeJs2cLJzAqz0KSmYWkexaSbmQ1CxhZVjGKphYkFxQn
-	pRcZ6xUn5haX5qXrJefnbmIEJoXT/57172C8e8D6EGMyMEImMkuJJucDk0peSbyhsZmRhamJ
-	qbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhiXVS9s7fSvao21tPik
-	0e37w8axkEdQcceHN6ei9OolxV9v4J8uzHDi0uYzSxmeHHyVdG/llpt7TXoPWS7cfCriDNOr
-	pXMyz+33qjL4s1J477EggbAg3yPrFFfLhgRomVRfN+/QLoxflFMYObfBYyZjjvXe11tqFimy
-	PLXpls6qiNNisFtXkqjEUpyRaKjFXFScCABYhVzwIAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/t6bp6798EGrxawGlxedccNgdGj8+b
-	5AIYo9JsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
-	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaINzY30jAz0TI30DE1jrQwNDIxMgWoS0jKO
-	HznDXHBEuGLe+9ssDYwNwl2MnBxCAioSf3dMZwWxJQRMJA4tmcQOYYtJXLi3nq2LkQuoZj6j
-	xM4Zh8CKWARUJa6+XAxWxCZgLvHuxA+wuLCArcTdAzdYQGwRoPiMqZOYQZqZBTaySvxtbGeC
-	2CYvMWNiJ1gRr4CgxMmZT4BsDqBtShI9dwwhwsoSl+9vY4Q4Qk5iydTLTBA2r8SM9qcsMPFp
-	X9cwQ9jSEudnbWCEOXrx98dQcX6JY7d3MEGM55V4cj8YZszuzV/YIGwBialnDjJClKhLrG4U
-	hAjzSaxZ+JYFZsquU8uZYVrvb5kLdg2zgKLElO6H7BC2gcSRRXNY0T3FK+AkcfZs4QRGuVlI
-	MrOQdM9C0o2sZgEjyypG0dSC5ILipPQKY73ixNzi0rx0veT83E2M4NT0bPEOxv/nrQ8xCnAw
-	KvHw3gh6EyjEmlhWXJl7iFGCg1lJhNdzFVCINyWxsiq1KD++qDQntfgQYzIw+iYyS4km5wPT
-	Zl5JvKGxibmpsamFgaG5uRlpwkrivM9arQOFBNITS1KzU1MLUotgtjBxcEo1MDpte+qXFv3Y
-	0bEp6JjXq5bgzCeNMvwM85V7xU5Lqi955vE4ev/8t+yH98sfWcXTGScVOeVVxoJ73qvd+I9Z
-	/Xz1dcvE6QLr7sV2uoZ7XDR4puAepqY308Z53f6f1kZJ9rO8eRZO2TNl66N0if0hhjGTfn04
-	wLSUJSv9lu2y+dtn36k48o/7MIsSS3FGoqEWc1FxIgDArFIKkQMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Mon, 22 Jul 2013 04:38:39 -0400
+Message-ID: <51ECEF8D.60109@hitachi.com>
+Date: Mon, 22 Jul 2013 17:38:37 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
+Subject: Re: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and
+ text_poke_smp_batch
+References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522> <20130718114753.26675.18714.stgit@mhiramat-M0-7522> <20130722074339.GA25976@gmail.com> <20130722082104.GA26823@gmail.com>
+In-Reply-To: <20130722082104.GA26823@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6M8cXEl008533
 
-Hello Sebastian,
-
-------- Original Message -------
-Sender : Sebastian Andrzej Siewior<bigeasy@linutronix.de> 
-Date   : Jul 22, 2013 13:55 (GMT+05:30)
-Title  : Re: [PATCH] of: provide of_platform_unpopulate()
-
-On 07/20/2013 07:42 AM, NAVEEN KRISHNA CHATRADHI wrote:
-> Hello Sebastian,
-
-Hello Naveen,
-
+(2013/07/22 17:21), Ingo Molnar wrote:
 > 
-> I just did one more testing.
+> * Ingo Molnar <mingo@kernel.org> wrote:
 > 
-> In case of iio/adc/exynos_adc.c there is a bug in the remove path.
-> If I fix the bug in the driver, with below patch
+>>
+>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>
+>>> Since introducing the text_poke_bp for all text_poke_smp*
+>>> callers, text_poke_smp* are now unused. This basically
+>>> reverts 3d55cc8a, 7deb18dc and related commits.
+>>>
+>>> This also fixes a Kconfig dependency issue on STOP_MACHINE
+>>> in the case of CONFIG_SMP && !CONFIG_MODULE_UNLOAD.
+>>>
+>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>> ---
+>>>  arch/x86/Kconfig                   |    5 --
+>>>  arch/x86/include/asm/alternative.h |   11 ----
+>>>  arch/x86/kernel/alternative.c      |   98 +-----------------------------------
+>>>  3 files changed, 2 insertions(+), 112 deletions(-)
+>>
+>> Hm, it does not build with the attached config:
+>>
+>> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
+>> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
+>> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
+>> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
 > 
-> --- a/drivers/iio/adc/exynos_adc.c
-> +++ b/drivers/iio/adc/exynos_adc.c
-> @@ -375,14 +375,14 @@ static int exynos_adc_remove(struct platform_device *pdev)
->         struct iio_dev *indio_dev = platform_get_drvdata(pdev);
->         struct exynos_adc *info = iio_priv(indio_dev);
-> 
-> -       device_for_each_child(&pdev->dev, NULL,
-> -                               exynos_adc_remove_devices);
->         regulator_disable(info->vdd);
->         clk_disable_unprepare(info->clk);
->         writel(0, info->enable_reg);
->         iio_device_unregister(indio_dev);
->         free_irq(info->irq, info);
->         iio_device_free(indio_dev);
-> +       device_for_each_child(&pdev->dev, NULL,
-> +                               exynos_adc_remove_devices);
-> 
-> Even without your fix, I could configure it as a module and the rmmod, insmod are working fine. (no crash)
+> 32-bit appears to be the key pattern.
 
-I have no idea why you moved it. I haven't found any .dts with this
-  regulator_disable(info->vdd);
-has to happen before we free and remove the devices.
-The dts part is not upstreamed yet.
+Ingo, please make sure your x86/jumplabel tree picked all of my patches.
+This 3/3 strongly depends on the previous 1/3 and 2/3.
+Without it, kprobes/opt.c can not be build because it still uses the
+text_poke_params data structure which 3/3 removes.
 
-binding but from the binding document I would assume that you do not
-have any memory resources and therefore you don't see that crash.
-Yes, my devices under ADC are 3rd party thermistors and they don't have memory resources.
-May be your explanation seems right.
+Thank you,
 
-Thanks,
-Naveen
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-> Regards,
-> Naveen
 
-Sebastian
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
