@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3GVXzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 19:55:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32179 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253Ab3GVXzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 19:55:22 -0400
-Date: Mon, 22 Jul 2013 19:55:14 -0400
-From: Dave Jones <davej@redhat.com>
-To: trinity@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Trinity v1.2
-Message-ID: <20130722235514.GA28463@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, trinity@vger.kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1753193Ab3GVX4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 19:56:04 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:53299 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3GVXz7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 19:55:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130723010250.5a3465ec@xenia.leun.net>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	<1367884221-20462-14-git-send-email-ccross@android.com>
+	<20130723010250.5a3465ec@xenia.leun.net>
+Date: Mon, 22 Jul 2013 16:55:58 -0700
+X-Google-Sender-Auth: 6Pa_-U6vkrIfbBlNCx_ewEec598
+Message-ID: <CAMbhsRQv+W897_5qGuNJD47jQ9ozN6KxeCa6UJAvZpqVuBpQ4w@mail.gmail.com>
+Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
+ v3 13/16] futex: use freezable blocking call)
+From: Colin Cross <ccross@android.com>
+To: Michael Leun <lkml20130126@newton.leun.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: multipart/mixed; boundary=047d7b3a7f8004216704e2226b54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's been six months since I last did a point release of trinity.
-In that time, a lot has changed[*], supporting new syscalls, new options,
-and fixing countless dumb bugs.
+--047d7b3a7f8004216704e2226b54
+Content-Type: text/plain; charset=ISO-8859-1
 
-All that time of course, trinity has continued to find new kernel bugs.
-It actually got to be too much work to track at one point.
+On Mon, Jul 22, 2013 at 4:02 PM, Michael Leun
+<lkml20130126@newton.leun.net> wrote:
+> On Mon,  6 May 2013 16:50:18 -0700
+> Colin Cross <ccross@android.com> wrote:
+>
+>> Avoid waking up every thread sleeping in a futex_wait call during
+> [...]
+>
+> With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
+> displaying 0% of saving image to disk.
+>
+> echo "1" >/sys/power/state still works.
+>
+> Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4, reverting
+> that from 3.11-rc2 makes s2disk working again.
+>
 
-There's a bunch of new features since 1.1, including preliminary
-support for fuzzing ioctl() thanks to Tommi Rantala, and the beginning
-of some interesting BPF fuzzing from Dan Borkmann, along with many
-improvements to existing syscall fuzzers. (Special props to Vince Weaver
-for his work on perf_event_open).
+I think the expanded use of the freezable_* helpers is exposing an
+existing bug in hibernation.  The SNAPSHOT_FREEZE ioctl calls
+freeze_processes(), which sets the global system_freezing_cnt and
+pm_freezing.  try_to_freeze_tasks then sends every process except
+current a signal which causes them all to end up in the refrigerator.
+The current task then returns back to userspace and continues its work
+to suspend to disk.  If that task ever hits a call to try_to_freeze()
+in the kernel, it will see system_freezing_cnt and pm_freezing=true
+and freeze, and suspend to disk will hang forever.  It could hit
+try_to_freeze() because of a signal delivered to the task, or from
+calling any syscall that uses a freezable_* helper like the one I
+added to sys_futex.
 
-You can find the tarball and/or git instructions at
-http://codemonkey.org.uk/projects/trinity/
+I think the right solution is to add a flag to the freezing task that
+marks it unfreezable.  I  think PF_NOFREEZE would work, although it is
+normally used on kernel threads, can you see if the attached patch
+helps?
 
-My thanks to everyone else who contributed since the last release.
-Being a sucker for stats, it's been fun to watch the graphs at
-https://www.ohloh.net/p/7245 steadily increasing. Hope to see these
-trends continue.
+--047d7b3a7f8004216704e2226b54
+Content-Type: application/octet-stream; 
+	name="0001-power-set-PF_NOFREEZE-flag-on-SNAPSHOT_FREEZE-task.patch"
+Content-Disposition: attachment; 
+	filename="0001-power-set-PF_NOFREEZE-flag-on-SNAPSHOT_FREEZE-task.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hjgc1d5z0
 
-	Dave
-
-[*]  581 files changed, 17782 insertions(+), 10253 deletions(-)
-     Practically a rewrite given there are only 21k LOC in the project :)
-
+RnJvbSAwZjIyZjJiMzU3YjA2MjA4ZmM3YzBiODJjZTNmMDkyOWQwMDg3N2NhIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBDb2xpbiBDcm9zcyA8Y2Nyb3NzQGFuZHJvaWQuY29tPgpEYXRl
+OiBNb24sIDIyIEp1bCAyMDEzIDE2OjUzOjE1IC0wNzAwClN1YmplY3Q6IFtQQVRDSF0gcG93ZXI6
+IHNldCBQRl9OT0ZSRUVaRSBmbGFnIG9uIFNOQVBTSE9UX0ZSRUVaRSB0YXNrCgpUaGUgdGFzayB0
+aGF0IGNhbGxzIHRoZSBTTkFQU0hPVF9GUkVFWkUgaW9jdGwgbmVlZHMgdG8gcmV0dXJuIGJhY2sK
+dG8gdXNlcnNwYWNlIGFuZCBjb250aW51ZSBwcmVwYXJpbmcgYSBzdXNwZW5kLXRvLWRpc2sgaW1h
+Z2UuIFNldAp0aGUgUEZfTk9GUkVFWkUgZmxhZyBvbiBpdCBzbyB0aGF0IGl0IGRvZXNuJ3QgYWNj
+aWRlbnRhbGx5IGZyZWV6ZQppZiBpdCBjb21lcyBhY3Jvc3MgYSBjYWxsIHRvIHRyeV90b19mcmVl
+emUoKS4KClJlcG9ydGVkLWJ5OiBNaWNoYWVsIExldW4gPGxrbWwyMDEzMDEyNkBuZXd0b24ubGV1
+bi5uZXQ+ClNpZ25lZC1vZmYtYnk6IENvbGluIENyb3NzIDxjY3Jvc3NAYW5kcm9pZC5jb20+Ci0t
+LQoga2VybmVsL3Bvd2VyL3VzZXIuYyB8IDIgKysKIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlv
+bnMoKykKCmRpZmYgLS1naXQgYS9rZXJuZWwvcG93ZXIvdXNlci5jIGIva2VybmVsL3Bvd2VyL3Vz
+ZXIuYwppbmRleCA0ZWQ4MWU3Li4xN2Y5YzIwIDEwMDY0NAotLS0gYS9rZXJuZWwvcG93ZXIvdXNl
+ci5jCisrKyBiL2tlcm5lbC9wb3dlci91c2VyLmMKQEAgLTIxOSw2ICsyMTksNyBAQCBzdGF0aWMg
+bG9uZyBzbmFwc2hvdF9pb2N0bChzdHJ1Y3QgZmlsZSAqZmlscCwgdW5zaWduZWQgaW50IGNtZCwK
+IAkJc3lzX3N5bmMoKTsKIAkJcHJpbnRrKCJkb25lLlxuIik7CiAKKwkJY3VycmVudC0+ZmxhZ3Mg
+fD0gUEZfTk9GUkVFWkU7CiAJCWVycm9yID0gZnJlZXplX3Byb2Nlc3NlcygpOwogCQlpZiAoIWVy
+cm9yKQogCQkJZGF0YS0+ZnJvemVuID0gMTsKQEAgLTIyOSw2ICsyMzAsNyBAQCBzdGF0aWMgbG9u
+ZyBzbmFwc2hvdF9pb2N0bChzdHJ1Y3QgZmlsZSAqZmlscCwgdW5zaWduZWQgaW50IGNtZCwKIAkJ
+CWJyZWFrOwogCQlwbV9yZXN0b3JlX2dmcF9tYXNrKCk7CiAJCXRoYXdfcHJvY2Vzc2VzKCk7CisJ
+CWN1cnJlbnQtPmZsYWdzICY9IH5QRl9OT0ZSRUVaRTsKIAkJZGF0YS0+ZnJvemVuID0gMDsKIAkJ
+YnJlYWs7CiAKLS0gCjEuOC4zCgo=
+--047d7b3a7f8004216704e2226b54--
