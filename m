@@ -1,200 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab3GVSOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:14:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41802 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932618Ab3GVSKQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932663Ab3GVSKQ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 22 Jul 2013 14:10:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41794 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab3GVSKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 14:10:14 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: balbi@ti.com, george.cherian@ti.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 03/16] usb: musb: dsps: remove the hardcoded phy pieces
-Date: Mon, 22 Jul 2013 20:09:54 +0200
-Message-Id: <1374516607-2705-4-git-send-email-bigeasy@linutronix.de>
+Cc: balbi@ti.com, george.cherian@ti.com
+Subject: am33x: multiple instances and dma support, v2
+Date: Mon, 22 Jul 2013 20:09:51 +0200
+Message-Id: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dsps uses a nop driver which is added in dsps itself and does the PHY
-on/off calls within dsps. Since those calls are now moved the nop driver
-itself, we can now request the phy proper phy and remove those calls.
-Currently only the first musb interface is used so we only add one phy
-node for now.
+Hello,
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/usb/musb/musb_dsps.c | 97 +-------------------------------------------
- 1 file changed, 1 insertion(+), 96 deletions(-)
+this series contains support for the two available MUSB instances on
+AM335x and DMA support. I added dma support at the end since it depends on
+the rework to support multiple instances.
+Patch two "still" extends the phy-nop driver since I have to dump it
+somewhere. I have no problems to replace it with George Cherian PHY driver
+which was posted earlier. Infact I will to try to review it and integrate
+it into my series if it fits.
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 603ea74..ab723fa 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -123,49 +123,8 @@ struct dsps_glue {
- 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
- 	struct timer_list timer[2];	/* otg_workaround timer */
- 	unsigned long last_timer[2];    /* last timer data for each instance */
--	u32 __iomem *usb_ctrl[2];
- };
- 
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_1	0x44e10628
--
--static const resource_size_t dsps_control_module_phys[] = {
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_0,
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_1,
--};
--
--#define USBPHY_CM_PWRDN		(1 << 0)
--#define USBPHY_OTG_PWRDN	(1 << 1)
--#define USBPHY_OTGVDET_EN	(1 << 19)
--#define USBPHY_OTGSESSEND_EN	(1 << 20)
--
--/**
-- * musb_dsps_phy_control - phy on/off
-- * @glue: struct dsps_glue *
-- * @id: musb instance
-- * @on: flag for phy to be switched on or off
-- *
-- * This is to enable the PHY using usb_ctrl register in system control
-- * module space.
-- *
-- * XXX: This function will be removed once we have a seperate driver for
-- * control module
-- */
--static void musb_dsps_phy_control(struct dsps_glue *glue, u8 id, u8 on)
--{
--	u32 usbphycfg;
--
--	usbphycfg = readl(glue->usb_ctrl[id]);
--
--	if (on) {
--		usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
--		usbphycfg |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
--	} else {
--		usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
--	}
--
--	writel(usbphycfg, glue->usb_ctrl[id]);
--}
- /**
-  * dsps_musb_enable - enable interrupts
-  */
-@@ -416,8 +375,7 @@ static int dsps_musb_init(struct musb *musb)
- 	musb->mregs += wrp->musb_core_offset;
- 
- 	/* NOP driver needs change if supporting dual instance */
--	usb_nop_xceiv_register();
--	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-+	musb->xceiv = devm_usb_get_phy_by_phandle(glue->dev, "phys", 0);
- 	if (IS_ERR_OR_NULL(musb->xceiv))
- 		return -EPROBE_DEFER;
- 
-@@ -435,9 +393,6 @@ static int dsps_musb_init(struct musb *musb)
- 	/* Reset the musb */
- 	dsps_writel(reg_base, wrp->control, (1 << wrp->reset));
- 
--	/* Start the on-chip PHY and its PLL. */
--	musb_dsps_phy_control(glue, pdev->id, 1);
--
- 	musb->isr = dsps_interrupt;
- 
- 	/* reset the otgdisable bit, needed for host mode to work */
-@@ -450,8 +405,6 @@ static int dsps_musb_init(struct musb *musb)
- 
- 	return 0;
- err0:
--	usb_put_phy(musb->xceiv);
--	usb_nop_xceiv_unregister();
- 	return status;
- }
- 
-@@ -463,14 +416,7 @@ static int dsps_musb_exit(struct musb *musb)
- 
- 	del_timer_sync(&glue->timer[pdev->id]);
- 
--	/* Shutdown the on-chip PHY and its PLL. */
--	musb_dsps_phy_control(glue, pdev->id, 0);
- 	usb_phy_shutdown(musb->xceiv);
--
--	/* NOP driver needs change if supporting dual instance */
--	usb_put_phy(musb->xceiv);
--	usb_nop_xceiv_unregister();
--
- 	return 0;
- }
- 
-@@ -499,16 +445,6 @@ static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
- 	char res_name[11];
- 	int ret;
- 
--	resources[0].start = dsps_control_module_phys[id];
--	resources[0].end = resources[0].start + SZ_4 - 1;
--	resources[0].flags = IORESOURCE_MEM;
--
--	glue->usb_ctrl[id] = devm_ioremap_resource(&pdev->dev, resources);
--	if (IS_ERR(glue->usb_ctrl[id])) {
--		ret = PTR_ERR(glue->usb_ctrl[id]);
--		goto err0;
--	}
--
- 	/* first resource is for usbss, so start index from 1 */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, id + 1);
- 	if (!res) {
-@@ -692,36 +628,6 @@ static int dsps_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM_SLEEP
--static int dsps_suspend(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev->parent);
--	struct dsps_glue *glue = platform_get_drvdata(pdev);
--	const struct dsps_musb_wrapper *wrp = glue->wrp;
--	int i;
--
--	for (i = 0; i < wrp->instances; i++)
--		musb_dsps_phy_control(glue, i, 0);
--
--	return 0;
--}
--
--static int dsps_resume(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev->parent);
--	struct dsps_glue *glue = platform_get_drvdata(pdev);
--	const struct dsps_musb_wrapper *wrp = glue->wrp;
--	int i;
--
--	for (i = 0; i < wrp->instances; i++)
--		musb_dsps_phy_control(glue, i, 1);
--
--	return 0;
--}
--#endif
--
--static SIMPLE_DEV_PM_OPS(dsps_pm_ops, dsps_suspend, dsps_resume);
--
- static const struct dsps_musb_wrapper ti81xx_driver_data = {
- 	.revision		= 0x00,
- 	.control		= 0x14,
-@@ -776,7 +682,6 @@ static struct platform_driver dsps_usbss_driver = {
- 	.remove         = dsps_remove,
- 	.driver         = {
- 		.name   = "musb-dsps",
--		.pm	= &dsps_pm_ops,
- 		.of_match_table	= of_match_ptr(musb_dsps_of_match),
- 	},
- 	.id_table	= musb_dsps_id_table,
--- 
-1.8.3.2
+The whole series is also available at
+  git://git.breakpoint.cc/bigeasy/linux.git am335x_usb
+
+Sebastian
 
