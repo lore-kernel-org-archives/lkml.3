@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab3GVXmN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 19:42:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8346 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab3GVXmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 19:42:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,722,1367996400"; 
-   d="scan'208";a="369385915"
-From: Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: rjw@sisk.pl, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>
-Subject: [PATCH v1 1/1] ACPI: Allow platform device creation without any IO resource
-Date: Mon, 22 Jul 2013 16:51:20 -0700
-Message-Id: <91404e863a8ce7bc9a757a085dea0c2a8a9b7986.1374536906.git.sathyanarayanan.kuppuswamy@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753038Ab3GVXpt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 19:45:49 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:38929 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3GVXps (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 19:45:48 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Stephen Warren <swarren@nvidia.com>,
+        xulinuxkernel <xulinuxkernel@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: fix a memleak when freeing maps
+Date: Tue, 23 Jul 2013 01:45:39 +0200
+Message-Id: <1374536739-18966-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, ACPI platform device creation is aborted when there
-are no valid IO resources. This approach will not work if the
-device has only GPIO as its resource or some custom resources.
-So this patch removes zero resource check and allows platform
-device creation even without any valid IO resource.
+We forgot to free the node itself when free:ing a map.
 
-Signed-off-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
+Reported-by: xulinuxkernel <xulinuxkernel@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/acpi/acpi_platform.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/pinctrl/core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-index fafec5d..32136b8 100644
---- a/drivers/acpi/acpi_platform.c
-+++ b/drivers/acpi/acpi_platform.c
-@@ -52,7 +52,7 @@ int acpi_create_platform_device(struct acpi_device *adev,
- 	struct platform_device_info pdevinfo;
- 	struct resource_list_entry *rentry;
- 	struct list_head resource_list;
--	struct resource *resources;
-+	struct resource *resources = NULL;
- 	int count;
- 
- 	/* If the ACPI node already has a physical device attached, skip it. */
-@@ -61,9 +61,12 @@ int acpi_create_platform_device(struct acpi_device *adev,
- 
- 	INIT_LIST_HEAD(&resource_list);
- 	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
--	if (count <= 0)
-+	if (count < 0)
- 		return 0;
- 
-+	if (!count)
-+		goto create_dev;
-+
- 	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
- 	if (!resources) {
- 		dev_err(&adev->dev, "No memory for resources\n");
-@@ -76,6 +79,7 @@ int acpi_create_platform_device(struct acpi_device *adev,
- 
- 	acpi_dev_free_resource_list(&resource_list);
- 
-+create_dev:
- 	memset(&pdevinfo, 0, sizeof(pdevinfo));
- 	/*
- 	 * If the ACPI node has a parent and that parent has a physical device
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5b272bf..2a00239 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1193,6 +1193,7 @@ void pinctrl_unregister_map(struct pinctrl_map const *map)
+ 	list_for_each_entry(maps_node, &pinctrl_maps, node) {
+ 		if (maps_node->maps == map) {
+ 			list_del(&maps_node->node);
++			kfree(maps_node);
+ 			mutex_unlock(&pinctrl_maps_mutex);
+ 			return;
+ 		}
 -- 
-1.7.9.5
+1.8.1.4
 
