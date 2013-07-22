@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab3GVQpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:45:11 -0400
-Received: from intma.in ([199.191.58.34]:63157 "HELO intma.in"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755829Ab3GVQpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:45:09 -0400
-Date: Mon, 22 Jul 2013 12:45:05 -0400
-From: Kurt H Maier <khm@sdf.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        ksummit-2013-discuss@lists.linuxfoundation.org
-Subject: Re: Maybe it's time to shut this thread down (Was: Re: [ 00/19]
- 3.10.1-stable review)
-Message-ID: <20130722164505.GA31930@intma.in>
-References: <20130718133008.GC30405@thunk.org>
- <20130719214421.GA5161@xanatos>
+	id S1757246Ab3GVQue (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:50:34 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:62820 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755790Ab3GVQud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 12:50:33 -0400
+Message-ID: <51ED0D31.8020406@gmail.com>
+Date: Mon, 22 Jul 2013 12:45:05 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719214421.GA5161@xanatos>
+To: Peter Schiffer <pschiffe@redhat.com>
+CC: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-man <linux-man@vger.kernel.org>, benjamin@python.org
+Subject: Re: [PATCH] open(2): document O_PATH
+References: <CAKgNAkgWiANFA1Z7o2EQmKmsMzzpa1ga2ggLeX3Bo58QmjDx6g@mail.gmail.com> <20130720114017.GA2118@ZenIV.linux.org.uk> <51EAF997.2090300@gmail.com> <51ECF166.4080007@redhat.com>
+In-Reply-To: <51ECF166.4080007@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 02:44:21PM -0700, Sarah Sharp wrote:
-> On Fri, Jul 19, 2013 at 04:03:24PM -0400, Kurt H Maier wrote:
+On 07/22/13 10:46, Peter Schiffer wrote:
+> On 07/20/2013 10:56 PM, Michael Kerrisk wrote:
+>> On 07/20/13 13:40, Al Viro wrote:
+>>> On Thu, Mar 14, 2013 at 10:35:59AM +0100, Michael Kerrisk (man-pages) wrote:
+>>>> Hello Al et al,
+>>>>
+>>>> Documenting O_PATH fell by the wayside last year
+>>>> (http://thread.gmane.org/gmane.linux.man/2790) as I got distracted
+>>>> with other tasks. A recent prod or two have reminded me restart this.
+>>>> I have the following patch queued to document O_PATH.
+>>>>
+>>>> Could you please review. I've provided the O_PATH doc both as
+>>>> formatted text, for ease of reviewing, and as a patch and entire file
+>>>> (attached).
+>>>
+>>> Seems to be mostly correct; the only thing missing is that F_GETFL is also
+>>> allowed (and return value will contain O_PATH for such descriptors).  Had
+>>> been there since the very beginning...
+>>
+>> Thanks, Al. I have added that piece.
+>>
 > 
-> Come to KS!  You're more than welcome to discuss this with us there.
+> Michael,
+> 
+> there is a typo within added piece:
+
+Thanks, Peter. Applied.
+
+Cheers,
+
+Michael
+
+
+
+> diff --git a/man2/open.2 b/man2/open.2
+> index c61ea7f..ef0f664 100644
+> --- a/man2/open.2
+> +++ b/man2/open.2
+> @@ -489,7 +489,7 @@ and
+>   .IP *
+>   Retrieving open file status flags using the
+>   .BR fcntl (2)
+> -.BR F_GETFD
+> +.BR F_GETFL
+>   operation: the returned flags will include the bit
+>   .BR O_PATH .
+> 
+> 
 > 
 
-
-Thanks for the invitation, but those events don't fit into my schedule.
-I hope in my absence you'll find away to empower yourself without
-disenfranchising others or reinforcing harmful cis-gender stereotypes.
-I wish you a constructive summit!
-
-khm
