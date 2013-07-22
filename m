@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933484Ab3GVUYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:24:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52108 "EHLO
+	id S933427Ab3GVUWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:22:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52070 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933461Ab3GVUW6 (ORCPT
+	with ESMTP id S933337Ab3GVUWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:22:58 -0400
+	Mon, 22 Jul 2013 16:22:49 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Feng Tang <feng.tang@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/11] perf tests: Add broken install-* tests into tests/make
-Date: Mon, 22 Jul 2013 17:22:38 -0300
-Message-Id: <1374524559-9839-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/11] perf script: Fix named threads support
+Date: Mon, 22 Jul 2013 17:22:29 -0300
+Message-Id: <1374524559-9839-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374524559-9839-1-git-send-email-acme@infradead.org>
 References: <1374524559-9839-1-git-send-email-acme@infradead.org>
@@ -29,106 +24,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: David Ahern <dsahern@gmail.com>
 
-Adding install-* tests into tests/make. Those tests are
-broken, so commenting them out right away.
+Commit 73994dc broke named thread support in perf-script. The thread
+struct in al is the main thread for a multithreaded process. The thread
+struct used for analysis (e.g., dumping events) should be the specific
+thread for the sample.
 
-* Nothing get installed for install-man, install_doc and
-  install_html targets, they just rebuild the documentation.
-
-* I've got following error for 'install-info':
-
-  $ make -f tests/make make_install_info
-  - make_install_info: cd . && make -f Makefile DESTDIR=/tmp/tmp.Xi4mb9J1a0 install-info
-
-  $ tail -f make_install_info
-  ...
-  PERF_VERSION = 3.11.rc1.g9b3c2d
-  make[2]: *** No rule to make target `user-manual.xml', needed by `user-manual.texi'.  Stop.
-  make[1]: *** [install-info] Error 2
-
-* I've got following error for 'install-pdf':
-
-  $ make -f tests/make make_install_pdf
-  - make_install_pdf: cd . && make -f Makefile DESTDIR=/tmp/tmp.fXseECBbt1 install-pdf
-
-  $ tail -f make_install_pdf
-  ...
-  PERF_VERSION = 3.11.rc1.g9b3c2d
-  make[2]: *** No rule to make target `user-manual.xml', needed by `user-manual.pdf'.  Stop.
-  make[1]: *** [install-pdf] Error 2
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1374497014-2817-6-git-send-email-jolsa@redhat.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Feng Tang <feng.tang@intel.com>
+Link: http://lkml.kernel.org/r/1374185175-28272-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/make | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ tools/perf/builtin-script.c                            |  6 +++---
+ tools/perf/util/scripting-engines/trace-event-perl.c   | 14 ++++++++------
+ tools/perf/util/scripting-engines/trace-event-python.c |  9 +++++----
+ tools/perf/util/trace-event-scripting.c                |  3 ++-
+ tools/perf/util/trace-event.h                          |  4 +++-
+ 5 files changed, 21 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-index d3819f2..2ca0abf 100644
---- a/tools/perf/tests/make
-+++ b/tools/perf/tests/make
-@@ -29,6 +29,11 @@ make_perf_o         := perf.o
- make_util_map_o     := util/map.o
- make_install        := install
- make_install_bin    := install-bin
-+make_install_doc    := install-doc
-+make_install_man    := install-man
-+make_install_html   := install-html
-+make_install_info   := install-info
-+make_install_pdf    := install-pdf
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index ecb6979..1cad370 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -397,10 +397,10 @@ static void print_sample_bts(union perf_event *event,
  
- # all the NO_* variable combined
- make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
-@@ -60,6 +65,12 @@ run += make_perf_o
- run += make_util_map_o
- run += make_install
- run += make_install_bin
-+# FIXME 'install-*' commented out till they're fixed
-+# run += make_install_doc
-+# run += make_install_man
-+# run += make_install_html
-+# run += make_install_info
-+# run += make_install_pdf
- run += make_minimal
+ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 			  struct perf_evsel *evsel, struct machine *machine,
+-			  struct addr_location *al)
++			  struct thread *thread,
++			  struct addr_location *al __maybe_unused)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+-	struct thread *thread = al->thread;
  
- ifneq ($(call has,ctags),)
-@@ -100,6 +111,26 @@ test_make_install_O     := $(test_make_install)
- test_make_install_bin   := $(test_make_install)
- test_make_install_bin_O := $(test_make_install)
+ 	if (output[attr->type].fields == 0)
+ 		return;
+@@ -511,7 +511,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+ 		return 0;
  
-+# FIXME nothing gets installed
-+test_make_install_man    := test -f $$TMP_DEST/share/man/man1/perf.1
-+test_make_install_man_O  := $(test_make_install_man)
-+
-+# FIXME nothing gets installed
-+test_make_install_doc    := $(test_ok)
-+test_make_install_doc_O  := $(test_ok)
-+
-+# FIXME nothing gets installed
-+test_make_install_html   := $(test_ok)
-+test_make_install_html_O := $(test_ok)
-+
-+# FIXME nothing gets installed
-+test_make_install_info   := $(test_ok)
-+test_make_install_info_O := $(test_ok)
-+
-+# FIXME nothing gets installed
-+test_make_install_pdf    := $(test_ok)
-+test_make_install_pdf_O  := $(test_ok)
-+
- # Kbuild tests only
- #test_make_python_perf_so_O := test -f $$TMP/tools/perf/python/perf.so
- #test_make_perf_o_O         := test -f $$TMP/tools/perf/perf.o
+-	scripting_ops->process_event(event, sample, evsel, machine, &al);
++	scripting_ops->process_event(event, sample, evsel, machine, thread, &al);
+ 
+ 	evsel->hists.stats.total_period += sample->period;
+ 	return 0;
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index eacec85..a85e4ae 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -261,7 +261,8 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
+ 				    struct perf_sample *sample,
+ 				    struct perf_evsel *evsel,
+ 				    struct machine *machine __maybe_unused,
+-				    struct addr_location *al)
++				    struct thread *thread,
++					struct addr_location *al)
+ {
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -272,7 +273,6 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
+ 	int cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+ 	unsigned long long nsecs = sample->time;
+-	struct thread *thread = al->thread;
+ 	char *comm = thread->comm;
+ 
+ 	dSP;
+@@ -351,7 +351,8 @@ static void perl_process_event_generic(union perf_event *event,
+ 				       struct perf_sample *sample,
+ 				       struct perf_evsel *evsel,
+ 				       struct machine *machine __maybe_unused,
+-				       struct addr_location *al __maybe_unused)
++				       struct thread *thread __maybe_unused,
++					   struct addr_location *al __maybe_unused)
+ {
+ 	dSP;
+ 
+@@ -377,10 +378,11 @@ static void perl_process_event(union perf_event *event,
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct machine *machine,
+-			       struct addr_location *al)
++			       struct thread *thread,
++				   struct addr_location *al)
+ {
+-	perl_process_tracepoint(event, sample, evsel, machine, al);
+-	perl_process_event_generic(event, sample, evsel, machine, al);
++	perl_process_tracepoint(event, sample, evsel, machine, thread, al);
++	perl_process_event_generic(event, sample, evsel, machine, thread, al);
+ }
+ 
+ static void run_start_sub(void)
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index e87aa5d..cc75a3c 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -225,6 +225,7 @@ static void python_process_tracepoint(union perf_event *perf_event
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct machine *machine __maybe_unused,
++				 struct thread *thread,
+ 				 struct addr_location *al)
+ {
+ 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+@@ -238,7 +239,6 @@ static void python_process_tracepoint(union perf_event *perf_event
+ 	int cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+ 	unsigned long long nsecs = sample->time;
+-	struct thread *thread = al->thread;
+ 	char *comm = thread->comm;
+ 
+ 	t = PyTuple_New(MAX_FIELDS);
+@@ -345,12 +345,12 @@ static void python_process_general_event(union perf_event *perf_event
+ 					 struct perf_sample *sample,
+ 					 struct perf_evsel *evsel,
+ 					 struct machine *machine __maybe_unused,
++					 struct thread *thread,
+ 					 struct addr_location *al)
+ {
+ 	PyObject *handler, *retval, *t, *dict;
+ 	static char handler_name[64];
+ 	unsigned n = 0;
+-	struct thread *thread = al->thread;
+ 
+ 	/*
+ 	 * Use the MAX_FIELDS to make the function expandable, though
+@@ -404,17 +404,18 @@ static void python_process_event(union perf_event *perf_event,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct machine *machine,
++				 struct thread *thread,
+ 				 struct addr_location *al)
+ {
+ 	switch (evsel->attr.type) {
+ 	case PERF_TYPE_TRACEPOINT:
+ 		python_process_tracepoint(perf_event, sample, evsel,
+-					  machine, al);
++					  machine, thread, al);
+ 		break;
+ 	/* Reserve for future process_hw/sw/raw APIs */
+ 	default:
+ 		python_process_general_event(perf_event, sample, evsel,
+-					     machine, al);
++					     machine, thread, al);
+ 	}
+ }
+ 
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 8715a10..95199e4 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -39,7 +39,8 @@ static void process_event_unsupported(union perf_event *event __maybe_unused,
+ 				      struct perf_sample *sample __maybe_unused,
+ 				      struct perf_evsel *evsel __maybe_unused,
+ 				      struct machine *machine __maybe_unused,
+-				      struct addr_location *al __maybe_unused)
++				      struct thread *thread __maybe_unused,
++					  struct addr_location *al __maybe_unused)
+ {
+ }
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 669a64a..fafe1a4 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -9,6 +9,7 @@ struct machine;
+ struct perf_sample;
+ union perf_event;
+ struct perf_tool;
++struct thread;
+ 
+ extern struct pevent *perf_pevent;
+ 
+@@ -68,7 +69,8 @@ struct scripting_ops {
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct machine *machine,
+-			       struct addr_location *al);
++			       struct thread *thread,
++				   struct addr_location *al);
+ 	int (*generate_script) (struct pevent *pevent, const char *outfile);
+ };
+ 
 -- 
 1.8.1.4
 
