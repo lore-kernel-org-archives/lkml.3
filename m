@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab3GVQS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:18:26 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:40394 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932918Ab3GVQM2 (ORCPT
+	id S933021Ab3GVQSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:18:47 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:48457 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932893Ab3GVQMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:12:28 -0400
+	Mon, 22 Jul 2013 12:12:19 -0400
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <tao.peng@emc.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 32/48] staging/lustre/lnet: remove empty file lnet/lnet/api-errno.c
-Date: Tue, 23 Jul 2013 00:06:53 +0800
-Message-Id: <1374509230-3324-33-git-send-email-bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "John L. Hammond" <john.hammond@intel.com>,
+        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 30/48] staging/lustre/llite: call simple_setattr() from ll_md_setattr()
+Date: Tue, 23 Jul 2013 00:06:51 +0800
+Message-Id: <1374509230-3324-31-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
 References: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
@@ -21,81 +21,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peng Tao <tao.peng@emc.com>
+From: "John L. Hammond" <john.hammond@intel.com>
 
-The file is empty. We can just remove it.
+This partially reverts the change from "LU-2482 layout: introduce new
+layout for released files" by calling simple_setattr() from
+ll_md_setattr() without ATTR_SIZE set. Doing so avoids failed
+assertions in osc_page_delete(). Disable truncates on released files
+and modify sanity 229 accordingly.
 
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2335
-Lustre-change: http://review.whamcloud.com/5880
-Reviewed-by: Liang Zhen <liang.zhen@intel.com>
-Reviewed-by: Li Wei <wei.g.li@intel.com>
-Reviewed-by: Isaac Huang <he.huang@intel.com>
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3448
+Lustre-change: http://review.whamcloud.com/6643
+Signed-off-by: John L. Hammond <john.hammond@intel.com>
+Reviewed-by: jacques-Charles Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <tao.peng@emc.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lnet/lnet/Makefile    |    2 +-
- drivers/staging/lustre/lnet/lnet/api-errno.c |   39 --------------------------
- 2 files changed, 1 insertion(+), 40 deletions(-)
- delete mode 100644 drivers/staging/lustre/lnet/lnet/api-errno.c
+ drivers/staging/lustre/lustre/llite/llite_lib.c |   18 ++++++++----------
+ drivers/staging/lustre/lustre/lov/lov_io.c      |    2 +-
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/lustre/lnet/lnet/Makefile b/drivers/staging/lustre/lnet/lnet/Makefile
-index 1bd9ef7..b815fe1 100644
---- a/drivers/staging/lustre/lnet/lnet/Makefile
-+++ b/drivers/staging/lustre/lnet/lnet/Makefile
-@@ -1,6 +1,6 @@
- obj-$(CONFIG_LNET) += lnet.o
+diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
+index b9cbe95..39d519b 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_lib.c
++++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
+@@ -1282,6 +1282,13 @@ int ll_md_setattr(struct dentry *dentry, struct md_op_data *op_data,
+ 		RETURN(rc);
+ 	}
  
--lnet-y := api-errno.o api-ni.o config.o lib-me.o lib-msg.o lib-eq.o	\
-+lnet-y := api-ni.o config.o lib-me.o lib-msg.o lib-eq.o	\
- 	  lib-md.o lib-ptl.o lib-move.o module.o lo.o router.o		\
- 	  router_proc.o acceptor.o peer.o
++	ia_valid = op_data->op_attr.ia_valid;
++	/* inode size will be in ll_setattr_ost, can't do it now since dirty
++	 * cache is not cleared yet. */
++	op_data->op_attr.ia_valid &= ~(TIMES_SET_FLAGS | ATTR_SIZE);
++	rc = simple_setattr(dentry, &op_data->op_attr);
++	op_data->op_attr.ia_valid = ia_valid;
++
+ 	/* Extract epoch data if obtained. */
+ 	op_data->op_handle = md.body->handle;
+ 	op_data->op_ioepoch = md.body->ioepoch;
+@@ -1364,7 +1371,6 @@ int ll_setattr_raw(struct dentry *dentry, struct iattr *attr)
+ 	struct ll_inode_info *lli = ll_i2info(inode);
+ 	struct md_op_data *op_data = NULL;
+ 	struct md_open_data *mod = NULL;
+-	unsigned int valid = attr->ia_valid;
+ 	int rc = 0, rc1 = 0;
+ 	ENTRY;
  
-diff --git a/drivers/staging/lustre/lnet/lnet/api-errno.c b/drivers/staging/lustre/lnet/lnet/api-errno.c
-deleted file mode 100644
-index 695b272..0000000
---- a/drivers/staging/lustre/lnet/lnet/api-errno.c
-+++ /dev/null
-@@ -1,39 +0,0 @@
--/*
-- * GPL HEADER START
-- *
-- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 only,
-- * as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License version 2 for more details (a copy is included
-- * in the LICENSE file that accompanied this code).
-- *
-- * You should have received a copy of the GNU General Public License
-- * version 2 along with this program; If not, see
-- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
-- *
-- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-- * CA 95054 USA or visit www.sun.com if you need additional information or
-- * have any questions.
-- *
-- * GPL HEADER END
-- */
--/*
-- * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
-- * Use is subject to license terms.
-- */
--/*
-- * This file is part of Lustre, http://www.lustre.org/
-- * Lustre is a trademark of Sun Microsystems, Inc.
-- *
-- * lnet/lnet/api-errno.c
-- *
-- * Instantiate the string table of errors
-- */
--
--/* If you change these, you must update the number table in portals/errno.h */
+@@ -1476,13 +1482,6 @@ int ll_setattr_raw(struct dentry *dentry, struct iattr *attr)
+ 		rc = ll_setattr_ost(inode, attr);
+ 	EXIT;
+ out:
+-	if (rc == 0) {
+-		/* Update inode attribute after dirty cache is cleaned
+-		 * by truncating OST objects. */
+-		attr->ia_valid |= ATTR_FORCE;
+-		rc = simple_setattr(dentry, attr);
+-		LASSERT(rc == 0);
+-	}
+ 	if (op_data) {
+ 		if (op_data->op_ioepoch) {
+ 			rc1 = ll_setattr_done_writing(inode, op_data, mod);
+@@ -1501,8 +1500,7 @@ out:
+ 	ll_stats_ops_tally(ll_i2sbi(inode), (attr->ia_valid & ATTR_SIZE) ?
+ 			LPROC_LL_TRUNC : LPROC_LL_SETATTR, 1);
+ 
+-	attr->ia_valid = valid;
+-	RETURN(rc);
++	return rc;
+ }
+ 
+ int ll_setattr(struct dentry *de, struct iattr *attr)
+diff --git a/drivers/staging/lustre/lustre/lov/lov_io.c b/drivers/staging/lustre/lustre/lov/lov_io.c
+index e78cdb7..b316ce8 100644
+--- a/drivers/staging/lustre/lustre/lov/lov_io.c
++++ b/drivers/staging/lustre/lustre/lov/lov_io.c
+@@ -980,9 +980,9 @@ int lov_io_init_released(const struct lu_env *env, struct cl_object *obj,
+ 		LASSERTF(0, "invalid type %d\n", io->ci_type);
+ 	case CIT_MISC:
+ 	case CIT_FSYNC:
+-	case CIT_SETATTR:
+ 		result = +1;
+ 		break;
++	case CIT_SETATTR:
+ 	case CIT_READ:
+ 	case CIT_WRITE:
+ 	case CIT_FAULT:
 -- 
 1.7.9.5
 
