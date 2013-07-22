@@ -1,228 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab3GVGNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 02:13:36 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:35692 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab3GVGNd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 02:13:33 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
-        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
-Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
-        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
-        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
-        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
-        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
-        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <riel@redhat.com>,
-        <drjones@redhat.com>, <virtualization@lists.linux-foundation.org>,
-        <srivatsa.vaddagiri@gmail.com>
-Date: Mon, 22 Jul 2013 11:50:51 +0530
-Message-Id: <20130722062051.24737.52043.sendpatchset@codeblue>
-In-Reply-To: <20130722061631.24737.75508.sendpatchset@codeblue>
-References: <20130722061631.24737.75508.sendpatchset@codeblue>
-Subject: [PATCH RFC V11 18/18] kvm hypervisor: Add directed yield in vcpu block path
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072206-6102-0000-0000-000003E547D3
+	id S1756668Ab3GVGNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 02:13:46 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:32809 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756314Ab3GVGNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 02:13:43 -0400
+Date: Mon, 22 Jul 2013 01:13:39 -0500
+From: Robin Holt <holt@sgi.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Sam Ben <sam.bennn@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
+ embedded in the buddy allocator
+Message-ID: <20130722061339.GC3421@sgi.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <51E628F8.6030303@gmail.com>
+ <20130717093051.GK3421@sgi.com>
+ <CAE9FiQUnsENuMGAXgxmJq+u-NnXW4fEXR-JKww8LY_8jOfoeBA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUnsENuMGAXgxmJq+u-NnXW4fEXR-JKww8LY_8jOfoeBA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm hypervisor: Add directed yield in vcpu block path
+On Fri, Jul 19, 2013 at 04:51:49PM -0700, Yinghai Lu wrote:
+> On Wed, Jul 17, 2013 at 2:30 AM, Robin Holt <holt@sgi.com> wrote:
+> > On Wed, Jul 17, 2013 at 01:17:44PM +0800, Sam Ben wrote:
+> >> >With this patch, we did boot a 16TiB machine.  Without the patches,
+> >> >the v3.10 kernel with the same configuration took 407 seconds for
+> >> >free_all_bootmem.  With the patches and operating on 2MiB pages instead
+> >> >of 1GiB, it took 26 seconds so performance was improved.  I have no feel
+> >> >for how the 1GiB chunk size will perform.
+> >>
+> >> How to test how much time spend on free_all_bootmem?
+> >
+> > We had put a pr_emerg at the beginning and end of free_all_bootmem and
+> > then used a modified version of script which record the time in uSecs
+> > at the beginning of each line of output.
+> 
+> used two patches, found 3TiB system will take 100s before slub is ready.
+> 
+> about three portions:
+> 1. sparse vmemap buf allocation, it is with bootmem wrapper, so clear those
+> struct page area take about 30s.
+> 2. memmap_init_zone: take about 25s
+> 3. mem_init/free_all_bootmem about 30s.
+> 
+> so still wonder why 16TiB will need hours.
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+I don't know where you got the figure of hours for memory initialization.
+That is likely for a 32TiB boot and includes the entire boot, not just
+getting the memory allocator initialized.
 
-We use the improved PLE handler logic in vcpu block patch for
-scheduling rather than plain schedule, so that we can make
-intelligent decisions.
+For a 16 TiB boot:
+1) 344
+2) 1151
+3) 407
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- Changes: 
- Added stubs for missing architecture (Gleb)
+I hope that illustrates why we chose to address the memmap_init_zone first
+which had the nice side effect of also impacting the free_all_bootmem
+slowdown.
 
- arch/arm/include/asm/kvm_host.h     |    5 +++++
- arch/arm64/include/asm/kvm_host.h   |    5 +++++
- arch/ia64/include/asm/kvm_host.h    |    5 +++++
- arch/mips/include/asm/kvm_host.h    |    5 +++++
- arch/powerpc/include/asm/kvm_host.h |    5 +++++
- arch/s390/include/asm/kvm_host.h    |    5 +++++
- arch/x86/include/asm/kvm_host.h     |    2 +-
- arch/x86/kvm/x86.c                  |    8 ++++++++
- include/linux/kvm_host.h            |    2 +-
- virt/kvm/kvm_main.c                 |    6 ++++--
- 10 files changed, 44 insertions(+), 4 deletions(-)
+With these patches, those numbers are currently:
+1) 344
+2) 49
+3) 26
 
-diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-index 7d22517..94836c0 100644
---- a/arch/arm/include/asm/kvm_host.h
-+++ b/arch/arm/include/asm/kvm_host.h
-@@ -226,6 +226,11 @@ static inline int kvm_arch_dev_ioctl_check_extension(long ext)
- 	return 0;
- }
- 
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- int kvm_perf_init(void);
- int kvm_perf_teardown(void);
- 
-diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
-index 644d739..cd18913 100644
---- a/arch/arm64/include/asm/kvm_host.h
-+++ b/arch/arm64/include/asm/kvm_host.h
-@@ -186,6 +186,11 @@ int handle_exit(struct kvm_vcpu *vcpu, struct kvm_run *run,
- int kvm_perf_init(void);
- int kvm_perf_teardown(void);
- 
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- static inline void __cpu_init_hyp_mode(phys_addr_t boot_pgd_ptr,
- 				       phys_addr_t pgd_ptr,
- 				       unsigned long hyp_stack_ptr,
-diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
-index 989dd3f..999ab15 100644
---- a/arch/ia64/include/asm/kvm_host.h
-+++ b/arch/ia64/include/asm/kvm_host.h
-@@ -595,6 +595,11 @@ int kvm_emulate_halt(struct kvm_vcpu *vcpu);
- int kvm_pal_emul(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run);
- void kvm_sal_emul(struct kvm_vcpu *vcpu);
- 
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- #define __KVM_HAVE_ARCH_VM_ALLOC 1
- struct kvm *kvm_arch_alloc_vm(void);
- void kvm_arch_free_vm(struct kvm *kvm);
-diff --git a/arch/mips/include/asm/kvm_host.h b/arch/mips/include/asm/kvm_host.h
-index 4d6fa0b..2c4aae9 100644
---- a/arch/mips/include/asm/kvm_host.h
-+++ b/arch/mips/include/asm/kvm_host.h
-@@ -655,6 +655,11 @@ extern int kvm_mips_trans_mtc0(uint32_t inst, uint32_t *opc,
- 			       struct kvm_vcpu *vcpu);
- 
- /* Misc */
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- extern void mips32_SyncICache(unsigned long addr, unsigned long size);
- extern int kvm_mips_dump_stats(struct kvm_vcpu *vcpu);
- extern unsigned long kvm_mips_get_ramsize(struct kvm *kvm);
-diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-index af326cd..1aeecc0 100644
---- a/arch/powerpc/include/asm/kvm_host.h
-+++ b/arch/powerpc/include/asm/kvm_host.h
-@@ -628,4 +628,9 @@ struct kvm_vcpu_arch {
- #define __KVM_HAVE_ARCH_WQP
- #define __KVM_HAVE_CREATE_DEVICE
- 
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- #endif /* __POWERPC_KVM_HOST_H__ */
-diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-index 3238d40..d3409fa 100644
---- a/arch/s390/include/asm/kvm_host.h
-+++ b/arch/s390/include/asm/kvm_host.h
-@@ -274,6 +274,11 @@ struct kvm_arch{
- 	int css_support;
- };
- 
-+static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	schedule();
-+}
-+
- extern int sie64a(struct kvm_s390_sie_block *, u64 *);
- extern char sie_exit;
- #endif
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 1d1f711..ed06ecd 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -1053,5 +1053,5 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info);
- int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
- void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
- void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
--
-+void kvm_do_schedule(struct kvm_vcpu *vcpu);
- #endif /* _ASM_X86_KVM_HOST_H */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 640d112..ea64481 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7319,6 +7319,14 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
- 			kvm_x86_ops->interrupt_allowed(vcpu);
- }
- 
-+void kvm_do_schedule(struct kvm_vcpu *vcpu)
-+{
-+	/* We try to yield to a kicked vcpu else do a schedule */
-+	if (kvm_vcpu_on_spin(vcpu) <= 0)
-+		schedule();
-+}
-+EXPORT_SYMBOL_GPL(kvm_do_schedule);
-+
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a63d83e..fab21ec 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -568,7 +568,7 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
- void kvm_vcpu_block(struct kvm_vcpu *vcpu);
- void kvm_vcpu_kick(struct kvm_vcpu *vcpu);
- bool kvm_vcpu_yield_to(struct kvm_vcpu *target);
--void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
-+bool kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
- void kvm_resched(struct kvm_vcpu *vcpu);
- void kvm_load_guest_fpu(struct kvm_vcpu *vcpu);
- void kvm_put_guest_fpu(struct kvm_vcpu *vcpu);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 1580dd4..72c49f3 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1685,7 +1685,7 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
- 		if (signal_pending(current))
- 			break;
- 
--		schedule();
-+		kvm_do_schedule(vcpu);
- 	}
- 
- 	finish_wait(&vcpu->wq, &wait);
-@@ -1786,7 +1786,7 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
- }
- #endif
- 
--void kvm_vcpu_on_spin(struct kvm_vcpu *me)
-+bool kvm_vcpu_on_spin(struct kvm_vcpu *me)
- {
- 	struct kvm *kvm = me->kvm;
- 	struct kvm_vcpu *vcpu;
-@@ -1835,6 +1835,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 
- 	/* Ensure vcpu is not eligible during next spinloop */
- 	kvm_vcpu_set_dy_eligible(me, false);
-+
-+	return yielded;
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
- 
+> also your patches looks like only address 2 and 3.
 
+Right, but I thought that was the normal way to do things.  Address
+one thing at a time and work toward a better kernel.  I don't see a
+relationship between the work we are doing here and the sparse vmemmap
+buffer allocation.  Have I missed something?
+
+Did you happen to time a boot with these patches applied to see how
+long it took and how much impact they had on a smaller config?
+
+Robin
