@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab3GVAtE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 20:49:04 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:44861 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab3GVAtC (ORCPT
+	id S1754455Ab3GVA7g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 20:59:36 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55556 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab3GVA7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 20:49:02 -0400
+	Sun, 21 Jul 2013 20:59:33 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-02-51ec83f3a6a7
+Date: Mon, 22 Jul 2013 09:59:41 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH] hugepage: allow parallelization of the hugepage fault
+ path
+Message-ID: <20130722005940.GA7506@lge.com>
+References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+ <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>
+ <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>
+ <20130715072432.GA28053@voom.fritz.box>
+ <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org>
+ <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
+ <20130718084235.GA9761@lge.com>
+ <20130719071432.GB19634@voom.fritz.box>
+ <1374269055.9305.19.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-In-Reply-To: <1374453831.2061.10.camel@joe-AO722>
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
- <1374290388-19308-3-git-send-email-grant.likely@linaro.org>
- <CAOesGMhaAy93J=Q1STZUHHA-SbH+WXCVuUn0ef14_18du2dk6w@mail.gmail.com>
- <1374366577.1940.10.camel@joe-AO722> <CACxGe6tqisx19LP=5gPyF1iuBKedTLp0yK+WgmqG5Cf+a95Taw@mail.gmail.com>
- <CACxGe6tJedLnM6FmvuQWTpGNFsefTn14cbnBMoWnr1gfA0seoQ@mail.gmail.com> <1374453831.2061.10.camel@joe-AO722>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Mon, 22 Jul 2013 01:48:41 +0100
-X-Google-Sender-Auth: EH8vAi3M1BfPS8pJEhOsp6jhH_Q
-Message-ID: <CACxGe6szWY8=u4ewi6HZWFk7+Zho+9F6c4-YXKUaB_NXhd3GZg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-To: Joe Perches <joe@perches.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374269055.9305.19.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 1:43 AM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2013-07-22 at 01:36 +0100, Grant Likely wrote:
->> On Sun, Jul 21, 2013 at 10:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
->> > On Sun, Jul 21, 2013 at 1:29 AM, Joe Perches <joe@perches.com> wrote:
->> >> On Sat, 2013-07-20 at 17:17 -0700, Olof Johansson wrote:
->> >>> On Fri, Jul 19, 2013 at 8:19 PM, Grant Likely <grant.likely@linaro.org> wrote:
->> >>> > Device tree bindings require a lot more attention than they used to.
->> >>> > We've got a group of volunteers willing to take over maintaining
->> >>> > bindings. This patch adds them to the MAINTAINERS file.
->> >> []
->> >>> > diff --git a/MAINTAINERS b/MAINTAINERS
->> >> []
->> >>> > +OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
->> >> []
->> >>> > +F:     arch/*/
->> >> []
->> >>> This seems a bit broad.
->> >>
->> >> Yep, that's every file anywhere under arch.
->> >
->> > yeah, that was a c/p mistake. I'll drop that line before committing.
->>
->> In fact, if things go well with the schema tool, it would be possible
->> to leave out the .dts files entirely as far as binding review goes.
->> The binding would be the important part and the .dts files would be
->> checked against that. That's something for the future though.
->
-> btw: please add a terminating slash to
->      the file pattern directories
->
-> +F:     Documentation/devicetree/
-> +F:     arch/*/boot/dts/
-> +F:     include/dt-bindings/
+On Fri, Jul 19, 2013 at 02:24:15PM -0700, Davidlohr Bueso wrote:
+> On Fri, 2013-07-19 at 17:14 +1000, David Gibson wrote:
+> > On Thu, Jul 18, 2013 at 05:42:35PM +0900, Joonsoo Kim wrote:
+> > > On Wed, Jul 17, 2013 at 12:50:25PM -0700, Davidlohr Bueso wrote:
+> > > > From: David Gibson <david@gibson.dropbear.id.au>
+> > > > 
+> > > > At present, the page fault path for hugepages is serialized by a
+> > > > single mutex. This is used to avoid spurious out-of-memory conditions
+> > > > when the hugepage pool is fully utilized (two processes or threads can
+> > > > race to instantiate the same mapping with the last hugepage from the
+> > > > pool, the race loser returning VM_FAULT_OOM).  This problem is
+> > > > specific to hugepages, because it is normal to want to use every
+> > > > single hugepage in the system - with normal pages we simply assume
+> > > > there will always be a few spare pages which can be used temporarily
+> > > > until the race is resolved.
+> > > > 
+> > > > Unfortunately this serialization also means that clearing of hugepages
+> > > > cannot be parallelized across multiple CPUs, which can lead to very
+> > > > long process startup times when using large numbers of hugepages.
+> > > > 
+> > > > This patch improves the situation by replacing the single mutex with a
+> > > > table of mutexes, selected based on a hash, which allows us to know
+> > > > which page in the file we're instantiating. For shared mappings, the
+> > > > hash key is selected based on the address space and file offset being faulted.
+> > > > Similarly, for private mappings, the mm and virtual address are used.
+> > > > 
+> > > 
+> > > Hello.
+> > > 
+> > > With this table mutex, we cannot protect region tracking structure.
+> > > See below comment.
+> > > 
+> > > /*
+> > >  * Region tracking -- allows tracking of reservations and instantiated pages
+> > >  *                    across the pages in a mapping.
+> > >  *
+> > >  * The region data structures are protected by a combination of the mmap_sem
+> > >  * and the hugetlb_instantion_mutex.  To access or modify a region the caller
+> > >  * must either hold the mmap_sem for write, or the mmap_sem for read and
+> > >  * the hugetlb_instantiation mutex:
+> > >  *
+> > >  *      down_write(&mm->mmap_sem);
+> > >  * or
+> > >  *      down_read(&mm->mmap_sem);
+> > >  *      mutex_lock(&hugetlb_instantiation_mutex);
+> > >  */
+> > 
+> > Ugh.  Who the hell added that.  I guess you'll need to split of
+> > another mutex for that purpose, afaict there should be no interaction
+> > with the actual, intended purpose of the instantiation mutex.
+> 
+> This was added in commit 84afd99b. One way to go would be to add a
+> spinlock to protect changes to the regions - however reading the
+> changelog, and based on David's previous explanation for the
+> instantiation mutex, I don't see why it was added. In fact several
+> places modify regions without holding the instantiation mutex, ie:
+> hugetlb_reserve_pages()
+> 
+> Am I missing something here?
 
-Done.
+hugetlb_reserve_pages() is called with down_write(mmap_sem),
+so fault flow which require down_read(mmap_sem) cannot interfere
+to change the region.
 
-g.
+Thanks.
