@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab3GVIXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:23:15 -0400
-Received: from mail1.centrum-group.com ([194.12.254.133]:59476 "EHLO
-	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3GVIXN (ORCPT
+	id S1756743Ab3GVIZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:25:31 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:46812 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab3GVIZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:23:13 -0400
-X-Antivirus-centrum-group.com-Mail-From: ibericaslmic@outlook.es via mail1
-X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 225.093346 secs Process 18299)
-Message-ID: <58515.83.61.167.109.1374439087.squirrel@mail1.centrum-group.com>
-Date: Sun, 21 Jul 2013 23:38:07 +0300 (EEST)
-Subject: Yon've won a Prize
-From: "Microsoft Iberica SL" <ibericaslmic@outlook.es>
-Reply-To: payingroll446@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.5
+	Mon, 22 Jul 2013 04:25:29 -0400
+Date: Mon, 22 Jul 2013 09:25:16 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Cc: sameo@linux.intel.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        koen@dominion.thruhere.net
+Subject: Re: [PATCH 4/4] mfd: input: arm: dts: doc: ti_am335x: typo fixes
+ (coordiante -> coordinate)
+Message-ID: <20130722082516.GE4681@laptop>
+References: <1374337656-6393-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1374337656-6393-5-git-send-email-zubair.lutfullah@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=WINDOWS-1251
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1374337656-6393-5-git-send-email-zubair.lutfullah@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yon've won a Prize
-MICROSOFT IBERICA SL"
-YOU 'VE WON.
-ATTN:MICROSOFT IBERICA SL
-Your email has won (EUR244,000,00)
-(TWO HUNDRED AND FOURTY FOUR THOUSAND EURO)
-Batch number:XL73276498AM
-Ref number:QR352899526KC
-This is a millennium scientific computer game in which
-email addresses were used.It is a promotional program aimed at
-encouraging internet users,therefore you do not need to buy ticket to enter
-for it.
-For further development,clarification and procedure please
-Contact:Dr Eduardo Sanchez,
-Email contact:payingroll446@yahoo.com.hk
+On Sat, 20 Jul 2013, Zubair Lutfullah wrote:
 
+> Did a grep for 'coordiante' and replaced them all with 'coordinate'
+> ---
+>  .../bindings/input/touchscreen/ti-tsc-adc.txt      |    4 ++--
+>  arch/arm/boot/dts/am335x-evm.dts                   |    2 +-
+>  drivers/input/touchscreen/ti_am335x_tsc.c          |    2 +-
+>  drivers/mfd/ti_am335x_tscadc.c                     |    2 +-
+>  4 files changed, 5 insertions(+), 5 deletions(-)
 
+Once these DT bindings move from a development state to something more
+concrete, I guess misspellings such as these will just have to remain
+incorrect. However, as we are still in a state of development you can
+have my:
 
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+... for the MFD part. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
