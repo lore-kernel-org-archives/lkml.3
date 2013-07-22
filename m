@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab3GVPvx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 11:51:53 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44804 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755770Ab3GVPvw (ORCPT
+	id S1756841Ab3GVPzB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 11:55:01 -0400
+Received: from mail-gg0-f170.google.com ([209.85.161.170]:35846 "EHLO
+	mail-gg0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab3GVPy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 11:51:52 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 00/10] mm, hugetlb: clean-up and possible bug fix
-In-Reply-To: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 22 Jul 2013 21:21:38 +0530
-Message-ID: <87txjmmw39.fsf@linux.vnet.ibm.com>
+	Mon, 22 Jul 2013 11:54:59 -0400
+Date: Mon, 22 Jul 2013 12:54:52 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: fix build with perl 5.18
+Message-ID: <20130722155452.GF2157@ghostprotocols.net>
+References: <1372063394-20126-1-git-send-email-kirill@shutemov.name>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072215-5140-0000-0000-0000038F06F2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372063394-20126-1-git-send-email-kirill@shutemov.name>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+Em Mon, Jun 24, 2013 at 11:43:14AM +0300, Kirill A. Shutemov escreveu:
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> 
+> perl.h from new Perl release doesn't like -Wundef and -Wswitch-default:
+> 
 
-> First 6 patches are almost trivial clean-up patches.
->
-> The others are for fixing three bugs.
-> Perhaps, these problems are minor, because this codes are used
-> for a long time, and there is no bug reporting for these problems.
->
-> These patches are based on v3.10.0 and
-> passed the libhugetlbfs test suite.
+Thanks, applied after minor fixup, sorry for the delay.
 
-Please also add the new tests you have as part of this patch series to
-the test suite.
-
--aneesh
-
+- Arnaldo
