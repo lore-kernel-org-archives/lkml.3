@@ -1,235 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab3GVQa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:30:59 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:61615 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101Ab3GVQa5 (ORCPT
+	id S1756484Ab3GVQe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:34:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47914 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab3GVQew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:30:57 -0400
+	Mon, 22 Jul 2013 12:34:52 -0400
+Date: Mon, 22 Jul 2013 10:34:15 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: Ric Wheeler <rwheeler@redhat.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        James Smart <James.Smart@Emulex.Com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
+        "kmo@daterainc.com" <kmo@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Hannes Reinecke <hare@suse.de>, Tejun Heo <tj@kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
+Message-ID: <20130722163415.GV32755@kernel.dk>
+References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
+ <20130712010223.GA15673@kroah.com>
+ <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
+ <51DFDFF5.80702@suse.de>
+ <1373698410.2922.10.camel@dabdike>
+ <1374008849.7397.853.camel@haakon3.risingtidesystems.com>
+ <20130716211529.GQ22392@kernel.dk>
+ <1374036751.2045.20.camel@dabdike>
+ <51E946C7.3020502@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAB=otbR-n7f=O3+YTPnfO6wRWz2aEcUnbjHoD746GsNgFW3tzQ@mail.gmail.com>
-References: <1374235814-17834-1-git-send-email-ruslan.bilovol@ti.com>
-	<51E948F0.4070307@ti.com>
-	<CAB=otbR-n7f=O3+YTPnfO6wRWz2aEcUnbjHoD746GsNgFW3tzQ@mail.gmail.com>
-Date: Mon, 22 Jul 2013 19:30:55 +0300
-X-Google-Sender-Auth: ZuHxoyqG3ZoXr-NVbBe14xOCaEo
-Message-ID: <CAB=otbSCzM8U=tJBseeA0MXcmrnp7v_9mj7=hq0=nRUGhYm2mA@mail.gmail.com>
-Subject: Re: [PATCH] arm: dts: twl6030: typical connection to omap4 as a
- separate dtsi file
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: benoit.cousson@linaro.org, tony@atomide.com, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        uri.y@variscite.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E946C7.3020502@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also CCing correct devicetree list that was changed recently
+On Fri, Jul 19 2013, Ric Wheeler wrote:
+> down the work items ahead of a real mainline push is high on
+> >>>>>>>>priority list for discussion.
+> >>>>>>>>
+> >>>>>>>>The parties to be included in such a discussion are:
+> >>>>>>>>
+> >>>>>>>>   - Jens Axboe (blk-mq author)
+> >>>>>>>>   - James Bottomley (scsi maintainer)
+> >>>>>>>>   - Christoph Hellwig (scsi)
+> >>>>>>>>   - Martin Petersen (scsi)
+> >>>>>>>>   - Tejun Heo (block + libata)
+> >>>>>>>>   - Hannes Reinecke (scsi error recovery)
+> >>>>>>>>   - Kent Overstreet (block, per-cpu ida)
+> >>>>>>>>   - Stephen Cameron (scsi-over-pcie driver)
+> >>>>>>>>   - Andrew Vasquez (qla2xxx LLD)
+> >>>>>>>>   - James Smart (lpfc LLD)
+> >>>>>>>Isn't this something that should have been discussed at the storage
+> >>>>>>>mini-summit a few months ago?
+> >>>>>>The scsi-mq prototype, along with blk-mq (in it's current form) did not
+> >>>>>>exist a few short months ago.  ;)
+> >>>>>>
+> >>>>>>>  It seems very specific to one subsystem to be a kernel summit topic,
+> >>>>>>>don't you think?
+> >>>>>>It's no more subsystem specific than half of the other proposals so far,
+> >>>>>>and given it's reach across multiple subsystems (block, scsi, target),
+> >>>>>>and the amount of off-list interest on the topic, I think it would make
+> >>>>>>a good candidate for discussion.
+> >>>>>>
+> >>>>>And it'll open up new approaches which previously were dismissed,
+> >>>>>like re-implementing multipathing on top of scsi-mq, giving us the
+> >>>>>single scsi device like other UNIX systems.
+> >>>>>
+> >>>>>Also I do think there's quite some synergy to be had, as with blk-mq
+> >>>>>we could nail each queue to a processor, which would eliminate the
+> >>>>>need for locking.
+> >>>>>Which could be useful for other subsystems, too.
+> >>>>Lets start with discussing this on the list, please, and then see where
+> >>>>we go from there ...
+> >>>>
+> >>>Yes, the discussion is beginning to make it's way to the list.  I've
+> >>>mostly been waiting for blk-mq to get a wider review before taking the
+> >>>early scsi-mq prototype driver to a larger public audience.
+> >>>
+> >>>Primarily, I'm now reaching out to the people most effected by existing
+> >>>scsi_request_fn() based performance limitations.  Most of them have
+> >>>abandoned existing scsi_request_fn() based logic in favor of raw block
+> >>>make_request() based drivers, and are now estimating the amount of
+> >>>effort to move to an scsi-mq based approach.
+> >>>
+> >>>Regardless, as the prototype progresses over the next months, having a
+> >>>face-to-face discussion with the key parties in the room would be very
+> >>>helpful given the large amount of effort involved to actually make this
+> >>>type of generational shift in SCSI actually happen.
+> >>There's a certain amount of overlap with the aio/O_DIRECT work as well.
+> >>But if it's not a general session, could always be a BOF or something.
+> >>
+> >>I'll second the argument that most technical topics probably DO belong
+> >>in a topic related workshop. But that leaves us with basically only
+> >>process related topics at KS, I don't think it hurts to have a bit of
+> >>tech meat on the bone too. At least I personally miss that part of KS
+> >>from years gone by.
+> >Heh well, given that most of the block mq discussions at LSF have been
+> >you saying you really should get around to cleaning up and posting the
+> >code, you'll understand my wanting to see that happen first ...
+> >
+> >I suppose we could try to run a storage workshop within KS, but I think
+> >most of the mini summit slots have already gone.  There's also plumbers
+> >if all slots are gone (I would say that, being biased and on the
+> >programme committee) Ric is running the storage and Filesystems MC
+> >
+> >http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/tracks/159
+> >
+> >James
+> >
+> 
+> And we still are looking for suggested topics - it would be great to have
+> the multi-queue work at plumbers.
+> 
+> You can post a proposal for it (or other topics) here:
+> 
+> http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/proposals
 
-On Mon, Jul 22, 2013 at 7:24 PM, Ruslan Bilovol <ruslan.bilovol@ti.com> wrote:
-> Hi Nishanth,
->
-> On Fri, Jul 19, 2013 at 5:10 PM, Nishanth Menon <nm@ti.com> wrote:
->>
->> On 07/19/2013 07:10 AM, Ruslan Bilovol wrote:
->>>
->>> The OMAP4 SoC family uses specially-designed
->>> PMIC (power management IC) companion chip for power
->>> management needs: TWL6030/TWL6032.
->>> Therefore there is a typical connection of PMIC to OMAP4
->>> so we can figure it out into separate .dtsi file
->>> and do not duplicate over board-specific files.
->>>
->>> Tested on OMAP4 SDP board and compile-tested for Panda board
->>>
->>> Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
->>> ---
->>>   arch/arm/boot/dts/omap4-panda-common.dtsi |   21 +---------------
->>>   arch/arm/boot/dts/omap4-sdp.dts           |   21 +---------------
->>>   arch/arm/boot/dts/twl6030_omap4.dtsi      |   38
->>> +++++++++++++++++++++++++++++
->>
->> arch/arm/boot/dts/omap4-var-som.dts ?
->
-> There is no muxing for TWL6030 in that file at all, so I didn't add it.
-> Moreover, that file seems to be not maintained since added (just
-> generic fixes or framework changes that came to all other files)
-> Second thing - I do not have schematics and HW for verification.
-> But if somebody from Variscite can confirm that omap4 is typically
-> connected to PMIC, I'm happy to add it as separate patch.
-> So I CCed Uri Yosef who is original author of the omap4-var-som.dts
->
-> Regards,
-> Ruslan
->
->>
->>>   3 files changed, 40 insertions(+), 40 deletions(-)
->>>   create mode 100644 arch/arm/boot/dts/twl6030_omap4.dtsi
->>>
->>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi
->>> b/arch/arm/boot/dts/omap4-panda-common.dtsi
->>> index faa95b5..d796302 100644
->>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
->>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
->>> @@ -109,23 +109,9 @@
->>>         };
->>>   };
->>>
->>> -&omap4_pmx_wkup {
->>> -       pinctrl-names = "default";
->>> -       pinctrl-0 = <
->>> -                       &twl6030_wkup_pins
->>> -       >;
->>> -
->>> -       twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
->>> -               pinctrl-single,pins = <
->>> -                       0x14 (PIN_OUTPUT | MUX_MODE2)           /*
->>> fref_clk0_out.sys_drm_msecure */
->>> -               >;
->>> -       };
->>> -};
->>> -
->>>   &omap4_pmx_core {
->>>         pinctrl-names = "default";
->>>         pinctrl-0 = <
->>> -                       &twl6030_pins
->>>                         &twl6040_pins
->>>                         &mcpdm_pins
->>>                         &mcbsp1_pins
->>> @@ -134,12 +120,6 @@
->>>                         &hsusbb1_pins
->>>         >;
->>>
->>> -       twl6030_pins: pinmux_twl6030_pins {
->>> -               pinctrl-single,pins = <
->>> -                       0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
->>> /* sys_nirq1.sys_nirq1 */
->>> -               >;
->>> -       };
->>> -
->>>         twl6040_pins: pinmux_twl6040_pins {
->>>                 pinctrl-single,pins = <
->>>                         0xe0 (PIN_OUTPUT | MUX_MODE3)   /*
->>> hdq_sio.gpio_127 */
->>> @@ -265,6 +245,7 @@
->>>   };
->>>
->>>   #include "twl6030.dtsi"
->>> +#include "twl6030_omap4.dtsi"
->>>
->>>   &i2c2 {
->>>         pinctrl-names = "default";
->>> diff --git a/arch/arm/boot/dts/omap4-sdp.dts
->>> b/arch/arm/boot/dts/omap4-sdp.dts
->>> index 7951b4e..91030c3 100644
->>> --- a/arch/arm/boot/dts/omap4-sdp.dts
->>> +++ b/arch/arm/boot/dts/omap4-sdp.dts
->>> @@ -142,23 +142,9 @@
->>>         };
->>>   };
->>>
->>> -&omap4_pmx_wkup {
->>> -       pinctrl-names = "default";
->>> -       pinctrl-0 = <
->>> -                       &twl6030_wkup_pins
->>> -       >;
->>> -
->>> -       twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
->>> -               pinctrl-single,pins = <
->>> -                       0x14 (PIN_OUTPUT | MUX_MODE2)           /*
->>> fref_clk0_out.sys_drm_msecure */
->>> -               >;
->>> -       };
->>> -};
->>> -
->>>   &omap4_pmx_core {
->>>         pinctrl-names = "default";
->>>         pinctrl-0 = <
->>> -                       &twl6030_pins
->>>                         &twl6040_pins
->>>                         &mcpdm_pins
->>>                         &dmic_pins
->>> @@ -193,12 +179,6 @@
->>>                 >;
->>>         };
->>>
->>> -       twl6030_pins: pinmux_twl6030_pins {
->>> -               pinctrl-single,pins = <
->>> -                       0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
->>> /* sys_nirq1.sys_nirq1 */
->>> -               >;
->>> -       };
->>> -
->>>         twl6040_pins: pinmux_twl6040_pins {
->>>                 pinctrl-single,pins = <
->>>                         0xe0 (PIN_OUTPUT | MUX_MODE3)           /*
->>> hdq_sio.gpio_127 */
->>> @@ -337,6 +317,7 @@
->>>   };
->>>
->>>   #include "twl6030.dtsi"
->>> +#include "twl6030_omap4.dtsi"
->>>
->>>   &i2c2 {
->>>         pinctrl-names = "default";
->>> diff --git a/arch/arm/boot/dts/twl6030_omap4.dtsi
->>> b/arch/arm/boot/dts/twl6030_omap4.dtsi
->>> new file mode 100644
->>> index 0000000..a4fa570
->>> --- /dev/null
->>> +++ b/arch/arm/boot/dts/twl6030_omap4.dtsi
->>> @@ -0,0 +1,38 @@
->>> +/*
->>> + * Copyright (C) 2013 Texas Instruments Incorporated -
->>> http://www.ti.com/
->>> + *
->>> + * This program is free software; you can redistribute it and/or modify
->>> + * it under the terms of the GNU General Public License version 2 as
->>> + * published by the Free Software Foundation.
->>> + */
->>> +
->>> +&twl {
->>> +       /*
->>> +        * On most OMAP4 platforms, the twl6030 IRQ line is connected
->>> +        * to the SYS_NIRQ1 line on OMAP and the twl6030 MSECURE line is
->>> +        * connected to the fref_clk0_out.sys_drm_msecure line.
->>> +        * Therefore, configure the defaults for the SYS_NIRQ1 and
->>> +        * fref_clk0_out.sys_drm_msecure pins here.
->>> +        */
->>> +       pinctrl-names = "default";
->>> +       pinctrl-0 = <
->>> +               &twl6030_pins
->>> +               &twl6030_wkup_pins
->>> +       >;
->>> +};
->>> +
->>> +&omap4_pmx_wkup {
->>> +       twl6030_wkup_pins: pinmux_twl6030_wkup_pins {
->>> +               pinctrl-single,pins = <
->>> +                       0x14 (PIN_OUTPUT | MUX_MODE2)           /*
->>> fref_clk0_out.sys_drm_msecure */
->>> +               >;
->>> +       };
->>> +};
->>> +
->>> +&omap4_pmx_core {
->>> +       twl6030_pins: pinmux_twl6030_pins {
->>> +               pinctrl-single,pins = <
->>> +                       0x15e (WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)
->>> /* sys_nirq1.sys_nirq1 */
->>> +               >;
->>> +       };
->>> +};
->>>
->>
->>
->> --
->> Regards,
->> Nishanth Menon
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+FWIW, I can't make Plumbers this year, unfortunately.
+
+-- 
+Jens Axboe
+
