@@ -1,41 +1,59 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab3GUNRm (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 21 Jul 2013 09:17:42 -0400
-Received: from outrelay03.libero.it ([212.52.84.103]:55673 "EHLO
-	outrelay03.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab3GUNRl (ORCPT
+	id S932919Ab3GVQTp (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 22 Jul 2013 12:19:45 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:52189 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932634Ab3GVQLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 09:17:41 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0201.51EBDF61.0074,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1587
-Message-ID: <4063079.1053321374412641449.JavaMail.defaultUser@defaultHost>
-Date: Sun, 21 Jul 2013 15:17:21 +0200 (CEST)
-From: banna <banna232@libero.it>
-Reply-To: bannaburey@yahoo.co.uk
-Subject: hello
-MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.83.15.2
-X-libjamv: fieL7W/HbaU=
-X-libjamsun: sfnnPg6b8ZV/nYFgXm5Uu//yOkoxLkpg
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 22 Jul 2013 12:11:54 -0400
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Fan Yong <yong.fan@whamcloud.com>,
+        Fan Yong <fan.yong@intel.com>, Peng Tao <tao.peng@emc.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 25/48] staging/lustre/lfsck: LFSCK 1.5 technical debts (3)
+Date: Tue, 23 Jul 2013 00:06:46 +0800
+Message-Id: <1374509230-3324-26-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
+References: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Fan Yong <yong.fan@whamcloud.com>
 
+Original patch resolves some LFSCK 1.5 technical debts, including:
+1) Check and remove repeated linkea entries.
+2) Merge some "goto" branches to make the code more readable.
+3) Some comments about object's nlink inconsistency processing.
 
-hello
+This patch picks the obd flags change.
 
-My name is Banna Aburey.I am a I was impressed when i saw your profile today
-on i will like to established a long lasting relationship with you. In 
-addition,i will like you to reply me through my private email box So i can give 
-you my picture, for you to know whom i am and I believe we can
-move from here! waiting to hear from you soonest.
-(Remember the distance or colour does not matter but love matters alot
-in life)
-please contact me here...
-(bannaburey@yahoo.co.uk)
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2915
+Lustre-change: http://review.whamcloud.com/6344
+Signed-off-by: Fan Yong <fan.yong@intel.com>
+Reviewed-by: Alex Zhuravlev <alexey.zhuravlev@intel.com>
+Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Peng Tao <tao.peng@emc.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+---
+ .../staging/lustre/lustre/include/obd_support.h    |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
+index b5d40af..03e6133 100644
+--- a/drivers/staging/lustre/lustre/include/obd_support.h
++++ b/drivers/staging/lustre/lustre/include/obd_support.h
+@@ -470,6 +470,7 @@ int obd_alloc_fail(const void *ptr, const char *name, const char *type,
+ #define OBD_FAIL_LFSCK_DELAY3		0x1602
+ #define OBD_FAIL_LFSCK_LINKEA_CRASH	0x1603
+ #define OBD_FAIL_LFSCK_LINKEA_MORE	0x1604
++#define OBD_FAIL_LFSCK_LINKEA_MORE2	0x1605
+ #define OBD_FAIL_LFSCK_FATAL1		0x1608
+ #define OBD_FAIL_LFSCK_FATAL2		0x1609
+ #define OBD_FAIL_LFSCK_CRASH		0x160a
+-- 
+1.7.9.5
 
