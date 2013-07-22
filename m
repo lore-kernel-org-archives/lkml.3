@@ -1,136 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab3GVLV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 07:21:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42548 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932435Ab3GVLVc (ORCPT
+	id S932552Ab3GVLYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 07:24:43 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:58765 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932380Ab3GVLYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 07:21:32 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v2 3/3] drivers: clocksource: add CPU PM notifier for ARM architected timer
-Date: Mon, 22 Jul 2013 12:21:22 +0100
-Message-Id: <1374492082-13686-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 22 Jul 2013 11:21:29.0496 (UTC) FILETIME=[9CA77180:01CE86CD]
-X-MC-Unique: 113072212213101001
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 22 Jul 2013 07:24:41 -0400
+Message-ID: <51ED1676.4040604@hitachi.com>
+Date: Mon, 22 Jul 2013 20:24:38 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, x86@kernel.org
+Subject: Re: [PATCH -tip/x86/jumplabel] x86: call out into int3 handler directly
+ instead of using notifier
+References: <20130720131226.GA13893@localhost> <alpine.LNX.2.00.1307221307280.23128@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1307221307280.23128@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6MBMJgl009578
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+(2013/07/22 20:14), Jiri Kosina wrote:
+> In fd4363fff3d96 ("x86: Introduce int3 (breakpoint)-based instruction 
+> patching"), the mechanism that was introduced for notifying alternatives 
+> code from int3 exception handler that and exception occured was 
+> die_notifier.
+> 
+> This is however problematic, as early code might be using jump labels even 
+> before the notifier registration has been performed, which will then lead 
+> to an oops due to unhandled exception. One of such occurences has been 
+> encountered by Fengguang:
 
-Few control settings done in architected timer as part of initialisation
-can be lost when CPU enters deeper power states. They need to be
-re-initialised when the CPU is (warm)reset again.
+Ah, right!
 
-This patch adds CPU PM notifiers to do the timer initialisation on warm
-resets. It also save the event stream divider value calculated during
-cold reset and uses the same in warm reset path.
+> 
+>  int3: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>  Modules linked in:
+>  CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.11.0-rc1-01429-g04bf576 #8
+>  task: ffff88000da1b040 ti: ffff88000da1c000 task.ti: ffff88000da1c000
+>  RIP: 0010:[<ffffffff811098cc>]  [<ffffffff811098cc>] ttwu_do_wakeup+0x28/0x225
+>  RSP: 0000:ffff88000dd03f10  EFLAGS: 00000006
+>  RAX: 0000000000000000 RBX: ffff88000dd12940 RCX: ffffffff81769c40
+>  RDX: 0000000000000002 RSI: 0000000000000000 RDI: 0000000000000001
+>  RBP: ffff88000dd03f28 R08: ffffffff8176a8c0 R09: 0000000000000002
+>  R10: ffffffff810ff484 R11: ffff88000dd129e8 R12: ffff88000dbc90c0
+>  R13: ffff88000dbc90c0 R14: ffff88000da1dfd8 R15: ffff88000da1dfd8
+>  FS:  0000000000000000(0000) GS:ffff88000dd00000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>  CR2: 00000000ffffffff CR3: 0000000001c88000 CR4: 00000000000006e0
+>  Stack:
+>   ffff88000dd12940 ffff88000dbc90c0 ffff88000da1dfd8 ffff88000dd03f48
+>   ffffffff81109e2b ffff88000dd12940 0000000000000000 ffff88000dd03f68
+>   ffffffff81109e9e 0000000000000000 0000000000012940 ffff88000dd03f98
+>  Call Trace:
+>   <IRQ>
+>   [<ffffffff81109e2b>] ttwu_do_activate.constprop.56+0x6d/0x79
+>   [<ffffffff81109e9e>] sched_ttwu_pending+0x67/0x84
+>   [<ffffffff8110c845>] scheduler_ipi+0x15a/0x2b0
+>   [<ffffffff8104dfb4>] smp_reschedule_interrupt+0x38/0x41
+>   [<ffffffff8173bf5d>] reschedule_interrupt+0x6d/0x80
+>   <EOI>
+>   [<ffffffff810ff484>] ? __atomic_notifier_call_chain+0x5/0xc1
+>   [<ffffffff8105cc30>] ? native_safe_halt+0xd/0x16
+>   [<ffffffff81015f10>] default_idle+0x147/0x282
+>   [<ffffffff81017026>] arch_cpu_idle+0x3d/0x5d
+>   [<ffffffff81127d6a>] cpu_idle_loop+0x46d/0x5db
+>   [<ffffffff81127f5c>] cpu_startup_entry+0x84/0x84
+>   [<ffffffff8104f4f8>] start_secondary+0x3c8/0x3d5
+>  Code: 5c 5d c3 e8 d7 0f 63 00 55 48 ff 05 1f 5d 1e 01 48 89 e5 41 55 49 89 f5 41 54 53 48 89 fb e8 8d fe ff ff 48
+>  01 cc <1f> 44 00 00 31 c0 eb 0c 48 ff 05 05 5d 1e 01 b8 01 00 00 00 48
+>  RIP  [<ffffffff811098cc>] ttwu_do_wakeup+0x28/0x225
+>   RSP <ffff88000dd03f10>
+>  ---[ end trace 0d3288a047152a17 ]---
+> 
+> Fix this by directly calling poke_int3_handler() from the int3 exception 
+> handler (analogically to what ftrace has been doing already), instead of 
+> relying on notifier, registration of which might not have yet been 
+> finalized by the time of the first trap.
 
-Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Reviewed-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- drivers/clocksource/arm_arch_timer.c | 38 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 37 insertions(+), 1 deletion(-)
+This seems OK for me.
 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 6301ee5..7057552 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -13,6 +13,7 @@
- #include <linux/device.h>
- #include <linux/smp.h>
- #include <linux/cpu.h>
-+#include <linux/cpu_pm.h>
- #include <linux/clockchips.h>
- #include <linux/interrupt.h>
- #include <linux/of_irq.h>
-@@ -39,6 +40,8 @@ static struct clock_event_device __percpu *arch_timer_evt;
- 
- static bool arch_timer_use_virtual = true;
- 
-+static int arch_timer_evtstream_div;
-+
- /*
-  * Architected system timer support.
-  */
-@@ -160,7 +163,9 @@ static int arch_timer_setup(struct clock_event_device *clk)
- 	pos = fls(evt_stream_div);
- 	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
- 		pos--;
--	arch_counter_set_user_access(min(pos, 15));
-+	/* save divider value for use in CPU PM notifier */
-+	arch_timer_evtstream_div = min(pos, 15);
-+	arch_counter_set_user_access(arch_timer_evtstream_div);
- 
- 	return 0;
- }
-@@ -267,6 +272,31 @@ static struct notifier_block arch_timer_cpu_nb = {
- 	.notifier_call = arch_timer_cpu_notify,
- };
- 
-+#ifdef CONFIG_CPU_PM
-+static int arch_timer_cpu_pm_notify(struct notifier_block *self,
-+				    unsigned long action, void *hcpu)
-+{
-+	if (action == CPU_PM_EXIT)
-+		arch_counter_set_user_access(arch_timer_evtstream_div);
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block arch_timer_cpu_pm_notifier = {
-+	.notifier_call = arch_timer_cpu_pm_notify,
-+};
-+
-+static int __init arch_timer_cpu_pm_init(void)
-+{
-+	return cpu_pm_register_notifier(&arch_timer_cpu_pm_notifier);
-+}
-+#else
-+static int __init arch_timer_cpu_pm_init(void)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int __init arch_timer_register(void)
- {
- 	int err;
-@@ -316,11 +346,17 @@ static int __init arch_timer_register(void)
- 	if (err)
- 		goto out_free_irq;
- 
-+	err = arch_timer_cpu_pm_init();
-+	if (err)
-+		goto out_unreg_notify;
-+
- 	/* Immediately configure the timer on the boot CPU */
- 	arch_timer_setup(this_cpu_ptr(arch_timer_evt));
- 
- 	return 0;
- 
-+out_unreg_notify:
-+	unregister_cpu_notifier(&arch_timer_cpu_nb);
- out_free_irq:
- 	if (arch_timer_use_virtual)
- 		free_percpu_irq(arch_timer_ppi[VIRT_PPI], arch_timer_evt);
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thanks!
+
+> 
+> Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  arch/x86/include/asm/alternative.h |    2 ++
+>  arch/x86/kernel/alternative.c      |   31 ++++++++-----------------------
+>  arch/x86/kernel/traps.c            |    4 ++++
+>  kernel/kprobes.c                   |    2 +-
+>  4 files changed, 15 insertions(+), 24 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+> index 3abf8dd..4df44c2 100644
+> --- a/arch/x86/include/asm/alternative.h
+> +++ b/arch/x86/include/asm/alternative.h
+> @@ -5,6 +5,7 @@
+>  #include <linux/stddef.h>
+>  #include <linux/stringify.h>
+>  #include <asm/asm.h>
+> +#include <asm/ptrace.h>
+>  
+>  /*
+>   * Alternative inline assembly for SMP.
+> @@ -232,6 +233,7 @@ struct text_poke_param {
+>  	size_t len;
+>  };
+>  
+> +extern int poke_int3_handler(struct pt_regs *regs);
+>  extern void *text_poke(void *addr, const void *opcode, size_t len);
+>  extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
+>  extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index 0ab4936..7f6351f 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -605,26 +605,24 @@ static void do_sync_core(void *info)
+>  static bool bp_patching_in_progress;
+>  static void *bp_int3_handler, *bp_int3_addr;
+>  
+> -static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
+> +int poke_int3_handler(struct pt_regs *regs)
+>  {
+> -	struct die_args *args = data;
+> -
+>  	/* bp_patching_in_progress */
+>  	smp_rmb();
+>  
+>  	if (likely(!bp_patching_in_progress))
+> -		return NOTIFY_DONE;
+> +		return 0;
+>  
+> -	/* we are not interested in non-int3 faults and ring > 0 faults */
+> -	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
+> -			    || args->regs->ip != (unsigned long)bp_int3_addr)
+> -		return NOTIFY_DONE;
+> +	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
+> +		return 0;
+>  
+>  	/* set up the specified breakpoint handler */
+> -	args->regs->ip = (unsigned long) bp_int3_handler;
+> +	regs->ip = (unsigned long) bp_int3_handler;
+> +
+> +	return 1;
+>  
+> -	return NOTIFY_STOP;
+>  }
+> +
+>  /**
+>   * text_poke_bp() -- update instructions on live kernel on SMP
+>   * @addr:	address to patch
+> @@ -689,19 +687,6 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  	return addr;
+>  }
+>  
+> -/* this one needs to run before anything else handles it as a
+> - * regular exception */
+> -static struct notifier_block int3_nb = {
+> -	.priority = 0x7fffffff,
+> -	.notifier_call = int3_notify
+> -};
+> -
+> -static int __init int3_init(void)
+> -{
+> -	return register_die_notifier(&int3_nb);
+> -}
+> -
+> -arch_initcall(int3_init);
+>  /*
+>   * Cross-modifying kernel text with stop_machine().
+>   * This code originally comes from immediate value.
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 772e2a8..2694486 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -58,6 +58,7 @@
+>  #include <asm/mce.h>
+>  #include <asm/fixmap.h>
+>  #include <asm/mach_traps.h>
+> +#include <asm/alternative.h>
+>  
+>  #ifdef CONFIG_X86_64
+>  #include <asm/x86_init.h>
+> @@ -324,6 +325,9 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+>  	    ftrace_int3_handler(regs))
+>  		return;
+>  #endif
+> +	if (poke_int3_handler(regs))
+> +		return;
+> +
+>  	prev_state = exception_enter();
+>  #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+>  	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index d6db7bd..bddf3b2 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
+>  
+>  static struct notifier_block kprobe_exceptions_nb = {
+>  	.notifier_call = kprobe_exceptions_notify,
+> -	.priority = 0x7ffffff0 /* High priority, but not first.  */
+> +	.priority = 0x7fffffff /* we need to be notified first */
+>  };
+>  
+>  unsigned long __weak arch_deref_entry_point(void *entry)
+> 
+
+
 -- 
-1.8.1.2
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
