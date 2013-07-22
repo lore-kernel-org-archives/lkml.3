@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995Ab3GVSLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:11:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41844 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932942Ab3GVSLB (ORCPT
+	id S932999Ab3GVSL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:11:57 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:35071 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328Ab3GVSLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 14:11:01 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: balbi@ti.com, george.cherian@ti.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 13/16] usb: musb: do not change dev's dma_mask
-Date: Mon, 22 Jul 2013 20:10:04 +0200
-Message-Id: <1374516607-2705-14-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Mon, 22 Jul 2013 14:11:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <5728692.GlhGgHY92H@vostro.rjw.lan>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+	<CAAG0J9-OgVe3Y0uo0bKr2TTcn3YUna1C_5NixBSsft3+cbKKWw@mail.gmail.com>
+	<5728692.GlhGgHY92H@vostro.rjw.lan>
+Date: Mon, 22 Jul 2013 11:11:54 -0700
+X-Google-Sender-Auth: MChNc5w9TgXwcj6i_txua1urxAo
+Message-ID: <CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
+Subject: Re: Linux 3.11-rc2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: James Hogan <james@albanarts.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Steven Newbury <steve@snewbury.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8d2421e ("usb: musb: kill global and static for multi instance")
-removed the global dma_mask copy and replaced by parent's DMA mask. The
-problem here is that if the parent does not have a dma_mask then
-musb_remove() goes kaboom.
-Instead trying to fix this I was thinking we do we need to erase
-dma_mask in the first place?
+On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> Linus, do you want me to send a pull request reverting 8c5bd7a and efaa14c?
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/usb/musb/musb_core.c | 7 -------
- 1 file changed, 7 deletions(-)
+Yes, but let's wait a while. Not because I think we'll fix the problem
+(hey, miracles might happen), but because I think it would be useful
+to couple the reverts with information about the particular machines
+that broke (and the people who reported it). So that when we
+inevitably try again, we can perhaps get some testing effort with
+those machines/people.
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 9b774e7..80ffd7e 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1843,10 +1843,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
- 	if (use_dma && dev->dma_mask)
- 		musb->dma_controller = dma_controller_create(musb, musb->mregs);
- 
--	/* ideally this would be abstracted in platform setup */
--	if (!musb->dma_controller)
--		dev->dma_mask = NULL;
--
- 	/* be sure interrupts are disabled before connecting ISR */
- 	musb_platform_disable(musb);
- 	musb_generic_disable(musb);
-@@ -1993,9 +1989,6 @@ static int musb_remove(struct platform_device *pdev)
- 
- 	musb_free(musb);
- 	device_init_wakeup(dev, 0);
--#ifndef CONFIG_MUSB_PIO_ONLY
--	dma_set_mask(dev, *dev->parent->dma_mask);
--#endif
- 	return 0;
- }
- 
--- 
-1.8.3.2
+It doesn't seem to be a show-stopped for a large number of people, so
+there's no huge hurry. I'd suggest doing the revert just in time for
+rc3, but waiting until then to gather info about people who see
+breakage.
 
+Sound like a plan?
+
+                Linus
