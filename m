@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab3GVDRM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 23:17:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40712 "EHLO mx1.redhat.com"
+	id S1756154Ab3GVD15 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 23:27:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18049 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754160Ab3GVDRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 23:17:10 -0400
-Message-ID: <51ECA3FE.5060703@redhat.com>
-Date: Mon, 22 Jul 2013 11:16:14 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        yinghan@google.com, kay@vrfy.org
-Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1374261785-1615-1-git-send-email-kys@microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755454Ab3GVD1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 23:27:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,715,1367996400"; 
+   d="scan'208";a="271377875"
+Message-ID: <1374463673.3436.68.camel@dvhart-mobl1.amr.corp.intel.com>
+Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the
+ MinnowBoard
+From: Darren Hart <dvhart@linux.intel.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        danders <danders@circuitco.com>,
+        "vishal.l.verma" <vishal.l.verma@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+Date: Sun, 21 Jul 2013 20:27:53 -0700
+In-Reply-To: <CACxGe6vOOMAj18LSzNHfgsDeJr1V7_d2CcB08jx_ZekOZ61jRQ@mail.gmail.com>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+	 <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
+	 <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
+	 <1372398218.9243.29.camel@envy.home> <20130704162641.GG27646@sirena.org.uk>
+	 <CACxGe6vOOMAj18LSzNHfgsDeJr1V7_d2CcB08jx_ZekOZ61jRQ@mail.gmail.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2013 03:23 AM, K. Y. Srinivasan wrote:
-> The current machinery for hot-adding memory requires having udev
-> rules to bring the memory segments online. Export the necessary functionality
-> to to bring the memory segment online without involving user space code. 
+On Mon, 2013-07-22 at 01:09 +0100, Grant Likely wrote:
+> On Thu, Jul 4, 2013 at 5:26 PM, Mark Brown <broonie@kernel.org> wrote:
+> > On Thu, Jun 27, 2013 at 10:43:38PM -0700, Darren Hart wrote:
+> >
+> >> minnow_hwid() just returns an int that the minnowboard platform driver
+> >> read from the GPIO. This seems like a proper abstraction to me. Do you
+> >> object to this one as well?
+> >
+> > We should really have a subsystem for this too - the general idea idea
+> > of identifying boards, fit options and so on by looking at things like
+> > GPIOs or numbers in flash is really common.
+> 
+> And yet this is a platform with ACPI. I would expect the ACPI to
+> identify the board, not a custom driver. The newest ACPI spec adds a
+> lot of nice useful things like GPIO and SPI bindings. Talk to Al Stone
+> about the progress his team has made on adding GPIO support to ACPICA.
+> 
+> This driver shouldn't be merged into mainline. Keep it as an
+> out-of-tree patch until the proper solution is implemented. That
+> shouldn't be too onerous since we now have available not one, but two
+> mechanisms for describing exactly what you want to do; ACPI or FDT.
 
-According to udev guys, udev won't provide unconditional, always enabled
-kernel
-policy in udev. This is really useful for driver to online the pages
-without user-space involvement.
+Yes, that is the current plan. I have isolated the necessary patches for
+bug fixes (merged, serial support (merged) and networking support (under
+review). I am exploring different options with ACPI for how to best
+handle the GPIO (LEDs and Keys) and the Lure device descriptions.
 
-Acked-by: Jason Wang <jasowang@redhat.com>
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/base/memory.c  |    5 ++++-
->  include/linux/memory.h |    4 ++++
->  2 files changed, 8 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 2b7813e..a8204ac 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -328,7 +328,7 @@ static int __memory_block_change_state_uevent(struct memory_block *mem,
->  	return ret;
->  }
->  
-> -static int memory_block_change_state(struct memory_block *mem,
-> +int memory_block_change_state(struct memory_block *mem,
->  		unsigned long to_state, unsigned long from_state_req,
->  		int online_type)
->  {
-> @@ -341,6 +341,8 @@ static int memory_block_change_state(struct memory_block *mem,
->  
->  	return ret;
->  }
-> +EXPORT_SYMBOL(memory_block_change_state);
-> +
->  static ssize_t
->  store_mem_state(struct device *dev,
->  		struct device_attribute *attr, const char *buf, size_t count)
-> @@ -540,6 +542,7 @@ struct memory_block *find_memory_block(struct mem_section *section)
->  {
->  	return find_memory_block_hinted(section, NULL);
->  }
-> +EXPORT_SYMBOL(find_memory_block);
->  
->  static struct attribute *memory_memblk_attrs[] = {
->  	&dev_attr_phys_index.attr,
-> diff --git a/include/linux/memory.h b/include/linux/memory.h
-> index 85c31a8..8e3ede5 100644
-> --- a/include/linux/memory.h
-> +++ b/include/linux/memory.h
-> @@ -115,6 +115,10 @@ extern void unregister_memory_notifier(struct notifier_block *nb);
->  extern int register_memory_isolate_notifier(struct notifier_block *nb);
->  extern void unregister_memory_isolate_notifier(struct notifier_block *nb);
->  extern int register_new_memory(int, struct mem_section *);
-> +extern int memory_block_change_state(struct memory_block *mem,
-> +		unsigned long to_state, unsigned long from_state_req,
-> +		int online_type);
-> +
->  #ifdef CONFIG_MEMORY_HOTREMOVE
->  extern int unregister_memory_section(struct mem_section *);
->  #endif
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
 
