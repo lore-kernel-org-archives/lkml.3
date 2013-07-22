@@ -1,94 +1,746 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab3GVKeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:34:09 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:52196 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab3GVKeH (ORCPT
+	id S932205Ab3GVKfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:35:06 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:23048
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757104Ab3GVKfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:34:07 -0400
-Date: Mon, 22 Jul 2013 12:34:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock implementation
-Message-ID: <20130722103402.GA1991@gmail.com>
-References: <1373679249-27123-1-git-send-email-Waiman.Long@hp.com>
- <1373679249-27123-2-git-send-email-Waiman.Long@hp.com>
- <alpine.DEB.2.02.1307151657540.11918@ionos.tec.linutronix.de>
- <51E49FA3.4030202@hp.com>
- <20130718074204.GA22623@gmail.com>
- <51E7F03A.4090305@hp.com>
- <20130719084023.GB25784@gmail.com>
- <51E95B85.8090003@hp.com>
+	Mon, 22 Jul 2013 06:35:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 11
+X-BigFish: VS11(zz98dI1432Ib922lc8k8b9ckzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h1de097h8275bhz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Date: Mon, 22 Jul 2013 18:39:36 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <broonie@kernel.org>, <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <lgirdwood@gmail.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] regulator: pfuze100: add pfuze100 regulator driver
+Message-ID: <20130722103935.GA14838@Robin-OptiPlex-780>
+References: <1374398247-11384-1-git-send-email-b38343@freescale.com>
+ <20130722091058.GI20271@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <51E95B85.8090003@hp.com>
+In-Reply-To: <20130722091058.GI20271@S2101-09.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Waiman Long <waiman.long@hp.com> wrote:
-
-> I had run some performance tests using the fserver and new_fserver 
-> benchmarks (on ext4 filesystems) of the AIM7 test suite on a 80-core 
-> DL980 with HT on. The following kernels were used:
+On Mon, Jul 22, 2013 at 05:11:00PM +0800, Shawn Guo wrote:
+> On Sun, Jul 21, 2013 at 05:17:27PM +0800, Robin Gong wrote:
+> > Add pfuze100 regulator driver.
+> > 
+> > Signed-off-by: Robin Gong <b38343@freescale.com>
+> > ---
+> >  .../devicetree/bindings/regulator/pfuze100.txt     |  113 +++++
+> >  drivers/regulator/Kconfig                          |    7 +
+> >  drivers/regulator/Makefile                         |    1 +
+> >  drivers/regulator/pfuze100-regulator.c             |  462 ++++++++++++++++++++
+> >  include/linux/regulator/pfuze100.h                 |   44 ++
+> >  5 files changed, 627 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/regulator/pfuze100.txt
+> >  create mode 100644 drivers/regulator/pfuze100-regulator.c
+> >  create mode 100644 include/linux/regulator/pfuze100.h
+> > 
+> > diff --git a/Documentation/devicetree/bindings/regulator/pfuze100.txt b/Documentation/devicetree/bindings/regulator/pfuze100.txt
+> > new file mode 100644
+> > index 0000000..22e1a48
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/regulator/pfuze100.txt
+> > @@ -0,0 +1,113 @@
+> > +PFUZE100 family of regulators
+> > +
+> > +Required properties:
+> > +- compatible: "fsl,pfuze100"
+> > +- reg: I2C slave address
+> > +- regulators: This is the list of child nodes that specify the regulator
+> > +  initialization data for defined regulators. Please refer to below doc
+> > +  Documentation/devicetree/bindings/regulator/regulator.txt.
 > 
-> 1. Modified 3.10.1 kernel with mb_cache_spinlock in fs/mbcache.c
->    replaced by a rwlock
-> 2. Modified 3.10.1 kernel + modified __read_lock_failed code as suggested
->    by Ingo
-> 3. Modified 3.10.1 kernel + queue read/write lock
-> 4. Modified 3.10.1 kernel + queue read/write lock in classic read/write
->    lock behavior
+> "regulators" is not a property but a sub-node.
 > 
-> The last one is with the read lock stealing flag set in the qrwlock
-> structure to give priority to readers and behave more like the classic
-> read/write lock with less fairness.
+> > +
+> > +  The valid names for regulators are:
+> > +  sw1ab,sw1c,sw2,sw3a,sw3b,sw4,swbst,vsnvs,vrefddr,vgen1~vgen6
+> > +
+> > +Each regulator is defined using the standard binding for regulators.
+> > +
+> > +Example:
+> > +
+> > +	pmic: pfuze100@08 {
+> > +		compatible = "fsl,pfuze100";
+> > +		reg = <0x08>;
+> > +
+> > +		regulators {
+> > +			sw1a_reg: sw1ab {
+> > +				regulator-min-microvolt = <300000>;
+> > +				regulator-max-microvolt = <1875000>;
+> > +				regulator-boot-on;
+> > +				regulator-always-on;
+> > +				regulator-ramp-delay = <6250>;
+> > +			};
+> > +
+> > +			sw1c_reg: sw1c {
+> > +				regulator-min-microvolt = <300000>;
+> > +				regulator-max-microvolt = <1875000>;
+> > +				regulator-boot-on;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			sw2_reg: sw2 {
+> > +				regulator-min-microvolt = <800000>;
+> > +				regulator-max-microvolt = <3300000>;
+> > +				regulator-boot-on;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			sw3a_reg: sw3a {
+> > +				regulator-min-microvolt = <400000>;
+> > +				regulator-max-microvolt = <1975000>;
+> > +				regulator-boot-on;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			sw3b_reg: sw3b {
+> > +				regulator-min-microvolt = <400000>;
+> > +				regulator-max-microvolt = <1975000>;
+> > +				regulator-boot-on;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			sw4_reg: sw4 {
+> > +				regulator-min-microvolt = <800000>;
+> > +				regulator-max-microvolt = <3300000>;
+> > +			};
+> > +
+> > +			swbst_reg: swbst {
+> > +				regulator-min-microvolt = <5000000>;
+> > +				regulator-max-microvolt = <5150000>;
+> > +			};
+> > +
+> > +			snvs_reg: vsnvs {
+> > +				regulator-min-microvolt = <1000000>;
+> > +				regulator-max-microvolt = <3000000>;
+> > +				regulator-boot-on;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			vref_reg: vrefddr {
+> > +				regulator-boot-on;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			vgen1_reg: vgen1 {
+> > +				regulator-min-microvolt = <800000>;
+> > +				regulator-max-microvolt = <1550000>;
+> > +			};
+> > +
+> > +			vgen2_reg: vgen2 {
+> > +				regulator-min-microvolt = <800000>;
+> > +				regulator-max-microvolt = <1550000>;
+> > +			};
+> > +
+> > +			vgen3_reg: vgen3 {
+> > +				regulator-min-microvolt = <1800000>;
+> > +				regulator-max-microvolt = <3300000>;
+> > +			};
+> > +
+> > +			vgen4_reg: vgen4 {
+> > +				regulator-min-microvolt = <1800000>;
+> > +				regulator-max-microvolt = <3300000>;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			vgen5_reg: vgen5 {
+> > +				regulator-min-microvolt = <1800000>;
+> > +				regulator-max-microvolt = <3300000>;
+> > +				regulator-always-on;
+> > +			};
+> > +
+> > +			vgen6_reg: vgen6 {
+> > +				regulator-min-microvolt = <1800000>;
+> > +				regulator-max-microvolt = <3300000>;
+> > +				regulator-always-on;
+> > +			};
+> > +		};
+> > +	};
+> > diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> > index f1e6ad9..f913172 100644
+> > --- a/drivers/regulator/Kconfig
+> > +++ b/drivers/regulator/Kconfig
+> > @@ -158,6 +158,13 @@ config REGULATOR_MC13892
+> >  	  Say y here to support the regulators found on the Freescale MC13892
+> >  	  PMIC.
+> >  
+> > +config REGULATOR_PFUZE100
+> > +	tristate "Support regulators on Freescale PFUZE100 PMIC"
+> > +	depends on I2C
+> > +	help
+> > +	  Say y here to support the regulators found on the Freescale PFUZE100
+> > +	  PMIC.
+> > +
+> >  config REGULATOR_ISL6271A
+> >  	tristate "Intersil ISL6271A Power regulator"
+> >  	depends on I2C
+> > diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+> > index ba4a3cf..ad62524 100644
+> > --- a/drivers/regulator/Makefile
+> > +++ b/drivers/regulator/Makefile
+> > @@ -45,6 +45,7 @@ obj-$(CONFIG_REGULATOR_MAX77693) += max77693.o
+> >  obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+> >  obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+> >  obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
+> > +obj-$(CONFIG_REGULATOR_PFUZE100) += pfuze100-regulator.o
+> >  obj-$(CONFIG_REGULATOR_PALMAS) += palmas-regulator.o
+> >  obj-$(CONFIG_REGULATOR_TPS51632) += tps51632-regulator.o
+> >  obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
+> > diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+> > new file mode 100644
+> > index 0000000..fd259ef
+> > --- /dev/null
+> > +++ b/drivers/regulator/pfuze100-regulator.c
+> > @@ -0,0 +1,462 @@
+> > +/*
+> > + * Copyright (C) 2011-2013 Freescale Semiconductor, Inc. All Rights Reserved.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program; if not, write to the Free Software
+> > + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+> > + */
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/init.h>
+> > +#include <linux/err.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_device.h>
+> > +#include <linux/regulator/of_regulator.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/regulator/driver.h>
+> > +#include <linux/regulator/machine.h>
+> > +#include <linux/regulator/pfuze100.h>
+> > +#include <linux/i2c.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/regmap.h>
+> > +
+> > +
 > 
-> The following table shows the averaged results in the 200-1000
-> user ranges:
+> One blank line.
 > 
-> +-----------------+--------+--------+--------+--------+
-> |  Kernel         |    1   |    2   |    3   |   4    |
-> +-----------------+--------+--------+--------+--------+
-> | fserver JPM     | 245598 | 274457 | 403348 | 411941 |
-> | % change from 1 |   0%   | +11.8% | +64.2% | +67.7% |
-> +-----------------+--------+--------+--------+--------+
-> | new-fserver JPM | 231549 | 269807 | 399093 | 399418 |
-> | % change from 1 |   0%   | +16.5% | +72.4% | +72.5% |
-> +-----------------+--------+--------+--------+--------+
+> > +#define PFUZE_NUMREGS		128
+> > +#define PFUZE100_VOL_OFFSET	0
+> > +#define PFUZE100_STANDBY_OFFSET	1
+> > +#define PFUZE100_MODE_OFFSET	3
+> > +#define PFUZE100_CONF_OFFSET	4
+> > +
+> > +#define PFUZE100_DEVICEID	0x0
+> > +#define PFUZE100_REVID		0x3
+> > +#define PFUZE100_FABID		0x3
+> > +
+> > +#define PFUZE100_SW1ABVOL	0x20
+> > +#define PFUZE100_SW1CVOL	0x2e
+> > +#define PFUZE100_SW2VOL		0x35
+> > +#define PFUZE100_SW3AVOL	0x3c
+> > +#define PFUZE100_SW3BVOL	0x43
+> > +#define PFUZE100_SW4VOL		0x4a
+> > +#define PFUZE100_SWBSTCON1	0x66
+> > +#define PFUZE100_VREFDDRCON	0x6a
+> > +#define PFUZE100_VSNVSVOL	0x6b
+> > +#define PFUZE100_VGEN1VOL	0x6c
+> > +#define PFUZE100_VGEN2VOL	0x6d
+> > +#define PFUZE100_VGEN3VOL	0x6e
+> > +#define PFUZE100_VGEN4VOL	0x6f
+> > +#define PFUZE100_VGEN5VOL	0x70
+> > +#define PFUZE100_VGEN6VOL	0x71
+> > +
+> > +struct pfuze_regulator {
+> > +	struct regulator_desc desc;
+> > +	unsigned char stby_reg;
+> > +	unsigned char stby_mask;
+> > +};
+> > +
+> > +struct pfuze_chip {
+> > +	struct regmap *regmap;
+> > +	struct device *dev;
+> > +	struct pfuze_regulator regulator_descs[PFUZE100_MAX_REGULATOR];
+> > +	struct regulator_dev *regulators[PFUZE100_MAX_REGULATOR];
+> > +};
+> > +
+> > +static const int pfuze100_swbst[] = {
+> > +	5000000, 5050000, 5100000, 5150000,
+> > +};
+> > +
+> > +static const int pfuze100_vsnvs[] = {
+> > +	1000000, 1100000, 1200000, 1300000, 1500000, 1800000, 3000000,
+> > +};
+> > +
+> > +static const struct i2c_device_id pfuze_device_id[] = {
+> > +	{.name = "pfuze100"},
+> > +	{},
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, pfuze_device_id);
+> > +
+> > +static const struct of_device_id pfuze_dt_ids[] = {
+> > +	{ .compatible = "fsl,pfuze100" },
+> > +	{},
+> > +};
+> > +MODULE_DEVICE_TABLE(of, pfuze_dt_ids);
+> > +
+> > +static int pfuze100_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+> > +{
+> > +	struct pfuze_chip *pfuze100 = rdev_get_drvdata(rdev);
+> > +	int id = rdev->desc->id;
+> > +	unsigned int val, ramp_bits, reg;
+> > +	int ret;
+> > +
+> > +	if (id < PFUZE100_SWBST) {
+> > +		if (id == PFUZE100_SW1AB)
+> > +			reg = PFUZE100_SW1ABVOL;
+> > +		else
+> > +			reg = PFUZE100_SW1CVOL + (id - PFUZE100_SW1C) * 7;
+> > +		regmap_read(pfuze100->regmap, reg, &val);
+> > +
+> > +		if (id <= PFUZE100_SW1C)
+> > +			ramp_delay = 25000 / (2 * ramp_delay);
+> > +		else if (val & 0x40)
+> > +			ramp_delay = 50000 / (4 * ramp_delay);
+> > +		else
+> > +			ramp_delay = 25000 / (2 * ramp_delay);
+> > +
+> > +		ramp_bits = (ramp_delay >> 1) - (ramp_delay >> 3);
+> > +		ret = regmap_update_bits(pfuze100->regmap, reg + 4 , 0xc0,
+> > +				ramp_bits << 6);
+> > +		if (ret < 0)
+> > +			dev_err(pfuze100->dev, "ramp failed, err %d\n", ret);
+> > +	} else
+> > +		ret = -EACCES;
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static struct regulator_ops pfuze100_ldo_regulator_ops = {
+> > +	.enable = regulator_enable_regmap,
+> > +	.disable = regulator_disable_regmap,
+> > +	.is_enabled = regulator_is_enabled_regmap,
+> > +	.list_voltage = regulator_list_voltage_linear,
+> > +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> > +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+> > +};
+> > +
+> > +static struct regulator_ops pfuze100_fixed_regulator_ops = {
+> > +	.list_voltage = regulator_list_voltage_linear,
+> > +};
+> > +
+> > +static struct regulator_ops pfuze100_sw_regulator_ops = {
+> > +	.list_voltage = regulator_list_voltage_linear,
+> > +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> > +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+> > +	.set_voltage_time_sel = regulator_set_voltage_time_sel,
+> > +	.set_ramp_delay = pfuze100_set_ramp_delay,
+> > +};
+> > +
+> > +static struct regulator_ops pfuze100_swb_regulator_ops = {
+> > +	.list_voltage = regulator_list_voltage_table,
+> > +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> > +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+> > +
+> > +};
+> > +
+> > +#define PFUZE100_FIXED_REG(_name, base, voltage)	\
+> > +{	\
+> > +	[PFUZE100_ ## _name] = {	\
+> > +		.desc = {	\
+> > +			.name = #_name,	\
+> > +			.n_voltages = 1,	\
+> > +			.ops = &pfuze100_fixed_regulator_ops,	\
+> > +			.type = REGULATOR_VOLTAGE,	\
+> > +			.id = PFUZE100_ ## _name,	\
+> > +			.owner = THIS_MODULE,	\
+> > +			.min_uV = (voltage),	\
+> > +			.enable_reg = (base),	\
+> > +			.enable_mask = 0x10,	\
+> > +		},	\
+> > +	}	\
+> > +}
+> > +
+> > +#define PFUZE100_SW_REG(_name, base, min, max, step)	\
+> > +{	\
+> > +	[PFUZE100_ ## _name] = {	\
+> > +		.desc = {	\
+> > +			.name = #_name,\
+> > +			.n_voltages = ((max) - (min)) / (step) + 1,	\
+> > +			.ops = &pfuze100_sw_regulator_ops,	\
+> > +			.type = REGULATOR_VOLTAGE,	\
+> > +			.id = PFUZE100_ ## _name,	\
+> > +			.owner = THIS_MODULE,	\
+> > +			.min_uV = (min),	\
+> > +			.uV_step = (step),	\
+> > +			.vsel_reg = (base) + PFUZE100_VOL_OFFSET,	\
+> > +			.vsel_mask = 0x3f,	\
+> > +		},	\
+> > +		.stby_reg = (base) + PFUZE100_STANDBY_OFFSET,	\
+> > +		.stby_mask = 0x3f,	\
+> > +	}	\
+> > +}
+> > +
+> > +#define PFUZE100_SWB_REG(_name, base, mask, voltages)	\
+> > +{	\
+> > +	[PFUZE100_ ## _name] = {	\
+> > +		.desc = {	\
+> > +			.name = #_name,	\
+> > +			.n_voltages = ARRAY_SIZE(voltages),	\
+> > +			.ops = &pfuze100_swb_regulator_ops,	\
+> > +			.type = REGULATOR_VOLTAGE,	\
+> > +			.id = PFUZE100_ ## _name,	\
+> > +			.owner = THIS_MODULE,	\
+> > +			.volt_table = voltages,	\
+> > +			.vsel_reg = (base),	\
+> > +			.vsel_mask = (mask),	\
+> > +		},	\
+> > +	}	\
+> > +}
+> > +
+> > +#define PFUZE100_VGEN_REG(_name, base, min, max, step)	\
+> > +{	\
+> > +	[PFUZE100_ ## _name] = {	\
+> > +		.desc = {	\
+> > +			.name = #_name,	\
+> > +			.n_voltages = ((max) - (min)) / (step) + 1,	\
+> > +			.ops = &pfuze100_ldo_regulator_ops,	\
+> > +			.type = REGULATOR_VOLTAGE,	\
+> > +			.id = PFUZE100_ ## _name,	\
+> > +			.owner = THIS_MODULE,	\
+> > +			.min_uV = (min),	\
+> > +			.uV_step = (step),	\
+> > +			.vsel_reg = (base),	\
+> > +			.vsel_mask = 0xf,	\
+> > +			.enable_reg = (base),	\
+> > +			.enable_mask = 0x10,	\
+> > +		},	\
+> > +		.stby_reg = (base),	\
+> > +		.stby_mask = 0x20,	\
+> > +	}	\
+> > +}
+> > +
+> > +static struct pfuze_regulator pfuze100_regulators[] = {
+> > +	PFUZE100_SW_REG(SW1AB, PFUZE100_SW1ABVOL, 300000, 1875000, 25000),
+> > +	PFUZE100_SW_REG(SW1C, PFUZE100_SW1CVOL, 300000, 1875000, 25000),
+> > +	PFUZE100_SW_REG(SW2, PFUZE100_SW2VOL, 400000, 1975000, 25000),
+> > +	PFUZE100_SW_REG(SW3A, PFUZE100_SW3AVOL, 400000, 1975000, 25000),
+> > +	PFUZE100_SW_REG(SW3B, PFUZE100_SW3BVOL, 400000, 1975000, 25000),
+> > +	PFUZE100_SW_REG(SW4, PFUZE100_SW4VOL, 400000, 1975000, 25000),
+> > +	PFUZE100_SWB_REG(SWBST, PFUZE100_SWBSTCON1, 0x3 , pfuze100_swbst),
+> > +	PFUZE100_SWB_REG(VSNVS, PFUZE100_VSNVSVOL, 0x7, pfuze100_vsnvs),
+> > +	PFUZE100_FIXED_REG(VREFDDR, PFUZE100_VREFDDRCON, 750000),
+> > +	PFUZE100_VGEN_REG(VGEN1, PFUZE100_VGEN1VOL, 800000, 1550000, 50000),
+> > +	PFUZE100_VGEN_REG(VGEN2, PFUZE100_VGEN2VOL, 800000, 1550000, 50000),
+> > +	PFUZE100_VGEN_REG(VGEN3, PFUZE100_VGEN3VOL, 1800000, 3300000, 100000),
+> > +	PFUZE100_VGEN_REG(VGEN4, PFUZE100_VGEN4VOL, 1800000, 3300000, 100000),
+> > +	PFUZE100_VGEN_REG(VGEN5, PFUZE100_VGEN5VOL, 1800000, 3300000, 100000),
+> > +	PFUZE100_VGEN_REG(VGEN6, PFUZE100_VGEN6VOL, 1800000, 3300000, 100000),
+> > +};
+> > +
+> > +#ifdef CONFIG_OF
+> > +static struct of_regulator_match pfuze100_matches[] = {
+> > +	{ .name = "sw1ab",	},
+> > +	{ .name = "sw1c",	},
+> > +	{ .name = "sw2",	},
+> > +	{ .name = "sw3a",	},
+> > +	{ .name = "sw3b",	},
+> > +	{ .name = "sw4",	},
+> > +	{ .name = "swbst",	},
+> > +	{ .name = "vsnvs",	},
+> > +	{ .name = "vrefddr",	},
+> > +	{ .name = "vgen1",	},
+> > +	{ .name = "vgen2",	},
+> > +	{ .name = "vgen3",	},
+> > +	{ .name = "vgen4",	},
+> > +	{ .name = "vgen5",	},
+> > +	{ .name = "vgen6",	},
+> > +};
+> > +
+> > +static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
+> > +{
+> > +	struct device *dev = chip->dev;
+> > +	struct device_node *parent;
+> > +	int ret;
+> > +
+> > +	of_node_get(dev->parent->of_node);
+> > +	parent = of_find_node_by_name(dev->parent->of_node, "regulators");
+> > +	if (!parent) {
+> > +		dev_err(dev, "regulators node not found\n");
+> > +		return -EINVAL;
+> 
+> So you leave dev->parent->of_node unbalanced.
+> 
+Seems of_find_node_by_name will of_node_put the parent node.
+> > +	}
+> > +
+> > +	ret = of_regulator_match(dev, parent, pfuze100_matches,
+> > +				 ARRAY_SIZE(pfuze100_matches));
+> > +
+> > +	of_node_put(dev->parent->of_node);
+> 
+> This could be move before of_regulator_match(), right?
+> 
+> > +	if (ret < 0) {
+> > +		dev_err(dev, "Error parsing regulator init data: %d\n",
+> > +			ret);
+> > +		return ret;
+> > +	}
+> > +
+> 
+> The kernel doc of function of_find_node_by_name() suggests you need a
+> of_node_put() call to put the node you get from there.
+> 
+Good point, should modify of_node_put(dev->parent->of_node) to 
+of_node_put(parent).
+> > +	return 0;
+> > +}
+> > +
+> > +static inline struct regulator_init_data *match_init_data(int index)
+> > +{
+> > +	return pfuze100_matches[index].init_data;
+> > +}
+> > +
+> > +static inline struct device_node *match_of_node(int index)
+> > +{
+> > +	return pfuze100_matches[index].of_node;
+> > +}
+> > +#else
+> > +static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
+> > +{
+> > +	return NULL;
+> > +}
+> > +
+> > +static inline struct regulator_init_data *match_init_data(int index)
+> > +{
+> > +	return NULL;
+> > +}
+> > +
+> > +static inline struct device_node *match_of_node(int index)
+> > +{
+> > +	return NULL;
+> > +}
+> > +#endif
+> > +
+> > +static int pfuze_identify(struct pfuze_chip *pfuze_chip)
+> > +{
+> > +	unsigned int value;
+> > +	int ret;
+> > +
+> > +	ret = regmap_read(pfuze_chip->regmap, PFUZE100_DEVICEID, &value);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	if (value & 0x0f) {
+> > +		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	ret = regmap_read(pfuze_chip->regmap, PFUZE100_REVID, &value);
+> > +	if (ret)
+> > +		return ret;
+> > +	dev_info(pfuze_chip->dev,
+> > +		 "Full lay: %x, Metal lay: %x\n",
+> > +		 (value & 0xf0) >> 4, value & 0x0f);
+> > +
+> > +	ret = regmap_read(pfuze_chip->regmap, PFUZE100_FABID, &value);
+> > +	if (ret)
+> > +		return ret;
+> > +	dev_info(pfuze_chip->dev, "FAB: %x, FIN: %x\n",
+> > +		 (value & 0xc) >> 2, value & 0x3);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct regmap_config pfuze_regmap_config = {
+> > +	.reg_bits = 8,
+> > +	.val_bits = 8,
+> > +	.max_register = PFUZE_NUMREGS,
+> > +	.cache_type = REGCACHE_RBTREE,
+> > +};
+> > +
+> > +static int pfuze100_regulator_probe(struct i2c_client *client,
+> > +				    const struct i2c_device_id *id)
+> > +{
+> > +	struct pfuze_chip *pfuze_chip;
+> > +	struct pfuze_regulator_platform_data *pdata =
+> > +	    dev_get_platdata(&client->dev);
+> > +	struct regulator_config config = { };
+> > +	int i, ret;
+> > +
+> > +	pfuze_chip = devm_kzalloc(&client->dev, sizeof(*pfuze_chip),
+> > +			GFP_KERNEL);
+> > +	if (!pfuze_chip)
+> > +		return -ENOMEM;
+> > +
+> > +	dev_set_drvdata(&client->dev, pfuze_chip);
+> > +
+> > +	memcpy(pfuze_chip->regulator_descs, pfuze100_regulators,
+> > +		sizeof(pfuze_chip->regulator_descs));
+> > +
+> > +	pfuze_chip->dev = &client->dev;
+> > +
+> > +	pfuze_chip->regmap = devm_regmap_init_i2c(client, &pfuze_regmap_config);
+> > +	if (IS_ERR(pfuze_chip->regmap)) {
+> > +		ret = PTR_ERR(pfuze_chip->regmap);
+> > +		dev_err(&client->dev,
+> > +			"regmap allocation failed with err %d\n", ret);
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = pfuze_identify(pfuze_chip);
+> > +	if (ret) {
+> > +		dev_err(&client->dev, "unrecognized pfuze chip ID!\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = pfuze_parse_regulators_dt(pfuze_chip);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	for (i = 0; i < PFUZE100_MAX_REGULATOR; i++) {
+> > +		struct regulator_init_data *init_data;
+> > +		int val;
+> > +
+> > +		if (pdata)
+> > +			init_data = pdata->init_data[i];
+> > +		else
+> > +			init_data = match_init_data(i);
+> > +
+> > +		/* SW2~SW4 high bit check and modify the voltage value table */
+> > +		if (i > PFUZE100_SW1C && i < PFUZE100_SWBST) {
+> > +			regmap_read(pfuze_chip->regmap, PFUZE100_SW2VOL +
+> > +					(i - PFUZE100_SW2) * 7, &val);
+> > +			if (val & 0x40) {
+> > +				pfuze_chip->regulator_descs[i].desc.min_uV
+> > +				= 800000;
+> > +				pfuze_chip->regulator_descs[i].desc.uV_step
+> > +				= 50000;
+> > +			}
+> > +		}
+> > +
+> > +		config.dev = &client->dev;
+> > +		config.init_data = init_data;
+> > +		config.driver_data = pfuze_chip;
+> > +		config.of_node = match_of_node(i);
+> > +
+> > +		pfuze_chip->regulators[i] = regulator_register(&pfuze_chip
+> > +			->regulator_descs[i].desc, &config);
+> > +		if (IS_ERR(pfuze_chip->regulators[i])) {
+> > +			dev_err(&client->dev, "register regulator%s failed\n",
+> > +				pfuze100_regulators[i].desc.name);
+> > +			ret = PTR_ERR(pfuze_chip->regulators[i]);
+> > +			while (--i >= 0)
+> > +				regulator_unregister(pfuze_chip->regulators[i]);
+> > +			return ret;
+> > +		}
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int pfuze100_regulator_remove(struct i2c_client *client)
+> > +{
+> > +	int i;
+> > +	struct pfuze_chip *pfuze_chip = dev_get_drvdata(&client->dev);
+> > +
+> > +	for (i = 0; i < PFUZE100_MAX_REGULATOR; i++)
+> > +		regulator_unregister(pfuze_chip->regulators[i]);
+> > +
+> > +	devm_kfree(&client->dev, pfuze_chip);
+> 
+> This is not needed.
+> 
+> Shawn
+> 
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct i2c_driver pfuze_driver = {
+> > +	.id_table = pfuze_device_id,
+> > +	.driver = {
+> > +		.name = "pfuze100-regulator",
+> > +		.owner = THIS_MODULE,
+> > +		.of_match_table = pfuze_dt_ids,
+> > +	},
+> > +	.probe = pfuze100_regulator_probe,
+> > +	.remove = pfuze100_regulator_remove,
+> > +};
+> > +module_i2c_driver(pfuze_driver);
+> > +
+> > +MODULE_AUTHOR("Robin Gong <b38343@freescale.com>");
+> > +MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100 PMIC");
+> > +MODULE_ALIAS("pfuze100-regulator");
+> > diff --git a/include/linux/regulator/pfuze100.h b/include/linux/regulator/pfuze100.h
+> > new file mode 100644
+> > index 0000000..65d550b
+> > --- /dev/null
+> > +++ b/include/linux/regulator/pfuze100.h
+> > @@ -0,0 +1,44 @@
+> > +/*
+> > + * Copyright (C) 2011-2013 Freescale Semiconductor, Inc. All Rights Reserved.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along
+> > + * with this program; if not, write to the Free Software Foundation, Inc.,
+> > + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> > + */
+> > +#ifndef __LINUX_REG_PFUZE100_H
+> > +#define __LINUX_REG_PFUZE100_H
+> > +
+> > +#define PFUZE100_SW1AB		0
+> > +#define PFUZE100_SW1C		1
+> > +#define PFUZE100_SW2		2
+> > +#define PFUZE100_SW3A		3
+> > +#define PFUZE100_SW3B		4
+> > +#define PFUZE100_SW4		5
+> > +#define PFUZE100_SWBST		6
+> > +#define PFUZE100_VSNVS		7
+> > +#define PFUZE100_VREFDDR	8
+> > +#define PFUZE100_VGEN1		9
+> > +#define PFUZE100_VGEN2		10
+> > +#define PFUZE100_VGEN3		11
+> > +#define PFUZE100_VGEN4		12
+> > +#define PFUZE100_VGEN5		13
+> > +#define PFUZE100_VGEN6		14
+> > +#define PFUZE100_MAX_REGULATOR	15
+> > +
+> > +struct regulator_init_data;
+> > +
+> > +struct pfuze_regulator_platform_data {
+> > +	struct regulator_init_data *init_data[PFUZE100_MAX_REGULATOR];
+> > +};
+> > +
+> > +#endif /* __LINUX_REG_PFUZE100_H */
+> > -- 
+> > 1.7.5.4
+> > 
+> > 
 
-So it's not just herding that is a problem.
-
-I'm wondering, how sensitive is this particular benchmark to fairness? 
-I.e. do the 200-1000 simulated users each perform the same number of ops, 
-so that any smearing of execution time via unfairness gets amplified?
-
-I.e. does steady-state throughput go up by 60%+ too with your changes?
-
-Thanks,
-
-	Ingo
