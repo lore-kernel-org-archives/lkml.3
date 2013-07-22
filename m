@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab3GVR3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:29:11 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:54940 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502Ab3GVR3J (ORCPT
+	id S932611Ab3GVRdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 13:33:37 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:29906 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932302Ab3GVRdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:29:09 -0400
+	Mon, 22 Jul 2013 13:33:35 -0400
+Date: Mon, 22 Jul 2013 19:33:33 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
+        Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>
+Subject: Re: [PATCH] staging/lustre: fix Kconfig bool defaults
+Message-ID: <20130722173332.GA14140@merkur.ravnborg.org>
+References: <1374511290-4883-1-git-send-email-bergwolf@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <CACxGe6tqisx19LP=5gPyF1iuBKedTLp0yK+WgmqG5Cf+a95Taw@mail.gmail.com>
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
-	<1374290388-19308-3-git-send-email-grant.likely@linaro.org>
-	<CAOesGMhaAy93J=Q1STZUHHA-SbH+WXCVuUn0ef14_18du2dk6w@mail.gmail.com>
-	<1374366577.1940.10.camel@joe-AO722>
-	<CACxGe6tqisx19LP=5gPyF1iuBKedTLp0yK+WgmqG5Cf+a95Taw@mail.gmail.com>
-Date: Mon, 22 Jul 2013 10:29:08 -0700
-Message-ID: <CAOesGMjdH6x9U0+6f6TC8Q=sCbO38aNedqTpHBe5cpLG79r3eA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-From: Olof Johansson <olof@lixom.net>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374511290-4883-1-git-send-email-bergwolf@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 21, 2013 at 2:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Sun, Jul 21, 2013 at 1:29 AM, Joe Perches <joe@perches.com> wrote:
->> On Sat, 2013-07-20 at 17:17 -0700, Olof Johansson wrote:
->>> On Fri, Jul 19, 2013 at 8:19 PM, Grant Likely <grant.likely@linaro.org> wrote:
->>> > Device tree bindings require a lot more attention than they used to.
->>> > We've got a group of volunteers willing to take over maintaining
->>> > bindings. This patch adds them to the MAINTAINERS file.
->> []
->>> > diff --git a/MAINTAINERS b/MAINTAINERS
->> []
->>> > +OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
->> []
->>> > +F:     arch/*/
->> []
->>> This seems a bit broad.
->>
->> Yep, that's every file anywhere under arch.
->
-> yeah, that was a c/p mistake. I'll drop that line before committing.
+On Tue, Jul 23, 2013 at 12:41:30AM +0800, Peng Tao wrote:
+> Should be y/n instead of true/false...
+> 
+> Reported-by: Paul Bolle <pebolle@tiscali.nl>
+> Cc: Andreas Dilger <andreas.dilger@intel.com>
+> Signed-off-by: Peng Tao <tao.peng@emc.com>
 
-Ok, with that:
+default n is the default.
+So usually we advice to drop this.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+	Sam
 
 
--Olof
+> ---
+> This applis on top of the 48 Intel tree ported patches.
+> 
+>  drivers/staging/lustre/lustre/Kconfig |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
+> index 566d89d..d80a78f 100644
+> --- a/drivers/staging/lustre/lustre/Kconfig
+> +++ b/drivers/staging/lustre/lustre/Kconfig
+> @@ -50,7 +50,7 @@ config LUSTRE_OBD_MAX_IOCTL_BUFFER
+>  config LUSTRE_DEBUG_LU_REF_CHECK
+>  	bool "Enable Lustre DEBUG object refcount checks"
+>  	depends on LUSTRE_FS
+> -	default false
+> +	default n
+>  	help
+>  	  This option is mainly for debug purpose. It enables Lustre code to track
+>  	  references between objects.
+> @@ -60,7 +60,7 @@ config LUSTRE_DEBUG_LU_REF_CHECK
+>  config LUSTRE_DEBUG_EXPENSIVE_CHECK
+>  	bool "Enable Lustre DEBUG checks"
+>  	depends on LUSTRE_FS
+> -	default false
+> +	default n
+>  	help
+>  	  This option is mainly for debug purpose. It enables Lustre code to do
+>  	  expensive checks that may have a performance impact.
+> @@ -70,4 +70,4 @@ config LUSTRE_DEBUG_EXPENSIVE_CHECK
+>  config LUSTRE_TRANSLATE_ERRNOS
+>  	bool
+>  	depends on LUSTRE_FS && !X86
+> -	default true
+> +	default y
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
