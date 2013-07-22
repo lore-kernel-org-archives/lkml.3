@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab3GVOD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:03:56 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:47767 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753868Ab3GVODy (ORCPT
+	id S1756086Ab3GVOFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:05:05 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.112]:44129 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754132Ab3GVOE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:03:54 -0400
-Message-ID: <51ED3BC3.40300@hurleysoftware.com>
-Date: Mon, 22 Jul 2013 10:03:47 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 22 Jul 2013 10:04:59 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-2.tower-200.messagelabs.com!1374501894!11361230!5
+X-Originating-IP: [66.77.174.13]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+From: Hector Palacios <hector.palacios@digi.com>
+To: <linux-iio@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <alexandre.belloni@free-electrons.com>, <jic23@kernel.org>,
+        <lars@metafoo.de>, <fabio.estevam@freescale.com>, <marex@denx.de>,
+        <hector.palacios@digi.com>
+Subject: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS LRADC
+Date: Mon, 22 Jul 2013 16:04:00 +0200
+Message-ID: <1374501843-19651-3-git-send-email-hector.palacios@digi.com>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        benjamin.tissoires@gmail.com, adlr@chromium.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying
- device issue""
-References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com> <51E84FD1.4050400@hurleysoftware.com> <20130718220936.GA8025@xanatos> <51E87C1F.1090301@hurleysoftware.com> <51E94F7C.9090302@canonical.com> <51E9B025.8010803@hurleysoftware.com> <alpine.LNX.2.00.1307221342410.23128@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1307221342410.23128@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2013 07:44 AM, Jiri Kosina wrote:
-> On Fri, 19 Jul 2013, Peter Hurley wrote:
->
->>>> As far as getting printk output from a custom kernel, I think that may
->>>> be beyond the reporter's capability. Perhaps one of the Ubuntu devs
->>>> triaging this bug could provide a test kernel for the OP with those
->>>> options on.
->>>>
->>>> Joseph, would you be willing to do that?
->>>
->>> Sure thing.  I'll build a kernel and request that the bug reporter
->>> collect usbmon data.
->>
->> Thanks Joseph for building the test kernel and getting it to the reporter!
->>
->> Sarah,
->>
->> I've attached the dmesg capture supplied by the original reporter on
->> a 3.10 custom kernel w/ the kbuild options you requested.
->>
->> It seems as if your initial suspicion is correct:
->>
->> [   46.785490] xhci_hcd 0000:00:14.0: Endpoint 0x81 not halted, refusing to
->> reset.
->> [   46.785493] xhci_hcd 0000:00:14.0: Endpoint 0x82 not halted, refusing to
->> reset.
->> [   46.785496] xhci_hcd 0000:00:14.0: Endpoint 0x83 not halted, refusing to
->> reset.
->> [   46.785952] xhci_hcd 0000:00:14.0: Waiting for status stage event
->>
->> At this point, would you recommend proceeding with the workaround or
->> waiting for an xHCI bug fix?
->
-> Thanks for your efforts.
->
-> Seems like this might be a part of the picture, but not a complete one.
-> Linus claims to have similar problem, but his receiver is not connected
-> through xHCI (I got this as an off-list report, so can't really provide a
-> pointer to ML archives).
+Some LRADC channels have fixed pre-dividers so they can measure
+different voltages at full scale. The reference voltage allows to
+expose a scaling attribute through the IIO sysfs so that a user can
+compute the real voltage out of a measured sample value.
 
-Ah, ok. I wasn't aware of that. I'll assume then that the necessary
-people have the complete picture.
+Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+Acked-by: Marek Vasut <marex@denx.de>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt | 9 ++++++++-
+ arch/arm/boot/dts/imx23.dtsi                                    | 4 ++++
+ arch/arm/boot/dts/imx28.dtsi                                    | 4 ++++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
 
-Regards,
-Peter Hurley
-
-
+diff --git a/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt b/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
+index 4688205..6ec485c 100644
+--- a/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
++++ b/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
+@@ -1,9 +1,12 @@
+ * Freescale i.MX28 LRADC device driver
+ 
+ Required properties:
+-- compatible: Should be "fsl,imx28-lradc"
++- compatible: "fsl,imx28-lradc", "fsl,imx23-lradc"
+ - reg: Address and length of the register set for the device
+ - interrupts: Should contain the LRADC interrupts
++- fsl,vref: Reference voltage (in mV) for each LRADC channel. This is the
++	    maximum voltage that can be measured at full scale in each channel
++	    considering fixed pre-dividers.
+ 
+ Optional properties:
+ - fsl,lradc-touchscreen-wires: Number of wires used to connect the touchscreen
+@@ -18,4 +21,8 @@ Examples:
+ 		reg = <0x80050000 0x2000>;
+ 		interrupts = <10 14 15 16 17 18 19
+ 				20 21 22 23 24 25>;
++		fsl,vref = <1850 1850 1850 1850
++			    1850 1850 1850 7400
++			    1850 1850 3700 1850
++			    3700 1850 1850 7400>
+ 	};
+diff --git a/arch/arm/boot/dts/imx23.dtsi b/arch/arm/boot/dts/imx23.dtsi
+index 587ceef..e212902 100644
+--- a/arch/arm/boot/dts/imx23.dtsi
++++ b/arch/arm/boot/dts/imx23.dtsi
+@@ -430,6 +430,10 @@
+ 				compatible = "fsl,imx23-lradc";
+ 				reg = <0x80050000 0x2000>;
+ 				interrupts = <36 37 38 39 40 41 42 43 44>;
++				fsl,vref = <1850 1850 1850 1850
++					    1850 1850 3700 7400
++					    1850 1850 1850 1850
++					    1850 1850 1850 7400>;
+ 				status = "disabled";
+ 			};
+ 
+diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
+index 6a8acb0..c1b3724 100644
+--- a/arch/arm/boot/dts/imx28.dtsi
++++ b/arch/arm/boot/dts/imx28.dtsi
+@@ -865,6 +865,10 @@
+ 				reg = <0x80050000 0x2000>;
+ 				interrupts = <10 14 15 16 17 18 19
+ 						20 21 22 23 24 25>;
++				fsl,vref = <1850 1850 1850 1850
++					    1850 1850 1850 7400
++					    1850 1850 3700 1850
++					    3700 1850 1850 7400>;
+ 				status = "disabled";
+ 			};
+ 
