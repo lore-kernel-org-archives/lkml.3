@@ -1,94 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab3GVOVi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 10:21:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31121 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756182Ab3GVOV0 (ORCPT
+	id S1756555Ab3GVOZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 10:25:15 -0400
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:43247 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab3GVOZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 10:21:26 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=eFrZKNUgOFAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Lhi7sDArL4UA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=S09kYNnEGi_uWo6_rOcA:9 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130722142124.870071281@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 22 Jul 2013 10:19:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 05/14] tracing/syscall: Avoid perf_trace_buf_*() if sys_data->perf_events
- is empty
-References: <20130722141947.972915744@goodmis.org>
-Content-Disposition: inline; filename=0005-tracing-syscall-Avoid-perf_trace_buf_-if-sys_data-pe.patch
+	Mon, 22 Jul 2013 10:25:11 -0400
+Date: Mon, 22 Jul 2013 10:25:08 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 04/16] ARM: topology: remove hwid/MPIDR dependency
+ from cpu_capacity
+In-Reply-To: <1374492747-13879-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Message-ID: <alpine.LFD.2.03.1307221024370.15022@syhkavp.arg>
+References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492747-13879-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+On Mon, 22 Jul 2013, Sudeep KarkadaNagesha wrote:
 
-perf_trace_buf_prepare() + perf_trace_buf_submit(head, task => NULL)
-make no sense if hlist_empty(head). Change perf_syscall_enter/exit()
-to check sys_data->{enter,exit}_event->perf_events beforehand.
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> Currently the topology code computes cpu capacity and stores it in
+> the list along with hwid(which is MPIDR) as it parses the CPU nodes
+> in the device tree. This is required as it needs to be mapped to the
+> logical CPU later.
+> 
+> Since the CPU device nodes can be retrieved in the logical ordering
+> using DT/OF helpers, its possible to store cpu_capacity also in logical
+> ordering and avoid storing hwid for each entry.
+> 
+> This patch removes hwid by making use of of_get_cpu_node.
+> 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Link: http://lkml.kernel.org/r/20130617170207.GA19806@redhat.com
-
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_syscalls.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 0611562..ac00857 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -566,6 +566,10 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	if (!sys_data)
- 		return;
- 
-+	head = this_cpu_ptr(sys_data->enter_event->perf_events);
-+	if (hlist_empty(head))
-+		return;
-+
- 	/* get the size after alignment with the u32 buffer size field */
- 	size = sizeof(unsigned long) * sys_data->nb_args + sizeof(*rec);
- 	size = ALIGN(size + sizeof(u32), sizeof(u64));
-@@ -583,8 +587,6 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	rec->nr = syscall_nr;
- 	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
- 			       (unsigned long *)&rec->args);
--
--	head = this_cpu_ptr(sys_data->enter_event->perf_events);
- 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
- 
-@@ -642,6 +644,10 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	if (!sys_data)
- 		return;
- 
-+	head = this_cpu_ptr(sys_data->exit_event->perf_events);
-+	if (hlist_empty(head))
-+		return;
-+
- 	/* We can probably do that at build time */
- 	size = ALIGN(sizeof(*rec) + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
-@@ -661,8 +667,6 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 
- 	rec->nr = syscall_nr;
- 	rec->ret = syscall_get_return_value(current, regs);
--
--	head = this_cpu_ptr(sys_data->exit_event->perf_events);
- 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
- 
--- 
-1.7.10.4
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
 
+> ---
+>  arch/arm/kernel/topology.c | 61 +++++++++++++++-------------------------------
+>  1 file changed, 19 insertions(+), 42 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+> index c5a5954..28ef27a 100644
+> --- a/arch/arm/kernel/topology.c
+> +++ b/arch/arm/kernel/topology.c
+> @@ -74,12 +74,8 @@ struct cpu_efficiency table_efficiency[] = {
+>  	{NULL, },
+>  };
+>  
+> -struct cpu_capacity {
+> -	unsigned long hwid;
+> -	unsigned long capacity;
+> -};
+> -
+> -struct cpu_capacity *cpu_capacity;
+> +unsigned long *__cpu_capacity;
+> +#define cpu_capacity(cpu)	__cpu_capacity[cpu]
+>  
+>  unsigned long middle_capacity = 1;
+>  
+> @@ -100,15 +96,19 @@ static void __init parse_dt_topology(void)
+>  	unsigned long capacity = 0;
+>  	int alloc_size, cpu = 0;
+>  
+> -	alloc_size = nr_cpu_ids * sizeof(struct cpu_capacity);
+> -	cpu_capacity = kzalloc(alloc_size, GFP_NOWAIT);
+> +	alloc_size = nr_cpu_ids * sizeof(*__cpu_capacity);
+> +	__cpu_capacity = kzalloc(alloc_size, GFP_NOWAIT);
+>  
+> -	while ((cn = of_find_node_by_type(cn, "cpu"))) {
+> -		const u32 *rate, *reg;
+> +	for_each_possible_cpu(cpu) {
+> +		const u32 *rate;
+>  		int len;
+>  
+> -		if (cpu >= num_possible_cpus())
+> -			break;
+> +		/* too early to use cpu->of_node */
+> +		cn = of_get_cpu_node(cpu);
+> +		if (!cn) {
+> +			pr_err("missing device node for CPU %d\n", cpu);
+> +			continue;
+> +		}
+>  
+>  		for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
+>  			if (of_device_is_compatible(cn, cpu_eff->compatible))
+> @@ -124,12 +124,6 @@ static void __init parse_dt_topology(void)
+>  			continue;
+>  		}
+>  
+> -		reg = of_get_property(cn, "reg", &len);
+> -		if (!reg || len != 4) {
+> -			pr_err("%s missing reg property\n", cn->full_name);
+> -			continue;
+> -		}
+> -
+>  		capacity = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
+>  
+>  		/* Save min capacity of the system */
+> @@ -140,13 +134,9 @@ static void __init parse_dt_topology(void)
+>  		if (capacity > max_capacity)
+>  			max_capacity = capacity;
+>  
+> -		cpu_capacity[cpu].capacity = capacity;
+> -		cpu_capacity[cpu++].hwid = be32_to_cpup(reg);
+> +		cpu_capacity(cpu) = capacity;
+>  	}
+>  
+> -	if (cpu < num_possible_cpus())
+> -		cpu_capacity[cpu].hwid = (unsigned long)(-1);
+> -
+>  	/* If min and max capacities are equals, we bypass the update of the
+>  	 * cpu_scale because all CPUs have the same capacity. Otherwise, we
+>  	 * compute a middle_capacity factor that will ensure that the capacity
+> @@ -154,9 +144,7 @@ static void __init parse_dt_topology(void)
+>  	 * SCHED_POWER_SCALE, which is the default value, but with the
+>  	 * constraint explained near table_efficiency[].
+>  	 */
+> -	if (min_capacity == max_capacity)
+> -		cpu_capacity[0].hwid = (unsigned long)(-1);
+> -	else if (4*max_capacity < (3*(max_capacity + min_capacity)))
+> +	if (4*max_capacity < (3*(max_capacity + min_capacity)))
+>  		middle_capacity = (min_capacity + max_capacity)
+>  				>> (SCHED_POWER_SHIFT+1);
+>  	else
+> @@ -170,23 +158,12 @@ static void __init parse_dt_topology(void)
+>   * boot. The update of all CPUs is in O(n^2) for heteregeneous system but the
+>   * function returns directly for SMP system.
+>   */
+> -void update_cpu_power(unsigned int cpu, unsigned long hwid)
+> +void update_cpu_power(unsigned int cpu)
+>  {
+> -	unsigned int idx = 0;
+> -
+> -	/* look for the cpu's hwid in the cpu capacity table */
+> -	for (idx = 0; idx < num_possible_cpus(); idx++) {
+> -		if (cpu_capacity[idx].hwid == hwid)
+> -			break;
+> -
+> -		if (cpu_capacity[idx].hwid == -1)
+> -			return;
+> -	}
+> -
+> -	if (idx == num_possible_cpus())
+> +	if (!cpu_capacity(cpu))
+>  		return;
+>  
+> -	set_power_scale(cpu, cpu_capacity[idx].capacity / middle_capacity);
+> +	set_power_scale(cpu, cpu_capacity(cpu) / middle_capacity);
+>  
+>  	printk(KERN_INFO "CPU%u: update cpu_power %lu\n",
+>  		cpu, arch_scale_freq_power(NULL, cpu));
+> @@ -194,7 +171,7 @@ void update_cpu_power(unsigned int cpu, unsigned long hwid)
+>  
+>  #else
+>  static inline void parse_dt_topology(void) {}
+> -static inline void update_cpu_power(unsigned int cpuid, unsigned int mpidr) {}
+> +static inline void update_cpu_power(unsigned int cpuid) {}
+>  #endif
+>  
+>   /*
+> @@ -281,7 +258,7 @@ void store_cpu_topology(unsigned int cpuid)
+>  
+>  	update_siblings_masks(cpuid);
+>  
+> -	update_cpu_power(cpuid, mpidr & MPIDR_HWID_BITMASK);
+> +	update_cpu_power(cpuid);
+>  
+>  	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
+>  		cpuid, cpu_topology[cpuid].thread_id,
+> -- 
+> 1.8.1.2
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
