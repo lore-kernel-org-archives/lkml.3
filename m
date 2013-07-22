@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3GVKvW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:51:22 -0400
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:44360 "EHLO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab3GVKvU (ORCPT
+	id S932216Ab3GVKvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:51:43 -0400
+Received: from [65.55.88.12] ([65.55.88.12]:45279 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753078Ab3GVKvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:51:20 -0400
+	Mon, 22 Jul 2013 06:51:42 -0400
+X-Forefront-Antispam-Report: CIP:157.56.250.85;KIP:(null);UIP:(null);IPV:NLI;H:AMXPRD0511HT003.eurprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: PS0(zzzz208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de097h1de096h8275bh8275dhz2fh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1155h)
+Message-ID: <51ED0E61.30106@youview.com>
+Date: Mon, 22 Jul 2013 11:50:09 +0100
+From: William Manley <william.manley@youview.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <51E9AA6D.3070007@kernel.org>
-References: <1374162430-30709-1-git-send-email-x0199363@ti.com>
-	<51E816BD.9010302@metafoo.de>
-	<CAGH3droXKeE7diARCZQ=n37XkAmYzrcUkyZLvcWjWVLHvJnWVw@mail.gmail.com>
-	<51E9AA6D.3070007@kernel.org>
-Date: Mon, 22 Jul 2013 13:51:19 +0300
-Message-ID: <CAGH3droNOGhbkpz5yqznKVX8HOmT2FimKp0_95JVSpEf7zUAoA@mail.gmail.com>
-Subject: Re: [PATCH] iio: core: Avoid double minus in sysfs output
-From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Oleksandr Kravchenko <x0199363@ti.com>, jic23@cam.ac.uk,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: <linux-kernel@vger.kernel.org>
+CC: <davem@davemloft.net>
+Subject: IGMP Unsolicited Report Interval too long for IGMPv3?
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [31.221.37.8]
+X-OriginatorOrg: youview.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this patch for now. I'll rework it soon. It issues
-warnings when compiling.
+If an IGMP join packet is lost you will not receive data sent to the 
+multicast group so if no data arrives from that multicast group in a 
+period of time after the IGMP join a second IGMP join will be sent.  The 
+delay between joins is the "IGMP Unsolicited Report Interval".
 
-On Sat, Jul 20, 2013 at 12:06 AM, Jonathan Cameron <jic23@kernel.org> wrote:
-> On 07/19/2013 07:15 AM, Oleksandr Kravchenko wrote:
->> On Thu, Jul 18, 2013 at 7:24 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>> On 07/18/2013 05:47 PM, Oleksandr Kravchenko wrote:
->>>> From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
->>>>
->>>> This patch fixes the issue with double minus in output when
->>>> reading channels from sysfs for IIO_VAL_INT_PLUS_MICRO and
->>>> IIO_VAL_INT_PLUS_NANO cases. Until this patch if val and val2
->>>> both are negatives output string contains "--" before
->>>> digits. It is result of "-%d..." in sprintf() format.
->>>>
->>>
->>> Hm, this might be a bug in a driver that is triggering this. The idea is
->>> that val2 is only allowed to be negative if val is 0.
->>>
->>> - Lars
->>>
->> If I calculate val and val2 in next way:
->> *val = adc / 1000000;
->> *val2 = adc % 1000000;
->> both val and val2 could by negative. Do I have to check it in my driver?
->>
-> I guess it is will happen occasionally.  In the c89 standard, module for a negative
-> is implementation specific.  Anyone know if we can assume this will work in all cases
-> within the kernel?
+In the kernel this seems to be hard coded to be chosen randomly between 
+0-10s.  In our use-case (IPTV) this is too long as it can cause channel 
+change to be slow in the presence of packet loss.
+
+I would guess that this 10s has come from IGMPv2 RFC2236, which was 
+reduced to 1s in IGMPv3 RFC3376.
+
+There was a thread about this on linux-rdma in 2010 in the context of IP 
+over Infiniband but it seems no patches got applied as a result of the 
+discussion:
+
+http://www.mail-archive.com/linux-rdma@vger.kernel.org/msg05740.html
+
+Would the right patch reducing the unsolicited report interval for 
+IGMPv3 be acceptable now?
+
+Thanks
+
+Will
 
 
-
--- 
-Oleksandr Kravchenko
-GlobalLogic
-P +380633213187
-P +380994930248
-www.globallogic.com
-
-http://www.globallogic.com/email_disclaimer.txt
