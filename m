@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022Ab3GVSij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:38:39 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:38316 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932629Ab3GVSih (ORCPT
+	id S933044Ab3GVSkW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:40:22 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:52910 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932629Ab3GVSkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 14:38:37 -0400
-Message-ID: <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Grant Grundler <grundler@google.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Freddy Xin <freddy@asix.com.tw>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        ASIX Louis =?UTF-8?Q?=5B=E8=98=87=E5=A8=81=E9=99=B8=5D?= 
-	<louis@asix.com.tw>,
-        "Allan Chou" <allan@asix.com.tw>
-Date: Mon, 22 Jul 2013 19:38:32 +0100
-In-Reply-To: <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
-References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
-	 <1374512879.4990.19.camel@edumazet-glaptop>
-	 <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 22 Jul 2013 14:40:20 -0400
+Message-ID: <51ED7C8E.1080701@gmail.com>
+Date: Tue, 23 Jul 2013 02:40:14 +0800
+From: Oliver Yang <yangoliver@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20030.005
-X-TM-AS-Result: No--16.352300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH] Fix build failures of python/perf.so.
+References: <1374493559-11139-1-git-send-email-yangoliver@gmail.com> <20130722150242.GB2157@ghostprotocols.net>
+In-Reply-To: <20130722150242.GB2157@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 11:29 -0700, Grant Grundler wrote:
-> On Mon, Jul 22, 2013 at 10:07 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> ...
-> > I guess that if a driver does not advertise NETIF_F_SG, this
-> > skb_linearize() call is not needed : All frames reaching your xmit
-> > function should already be linear
+于 7/22/2013 11:02 PM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Jul 22, 2013 at 07:45:59PM +0800, Oliver Yang escreveu:
+>> If gcc and python are not under the standard path, it could cause
+>> the build failure of perf.so.
 > 
-> As Ben Hutchings pointed out, hw_features is still setting this...but
-> I'm not sure how that matters.
+> How can just adding the prefix to the compiler like that fix something?
+
+Sorry for causing the confusions. I sent out a wrong patch.
+
+The one I want to send out was,
+
+ $(OUTPUT)python/perf.so: $(PYRF_OBJS)
+-       $(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
++       $(QUIET_GEN)PATH='$(CROSS_COMPILE)' CFLAGS='$(BASIC_CFLAGS)'
+$(PYTHON_WORD) util/setup.py \
+          --quiet build_ext; \
+        mkdir -p $(OUTPUT)python && \
+        cp $(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/
+
+
+But I realized that our customized env had a naming conflicts with
+perf makefile. In our customized top level makefile, we defined
+'CROSS_COMPILE' as the location of compiler, which is under a
+non-standard path.
+
+If without this fix, when we use the python from a non-standard
+location, it will try to find gcc under the directory defined by
+$PATH. But we do want to specify the gcc location which matched with
+our specified python version.
+
+Here is the original error messages, the gcc matched with python was
+not under the directory defined by $PATH,
+
+CFLAGS='-Iutil/include -Iarch/x86/include -DLIBELF_NO_MMAP
+-DNO_NEWT_SUPPORT -DNO_LIBPERL -DHAVE_CPLUS_DEMANGLE -DNO_STRLCPY'
+'/nfs/tools/usr/bin/python' util/setup.py \
+  --quiet build_ext; \
+mkdir -p python && \
+cp python_ext_build/lib/perf.so python/
+unable to execute gcc: Not a directory
+error: command 'gcc' failed with exit status 1
+cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
+make: *** [python/perf.so] Error 1
+
 > 
-> ax88179_set_features() doesn't allow setting SG or TSO features.  But
-> I expect it would be "not too difficult" to add such that ethtool
-> could set those features after boot.
-[...]
+> Looking at the references to CROSS_COMPILE in tools/perf/Makefile:
+> 
+> -----------------------------------
+> 
+> # Define CROSS_COMPILE as prefix name of compiler if you want
+> # cross-builds.
+> 
+> <SNIP>
+> 
+> CC = $(CROSS_COMPILE)gcc
+> AR = $(CROSS_COMPILE)ar
+> 
+> -----------------------------------
+> 
+> Can you provide the make command line you're using that makes it work
+> for you with this patch?
 
-It already can.  That's what putting feature flags in hw_features does.
+I just export CROSS_COMPILE with a directory contained with right gcc
+version. Now I realize that this patch is NOT correct, and it just
+happened to work.
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Thanks for your comments. Sorry again.
 
