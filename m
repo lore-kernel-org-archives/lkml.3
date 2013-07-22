@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3GVQzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:55:32 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:47266 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab3GVQzb (ORCPT
+	id S1757530Ab3GVQ4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:56:55 -0400
+Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:38274 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756392Ab3GVQ4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:55:31 -0400
-Date: Mon, 22 Jul 2013 16:55:29 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: catalin.marinas@arm.com, Russell King <linux@arm.linux.org.uk>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Mesfin, Yebio" <ymesfin@ti.com>
-Subject: Re: linux-3.11-rc1: Internal error: Oops - undefined instruction:
- 0 [#1] SMP ARM on OMAP3/AM335x
-In-Reply-To: <51ECFBAC.7090900@ti.com>
-Message-ID: <alpine.DEB.2.02.1307221652350.10891@utopia.booyaka.com>
-References: <51ECFBAC.7090900@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 22 Jul 2013 12:56:54 -0400
+Date: Mon, 22 Jul 2013 18:57:07 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH 04/22] ARM: at91: dt: Remove '0x's from Animeo IP DTS file
+Message-ID: <20130722165707.GJ16015@ns203013.ovh.net>
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374490361-25769-4-git-send-email-lee.jones@linaro.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 7245728852301229055
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Jul 2013, Roger Quadros wrote:
+On 11:52 Mon 22 Jul     , Lee Jones wrote:
+> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-> I observe the following problem on booting v3.11-rc1 on OMAP3 beagle board.
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/boot/dts/animeo_ip.dts | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> [    5.888946] Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
-> [    5.896057] Modules linked in:
-> [    5.899322] CPU: 0 PID: 9 Comm: rcu_sched Not tainted 3.11.0-rc2-00001-g1ea701a #876
-> [    5.907501] task: ce0720c0 ti: ce07a000 task.ti: ce07a000
-> [    5.913208] PC is at check_and_switch_context+0x130/0x4dc
-> [    5.918914] LR is at check_and_switch_context+0xd8/0x4dc
-
-It affects 3730beaglexm and am335xbonelt here too.
-
-http://www.pwsan.com/omap/testlogs/test_v3.11-rc2/20130721203314/boot/am335xbonelt/am335x-bone/am335xbonelt_log.txt
-http://www.pwsan.com/omap/testlogs/test_v3.11-rc2/20130721203314/boot/3730beaglexm/3730beaglexm_log.txt
-
-
-- Paul
+> diff --git a/arch/arm/boot/dts/animeo_ip.dts b/arch/arm/boot/dts/animeo_ip.dts
+> index 3a1de9e..4cb0342 100644
+> --- a/arch/arm/boot/dts/animeo_ip.dts
+> +++ b/arch/arm/boot/dts/animeo_ip.dts
+> @@ -105,7 +105,7 @@
+>  				reg = <0x48000 0x8000>;
+>  			};
+>  
+> -			user_block@0x50000 {
+> +			user_block@50000 {
+>  				label = "user_block";
+>  				reg = <0x50000 0xb0000>;
+>  			};
+> -- 
+> 1.8.1.2
+> 
