@@ -1,80 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab3GVCm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 22:42:58 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:47118 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab3GVCm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 22:42:57 -0400
-X-Spam-Score: -100.8
-Message-ID: <51EC9BF6.3060800@asianux.com>
-Date: Mon, 22 Jul 2013 10:41:58 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755316Ab3GVCpl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 22:45:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60541 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754653Ab3GVCph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 22:45:37 -0400
+X-IronPort-AV: E=Sophos;i="4.89,715,1367942400"; 
+   d="scan'208";a="7970910"
+Message-ID: <51EC9D6F.9010807@cn.fujitsu.com>
+Date: Mon, 22 Jul 2013 10:48:15 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: khali@linux-fr.org, David.Woodhouse@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/params.c: add/modify failure processing code
- when sysfs_create_file() fails.
-References: <51DB8597.4090101@asianux.com> <87y59gcg17.fsf@rustcorp.com.au> <51DCC426.3010606@gmail.com> <87k3kx50bp.fsf@rustcorp.com.au> <51DE2F55.2070109@asianux.com>
-In-Reply-To: <51DE2F55.2070109@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+CC: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 00/21] Arrange hotpluggable memory as ZONE_MOVABLE.
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/22 10:43:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/22 10:43:36,
+	Serialize complete at 2013/07/22 10:43:36
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+Hi,
 
-Please help check this patch, when you have time.
+Forgot to mention, this patch-set is based on linux-3.10 release.
 
-Thanks.
+Thanks. :)
 
-On 07/11/2013 12:06 PM, Chen Gang wrote:
-> When sysfs_create_file() fails, need consider about it. And process it
-> with BUG_ON(), because sysfs_create_file() can fail due to OOM (not at
-> boot) or name duplication (not here).
-> 
-> Also correct the error printing information when failure occurs.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/params.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/params.c b/kernel/params.c
-> index 440e65d..3d70f90 100644
-> --- a/kernel/params.c
-> +++ b/kernel/params.c
-> @@ -745,12 +745,14 @@ static struct module_kobject * __init locate_module_kobject(const char *name)
->  		err = kobject_init_and_add(&mk->kobj, &module_ktype, NULL,
->  					   "%s", name);
->  #ifdef CONFIG_MODULES
-> -		if (!err)
-> +		if (!err) {
->  			err = sysfs_create_file(&mk->kobj, &module_uevent.attr);
-> +			BUG_ON(err);
-> +		}
->  #endif
->  		if (err) {
->  			kobject_put(&mk->kobj);
-> -			pr_crit("Adding module '%s' to sysfs failed (%d), the system may be unstable.\n",
-> +			pr_crit("Initializing and adding module '%s' failed (%d), the system may be unstable.\n",
->  				name, err);
->  			return NULL;
->  		}
-> @@ -845,6 +847,7 @@ static void __init version_sysfs_builtin(void)
->  		mk = locate_module_kobject(vattr->module_name);
->  		if (mk) {
->  			err = sysfs_create_file(&mk->kobj, &vattr->mattr.attr);
-> +			BUG_ON(err);
->  			kobject_uevent(&mk->kobj, KOBJ_ADD);
->  			kobject_put(&mk->kobj);
->  		}
-> 
-
-
--- 
-Chen Gang
+On 07/19/2013 03:59 PM, Tang Chen wrote:
+> This patch-set aims to solve some problems at system boot time
+> to enhance memory hotplug functionality.
+>
+> [Background]
+>
+> The Linux kernel cannot migrate pages used by the kernel because
+> of the kernel direct mapping. Since va = pa + PAGE_OFFSET, if the
+> physical address is changed, we cannot simply update the kernel
+> pagetable. On the contrary, we have to update all the pointers
+> pointing to the virtual address, which is very difficult to do.
+>
+> In order to do memory hotplug, we should prevent the kernel to use
+> hotpluggable memory.
+>
+> In ACPI, there is a table named SRAT(System Resource Affinity Table).
+> It contains system NUMA info (CPUs, memory ranges, PXM), and also a
+> flag field indicating which memory ranges are hotpluggable.
+>
+>
+> [Problem to be solved]
+>
+> At the very early time when the system is booting, we use a bootmem
+> allocator, named memblock, to allocate memory for the kernel.
+> memblock will start to work before the kernel parse SRAT, which
+> means memblock won't know which memory is hotpluggable before SRAT
+> is parsed.
+>
+> So at this time, memblock could allocate hotpluggable memory for
+> the kernel to use permanently. For example, the kernel may allocate
+> pagetables in hotpluggable memory, which cannot be freed when the
+> system is up.
+>
+> So we have to prevent memblock allocating hotpluggable memory for
+> the kernel at the early boot time.
+>
+>
+> [Earlier solutions]>
+> We have tried to parse SRAT earlier, before memblock is ready. To
+> do this, we also have to do ACPI_INITRD_TABLE_OVERRIDE earlier.
+> Otherwise the override tables won't be able to effect.
+>
+> This is not that easy to do because memblock is ready before direct
+> mapping is setup. So Yinghai split the ACPI_INITRD_TABLE_OVERRIDE
+> procedure into two steps: find and copy. Please refer to the
+> following patch-set:
+>          https://lkml.org/lkml/2013/6/13/587
+>
+> To this solution, tj gave a lot of comments and the following
+> suggestions.
+>
+>
+> [Suggestion from tj]
+>
+> tj mainly gave the following suggestions:
+>
+> 1. Necessary reordering is OK, but we should not rely on
+>     reordering to achieve the goal because it makes the kernel
+>     too fragile.
+>
+> 2. Memory allocated to kernel for temporary usage is OK because
+>     it will be freed when the system is up. Doing relocation
+>     for permanent allocated hotpluggable memory will make the
+>     the kernel more robust.
+>
+> 3. Need to enhance memblock to discover and complain if any
+>     hotpluggable memory is allocated to kernel.
+>
+> After a long thinking, we choose not to do the relocation for
+> the following reasons:
+>
+> 1. It's easy to find out the allocated hotpluggable memory. But
+>     memblock will merge the adjoined ranges owned by different users
+>     and used for different purposes. It's hard to find the owners.
+>
+> 2. Different memory has different way to be relocated. I think one
+>     function for each kind of memory will make the code too messy.
+>
+> 3. Pagetable could be in hotpluggable memory. Relocating pagetable
+>     is too difficult and risky. We have to update all PUD, PMD pages.
+>     And also, ACPI_INITRD_TABLE_OVERRIDE and parsing SRAT procedures
+>     are not long after pagetable is initialized. If we relocate the
+>     pagetable not long after it was initialized, the code will be
+>     very ugly.
+>
+>
+> [Solution in this patch-set]
+>
+> In this patch-set, we still do the reordering, but in a new way.
+>
+> 1. Improve memblock with flags, so that it is able to differentiate
+>     memory regions for different usage. And also a MEMBLOCK_HOTPLUGGABLE
+>     flag to mark hotpluggable memory.
+>     (patch 1 ~ 3)
+>
+> 2. When memblock is ready (memblock_x86_fill() is called), initialize
+>     acpi_gbl_root_table_list, fulfill all the ACPI tables' phys addrs.
+>     Now, we have all the ACPI tables' phys addrs provided by firmware.
+>     (patch 4 ~ 8)
+>
+> 3. Check if there is a SRAT in initrd file used to override the one
+>     provided by firmware. If so, get its phys addr.
+>     (patch 12)
+>
+> 4. If no override SRAT in initrd, get the phys addr of the SRAT
+>     provided by firmware.
+>     (patch 13)
+>
+>     Now, we have the phys addr of the to be used SRAT, the one in
+>     initrd or the one in firmware.
+>
+> 5. Parse only the memory affinities in SRAT, find out all the
+>     hotpluggable memory regions and reserve them in memblock with
+>     MEMBLK_HOTPLUGGABLE flag.
+>     (patch 14 ~ 15)
+>
+> 6. The kernel goes through the current path. Any other related parts,
+>     such as ACPI_INITRD_TABLE_OVERRIDE path, the current parsing ACPI
+>     tables pathes, global variable numa_meminfo, and so on, are not
+>     modified. They work as before.
+>
+> 7. Free memory with MEMBLK_HOTPLUGGABLE flag when memory initialization
+>     is finished.
+>     (patch 16)
+>
+> 8. Introduce movablecore=acpi boot option to allow users to enable
+>     and disable this functionality.
+>     (patch 17 ~ 21)
+>
+> And patch 9 ~ 11 fix some small problems.
+>
+>
+> In summary, in order to get hotpluggable memory info as early as possible,
+> this patch-set only parse memory affinities in SRAT one more time right
+> after memblock is ready, and leave all the other pathes untouched. With
+> the hotpluggable memory info, we can arrange hotpluggable memory in
+> ZONE_MOVABLE to prevent the kernel to use it.
+>
+> Thanks. :)
+>
+>
+> Tang Chen (20):
+>    acpi: Print Hot-Pluggable Field in SRAT.
+>    memblock, numa: Introduce flag into memblock.
+>    x86, acpi, numa, mem-hotplug: Introduce MEMBLK_HOTPLUGGABLE to
+>      reserve hotpluggable memory.
+>    acpi: Remove "continue" in macro INVALID_TABLE().
+>    acpi: Introduce acpi_invalid_table() to check if a table is invalid.
+>    x86, acpi: Split acpi_boot_table_init() into two parts.
+>    x86, acpi: Initialize ACPI root table list earlier.
+>    x86, acpi: Also initialize signature and length when parsing root
+>      table.
+>    x86: Make get_ramdisk_{image|size}() global.
+>    earlycpio.c: Fix the confusing comment of find_cpio_data().
+>    x86, acpi: Try to find if SRAT is overrided earlier.
+>    x86, acpi: Try to find SRAT in firmware earlier.
+>    x86, acpi, numa: Reserve hotpluggable memory at early time.
+>    x86, acpi, numa: Don't reserve memory on nodes the kernel resides in.
+>    x86, memblock, mem-hotplug: Free hotpluggable memory reserved by
+>      memblock.
+>    page_alloc, mem-hotplug: Improve movablecore to {en|dis}able using
+>      SRAT.
+>    x86, numa: Synchronize nid info in memblock.reserve with
+>      numa_meminfo.
+>    x86, numa: Save nid when reserve memory into memblock.reserved[].
+>    x86, numa, acpi, memory-hotplug: Make movablecore=acpi have higher
+>      priority.
+>    doc, page_alloc, acpi, mem-hotplug: Add doc for movablecore=acpi boot
+>      option.
+>
+> Yasuaki Ishimatsu (1):
+>    x86: get pg_data_t's memory from other node
+>
+>   Documentation/kernel-parameters.txt |   10 ++
+>   arch/x86/include/asm/setup.h        |    3 +
+>   arch/x86/kernel/acpi/boot.c         |   38 +++--
+>   arch/x86/kernel/setup.c             |   22 +++-
+>   arch/x86/mm/numa.c                  |   55 +++++++-
+>   arch/x86/mm/srat.c                  |   11 +-
+>   drivers/acpi/acpica/tbutils.c       |   48 ++++++-
+>   drivers/acpi/acpica/tbxface.c       |   34 +++++
+>   drivers/acpi/osl.c                  |  262 ++++++++++++++++++++++++++++++++---
+>   drivers/acpi/tables.c               |    7 +-
+>   include/acpi/acpixf.h               |    6 +
+>   include/linux/acpi.h                |   21 +++-
+>   include/linux/memblock.h            |    9 ++
+>   include/linux/memory_hotplug.h      |    5 +
+>   include/linux/mm.h                  |    9 ++
+>   lib/earlycpio.c                     |    7 +-
+>   mm/memblock.c                       |   90 ++++++++++--
+>   mm/memory_hotplug.c                 |   42 ++++++-
+>   mm/nobootmem.c                      |    3 +
+>   mm/page_alloc.c                     |   44 ++++++-
+>   20 files changed, 656 insertions(+), 70 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
