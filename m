@@ -1,150 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab3GVBIA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 21:08:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23061 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010Ab3GVBH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 21:07:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,715,1367996400"; 
-   d="scan'208";a="368871688"
-Date: Mon, 22 Jul 2013 09:07:56 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [x86] Kernel panic - not syncing: Fatal exception in interrupt
-Message-ID: <20130722010756.GA3365@localhost>
-References: <20130720131226.GA13893@localhost>
- <51EB29FD.60508@zytor.com>
- <alpine.LNX.2.00.1307211004100.31632@pobox.suse.cz>
+	id S1753753Ab3GVBTJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 21:19:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41837 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab3GVBTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 21:19:06 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>
+Subject: RE: [PATCH 1/3] mfd: add LP3943 MFD driver
+Thread-Topic: [PATCH 1/3] mfd: add LP3943 MFD driver
+Thread-Index: Ac6BzEn3Qmj4peQLTCahfY4cnCS0AwA0E7OAAPLQr5A=
+Date: Mon, 22 Jul 2013 01:18:54 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E83161@DQHE06.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F82E815C3@DQHE06.ent.ti.com>
+ <20130717112033.GB3336@laptop>
+In-Reply-To: <20130717112033.GB3336@laptop>
+Accept-Language: en-US, ko-KR
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1307211004100.31632@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6M1JOm2006498
 
-Hi Jiri,
+Hi Lee,
+Thanks for your detailed review.
 
-> What I am however wondering whether can't be case here is that the jump 
-> label was used before int3_notifier has been registered.
-> I am thinking about ways around this, but we'll probably have to do the 
-> same ftrace is doing, i.e. hook into do_int3() directly instead of relying 
-> on the notifier to be registered in time.
+> > diff --git a/Documentation/devicetree/bindings/mfd/lp3943.txt
+> b/Documentation/devicetree/bindings/mfd/lp3943.txt
+> > new file mode 100644
+> > index 0000000..4eb251d
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/lp3943.txt
+> > @@ -0,0 +1,23 @@
+> > +Bindings for TI/National Semiconductor LP3943 Driver
+> > +
+> > +Required properties:
+> > +  - compatible: "ti,lp3943"
+> > +  - reg: 7bit I2C slave address. 0x60 ~ 0x67
+> > +
+> > +Optional properties:
+> > +  - ti,pwm0, ti,pwm1: Output channel definition for PWM port 0 and 1
+> > +                      0 = invalid, 1 = LED0, 2 = LED 1, ... 16 = LED15
+>                                          No space here ^      ^ comma here
 > 
-> Fengguang, as I am not able to reproduce this bug locally, could you do me 
-> a favor and test whether the patch below works the problem around, just 
-> for the sake of testing the hypothesis?
+> This is actually pretty confusing.
 
-I tested 1000 boots with the patch and find no more boot problem.
+Thanks for catching this. my ugly formatting :(
 
-Thanks,
-Fengguang
+> Any way you can put the invalid entry at the end so, 0 == LED0?
+> 
+> > +Datasheet
+> > +  http://www.ti.com/lit/ds/snvs256b/snvs256b.pdf
+> 
+> Ah, I see.... So the above are pins, rather than arbitrary channel Nos.
+> 
+> Would it make sense to use pinctrl instead then?
 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] x86: call out into int3 handler directly instead of using notifier
+I'm not familiar with the PINCTRL subsystem. I'll check it.
+
+> > +int lp3943_read_byte(struct lp3943 *l, u8 reg, u8 *read)
 > 
-> ---
->  arch/x86/include/asm/alternative.h |    2 ++
->  arch/x86/kernel/alternative.c      |   22 +++++++++++++++++++++-
->  arch/x86/kernel/traps.c            |    4 ++++
->  3 files changed, 27 insertions(+), 1 deletions(-)
+> Not sure I like 'l' as a variable name. The function is small enough
+> to get away with it in this context, but it would probably be better
+> if it were renamed to something more meaningful.
+
+LP3943 consists of two devices - GPIO and PWM drivers.
+So each private data was defined as 
+
+struct lp3943 *l;			/* MFD device */
+struct lp3943_gpio *lg;		/* GPIO driver */
+struct lp3943_pwm *lp;		/* PWM driver */
+
+As you pointed, the 'l' may look like a list of something.
+I'll rename them as below.
+
+struct lp3943 *lp3943;
+struct lp3943_gpio *lp3943_gpio;
+struct lp3943_pwm *lp3943_pwm;
+
+> > +static const struct i2c_device_id lp3943_ids[] = {
+> > +	{"lp3943", 0},
 > 
-> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-> index 3abf8dd..c22a41d 100644
-> --- a/arch/x86/include/asm/alternative.h
-> +++ b/arch/x86/include/asm/alternative.h
-> @@ -5,6 +5,7 @@
->  #include <linux/stddef.h>
->  #include <linux/stringify.h>
->  #include <asm/asm.h>
-> +#include <asm/ptrace.h>
->  
->  /*
->   * Alternative inline assembly for SMP.
-> @@ -232,6 +233,7 @@ struct text_poke_param {
->  	size_t len;
->  };
->  
-> +extern int poke_bp_int3_handler(struct pt_regs *regs);
->  extern void *text_poke(void *addr, const void *opcode, size_t len);
->  extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
->  extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index 0ab4936..e1088f2 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -605,6 +605,24 @@ static void do_sync_core(void *info)
->  static bool bp_patching_in_progress;
->  static void *bp_int3_handler, *bp_int3_addr;
->  
-> +int poke_bp_int3_handler(struct pt_regs *regs)
-> +{
-> +	/* bp_patching_in_progress */
-> +	smp_rmb();
-> +
-> +	if (likely(!bp_patching_in_progress))
-> +		return 0;
-> +
-> +	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
-> +		return 0;
-> +
-> +	/* set up the specified breakpoint handler */
-> +	regs->ip = (unsigned long) bp_int3_handler;
-> +
-> +	return 1;
-> +
-> +}
-> +
->  static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
->  {
->  	struct die_args *args = data;
-> @@ -689,6 +707,7 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
->  	return addr;
->  }
->  
-> +#if 0
->  /* this one needs to run before anything else handles it as a
->   * regular exception */
->  static struct notifier_block int3_nb = {
-> @@ -700,8 +719,9 @@ static int __init int3_init(void)
->  {
->  	return register_die_notifier(&int3_nb);
->  }
-> -
->  arch_initcall(int3_init);
-> +#endif
-> +
->  /*
->   * Cross-modifying kernel text with stop_machine().
->   * This code originally comes from immediate value.
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 772e2a8..e464764 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -58,6 +58,7 @@
->  #include <asm/mce.h>
->  #include <asm/fixmap.h>
->  #include <asm/mach_traps.h>
-> +#include <asm/alternative.h>
->  
->  #ifdef CONFIG_X86_64
->  #include <asm/x86_init.h>
-> @@ -324,6 +325,9 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
->  	    ftrace_int3_handler(regs))
->  		return;
->  #endif
-> +	if (poke_bp_int3_handler(regs))
-> +		return;
-> +
->  	prev_state = exception_enter();
->  #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
->  	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
+> Lack of consistency ...
+
+I don't know exactly what it means. Do you mean the name of I2C device?
+
+Regards,
+Milo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
