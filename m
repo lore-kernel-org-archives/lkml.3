@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab3GVPhO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 11:37:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65354 "EHLO mx1.redhat.com"
+	id S1757563Ab3GVPhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 11:37:40 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50691 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752252Ab3GVPhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 11:37:13 -0400
-From: Nikola Pajkovsky <npajkovs@redhat.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Kim <jaegeuk.kim@samsung.com>,
-        f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] f2fs: use list_for_each rather than list_for_each_safe, in remove_orphan_inode()
-References: <51E8F7A6.7030708@cn.fujitsu.com>
-Date: Mon, 22 Jul 2013 17:36:45 +0200
-In-Reply-To: <51E8F7A6.7030708@cn.fujitsu.com> (Gu Zheng's message of "Fri, 19
-	Jul 2013 16:24:06 +0800")
-Message-ID: <m3d2qa7gj6.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (x86_64-unknown-linux-gnu)
+	id S1752252Ab3GVPhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 11:37:39 -0400
+Date: Mon, 22 Jul 2013 11:37:34 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Paul Bolle <paul.bollee@gmail.com>
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-07-18-16-40 uploaded
+Message-ID: <20130722153734.GB715@cmpxchg.org>
+References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com>
+ <51E8B34B.1070200@gmail.com>
+ <20130719180035.GI17812@cmpxchg.org>
+ <51ED2276.2020205@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51ED2276.2020205@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
+On Mon, Jul 22, 2013 at 08:15:50PM +0800, Paul Bolle wrote:
+> On 07/20/2013 02:00 AM, Johannes Weiner wrote:
+> >On Thu, Jul 18, 2013 at 11:32:27PM -0400, Paul Bolle wrote:
+> >>On 07/18/2013 07:41 PM, akpm@linux-foundation.org wrote:
+> >>>The mm-of-the-moment snapshot 2013-07-18-16-40 has been uploaded to
+> >>>
+> >>>    http://www.ozlabs.org/~akpm/mmotm/
+> >>>
+> >>>mmotm-readme.txt says
+> >>>
+> >>>README for mm-of-the-moment:
+> >>>
+> >>>http://www.ozlabs.org/~akpm/mmotm/
+> >>>
+> >>>This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> >>>more than once a week.
+> >>>
+> >>>You will need quilt to apply these patches to the latest Linus release (3.x
+> >>>or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+> >>>http://ozlabs.org/~akpm/mmotm/series
+> >>>
+> >>>The file broken-out.tar.gz contains two datestamp files: .DATE and
+> >>>.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+> >>>followed by the base kernel version against which this patch series is to
+> >>>be applied.
+> >>>
+> >>>This tree is partially included in linux-next.  To see which patches are
+> >>>included in linux-next, consult the `series' file.  Only the patches
+> >>>within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+> >>>linux-next.
+> >>>
+> >>>A git tree which contains the memory management portion of this tree is
+> >>>maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+> >>>by Michal Hocko.  It contains the patches which are between the
+> >>>"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+> >>>file, http://www.ozlabs.org/~akpm/mmotm/series.
+> >>>
+> >>>
+> >>>A full copy of the full kernel tree with the linux-next and mmotm patches
+> >>>already applied is available through git within an hour of the mmotm
+> >>>release.  Individual mmotm releases are tagged.  The master branch always
+> >>>points to the latest release, so it's constantly rebasing.
+> >>>
+> >>>http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+> >>>
+> >>>To develop on top of mmotm git:
+> >>>
+> >>>   $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+> >>>   $ git remote update mmotm
+> >>>   $ git checkout -b topic mmotm/master
+> >>>   <make changes, commit>
+> >>>   $ git send-email mmotm/master.. [...]
+> >>>
+> >>>To rebase a branch with older patches to a new mmotm release:
+> >>>
+> >>>   $ git remote update mmotm
+> >>>   $ git rebase --onto mmotm/master <topic base> topic
+> >Andrew, that workflow is actually meant for
+> >http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
+> >(i.e. the git remote add mmotm <michal's tree> does not make much
+> >sense).  Michal's tree is append-only, so all this precision-rebasing
+> >is unnecessary.
+> >
+> >>The -mm tree is
+> >>git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git or
+> >>linux-next -mm branch?
+> >It depends what you want for the base.  What's in linux-next is based
+> >on linux-next, so the latest and greatest.
+> 
+> But Andrew has his own queue which is the most latest one before
+> merged into linux-next. How can developer works against his queue?
 
-> As we remove the target single node, so list_for_each is enought, in order to
-> clean up, we use list_for_each_entry instead.
->
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  fs/f2fs/checkpoint.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> index 290db04..87f7bc2 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -237,13 +237,12 @@ out:
->  
->  void remove_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
->  {
-> -	struct list_head *this, *next, *head;
-> +	struct list_head *head;
->  	struct orphan_inode_entry *orphan;
->  
->  	mutex_lock(&sbi->orphan_inode_mutex);
->  	head = &sbi->orphan_inode_list;
-> -	list_for_each_safe(this, next, head) {
-> -		orphan = list_entry(this, struct orphan_inode_entry, list);
-> +	list_for_each_entry(orphan, head, list) {
->  		if (orphan->ino == ino) {
->  			list_del(&orphan->list);
->  			kmem_cache_free(orphan_entry_slab, orphan);
-
-you have meant list_for_each_entry_safe, haven't you?
-
--- 
-Nikola
+By using either the quilt series from
+http://www.ozlabs.org/~akpm/mmotm/ or the master branch from
+http://git.cmpxchg.org/cgit/linux-mmotm.git/
