@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3GVEic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 00:38:32 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51244 "EHLO
+	id S1756309Ab3GVEi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 00:38:59 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51242 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3GVEi3 (ORCPT
+	with ESMTP id S1756210Ab3GVEi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Jul 2013 00:38:29 -0400
 From: Vaughan Cao <vaughan.cao@oracle.com>
@@ -12,80 +12,113 @@ To: joern@logfs.org
 Cc: dgilbert@interlog.com, JBottomley@parallels.com,
         linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         vaughan.cao@oracle.com
-Subject: [PATCH v5 3/4] [SCSI] sg: checking sdp->detached isn't protected when open
-Date: Mon, 22 Jul 2013 12:40:32 +0800
-Message-Id: <1374468033-8947-4-git-send-email-vaughan.cao@oracle.com>
+Subject: [PATCH v5 2/4] [SCSI] sg: no need sg_open_exclusive_lock
+Date: Mon, 22 Jul 2013 12:40:31 +0800
+Message-Id: <1374468033-8947-3-git-send-email-vaughan.cao@oracle.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com>
 References: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com>
  <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@detached is set under the protection of sg_index_lock. Without getting the
-lock, new sfp will be added during sg removal and there is no chance for it
-to be picked out. So check with sg_index_lock held in sg_add_sfp().
-
-Changes from v4:
- * use ERR_PTR series instead of adding another parameter in sg_add_sfp
+Open exclusive check is protected by o_sem, no need sg_open_exclusive_lock.
+@exclude is used to record which type of rwsem we are holding.
 
 Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
 ---
- drivers/scsi/sg.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/scsi/sg.c | 34 +++++-----------------------------
+ 1 file changed, 5 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index 671b760..f0e4785 100644
+index edc395a..671b760 100644
 --- a/drivers/scsi/sg.c
 +++ b/drivers/scsi/sg.c
-@@ -295,21 +295,17 @@ sg_open(struct inode *inode, struct file *filp)
+@@ -103,8 +103,6 @@ static int scatter_elem_sz_prev = SG_SCATTER_SZ;
+ static int sg_add(struct device *, struct class_interface *);
+ static void sg_remove(struct device *, struct class_interface *);
+ 
+-static DEFINE_SPINLOCK(sg_open_exclusive_lock);
+-
+ static DEFINE_IDR(sg_index_idr);
+ static DEFINE_RWLOCK(sg_index_lock);	/* Also used to lock
+ 							   file descriptor list for device */
+@@ -174,7 +172,6 @@ typedef struct sg_device { /* holds the state of each scsi generic device */
+ 	struct list_head sfds;
+ 	struct rw_semaphore o_sem;	/* exclude open should hold this rwsem */
+ 	volatile char detached;	/* 0->attached, 1->detached pending removal */
+-	/* exclude protected by sg_open_exclusive_lock */
+ 	char exclude;		/* opened for exclusive access */
+ 	char sgdebug;		/* 0->off, 1->sense, 9->dump dev, 10-> all devs */
+ 	struct gendisk *disk;
+@@ -224,27 +221,6 @@ static int sg_allow_access(struct file *filp, unsigned char *cmd)
+ 	return blk_verify_command(q, cmd, filp->f_mode & FMODE_WRITE);
+ }
+ 
+-static int get_exclude(Sg_device *sdp)
+-{
+-	unsigned long flags;
+-	int ret;
+-
+-	spin_lock_irqsave(&sg_open_exclusive_lock, flags);
+-	ret = sdp->exclude;
+-	spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
+-	return ret;
+-}
+-
+-static int set_exclude(Sg_device *sdp, char val)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&sg_open_exclusive_lock, flags);
+-	sdp->exclude = val;
+-	spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
+-	return val;
+-}
+-
+ static int sfds_list_empty(Sg_device *sdp)
+ {
+ 	unsigned long flags;
+@@ -317,7 +293,7 @@ sg_open(struct inode *inode, struct file *filp)
+ 	}
+ 	/* Since write lock is held, no need to check sfd_list */
  	if (flags & O_EXCL)
- 		sdp->exclude = 1;	/* used by release lock */
+-		set_exclude(sdp, 1);
++		sdp->exclude = 1;	/* used by release lock */
  
--	if (sdp->detached) {
--		retval = -ENODEV;
--		goto sem_out;
--	}
- 	if (sfds_list_empty(sdp)) {	/* no existing opens on this device */
- 		sdp->sgdebug = 0;
- 		q = sdp->device->request_queue;
- 		sdp->sg_tablesize = queue_max_segments(q);
- 	}
--	if ((sfp = sg_add_sfp(sdp, dev)))
--		filp->private_data = sfp;
--	else {
--		retval = -ENOMEM;
-+	sfp = sg_add_sfp(sdp, dev);
-+	if (IS_ERR(sfp)) {
-+		retval = PTR_ERR(sfp);
- 		goto sem_out;
- 	}
-+	filp->private_data = sfp;
- 	retval = 0;
- 
+ 	if (sdp->detached) {
+ 		retval = -ENODEV;
+@@ -339,7 +315,7 @@ sg_open(struct inode *inode, struct file *filp)
  	if (retval) {
-@@ -2055,7 +2051,7 @@ sg_add_sfp(Sg_device * sdp, int dev)
+ sem_out:
+ 		if (flags & O_EXCL) {
+-			set_exclude(sdp, 0);	/* undo if error */
++			sdp->exclude = 0;	/* undo if error */
+ 			up_write(&sdp->o_sem);
+ 		} else
+ 			up_read(&sdp->o_sem);
+@@ -366,8 +342,8 @@ sg_release(struct inode *inode, struct file *filp)
+ 		return -ENXIO;
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_release: %s\n", sdp->disk->disk_name));
  
- 	sfp = kzalloc(sizeof(*sfp), GFP_ATOMIC | __GFP_NOWARN);
- 	if (!sfp)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	init_waitqueue_head(&sfp->read_wait);
- 	rwlock_init(&sfp->rq_list_lock);
-@@ -2070,6 +2066,10 @@ sg_add_sfp(Sg_device * sdp, int dev)
- 	sfp->keep_orphan = SG_DEF_KEEP_ORPHAN;
- 	sfp->parentdp = sdp;
- 	write_lock_irqsave(&sg_index_lock, iflags);
-+	if (sdp->detached) {
-+		write_unlock_irqrestore(&sg_index_lock, iflags);
-+		return ERR_PTR(-ENODEV);
-+	}
- 	list_add_tail(&sfp->sfd_siblings, &sdp->sfds);
- 	write_unlock_irqrestore(&sg_index_lock, iflags);
- 	SCSI_LOG_TIMEOUT(3, printk("sg_add_sfp: sfp=0x%p\n", sfp));
+-	excl = get_exclude(sdp);
+-	set_exclude(sdp, 0);
++	excl = sdp->exclude;
++	sdp->exclude = 0;
+ 	if (excl)
+ 		up_write(&sdp->o_sem);
+ 	else
+@@ -2637,7 +2613,7 @@ static int sg_proc_seq_show_debug(struct seq_file *s, void *v)
+ 			     scsidp->lun,
+ 			     scsidp->host->hostt->emulated);
+ 		seq_printf(s, " sg_tablesize=%d excl=%d\n",
+-			   sdp->sg_tablesize, get_exclude(sdp));
++			   sdp->sg_tablesize, sdp->exclude);
+ 		sg_proc_debug_helper(s, sdp);
+ 	}
+ 	read_unlock_irqrestore(&sg_index_lock, iflags);
 -- 
 1.7.11.7
 
