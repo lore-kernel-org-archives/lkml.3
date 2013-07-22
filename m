@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab3GVRqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:46:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6748 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab3GVRqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:46:00 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=q-5KwEyaYmUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PzHPlaRu3OEA:10 a=78NmWIzSC-6F6aEd2cgA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374515158.3356.112.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/7] tracing: Introduce trace_create_cpu_file() and
- tracing_get_cpu()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 22 Jul 2013 13:45:58 -0400
-In-Reply-To: <20130722171435.GA27080@redhat.com>
-References: <20130722134342.GA18355@redhat.com>
-	 <1374504957.3356.91.camel@gandalf.local.home>
-	 <20130722171435.GA27080@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932553Ab3GVRtz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 13:49:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51173 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756027Ab3GVRty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 13:49:54 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Balaji TK <balajitk@ti.com>, Arnd Bergmann <arnd@arndb.de>
+CC: Jason Kridner <jkridner@beagleboard.org>,
+        Mark Jackson <mpfj-list@newflow.co.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+Date: Mon, 22 Jul 2013 12:49:17 -0500
+Message-ID: <1374515357-14574-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 19:14 +0200, Oleg Nesterov wrote:
+HWMOD removal for MMC is breaking edma_start as the events are being manually
+triggered due to unused channel list not being clear, Thanks to Balaji TK for
+finding this issue.
 
-> Al, I will appreciate it if can ack/nack this hack.
-> 
+This patch fixes the issue, by reading the "dmas" property from the DT node if
+it exists and clearing the bits in the unused channel list.
 
-Yes Al, please ack or nack this hack or at least get back as the fact
-that we may sack the hack if we can't keep it intact and taken aback due
-to the lack of keeping in track the quality of the hack which will get
-us flack and we'll be attacked for our slack and have to pack the hack
-cause it's whacked.
+Cc: Balaji T K <balajitk@ti.com>
+Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+Fixed pushed to git@github.com:joelagnel/linux-kernel.git
+   99b65c9..a411a81  master-rebase -> master-rebase
 
-Thanks ;-)
+ arch/arm/common/edma.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
--- Steve
-
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index a432e6c..720f958 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -561,14 +561,29 @@ static int reserve_contiguous_slots(int ctlr, unsigned int id,
+ static int prepare_unused_channel_list(struct device *dev, void *data)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	int i, ctlr;
+-
+-	for (i = 0; i < pdev->num_resources; i++) {
+-		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+-				(int)pdev->resource[i].start >= 0) {
+-			ctlr = EDMA_CTLR(pdev->resource[i].start);
+-			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+-					edma_cc[ctlr]->edma_unused);
++	int i = 0, ctlr;
++	u32 dma_chan;
++	__be32 *dma_chan_p;
++	struct property *prop;
++
++	if (dev->of_node) {
++		of_property_for_each_u32(dev->of_node, "dmas", prop, \
++					 dma_chan_p, dma_chan) {
++			if (i++ & 1) {
++				ctlr = EDMA_CTLR(dma_chan);
++				clear_bit(EDMA_CHAN_SLOT(dma_chan),
++						edma_cc[ctlr]->edma_unused);
++			}
++		}
++	} else {
++		for (; i < pdev->num_resources; i++) {
++			if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
++			    (int)pdev->resource[i].start >= 0) {
++				ctlr = EDMA_CTLR(pdev->resource[i].start);
++				clear_bit(EDMA_CHAN_SLOT(
++					  pdev->resource[i].start),
++					  edma_cc[ctlr]->edma_unused);
++			}
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
 
