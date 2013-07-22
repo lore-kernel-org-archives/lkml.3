@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab3GVND2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:03:28 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:42701 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697Ab3GVND0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:03:26 -0400
+	id S1755419Ab3GVNDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:03:37 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2567 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754868Ab3GVND1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 09:03:27 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <51ED2D90.4020209@broadcom.com>
+Date: Mon, 22 Jul 2013 06:03:12 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130722124047.GL4165@ZenIV.linux.org.uk>
-References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
- <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
- <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com> <20130722124047.GL4165@ZenIV.linux.org.uk>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Mon, 22 Jul 2013 18:32:46 +0530
-Message-ID: <CALkWK0=bAwDxbLEtHOThjY58BmWCrFYgZm9GaLfEnF5vpu1VJw@mail.gmail.com>
-Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Richard Weinberger <richard@nod.at>
-Content-Type: text/plain; charset=UTF-8
+To: "Lee Jones" <lee.jones@linaro.org>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 05/22] ARM: dts: bcm281xx: Remove '0x's from
+ BCM11351 BRT DTS file
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-5-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1374490361-25769-5-git-send-email-lee.jones@linaro.org>
+X-WSS-ID: 7DF3F33B31W54485687-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro wrote:
-> On Mon, Jul 22, 2013 at 03:15:14PM +0530, Ramkumar Ramachandra wrote:
->> Ramkumar Ramachandra wrote:
->> > [1]: http://lists.freedesktop.org/archives/systemd-devel/2013-July/012152.html
->>
->> ... and the patches were rejected.  Lennart says that UML providing
->> /dev/tty* is wrong, and that UML should call them /dev/hvc* (or
->> something).  Can we do something about the situation?  Can we remove
->> /dev/tty*, and provide /dev/hvc*?  Will we be breaking existing users?
+On 13-07-22 03:52 AM, Lee Jones wrote:
+> Cc: Christian Daudt <csd@broadcom.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   arch/arm/boot/dts/bcm11351-brt.dts | 6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
 >
-> Yes, you would be breaking existing users.  Starting with anybody with static
-> /dev.  Or a debian userland, for that matter.  Any systemd-free setup,
-> actually.
+> diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
+> index 67ec524..fdace5d 100644
+> --- a/arch/arm/boot/dts/bcm11351-brt.dts
+> +++ b/arch/arm/boot/dts/bcm11351-brt.dts
+> @@ -27,18 +27,18 @@
+>   		status = "okay";
+>   	};
+>   
+> -	sdio0: sdio@0x3f180000 {
+> +	sdio0: sdio@3f180000 {
+>   		max-frequency = <48000000>;
+>   		status = "okay";
+>   	};
+>   
+> -	sdio1: sdio@0x3f190000 {
+> +	sdio1: sdio@3f190000 {
+>   		non-removable;
+>   		max-frequency = <48000000>;
+>   		status = "okay";
+>   	};
+>   
+> -	sdio3: sdio@0x3f1b0000 {
+> +	sdio3: sdio@3f1b0000 {
+>   		max-frequency = <48000000>;
+>   		status = "okay";
+>   	};
+Hi Lee,
+  Is this convention documented ? Someone called my attention to the 
+fact that this dts files was inconsistent in its use of 0x in names, but 
+I was not aware of a coding guideline for this.
 
-Systemd does not support a static /dev, so we're talking about
-non-systemd systems.  Ofcourse I reject anything that breaks existing
-users.
+  Thanks,
+     csd
 
-> Changing device number assignments is not to be done lightly, whether
-> they should've been set that way back then or not.
 
-I never proposed something as ridiculous as changing device number
-assignments.  I'm trying to add a HVC_DRIVER to um Linux: I enabled it
-in the Kconfig; any idea how to get devtmpfs to populate /dev with
-hvc* device nodes now?
-
-> As for Lennart's opinion...  *shrug*  He's free to do whatever he wants
-> in systemd.  It does not translate into having any kind of control over
-> the kernel.
-
-If you care about users, you will stop worrying about different
-people's "opinions", "control", and work towards a solution.  I want
-great user-experience, period.  You can continue to argue endlessly
-about the sanity of Lennart/systemd for all I care, but you cannot
-deny the fact that systemd has _users_.  Users that you must support.
-
-So, what should we do?
