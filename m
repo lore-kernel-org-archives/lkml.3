@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab3GVTVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 15:21:14 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:37846 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932676Ab3GVTVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 15:21:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1307221633010.23128@pobox.suse.cz>
-References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
-	<alpine.LNX.2.00.1307221633010.23128@pobox.suse.cz>
-Date: Mon, 22 Jul 2013 12:21:10 -0700
-X-Google-Sender-Auth: szIvVcgS3GlfbjPlM3yoDe3POAY
-Message-ID: <CA+55aFxKZnYResCmCvaYGksdWYuuHCAAjJ1eRkR94GmiTrJrkA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing
- Unifying device issue""
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        benjamin.tissoires@gmail.com, Andrew de los Reyes <adlr@chromium.org>,
-        joseph.salisbury@canonical.com,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
+	id S933127Ab3GVTWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 15:22:42 -0400
+Received: from etezian.org ([198.101.225.253]:57524 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932676Ab3GVTWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 15:22:41 -0400
+From: Andi Shyti <andi@etezian.org>
+To: sfrench@samba.org
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, andi@etezian.org
+Subject: [PATCH 2/2] cifs: file: initialize oparms.reconnect before using it
+Date: Mon, 22 Jul 2013 21:24:00 +0200
+Message-Id: <1374521040-5461-1-git-send-email-andi@etezian.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 7:35 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->
-> Linus -- could you please by any chance test whether the two patches in
-> that branch make the problem you are observing any better? (and no, this
-> is not a pull request yet).
->
-> It's still not clear whether we are chasing two different issues here, or
-> not.
+In the cifs_reopen_file function, if the following statement is
+asserted:
 
-I think it's two different issues. It sounds like the USB3 one is
-fairly repeatable?
+(tcon->unix_ext && cap_unix(tcon->ses) &&
+		(CIFS_UNIX_POSIX_PATH_OPS_CAP &
+		(tcon->fsUnixInfo.Capability)))
 
-Mine is quite rare. I think it's so far happened just once during the
-the 3.11 merge window+, and that's despite me rebooting usually a few
-times a day (less now that things are calming down).
+and we succeed to open with cifs_posix_open, the function jumps
+to the label reopen_success and checks for oparms.reconnect
+which is not initialized.
 
-On Mon, Jul 22, 2013 at 8:27 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->
-> It might help to get a usbmon trace and dmesg log from Linus, if he
-> still has this problem.
+To avoid this the oparms structure initialization is anticipated
+before the if statement.
 
-So see above. I've sent the dmesg - not that it's useful, since it
-just lacks the lines showing the actual wireless device after plugging
-it in (but the receiver is recognized). No error messages, just not
-any working keyboard.
+Signed-off-by: Andi Shyti <andi@etezian.org>
+---
+ fs/cifs/file.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-And it's not common. I think it has happened a handful of times over
-the last four months or so.
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 1e57f36..fbeaf45 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -632,6 +632,15 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
+ 	else
+ 		oplock = 0;
+ 
++	oparms.tcon = tcon;
++	oparms.cifs_sb = cifs_sb;
++	oparms.desired_access = desired_access;
++	oparms.create_options = create_options;
++	oparms.disposition = disposition;
++	oparms.path = full_path;
++	oparms.fid = &cfile->fid;
++	oparms.reconnect = true;
++
+ 	if (tcon->unix_ext && cap_unix(tcon->ses) &&
+ 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+ 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+@@ -663,15 +672,6 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
+ 	if (server->ops->get_lease_key)
+ 		server->ops->get_lease_key(inode, &cfile->fid);
+ 
+-	oparms.tcon = tcon;
+-	oparms.cifs_sb = cifs_sb;
+-	oparms.desired_access = desired_access;
+-	oparms.create_options = create_options;
+-	oparms.disposition = disposition;
+-	oparms.path = full_path;
+-	oparms.fid = &cfile->fid;
+-	oparms.reconnect = true;
+-
+ 	/*
+ 	 * Can not refresh inode by passing in file_info buf to be returned by
+ 	 * CIFSSMBOpen and then calling get_inode_info with returned buf since
+-- 
+1.8.3.2
 
-                  Linus
