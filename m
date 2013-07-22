@@ -1,106 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab3GVH6h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 03:58:37 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:43730 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab3GVH6f (ORCPT
+	id S1756714Ab3GVH7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 03:59:05 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:34981 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756695Ab3GVH7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 03:58:35 -0400
-X-Auth-Info: yycwgmik8SFALf0oehRJUlPHSrpOQvwqOD5jj0WkhuQ=
-From: Marek Vasut <marex@denx.de>
-To: Hector Palacios <hector.palacios@digi.com>
-Subject: Re: [PATCH v2 3/5] iio: mxs-lradc: add scale attribute to channels
-Date: Mon, 22 Jul 2013 09:58:33 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
-Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-References: <1374225208-28940-1-git-send-email-hector.palacios@digi.com> <201307220942.08990.marex@denx.de> <51ECE34E.7050904@digi.com>
-In-Reply-To: <51ECE34E.7050904@digi.com>
+	Mon, 22 Jul 2013 03:59:00 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307220958.33433.marex@denx.de>
+In-Reply-To: <51ECDDE3.1040209@ti.com>
+References: <1372656552-18824-1-git-send-email-george.cherian@ti.com>
+ <20130702032712.GD6262@xanatos> <CANqatMA869UoTFDvSAO1P4OKsiVf+qyXbCrpHDOhm4+TMZ2cGA@mail.gmail.com>
+ <51ECDDE3.1040209@ti.com>
+From: Shuduo Sang <sangshuduo@gmail.com>
+Date: Mon, 22 Jul 2013 15:58:19 +0800
+Message-ID: <CANqatMDrfV9+3ONnuZLN7xsp-TOoxHG2TV4a01EH2p8Z+zefWA@mail.gmail.com>
+Subject: Re: [PATCH v2] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all
+ controllers with xhci 1.0
+To: George Cherian <george.cherian@ti.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-usb <linux-usb@vger.kernel.org>, balbi <balbi@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        gregkh <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hector,
+On Mon, Jul 22, 2013 at 3:23 PM, George Cherian <george.cherian@ti.com> wrote:
+>
+> Hi Shuduo,
+>
+>
+> On 7/22/2013 12:35 PM, Shuduo Sang wrote:
+>>
+>> Hi Sarah and George,
+>>
+>> I met this issue at my side too. Per lspci output and HCIVERSION, I
+>> see the host is Lynx
+>> Point xhci 1.0 host.
+>>
+>> I notice George's patch has not been merged in kernel 3.11-rc1.
+>
+>
+> Just to make sure, without the patch are you getting the following error.
+>
+>
+> "ERROR Transfer event TRB DMA ptr not part of current TD"
+>
 
-> Hi Marek,
-> 
-> On 07/22/2013 09:42 AM, Marek Vasut wrote:
-> > Dear Hector Palacios,
-> > 
-> >> Hi Marek,
-> >> 
-> >> On 07/19/2013 06:14 PM, Marek Vasut wrote:
-> >>> Dear Hector Palacios,
-> >>> 
-> >>>> Dear Marek,
-> >>>> 
-> >>>> On 07/19/2013 04:30 PM, Marek Vasut wrote:
-> >>>>>> @@ -228,39 +230,12 @@ struct mxs_lradc {
-> >>>>>> 
-> >>>>>>     #define LRADC_RESOLUTION			12
-> >>>>>>     #define LRADC_SINGLE_SAMPLE_MASK		((1 << LRADC_RESOLUTION)
-> > 
-> > - 1)
-> > 
-> >>>>>> -/*
-> >>>>>> - * Raw I/O operations
-> >>>>>> - */
-> >>>>>> -static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
-> >>>>>> +static int mxs_lradc_read_single(struct iio_dev *iio_dev,
-> >>>>>> 
-> >>>>>>     			const struct iio_chan_spec *chan,
-> >>>>>>     			int *val, int *val2, long m)
-> >>>>>>     
-> >>>>>>     {
-> >>>>>>     
-> >>>>>>     	struct mxs_lradc *lradc = iio_priv(iio_dev);
-> >>>>>>     	int ret;
-> >>>>>> 
-> >>>>>> -	unsigned long mask;
-> >>>>>> -
-> >>>>>> -	if (m != IIO_CHAN_INFO_RAW)
-> >>>>>> -		return -EINVAL;
-> >>>>>> -
-> >>>>>> -	/* Check for invalid channel */
-> >>>>>> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
-> >>>>>> -		return -EINVAL;
-> >>>>> 
-> >>>>> This was already resolved, so this patch won't apply I'm afraid.
-> >>>> 
-> >>>> You mean the 'unsigned long mask', right?  Yeah, I think I had
-> >>>> resolved that one before submitting, but looks like I didn't.
-> >>>> The other check is not resolved afaik. We agreed to remove it, but on
-> >>>> a different patch.
-> >>> 
-> >>> I mean the other check, yeah. A patch removing that should be applied
-> >>> already.
-> >> 
-> >> Where exactly? It's not fixed in Jonathan's fixes-togreg branch, at
-> >> least. Did you fixed it?
-> > 
-> > I use linux-next [1], should be it.
-> > 
-> > http://git.kernel.org/cgit/linux/kernel/git/next/linux-
-> > next.git/log/drivers/staging/iio/adc/mxs-lradc.c
-> 
-> That is removing the unsigned long mask, but not the check for invalid
-> channel. I'm taking care of the unsigned long mask but an additional patch
-> is needed to remove the check for invalid channel.
+Yes, I run below script to capture picture.
 
-Sorry for the confusion.
+#!/bin/bash
+# camera_stress.sh
+# Testing the camera by BinLi
 
-Best regards,
-Marek Vasut
+for ((i=0; i<10 ; i++))
+do
+        fswebcam --no-banner -r 352x288 -d /dev/video0 test_$i.jpg
+done
+
+It will randomly fail at later loops. The fail rate about 20%~30%. When it fail,
+I can see error messages by dmesg as below:
+
+[ 68.171039] xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr
+not part of current TD
+[ 68.175030] xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr
+not part of current TD
+[ 68.179026] xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr
+not part of current TD
+[ 68.180082] usb 3-12: USB disconnect, device number 4
+[ 68.450459] usb 3-12: new high-speed USB device number 5 using xhci_hcd
+[ 68.477960] usb 3-12: New USB device found, idVendor=5986, idProduct=0397
+[ 68.477964] usb 3-12: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[ 68.477966] usb 3-12: Product: Integrated Camera
+[ 68.477968] usb 3-12: Manufacturer: Vimicro corp.
+[ 68.479107] uvcvideo: Found UVC 1.00 device Integrated Camera (5986:0397)
+[ 68.479821] input: Integrated Camera as
+/devices/pci0000:00/0000:00:14.0/usb3/3-12/3-12:1.0/input/input15
+[ 321.389721] type=1400 audit(1374214638.182:29): apparmor="DENIED"
+operation="capable" parent=1 profile="/usr/sbin/cupsd" pid=1232
+comm="cupsd" pid=1232 comm="cupsd" c
+apability=36 capname="block_suspend"
+
+
+
+>
+>> Then I manually applied George's patch against 3.10.0 but the issue
+>> still happen when I use
+>> camera to capture picture.
+>
+>
+> Can you explain what is the exact issue you face after applying the patch?
+> Are you still getting
+>
+>
+> "ERROR Transfer event TRB DMA ptr not part of current TD"
+>
+
+Yes, after I applied your patch manually, I still getting this error.
+Seems fail rate is same.
+
+>> So I doubt some corner test has not been
+>> covered by patch.
+>> Pls let me know what I can do if you need more information.
+>>
+>> Thanks,
+>> Shuduo
+>>
+>> On Tue, Jul 2, 2013 at 11:27 AM, Sarah Sharp
+>> <sarah.a.sharp@linux.intel.com> wrote:
+>>>
+>>> Thanks George, this looks fine.  I will munge the description a bit when
+>>> I commit it, and mark it for stable as well.
+>>>
+>>> Unfortunately, due to the timing of the merge window, this patch will
+>>> have to wait for 2-3 weeks until 3.11-rc1 is out.
+>>>
+>>> Sarah Sharp
+>>>
+>>> On Mon, Jul 01, 2013 at 10:59:12AM +0530, George Cherian wrote:
+>>>>
+>>>> Xhci controllers with hci_version > 0.96 gives spurious success
+>>>> events on short packet completion. During webcam capture the
+>>>> "ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+>>>> The same application works fine with synopsis controllers hci_version
+>>>> 0.96.
+>>>> The same Issue is seen with Intel Pantherpoint xhci controller. So
+>>>> enabling
+>>>> this quirk in xhci_gen_setup if controller verion is greater than 0.96.
+>>>> For xhci-pci move the quirk to much generic place xhci_gen_setup.
+>>>>
+>>>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>>>> ---
+>>>>   drivers/usb/host/xhci-pci.c | 1 -
+>>>>   drivers/usb/host/xhci.c     | 7 +++++++
+>>>>   2 files changed, 7 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+>>>> index cc24e39..f00cb20 100644
+>>>> --- a/drivers/usb/host/xhci-pci.c
+>>>> +++ b/drivers/usb/host/xhci-pci.c
+>>>> @@ -93,7 +93,6 @@ static void xhci_pci_quirks(struct device *dev, struct
+>>>> xhci_hcd *xhci)
+>>>>        }
+>>>>        if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+>>>>                        pdev->device ==
+>>>> PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+>>>> -             xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+>>>>                xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+>>>>                xhci->limit_active_eps = 64;
+>>>>                xhci->quirks |= XHCI_SW_BW_CHECKING;
+>>>> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+>>>> index d8f640b..0f7be59 100644
+>>>> --- a/drivers/usb/host/xhci.c
+>>>> +++ b/drivers/usb/host/xhci.c
+>>>> @@ -4697,6 +4697,13 @@ int xhci_gen_setup(struct usb_hcd *hcd,
+>>>> xhci_get_quirks_t get_quirks)
+>>>>
+>>>>        get_quirks(dev, xhci);
+>>>>
+>>>> +     /* In xhci controllers which follow xhci 1.0 spec gives a spurious
+>>>> +      * success event after a short transfer. This quirk will ignore
+>>>> such
+>>>> +      * spurious event.
+>>>> +      */
+>>>> +     if (xhci->hci_version > 0x96)
+>>>> +             xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+>>>> +
+>>>>        /* Make sure the HC is halted. */
+>>>>        retval = xhci_halt(xhci);
+>>>>        if (retval)
+>>>> --
+>>>> 1.8.1.4
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+> --
+> -George
+>
