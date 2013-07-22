@@ -1,193 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933454Ab3GVUW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:22:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52071 "EHLO
+	id S933527Ab3GVUXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:23:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52116 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933338Ab3GVUWt (ORCPT
+	with ESMTP id S933483Ab3GVUXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:22:49 -0400
+	Mon, 22 Jul 2013 16:23:02 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Clark Williams <williams@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/11] perf tools: Support callchain sorting based on addresses
-Date: Mon, 22 Jul 2013 17:22:32 -0300
-Message-Id: <1374524559-9839-5-git-send-email-acme@infradead.org>
+        Hitoshi Mitake <h.mitake@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [GIT PULL 00/11] perf/core improvements and fixes
+Date: Mon, 22 Jul 2013 17:22:28 -0300
+Message-Id: <1374524559-9839-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1374524559-9839-1-git-send-email-acme@infradead.org>
-References: <1374524559-9839-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-With programs with very large functions it can be useful to distinguish
-the callgraph nodes on more than just function names. So for example if
-you have multiple calls to the same function, it ends up being separate
-nodes in the chain.
+Hi Ingo,
 
-This patch adds a new key field to the callgraph options, that allows
-comparing nodes on functions (as today, default) and addresses.
+	Please consider pulling.
 
-Longer term it would be nice to also handle src lines, but that would
-need more changes and address is a reasonable proxy for it today.
+	Tomorrow I'll try to process Jiri's group leader patches and David's 'kvm live'
+kits and continue looking for patches not processed during my vacations.
 
-I right now reference the global params, as there was no simple way to
-register a params pointer.
+Thanks,
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/n/tip-0uskktybf0e7wrnoi5e9b9it@git.kernel.org
+- Arnaldo
+
+The following changes since commit 5a9821321e0a61674fd5c4b5a9e95007d0e7e052:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-07-19 09:35:30 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to f9ea55d0ddf66ed030b2a478625cd5792d30df16:
+
+  perf tools: Move weight back to common sort keys (2013-07-22 16:58:28 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes.
+
+. Fix memcpy benchmark for large sizes, from Andi Kleen.
+
+. Support callchain sorting based on addresses, from Andi Kleen
+
+. Move weight back to common sort keys, From Andi Kleen.
+
+. Fix named threads support in 'perf script', from David Ahern.
+
+. Handle ENODEV on default cycles event, fix from David Ahern.
+
+. More install tests, from Jiri Olsa.
+
+. Fix build with perl 5.18, from Kirill A. Shutemov.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-report.txt |  8 ++++++--
- tools/perf/builtin-report.c              | 19 +++++++++++++++----
- tools/perf/util/callchain.c              |  7 +++++--
- tools/perf/util/callchain.h              |  6 ++++++
- tools/perf/util/hist.c                   |  3 ++-
- 5 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 747ff50..2b8097e 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -115,7 +115,7 @@ OPTIONS
- --dump-raw-trace::
-         Dump raw trace in ASCII.
- 
---g [type,min[,limit],order]::
-+-g [type,min[,limit],order[,key]]::
- --call-graph::
-         Display call chains using type, min percent threshold, optional print
- 	limit and order.
-@@ -129,7 +129,11 @@ OPTIONS
- 	- callee: callee based call graph.
- 	- caller: inverted caller based call graph.
- 
--	Default: fractal,0.5,callee.
-+	key can be:
-+	- function: compare on functions
-+	- address: compare on individual code addresses
-+
-+	Default: fractal,0.5,callee,function.
- 
- -G::
- --inverted::
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index a34c587..d785d89 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -667,12 +667,23 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- 	}
- 
- 	/* get the call chain order */
--	if (!strcmp(tok2, "caller"))
-+	if (!strncmp(tok2, "caller", strlen("caller")))
- 		callchain_param.order = ORDER_CALLER;
--	else if (!strcmp(tok2, "callee"))
-+	else if (!strncmp(tok2, "callee", strlen("callee")))
- 		callchain_param.order = ORDER_CALLEE;
- 	else
- 		return -1;
-+
-+	/* Get the sort key */
-+	tok2 = strtok(NULL, ",");
-+	if (!tok2)
-+		goto setup;
-+	if (!strncmp(tok2, "function", strlen("function")))
-+		callchain_param.key = CCKEY_FUNCTION;
-+	else if (!strncmp(tok2, "address", strlen("address")))
-+		callchain_param.key = CCKEY_ADDRESS;
-+	else
-+		return -1;
- setup:
- 	if (callchain_register_param(&callchain_param) < 0) {
- 		fprintf(stderr, "Can't register callchain params\n");
-@@ -784,8 +795,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
- 		    "Only display entries with parent-match"),
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
--		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit and callchain order. "
--		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
-+		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
-+		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
- 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
- 		    "alias for inverted call graph"),
- 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 42b6a63..4fee33b 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -15,6 +15,7 @@
- #include <errno.h>
- #include <math.h>
- 
-+#include "hist.h"
- #include "util.h"
- #include "callchain.h"
- 
-@@ -327,7 +328,8 @@ append_chain(struct callchain_node *root,
- 	/*
- 	 * Lookup in the current node
- 	 * If we have a symbol, then compare the start to match
--	 * anywhere inside a function.
-+	 * anywhere inside a function, unless function
-+	 * mode is disabled.
- 	 */
- 	list_for_each_entry(cnode, &root->val, list) {
- 		struct callchain_cursor_node *node;
-@@ -339,7 +341,8 @@ append_chain(struct callchain_node *root,
- 
- 		sym = node->sym;
- 
--		if (cnode->ms.sym && sym) {
-+		if (cnode->ms.sym && sym &&
-+		    callchain_param.key == CCKEY_FUNCTION) {
- 			if (cnode->ms.sym->start != sym->start)
- 				break;
- 		} else if (cnode->ip != node->ip)
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3ee9f67..812d5a0 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -41,12 +41,18 @@ struct callchain_param;
- typedef void (*sort_chain_func_t)(struct rb_root *, struct callchain_root *,
- 				 u64, struct callchain_param *);
- 
-+enum chain_key {
-+	CCKEY_FUNCTION,
-+	CCKEY_ADDRESS
-+};
-+
- struct callchain_param {
- 	enum chain_mode 	mode;
- 	u32			print_limit;
- 	double			min_percent;
- 	sort_chain_func_t	sort;
- 	enum chain_order	order;
-+	enum chain_key		key;
- };
- 
- struct callchain_list {
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a9dd1b9..46a0d35 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -24,7 +24,8 @@ enum hist_filter {
- struct callchain_param	callchain_param = {
- 	.mode	= CHAIN_GRAPH_REL,
- 	.min_percent = 0.5,
--	.order  = ORDER_CALLEE
-+	.order  = ORDER_CALLEE,
-+	.key	= CCKEY_FUNCTION
- };
- 
- u16 hists__col_len(struct hists *hists, enum hist_column col)
--- 
-1.8.1.4
+----------------------------------------------------------------
+Andi Kleen (3):
+      perf bench: Fix memcpy benchmark for large sizes
+      perf tools: Support callchain sorting based on addresses
+      perf tools: Move weight back to common sort keys
 
+David Ahern (2):
+      perf script: Fix named threads support
+      perf evsel: Handle ENODEV on default cycles event
+
+Jiri Olsa (5):
+      perf tests: Run ctags/cscope make tests only with needed binaries
+      perf tests: Rename TMP to TMP_O tests/make variable
+      perf tests: Add DESTDIR=TMP_DEST tests/make variable
+      perf tests: Add 'make install/install-bin' tests into tests/make
+      perf tests: Add broken install-* tests into tests/make
+
+Kirill A. Shutemov (1):
+      perf tools: Fix build with perl 5.18
+
+ tools/perf/Documentation/perf-report.txt           |  8 ++-
+ tools/perf/Makefile                                |  4 +-
+ tools/perf/bench/mem-memcpy.c                      |  2 +
+ tools/perf/builtin-report.c                        | 19 ++++--
+ tools/perf/builtin-script.c                        |  6 +-
+ tools/perf/tests/make                              | 67 +++++++++++++++++++---
+ tools/perf/util/callchain.c                        |  7 ++-
+ tools/perf/util/callchain.h                        |  6 ++
+ tools/perf/util/evsel.c                            |  2 +-
+ tools/perf/util/hist.c                             |  3 +-
+ .../perf/util/scripting-engines/trace-event-perl.c | 14 +++--
+ .../util/scripting-engines/trace-event-python.c    |  9 +--
+ tools/perf/util/sort.c                             |  4 +-
+ tools/perf/util/sort.h                             |  6 +-
+ tools/perf/util/trace-event-scripting.c            |  3 +-
+ tools/perf/util/trace-event.h                      |  4 +-
+ 16 files changed, 124 insertions(+), 40 deletions(-)
