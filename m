@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200Ab3GVTCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 15:02:30 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17144 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab3GVTC3 (ORCPT
+	id S932936Ab3GVTEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 15:04:47 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:45972 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932521Ab3GVTEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 15:02:29 -0400
-From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fib_trie: potential out of bounds access in trie_show_stats()
-Date: Mon, 22 Jul 2013 12:01:58 -0700
-Message-Id: <1374519718-8299-1-git-send-email-jerry.snitselaar@oracle.com>
-X-Mailer: git-send-email 1.8.3.3.754.g9c3c367
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 22 Jul 2013 15:04:46 -0400
+Message-ID: <51ED824B.10102@linaro.org>
+Date: Mon, 22 Jul 2013 12:04:43 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Marcus Gelderie <redmnic@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Race condition in time/alarmtimer.c
+References: <20130624191202.GA22643@cantor.Speedport_W_503V_Typ_C> <20130629134715.GB19380@cantor.Speedport_W_503V_Typ_C>
+In-Reply-To: <20130629134715.GB19380@cantor.Speedport_W_503V_Typ_C>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the <= max condition in the for loop, it will be always go 1
-element further than needed. If the condition for the while loop is
-never met, then max is MAX_STAT_DEPTH, and for loop will walk off the
-end of nodesizes[].
+On 06/29/2013 06:47 AM, Marcus Gelderie wrote:
+> On Mo, Jun 24, 2013 at 09:12:03PM +0200, Marcus Gelderie wrote:
+>> Hi,
+>>
+>> there seems to be a race condition in kernel/time/alarmtimer.c
+>>
+>> More specifically, the following function (line numbers correspond to actual file):
+>>
+>> 584 static int alarmtimer_do_nsleep(struct alarm *alarm, ktime_t absexp)
+>> 585 {
+>> 586         alarm->data = (void *)current;
+>> 587         do {
+>> 588                 set_current_state(TASK_INTERRUPTIBLE);
+>> 589                 alarm_start(alarm, absexp);
+>> 590                 if (likely(alarm->data))
+>> 591                         schedule();
+>> 592
+>> 593                 alarm_cancel(alarm);
+>> 594         } while (alarm->data && !signal_pending(current));
+>> 595
+>> 596         __set_current_state(TASK_RUNNING);
+>> 597
+>> 598         return (alarm->data == NULL);
+>> 599 }
+>>
+>> has a race: If the task is preempted after set_current_state(TASK_INTERRUPTIBLE)
+>> but before the alarm is started in the next line, the task never wakes up.
+>>
+>> Swapping both lines is not an option either, because then the alarm might trigger before
+>> the thread sets itself to TASK_INTERRUPTIBLE, thereby loosing the wakeup.
+>>
+>> A spinlock would disable preemption and protect alarm->data against the race from another CPU.
+>> We could wrap lines 588 and 589 with a spin lock. Then the wakeup code would also aquire the
+>> lock, of course. The lock could be attached to struct alarm.
+>>
+>> An alternative would be a waitqueue, of course.
+>>
+>> If folks agree with me, I will provide a patch.
 
-Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
----
- net/ipv4/fib_trie.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So does this race also affect the hrtimer do_nanosleep?
 
-diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
-index 49616fe..108a1e9c 100644
---- a/net/ipv4/fib_trie.c
-+++ b/net/ipv4/fib_trie.c
-@@ -2133,7 +2133,7 @@ static void trie_show_stats(struct seq_file *seq, struct trie_stat *stat)
- 		max--;
- 
- 	pointers = 0;
--	for (i = 1; i <= max; i++)
-+	for (i = 1; i < max; i++)
- 		if (stat->nodesizes[i] != 0) {
- 			seq_printf(seq, "  %u: %u",  i, stat->nodesizes[i]);
- 			pointers += (1<<i) * stat->nodesizes[i];
--- 
-1.8.3.2.701.g8c4e4ec
+thanks
+-john
+
 
