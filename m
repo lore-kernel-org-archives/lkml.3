@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab3GVPnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 11:43:17 -0400
-Received: from mout1.fh-giessen.de ([212.201.18.42]:53596 "EHLO
-	mout1.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341Ab3GVPnQ (ORCPT
+	id S932344Ab3GVPqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 11:46:09 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:33255 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755447Ab3GVPqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 11:43:16 -0400
-Message-ID: <51ED5311.7070200@mni.thm.de>
-Date: Mon, 22 Jul 2013 17:43:13 +0200
-From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Thunderbird/25.0a1
+	Mon, 22 Jul 2013 11:46:08 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 01/10] mm, hugetlb: move up the code which check availability of free huge page
+In-Reply-To: <1374482191-3500-2-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com> <1374482191-3500-2-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 22 Jul 2013 21:15:56 +0530
+Message-ID: <871u6qoax7.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: Linux 3.11-rc2
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <51EC4D77.2010502@mni.thm.de> <2494093.OzngazxDQW@vostro.rjw.lan>
-In-Reply-To: <2494093.OzngazxDQW@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072215-3864-0000-0000-00000932DEF7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.07.2013 15:08, Rafael J. Wysocki wrote:
-> On Sunday, July 21, 2013 11:07:03 PM Tobias Klausmann wrote:
->> On 21.07.2013 21:53, Linus Torvalds wrote:
->>> So it's been another week, and -rc2 is out there.
->> ...
->>>    (b) we had a late change to how ACPI backlight handling is done on
->>> certain machines, and while this kind of thing really shouldn't be
->>> done outside the merge window, I ended up pulling it anyway. But I'd
->>> *really* like to have people test this thing particularly on laptops
->>> with intel-based graphics. It should only matter (and hopefully
->>> improve things) for the newer ones with BIOSes designed for Windows 8,
->>> but hey, the more testing, the better. Backlight handling has been
->>> painful before, so I'm mentioning this explicitly.
->>>
->> This pach finally fixes my backlight control!
-> Yes, it fixes that for a number of people, which is the reason why I send
-> the pull request in the first place, but it also turns out to break things
-> for some people and therefore it'll have to be reverted.
->
-> We're still going to work on that, though.
->
-> Thanks,
-> Rafael
->
->
-If you have new patches ready for this and you want them to be tested, 
-let me know!
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-Thanks,
-Tobias
+> In this time we are holding a hugetlb_lock, so hstate values can't
+> be changed. If we don't have any usable free huge page in this time,
+> we don't need to proceede the processing. So move this code up.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index e2bfbf7..fc4988c 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -539,10 +539,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+>  	struct zoneref *z;
+>  	unsigned int cpuset_mems_cookie;
+>
+> -retry_cpuset:
+> -	cpuset_mems_cookie = get_mems_allowed();
+> -	zonelist = huge_zonelist(vma, address,
+> -					htlb_alloc_mask, &mpol, &nodemask);
+>  	/*
+>  	 * A child process with MAP_PRIVATE mappings created by their parent
+>  	 * have no page reserves. This check ensures that reservations are
+> @@ -556,6 +552,11 @@ retry_cpuset:
+>  	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+>  		goto err;
+>
+> +retry_cpuset:
+> +	cpuset_mems_cookie = get_mems_allowed();
+> +	zonelist = huge_zonelist(vma, address,
+> +					htlb_alloc_mask, &mpol, &nodemask);
+> +
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>  						MAX_NR_ZONES - 1, nodemask) {
+>  		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+> @@ -574,7 +575,6 @@ retry_cpuset:
+>  	return page;
+>
+>  err:
+> -	mpol_cond_put(mpol);
+>  	return NULL;
+>  }
+>
+> -- 
+> 1.7.9.5
+
