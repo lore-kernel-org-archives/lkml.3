@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab3GVNtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:49:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56697 "EHLO mx1.redhat.com"
+	id S932143Ab3GVNtP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:49:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19297 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755781Ab3GVNtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:49:03 -0400
-Date: Mon, 22 Jul 2013 15:43:54 +0200
+	id S1755781Ab3GVNtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 09:49:13 -0400
+Date: Mon, 22 Jul 2013 15:43:57 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -16,9 +16,9 @@ Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] tracing: Change tracing_entries_fops to rely on
+Subject: [PATCH 6/7] tracing: Change tracing_fops/snapshot_fops to rely on
 	tracing_get_cpu()
-Message-ID: <20130722134354.GA18375@redhat.com>
+Message-ID: <20130722134357.GA18378@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,151 +28,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tracing_open_generic_tc() is racy, the memory inode->i_private
-points to can be already freed.
+tracing_open() and tracing_snapshot_open() are racy, the memory
+inode->i_private points to can be already freed.
 
-1. Change its last user, tracing_entries_fops, to use
-   tracing_*_generic_tr() instead.
-
-2. Change debugfs_create_file("buffer_size_kb", data) callers
-   to pass "data = tr".
-
-3. Change tracing_entries_read() and tracing_entries_write() to
-   use tracing_get_cpu().
-
-4. Kill the no longer used tracing_open_generic_tc() and
-   tracing_release_generic_tc().
+Convert these last users of "inode->i_private == trace_cpu" to
+use "i_private = trace_array" and rely on tracing_get_cpu().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace.c |   49 ++++++++++++-------------------------------------
- 1 files changed, 12 insertions(+), 37 deletions(-)
+ kernel/trace/trace.c |   52 +++++++++++++++++++++----------------------------
+ 1 files changed, 22 insertions(+), 30 deletions(-)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d6429e5..611113d 100644
+index 611113d..0c0b4d5 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -2980,23 +2980,6 @@ static int tracing_open_generic_tr(struct inode *inode, struct file *filp)
- 	return 0;
- }
+@@ -2858,9 +2858,9 @@ static const struct seq_operations tracer_seq_ops = {
+ };
  
--static int tracing_open_generic_tc(struct inode *inode, struct file *filp)
--{
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
--
--	if (tracing_disabled)
--		return -ENODEV;
--
--	if (trace_array_get(tr) < 0)
--		return -ENODEV;
--
--	filp->private_data = inode->i_private;
--
--	return 0;
--	
--}
--
+ static struct trace_iterator *
+-__tracing_open(struct trace_array *tr, struct trace_cpu *tc,
+-	       struct inode *inode, struct file *file, bool snapshot)
++__tracing_open(struct inode *inode, struct file *file, bool snapshot)
+ {
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_iterator *iter;
+ 	int cpu;
+ 
+@@ -2901,8 +2901,8 @@ __tracing_open(struct trace_array *tr, struct trace_cpu *tc,
+ 		iter->trace_buffer = &tr->trace_buffer;
+ 	iter->snapshot = snapshot;
+ 	iter->pos = -1;
++	iter->cpu_file = tracing_get_cpu(inode);
+ 	mutex_init(&iter->mutex);
+-	iter->cpu_file = tc->cpu;
+ 
+ 	/* Notify the tracer early; before we stop tracing. */
+ 	if (iter->trace && iter->trace->open)
+@@ -2982,22 +2982,16 @@ static int tracing_open_generic_tr(struct inode *inode, struct file *filp)
+ 
  static int tracing_release(struct inode *inode, struct file *file)
  {
- 	struct seq_file *m = file->private_data;
-@@ -3050,15 +3033,6 @@ static int tracing_release_generic_tr(struct inode *inode, struct file *file)
- 	return 0;
- }
- 
--static int tracing_release_generic_tc(struct inode *inode, struct file *file)
--{
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
--
--	trace_array_put(tr);
--	return 0;
--}
--
- static int tracing_single_release_tr(struct inode *inode, struct file *file)
- {
- 	struct trace_array *tr = inode->i_private;
-@@ -4378,15 +4352,16 @@ static ssize_t
- tracing_entries_read(struct file *filp, char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
- {
--	struct trace_cpu *tc = filp->private_data;
--	struct trace_array *tr = tc->tr;
-+	struct inode *inode = file_inode(filp);
 +	struct trace_array *tr = inode->i_private;
-+	int cpu = tracing_get_cpu(inode);
- 	char buf[64];
- 	int r = 0;
- 	ssize_t ret;
+ 	struct seq_file *m = file->private_data;
+-	struct trace_iterator *iter;
+-	struct trace_array *tr;
++	struct trace_iterator *iter = m->private;
+ 	int cpu;
  
+-	/* Writes do not use seq_file, need to grab tr from inode */
+ 	if (!(file->f_mode & FMODE_READ)) {
+-		struct trace_cpu *tc = inode->i_private;
+-
+-		trace_array_put(tc->tr);
++		trace_array_put(tr);
+ 		return 0;
+ 	}
+ 
+-	iter = m->private;
+-	tr = iter->tr;
+-
  	mutex_lock(&trace_types_lock);
  
--	if (tc->cpu == RING_BUFFER_ALL_CPUS) {
-+	if (cpu == RING_BUFFER_ALL_CPUS) {
- 		int cpu, buf_size_same;
- 		unsigned long size;
+ 	for_each_tracing_cpu(cpu) {
+@@ -3044,8 +3038,7 @@ static int tracing_single_release_tr(struct inode *inode, struct file *file)
  
-@@ -4413,7 +4388,7 @@ tracing_entries_read(struct file *filp, char __user *ubuf,
- 		} else
- 			r = sprintf(buf, "X\n");
- 	} else
--		r = sprintf(buf, "%lu\n", per_cpu_ptr(tr->trace_buffer.data, tc->cpu)->entries >> 10);
-+		r = sprintf(buf, "%lu\n", per_cpu_ptr(tr->trace_buffer.data, cpu)->entries >> 10);
- 
- 	mutex_unlock(&trace_types_lock);
- 
-@@ -4425,7 +4400,8 @@ static ssize_t
- tracing_entries_write(struct file *filp, const char __user *ubuf,
- 		      size_t cnt, loff_t *ppos)
+ static int tracing_open(struct inode *inode, struct file *file)
  {
--	struct trace_cpu *tc = filp->private_data;
-+	struct inode *inode = file_inode(filp);
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
 +	struct trace_array *tr = inode->i_private;
- 	unsigned long val;
- 	int ret;
+ 	struct trace_iterator *iter;
+ 	int ret = 0;
  
-@@ -4439,8 +4415,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+@@ -3053,16 +3046,17 @@ static int tracing_open(struct inode *inode, struct file *file)
+ 		return -ENODEV;
  
- 	/* value is in KB */
- 	val <<= 10;
--
--	ret = tracing_resize_ring_buffer(tc->tr, val, tc->cpu);
-+	ret = tracing_resize_ring_buffer(tr, val, tracing_get_cpu(inode));
- 	if (ret < 0)
- 		return ret;
+ 	/* If this file was open for write, then erase contents */
+-	if ((file->f_mode & FMODE_WRITE) &&
+-	    (file->f_flags & O_TRUNC)) {
+-		if (tc->cpu == RING_BUFFER_ALL_CPUS)
++	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
++		int cpu = tracing_get_cpu(inode);
++
++		if (cpu == RING_BUFFER_ALL_CPUS)
+ 			tracing_reset_online_cpus(&tr->trace_buffer);
+ 		else
+-			tracing_reset(&tr->trace_buffer, tc->cpu);
++			tracing_reset(&tr->trace_buffer, cpu);
+ 	}
  
-@@ -4888,11 +4863,11 @@ static const struct file_operations tracing_pipe_fops = {
- };
+ 	if (file->f_mode & FMODE_READ) {
+-		iter = __tracing_open(tr, tc, inode, file, false);
++		iter = __tracing_open(inode, file, false);
+ 		if (IS_ERR(iter))
+ 			ret = PTR_ERR(iter);
+ 		else if (trace_flags & TRACE_ITER_LATENCY_FMT)
+@@ -4676,8 +4670,7 @@ struct ftrace_buffer_info {
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ {
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_iterator *iter;
+ 	struct seq_file *m;
+ 	int ret = 0;
+@@ -4686,7 +4679,7 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ 		return -ENODEV;
  
- static const struct file_operations tracing_entries_fops = {
--	.open		= tracing_open_generic_tc,
-+	.open		= tracing_open_generic_tr,
- 	.read		= tracing_entries_read,
- 	.write		= tracing_entries_write,
- 	.llseek		= generic_file_llseek,
--	.release	= tracing_release_generic_tc,
-+	.release	= tracing_release_generic_tr,
- };
+ 	if (file->f_mode & FMODE_READ) {
+-		iter = __tracing_open(tr, tc, inode, file, true);
++		iter = __tracing_open(inode, file, true);
+ 		if (IS_ERR(iter))
+ 			ret = PTR_ERR(iter);
+ 	} else {
+@@ -4703,8 +4696,8 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ 		ret = 0;
  
- static const struct file_operations tracing_total_entries_fops = {
-@@ -5576,7 +5551,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
- 				tr, cpu, &tracing_stats_fops);
+ 		iter->tr = tr;
+-		iter->trace_buffer = &tc->tr->max_buffer;
+-		iter->cpu_file = tc->cpu;
++		iter->trace_buffer = &tr->max_buffer;
++		iter->cpu_file = tracing_get_cpu(inode);
+ 		m->private = iter;
+ 		file->private_data = m;
+ 	}
+@@ -5521,7 +5514,6 @@ trace_create_cpu_file(const char *name, umode_t mode, struct dentry *parent,
+ static void
+ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ {
+-	struct trace_array_cpu *data = per_cpu_ptr(tr->trace_buffer.data, cpu);
+ 	struct dentry *d_percpu = tracing_dentry_percpu(tr, cpu);
+ 	struct dentry *d_cpu;
+ 	char cpu_dir[30]; /* 30 characters should be more than enough */
+@@ -5542,7 +5534,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
  
- 	trace_create_cpu_file("buffer_size_kb", 0444, d_cpu,
--				&data->trace_cpu, cpu, &tracing_entries_fops);
-+				tr, cpu, &tracing_entries_fops);
+ 	/* per cpu trace */
+ 	trace_create_cpu_file("trace", 0644, d_cpu,
+-				&data->trace_cpu, cpu, &tracing_fops);
++				tr, cpu, &tracing_fops);
+ 
+ 	trace_create_cpu_file("trace_pipe_raw", 0444, d_cpu,
+ 				tr, cpu, &tracing_buffers_fops);
+@@ -5555,7 +5547,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
  
  #ifdef CONFIG_TRACER_SNAPSHOT
  	trace_create_cpu_file("snapshot", 0644, d_cpu,
-@@ -6152,7 +6127,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
+-			  	&data->trace_cpu, cpu, &snapshot_fops);
++			  	tr, cpu, &snapshot_fops);
+ 
+ 	trace_create_cpu_file("snapshot_raw", 0444, d_cpu,
+ 				tr, cpu, &snapshot_raw_fops);
+@@ -6121,7 +6113,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
+ 			  tr, &tracing_iter_fops);
+ 
+ 	trace_create_file("trace", 0644, d_tracer,
+-			(void *)&tr->trace_cpu, &tracing_fops);
++			  tr, &tracing_fops);
+ 
+ 	trace_create_file("trace_pipe", 0444, d_tracer,
  			  tr, &tracing_pipe_fops);
+@@ -6142,11 +6134,11 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
+ 			  &trace_clock_fops);
  
- 	trace_create_file("buffer_size_kb", 0644, d_tracer,
--			(void *)&tr->trace_cpu, &tracing_entries_fops);
-+			  tr, &tracing_entries_fops);
+ 	trace_create_file("tracing_on", 0644, d_tracer,
+-			    tr, &rb_simple_fops);
++			  tr, &rb_simple_fops);
  
- 	trace_create_file("buffer_total_size_kb", 0444, d_tracer,
- 			  tr, &tracing_total_entries_fops);
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ 	trace_create_file("snapshot", 0644, d_tracer,
+-			  (void *)&tr->trace_cpu, &snapshot_fops);
++			  tr, &snapshot_fops);
+ #endif
+ 
+ 	for_each_tracing_cpu(cpu)
 -- 
 1.5.5.1
 
