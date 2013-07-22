@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab3GVPqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 11:46:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34561 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755447Ab3GVPqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 11:46:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,720,1367996400"; 
-   d="scan'208";a="369185095"
-From: "Jiang, Dave" <dave.jiang@intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Dan Williams <djbw@fb.com>, "Koul, Vinod" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ioatdma: silence GCC warnings
-Thread-Topic: [PATCH v2] ioatdma: silence GCC warnings
-Thread-Index: AQHOhXO9zpb9mUG4QEO3FmnOxZqGGZlxT72A
-Date: Mon, 22 Jul 2013 15:46:36 +0000
-Message-ID: <1374507997.43171.7.camel@djiang5-linux2.ch.intel.com>
-References: <1371465315.26299.17.camel@x61.thuisdomein>
-	 <CAA9_cmc9XWCvU=d2qu6rMaV+_sxBeMgrreZWU5ofzAd3dANT9w@mail.gmail.com>
-	 <1374147757.26384.49.camel@x61.thuisdomein>
-	 <1374343505.15242.12.camel@x61.thuisdomein>
-In-Reply-To: <1374343505.15242.12.camel@x61.thuisdomein>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.2.105.54]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <BDF0C9F2D3080D4E8EB7D4E10D999072@intel.com>
+	id S932373Ab3GVPsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 11:48:22 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:42369 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755447Ab3GVPsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 11:48:21 -0400
+From: Fabio Coatti <fabio.coatti@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: 3.10.2 Trace: Freezing of tasks failed
+Date: Mon, 22 Jul 2013 17:48:16 +0200
+Message-ID: <2218989.ZIPS7tkB8B@calvin>
+User-Agent: KMail/4.10.5 (Linux/3.10.2; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6MFkxAE011518
 
-On Sat, 2013-07-20 at 20:05 +0200, Paul Bolle wrote:
-> Building dma_v3.o triggers a GCC warning:
->     drivers/dma/ioat/dma_v3.c: In function ‚Äò__ioat3_prep_pq16_lock‚Äô:
->     drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
->     drivers/dma/ioat/dma_v3.c:264:11: warning: array subscript is below array bounds [-Warray-bounds]
-> 
-> This warning is caused by pq16_set_src(). It uses "int idx" as an index
-> to an eight element array. Changing "idx" to "unsigned" silences this
-> warning. Apparently GCC can then determine that "idx" will never be
-> negative.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Hi all,
 
-Acked-by: Dave Jiang <dave.jiang@intel.com>
+I just installed 3.10.2 and I started to see this kind of messages:
+===============================================
+[lun lug 22 15:45:28 2013] PM: Syncing filesystems ... done.
+[lun lug 22 15:45:28 2013] Freezing user space processes ... 
+[lun lug 22 15:45:48 2013] Freezing of tasks failed after 20.00 seconds (1 
+tasks refusing to freeze, wq_busy=0):
+[lun lug 22 15:45:48 2013] mc              D ffff8801a24adf80     0 16470  
+30425 0x00000004
+[lun lug 22 15:45:48 2013]  ffff8801a24adb80 0000000000000002 0000000000000000 
+ffff880233732dc0
+[lun lug 22 15:45:48 2013]  ffff8801580c9fd8 0000000000011f00 ffff8801580c9fd8 
+ffff8801a24adb80
+[lun lug 22 15:45:48 2013]  000000000000000e 000000000000000e ffffea0002871b80 
+0000000000000001
+[lun lug 22 15:45:48 2013] Call Trace:
+[lun lug 22 15:45:48 2013]  [<ffffffff810dfd7b>] ? cgroup_freezing+0x20/0x25
+[lun lug 22 15:45:48 2013]  [<ffffffff810c7698>] ? 
+freezing_slow_path+0x20/0x41
+[lun lug 22 15:45:48 2013]  [<ffffffff8109c388>] ? recalc_sigpending+0x3b/0x41
+[lun lug 22 15:45:48 2013]  [<ffffffff8109cc02>] ? 
+__set_task_blocked+0x5d/0x64
+[lun lug 22 15:45:48 2013]  [<ffffffff8109ea3b>] ? 
+__set_current_blocked+0x2d/0x43
+[lun lug 22 15:45:48 2013]  [<ffffffffa003ac0a>] ? 
+__fuse_request_send+0x1c4/0x282 [fuse]
+[lun lug 22 15:45:48 2013]  [<ffffffff810aa934>] ? 
+abort_exclusive_wait+0x79/0x79
+[lun lug 22 15:45:48 2013]  [<ffffffffa003f121>] ? fuse_send_write+0x10e/0x121 
+[fuse]
+[lun lug 22 15:45:48 2013]  [<ffffffffa0040876>] ? 
+fuse_perform_write+0x303/0x40f [fuse]
+[lun lug 22 15:45:48 2013]  [<ffffffffa0040bd0>] ? 
+fuse_file_aio_write+0x24e/0x297 [fuse]
+[lun lug 22 15:45:48 2013]  [<ffffffff81139f3f>] ? do_sync_write+0x69/0x8c
+[lun lug 22 15:45:48 2013]  [<ffffffff810b562b>] ? get_vtime_delta+0xd/0x59
+[lun lug 22 15:45:48 2013]  [<ffffffff8113a930>] ? vfs_write+0xbd/0x162
+[lun lug 22 15:45:48 2013]  [<ffffffff8113ac9d>] ? SyS_write+0x45/0x77
+[lun lug 22 15:45:48 2013]  [<ffffffff81700991>] ? tracesys+0xd4/0xd9
 
-> ---
-> 0) v2: cut back to a one hunk change, as Dan suggested.
-> 
-> 1) Still just compile tested.
-> 
->  drivers/dma/ioat/dma_v3.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-> index b642e03..2bb4601 100644
-> --- a/drivers/dma/ioat/dma_v3.c
-> +++ b/drivers/dma/ioat/dma_v3.c
-> @@ -251,7 +251,7 @@ static bool is_bwd_noraid(struct pci_dev *pdev)
->  }
->  
->  static void pq16_set_src(struct ioat_raw_descriptor *desc[3],
-> -			dma_addr_t addr, u32 offset, u8 coef, int idx)
-> +			dma_addr_t addr, u32 offset, u8 coef, unsigned idx)
->  {
->  	struct ioat_pq_descriptor *pq = (struct ioat_pq_descriptor *)desc[0];
->  	struct ioat_pq16a_descriptor *pq16 =
+[lun lug 22 15:45:48 2013] Restarting tasks ... done.
+[lun lug 22 15:45:48 2013] video LNXVIDEO:01: Restoring backlight state
+===============================================
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Machine:
+
+Linux calvin 3.10.2 #1 SMP PREEMPT Mon Jul 22 13:41:43 CEST 2013 x86_64 
+Intel(R) Core(TM) i5-3427U CPU @ 1.80GHz GenuineIntel GNU/Linux
+gcc (Gentoo 4.7.3 p1.0, pie-0.5.5) 4.7.3
+
+I didn't dug into details yet (for lack of time, sorry, maybe later) but if 
+more info are needed just let me know (CC: me as I'm not on mailing list)
+
+--
+Fabio
