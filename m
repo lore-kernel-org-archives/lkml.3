@@ -1,175 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab3GVNQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:16:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39234 "EHLO arroyo.ext.ti.com"
+	id S1755543Ab3GVNSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:18:41 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:22167 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754868Ab3GVNQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:16:55 -0400
-Message-ID: <51ED30A8.10200@ti.com>
-Date: Mon, 22 Jul 2013 16:16:24 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755305Ab3GVNSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 09:18:40 -0400
+Date: Mon, 22 Jul 2013 15:17:08 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Shinya Kuribayashi <skuribay@pobox.com>
+Cc: mika.westerberg@linux.intel.com, linux-i2c@vger.kernel.org,
+        wsa@the-dreams.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c-designware: make *CNT values configurable
+Message-ID: <20130722131706.GA24081@ab42.lan>
+References: <20130709161927.GC30236@ab42.lan>
+ <20130710105215.GY4898@intel.com>
+ <20130710165634.GA30693@ab42.lan>
+ <20130711073600.GG4898@intel.com>
+ <20130711101330.GP4898@intel.com>
+ <51DFB6C1.4040001@pobox.com>
+ <20130712085140.GY4898@intel.com>
+ <51E0E76B.1040304@pobox.com>
+ <20130716111616.GA25835@ab42.lan>
+ <51E6ACBE.7000509@pobox.com>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>,
-        <sergei.shtylyov@cogentembedded.com>, <khilman@linaro.org>,
-        <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/6] USB: ehci-omap: Implement suspend/resume
-References: <Pine.LNX.4.44L0.1307111106090.1276-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1307111106090.1276-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E6ACBE.7000509@pobox.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-On 07/11/2013 06:14 PM, Alan Stern wrote:
-> On Thu, 11 Jul 2013, Roger Quadros wrote:
+On Wed, Jul 17, 2013 at 11:39:58PM +0900, Shinya Kuribayashi wrote:
+> On 7/16/13 8:16 PM, Christian Ruppert wrote:> On Sat, Jul 13, 2013 at 02:36:43PM +0900, Shinya Kuribayashi wrote:
+> >>Basically, DW I2C core provides a good enough (and quite direct) way
+> >>to control tHIGH and tLOW timing specs, *HCNT and *LCNT registers.
+> >>
+> >>But from my experience (with a slightly old version of DW I2C core
+> >>around 2005, version 1.06a or so), DW I2C core was apparently lacking
+> >>in an appropriate hardware mechanism to meet tHD;STA timing spec.  We
+> >>then found that we could meet tHD;STA by increasing *HCNT values, so
+> >>that's what currently we have in i2c-designware.c  I know with that
+> >>workaround applied, tHIGH is to be configured with a larger value
+> >>than necessary, but we have no choice.  For I2C bus systems, we must
+> >>meet every timing constraint strictly as required.  If DW I2C core
+> >>cannot meet tHD;STA without the sacrifice of tHIGH, and I would call
+> >>it a hardware bug.
+> >
+> >I agree. However, tHD;STA [min] is defined to the same value as tHIGH
+> >[min] for all modes in the I2C specification. Do I understand you
+> >correctly that the SCL_HCNT parameters control at the same time tHIGH
+> >and tHD;STA?
 > 
->>> The other two problems are both related to the interaction between
->>> system PM and runtime PM.  Suppose the controller is already runtime
->>> suspended when the system goes to sleep.  Because it is runtime
->>> suspended, it is enabled for wakeup.  But device_may_wakeup() could
->>> return false; if this happens then you have to do a runtime-resume in
->>> omap_ehci_suspend() before calling ehci_suspend(), so that the
->>> controller can be suspended again with wakeups disabled.  (Or you could
->>> choose an alternative method for accomplishing the same result, such as
->>> disabling the wakeup signal from the pad without going through a whole
->>> EHCI resume/suspend cycle.)  Conversely, if device_may_wakeup() returns
->>> true then you shouldn't do anything at all, because the controller is
->>> already suspended with the correct wakeup setting.
->>
->> I think this case is taken care of by the Runtime PM core at least for the OMAP
->> platform according to the documentation
->>
->> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/power/runtime_pm.txt#n647
+> *HCNT value does affect both tHIGH and tHD;STA at the same time.
+> But we have to make sure that composition of tHIGH is different
+> from the one of tHD;STA.
 > 
-> No; that section refers only to races, not to wakeup settings.
+> For tHIGH
+> ----------
 > 
->> At the end of this mail is the log during system suspend/resume
->>
->> You can notice the following sequence
->>
->> -ehci runtime suspends
->> -system suspend triggered
->> -ehci runtime resumes
->> -ehci suspends (uses new wakeup settings)
->> -system wakeup triggered
->> -ehci resumes
->> -ehci runtime suspends
+> DW I2C core is aware of the SCL rising transition (tr) and can
+> ignore it.  It starts counting the HIGH period of the SCL signal
+> (tHIGH) after the SCL input voltage increases at VIH.
 > 
-> This is because the root hub was runtime suspended with the wrong
-> wakeup setting.  The USB core, which is careful about these things,
-> resumed and re-suspended it with the proper wakeup setting.  In the 
-> process, the controller had to be runtime resumed as well.
+> This is described in the data book as an ideal configuration,
+> and the resulting formula would be:
 > 
-> Try doing the test over again, but this time with the root hub enabled 
-> for wakeup and the controller disabled.  (I know this is a bizarre 
-> combination, but try it anyway.)  Also, after the system wakes up, see 
-> whether the root hub and controller get runtime suspended.
+> 	HCNT + (1+4+3) >= IC_CLK * tHIGH ... (a)
 > 
-
-The first part of the test caught the problem were we were trying to access
-EHCI registers when HW is not accessible. So this was a good test case.
-
->>> For the third problem, suppose the controller was runtime suspended
->>> when the system went to sleep.  When the system wakes up, the
->>> controller will become active, so you have to inform the runtime PM
->>> core about its change of state.  Basically, if omap_ehci_resume() sees
->>> that ehci_resume() returned 0 then it must do:
->>>
->>> 	pm_runtime_disable(dev);
->>> 	pm_runtime_set_active(dev);
->>> 	pm_runtime_enable(dev);
->>>
->>> All of these issues are discussed (among lots of other material) in 
->>> Documentation/power/runtime_pm.txt.
->>
->> Is this still applicable? Documentation claims
->>
->>    "During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
->>     for every device right after executing the subsystem-level .resume_early()
->>     callback and right after executing the subsystem-level .resume() callback
->>     for it, respectively."
+> please refer to the data book for details about (1+4+3) part.
 > 
-> Yes, this is applicable, but it is irrelevant to the problem I 
-> described.  You still have to tell the runtime PM core that the device 
-> is now active.
+> For tLOW
+> --------
+> 
+> DW I2C core starts counting the SCL CNTs for the LOW period of
+> the SCL signal (tLOW) as soon as it pulls the SCL line _without_
+> _confirming_ the SCL input voltage decreases at VIL.
+> 
+> In order to meet the tLOW timing spec, we need to take into
+> account the fall time of SCL signal (tf), so the resulting
+> formula should be:
+> 
+> 	LCNT + 1 >= IC_CLK * (tLOW + tf)
+> 
+> please refer to the data book for details about '+1' part.
+> 
+> For tHD;STA
+> -----------
+> 
+> There is no explanation about tHD;STA in the data book.  We
+> only have (my) experimental result; tHD;STA turned out to be
+> proportional to 'HCNT + 3'.  The formula is:
+> 
+> 	HCNT + 3 >= IC_CLK * (tHD;STA + tf) ... (b)
+> 
+> DW I2C core seems to start counting the SCL CNTs for the HIGH
+> period of the SCL signel (tHD;STA) as soon as it pulls the _SDA_
+> line without confirming the SDA input voltage decreases at VIL,
+> so we have to take into account the SDA falling transition (tf)
+> here.
+> 
+> As can be expected from (a) and (b), if tHD;STA [min] is defined
+> to the same value as tHIGH [min], we need to have larger HCNT
+> value than necessary for tHIGH, to meet tHD;STA constraint.
+> 
+> [...]
 
-Right, I understand it now. How does the below code look?
+Hrmmm... This makes my head spin. Do you think the following code
+snippet represents an accurate method to calculate the register values?
+If you agree I'll prepare a patch based on that for the DW I2C. The
+question will be, however, how to obtain the transition times.
 
-+static int omap_ehci_suspend(struct device *dev)
-+{
-+       struct usb_hcd *hcd = dev_get_drvdata(dev);
-+       bool do_wakeup = device_may_wakeup(dev);
-+       int ret;
-+
-+       dev_dbg(dev, "%s may_wakeup %d\n", __func__, do_wakeup);
-+
-+       if (pm_runtime_status_suspended(dev)) {
-+               pm_runtime_get_sync(dev);
-+               ehci_resume(hcd, false);
-+               ret = ehci_suspend(hcd, do_wakeup);
-+               pm_runtime_put_sync(dev);
-+
-+       } else {
-+               ret = ehci_suspend(hcd, do_wakeup);
-+       }
-+
-+       return ret;
-+}
-+
-+static int omap_ehci_resume(struct device *dev)
-+{
-+       struct usb_hcd *hcd = dev_get_drvdata(dev);
-+       int ret;
-+
-+       dev_dbg(dev, "%s\n", __func__);
-+
-+       ret = ehci_resume(hcd, false);
-+       if (!ret) {
-+               /*
-+                * Controller was powered ON so reflect state
-+                */
-+               pm_runtime_disable(dev);
-+               pm_runtime_set_active(dev);
-+               pm_runtime_enable(dev);
-+       }
-+
-+       return ret;
-+}
-+
-+static int omap_ehci_runtime_suspend(struct device *dev)
-+{
-+       struct usb_hcd *hcd = dev_get_drvdata(dev);
-+       struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
-+
-+       dev_dbg(dev, "%s\n", __func__);
-+
-+       if (omap->bound)
-+               ehci_suspend(hcd, true);
-+
-+       return 0;
-+}
-+
-+static int omap_ehci_runtime_resume(struct device *dev)
-+{
-+       struct usb_hcd *hcd = dev_get_drvdata(dev);
-+       struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
-+
-+       dev_dbg(dev, "%s\n", __func__);
-+
-+       if (omap->bound)
-+               ehci_resume(hcd, false);
-+
-+       return 0;
-+}
+Would it make sense to add generic I2C device tree properties for those
+parameters? These parameters are independent of the actual bus driver,
+rather a PCB property... And as such the correct place would be device
+tree or ACPI or similar.
 
+Greetings,
+  Christian
 
-cheers,
--roger
+--- SNIP ---
+/*
+ *        t_f;SDA
+ *          |-|
+ *     _____              _____ . . .
+ *          \            /
+ * SDA       \          /
+ *            \________/       t_r;SCL    t_f;SCL
+ *                               |-|        |-|
+ *     ______________               ________
+ *                   \             /        \
+ * SCL                \           /          \
+ *                     \_________/            \_______ . . .
+ *            |------| |---------| |--------|
+ *            t_HD;STA    t_LOW      t_HIGH
+ *
+ *          |--------|-----------| |--------|
+ *         (   HCNT       LCNT        HCNT   ) * 1/f_SYS
+ *
+ *
+ * HCNT = f_SYS * max(t_HD;STA + t_f;SDA , t_HIGH)
+ *      = f_SYS * (t_HIGH + t_f;SDA)      because T_HD;STA == T_HIGH
+ * LCNT = f_SYS * (t_f;SCL + t_LOW)
+ * HCNT + LCNT + t_r;SCL = 1/f_SCL = t_SCL
+ */
+
+#define I2C_STD_MODE       (0)
+#define I2C_FAST_MODE      (1)
+#define I2C_FAST_MODE_PLUS (2)
+
+static const struct i2c_timing_params {
+	unsigned int t_SCL;   /* t_SCL in (ms * 65536) */
+	unsigned int t_LOW;   /* t_LOW in (ms * 65536) */
+	unsigned int t_HIGH;  /* t_HIGH = t_HD;STA in (ms * 65536) */
+} i2c_timing_params[] = {
+	{ /* I2C_STD_MODE */
+		.t_SCL   = 10.0e-3 * 65536 + 0.5,
+		.t_LOW   =  4.7e-3 * 65536 + 0.5,
+		.t_HIGH  =  4.0e-3 * 65536 + 0.5,
+	},
+	{ /* I2C_FAST_MODE */
+		.t_SCL   =  2.5e-3 * 65536 + 0.5,
+		.t_LOW   =  1.3e-3 * 65536 + 0.5,
+		.t_HIGH  =  0.6e-3 * 65536 + 0.5,
+	},
+	{ /* I2C_FAST_MODE_PLUS */
+		.t_SCL   =  1.0e-3 * 65536 + 0.5,
+		.t_LOW   =  0.5e-3 * 65536 + 0.5,
+		.t_HIGH  =  0.26e-3 * 65536 + 0.5,
+	},
+};
+
+#define DW_CNT_OFFS    (1)
+#define DW_FILT_OFFS   (2)
+#define DW_SCL_LATENCY (3)
+
+/*
+ * all timings in ns f_SYS in kHz
+ * For worst case scenario assume tf_SCL = tf_SDA = 300ns, tr_SCL = 0ns
+ */
+void calc_timing_params(u16 *HCNT, u16 *LCNT, unsigned int f_SYS
+			unsigned int tf_SCL, unsigned int tr_SCL,
+			unsigned int tf_SDA, unsigned int mode,
+			unsigned int IC_SPKLEN)
+{
+	unsigned int H, L;
+	int D;
+	/*
+	 * The worst case High count timing includes the SDA falling
+	 * transition of start condition
+	 */
+	H = f_SYS * (tf_SDA + i2c_timing_params[mode].t_HIGH);
+
+	/* The Low count timing always includes the preceding falling edge. */
+	L = f_SYS * (tf_SCL + i2c_timing_params[mode].t_LOW);
+
+	/*
+	 * The clock timings must not exceed the maximum frequencies
+	 * from the I2C specification, slow down if required.
+	 */
+	D = (f_SYS * i2c_timing_params[mode].t_scl - H - L - tr_SCL) / 2;
+	if (D > 0) {
+		H += D;
+		L += D;
+	}
+
+	/*
+	 * Round the HIGH count and subtract
+	 * (DW_CNT_OFFS + DW_FILT_OFFS + DW_SCL_LATENCY + IC_SPKLEN)
+	 * which are added to the register value inside the DW IP.
+	 */
+	H = ((H + 32768) >> 16) - DW_CNT_OFFS - DW_FILT_OFFS
+				- DW_SCL_LATENCY - IC_SPKLEN;
+
+	/*
+	 * Round the LOW count and subtract DW_CNT_OFFS which is added to
+	 * the register value inside the DW IP.
+	 */
+	L = ((L + 32768) >> 16) - DW_CNT_OFFS;
+
+	/* Respect the DW IP minimum timings */
+	if (H < (IC_SPKLEN + 5))
+		H = IC_SPKLEN + 5;
+	if (L < (IC_SPKLEN + 7))
+		L = IC_SPKLEN + 7;
+	*HCNT = H;
+	*LCNT = L;
+}
+
