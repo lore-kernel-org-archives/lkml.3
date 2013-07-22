@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318Ab3GVUBv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:01:51 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:64984 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933184Ab3GVUBu (ORCPT
+	id S933315Ab3GVUDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:03:47 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:40751 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237Ab3GVUDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:01:50 -0400
+	Mon, 22 Jul 2013 16:03:46 -0400
+Message-ID: <51ED9018.1020003@gmail.com>
+Date: Mon, 22 Jul 2013 15:03:36 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51ED882F.9080801@nod.at>
-References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
- <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
- <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com>
- <20130722124047.GL4165@ZenIV.linux.org.uk> <CALkWK0=bAwDxbLEtHOThjY58BmWCrFYgZm9GaLfEnF5vpu1VJw@mail.gmail.com>
- <51ED31AF.8000309@nod.at> <CALkWK0ki0JN_uB3VNr=j0hAcEhiT_Xr+xd911-AGy5sjd95GFg@mail.gmail.com>
- <51ED3CF5.7000609@nod.at> <CALkWK0kwBaNHfH6fjtnCTxseWcXfEvNFgFovZVkz5E0_fxiHWA@mail.gmail.com>
- <51ED882F.9080801@nod.at>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Tue, 23 Jul 2013 01:31:09 +0530
-Message-ID: <CALkWK0mVX21Y7xH+uPjKVBGmHqo4HW1uFRGvpKxWHTQdhV8Ehw@mail.gmail.com>
-Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
-To: Richard Weinberger <richard@nod.at>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+To: Pawel Moll <pawel.moll@arm.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
+References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>  <1374290388-19308-3-git-send-email-grant.likely@linaro.org> <1374511851.3609.10.camel@hornet>
+In-Reply-To: <1374511851.3609.10.camel@hornet>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger wrote:
-> No, but we won't break existing applications, period.
+On 07/22/2013 11:50 AM, Pawel Moll wrote:
+> On Sat, 2013-07-20 at 04:19 +0100, Grant Likely wrote:
+>> +F:	include/dt-bindings
+> 
+> One thing we didn't finish talking about was the question if this
+> directory is supposed to contain *.dtsi files as well? The obvious
+> problem I have is a vexpress motherboard being (well, actually not bein
+> right now) shared between arch/arm/boot/dts and arch/arm64/boot/dts.
 
-We're on the same page: I'm absolutely against breaking existing users too.
+Please no. When we move dts files out of the kernel, we will still need
+to copy dt-bindings into the kernel. Also, I think we should move all
+dts files out of arch subdirs and arrange by vendor or soc family. I'm
+sure there are some cases that structure doesn't fit well, but there is
+very little in a dts tied to a cpu architecture.
 
-> If you offer me a solution that does not break any existing applications
-> and solves your systemd issue we can talk. :-)
+Rob
 
-I think a hv console driver for um Linux will solve the problem, but I
-can't be sure.  I'm trying to write one, and I'll hopefully have
-something to show in a few more caffeinated hours.
+> Pawel
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Let me know if you have any thoughts/ pointers.
