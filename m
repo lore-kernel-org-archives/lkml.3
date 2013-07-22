@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab3GVQue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:50:34 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:62820 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755790Ab3GVQud (ORCPT
+	id S1757569Ab3GVQu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:50:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51868 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab3GVQu4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:50:33 -0400
-Message-ID: <51ED0D31.8020406@gmail.com>
-Date: Mon, 22 Jul 2013 12:45:05 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Peter Schiffer <pschiffe@redhat.com>
-CC: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-man <linux-man@vger.kernel.org>, benjamin@python.org
-Subject: Re: [PATCH] open(2): document O_PATH
-References: <CAKgNAkgWiANFA1Z7o2EQmKmsMzzpa1ga2ggLeX3Bo58QmjDx6g@mail.gmail.com> <20130720114017.GA2118@ZenIV.linux.org.uk> <51EAF997.2090300@gmail.com> <51ECF166.4080007@redhat.com>
-In-Reply-To: <51ECF166.4080007@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Jul 2013 12:50:56 -0400
+Message-ID: <1374511851.3609.10.camel@hornet>
+Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
+From: Pawel Moll <pawel.moll@arm.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Date: Mon, 22 Jul 2013 17:50:51 +0100
+In-Reply-To: <1374290388-19308-3-git-send-email-grant.likely@linaro.org>
+References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
+	 <1374290388-19308-3-git-send-email-grant.likely@linaro.org>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 22 Jul 2013 16:50:51.0964 (UTC) FILETIME=[A000BFC0:01CE86FB]
+X-MC-Unique: 113072217505401201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/13 10:46, Peter Schiffer wrote:
-> On 07/20/2013 10:56 PM, Michael Kerrisk wrote:
->> On 07/20/13 13:40, Al Viro wrote:
->>> On Thu, Mar 14, 2013 at 10:35:59AM +0100, Michael Kerrisk (man-pages) wrote:
->>>> Hello Al et al,
->>>>
->>>> Documenting O_PATH fell by the wayside last year
->>>> (http://thread.gmane.org/gmane.linux.man/2790) as I got distracted
->>>> with other tasks. A recent prod or two have reminded me restart this.
->>>> I have the following patch queued to document O_PATH.
->>>>
->>>> Could you please review. I've provided the O_PATH doc both as
->>>> formatted text, for ease of reviewing, and as a patch and entire file
->>>> (attached).
->>>
->>> Seems to be mostly correct; the only thing missing is that F_GETFL is also
->>> allowed (and return value will contain O_PATH for such descriptors).  Had
->>> been there since the very beginning...
->>
->> Thanks, Al. I have added that piece.
->>
-> 
-> Michael,
-> 
-> there is a typo within added piece:
+On Sat, 2013-07-20 at 04:19 +0100, Grant Likely wrote:
+> +F:	include/dt-bindings
 
-Thanks, Peter. Applied.
+One thing we didn't finish talking about was the question if this
+directory is supposed to contain *.dtsi files as well? The obvious
+problem I have is a vexpress motherboard being (well, actually not bein
+right now) shared between arch/arm/boot/dts and arch/arm64/boot/dts.
 
-Cheers,
+Pawel
 
-Michael
-
-
-
-> diff --git a/man2/open.2 b/man2/open.2
-> index c61ea7f..ef0f664 100644
-> --- a/man2/open.2
-> +++ b/man2/open.2
-> @@ -489,7 +489,7 @@ and
->   .IP *
->   Retrieving open file status flags using the
->   .BR fcntl (2)
-> -.BR F_GETFD
-> +.BR F_GETFL
->   operation: the returned flags will include the bit
->   .BR O_PATH .
-> 
-> 
-> 
 
