@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab3GVTiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 15:38:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:40938 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932820Ab3GVTh6 (ORCPT
+	id S933245Ab3GVTnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 15:43:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58582 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932820Ab3GVTns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 15:37:58 -0400
-Date: Mon, 22 Jul 2013 15:36:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 0/18] Paravirtualized ticket spinlocks
-Message-ID: <20130722193627.GP30300@phenom.dumpdata.com>
-References: <20130722061631.24737.75508.sendpatchset@codeblue>
+	Mon, 22 Jul 2013 15:43:48 -0400
+Message-ID: <51ED8B6F.6020700@wwwdotorg.org>
+Date: Mon, 22 Jul 2013 12:43:43 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130722061631.24737.75508.sendpatchset@codeblue>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, wni@nvidia.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, l.stach@pengutronix.de
+Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
+ zone build
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com> <20130717220942.GB990@roeck-us.net> <51E7F341.8020508@ti.com> <51E8234D.1020607@wwwdotorg.org> <20130718212108.GC4110@roeck-us.net> <51E98A07.4050402@wwwdotorg.org> <20130721110807.GC24303@roeck-us.net>
+In-Reply-To: <20130721110807.GC24303@roeck-us.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> github link: https://github.com/ktraghavendra/linux/tree/pvspinlock_v11
+On 07/21/2013 04:08 AM, Guenter Roeck wrote:
+> ... [a bunch of good points re: why DT shouldn't describe thermal
+> profiles]
 
-And chance you have a backup git tree? I get:
+Yes, lots of good arguments there.
 
-This repository is temporarily unavailable.
+So, where/how in your opinion should thermal profiles be defined, and
+how should they get into the kernel? The nice thing about DT is that
+it's a single place that describes the platform, with a well-defined
+method of getting that information into the kernel. What alternatives exist?
 
-> 
-> Please note that we set SPIN_THRESHOLD = 32k with this series,
-> that would eatup little bit of overcommit performance of PLE machines
-> and overall performance of non-PLE machines.
-> 
-> The older series[3] was tested by Attilio for Xen implementation.
-> 
-> Note that Konrad needs to revert below two patches to enable xen on hvm 
->   70dd4998, f10cd522c
+> Other but related subject .. from a thermal / hwmon driver's perspective, if
+> such a driver supports thermal subsystem, it should just register itself as
+> thermal sensor device, because that is what it is. If and how it is tied to
+> cooling devices should be part of the thermal subsystem and be decided there.
 
-We could add that to the series. But let me first test it out - and that
-gets back to the repo :-)
+For audio, we have individual DT nodes that represent individual
+audio-related components such as audio controllers, audio CODECs, etc.
+We also have a "virtual" node that describes how those components
+interact and create a complete sound card. Would it make sense to do
+something similar with thermal sensors and cooling devices; represent
+them all individually, have them register themselves with the
+thermal/hwmon subsystem as you describe, but then have another "system
+level" node that describes how the system designer intended them to
+interact?
+
+If you don't think so, how would the kernel represent and gain that
+higher-level knowledge?
