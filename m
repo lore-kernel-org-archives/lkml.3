@@ -1,52 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933408Ab3GVUwL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:52:11 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:49731 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316Ab3GVUwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:52:09 -0400
-Date: Mon, 22 Jul 2013 22:52:03 +0200
-From: Kiko Piris <kernel@pirispons.net>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: 3.10.1 cpufreq suspend/resume regression still present in 3.10.2
-Message-ID: <20130722205203.GA8075@sacarino.pirispons.net>
-Mail-Followup-To: Kiko Piris <kernel@pirispons.net>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-	gregkh@linuxfoundation.org
-References: <20130722151653.GA7213@sacarino.pirispons.net>
- <1374507247.15242.26.camel@x61.thuisdomein>
- <20130722155456.GA7836@sacarino.pirispons.net>
- <51ED56FF.9030508@linux.vnet.ibm.com>
+	id S933402Ab3GVUxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:53:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:30783 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932316Ab3GVUxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 16:53:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,721,1367996400"; 
+   d="scan'208";a="271739756"
+Message-ID: <51ED9BC0.6020206@linux.intel.com>
+Date: Mon, 22 Jul 2013 13:53:20 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51ED56FF.9030508@linux.vnet.ibm.com>
-User-Agent: Mutt
-X-No-CC: Please respect my Mail-Followup-To header
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, x86@kernel.org
+Subject: Re: [PATCH -tip/x86/jumplabel] x86: call out into int3 handler directly
+ instead of using notifier
+References: <20130720131226.GA13893@localhost> <alpine.LNX.2.00.1307221307280.23128@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1307221307280.23128@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/07/2013 at 21:29 +0530, Srivatsa S. Bhat wrote:
+Hi Jiri,
 
-> Try applying the two mainline commits that I mentioned in my previous
-> mail, on top of 3.10.2 and check if it fixes your problem.
+ What is the baseline for this patch?
 
-It does fix it.
+	-hpa
 
-Running 3.10.2 with your two patches, suspended and resumed a couple of
-times without a problem (previously it didn’t wake up 100% of the
-times).
-
-Thank you both for your help!
-
-Regards.
-
--- 
-Kiko
