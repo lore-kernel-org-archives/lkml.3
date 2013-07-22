@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933424Ab3GVUZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:25:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52088 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933357Ab3GVUWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:22:51 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/11] perf tools: Move weight back to common sort keys
-Date: Mon, 22 Jul 2013 17:22:39 -0300
-Message-Id: <1374524559-9839-12-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1374524559-9839-1-git-send-email-acme@infradead.org>
-References: <1374524559-9839-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757389Ab3GVUag (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:30:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41003 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757124Ab3GVUae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 16:30:34 -0400
+Date: Mon, 22 Jul 2013 22:30:31 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH RFC] lib: Make radix_tree_node_alloc() irq safe
+Message-ID: <20130722203031.GI23658@quack.suse.cz>
+References: <1373994390-5479-1-git-send-email-jack@suse.cz>
+ <20130717161200.40a97074623be2685beb8156@linux-foundation.org>
+ <20130718130932.GA10419@quack.suse.cz>
+ <20130718143715.ce4bef65d01040fbbcd90f95@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718143715.ce4bef65d01040fbbcd90f95@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu 18-07-13 14:37:15, Andrew Morton wrote:
+> On Thu, 18 Jul 2013 15:09:32 +0200 Jan Kara <jack@suse.cz> wrote:
+> 
+> > On Wed 17-07-13 16:12:00, Andrew Morton wrote:
+> > > On Tue, 16 Jul 2013 19:06:30 +0200 Jan Kara <jack@suse.cz> wrote:
+> > > 
+> > > BUG_ON(in_interrupt()) :)
+> >   Or maybe WARN_ON()... But it's not so easy :) Currently radix tree code
+> > assumes that if gfp_mask doesn't have __GFP_WAIT set caller has performed
+> > radix_tree_preload(). Clearly this will stop working for in-interrupt users
+> > of radix tree. So how do we propagate the information from the caller of
+> > radix_tree_insert() down to radix_tree_node_alloc() whether the preload has
+> > been performed or not? Will we rely on in_interrupt() or use some special
+> > gfp_mask bit?
+> 
+> Well, it won't stop working.  The interrupt-time
+> radix_tree_node_alloc() call will try to grab a node from the cpu-local
+> magazine and if that failed, will call kmem_cache_alloc().  Presumably
+> the caller has passed in GFP_ATOMIC, so the kmem_cache_alloc() will use
+> page reserves, which seems appropriate.
+  True. But then we have to make radix_tree_node_alloc() irq safe as I did
+in my patch.
 
-This is a partial revert of Namhyung's patch
+> This will mean that the interrupt-time node allocation will sometimes
+> steal a preloaded node from process-context code.  In the absolutely
+> worst case, the process-context code will then need to try
+> kmem_cache_alloc(), which will probably succeed anyway.
+  What I found somewhat nasty about stealing of preallocated nodes by
+interrupt is that process-context user can do preload which succeeds so he
+assumes radix_tree_node_alloc() cannot fail. If interrupt steals nodes,
+radix_tree_node_alloc() can return NULL for process-context user and that
+may oops or whatever (I've checked and there are users where this would
+currently happen - e.g. mm/vmalloc.c:new_vmap_block()). And it will be
+quite hard to track down why that happened.
 
- afab87b91f3f331d55664172dad8e476e6ffca9d
- perf sort: Separate out memory-specific sort keys
+So the question is more about the status of radix_tree_preload() - do we
+make it just an optimization (so that allocations have higher chance of
+success / stress the system less) or do we want to guarantee the caller
+that nodes are there to be used? In the first case we have to fix some
+users of radix_tree_preload() in the second case we have to tweak
+radix_tree_node_alloc() like you suggest below.
 
-He wrote
+> It's not perfect - we'd prefer that process-context node allocations
+> not get stolen in this fashion.  That's easily fixed with
+> 
+> --- a/lib/radix-tree.c~a
+> +++ a/lib/radix-tree.c
+> @@ -207,7 +207,10 @@ radix_tree_node_alloc(struct radix_tree_
+>  	struct radix_tree_node *ret = NULL;
+>  	gfp_t gfp_mask = root_gfp_mask(root);
+>  
+> -	if (!(gfp_mask & __GFP_WAIT)) {
+> +	/*
+> +	 * Lengthy comment goes here
+> +	 */
+> +	if (!(gfp_mask & __GFP_WAIT) && !in_interrupt()) {
+>  		struct radix_tree_preload *rtp;
+>  
+>  		/*
+> 
+> But I don't know if it's worth it.
+> 
+> > Secondly, CFQ has this unpleasant property that some functions are
+> > sometimes called from interrupt context and sometimes not. So these
+> > functions would have to check in what context they are called and either
+> > perform preload or not. That's doable but it's going to be a bit ugly and
+> > has to match the check in radix_tree_node_alloc() whether preload should be
+> > used or not. So leaving the checking to the users of radix tree looks
+> > fragile.
+> 
+> mm...  The CFQ code should be passing around a gfp_t anyway - GFP_NOIO
+> or GFP_ATOMIC, depending on the calling context.  So don't call
+> radix_tree_preload() if it's GFP_ATOMIC.
+  I've checked and there are other users which can end up calling
+radix_tree_preload() with GFP_ATOMIC or similar gfp masks (e.g. some
+add_to_swap_cache() users). So I think it would be better to handle that
+case inside a common function. Maybe we could have a separate function like
+radix_tree_try_preload() which would just skip any preloading if mask
+doesn't have __GFP_WAIT set and radix_tree_preload() will complain if it is
+passed a gfp mask without __GFP_WAIT. Hm?
 
- For global/local weights, I'm not entirely sure to place them into the
- memory dimension.  But it's the only user at this time.
-
-Well TSX is another (in fact the original) user of the flags, and it
-needs them to be common. So move local/global weight back to the common
-sort keys.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Link: http://lkml.kernel.org/r/1374188333-17899-1-git-send-email-andi@firstfloor.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/sort.c | 4 ++--
- tools/perf/util/sort.h | 6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index cb2b108..5f118a0 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -874,6 +874,8 @@ static struct sort_dimension common_sort_dimensions[] = {
- 	DIM(SORT_PARENT, "parent", sort_parent),
- 	DIM(SORT_CPU, "cpu", sort_cpu),
- 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
-+	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
-+	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
- };
- 
- #undef DIM
-@@ -893,8 +895,6 @@ static struct sort_dimension bstack_sort_dimensions[] = {
- #define DIM(d, n, func) [d - __SORT_MEMORY_MODE] = { .name = n, .entry = &(func) }
- 
- static struct sort_dimension memory_sort_dimensions[] = {
--	DIM(SORT_LOCAL_WEIGHT, "local_weight", sort_local_weight),
--	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
- 	DIM(SORT_MEM_DADDR_SYMBOL, "symbol_daddr", sort_mem_daddr_sym),
- 	DIM(SORT_MEM_DADDR_DSO, "dso_daddr", sort_mem_daddr_dso),
- 	DIM(SORT_MEM_LOCKED, "locked", sort_mem_locked),
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 586022d..4e80dbd 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -143,6 +143,8 @@ enum sort_type {
- 	SORT_PARENT,
- 	SORT_CPU,
- 	SORT_SRCLINE,
-+	SORT_LOCAL_WEIGHT,
-+	SORT_GLOBAL_WEIGHT,
- 
- 	/* branch stack specific sort keys */
- 	__SORT_BRANCH_STACK,
-@@ -154,9 +156,7 @@ enum sort_type {
- 
- 	/* memory mode specific sort keys */
- 	__SORT_MEMORY_MODE,
--	SORT_LOCAL_WEIGHT = __SORT_MEMORY_MODE,
--	SORT_GLOBAL_WEIGHT,
--	SORT_MEM_DADDR_SYMBOL,
-+	SORT_MEM_DADDR_SYMBOL = __SORT_MEMORY_MODE,
- 	SORT_MEM_DADDR_DSO,
- 	SORT_MEM_LOCKED,
- 	SORT_MEM_TLB,
+								Honza
 -- 
-1.8.1.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
