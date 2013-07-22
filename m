@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168Ab3GVS5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:57:54 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:15694 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932957Ab3GVS5x (ORCPT
+	id S933176Ab3GVS6u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:58:50 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40526 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932957Ab3GVS6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 14:57:53 -0400
-Message-ID: <1374519467.7608.87.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
-From: Jason Low <jason.low2@hp.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Mon, 22 Jul 2013 11:57:47 -0700
-In-Reply-To: <20130722070144.GC5138@linux.vnet.ibm.com>
-References: <1374220211.5447.9.camel@j-VirtualBox>
-	 <20130722070144.GC5138@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 22 Jul 2013 14:58:48 -0400
+Message-ID: <51ED80E7.4050606@codeaurora.org>
+Date: Mon, 22 Jul 2013 11:58:47 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>
+Subject: Re: [PATCH v4 03/17] sched_clock: Use an hrtimer instead of timer
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org> <1374189690-10810-4-git-send-email-sboyd@codeaurora.org> <51ED781F.6060300@linaro.org> <51ED7DD5.8010000@codeaurora.org>
+In-Reply-To: <51ED7DD5.8010000@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 12:31 +0530, Srikar Dronamraju wrote:
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index e8b3350..da2cb3e 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -1348,6 +1348,8 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
-> >  		else
-> >  			update_avg(&rq->avg_idle, delta);
-> >  		rq->idle_stamp = 0;
-> > +
-> > +		rq->idle_duration = (rq->idle_duration + delta) / 2;
-> 
-> Cant we just use avg_idle instead of introducing idle_duration?
+On 07/22/13 11:45, Stephen Boyd wrote:
+> On 07/22/13 11:21, John Stultz wrote:
+>> On 07/18/2013 04:21 PM, Stephen Boyd wrote:
+>>> In the next patch we're going to increase the number of bits that
+>>> the generic sched_clock can handle to be greater than 32. With
+>>> more than 32 bits the wraparound time can be larger than what can
+>>> fit into the units that msecs_to_jiffies takes (unsigned int).
+>>> Luckily, the wraparound is initially calculated in nanoseconds
+>>> which we can easily use with hrtimers, so switch to using an
+>>> hrtimer.
+>>>
+>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>
+>> Hrmm. So in my testing (under qemu), this patch causes bootup to hang.
+>>
+>> qemu-system-arm -kernel zImage-arm -M vexpress-a9 -cpu cortex-a9
+>> -nographic -m 1024  -append 'root=/dev/mmcblk0p2 rw mem=1024M
+>> raid=noautodetect console=ttyAMA0,38400n8 rootwait vmalloc=256MB
+>> devtmpfs.mount=0' -sd test-arm.img -redir tcp:4300::22
+>>
+>> Config file attached.
+>>
+>> I haven't gotten a chance to look very closely, but it seems the
+>> folowing patch resolves the issue. I'm not sure if we're seeing
+>> callers to setup_sched_clock happen after sched_clock_postinit or
+>> what, but it probably needs another look over.
+>>
+>> thanks
+>> -john
+>>
+>>
+>> diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+>> index a269890b..c018ffc 100644
+>> --- a/kernel/time/sched_clock.c
+>> +++ b/kernel/time/sched_clock.c
+>> @@ -138,12 +138,6 @@ void __init setup_sched_clock(u32 (*read)(void),
+>> int bits, unsigned long rate)
+>>      pr_info("sched_clock: %u bits at %lu%cHz, resolution %lluns,
+>> wraps every %lluns\n",
+>>          bits, r, r_unit, res, wrap);
+>>  
+>> -    /*
+>> -     * Start the timer to keep sched_clock() properly updated and
+>> -     * sets the initial epoch.
+>> -     */
+>> -    hrtimer_init(&sched_clock_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+>> -    sched_clock_timer.function = sched_clock_poll;
+>>      update_sched_clock();
+>>  
+>>      /*
+>> @@ -175,6 +169,13 @@ void __init sched_clock_postinit(void)
+>>          setup_sched_clock(jiffy_sched_clock_read, 32, HZ);
+>>  
+>>      update_sched_clock();
+>> +
+>> +    /*
+>> +     * Start the timer to keep sched_clock() properly updated and
+>> +     * sets the initial epoch.
+>> +     */
+>> +    hrtimer_init(&sched_clock_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+>> +    sched_clock_timer.function = sched_clock_poll;
+>>      hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
+>>  }
+>>  
+>>
+> Hmm. Is it too early to use hrtimers? Moving the hrtimer_start() into
+> sched_clock_register() also causes the same crash.
 
-A potential issue I have found with avg_idle is that it may sometimes be
-not quite as accurate for the purposes of this patch, because it is
-always given a max value (default is 1000000 ns). For example, a CPU
-could have remained idle for 1 second and avg_idle would be set to 1
-millisecond. Another question I have is whether we can update avg_idle
-at all times without putting a maximum value on avg_idle, or increase
-the maximum value of avg_idle by a lot.
+Yes that seems to be the problem. The vexpress board is setting up the
+sched_clock in setup_arch() (via v2m_init_early) which runs before
+hrtimers_init(). I've only tested this on boards that setup the timer in
+the time_init() callback which runs after hrtimers_init(). Your patch
+should be fine, although it would be nice if we didn't have callers
+setting up the sched_clock so early.
 
-> Should we take the consideration of whether a idle_balance was
-> successful or not?
-
-I recently ran fserver on the 8 socket machine with HT-enabled and found
-that load balance was succeeding at a higher than average rate, but idle
-balance was still lowering performance of that workload by a lot.
-However, it makes sense to allow idle balance to run longer/more often
-when it has a higher success rate.
-
-> I am not sure whats a reasonable value for n can be, but may be we could
-> try with n=3.
-
-Based on some of the data I collected, n = 10 to 20 provides much better
-performance increases.
-
-> Also have we checked the performance after adjusting the
-> sched_migration_cost tunable?
-> 
-> I guess, if we increase the sched_migration_cost, we should have lesser
-> newly idle balance requests. 
-
-Yes, I have done quite a bit of testing with sched_migration_cost and
-adjusting it does help performance when idle balance overhead is high.
-But I have found that a higher value may decrease the performance during
-situations where the cost of idle_balance is not high. Additionally,
-when to modify this tunable and by how much to modify it by can
-sometimes be unpredictable. 
-
-Thanks,
-Jason
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
