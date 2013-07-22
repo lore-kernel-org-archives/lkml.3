@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933225Ab3GVTZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 15:25:11 -0400
-Received: from etezian.org ([198.101.225.253]:57539 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932912Ab3GVTZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 15:25:08 -0400
-Date: Mon, 22 Jul 2013 21:26:32 +0200
-From: Andi Shyti <andi@etezian.org>
-To: sfrench@samba.org
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cifs: file: initialize oparms.reconnect before using
- it
-Message-ID: <20130722192632.GA4258@jack.whiskey>
-References: <1374521040-5461-1-git-send-email-andi@etezian.org>
+	id S933242Ab3GVTZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 15:25:43 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:54517 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932912Ab3GVTZl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 15:25:41 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 07/22] ARM: exynos: Remove '0x's from Exynos4110 DTSI file
+Date: Mon, 22 Jul 2013 21:25:35 +0200
+Message-ID: <2350088.9z671SCjFz@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org> <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374521040-5461-1-git-send-email-andi@etezian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is patch 1/1, not 2/2... messed up with git.
+Hi Lee,
 
-Andi
-
-On Mon, Jul 22, 2013 at 09:24:00PM +0200, Andi Shyti wrote:
-> In the cifs_reopen_file function, if the following statement is
-> asserted:
-> 
-> (tcon->unix_ext && cap_unix(tcon->ses) &&
-> 		(CIFS_UNIX_POSIX_PATH_OPS_CAP &
-> 		(tcon->fsUnixInfo.Capability)))
-> 
-> and we succeed to open with cifs_posix_open, the function jumps
-> to the label reopen_success and checks for oparms.reconnect
-> which is not initialized.
-> 
-> To avoid this the oparms structure initialization is anticipated
-> before the if statement.
-> 
-> Signed-off-by: Andi Shyti <andi@etezian.org>
+On Monday 22 of July 2013 11:52:26 Lee Jones wrote:
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: linux-samsung-soc@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  fs/cifs/file.c | 18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+>  arch/arm/boot/dts/exynos4210.dtsi | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> index 1e57f36..fbeaf45 100644
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -632,6 +632,15 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
->  	else
->  		oplock = 0;
->  
-> +	oparms.tcon = tcon;
-> +	oparms.cifs_sb = cifs_sb;
-> +	oparms.desired_access = desired_access;
-> +	oparms.create_options = create_options;
-> +	oparms.disposition = disposition;
-> +	oparms.path = full_path;
-> +	oparms.fid = &cfile->fid;
-> +	oparms.reconnect = true;
-> +
->  	if (tcon->unix_ext && cap_unix(tcon->ses) &&
->  	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->  				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
-> @@ -663,15 +672,6 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
->  	if (server->ops->get_lease_key)
->  		server->ops->get_lease_key(inode, &cfile->fid);
->  
-> -	oparms.tcon = tcon;
-> -	oparms.cifs_sb = cifs_sb;
-> -	oparms.desired_access = desired_access;
-> -	oparms.create_options = create_options;
-> -	oparms.disposition = disposition;
-> -	oparms.path = full_path;
-> -	oparms.fid = &cfile->fid;
-> -	oparms.reconnect = true;
-> -
->  	/*
->  	 * Can not refresh inode by passing in file_info buf to be returned by
->  	 * CIFSSMBOpen and then calling get_inode_info with returned buf since
-> -- 
-> 1.8.3.2
+> diff --git a/arch/arm/boot/dts/exynos4210.dtsi
+> b/arch/arm/boot/dts/exynos4210.dtsi index b7f358a..53e2527 100644
+> --- a/arch/arm/boot/dts/exynos4210.dtsi
+> +++ b/arch/arm/boot/dts/exynos4210.dtsi
+> @@ -72,7 +72,7 @@
+>  		};
+>  	};
+> 
+> -	clock: clock-controller@0x10030000 {
+> +	clock: clock-controller@10030000 {
+>  		compatible = "samsung,exynos4210-clock";
+>  		reg = <0x10030000 0x20000>;
+>  		#clock-cells = <1>;
+
+This looks fine, but please fix commit message - it should be Exynos4210. 
+Also some explanation why this change is needed would be good, even if 
+it's obvious.
+
+Best regards,
+Tomasz
+
