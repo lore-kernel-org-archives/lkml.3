@@ -1,43 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab3GVQEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:04:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47193 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530Ab3GVQEf (ORCPT
+	id S1756776Ab3GVQHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:07:49 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48188 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab3GVQHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:04:35 -0400
-Date: Mon, 22 Jul 2013 13:04:29 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        fweisbec@gmail.com
-Subject: Re: [PATCH] perf, tools: Support callchain sorting based on addresses
-Message-ID: <20130722160429.GH2157@ghostprotocols.net>
-References: <1374187370-14183-1-git-send-email-andi@firstfloor.org>
+	Mon, 22 Jul 2013 12:07:47 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 05/10] mm, hugetlb: fix and clean-up node iteration code to alloc or free
+In-Reply-To: <1374482191-3500-6-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com> <1374482191-3500-6-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 22 Jul 2013 21:20:48 +0530
+Message-ID: <87wqoimw4n.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374187370-14183-1-git-send-email-andi@firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072215-1618-0000-0000-00000451324E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 18, 2013 at 03:42:50PM -0700, Andi Kleen escreveu:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> With programs with very large functions it can be useful to distinguish
-> the callgraph nodes on more than just function names. So for example if
-> you have multiple calls to the same function, it ends up being
-> separate nodes in the chain.
-> 
-> This patch adds a new key field to the callgraph options, that
-> allows comparing nodes on functions (as today, default) and addresses.
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-Thanks, applied.
+> Current node iteration code have a minor problem which do one more
+> node rotation if we can't succeed to allocate. For example,
+> if we start to allocate at node 0, we stop to iterate at node 0.
+> Then we start to allocate at node 1 for next allocation.
+>
+> I introduce new macros "for_each_node_mask_to_[alloc|free]" and
+> fix and clean-up node iteration code to alloc or free.
+> This makes code more understandable.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-- Arnaldo
+
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 83edd17..3ac0a6f 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -752,33 +752,6 @@ static int hstate_next_node_to_alloc(struct hstate *h,
+>  	return nid;
+>  }
+>
+> -static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
+> -{
+> -	struct page *page;
+> -	int start_nid;
+> -	int next_nid;
+> -	int ret = 0;
+> -
+> -	start_nid = hstate_next_node_to_alloc(h, nodes_allowed);
+> -	next_nid = start_nid;
+> -
+> -	do {
+> -		page = alloc_fresh_huge_page_node(h, next_nid);
+> -		if (page) {
+> -			ret = 1;
+> -			break;
+> -		}
+> -		next_nid = hstate_next_node_to_alloc(h, nodes_allowed);
+> -	} while (next_nid != start_nid);
+> -
+> -	if (ret)
+> -		count_vm_event(HTLB_BUDDY_PGALLOC);
+> -	else
+> -		count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+> -
+> -	return ret;
+> -}
+> -
+>  /*
+>   * helper for free_pool_huge_page() - return the previously saved
+>   * node ["this node"] from which to free a huge page.  Advance the
+> @@ -797,6 +770,40 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
+>  	return nid;
+>  }
+>
+> +#define for_each_node_mask_to_alloc(hs, nr_nodes, node, mask)		\
+> +	for (nr_nodes = nodes_weight(*mask);				\
+> +		nr_nodes > 0 &&						\
+> +		((node = hstate_next_node_to_alloc(hs, mask)) || 1);	\
+> +		nr_nodes--)
+> +
+> +#define for_each_node_mask_to_free(hs, nr_nodes, node, mask)		\
+> +	for (nr_nodes = nodes_weight(*mask);				\
+> +		nr_nodes > 0 &&						\
+> +		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
+> +		nr_nodes--)
+> +
+> +static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
+> +{
+> +	struct page *page;
+> +	int nr_nodes, node;
+> +	int ret = 0;
+> +
+> +	for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
+> +		page = alloc_fresh_huge_page_node(h, node);
+> +		if (page) {
+> +			ret = 1;
+> +			break;
+> +		}
+> +	}
+> +
+> +	if (ret)
+> +		count_vm_event(HTLB_BUDDY_PGALLOC);
+> +	else
+> +		count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+> +
+> +	return ret;
+> +}
+> +
+>  /*
+>   * Free huge page from pool from next node to free.
+>   * Attempt to keep persistent huge pages more or less
+> @@ -806,36 +813,31 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
+>  static int free_pool_huge_page(struct hstate *h, nodemask_t *nodes_allowed,
+>  							 bool acct_surplus)
+>  {
+> -	int start_nid;
+> -	int next_nid;
+> +	int nr_nodes, node;
+>  	int ret = 0;
+>
+> -	start_nid = hstate_next_node_to_free(h, nodes_allowed);
+> -	next_nid = start_nid;
+> -
+> -	do {
+> +	for_each_node_mask_to_free(h, nr_nodes, node, nodes_allowed) {
+>  		/*
+>  		 * If we're returning unused surplus pages, only examine
+>  		 * nodes with surplus pages.
+>  		 */
+> -		if ((!acct_surplus || h->surplus_huge_pages_node[next_nid]) &&
+> -		    !list_empty(&h->hugepage_freelists[next_nid])) {
+> +		if ((!acct_surplus || h->surplus_huge_pages_node[node]) &&
+> +		    !list_empty(&h->hugepage_freelists[node])) {
+>  			struct page *page =
+> -				list_entry(h->hugepage_freelists[next_nid].next,
+> +				list_entry(h->hugepage_freelists[node].next,
+>  					  struct page, lru);
+>  			list_del(&page->lru);
+>  			h->free_huge_pages--;
+> -			h->free_huge_pages_node[next_nid]--;
+> +			h->free_huge_pages_node[node]--;
+>  			if (acct_surplus) {
+>  				h->surplus_huge_pages--;
+> -				h->surplus_huge_pages_node[next_nid]--;
+> +				h->surplus_huge_pages_node[node]--;
+>  			}
+>  			update_and_free_page(h, page);
+>  			ret = 1;
+>  			break;
+>  		}
+> -		next_nid = hstate_next_node_to_free(h, nodes_allowed);
+> -	} while (next_nid != start_nid);
+> +	}
+>
+>  	return ret;
+>  }
+> @@ -1172,14 +1174,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  int __weak alloc_bootmem_huge_page(struct hstate *h)
+>  {
+>  	struct huge_bootmem_page *m;
+> -	int nr_nodes = nodes_weight(node_states[N_MEMORY]);
+> +	int nr_nodes, node;
+>
+> -	while (nr_nodes) {
+> +	for_each_node_mask_to_alloc(h, nr_nodes, node, &node_states[N_MEMORY]) {
+>  		void *addr;
+>
+> -		addr = __alloc_bootmem_node_nopanic(
+> -				NODE_DATA(hstate_next_node_to_alloc(h,
+> -						&node_states[N_MEMORY])),
+> +		addr = __alloc_bootmem_node_nopanic(NODE_DATA(node),
+>  				huge_page_size(h), huge_page_size(h), 0);
+>
+>  		if (addr) {
+> @@ -1191,7 +1191,6 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
+>  			m = addr;
+>  			goto found;
+>  		}
+> -		nr_nodes--;
+>  	}
+>  	return 0;
+>
+> @@ -1330,48 +1329,28 @@ static inline void try_to_free_low(struct hstate *h, unsigned long count,
+>  static int adjust_pool_surplus(struct hstate *h, nodemask_t *nodes_allowed,
+>  				int delta)
+>  {
+> -	int start_nid, next_nid;
+> -	int ret = 0;
+> +	int nr_nodes, node;
+>
+>  	VM_BUG_ON(delta != -1 && delta != 1);
+>
+> -	if (delta < 0)
+> -		start_nid = hstate_next_node_to_alloc(h, nodes_allowed);
+> -	else
+> -		start_nid = hstate_next_node_to_free(h, nodes_allowed);
+> -	next_nid = start_nid;
+> -
+> -	do {
+> -		int nid = next_nid;
+> -		if (delta < 0)  {
+> -			/*
+> -			 * To shrink on this node, there must be a surplus page
+> -			 */
+> -			if (!h->surplus_huge_pages_node[nid]) {
+> -				next_nid = hstate_next_node_to_alloc(h,
+> -								nodes_allowed);
+> -				continue;
+> -			}
+> +	if (delta < 0) {
+> +		for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
+> +			if (h->surplus_huge_pages_node[node])
+> +				goto found;
+>  		}
+> -		if (delta > 0) {
+> -			/*
+> -			 * Surplus cannot exceed the total number of pages
+> -			 */
+> -			if (h->surplus_huge_pages_node[nid] >=
+> -						h->nr_huge_pages_node[nid]) {
+> -				next_nid = hstate_next_node_to_free(h,
+> -								nodes_allowed);
+> -				continue;
+> -			}
+> +	} else {
+> +		for_each_node_mask_to_free(h, nr_nodes, node, nodes_allowed) {
+> +			if (h->surplus_huge_pages_node[node] <
+> +					h->nr_huge_pages_node[node])
+> +				goto found;
+>  		}
+> +	}
+> +	return 0;
+>
+> -		h->surplus_huge_pages += delta;
+> -		h->surplus_huge_pages_node[nid] += delta;
+> -		ret = 1;
+> -		break;
+> -	} while (next_nid != start_nid);
+> -
+> -	return ret;
+> +found:
+> +	h->surplus_huge_pages += delta;
+> +	h->surplus_huge_pages_node[node] += delta;
+> +	return 1;
+>  }
+>
+>  #define persistent_huge_pages(h) (h->nr_huge_pages - h->surplus_huge_pages)
+> -- 
+> 1.7.9.5
+
