@@ -1,60 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933141Ab3GVSr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:47:28 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:47050 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932757Ab3GVSr0 (ORCPT
+	id S933093Ab3GVSvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:51:47 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36232 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932903Ab3GVSvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 14:47:26 -0400
-Message-ID: <1374518841.4990.26.camel@edumazet-glaptop>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ASIX Louis =?UTF-8?Q?=5B=E8=98=87=E5=A8=81=E9=99=B8=5D?= 
-	<louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>
-Date: Mon, 22 Jul 2013 11:47:21 -0700
-In-Reply-To: <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
-References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
-	 <1374512879.4990.19.camel@edumazet-glaptop>
-	 <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
-	 <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 22 Jul 2013 14:51:46 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] mm: Restructure free-page stealing code and fix a bug
+To: akpm@linux-foundation.org, mgorman@suse.de, minchan@kernel.org,
+        cody@linux.vnet.ibm.com
+Cc: rostedt@goodmis.org, jiang.liu@huawei.com,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Tue, 23 Jul 2013 00:18:06 +0530
+Message-ID: <20130722184805.9573.78514.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072218-8878-0000-0000-000008105BF7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 19:38 +0100, Ben Hutchings wrote:
-> On Mon, 2013-07-22 at 11:29 -0700, Grant Grundler wrote:
-> > On Mon, Jul 22, 2013 at 10:07 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > ...
-> > > I guess that if a driver does not advertise NETIF_F_SG, this
-> > > skb_linearize() call is not needed : All frames reaching your xmit
-> > > function should already be linear
-> > 
-> > As Ben Hutchings pointed out, hw_features is still setting this...but
-> > I'm not sure how that matters.
-> > 
-> > ax88179_set_features() doesn't allow setting SG or TSO features.  But
-> > I expect it would be "not too difficult" to add such that ethtool
-> > could set those features after boot.
-> [...]
-> 
-> It already can.  That's what putting feature flags in hw_features does.
+The free-page stealing code in __rmqueue_fallback() is somewhat hard to
+follow, and has an incredible amount of subtlety hidden inside!
 
-My original concern, that inspired this patch, was to remove SG support,
-as this driver does not have SG support at all.
+First off, there is a minor bug in the reporting of change-of-ownership of
+pageblocks. Under some conditions, we try to move upto 'pageblock_nr_pages'
+no. of pages to the preferred allocation list. But we change the ownership
+of that pageblock to the preferred type only if we manage to successfully
+move atleast half of that pageblock (or if page_group_by_mobility_disabled
+is set).
 
-Linearize a full TSO packet needs order-5 allocations, thats likely to
-fail and lead to very slow TCP performance, because it will only rely on
-retransmits.
+However, the current code ignores the latter part and sets the 'migratetype'
+variable to the preferred type, irrespective of whether we actually changed
+the pageblock migratetype of that block or not. So, the page_alloc_extfrag
+tracepoint can end up printing incorrect info (i.e., 'change_ownership'
+might be shown as 1 when it must have been 0).
 
+So fixing this involves moving the update of the 'migratetype' variable to
+the right place. But looking closer, we observe that the 'migratetype' variable
+is used subsequently for checks such as "is_migrate_cma()". Obviously the
+intent there is to check if the *fallback* type is MIGRATE_CMA, but since we
+already set the 'migratetype' variable to start_migratetype, we end up checking
+if the *preferred* type is MIGRATE_CMA!!
 
+To make things more interesting, this actually doesn't cause a bug in practice,
+because we never change *anything* if the fallback type is CMA.
+
+So, restructure the code in such a way that it is trivial to understand what
+is going on, and also fix the above mentioned bug. And while at it, also add a
+comment explaining the subtlety behind the migratetype used in the call to
+expand().
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ mm/page_alloc.c |   96 ++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 60 insertions(+), 36 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255..027d417 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1007,6 +1007,53 @@ static void change_pageblock_range(struct page *pageblock_page,
+ 	}
+ }
+ 
++/*
++ * If breaking a large block of pages, move all free pages to the preferred
++ * allocation list. If falling back for a reclaimable kernel allocation, be
++ * more aggressive about taking ownership of free pages.
++ *
++ * On the other hand, never change migration type of MIGRATE_CMA pageblocks
++ * nor move CMA pages to different free lists. We don't want unmovable pages
++ * to be allocated from MIGRATE_CMA areas.
++ *
++ * Returns the new migratetype of the pageblock (or the same old migratetype
++ * if it was unchanged).
++ */
++static inline int try_to_steal_freepages(struct zone *zone, struct page *page,
++					 int start_type, int fallback_type)
++{
++	int current_order = page_order(page);
++
++	if (is_migrate_cma(fallback_type))
++		return fallback_type;
++
++	/* Take ownership for orders >= pageblock_order */
++	if (current_order >= pageblock_order) {
++		change_pageblock_range(page, current_order, start_type);
++		return start_type;
++	}
++
++	if (current_order >= pageblock_order / 2 ||
++	    start_type == MIGRATE_RECLAIMABLE ||
++	    page_group_by_mobility_disabled) {
++
++		int pages;
++
++		pages = move_freepages_block(zone, page, start_type);
++
++		/* Claim the whole block if over half of it is free */
++		if (pages >= (1 << (pageblock_order-1)) ||
++				page_group_by_mobility_disabled) {
++
++			set_pageblock_migratetype(page, start_type);
++			return start_type;
++		}
++
++	}
++
++	return fallback_type;
++}
++
+ /* Remove an element from the buddy allocator from the fallback list */
+ static inline struct page *
+ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+@@ -1014,7 +1061,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 	struct free_area * area;
+ 	int current_order;
+ 	struct page *page;
+-	int migratetype, i;
++	int migratetype, new_type, i;
+ 
+ 	/* Find the largest possible block of pages in the other list */
+ 	for (current_order = MAX_ORDER-1; current_order >= order;
+@@ -1034,51 +1081,28 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 					struct page, lru);
+ 			area->nr_free--;
+ 
+-			/*
+-			 * If breaking a large block of pages, move all free
+-			 * pages to the preferred allocation list. If falling
+-			 * back for a reclaimable kernel allocation, be more
+-			 * aggressive about taking ownership of free pages
+-			 *
+-			 * On the other hand, never change migration
+-			 * type of MIGRATE_CMA pageblocks nor move CMA
+-			 * pages on different free lists. We don't
+-			 * want unmovable pages to be allocated from
+-			 * MIGRATE_CMA areas.
+-			 */
+-			if (!is_migrate_cma(migratetype) &&
+-			    (current_order >= pageblock_order / 2 ||
+-			     start_migratetype == MIGRATE_RECLAIMABLE ||
+-			     page_group_by_mobility_disabled)) {
+-				int pages;
+-				pages = move_freepages_block(zone, page,
+-								start_migratetype);
+-
+-				/* Claim the whole block if over half of it is free */
+-				if (pages >= (1 << (pageblock_order-1)) ||
+-						page_group_by_mobility_disabled)
+-					set_pageblock_migratetype(page,
+-								start_migratetype);
+-
+-				migratetype = start_migratetype;
+-			}
++			new_type = try_to_steal_freepages(zone, page,
++							  start_migratetype,
++							  migratetype);
+ 
+ 			/* Remove the page from the freelists */
+ 			list_del(&page->lru);
+ 			rmv_page_order(page);
+ 
+-			/* Take ownership for orders >= pageblock_order */
+-			if (current_order >= pageblock_order &&
+-			    !is_migrate_cma(migratetype))
+-				change_pageblock_range(page, current_order,
+-							start_migratetype);
+-
++			/*
++			 * Borrow the excess buddy pages as well, irrespective
++			 * of whether we stole freepages, or took ownership of
++			 * the pageblock or not.
++			 *
++			 * Exception: When borrowing from MIGRATE_CMA, release
++			 * the excess buddy pages to CMA itself.
++			 */
+ 			expand(zone, page, order, current_order, area,
+ 			       is_migrate_cma(migratetype)
+ 			     ? migratetype : start_migratetype);
+ 
+ 			trace_mm_page_alloc_extfrag(page, order, current_order,
+-				start_migratetype, migratetype);
++				start_migratetype, new_type);
+ 
+ 			return page;
+ 		}
 
