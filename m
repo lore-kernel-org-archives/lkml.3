@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3GVFp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 01:45:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37895 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752954Ab3GVFp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 01:45:58 -0400
-Message-ID: <51ECC705.2070904@ti.com>
-Date: Mon, 22 Jul 2013 11:15:41 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754753Ab3GVF4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 01:56:18 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:3099
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752954Ab3GVF4Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 01:56:16 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <vakul@freescale.com>, Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v4 0/3] DMA: Freescale: Add support for 8-channel DMA engine
+Date: Mon, 22 Jul 2013 13:55:37 +0800
+Message-ID: <1374472540-21177-1-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <kishon@ti.com>
-Subject: Re: [PATCH v2 3/4] arm: dts: Add USB phy nodes for AM33XX
-References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-4-git-send-email-george.cherian@ti.com> <51E94571.8080805@cogentembedded.com> <51E94B30.9070805@linutronix.de> <51E98663.2040308@cogentembedded.com> <51E98897.6050105@linutronix.de> <51EA06EB.4080709@ti.com>
-In-Reply-To: <51EA06EB.4080709@ti.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/20/2013 9:11 AM, George Cherian wrote:
-> On 7/20/2013 12:12 AM, Sebastian Andrzej Siewior wrote:
->> On 07/19/2013 08:33 PM, Sergei Shtylyov wrote:
->>> Hello.
->> Hello,
->>
->>>> usb: usb@47400000 {
->>>>      compatible = "ti,am33xx-usb";
->>>>           usb0_phy: phy@47401300 {
->>>>          compatible = "ti,am335x-usb-phy";
->>>>      }
->>>>      usb0: usb@47401000 {
->>>>          musb0: usb@47401400 {
->>>>              compatible = "mg,musbmhdrc";
->>>>          }
->>>>      }
->>>>      usb1_phy: phy@47402300 {
->>>>          compatible = "ti,am335x-usb-phy";
->>>>      }
->>>>      usb1: usb@47402000 {
->>>>          musb1: usb@47402400 {
->>>>              compatible = "mg,musbmhdrc";
->>>>          }
->>>>      }
->>>> }
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-How about something like this ?
+Hi Vinod, Dan, Scott and Leo, please have a look at these V2 patches.
 
-Here am making
-     wrapper -> musb instance 0 -> phy0
-     wrapper -> musb instance 1 -> phy1
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+adds support this DMA engine.
 
-                 musb: usb@47400000 {
-                         compatible = "ti,musb-am33xx";
-                         reg = <0x47400000 0x1000>;
-                         ranges;
-                         #address-cells = <1>;
-                         #size-cells = <1>;
-                         interrupts = <17>;
-                         ti,hwmods = "usb_otg_hs";
+V3->V4 changes:
+- introduce new patch [1/3] to revise the legacy dma binding document
+- and then add new paragraph to describe new dt node binding in [2/3]
+- rebase to latest kernel v3.11-rc1
 
-                         usb0@47401000 {
-                                 reg = <0x47401000 0x800>;
-                                 interrupts = <18>;
-                                 interrupt-names = "mc";
-                                 multipoint = <1>;
-                                 num-eps = <16>;
-                                 ram-bits = <12>;
-                                 port-mode = <3>;
-                                 power = <250>;
-                                 phys = <&phy1>;
-                                 phy-names = "am335x-usb0";
-                                 phy1: am335x-usb0 {
-                                         compatible = "ti,am335x-usb2";
-                                         #phy-cells = <0>;
-                                         id= <0>;
-                                 };
-                         };
+V2->V3 changes:
+- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+- edit text string in Kconfig and the driver files, using "elo series" to
+  mention all the current "elo*"
 
-                         usb1@47401800 {
-                                 reg = <0x47401800 0x800>;
-                                 interrupts = <19>;
-                                 interrupt-names = "mc";
-                                 multipoint = <1>;
-                                 num-eps = <16>;
-                                 ram-bits = <12>;
-                                 port-mode = <3>;
-                                 power = <250>;
-                                 phys = <&phy2>;
-                                 phy-names = "am335x-usb1";
-                                 phy2: am335x-usb1 {
-                                         compatible = "ti,am335x-usb2";
-                                         #phy-cells = <0>;
-                                         id= <1>;
-                                 };
-                         };
+V1->V2 changes:
+- removed the codes handling the register dgsr1, since it isn't used corrently
+- renamed the DMA DT compatible to "fsl,elo3-dma"
+- renamed the new dts files to "elo3-dma-<n>.dtsi"
 
-                 };
+Hongbo Zhang (3):
+  DMA: Freescale: revise device tree binding document
+  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+  DMA: Freescale: update driver to support 8-channel DMA engine
+
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |  122 +++++++++++++++-----
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 +++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 +++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ drivers/dma/Kconfig                                |    9 +-
+ drivers/dma/fsldma.c                               |    9 +-
+ drivers/dma/fsldma.h                               |    2 +-
+ 8 files changed, 274 insertions(+), 38 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
 
 -- 
--George
+1.7.9.5
+
+
 
