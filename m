@@ -1,86 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab3GVNPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 09:15:46 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:41779 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab3GVNPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 09:15:44 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: James Hogan <james@albanarts.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>
-Subject: Re: Linux 3.11-rc2
-Date: Mon, 22 Jul 2013 15:15:38 +0200
-Message-ID: <3298830.Snx2ykMFY6@merkaba>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc2-tp520; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5728692.GlhGgHY92H@vostro.rjw.lan>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <CAAG0J9-OgVe3Y0uo0bKr2TTcn3YUna1C_5NixBSsft3+cbKKWw@mail.gmail.com> <5728692.GlhGgHY92H@vostro.rjw.lan>
+	id S1755482Ab3GVNQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 09:16:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39234 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754868Ab3GVNQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 09:16:55 -0400
+Message-ID: <51ED30A8.10200@ti.com>
+Date: Mon, 22 Jul 2013 16:16:24 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>, <khilman@linaro.org>,
+        <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] USB: ehci-omap: Implement suspend/resume
+References: <Pine.LNX.4.44L0.1307111106090.1276-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1307111106090.1276-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 22. Juli 2013, 15:02:22 schrieb Rafael J. Wysocki:
-> On Monday, July 22, 2013 12:08:40 AM James Hogan wrote:
-> > On 21 July 2013 20:53, Linus Torvalds <torvalds@linux-foundation.org> 
-wrote:
-> > >  (b) we had a late change to how ACPI backlight handling is done on
-> > > 
-> > > certain machines, and while this kind of thing really shouldn't be
-> > > done outside the merge window, I ended up pulling it anyway. But I'd
-> > > *really* like to have people test this thing particularly on laptops
-> > > with intel-based graphics. It should only matter (and hopefully
-> > > improve things) for the newer ones with BIOSes designed for Windows 8,
-> > > but hey, the more testing, the better. Backlight handling has beenin
-> > > painful before, so I'm mentioning this explicitly.
-> > 
-> > 8c5bd7a "ACPI / video / i915: No ACPI backlight if firmware expects
-> > Windows 8" breaks backlight control for me because
-> > /sys/class/backlight/acpi_video0 disappears, and
-> > /sys/class/backlight/intel_backlight doesn't seem to have any effect.
-> > 
-> > Note that acpi_video0 only worked because I was applying "[PATCH]
-> > drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight" [1], so
-> > strictly speaking mainline already didn't work.
+Hi Alan,
+
+On 07/11/2013 06:14 PM, Alan Stern wrote:
+> On Thu, 11 Jul 2013, Roger Quadros wrote:
 > 
-> James, sorry for breaking things for you.  The patch you're mentioning is
-> going to hit the mainline at one point anyway I suppose.
+>>> The other two problems are both related to the interaction between
+>>> system PM and runtime PM.  Suppose the controller is already runtime
+>>> suspended when the system goes to sleep.  Because it is runtime
+>>> suspended, it is enabled for wakeup.  But device_may_wakeup() could
+>>> return false; if this happens then you have to do a runtime-resume in
+>>> omap_ehci_suspend() before calling ehci_suspend(), so that the
+>>> controller can be suspended again with wakeups disabled.  (Or you could
+>>> choose an alternative method for accomplishing the same result, such as
+>>> disabling the wakeup signal from the pad without going through a whole
+>>> EHCI resume/suspend cycle.)  Conversely, if device_may_wakeup() returns
+>>> true then you shouldn't do anything at all, because the controller is
+>>> already suspended with the correct wakeup setting.
+>>
+>> I think this case is taken care of by the Runtime PM core at least for the OMAP
+>> platform according to the documentation
+>>
+>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/power/runtime_pm.txt#n647
+> 
+> No; that section refers only to races, not to wakeup settings.
+> 
+>> At the end of this mail is the log during system suspend/resume
+>>
+>> You can notice the following sequence
+>>
+>> -ehci runtime suspends
+>> -system suspend triggered
+>> -ehci runtime resumes
+>> -ehci suspends (uses new wakeup settings)
+>> -system wakeup triggered
+>> -ehci resumes
+>> -ehci runtime suspends
+> 
+> This is because the root hub was runtime suspended with the wrong
+> wakeup setting.  The USB core, which is careful about these things,
+> resumed and re-suspended it with the proper wakeup setting.  In the 
+> process, the controller had to be runtime resumed as well.
+> 
+> Try doing the test over again, but this time with the root hub enabled 
+> for wakeup and the controller disabled.  (I know this is a bizarre 
+> combination, but try it anyway.)  Also, after the system wakes up, see 
+> whether the root hub and controller get runtime suspended.
+> 
 
-Dunno whether thats related, but after locking screen today and screen blanker 
-kicking in (just a blank screen), I was not able to reactivate the display 
-again by typing a key or so unless I closed the laptop display lid, let the 
-machine suspend (to ram) and opened it again.
+The first part of the test caught the problem were we were trying to access
+EHCI registers when HW is not accessible. So this was a good test case.
 
-Plain 3.11-rc2 on ThinkPad T520:
+>>> For the third problem, suppose the controller was runtime suspended
+>>> when the system went to sleep.  When the system wakes up, the
+>>> controller will become active, so you have to inform the runtime PM
+>>> core about its change of state.  Basically, if omap_ehci_resume() sees
+>>> that ehci_resume() returned 0 then it must do:
+>>>
+>>> 	pm_runtime_disable(dev);
+>>> 	pm_runtime_set_active(dev);
+>>> 	pm_runtime_enable(dev);
+>>>
+>>> All of these issues are discussed (among lots of other material) in 
+>>> Documentation/power/runtime_pm.txt.
+>>
+>> Is this still applicable? Documentation claims
+>>
+>>    "During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
+>>     for every device right after executing the subsystem-level .resume_early()
+>>     callback and right after executing the subsystem-level .resume() callback
+>>     for it, respectively."
+> 
+> Yes, this is applicable, but it is irrelevant to the problem I 
+> described.  You still have to tell the runtime PM core that the device 
+> is now active.
 
-martin@merkaba:~> phoronix-test-suite system-info
+Right, I understand it now. How does the below code look?
 
-Phoronix Test Suite v4.6.0
-System Information
++static int omap_ehci_suspend(struct device *dev)
++{
++       struct usb_hcd *hcd = dev_get_drvdata(dev);
++       bool do_wakeup = device_may_wakeup(dev);
++       int ret;
++
++       dev_dbg(dev, "%s may_wakeup %d\n", __func__, do_wakeup);
++
++       if (pm_runtime_status_suspended(dev)) {
++               pm_runtime_get_sync(dev);
++               ehci_resume(hcd, false);
++               ret = ehci_suspend(hcd, do_wakeup);
++               pm_runtime_put_sync(dev);
++
++       } else {
++               ret = ehci_suspend(hcd, do_wakeup);
++       }
++
++       return ret;
++}
++
++static int omap_ehci_resume(struct device *dev)
++{
++       struct usb_hcd *hcd = dev_get_drvdata(dev);
++       int ret;
++
++       dev_dbg(dev, "%s\n", __func__);
++
++       ret = ehci_resume(hcd, false);
++       if (!ret) {
++               /*
++                * Controller was powered ON so reflect state
++                */
++               pm_runtime_disable(dev);
++               pm_runtime_set_active(dev);
++               pm_runtime_enable(dev);
++       }
++
++       return ret;
++}
++
++static int omap_ehci_runtime_suspend(struct device *dev)
++{
++       struct usb_hcd *hcd = dev_get_drvdata(dev);
++       struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
++
++       dev_dbg(dev, "%s\n", __func__);
++
++       if (omap->bound)
++               ehci_suspend(hcd, true);
++
++       return 0;
++}
++
++static int omap_ehci_runtime_resume(struct device *dev)
++{
++       struct usb_hcd *hcd = dev_get_drvdata(dev);
++       struct omap_hcd *omap = (struct omap_hcd *)hcd_to_ehci(hcd)->priv;
++
++       dev_dbg(dev, "%s\n", __func__);
++
++       if (omap->bound)
++               ehci_resume(hcd, false);
++
++       return 0;
++}
 
-Hardware:
-Processor: Intel Core i5-2520M @ 3.20GHz (4 Cores), Motherboard: LENOVO 
-42433WG, Chipset: Intel 2nd Generation Core Family DRAM, Memory: 8192MB, Disk: 
-300GB INTEL SSDSA2CW30 + 30GB INTEL SSDMCEAC03, Graphics: Intel 2nd Generation 
-Core Family IGP, Audio: Conexant CX20590, Network: Intel 82579LM Gigabit 
-Connection + Intel Centrino Advanced-N 6205
 
-Software:
-OS: Debian unstable, Kernel: 3.11.0-rc2-tp520 (x86_64), Desktop: KDE 4.10.5, 
-Display Server: X Server 1.12.4, Display Driver: intel 2.20.14, OpenGL: 3.0 
-Mesa 9.1.4, Compiler: GCC 4.8, File-System: btrfs, Screen Resolution: 
-1920x1080
-
-Thanks,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+cheers,
+-roger
