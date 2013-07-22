@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3GVMpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 08:45:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755270Ab3GVMpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 08:45:15 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>
-Subject: [PATCH 1/5] perf tests: Run ctags/cscope make tests only with needed binaries
-Date: Mon, 22 Jul 2013 14:43:30 +0200
-Message-Id: <1374497014-2817-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1374497014-2817-1-git-send-email-jolsa@redhat.com>
-References: <1374497014-2817-1-git-send-email-jolsa@redhat.com>
+	id S1754548Ab3GVMrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 08:47:07 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:47525
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752844Ab3GVMrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 08:47:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 22 Jul 2013 20:46:49 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Robin Gong <b38343@freescale.com>
+CC: <broonie@kernel.org>, <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <lgirdwood@gmail.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] regulator: pfuze100: add pfuze100 regulator driver
+Message-ID: <20130722124647.GK20271@S2101-09.ap.freescale.net>
+References: <1374398247-11384-1-git-send-email-b38343@freescale.com>
+ <20130722091058.GI20271@S2101-09.ap.freescale.net>
+ <20130722103935.GA14838@Robin-OptiPlex-780>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130722103935.GA14838@Robin-OptiPlex-780>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running tags and cscope make tests only if the 'ctags'
-and 'cscope' binaries are installed, so we don't have
-false alarm test failures.
+On Mon, Jul 22, 2013 at 06:39:36PM +0800, Robin Gong wrote:
+> > > +static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
+> > > +{
+> > > +	struct device *dev = chip->dev;
+> > > +	struct device_node *parent;
+> > > +	int ret;
+> > > +
+> > > +	of_node_get(dev->parent->of_node);
+> > > +	parent = of_find_node_by_name(dev->parent->of_node, "regulators");
+> > > +	if (!parent) {
+> > > +		dev_err(dev, "regulators node not found\n");
+> > > +		return -EINVAL;
+> > 
+> > So you leave dev->parent->of_node unbalanced.
+> > 
+> Seems of_find_node_by_name will of_node_put the parent node.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>
----
- tools/perf/tests/make | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+Ah, yes.  I missed that.
 
-diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-index c441a28..d1efef9 100644
---- a/tools/perf/tests/make
-+++ b/tools/perf/tests/make
-@@ -1,6 +1,8 @@
- PERF := .
- MK   := Makefile
- 
-+has = $(shell which $1 2>/dev/null)
-+
- # standard single make variable specified
- make_clean_all      := clean all
- make_python_perf_so := python/perf.so
-@@ -50,14 +52,19 @@ run += make_no_backtrace
- run += make_no_libnuma
- run += make_no_libaudit
- run += make_no_libbionic
--run += make_tags
--run += make_cscope
- run += make_help
- run += make_doc
- run += make_perf_o
- run += make_util_map_o
- run += make_minimal
- 
-+ifneq ($(call has,ctags),)
-+run += make_tags
-+endif
-+ifneq ($(call has,cscope),)
-+run += make_cscope
-+endif
-+
- # $(run_O) contains same portion of $(run) tests with '_O' attached
- # to distinguish O=... tests
- run_O := $(addsuffix _O,$(run))
--- 
-1.7.11.7
+Shawn
 
