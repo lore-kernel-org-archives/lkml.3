@@ -1,146 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab3GVIco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 04:32:44 -0400
-Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:46773 "EHLO
-	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753959Ab3GVIcl (ORCPT
+	id S1756823Ab3GVIgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 04:36:40 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56098 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756740Ab3GVIgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 04:32:41 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-media@vger.kernel.org
-Cc: alipowski@interia.pl, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, srinivas.kandagatla@gmail.com,
-        srinivas.kandagatla@st.com, sean@mess.org
-Subject: [PATCH v2 1/2] media: rc: Add rc_open/close and use count to rc_dev.
-Date: Mon, 22 Jul 2013 09:22:57 +0100
-Message-Id: <1374481377-3365-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1374481319-3293-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1374481319-3293-1-git-send-email-srinivas.kandagatla@st.com>
+	Mon, 22 Jul 2013 04:36:38 -0400
+X-AuditID: 9c93016f-b7b50ae0000021a9-c4-51ecef13bccc
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 00/10] mm, hugetlb: clean-up and possible bug fix
+Date: Mon, 22 Jul 2013 17:36:21 +0900
+Message-Id: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+First 6 patches are almost trivial clean-up patches.
 
-This patch adds user count to rc_dev structure, the reason to add this
-new member is to allow other code like lirc to open rc device directly.
-In the existing code, rc device is only opened by input subsystem which
-works ok if we have any input drivers to match. But in case like lirc
-where there will be no input driver, rc device will be never opened.
+The others are for fixing three bugs.
+Perhaps, these problems are minor, because this codes are used
+for a long time, and there is no bug reporting for these problems.
 
-Having this user count variable will be usefull to allow rc device to be
-opened from code other than rc-main.
+These patches are based on v3.10.0 and
+passed the libhugetlbfs test suite.
 
-This patch also adds rc_open and rc_close functions for other drivers
-like lirc to open and close rc devices. This functions safely increment
-and decrement the user count. Other driver wanting to open rc device
-should call rc_open and rc_close, rather than directly modifying the
-rc_dev structure.
+Changes from v1.
+Split patch 1 into two patches to clear it's purpose.
+Remove useless indentation changes in 'clean-up alloc_huge_page()'
+Fix new iteration code bug.
+Add reviewed-by or acked-by.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- drivers/media/rc/rc-main.c |   46 ++++++++++++++++++++++++++++++++++++++++---
- include/media/rc-core.h    |    4 +++
- 2 files changed, 46 insertions(+), 4 deletions(-)
+Joonsoo Kim (10):
+  mm, hugetlb: move up the code which check availability of free huge
+    page
+  mm, hugetlb: remove err label in dequeue_huge_page_vma()
+  mm, hugetlb: trivial commenting fix
+  mm, hugetlb: clean-up alloc_huge_page()
+  mm, hugetlb: fix and clean-up node iteration code to alloc or free
+  mm, hugetlb: remove redundant list_empty check in
+    gather_surplus_pages()
+  mm, hugetlb: do not use a page in page cache for cow optimization
+  mm, hugetlb: add VM_NORESERVE check in vma_has_reserves()
+  mm, hugetlb: remove decrement_hugepage_resv_vma()
+  mm, hugetlb: decrement reserve count if VM_NORESERVE alloc page cache
 
-diff --git a/drivers/media/rc/rc-main.c b/drivers/media/rc/rc-main.c
-index 1cf382a..1dedebd 100644
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -699,19 +699,50 @@ void rc_keydown_notimeout(struct rc_dev *dev, int scancode, u8 toggle)
- }
- EXPORT_SYMBOL_GPL(rc_keydown_notimeout);
- 
-+int rc_open(struct rc_dev *rdev)
-+{
-+	int rval = 0;
-+
-+	if (!rdev)
-+		return -EINVAL;
-+
-+	mutex_lock(&rdev->lock);
-+	if (!rdev->users++)
-+		rval = rdev->open(rdev);
-+
-+	if (rval)
-+		rdev->users--;
-+
-+	mutex_unlock(&rdev->lock);
-+
-+	return rval;
-+}
-+EXPORT_SYMBOL_GPL(rc_open);
-+
- static int ir_open(struct input_dev *idev)
- {
- 	struct rc_dev *rdev = input_get_drvdata(idev);
- 
--	return rdev->open(rdev);
-+	return rc_open(rdev);
-+}
-+
-+void rc_close(struct rc_dev *rdev)
-+{
-+	if (rdev) {
-+		mutex_lock(&rdev->lock);
-+
-+		 if (!--rdev->users)
-+			rdev->close(rdev);
-+
-+		mutex_unlock(&rdev->lock);
-+	}
- }
-+EXPORT_SYMBOL_GPL(rc_close);
- 
- static void ir_close(struct input_dev *idev)
- {
- 	struct rc_dev *rdev = input_get_drvdata(idev);
--
--	 if (rdev)
--		rdev->close(rdev);
-+	rc_close(rdev);
- }
- 
- /* class for /sys/class/rc */
-@@ -1076,7 +1107,14 @@ int rc_register_device(struct rc_dev *dev)
- 	memcpy(&dev->input_dev->id, &dev->input_id, sizeof(dev->input_id));
- 	dev->input_dev->phys = dev->input_phys;
- 	dev->input_dev->name = dev->input_name;
-+
-+	/* input_register_device can call ir_open, so unlock mutex here */
-+	mutex_unlock(&dev->lock);
-+
- 	rc = input_register_device(dev->input_dev);
-+
-+	mutex_lock(&dev->lock);
-+
- 	if (rc)
- 		goto out_table;
- 
-diff --git a/include/media/rc-core.h b/include/media/rc-core.h
-index 06a75de..2f6f1f7 100644
---- a/include/media/rc-core.h
-+++ b/include/media/rc-core.h
-@@ -101,6 +101,7 @@ struct rc_dev {
- 	bool				idle;
- 	u64				allowed_protos;
- 	u64				enabled_protocols;
-+	u32				users;
- 	u32				scanmask;
- 	void				*priv;
- 	spinlock_t			keylock;
-@@ -142,6 +143,9 @@ void rc_free_device(struct rc_dev *dev);
- int rc_register_device(struct rc_dev *dev);
- void rc_unregister_device(struct rc_dev *dev);
- 
-+int rc_open(struct rc_dev *rdev);
-+void rc_close(struct rc_dev *rdev);
-+
- void rc_repeat(struct rc_dev *dev);
- void rc_keydown(struct rc_dev *dev, int scancode, u8 toggle);
- void rc_keydown_notimeout(struct rc_dev *dev, int scancode, u8 toggle);
+ mm/hugetlb.c |  250 ++++++++++++++++++++++++++--------------------------------
+ 1 file changed, 112 insertions(+), 138 deletions(-)
+
 -- 
-1.7.6.5
+1.7.9.5
 
