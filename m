@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab3GVSf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 14:35:29 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59878 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932629Ab3GVSf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 14:35:28 -0400
-Date: Mon, 22 Jul 2013 13:03:38 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Vaughan Cao <vaughan.cao@oracle.com>
-Cc: dgilbert@interlog.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] [SCSI] sg: fix race condition in sg_open
-Message-ID: <20130722170338.GA15824@logfs.org>
-References: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com>
- <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com>
+	id S932891Ab3GVSgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 14:36:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49407 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932629Ab3GVSgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 14:36:23 -0400
+Message-ID: <51ED7B9A.1050004@zytor.com>
+Date: Mon, 22 Jul 2013 11:36:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Brandon Philips <brandon@ifup.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: is kexec on Xen domU possible?
+References: <20130719020603.GA22932@kroah.com> <20130719131819.GC11233@debian70-amd64.local.net-space.pl> <20130719151243.GA15488@kroah.com> <20130719183235.GA12267@debian70-amd64.local.net-space.pl> <20130719191449.GA1882@kroah.com> <51E9A85D.2060206@zytor.com> <20130722170307.GB14451@debian70-amd64.local.net-space.pl> <87wqoise9d.fsf@xmission.com> <51ED78EE.9020903@zytor.com> <20130722183315.GA29273@kroah.com>
+In-Reply-To: <20130722183315.GA29273@kroah.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 July 2013 12:40:29 +0800, Vaughan Cao wrote:
+On 07/22/2013 11:33 AM, Greg KH wrote:
 > 
-> There is a race when open sg with O_EXCL flag. Also a race may happen between
-> sg_open and sg_remove.
+> I don't care about kdump, I care about kexec on domU for people who are
+> running on cloud providers with old versions of Xen so that they can
+> control what kernel they can boot, when they want to boot it.  If kdump
+> works as well, that's just a bonus, but it's down on the list of things
+> for me to be concerned about.
 > 
-> Changes from v4:
->  * [3/4] use ERR_PTR series instead of adding another parameter in sg_add_sfp
->  * [4/4] fix conflict for cherry-pick from v3.
-> 
-> Changes from v3:
->  * release o_sem in sg_release(), not in sg_remove_sfp().
->  * not set exclude with sfd_lock held.
-> 
-> Vaughan Cao (4):
->   [SCSI] sg: use rwsem to solve race during exclusive open
->   [SCSI] sg: no need sg_open_exclusive_lock
->   [SCSI] sg: checking sdp->detached isn't protected when open
->   [SCSI] sg: push file descriptor list locking down to per-device
->     locking
-> 
->  drivers/scsi/sg.c | 178 +++++++++++++++++++++++++-----------------------------
->  1 file changed, 83 insertions(+), 95 deletions(-)
 
-Patchset looks good to me, although I didn't test it on hardware yet.
-Signed-off-by: Joern Engel <joern@logfs.org>
+Another valid use case, to be sure.
 
-James, care to pick this up?
+	-hpa
 
-Jörn
 
---
-Good warriors cause others to come to them and do not go to others.
--- Sun Tzu
