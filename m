@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab3GVKGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:06:12 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:57204 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab3GVKGK (ORCPT
+	id S1757305Ab3GVKJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:09:20 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55367 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687Ab3GVKJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:06:10 -0400
-Date: Mon, 22 Jul 2013 12:06:06 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: Raghavendra KT <raghavendra.kt.linux@gmail.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [RESEND][PATCH] mm: vmstats: tlb flush counters
-Message-ID: <20130722100605.GA1148@gmail.com>
-References: <20130716234438.C792C316@viggo.jf.intel.com>
- <CAC4Lta1mHixqfRSJKpydH3X9M_nQPCY3QSD86Tm=cnQ+KxpGYw@mail.gmail.com>
- <51E95932.5030902@sr71.net>
+	Mon, 22 Jul 2013 06:09:19 -0400
+Date: Mon, 22 Jul 2013 11:08:57 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20130722100856.GQ9858@sirena.org.uk>
+References: <1374485092-13211-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SKuKPt3hQSBflurX"
 Content-Disposition: inline
-In-Reply-To: <51E95932.5030902@sr71.net>
+In-Reply-To: <1374485092-13211-1-git-send-email-p.zabel@pengutronix.de>
+X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: irq: Acknowledge also interrupts that are masked
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Dave Hansen <dave@sr71.net> wrote:
+--SKuKPt3hQSBflurX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On 07/19/2013 04:38 AM, Raghavendra KT wrote:
-> > While measuring non - PLE performance, one of the bottleneck, I am seeing is
-> > flush tlbs.
-> > perf had helped in alaysing a bit there, but this patch would help
-> > in precise calculation. It will aslo help in tuning the PLE window
-> > experiments (larger PLE window
-> > would affect remote flush TLBs)
-> 
-> Interesting.  What workload is that?  I've been having problems finding
-> workloads that are too consumed with TLB flushes.
+On Mon, Jul 22, 2013 at 11:24:52AM +0200, Philipp Zabel wrote:
+> In case the hardware interrupt mask register does not prevent the chip level
+> irq from being asserted by the corresponding interrupt status bit, stray
+> masked interrupts should to be acknowledged, too.
 
-Btw., would be nice to also integrate these VM counters into perf as well, 
-as an instrumentation variant/option.
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+> I have seen GPI interrupts trigger on DA9063 trigger after being masked during
+> initialization, and once the status bits are set, the interrupt handler routine
+> never clears them, which keeps the chip irq line asserted forever.
 
-It could be done in an almost zero overhead fashion using jump-labels I 
-think.
+This can't be the standard behaviour since it breaks expectations as to
+what happens for masked interrupts.  Though based on your description of
+the problem it sounds like a quirk to ack interrupts immediately after
+masking them might do the trick instead of the full on always ack
+behaviour.
 
-[ Just in case someone is bored to death and is looking for an interesting 
-  side project ;-) ]
+--SKuKPt3hQSBflurX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-	Ingo
+iQIcBAEBAgAGBQJR7QS1AAoJELSic+t+oim9HWAQAILjJfljC1Q9ChcV3M5mYVG1
+um4VAXoP93HRXtcy8FNqYBGMjgWjnR86NuV6UyA8n215wk/qnmp6rrNGB0QNwes2
+6ZkVMckB/0QT8EWxKLx+hJirWpSQJWltGZ0FHteIf5JblXCztjV6itHsQ1tw8I4E
+Eizm5WCojpgeonMbVQrLlMGGz5AGFS2+/4qScpPcPOOpdiCsIHSJRUE7Dm+QQDtW
+hbYCXiVUY0TKyIbrAvEw2sjTlY2r6DZNvEjgL7s0+AuHKbJccguz8UPSi73n+vTh
+ooatVhr8RHVdLcjSIFMCLhn9+XUqG97oINymedHsAEQVnSmpH8obs47hBlnYcXRp
+KyNskt1ukCw1VQmQ1nBMhapPSbA2rEESlb23C5CWGYmBRorsqCfI00ihmUdNbDcp
+mchqE0GGoECuf3xbOC4ajOIX2EV8DdXCffOJGy05eMaYq7kOdf5vMfy1IJcaXQu1
+YScM/JhGfFgNpWTEw2ViFH21tiLG1qTf6gggAHP4ri0TAL0Mvz7VKYkspwyCbIge
+ZaIFAefA4sZ+Qutpvi4aJLasfXEa8rVnZX/Dj6/31j9mCZFS9IZWMGKK68Z9aGmI
+tznCs1Te9HqgnzSlMVFT2cR69ZEp52ymYrRAx4+sVbPWA1UFPPZzOLYKSb80BUx1
+dHCXYzETQT1akor+6zRi
+=GFmR
+-----END PGP SIGNATURE-----
+
+--SKuKPt3hQSBflurX--
