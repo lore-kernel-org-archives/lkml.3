@@ -1,182 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab3GVWyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 18:54:41 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:50094 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab3GVWyk (ORCPT
+	id S1752275Ab3GVXAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 19:00:05 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:34172 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab3GVXAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 18:54:40 -0400
+	Mon, 22 Jul 2013 19:00:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130718151507.30990.67174.stgit@localhost>
-References: <20130718151213.30990.45828.stgit@localhost>
-	<20130718151507.30990.67174.stgit@localhost>
-Date: Tue, 23 Jul 2013 00:54:38 +0200
-Message-ID: <CACRpkdY5-OFN4YQywPj06jkf493BhwgJGMEnmKmbovTh+co2Yg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] pinctrl: Allow pinctrl to have multiple active states
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458DDC71C@US01WEMBX2.internal.synopsys.com>
+References: <38175373.Cq6zxae9tO@harkonnen> <A2CA0424C0A6F04399FB9E1CD98E030458DDC71C@US01WEMBX2.internal.synopsys.com>
+From: Federico Vaga <federico.vaga@gmail.com>
+Date: Tue, 23 Jul 2013 00:59:40 +0200
+Message-ID: <CAH5GJ0rB8p2doS3AZ_ywoY8nWmD8Vnjd+jCAxt06U021SB7YLQ@mail.gmail.com>
+Subject: Re: DWC2 and/or S3C-HSOTG for STA2X11 board
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 5:15 PM, Tony Lindgren <tony@atomide.com> wrote:
+Hi Paul,
 
-> It's quite common that we need to dynamically change some pins for a
-> device for runtime PM, or toggle a pin between rx and tx. Changing all
+Sorry for the delayed answer :(
 
-What does "change" mean above?
-
-Please reword to "remux" if that is what is meant.
-
-> the pins for a device is not efficient way of doing it.
+> As part of the merge, we will need to develop a PCI wrapper for
+> s3c-hsotg anyway, so I think it would not be wasted effort.
+> Actually, as a POC I already did this as a quick hack, just to
+> make sure that the driver will work on our PCIe prototyping
+> platform (it does).
 >
-> So let's allow setting up multiple active states for pinctrl.
-
-Do you mean multiple default states?
-
-I have a hard time understanding so please help me out :-/
-
-> Currently
-> we only need PINCTRL_STATIC and PINCTRL_DYNAMIC, where PINCTRL_STATIC
-> covers the current default pins, and PINCTRL_DYNAMIC holds the dynamic
-> pins that need to be toggled.
-
-Toggled when?
-
-When changing state to another one? Any other state? Or back to
-this state? Sorry not following ... this needs to be more verbose.
-
+> As Felipe says, currently s3c-hsotg does have too much knowledge
+> of Samsung platform. But it should be fairly easy to move that
+> knowledge from the core code to a platform-device wrapper,
+> similar to platform.c in the dwc2 driver. So if you would like
+> to work on that (creating a PCI wrapper and a platform wrapper)
+> I think it would be useful.
 >
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> ---
->  drivers/pinctrl/core.c |   18 ++++++++++--------
->  drivers/pinctrl/core.h |   10 ++++++++--
->  2 files changed, 18 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> index a97b717..c9b709b 100644
-> --- a/drivers/pinctrl/core.c
-> +++ b/drivers/pinctrl/core.c
-> @@ -885,7 +885,8 @@ static void pinctrl_free(struct pinctrl *p, bool inlist)
->         mutex_lock(&pinctrl_list_mutex);
->         list_for_each_entry_safe(state, n1, &p->states, node) {
->                 list_for_each_entry_safe(setting, n2, &state->settings, node) {
-> -                       pinctrl_free_setting(state == p->state, setting);
-> +                       pinctrl_free_setting(state == p->state[PINCTRL_STATIC],
-> +                                            setting);
->                         list_del(&setting->node);
->                         kfree(setting);
->                 }
-> @@ -955,13 +956,13 @@ EXPORT_SYMBOL_GPL(pinctrl_lookup_state);
->  int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
->  {
->         struct pinctrl_setting *setting, *setting2;
-> -       struct pinctrl_state *old_state = p->state;
-> +       struct pinctrl_state *old_state = p->state[PINCTRL_STATIC];
->         int ret;
->
-> -       if (p->state == state)
-> +       if (old_state == state)
->                 return 0;
->
-> -       if (p->state) {
-> +       if (old_state) {
->                 /*
->                  * The set of groups with a mux configuration in the old state
->                  * may not be identical to the set of groups with a mux setting
-> @@ -971,7 +972,7 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
->                  * but not in the new state, this code puts that group into a
->                  * safe/disabled state.
->                  */
-> -               list_for_each_entry(setting, &p->state->settings, node) {
-> +               list_for_each_entry(setting, &old_state->settings, node) {
->                         bool found = false;
->                         if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
->                                 continue;
-> @@ -989,7 +990,7 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
->                 }
->         }
->
-> -       p->state = NULL;
-> +       p->state[PINCTRL_STATIC] = NULL;
->
->         /* Apply all the settings for the new state */
->         list_for_each_entry(setting, &state->settings, node) {
-> @@ -1011,7 +1012,7 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
->                 }
->         }
->
-> -       p->state = state;
-> +       p->state[PINCTRL_STATIC] = state;
->
->         return 0;
->
-> @@ -1492,7 +1493,8 @@ static int pinctrl_show(struct seq_file *s, void *what)
->         list_for_each_entry(p, &pinctrl_list, node) {
->                 seq_printf(s, "device: %s current state: %s\n",
->                            dev_name(p->dev),
-> -                          p->state ? p->state->name : "none");
-> +                          p->state[PINCTRL_STATIC] ?
-> +                          p->state[PINCTRL_STATIC]->name : "none");
->
->                 list_for_each_entry(state, &p->states, node) {
->                         seq_printf(s, "  state: %s\n", state->name);
-> diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-> index 75476b3..ac5a269 100644
-> --- a/drivers/pinctrl/core.h
-> +++ b/drivers/pinctrl/core.h
-> @@ -53,12 +53,18 @@ struct pinctrl_dev {
->  #endif
->  };
->
-> +enum pinctrl_states {
-> +       PINCTRL_STATIC,
-> +       PINCTRL_DYNAMIC,
-> +       PINCTRL_NR_STATES,
-> +};
+> If you want, I can send you my hacked-up code for the PCI
+> version of the driver, to use as a starting point.
 
-This needs some very precise kerneldoc so it is chrystal clear what these
-states are all about. "pinctrl_states" is not a good name for this enum,
-please find some more precise name, because we have functions
-with names like pinctrl_select_state() which is not related to this.
+Yes, it will be really useful, thanks.
 
-Is this substates or?
+I will try to do both wrapper (PCI, platform), but I do not know how much
+time does it takes because I am really busy at the moment
 
-> +
->  /**
->   * struct pinctrl - per-device pin control state holder
->   * @node: global list node
->   * @dev: the device using this pin control handle
->   * @states: a list of states for this device
-> - * @state: the current state
-> + * @state: the current state(s)
+You know the hardware better than me, so: have you other suggestion
+to point me on the right way?
 
-How can more than one state be the current state? Sorry I don't get this.
-This needs to be more precise I think.
+Thank you :)
 
->   * @dt_maps: the mapping table chunks dynamically parsed from device tree for
->   *     this device, if any
->   * @users: reference count
-> @@ -67,7 +73,7 @@ struct pinctrl {
->         struct list_head node;
->         struct device *dev;
->         struct list_head states;
-> -       struct pinctrl_state *state;
-> +       struct pinctrl_state *state[PINCTRL_NR_STATES];
->         struct list_head dt_maps;
->         struct kref users;
->  };
-
-Yours,
-Linus Walleij
+--
+Federico Vaga
