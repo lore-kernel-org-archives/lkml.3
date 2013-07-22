@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab3GVXy6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 19:54:58 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:36176 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab3GVXy5 (ORCPT
+	id S1753230Ab3GVXzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 19:55:21 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38206 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab3GVXzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 19:54:57 -0400
-MIME-Version: 1.0
-Date: Tue, 23 Jul 2013 01:54:56 +0200
-Message-ID: <CACRpkdZ2110vCrP2vgPBN3EoTB40BgKyr9U4Tqd_uFTwmG-BNA@mail.gmail.com>
-Subject: [GIT PULL] GPIO fixes for v3.11-rc2
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Jul 2013 19:55:19 -0400
+Date: Tue, 23 Jul 2013 09:55:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: status of various trees
+Message-Id: <20130723095513.19b9638ab4a19157e9834dcf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__23_Jul_2013_09_55_14_+1000_RuC90XG_zb2zFSEO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Tue__23_Jul_2013_09_55_14_+1000_RuC90XG_zb2zFSEO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-here is a round of GPIO fixes for the rc series. The OMAP patches have
-been around since around the merge window, but since they first
-caused more breakage I let them boil in -next for a while. These should
-be fine now.
+Hi Grant,
 
-Please pull them in!
+Currently linux-next has the following gpio trees:
 
-Yours,
-Linus Walleij
+gpio-current	git://git.secretlab.ca/git/linux-2.6#gpio/merge
+gpio		git://git.secretlab.ca/git/linux-2.6#gpio/next
+gpio-lw		git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.gi=
+t#for-next
 
+Given commit a0062d4e3a0a ("MAINTAINERS: Remove Grant Likely") in the
+devicetree-current tree today, should I remove the first two and rename
+the third to be just "gpio"?  (And does Linus have an alternative
+"current" tree?)
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+I also have the irqdomain tree:
 
-  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
+irqdomain	git://git.secretlab.ca/git/linux-2.6.git#irqdomain/next
 
-are available in the git repository at:
+Should I remove that?  And is there going to be an alternative?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-for-v3.11-2
+And for spi, I have:
 
-for you to fetch changes up to afe8ce9b29c487ea7f62faa936b6abb84e0b8815:
+spi		git://git.secretlab.ca/git/linux-2.6#spi/next
+spi-mb		git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git#for-n=
+ext
 
-  drivers: gpio: msm: Fix the error condition for reading ngpio
-(2013-07-20 23:33:33 +0200)
+again, should I remove the first and rename the second?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-----------------------------------------------------------------
-A first round of GPIO fixes for the v3.11 series:
-- OMAP device tree boot fix
-- Handle an error condition in the MSM driver
+--Signature=_Tue__23_Jul_2013_09_55_14_+1000_RuC90XG_zb2zFSEO
+Content-Type: application/pgp-signature
 
-----------------------------------------------------------------
-Javier Martinez Canillas (3):
-      gpio/omap: don't create an IRQ mapping for every GPIO on DT
-      gpio/omap: auto request GPIO as input if used as IRQ via DT
-      gpio/omap: fix build error when OF_GPIO is not defined.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Rohit Vaswani (1):
-      drivers: gpio: msm: Fix the error condition for reading ngpio
+iQIcBAEBCAAGBQJR7cZiAAoJEECxmPOUX5FEhRoQAIcG05nhIYWtgp0gfRVWgAQQ
+9xW8yK05bo2TMHaMjWJmqA/b0mCzfcSSmSDdkiM57N0USx1gFKCU3avFjssxZsKO
+RriBAmaazJQ41knnk0bsiOi+mEarE/NiQzGNvjvG7oqtzeVa2rBvRbACxyCDFi43
+na9lMSbZNsK25AgTEDz4DHMScIRRwHgFX1Bv3dVoj77Y6EeN5lupCnv/F1l99IT/
+N0BcWWSRg54Q/8wuzRoDapwZCvUsEs9dl+gV9+onYO72Lly1rLzZa6gjgPaKMyOZ
+jkovaHkEZ/0k/TI6QLYTJHtaKfvyDFrsBsP2Vs94jAq1H5q09OI6yACcyvjcAsO7
+Niq8r51Ss7xRzmR/i3Tzw4hSZADwfCHbRYsfevAK287RbdaMVZ5dyLGCvoRdp7ix
+wntOYqBI/jn6VjKf+hyU9XGRUfRQ1HxCwS1pNDCAmFRtTo9F4XPDhucgJUnoSl0t
+vlKMLQ5VRPvqMQkqE10od1t3py48WyPnRsJpMbB9D3VmZeyDR4OeqQCc1tipUHC3
+nMEZEPKHGNt+ZRfh7+0O9PuL9QDJE54IzTkOh4vdeL4PfXAoFv6Cguoa8hrAmLk+
+vS0vTA0d0nTQX7R2T9riR4Dl9WRNqCOak++DvFwB29zmtt1wDrcZUWj9KNDLpsK7
+m/84dL7Lk3Ixk+8TQL9o
+=snc7
+-----END PGP SIGNATURE-----
 
- drivers/gpio/gpio-msm-v2.c |  2 +-
- drivers/gpio/gpio-omap.c   | 84 ++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 71 insertions(+), 15 deletions(-)
+--Signature=_Tue__23_Jul_2013_09_55_14_+1000_RuC90XG_zb2zFSEO--
