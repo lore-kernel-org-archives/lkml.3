@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab3GVRLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 13:11:21 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:10437 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757398Ab3GVRLT (ORCPT
+	id S1757875Ab3GVRM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 13:12:57 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:12464 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756461Ab3GVRM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 13:11:19 -0400
-Message-ID: <1374513075.1635.14.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <freddy@asix.com.tw>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <grundler@google.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <louis@asix.com.tw>,
-        <allan@asix.com.tw>
-Date: Mon, 22 Jul 2013 18:11:15 +0100
-In-Reply-To: <1374512879.4990.19.camel@edumazet-glaptop>
-References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
-	 <1374512879.4990.19.camel@edumazet-glaptop>
-Organization: Solarflare
+	Mon, 22 Jul 2013 13:12:56 -0400
+Message-ID: <1374513120.16322.21.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+From: Toshi Kani <toshi.kani@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
+        kosaki.motohiro@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
+        tangchen@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Date: Mon, 22 Jul 2013 11:12:00 -0600
+In-Reply-To: <20130722083721.GC25976@gmail.com>
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
+	 <20130722083721.GC25976@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-MIME-Version: 1.0
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20030.005
-X-TM-AS-Result: No--18.210300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 10:07 -0700, Eric Dumazet wrote:
-> On Sat, 2013-07-20 at 17:16 +0800, freddy@asix.com.tw wrote:
-> > From: Freddy Xin <freddy@asix.com.tw>
-> > 
-> > Disable TSO and SG network features in reset() and bind() functions,
-> > and check the return value of skb_linearize() in tx_fixup() to prevent
-> > TX throttling.
-> > 
-> > Signed-off-by: Freddy Xin <freddy@asix.com.tw>
-> > ---
-> >  drivers/net/usb/ax88179_178a.c | 8 +++++---
-> >  1 file changed, 5 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-> > index 1e3c302..eb71331 100644
-> > --- a/drivers/net/usb/ax88179_178a.c
-> > +++ b/drivers/net/usb/ax88179_178a.c
-> > @@ -1029,7 +1029,7 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
-> >  	dev->mii.supports_gmii = 1;
-> >  
-> >  	dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
-> > -			      NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
-> > +			      NETIF_F_RXCSUM;
-> >  
-> >  	dev->net->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
-> >  				 NETIF_F_RXCSUM | NETIF_F_SG | NETIF_F_TSO;
-> > @@ -1173,7 +1173,9 @@ ax88179_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
-> >  	if (((skb->len + 8) % frame_size) == 0)
-> >  		tx_hdr2 |= 0x80008000;	/* Enable padding */
-> >  
-> > -	skb_linearize(skb);
-> > +	if (skb_linearize(skb))
-> > +		return NULL;
-> > +
-> >  	
+On Mon, 2013-07-22 at 10:37 +0200, Ingo Molnar wrote:
+> * Toshi Kani <toshi.kani@hp.com> wrote:
 > 
-> I guess that if a driver does not advertise NETIF_F_SG, this
-> skb_linearize() call is not needed : All frames reaching your xmit
-> function should already be linear
+> > CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
+> > interface, which allows a given memory address to be hot-added as
+> > follows. (See Documentation/memory-hotplug.txt for more detail.)
+> > 
+> > # echo start_address_of_new_memory > /sys/devices/system/memory/probe
+> > 
+> > This probe interface is required on powerpc. On x86, however, ACPI
+> > notifies a memory hotplug event to the kernel, which performs its
+> > hotplug operation as the result. Therefore, regular users do not need
+> > this interface on x86. This probe interface is also error-prone and
+> > misleading that the kernel blindly adds a given memory address without
+> > checking if the memory is present on the system; no probing is done
+> > despite of its name. The kernel crashes when a user requests to online
+> > a memory block that is not present on the system. This interface is
+> > currently used for testing as it can fake a hotplug event.
+> > 
+> > This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86, adds
+> > its Kconfig menu entry on x86, and clarifies its use in Documentation/
+> > memory-hotplug.txt.
+> 
+> Could we please also fix it to never crash the kernel, even if stupid 
+> ranges are provided?
 
-Look at the hw_features initialisation...
+Yes, this probe interface can be enhanced to verify the firmware
+information before adding a given memory address.  However, such change
+would interfere its test use of "fake" hotplug, which is only the known
+use-case of this interface on x86.
 
-Ben.
+In order to verify if a given memory address is enabled at run-time (as
+opposed to boot-time), we need to check with ACPI memory device objects
+on x86.  However, system vendors tend to not implement memory device
+objects unless their systems support memory hotplug.  Dave Hansen is
+using this interface for his testing as a way to fake a hotplug event on
+a system that does not support memory hotplug.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Thanks,
+-Toshi
+
+
+
+  
+
 
