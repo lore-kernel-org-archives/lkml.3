@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab3GVVqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:46:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36846 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388Ab3GVVqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:46:36 -0400
-Date: Mon, 22 Jul 2013 14:46:47 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        wni@nvidia.com, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, l.stach@pengutronix.de
-Subject: Re: [lm-sensors] [RESEND PATCH V1 0/9] thermal: introduce DT thermal
- zone build
-Message-ID: <20130722214647.GA15765@roeck-us.net>
-References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com>
- <20130717220942.GB990@roeck-us.net>
- <51E7F341.8020508@ti.com>
- <51E8234D.1020607@wwwdotorg.org>
- <20130718212108.GC4110@roeck-us.net>
- <51E98A07.4050402@wwwdotorg.org>
- <20130721110807.GC24303@roeck-us.net>
- <51ED8B6F.6020700@wwwdotorg.org>
+	id S933480Ab3GVVsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 17:48:01 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53692 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932388Ab3GVVr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 17:47:59 -0400
+Message-ID: <51EDA80F.7060606@ti.com>
+Date: Mon, 22 Jul 2013 16:45:51 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51ED8B6F.6020700@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Mark Jackson <mpfj-list@newflow.co.uk>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/3] dmaengine: add dma_get_slave_sg_limits()
+References: <1374166001-31340-1-git-send-email-joelf@ti.com> <1374166001-31340-2-git-send-email-joelf@ti.com> <20130718161658.GW16653@intel.com>
+In-Reply-To: <20130718161658.GW16653@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 12:43:43PM -0700, Stephen Warren wrote:
-> On 07/21/2013 04:08 AM, Guenter Roeck wrote:
-> > ... [a bunch of good points re: why DT shouldn't describe thermal
-> > profiles]
-> 
-> Yes, lots of good arguments there.
-> 
-> So, where/how in your opinion should thermal profiles be defined, and
-> how should they get into the kernel? The nice thing about DT is that
-> it's a single place that describes the platform, with a well-defined
-> method of getting that information into the kernel. What alternatives exist?
-> 
-Excellent but quite different question. Quite frankly, I would love to be able
-to use DT to describe a platform and its configuration and use instead of just
-its hardware. Just like with thermal data, it would be great if I could use
-devicetree information to describe limits for hwmon devices and configuration
-information for all kinds of devices. This would simplify my life a lot.
-Unfortunately, that is not how it works, so one ends up with pre-configuring
-devices on ROMMON or secondary methods such as sensors.conf for hwmon devices.
-Sure, that all works, but for embedded devices it means I have to re-build the
-root file system each time a limit is changed. It _would_ be much simpler to
-just be able to change the limit(s) in devicetree data and be done.
+On 07/18/2013 11:16 AM, Vinod Koul wrote:> On Thu, Jul 18, 2013 at
+11:46:39AM -0500, Joel Fernandes wrote:
+>> From: Matt Porter <mporter@ti.com>
+>>
+>> Add a dmaengine API to retrieve slave SG transfer limits.
+>>
+>> The API is optionally implemented by dmaengine drivers and when
+>> unimplemented will return a NULL pointer. A client driver using
+>> this API provides the required dma channel, address width, and
+>> burst size of the transfer. dma_get_slave_sg_limits() returns an
+>> SG limits structure with the maximum number and size of SG segments
+>> that the given channel can handle.
+> Hi Joel,
+>
+> I have already resurrected this and generalized the API to get the slave
+> capablities.
+> https://lkml.org/lkml/2013/7/15/147
 
-So, no, I don't have a good other solution. I have seen attempts to implement a
-user-space 'parallel' devicetree, or the above mentioned sensors.conf file, but
-nothing comprehensive. If you find a good generic solution, let me know.
+Hi Vinod,
 
-Note that ACPI is an attempt to do that, but its scope is not limited to
-describing the hardware, and it is not available on non-Intel embedded systems.
-Also, it is typically controlled by another entity in a company (the BIOS
-engineers), who tend to be highly resistive to changes. Modifying ACPI
-data tends to be way more difficult than modifying devicetree data.
+get_caps and get_sg_limits are 2 different things, looks like this was
+already discussed earlier, and this patch series is a separate API that
+adds support for SG limits.
 
-> > Other but related subject .. from a thermal / hwmon driver's perspective, if
-> > such a driver supports thermal subsystem, it should just register itself as
-> > thermal sensor device, because that is what it is. If and how it is tied to
-> > cooling devices should be part of the thermal subsystem and be decided there.
-> 
-> For audio, we have individual DT nodes that represent individual
-> audio-related components such as audio controllers, audio CODECs, etc.
-> We also have a "virtual" node that describes how those components
-> interact and create a complete sound card. Would it make sense to do
-> something similar with thermal sensors and cooling devices; represent
-> them all individually, have them register themselves with the
-> thermal/hwmon subsystem as you describe, but then have another "system
-> level" node that describes how the system designer intended them to
-> interact?
-> 
-For device registration itself, definitely. An instance of a sensor driver
-should not have to know how (or if) it is used by the system, just like a gpio
-driver does not have to know if and how the gpio pins it provides are used.
+Infact, you can already see here that he changed the name of the
+function from caps to dma_get_slave_sg_limits:
+http://linux.davincidsp.com/pipermail/davinci-linux-open-source/2013-March/026601.html
 
-Binding is the tricky question here, as it is all virtual and, as you said
-yourself, describes the interaction and thus use of the various sensors and
-cooling devices to accomplish the ultimate goal of keeping the system in an
-acceptable temperature range. Hopefully you'll get an answer from the
-devicetree experts if your intended devicetree usage of it is acceptable.
+Considering this, what is the way forward? Can this patch series be
+merged as it is a different API as discussed above?
 
-Guenter
+Summarizing:
+* get_caps API cannot be used for this same purpose, as get_caps is done
+_before_ the DMA channel can be configured from what it looks like:
+* get_sg_limits, on the other hand is supposed to already have the
+parameters required for configuring the DMA channel before hand.
+
+Are there any other changes to the get_sg_limits series you would like
+before it can be applied? Any other suggestions?
+
+Thanks,
+
+-Joel
+
