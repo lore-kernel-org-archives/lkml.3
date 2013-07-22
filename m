@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab3GVE1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 00:27:49 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:60361 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab3GVE1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 00:27:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <1374256055-26894-2-git-send-email-broonie@kernel.org>
-References: <1374256055-26894-1-git-send-email-broonie@kernel.org>
-	<1374256055-26894-2-git-send-email-broonie@kernel.org>
-Date: Mon, 22 Jul 2013 09:57:47 +0530
-Message-ID: <CAKohpok+jZkVpOR28RjX-8RAb4ZYC097wMXiac45MHWmqsrS4w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] extcon: adc-jack: Use power efficient workqueue
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755550Ab3GVEgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 00:36:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42674 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752954Ab3GVEgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 00:36:01 -0400
+Message-ID: <1374467758.2061.14.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] Squashfs: add LZ4 compression support
+From: Joe Perches <joe@perches.com>
+To: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-embedded@vger.kernel.org
+Date: Sun, 21 Jul 2013 21:35:58 -0700
+In-Reply-To: <1374459663-15363-2-git-send-email-phillip@squashfs.org.uk>
+References: <1374459663-15363-1-git-send-email-phillip@squashfs.org.uk>
+	 <1374459663-15363-2-git-send-email-phillip@squashfs.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 July 2013 23:17, Mark Brown <broonie@kernel.org> wrote:
-> From: Mark Brown <broonie@linaro.org>
->
-> The debounce timeout is generally quite long and the work not performance
-> critical so allow the scheduler to run the work anywhere rather than in
-> the normal per-CPU workqueue.
->
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/extcon/extcon-adc-jack.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+On Mon, 2013-07-22 at 03:21 +0100, Phillip Lougher wrote:
+> Add support for reading file systems compressed with the
+> LZ4 compression algorithm.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Some whitespace trivia and a naming comment.
+
+> diff --git a/fs/squashfs/lz4_wrapper.c b/fs/squashfs/lz4_wrapper.c
+[]
+> +static void *lz4_init(struct squashfs_sb_info *msblk, void *buff, int len)
+[]
+> +	/* LZ4 compressed filesystems always have compression options */
+> +	if(comp_opts == NULL || len < sizeof(*comp_opts)) {
+
+space after ifs please.
+
+> +	if(le32_to_cpu(comp_opts->version) != LZ4_LEGACY) {
+
+> +
+> +
+> +static void lz4_free(void *strm)
+
+Single blank line between functions
+
+> +static int lz4_uncompress(struct squashfs_sb_info *msblk, void **buffer,
+> +	struct buffer_head **bh, int b, int offset, int length, int srclength,
+> +	int pages)
+> +{
+> +	struct squashfs_lz4 *stream = msblk->stream;
+> +	void *buff = stream->input;
+
+It's not particularly nice to have both buffer and buff
+in the same function.
+
+Maybe void *input though char *input would be better.
+
+> +	int avail, i, bytes = length, res;
+> +	size_t dest_len = srclength;
+> +
+> +	mutex_lock(&msblk->read_data_mutex);
+> +
+> +	for (i = 0; i < b; i++) {
+> +		wait_on_buffer(bh[i]);
+> +		if (!buffer_uptodate(bh[i]))
+> +			goto block_release;
+> +
+> +		avail = min(bytes, msblk->devblksize - offset);
+> +		memcpy(buff, bh[i]->b_data + offset, avail);
+> +		buff += avail;
+> +		bytes -= avail;
+> +		offset = 0;
+> +		put_bh(bh[i]);
+> +	}
+
+
