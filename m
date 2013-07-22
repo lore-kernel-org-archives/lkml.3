@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179Ab3GVQNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 12:13:50 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:53234 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933162Ab3GVQNo (ORCPT
+	id S933159Ab3GVQNl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 12:13:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42436 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933052Ab3GVQNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 12:13:44 -0400
-From: Peng Tao <bergwolf@gmail.com>
+	Mon, 22 Jul 2013 12:13:34 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Fan Yong <fan.yong@intel.com>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 47/48] staging/lustre/scrub: purge inconsistenct objects after OI scrub
-Date: Tue, 23 Jul 2013 00:07:08 +0800
-Message-Id: <1374509230-3324-48-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
-References: <1374509230-3324-1-git-send-email-bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [ 10/18] ACPI / EC: Add HP Folio 13 to ec_dmi_table in order to skip DSDT scan
+References: <20130719021048.965829361@linuxfoundation.org>
+	<20130719021049.669930750@linuxfoundation.org>
+Date: Mon, 22 Jul 2013 17:13:29 +0100
+In-Reply-To: <20130719021049.669930750@linuxfoundation.org> (Greg
+	Kroah-Hartman's message of "Thu, 18 Jul 2013 19:23:25 -0700")
+Message-ID: <87txjm609i.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fan Yong <fan.yong@intel.com>
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-When OI scrub repaired the found inconsistency, it needs to purge the
-old object out of cache; otherwise, others may still use those cached
-stale information.
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Original patch adds functions in obdclass that is only used by server.
-Drop that part. Only merge in error handling change.
+Sorry for the late review, but this patch is actually tagged for
+stable kernels >= 3.9 ("Cc: 3.9+ <stable@vger.kernel.org>").  But it
+is probably harmless and not worth the trouble of reverting them from
+3.0 and 3.4.
 
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3335
-Lustre-change: http://review.whamcloud.com/6697
-Signed-off-by: Fan Yong <fan.yong@intel.com>
-Reviewed-by: Alex Zhuravlev <alexey.zhuravlev@intel.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
----
- drivers/staging/lustre/lustre/obdclass/lu_object.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/obdclass/lu_object.c b/drivers/staging/lustre/lustre/obdclass/lu_object.c
-index 2fb65f6..896f24a 100644
---- a/drivers/staging/lustre/lustre/obdclass/lu_object.c
-+++ b/drivers/staging/lustre/lustre/obdclass/lu_object.c
-@@ -538,7 +538,7 @@ static struct lu_object *htable_lookup(struct lu_site *s,
- 	__u64  ver = cfs_hash_bd_version_get(bd);
- 
- 	if (*version == ver)
--		return NULL;
-+		return ERR_PTR(-ENOENT);
- 
- 	*version = ver;
- 	bkt = cfs_hash_bd_extra_get(s->ls_obj_hash, bd);
-@@ -547,7 +547,7 @@ static struct lu_object *htable_lookup(struct lu_site *s,
- 	hnode = cfs_hash_bd_peek_locked(s->ls_obj_hash, bd, (void *)f);
- 	if (hnode == NULL) {
- 		lprocfs_counter_incr(s->ls_stats, LU_SS_CACHE_MISS);
--		return NULL;
-+		return ERR_PTR(-ENOENT);
- 	}
- 
- 	h = container_of0(hnode, struct lu_object_header, loh_hash);
-@@ -651,7 +651,7 @@ static struct lu_object *lu_object_find_try(const struct lu_env *env,
- 	cfs_hash_bd_get_and_lock(hs, (void *)f, &bd, 1);
- 	o = htable_lookup(s, &bd, f, waiter, &version);
- 	cfs_hash_bd_unlock(hs, &bd, 1);
--	if (o != NULL)
-+	if (!IS_ERR(o) || PTR_ERR(o) != -ENOENT)
- 		return o;
- 
- 	/*
-@@ -667,7 +667,7 @@ static struct lu_object *lu_object_find_try(const struct lu_env *env,
- 	cfs_hash_bd_lock(hs, &bd, 1);
- 
- 	shadow = htable_lookup(s, &bd, f, waiter, &version);
--	if (likely(shadow == NULL)) {
-+	if (likely(IS_ERR(shadow) && PTR_ERR(shadow) == -ENOENT)) {
- 		struct lu_site_bkt_data *bkt;
- 
- 		bkt = cfs_hash_bd_extra_get(hs, &bd);
-@@ -2077,7 +2077,7 @@ void lu_object_assign_fid(const struct lu_env *env, struct lu_object *o,
- 	cfs_hash_bd_get_and_lock(hs, (void *)fid, &bd, 1);
- 	shadow = htable_lookup(s, &bd, fid, &waiter, &version);
- 	/* supposed to be unique */
--	LASSERT(shadow == NULL);
-+	LASSERT(IS_ERR(shadow) && PTR_ERR(shadow) == -ENOENT);
- 	*old = *fid;
- 	bkt = cfs_hash_bd_extra_get(hs, &bd);
- 	cfs_hash_bd_add_locked(hs, &bd, &o->lo_header->loh_hash);
+Cheers,
 -- 
-1.7.9.5
+Luis
 
+
+>
+> ------------------
+>
+> From: Lan Tianyu <tianyu.lan@intel.com>
+>
+> commit eff9a4b62b14cf0d9913e3caf1f26f8b7a6105c9 upstream.
+>
+> HP Folio 13's BIOS defines CMOS RTC Operation Region and the EC's
+> _REG method will access that region.  To allow the CMOS RTC region
+> handler to be installed before the EC _REG method is first invoked,
+> add ec_skip_dsdt_scan() as HP Folio 13's callback to ec_dmi_table.
+>
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=54621
+> Reported-and-tested-by: Stefan Nagy <public@stefan-nagy.at>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>  drivers/acpi/ec.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> --- a/drivers/acpi/ec.c
+> +++ b/drivers/acpi/ec.c
+> @@ -964,6 +964,10 @@ static struct dmi_system_id __initdata e
+>  	ec_enlarge_storm_threshold, "CLEVO hardware", {
+>  	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
+>  	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
+> +	{
+> +	ec_skip_dsdt_scan, "HP Folio 13", {
+> +	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+> +	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
+>  	{},
+>  };
+>  
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
