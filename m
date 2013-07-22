@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3GVBWH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 21:22:07 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:52984 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab3GVBWC (ORCPT
+	id S1754299Ab3GVBV4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 21:21:56 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:18764 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab3GVBVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 21:22:02 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: linus.walleij@linaro.org
-Cc: shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] pinctrl: pinctrl-imx: Remove unneeded check for platform_get_resource()
-Date: Sun, 21 Jul 2013 22:16:21 -0300
-Message-Id: <1374455781-17905-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 21 Jul 2013 21:21:54 -0400
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>
+Subject: [PATCH 2/4] ipc: drop ipc_lock_by_ptr
+Date: Sun, 21 Jul 2013 18:21:41 -0700
+Message-Id: <1374456103-25353-3-git-send-email-davidlohr.bueso@hp.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1374456103-25353-1-git-send-email-davidlohr.bueso@hp.com>
+References: <1374456103-25353-1-git-send-email-davidlohr.bueso@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+After previous cleanups and optimizations, this function is no longer
+heavily used and we don't have a good reason to keep it. Update the
+few remaining callers and get rid of it.
 
-As devm_ioremap_resource() is used on probe, there is no need to explicitly 
-check the return value from platform_get_resource(), as this is something that
-devm_ioremap_resource() takes care by itself.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- drivers/pinctrl/pinctrl-imx.c | 3 ---
- 1 file changed, 3 deletions(-)
+ ipc/namespace.c | 3 ++-
+ ipc/util.c      | 6 ++++--
+ ipc/util.h      | 6 ------
+ 3 files changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-index 57a4eb0..dea739a 100644
---- a/drivers/pinctrl/pinctrl-imx.c
-+++ b/drivers/pinctrl/pinctrl-imx.c
-@@ -580,9 +580,6 @@ int imx_pinctrl_probe(struct platform_device *pdev,
- 		return -ENOMEM;
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index 67dc744..aba9a58 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -89,7 +89,8 @@ void free_ipcs(struct ipc_namespace *ns, struct ipc_ids *ids,
+ 		perm = idr_find(&ids->ipcs_idr, next_id);
+ 		if (perm == NULL)
+ 			continue;
+-		ipc_lock_by_ptr(perm);
++		rcu_read_lock();
++		ipc_lock_object(perm);
+ 		free(ns, perm);
+ 		total++;
+ 	}
+diff --git a/ipc/util.c b/ipc/util.c
+index 1ddadcf..9f6aa30 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -205,7 +205,8 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
+ 			continue;
+ 		}
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENOENT;
+-		ipc_lock_by_ptr(ipc);
++		rcu_read_lock();
++		ipc_lock_object(ipc);
+ 		return ipc;
+ 	}
+ 
+@@ -838,7 +839,8 @@ static struct kern_ipc_perm *sysvipc_find_ipc(struct ipc_ids *ids, loff_t pos,
+ 		ipc = idr_find(&ids->ipcs_idr, pos);
+ 		if (ipc != NULL) {
+ 			*new_pos = pos + 1;
+-			ipc_lock_by_ptr(ipc);
++			rcu_read_lock();
++			ipc_lock_object(ipc);
+ 			return ipc;
+ 		}
+ 	}
+diff --git a/ipc/util.h b/ipc/util.h
+index 0a362ff..14b0a2a 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -171,12 +171,6 @@ static inline void ipc_assert_locked_object(struct kern_ipc_perm *perm)
+ 	assert_spin_locked(&perm->lock);
+ }
+ 
+-static inline void ipc_lock_by_ptr(struct kern_ipc_perm *perm)
+-{
+-	rcu_read_lock();
+-	ipc_lock_object(perm);
+-}
 -
- 	ipctl->base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(ipctl->base))
- 		return PTR_ERR(ipctl->base);
+ static inline void ipc_unlock(struct kern_ipc_perm *perm)
+ {
+ 	ipc_unlock_object(perm);
 -- 
-1.8.1.2
+1.7.11.7
 
