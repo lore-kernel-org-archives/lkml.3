@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933394Ab3GVU5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:57:30 -0400
-Received: from mail-ye0-f178.google.com ([209.85.213.178]:51178 "EHLO
-	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913Ab3GVU53 (ORCPT
+	id S933418Ab3GVU7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:59:06 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:57904 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932316Ab3GVU7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:57:29 -0400
-Message-ID: <51ED9CC2.8040604@gmail.com>
-Date: Mon, 22 Jul 2013 16:57:38 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 22 Jul 2013 16:59:04 -0400
+Message-ID: <51ED9D15.3010304@linaro.org>
+Date: Mon, 22 Jul 2013 13:59:01 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        dave@sr71.net, kosaki.motohiro@gmail.com,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>  <20130722083721.GC25976@gmail.com> <1374513120.16322.21.camel@misato.fc.hp.com>
-In-Reply-To: <1374513120.16322.21.camel@misato.fc.hp.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: Re: [PATCH] RTC: Add an alarm disable quirk
+References: <1374162294-29726-1-git-send-email-bp@alien8.de> <51E8194E.1030704@linaro.org> <20130718225349.GD15992@pd.tnic> <20130719142628.GC19581@pd.tnic> <20130719151321.GD19581@pd.tnic>
+In-Reply-To: <20130719151321.GD19581@pd.tnic>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(7/22/13 1:12 PM), Toshi Kani wrote:
-> On Mon, 2013-07-22 at 10:37 +0200, Ingo Molnar wrote:
->> * Toshi Kani <toshi.kani@hp.com> wrote:
->>
->>> CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
->>> interface, which allows a given memory address to be hot-added as
->>> follows. (See Documentation/memory-hotplug.txt for more detail.)
+On 07/19/2013 08:13 AM, Borislav Petkov wrote:
+> On Fri, Jul 19, 2013 at 04:26:28PM +0200, Borislav Petkov wrote:
+>> On Fri, Jul 19, 2013 at 12:53:49AM +0200, Borislav Petkov wrote:
+>>>> I assumed it was some sort of BIOS issue where any modification of the
+>>>> RTC_AIE bit caused the alarm irq line to be left high(or something
+>>>> like that) that triggered the immediate power-on on shutdown. But I've
+>>>> not been able to dig down on this.
+>>> Ha, this actually fits like an ass on a bucket (don't ask - German
+>>> proverb :-)).
 >>>
->>> # echo start_address_of_new_memory > /sys/devices/system/memory/probe
+>>> If what you're saying is actually the case, then this explains why not
+>>> writing to 0xb doesn't cause the alarm irq to fire.
 >>>
->>> This probe interface is required on powerpc. On x86, however, ACPI
->>> notifies a memory hotplug event to the kernel, which performs its
->>> hotplug operation as the result. Therefore, regular users do not need
->>> this interface on x86. This probe interface is also error-prone and
->>> misleading that the kernel blindly adds a given memory address without
->>> checking if the memory is present on the system; no probing is done
->>> despite of its name. The kernel crashes when a user requests to online
->>> a memory block that is not present on the system. This interface is
->>> currently used for testing as it can fake a hotplug event.
+>>> Btw, in the trace above we do the disabling twice. Once from
+>>> rtc_timer_remove() and then again from rtc_timer_do_work().
 >>>
->>> This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86, adds
->>> its Kconfig menu entry on x86, and clarifies its use in Documentation/
->>> memory-hotplug.txt.
->>
->> Could we please also fix it to never crash the kernel, even if stupid
->> ranges are provided?
+>>> So, if we disable it once and we touch RTC_AIE again causing the second
+>>> time to rearm the alarm irq, this would explain the issue. Which reminds
+>>> me:
+>>>
+>>> Maybe we should read out the alarm interrupt first and disable it only
+>>> if it is enabled - that would save us the modification of RTC_AIE. Cool,
+>>> I'll try that tomorrow.
+>> Well, the below seems to do the trick. But since I don't trust the BIOS
+>> in any way, I'll run it a couple more days here. Btw, I think we should
+>> commit this regardless, as it saves us unneeded writes:
+> Nope, this doesn't help - box just rebooted. :(
 >
-> Yes, this probe interface can be enhanced to verify the firmware
-> information before adding a given memory address.  However, such change
-> would interfere its test use of "fake" hotplug, which is only the known
-> use-case of this interface on x86.
->
-> In order to verify if a given memory address is enabled at run-time (as
-> opposed to boot-time), we need to check with ACPI memory device objects
-> on x86.  However, system vendors tend to not implement memory device
-> objects unless their systems support memory hotplug.  Dave Hansen is
-> using this interface for his testing as a way to fake a hotplug event on
-> a system that does not support memory hotplug.
+> So I'm back to the DMI quirk patch...
 
-One of possible option is to return EINVAL when system has real hotplug device.
-I mean this interface is only useful when system don't have proper hardware
-feature and doesn't work correctly hardware property and this interface command
-are not consistent.
+So did this work some of the time, but not all? Or was the behavior 
+totally unchanged with this?
 
-Dave, What do you think?
-
+thanks
+-john
