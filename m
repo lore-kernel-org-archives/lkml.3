@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab3GVKxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:53:38 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:58499 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab3GVKxf (ORCPT
+	id S932425Ab3GVKxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:53:51 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:36148 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab3GVKxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:53:35 -0400
+	Mon, 22 Jul 2013 06:53:49 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-Subject: [PATCH 16/22] ARM: dts: Remove '0x's from OMAP3430 SDP DTS file
-Date: Mon, 22 Jul 2013 11:52:35 +0100
-Message-Id: <1374490361-25769-16-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 17/22] ARM: dts: Remove '0x's from OMAP4 DTS file
+Date: Mon, 22 Jul 2013 11:52:36 +0100
+Message-Id: <1374490361-25769-17-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
 References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
@@ -31,80 +31,22 @@ Cc: Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/omap3430-sdp.dts | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ arch/arm/boot/dts/omap4.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/omap3430-sdp.dts b/arch/arm/boot/dts/omap3430-sdp.dts
-index e2249bc..281914e 100644
---- a/arch/arm/boot/dts/omap3430-sdp.dts
-+++ b/arch/arm/boot/dts/omap3430-sdp.dts
-@@ -84,15 +84,15 @@
- 			label = "bootloader-nor";
- 			reg = <0 0x40000>;
- 		};
--		partition@0x40000 {
-+		partition@40000 {
- 			label = "params-nor";
- 			reg = <0x40000 0x40000>;
- 		};
--		partition@0x80000 {
-+		partition@80000 {
- 			label = "kernel-nor";
- 			reg = <0x80000 0x200000>;
- 		};
--		partition@0x280000 {
-+		partition@280000 {
- 			label = "filesystem-nor";
- 			reg = <0x240000 0x7d80000>;
- 		};
-@@ -125,19 +125,19 @@
- 			label = "xloader-nand";
- 			reg = <0 0x80000>;
- 		};
--		partition@0x80000 {
-+		partition@80000 {
- 			label = "bootloader-nand";
- 			reg = <0x80000 0x140000>;
- 		};
--		partition@0x1c0000 {
-+		partition@1c0000 {
- 			label = "params-nand";
- 			reg = <0x1c0000 0xc0000>;
- 		};
--		partition@0x280000 {
-+		partition@280000 {
- 			label = "kernel-nand";
- 			reg = <0x280000 0x500000>;
- 		};
--		partition@0x780000 {
-+		partition@780000 {
- 			label = "filesystem-nand";
- 			reg = <0x780000 0x7880000>;
- 		};
-@@ -170,19 +170,19 @@
- 			label = "xloader-onenand";
- 			reg = <0 0x80000>;
- 		};
--		partition@0x80000 {
-+		partition@80000 {
- 			label = "bootloader-onenand";
- 			reg = <0x80000 0x40000>;
- 		};
--		partition@0xc0000 {
-+		partition@c0000 {
- 			label = "params-onenand";
- 			reg = <0xc0000 0x20000>;
- 		};
--		partition@0xe0000 {
-+		partition@e0000 {
- 			label = "kernel-onenand";
- 			reg = <0xe0000 0x200000>;
- 		};
--		partition@0x2e0000 {
-+		partition@2e0000 {
- 			label = "filesystem-onenand";
- 			reg = <0x2e0000 0xfd20000>;
- 		};
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 22d9f2b..45708e1 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -56,7 +56,7 @@
+ 		cache-level = <2>;
+ 	};
+ 
+-	local-timer@0x48240600 {
++	local-timer@48240600 {
+ 		compatible = "arm,cortex-a9-twd-timer";
+ 		reg = <0x48240600 0x20>;
+ 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_RAW(3) | IRQ_TYPE_LEVEL_HIGH)>;
 -- 
 1.8.1.2
 
