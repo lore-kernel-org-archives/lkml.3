@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479Ab3GVUXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:23:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52109 "EHLO
+	id S933484Ab3GVUYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:24:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52108 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933338Ab3GVUW6 (ORCPT
+	with ESMTP id S933461Ab3GVUW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Jul 2013 16:22:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/11] perf tests: Add 'make install/install-bin' tests into tests/make
-Date: Mon, 22 Jul 2013 17:22:37 -0300
-Message-Id: <1374524559-9839-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/11] perf tests: Add broken install-* tests into tests/make
+Date: Mon, 22 Jul 2013 17:22:38 -0300
+Message-Id: <1374524559-9839-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374524559-9839-1-git-send-email-acme@infradead.org>
 References: <1374524559-9839-1-git-send-email-acme@infradead.org>
@@ -31,16 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding 'make install' and 'make install-bin' tests into tests/make. It's
-run as part of the suite, but could be run separately like:
+Adding install-* tests into tests/make. Those tests are
+broken, so commenting them out right away.
 
-  $ make -f tests/make make_install
-  - make_install: cd . && make -f Makefile DESTDIR=/tmp/tmp.LpkYbk5pfs install
-    test: test -x /tmp/tmp.LpkYbk5pfs/bin/perf
-  $ make -f tests/make make_install_bin
-  - make_install_bin: cd . && make -f Makefile DESTDIR=/tmp/tmp.dMxePBMcFT
-    install-bin
-    test: test -x /tmp/tmp.dMxePBMcFT/bin/perf
+* Nothing get installed for install-man, install_doc and
+  install_html targets, they just rebuild the documentation.
+
+* I've got following error for 'install-info':
+
+  $ make -f tests/make make_install_info
+  - make_install_info: cd . && make -f Makefile DESTDIR=/tmp/tmp.Xi4mb9J1a0 install-info
+
+  $ tail -f make_install_info
+  ...
+  PERF_VERSION = 3.11.rc1.g9b3c2d
+  make[2]: *** No rule to make target `user-manual.xml', needed by `user-manual.texi'.  Stop.
+  make[1]: *** [install-info] Error 2
+
+* I've got following error for 'install-pdf':
+
+  $ make -f tests/make make_install_pdf
+  - make_install_pdf: cd . && make -f Makefile DESTDIR=/tmp/tmp.fXseECBbt1 install-pdf
+
+  $ tail -f make_install_pdf
+  ...
+  PERF_VERSION = 3.11.rc1.g9b3c2d
+  make[2]: *** No rule to make target `user-manual.xml', needed by `user-manual.pdf'.  Stop.
+  make[1]: *** [install-pdf] Error 2
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Borislav Petkov <bp@alien8.de>
@@ -50,42 +67,64 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1374497014-2817-5-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1374497014-2817-6-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/make | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/perf/tests/make | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
 diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-index 7646a00..d3819f2 100644
+index d3819f2..2ca0abf 100644
 --- a/tools/perf/tests/make
 +++ b/tools/perf/tests/make
-@@ -27,6 +27,8 @@ make_help           := help
- make_doc            := doc
- make_perf_o         := perf.o
+@@ -29,6 +29,11 @@ make_perf_o         := perf.o
  make_util_map_o     := util/map.o
-+make_install        := install
-+make_install_bin    := install-bin
+ make_install        := install
+ make_install_bin    := install-bin
++make_install_doc    := install-doc
++make_install_man    := install-man
++make_install_html   := install-html
++make_install_info   := install-info
++make_install_pdf    := install-pdf
  
  # all the NO_* variable combined
  make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
-@@ -56,6 +58,8 @@ run += make_help
- run += make_doc
- run += make_perf_o
+@@ -60,6 +65,12 @@ run += make_perf_o
  run += make_util_map_o
-+run += make_install
-+run += make_install_bin
+ run += make_install
+ run += make_install_bin
++# FIXME 'install-*' commented out till they're fixed
++# run += make_install_doc
++# run += make_install_man
++# run += make_install_html
++# run += make_install_info
++# run += make_install_pdf
  run += make_minimal
  
  ifneq ($(call has,ctags),)
-@@ -91,6 +95,11 @@ test_make_python_perf_so := test -f $(PERF)/python/perf.so
- test_make_perf_o     := test -f $(PERF)/perf.o
- test_make_util_map_o := test -f $(PERF)/util/map.o
+@@ -100,6 +111,26 @@ test_make_install_O     := $(test_make_install)
+ test_make_install_bin   := $(test_make_install)
+ test_make_install_bin_O := $(test_make_install)
  
-+test_make_install       := test -x $$TMP_DEST/bin/perf
-+test_make_install_O     := $(test_make_install)
-+test_make_install_bin   := $(test_make_install)
-+test_make_install_bin_O := $(test_make_install)
++# FIXME nothing gets installed
++test_make_install_man    := test -f $$TMP_DEST/share/man/man1/perf.1
++test_make_install_man_O  := $(test_make_install_man)
++
++# FIXME nothing gets installed
++test_make_install_doc    := $(test_ok)
++test_make_install_doc_O  := $(test_ok)
++
++# FIXME nothing gets installed
++test_make_install_html   := $(test_ok)
++test_make_install_html_O := $(test_ok)
++
++# FIXME nothing gets installed
++test_make_install_info   := $(test_ok)
++test_make_install_info_O := $(test_ok)
++
++# FIXME nothing gets installed
++test_make_install_pdf    := $(test_ok)
++test_make_install_pdf_O  := $(test_ok)
 +
  # Kbuild tests only
  #test_make_python_perf_so_O := test -f $$TMP/tools/perf/python/perf.so
