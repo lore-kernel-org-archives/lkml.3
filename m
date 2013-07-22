@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab3GVKEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756687Ab3GVKE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:04:29 -0400
-Date: Mon, 22 Jul 2013 12:02:43 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 15/23] perf tools: Add perf data version 3 header read
-Message-ID: <20130722100243.GC14350@krava.brq.redhat.com>
-References: <1374083403-14591-1-git-send-email-jolsa@redhat.com>
- <1374083403-14591-16-git-send-email-jolsa@redhat.com>
- <8738rawxz8.fsf@sejong.aot.lge.com>
+	id S932158Ab3GVKFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:05:40 -0400
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:56767 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756025Ab3GVKFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 06:05:39 -0400
+X-SENDER-IP: [85.230.171.181]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At1pABUD7VFV5qu1PGdsb2JhbABagwaDJoUjuGcEAYENFwMBAQEBODWCJAEBBTocEwEPEAgDFQMJJQ8FJQoaE4gUtlwWjmOBHQeDEG4Dl1yGM44vOg
+X-IronPort-AV: E=Sophos;i="4.89,718,1367964000"; 
+   d="scan'208";a="584680224"
+From: rydberg@euromail.se
+Date: Mon, 22 Jul 2013 12:07:13 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [ 37/72] Input: bcm5974 - add support for the 2013 MacBook Air
+Message-ID: <20130722100713.GA1952@polaris.bitmath.org>
+References: <20130719052559.852627424@linuxfoundation.org>
+ <20130719054445.GA14863@kroah.com>
+ <20130722014203.GA31697@kroah.com>
+ <68729596.GVj7zRsy2V@dtor-d630.eng.vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8738rawxz8.fsf@sejong.aot.lge.com>
+In-Reply-To: <68729596.GVj7zRsy2V@dtor-d630.eng.vmware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 09:11:39PM +0900, Namhyung Kim wrote:
-> On Wed, 17 Jul 2013 19:49:55 +0200, Jiri Olsa wrote:
-> > Adding perf data version 3 header read code to load
-> > data for v3 format.
-> >
-> [SNIP]
-> > +
-> > +	session = container_of(header, struct perf_session, header);
-> > +	if (session->evlist)
-> > +		return 0;
+Hi Dmitry,
+
+On Sun, Jul 21, 2013 at 07:21:29PM -0700, Dmitry Torokhov wrote:
+> On Sunday, July 21, 2013 06:42:03 PM Greg Kroah-Hartman wrote:
+> > On Thu, Jul 18, 2013 at 10:44:45PM -0700, Greg Kroah-Hartman wrote:
+> > > On Thu, Jul 18, 2013 at 10:40:40PM -0700, Dmitry Torokhov wrote:
+> > > > Greg,
+> > > > 
+> > > > On Thu, Jul 18, 2013 at 10:25:54PM -0700, Greg Kroah-Hartman wrote:
+> > > > > 3.10-stable review patch.  If anyone has any objections, please let me
+> > > > > know.
+> > > > > 
+> > > > > ------------------
+> > > > > 
+> > > > > From: Dmitry Torokhov <rydberg@euromail.se>
+> > > > 
+> > > > Any chance you could change this to read "Henrik Rydberg"? My import
+> > > > script messed up. And on hid part as well...
+> > > 
+> > > Ok, will do.
+> > 
+> > And I promptly forgot to do this, and I released 3.10.2 with it as-is,
+> > sorry about that.
 > 
-> I guess we need version check here.  The v2 format still needs to
-> process it even though it's session already has a evlist, right?
+> Oh well, it was my screw up to begin with. Hopefully Henrik is not too annoyed 
+> with me.
 
-right, we need it for event names.. will fix
+Well, it's the thought that counts, thanks for trying. As long as
+people do not start to mix us up, I am happy. ;-)
 
-thanks,
-jirka
+Henrik
