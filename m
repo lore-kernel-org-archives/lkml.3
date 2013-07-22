@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab3GVUHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 16:07:36 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:46520 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab3GVUHf (ORCPT
+	id S1757066Ab3GVUJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 16:09:17 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:48152 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756784Ab3GVUJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 16:07:35 -0400
+	Mon, 22 Jul 2013 16:09:15 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: "Chaiken, Alison" <Alison_Chaiken@mentor.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: The future of DT binding maintainership
+Date: Mon, 22 Jul 2013 22:09:09 +0200
+Message-ID: <1925583.R0td2pS6as@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <60BA5429A0E1584BA3633194F6F993B502B21362@NA-MBX-03.mgc.mentorg.com>
+References: <CACxGe6vtJPbbqwpH8Th5S36Hx50f39j1P4OpLb-Um9xQie6Lng@mail.gmail.com> <2962401.WRRoYlXkRr@flatron> <60BA5429A0E1584BA3633194F6F993B502B21362@NA-MBX-03.mgc.mentorg.com>
 MIME-Version: 1.0
-In-Reply-To: <CAO4LoOyW39zCnGq_fnQ5LK9sXD8s3x9LdYvvRMZ=AwfoyaOHqw@mail.gmail.com>
-References: <CAO4LoOyW39zCnGq_fnQ5LK9sXD8s3x9LdYvvRMZ=AwfoyaOHqw@mail.gmail.com>
-Date: Mon, 22 Jul 2013 22:07:34 +0200
-Message-ID: <CAAfyv36tJ3bF-uTTd8yqs-4eCJUV6Pz9Acz3pD-VESwTBrSHOQ@mail.gmail.com>
-Subject: Re: Unsupported DisplayLink (udl or udlfb module)
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Paolo Bolzoni <paolo.bolzoni.brown@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Paolo Bolzini,
+Hi Alison,
 
-On Mon, Jul 22, 2013 at 2:58 PM, Paolo Bolzoni
-<paolo.bolzoni.brown@gmail.com> wrote:
-> Dear kernel list,
-> I bought a DVI to VGA adapter[0] hoping to make it work with the
-> modules udl or udlfb. The program lsusb does recognize it as a
-> DisplayLink:
->
-> //// lsmod output:
-> Bus 002 Device 004: ID 17e9:4300 DisplayLink
->
-> But, it does not matter what of the two modules I have loaded it
-> seems the kernel does not recognize it
-Matching is done by VID = 0x17e9 which seem match but then by
-bInterfaceClass = 0xff, bInterfaceSubClass = 0x00 and bInterfaceProtocol = 0x00.
-Can you please post lsusb -v to check what are other parameters for your device.
->
-> # modprobe udl
-> //// plugging
-> # dmesg|tail -3
-> [ 5500.731973] usb 2-1: new SuperSpeed USB device number 5 using xhci_hcd
-> [ 5500.747190] usbip-host 2-1:1.0: 2-1 is not in match_busid table... skip!
-> [ 5500.747760] usbip-host 2-1:1.1: 2-1 is not in match_busid table... skip!
-> //// unplugging
-> # rmmod udl
-> # modprobe udlfb
-> //// plugging
-> # dmesg|tail -4
-> [ 5544.168599] usb 2-1: USB disconnect, device number 5
-> [ 5560.144758] usb 2-1: new SuperSpeed USB device number 6 using xhci_hcd
-> [ 5560.160033] usbip-host 2-1:1.0: 2-1 is not in match_busid table... skip!
-> [ 5560.160585] usbip-host 2-1:1.1: 2-1 is not in match_busid table... skip!
->
-> I tried seeking on the Internet, but I could not find anything about
-> this 17e9:4300 model. So I ask, it will be supported? It is already
-> supported somewhat? Can I help? I have no experience in kernel
-> programming; but asking is legit I guess.
->
-> Please if you answer put my address paolo.bolzoni.brown@gmail.com in
-> CC as I did not register to the mailing list scared by the huge volume.
->
-> Yours sincerely,
-> Paolo Bolzoni
->
->
-> [0] http://www.amazon.co.uk/exec/obidos/ASIN/B0086359SG/ref=ox_ya_os_product
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Monday 22 of July 2013 19:59:25 Chaiken, Alison wrote:
+> Grant Likely wrote:
+> > Another thing discussed is that we need to start validating DT schema
+> > with an extension to dtc.
+> Is there a schema out there in the wild that exemplifies what you mean?
 
-Regards,
+Not really. The format of schemas is currently in design stage. I'm 
+currently rethinking some details of what I have in my mind. Give me some 
+more time and I will post an RFC to the ML with all that written down.
 
-marek
+> > Tomasz Figa has volunteered to do this work and has support from his
+> > employer
+> That's great news.
+> 
+> > to have is that the DT schema will get checked as part of the dts
+> > build
+> > process so that any DT file that doesn't match the documented schema
+> > will get flagged, and that the schema files will be human readable and
+> > will double as documentation.
+> 
+> No doubt DTS files are already the best documentation available for many
+> targets.    The vendor's technical reference manual describes how the
+> hardware is supposed to work, but the DTS describes what actually does.
+>   Any errata that the vendor issues subsequent to publication of the
+> TRM must be reflected in DTS, after all.
 
---
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+I'm not sure about this. Device tree should describe what hardware it is, 
+not how it works, unless it is really necessary.
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+> The schema-check idea reminds me of the W3C HTML validators:
+> 
+>       http://validator.w3.org/
+> 
+> Since device-tree source looks a bit like XML (or maybe more like JSON),
+> will be the schemas be similar in spirit to DTDs, and is it helpful to
+> think of the validator in this spirit?   Or will the checker be more
+> like "gcc -Wall", since it will be invoked by a compiler?
+
+My idea is to implement compile time verification in dtc, so I guess it 
+will be more like the latter. Since dts is what dtc can already parse, my 
+plan is to keep the schemas in spirit to dts, just modifying/extending it 
+to allow specifying bindings with them, rather than static values.
+
+Best regards,
+Tomasz
+
