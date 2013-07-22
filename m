@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933242Ab3GVTZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 15:25:43 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:54517 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932912Ab3GVTZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 15:25:41 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH 07/22] ARM: exynos: Remove '0x's from Exynos4110 DTSI file
-Date: Mon, 22 Jul 2013 21:25:35 +0200
-Message-ID: <2350088.9z671SCjFz@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org> <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
+	id S933205Ab3GVT34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 15:29:56 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932676Ab3GVT3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 15:29:55 -0400
+Message-ID: <51ED882F.9080801@nod.at>
+Date: Mon, 22 Jul 2013 21:29:51 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
+References: <1374258017-19606-1-git-send-email-artagnon@gmail.com> <51E988FF.9010201@nod.at> <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com> <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com> <20130722124047.GL4165@ZenIV.linux.org.uk> <CALkWK0=bAwDxbLEtHOThjY58BmWCrFYgZm9GaLfEnF5vpu1VJw@mail.gmail.com> <51ED31AF.8000309@nod.at> <CALkWK0ki0JN_uB3VNr=j0hAcEhiT_Xr+xd911-AGy5sjd95GFg@mail.gmail.com> <51ED3CF5.7000609@nod.at> <CALkWK0kwBaNHfH6fjtnCTxseWcXfEvNFgFovZVkz5E0_fxiHWA@mail.gmail.com>
+In-Reply-To: <CALkWK0kwBaNHfH6fjtnCTxseWcXfEvNFgFovZVkz5E0_fxiHWA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-On Monday 22 of July 2013 11:52:26 Lee Jones wrote:
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: linux-samsung-soc@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/boot/dts/exynos4210.dtsi | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Am 22.07.2013 17:33, schrieb Ramkumar Ramachandra:
+> Richard Weinberger wrote:
+>> Again what problem are you trying to solve?
+>> If you want a getty on /dev/tty0, run:
 > 
-> diff --git a/arch/arm/boot/dts/exynos4210.dtsi
-> b/arch/arm/boot/dts/exynos4210.dtsi index b7f358a..53e2527 100644
-> --- a/arch/arm/boot/dts/exynos4210.dtsi
-> +++ b/arch/arm/boot/dts/exynos4210.dtsi
-> @@ -72,7 +72,7 @@
->  		};
->  	};
+> To get systemd to do that for me automatically :)
 > 
-> -	clock: clock-controller@0x10030000 {
-> +	clock: clock-controller@10030000 {
->  		compatible = "samsung,exynos4210-clock";
->  		reg = <0x10030000 0x20000>;
->  		#clock-cells = <1>;
+> It automatically does the right thing when it detects xen, bochs,
+> qemu, vmware, microsoft, oracle, chroot, openvz, and lxc.  So, why not
+> uml?
 
-This looks fine, but please fix commit message - it should be Exynos4210. 
-Also some explanation why this change is needed would be good, even if 
-it's obvious.
+Ask systemd folks. UML exists much longer than systemd.
 
-Best regards,
-Tomasz
+> [1/2] is about getting it to active console-getty.service when uml is detected.
+> 
+> [2/2] is about getting it to disable vconsole-setup.service when uml
+> is detected (since it uml doesn't do VT emulation, and the service
+> will always fail).
+> 
+> Too minor a problem?
+
+No, but we won't break existing applications, period.
+If you offer me a solution that does not break any existing applications
+and solves your systemd issue we can talk. :-)
+
+Thanks,
+//richard
 
